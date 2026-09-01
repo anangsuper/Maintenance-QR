@@ -1,6 +1,6 @@
 <?php
 require __DIR__ . '/bootstrap.php';
-require_login();
+// Buka akses finding agar teknisi yang scan dari HP bisa langsung lapor temuan
 
 $logId = max(0, (int)($_GET['log_id'] ?? $_POST['log_id'] ?? 0));
 if (!$logId) {

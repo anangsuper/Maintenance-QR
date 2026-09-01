@@ -49,11 +49,21 @@ $head = '<style>
 }
 </style>';
 
+$currentBase = module_base_url();
+$isLocal = (str_contains($currentBase, 'localhost') || str_contains($currentBase, '127.0.0.1'));
+$localWarning = $isLocal ? '
+<div class="alert alert-warning no-print mb-4">
+  <div class="fw-bold"><i class="bi bi-exclamation-triangle-fill me-1"></i> Perhatian: QR Menggunakan Alamat "localhost"</div>
+  <div class="small">Kamera HP tidak bisa membuka alamat <code>localhost</code>. Agar QR bisa discan dari HP teknisi, pastikan QR dicetak dari <strong>Domain Vercel Anda</strong> (misal: <code>https://nama-project.vercel.app</code>) atau atur variabel <code>APP_URL</code> ke alamat domain/IP publik Anda.</div>
+  <div class="small mt-1 text-muted">URL Target Saat Ini: <code>'.e($currentBase).'</code></div>
+</div>' : '';
+
 $body = '
 <div class="no-print d-flex justify-content-between align-items-center mb-3">
-  <div><h2 class="mb-0">Cetak QR Maintenance</h2><div class="text-secondary">Gunakan kertas stiker agar mudah ditempel.</div></div>
-  <button class="btn btn-primary" onclick="window.print()">Print</button>
+  <div><h2 class="mb-0">Cetak QR Maintenance</h2><div class="text-secondary">Gunakan kertas stiker agar mudah ditempel pada bodi komputer.</div></div>
+  <button class="btn btn-primary" onclick="window.print()"><i class="bi bi-printer me-1"></i> Print / Cetak</button>
 </div>
+'.$localWarning.'
 <div class="qr-grid">'.$cards.'</div>';
 
 $script = '

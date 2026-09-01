@@ -1,6 +1,6 @@
 <?php
 require __DIR__ . '/bootstrap.php';
-require_login();
+// Buka akses scan agar teknisi bisa langsung scan QR dari HP tanpa terblokir login redirect
 
 $token = trim((string)($_GET['t'] ?? $_POST['t'] ?? ''));
 if ($token === '' || !preg_match('/^[a-zA-Z0-9\-_]{1,128}$/', $token)) {
