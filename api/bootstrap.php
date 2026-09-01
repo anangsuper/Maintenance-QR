@@ -531,6 +531,179 @@ function create_new_asset(array $data): array {
     }
 }
 
+function get_asset_by_id(int $id): ?array {
+    if ($id <= 0) return null;
+    if (is_google_cloud_mode()) {
+        $assets = map_sheets_assets(true);
+        foreach ($assets as $a) {
+            if ((int)($a['id'] ?? 0) === $id) {
+                return $a;
+            }
+        }
+        return null;
+    }
+
+    try {
+        $base = asset_query_base();
+        $st = db()->prepare($base . " WHERE a.id = ? LIMIT 1");
+        $st->execute([$id]);
+        $row = $st->fetch();
+        return $row ?: null;
+    } catch (Throwable $e) {
+        return null;
+    }
+}
+
+function update_asset(int $id, array $data): array {
+    if ($id <= 0) return ['success' => false, 'error' => 'ID aset tidak valid'];
+
+    $kode = trim((string)($data['kode_inventaris'] ?? ''));
+    $merk = trim((string)($data['merk'] ?? ''));
+    $model = trim((string)($data['model'] ?? ''));
+    $sn = trim((string)($data['serial_number'] ?? ''));
+    $idKat = (int)($data['id_kategori'] ?? 0);
+    $idCab = (int)($data['id_cabang'] ?? 0);
+    $idDiv = (int)($data['id_divisi'] ?? 0);
+    $idKar = (int)($data['id_karyawan'] ?? 0);
+    $namaKar = trim((string)($data['nama_karyawan'] ?? $data['custom_karyawan'] ?? ''));
+    $status = trim((string)($data['status'] ?? 'Aktif')) ?: 'Aktif';
+    $ket = trim((string)($data['keterangan'] ?? ''));
+    $placement = trim((string)($data['placement_label'] ?? 'Bodi Casing')) ?: 'Bodi Casing';
+
+    if (is_google_cloud_mode()) {
+        $client = google_sheets_v4_client();
+        if (!$client) {
+            return ['success' => false, 'error' => 'Google Sheets client tidak tersedia'];
+        }
+
+        // Cari atau buat karyawan jika nama diisi
+        if ($namaKar !== '') {
+            $karRows = $client->getSheetData('Karyawan');
+            $foundKarId = 0;
+            foreach ($karRows as $kr) {
+                $kName = trim((string)($kr['nama_karyawan'] ?? $kr['nama'] ?? ''));
+                if (strcasecmp($kName, $namaKar) === 0) {
+                    $foundKarId = (int)($kr['id'] ?? 0);
+                    break;
+                }
+            }
+            if ($foundKarId > 0) {
+                $idKar = $foundKarId;
+            } else {
+                $newKarId = count($karRows) + 1;
+                $client->appendValues('Karyawan!A:D', [[$newKarId, $namaKar, $idCab, $idDiv]]);
+                $idKar = $newKarId;
+            }
+        }
+
+        $assets = $client->getSheetData('Assets');
+        $targetRow = null;
+        foreach ($assets as $a) {
+            if ((int)($a['id'] ?? 0) === $id) {
+                $targetRow = $a;
+                break;
+            }
+        }
+
+        if (!$targetRow) {
+            return ['success' => false, 'error' => 'Aset dengan ID tersebut tidak ditemukan'];
+        }
+
+        $rowNum = (int)($targetRow['_row_num'] ?? 0);
+        if ($rowNum <= 1) {
+            return ['success' => false, 'error' => 'Gagal menentukan baris data aset'];
+        }
+
+        if ($kode === '') {
+            $kode = sprintf('INV-IT-%03d', $id);
+        }
+
+        $assetRow = [
+            $id,
+            $kode,
+            $merk,
+            $model,
+            $sn,
+            $idKat,
+            $idCab,
+            $idDiv,
+            $idKar,
+            $status,
+            $ket
+        ];
+
+        $updated = $client->updateValues("Assets!A{$rowNum}:K{$rowNum}", [$assetRow]);
+        if (!$updated) {
+            return ['success' => false, 'error' => 'Gagal memperbarui data di Google Sheets'];
+        }
+
+        // Update placement label di Asset_QR_Tokens jika ada
+        $qrRows = $client->getSheetData('Asset_QR_Tokens');
+        foreach ($qrRows as $q) {
+            if ((int)($q['asset_id'] ?? 0) === $id) {
+                $qrRowNum = (int)($q['_row_num'] ?? 0);
+                if ($qrRowNum > 1) {
+                    $client->updateValues("Asset_QR_Tokens!D{$qrRowNum}", [[$placement]]);
+                }
+                break;
+            }
+        }
+
+        map_sheets_assets(true);
+
+        return [
+            'success' => true,
+            'asset_id' => $id,
+            'kode_inventaris' => $kode,
+            'karyawan_nama' => $namaKar
+        ];
+    }
+
+    // MySQL Mode
+    try {
+        if ($namaKar !== '') {
+            $kName = name_column('karyawan') ?: 'nama_karyawan';
+            $findSt = db()->prepare("SELECT id FROM karyawan WHERE LOWER(`{$kName}`) = LOWER(?) LIMIT 1");
+            $findSt->execute([$namaKar]);
+            $existingKarId = (int)$findSt->fetchColumn();
+            if ($existingKarId > 0) {
+                $idKar = $existingKarId;
+            } else {
+                $insKar = db()->prepare("INSERT INTO karyawan (`{$kName}`, id_cabang, id_divisi) VALUES (?, ?, ?)");
+                $insKar->execute([$namaKar, $idCab, $idDiv]);
+                $idKar = (int)db()->lastInsertId();
+            }
+        }
+
+        if ($kode === '') {
+            $kode = sprintf('INV-IT-%03d', $id);
+        }
+
+        $upSt = db()->prepare("
+            UPDATE assets
+            SET kode_inventaris = ?, merk = ?, model = ?, serial_number = ?,
+                id_kategori = ?, id_cabang = ?, id_divisi = ?, id_karyawan = ?,
+                status = ?, keterangan = ?
+            WHERE id = ?
+        ");
+        $upSt->execute([
+            $kode, $merk, $model, $sn, $idKat, $idCab, $idDiv, $idKar, $status, $ket, $id
+        ]);
+
+        $upQr = db()->prepare("UPDATE asset_qr_tokens SET placement_label = ? WHERE asset_id = ?");
+        $upQr->execute([$placement, $id]);
+
+        return [
+            'success' => true,
+            'asset_id' => $id,
+            'kode_inventaris' => $kode,
+            'karyawan_nama' => $namaKar
+        ];
+    } catch (Throwable $e) {
+        return ['success' => false, 'error' => $e->getMessage()];
+    }
+}
+
 function get_dashboard_data(int $month, int $year, int $cabangId): array {
     if (is_google_cloud_mode()) {
         $client = google_sheets_v4_client();

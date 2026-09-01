@@ -46,15 +46,15 @@ foreach ($rows as $r) {
         ? '<span class="badge text-bg-success">Siap</span>'
         : '<span class="badge text-bg-secondary">Belum dibuat</span>';
 
-    $action = '';
+    $action = '<a class="btn btn-sm btn-outline-secondary me-1" href="'.e(module_url('asset_edit.php', ['id'=>(int)$r['id']])).'"><i class="bi bi-pencil"></i> Edit</a> ';
     if ($url) {
-        $action .= '<a class="btn btn-sm btn-outline-primary" target="_blank" href="'.e(module_url('print_qr.php', ['asset_id'=>(int)$r['id']])).'">Cetak</a> ';
+        $action .= '<a class="btn btn-sm btn-outline-primary me-1" target="_blank" href="'.e(module_url('print_qr.php', ['asset_id'=>(int)$r['id']])).'"><i class="bi bi-printer"></i> Cetak</a> ';
     }
     $action .= '<form method="post" class="d-inline">
       <input type="hidden" name="_csrf" value="'.e(csrf_token()).'">
       <input type="hidden" name="action" value="regenerate">
       <input type="hidden" name="asset_id" value="'.(int)$r['id'].'">
-      <button class="btn btn-sm btn-outline-danger" onclick="return confirm(\'Buat ulang QR? QR lama akan tidak berlaku.\')">Buat Ulang</button>
+      <button class="btn btn-sm btn-outline-danger" onclick="return confirm(\'Buat ulang QR? QR lama akan tidak berlaku.\')"><i class="bi bi-arrow-repeat"></i> Buat Ulang</button>
     </form>';
 
     $table .= '<tr>

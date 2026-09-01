@@ -29,7 +29,7 @@ foreach ($cabangs as $c) {
 $pendingHtml = '';
 foreach ($pendingRows as $r) {
     $pendingHtml .= '<tr>
-      <td>'.e($r['kode_inventaris'] ?? '-').'</td>
+      <td><a href="'.e(module_url('asset_edit.php', ['id' => (int)$r['id']])).'" class="fw-bold text-decoration-none" title="Klik untuk Edit Data">'.e($r['kode_inventaris'] ?? '-').' <i class="bi bi-pencil-square small text-secondary"></i></a></td>
       <td>'.e(asset_title($r)).'</td>
       <td>'.e($r['karyawan_nama'] ?? '-').'</td>
       <td>'.e($r['cabang_nama'] ?? '-').'</td>
