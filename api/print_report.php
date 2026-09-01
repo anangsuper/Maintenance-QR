@@ -37,7 +37,7 @@ if ($cabangId > 0 && is_array($cabangs)) {
 $pending = max(0, $total - $done);
 $percent = $total > 0 ? round(($done / $total) * 100) : 0;
 
-// Filter Options
+// Filter Dropdown Options
 $cabangOpts = '';
 foreach ($cabangs as $c) {
     $cId = (int)($c['id'] ?? 0);
@@ -57,15 +57,17 @@ if (!empty($historyRows)) {
             ? '<span class="badge-print badge-print-danger">Ada Temuan</span>' 
             : '<span class="badge-print badge-print-success">Selesai</span>';
 
+        $waktuStr = e(format_id_date((string)($r['maintenance_date'] ?? ''))).' '.e(substr((string)($r['maintenance_time'] ?? ''), 0, 5));
+
         $doneTrs .= '<tr>
-          <td class="text-center">'.$i.'</td>
-          <td>'.e(format_id_date((string)($r['maintenance_date'] ?? ''))).' <small class="text-muted">'.e(substr((string)($r['maintenance_time'] ?? ''), 0, 5)).'</small></td>
-          <td class="fw-bold">'.e($r['kode_inventaris'] ?? '-').'</td>
+          <td class="col-no">'.$i.'</td>
+          <td class="col-nowrap">'.$waktuStr.'</td>
+          <td class="col-nowrap fw-bold">'.e($r['kode_inventaris'] ?? '-').'</td>
           <td>'.e(trim(($r['merk'] ?? '').' '.($r['model'] ?? ''))).'</td>
           <td>'.e($r['karyawan_nama'] ?? '-').'</td>
           <td>'.e(($r['cabang_nama'] ?? '-')).'</td>
-          <td>'.e($tech).'</td>
-          <td class="text-center">'.$statusBadge.'</td>
+          <td class="col-nowrap">'.e($tech).'</td>
+          <td class="col-nowrap text-center">'.$statusBadge.'</td>
         </tr>';
     }
 }
@@ -86,13 +88,13 @@ if (!empty($findingsRows)) {
         };
 
         $findingTrs .= '<tr>
-          <td class="text-center">'.$k.'</td>
-          <td class="fw-bold">'.e($f['kode_inventaris']).'</td>
+          <td class="col-no">'.$k.'</td>
+          <td class="col-nowrap fw-bold">'.e($f['kode_inventaris']).'</td>
           <td>'.e($f['merk_model']).'<br><small class="text-muted">'.e($f['karyawan_nama']).' ('.e($f['cabang_nama']).')</small></td>
           <td>'.nl2br(e($f['finding'])).'</td>
           <td>'.nl2br(e($f['action_taken'] ?: '-')).'</td>
-          <td class="text-center"><span class="badge-print '.$sevClass.'">'.e($f['severity']).'</span></td>
-          <td class="text-center"><strong>'.e($f['repair_status']).'</strong></td>
+          <td class="col-nowrap text-center"><span class="badge-print '.$sevClass.'">'.e($f['severity']).'</span></td>
+          <td class="col-nowrap text-center"><strong>'.e($f['repair_status']).'</strong></td>
         </tr>';
     }
 }
@@ -104,12 +106,12 @@ if (!empty($pendingRows)) {
     foreach ($pendingRows as $r) {
         $j++;
         $pendingTrs .= '<tr>
-          <td class="text-center">'.$j.'</td>
-          <td class="fw-bold">'.e($r['kode_inventaris'] ?? '-').'</td>
+          <td class="col-no">'.$j.'</td>
+          <td class="col-nowrap fw-bold">'.e($r['kode_inventaris'] ?? '-').'</td>
           <td>'.e(asset_title($r)).'</td>
           <td>'.e($r['karyawan_nama'] ?? '-').'</td>
           <td>'.e($r['cabang_nama'] ?? '-').' ('.e($r['divisi_nama'] ?? '-').')</td>
-          <td class="text-center"><span class="badge-print badge-print-secondary">Belum</span></td>
+          <td class="col-nowrap text-center"><span class="badge-print badge-print-secondary">Belum</span></td>
         </tr>';
     }
 }
@@ -118,162 +120,304 @@ if (!$pendingTrs) {
 }
 
 $head = '<style>
-body { background: #eaedf2; font-family: "Segoe UI", Arial, sans-serif; }
-.report-page { max-width: 1100px; margin: 0 auto; background: #fff; border-radius: 8px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); padding: 35px 40px; }
-.report-title-box { border-bottom: 3px double #0d6efd; padding-bottom: 15px; margin-bottom: 25px; }
-.stat-card { border: 1px solid #dee2e6; border-radius: 8px; padding: 12px 16px; background: #fdfdfd; }
-.stat-card .stat-val { font-size: 1.6rem; font-weight: 700; line-height: 1.2; }
-.stat-card .stat-lbl { font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.5px; color: #6c757d; font-weight: 600; }
-.table-report { font-size: 0.9rem; width: 100%; border-collapse: collapse; margin-bottom: 20px; }
-.table-report th { background: #f1f4f8; font-weight: 600; border: 1px solid #ccc; padding: 8px 10px; color: #333; }
-.table-report td { border: 1px solid #ccc; padding: 8px 10px; vertical-align: middle; }
-.badge-print { display: inline-block; padding: 3px 8px; font-size: 0.75rem; font-weight: 600; border-radius: 4px; border: 1px solid transparent; }
-.badge-print-success { background: #e8f5e9; color: #1e7e34; border-color: #c3e6cb; }
-.badge-print-danger { background: #fde8e8; color: #bd2130; border-color: #f5c6cb; }
-.badge-print-warning { background: #fff3cd; color: #856404; border-color: #ffeeba; }
-.badge-print-info { background: #e3f2fd; color: #0c5460; border-color: #bee5eb; }
-.badge-print-secondary { background: #f8f9fa; color: #6c757d; border-color: #dee2e6; }
-.signature-section { margin-top: 40px; page-break-inside: avoid; }
-.signature-box { text-align: center; }
-.signature-line { width: 180px; margin: 60px auto 4px auto; border-bottom: 1px solid #333; }
+/* Reset & Page Setup */
+@page {
+  size: A4 landscape;
+  margin: 10mm 12mm;
+}
 
+body {
+  background: #eaedf2;
+  font-family: "Segoe UI", Tahoma, Arial, sans-serif;
+  color: #212529;
+}
+
+.report-wrapper {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.report-page {
+  width: 100%;
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+  padding: 30px 35px;
+  box-sizing: border-box;
+}
+
+.report-header {
+  border-bottom: 2px solid #222;
+  padding-bottom: 12px;
+  margin-bottom: 18px;
+}
+
+/* Compact Executive Summary Row */
+.summary-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 22px;
+}
+
+.summary-card {
+  flex: 1 1 0;
+  min-width: 140px;
+  background: #f8f9fa;
+  border: 1px solid #dee2e6;
+  border-radius: 6px;
+  padding: 10px 14px;
+}
+
+.summary-card .lbl {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #6c757d;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 2px;
+}
+
+.summary-card .val {
+  font-size: 1.4rem;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+/* Tables */
+.table-report {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 22px;
+  font-size: 9.5pt;
+  table-layout: auto;
+}
+
+.table-report th {
+  background: #f1f3f5;
+  color: #111;
+  font-weight: 600;
+  border: 1px solid #999;
+  padding: 7px 10px;
+  vertical-align: middle;
+}
+
+.table-report td {
+  border: 1px solid #bbb;
+  padding: 6px 10px;
+  vertical-align: middle;
+}
+
+.col-no {
+  width: 35px;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.col-nowrap {
+  white-space: nowrap !important;
+}
+
+.badge-print {
+  display: inline-block;
+  padding: 2px 7px;
+  font-size: 8pt;
+  font-weight: 600;
+  border-radius: 4px;
+  border: 1px solid transparent;
+  white-space: nowrap;
+}
+
+.badge-print-success { background: #d1e7dd; color: #0f5132; border-color: #badbcc; }
+.badge-print-danger { background: #f8d7da; color: #842029; border-color: #f5c2c7; }
+.badge-print-warning { background: #fff3cd; color: #664d03; border-color: #ffecb5; }
+.badge-print-info { background: #cff4fc; color: #055160; border-color: #b6effb; }
+.badge-print-secondary { background: #e2e3e5; color: #41464b; border-color: #d3d6d8; }
+
+.section-heading {
+  font-size: 10.5pt;
+  font-weight: 700;
+  margin-bottom: 8px;
+  color: #111;
+}
+
+/* Signature Block */
+.signature-section {
+  margin-top: 35px;
+  page-break-inside: avoid;
+}
+
+.signature-box {
+  text-align: center;
+}
+
+.signature-line {
+  width: 200px;
+  margin: 55px auto 4px auto;
+  border-bottom: 1px solid #000;
+}
+
+/* Print CSS */
 @media print {
-  body { background: #fff !important; margin: 0; padding: 0; font-size: 10.5pt; color: #000; }
-  .no-print, nav, header { display: none !important; }
-  .report-page { max-width: 100% !important; width: 100% !important; margin: 0 !important; padding: 0 !important; box-shadow: none !important; border-radius: 0 !important; }
-  .report-title-box { border-bottom: 2px solid #000 !important; }
-  .table-report th, .table-report td { border: 1px solid #555 !important; }
-  .stat-card { border: 1px solid #888 !important; }
-  tr { page-break-inside: avoid; }
-  .page-break { page-break-before: always; }
+  body {
+    background: #fff !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    font-size: 9pt;
+    color: #000;
+  }
+
+  .no-print, nav, header {
+    display: none !important;
+  }
+
+  .container, main.container, .report-wrapper, .report-page {
+    max-width: 100% !important;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    box-shadow: none !important;
+    border-radius: 0 !important;
+  }
+
+  .table-report th {
+    background: #e9ecef !important;
+    color: #000 !important;
+    border: 1px solid #444 !important;
+  }
+
+  .table-report td {
+    border: 1px solid #555 !important;
+  }
+
+  .summary-card {
+    border: 1px solid #777 !important;
+    background: #fff !important;
+  }
+
+  tr {
+    page-break-inside: avoid;
+  }
+
+  .page-break {
+    page-break-before: always;
+  }
 }
 </style>';
 
 $body = '
-<!-- Interactive Controls Bar (Hidden during Print) -->
-<div class="no-print mb-4 p-3 bg-white rounded-3 shadow-sm" style="max-width: 1100px; margin: 0 auto 20px auto;">
-  <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 border-bottom pb-3 mb-3">
-    <div class="d-flex align-items-center gap-2">
-      <a class="btn btn-outline-secondary btn-sm" href="'.e(module_url('dashboard.php', ['bulan'=>$month,'tahun'=>$year,'cabang'=>$cabangId])).'"><i class="bi bi-arrow-left"></i> Kembali ke Dashboard</a>
-      <h5 class="mb-0 fw-bold text-dark"><i class="bi bi-printer me-2 text-primary"></i>Cetak Laporan Maintenance</h5>
+<div class="report-wrapper">
+  <!-- Interactive Controls Bar (Hidden during Print) -->
+  <div class="no-print mb-4 p-3 bg-white rounded-3 shadow-sm">
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 border-bottom pb-3 mb-3">
+      <div class="d-flex align-items-center gap-2">
+        <a class="btn btn-outline-secondary btn-sm" href="'.e(module_url('dashboard.php', ['bulan'=>$month,'tahun'=>$year,'cabang'=>$cabangId])).'"><i class="bi bi-arrow-left"></i> Dashboard</a>
+        <h5 class="mb-0 fw-bold text-dark"><i class="bi bi-printer me-2 text-primary"></i>Cetak Rekap Maintenance (Format A4 Landscape)</h5>
+      </div>
+      <div class="d-flex gap-2">
+        <button class="btn btn-primary fw-semibold px-4" onclick="window.print()"><i class="bi bi-printer-fill me-1"></i> Print / Download PDF</button>
+      </div>
     </div>
-    <div class="d-flex gap-2">
-      <button class="btn btn-primary fw-semibold px-4" onclick="window.print()"><i class="bi bi-printer-fill me-1"></i> Print / Download PDF</button>
-    </div>
-  </div>
 
-  <form method="get" class="row g-2 align-items-end">
-    <div class="col-6 col-md-3">
-      <label class="form-label small fw-semibold">Bulan</label>
-      <select class="form-select form-select-sm" name="bulan">';
+    <form method="get" class="row g-2 align-items-end">
+      <div class="col-6 col-md-3">
+        <label class="form-label small fw-semibold">Bulan</label>
+        <select class="form-select form-select-sm" name="bulan">';
 for ($m=1;$m<=12;$m++) {
     $body .= '<option value="'.$m.'"'.($m===$month?' selected':'').'>'.$monthNames[$m].'</option>';
 }
 $body .= '</select>
-    </div>
-    <div class="col-6 col-md-3">
-      <label class="form-label small fw-semibold">Tahun</label>
-      <input type="number" class="form-control form-control-sm" name="tahun" value="'.$year.'" min="2020" max="2100">
-    </div>
-    <div class="col-md-4">
-      <label class="form-label small fw-semibold">Cabang</label>
-      <select class="form-select form-select-sm" name="cabang">
-        <option value="0">Semua Cabang</option>
-        '.$cabangOpts.'
-      </select>
-    </div>
-    <div class="col-md-2">
-      <button type="submit" class="btn btn-outline-primary btn-sm w-100"><i class="bi bi-filter me-1"></i> Tampilkan</button>
-    </div>
-  </form>
-</div>
+      </div>
+      <div class="col-6 col-md-3">
+        <label class="form-label small fw-semibold">Tahun</label>
+        <input type="number" class="form-control form-control-sm" name="tahun" value="'.$year.'" min="2020" max="2100">
+      </div>
+      <div class="col-md-4">
+        <label class="form-label small fw-semibold">Cabang</label>
+        <select class="form-select form-select-sm" name="cabang">
+          <option value="0">Semua Cabang</option>
+          '.$cabangOpts.'
+        </select>
+      </div>
+      <div class="col-md-2">
+        <button type="submit" class="btn btn-outline-primary btn-sm w-100"><i class="bi bi-filter me-1"></i> Tampilkan</button>
+      </div>
+    </form>
+  </div>
 
-<!-- Main Printable Report Sheet -->
-<div class="report-page">
-  <!-- Kop Surat & Judul Laporan -->
-  <div class="report-title-box">
-    <div class="d-flex justify-content-between align-items-start flex-wrap gap-2">
-      <div>
-        <h4 class="fw-bold mb-1 text-dark" style="letter-spacing: 0.5px;">LAPORAN REKAPITULASI MAINTENANCE IT & HARDWARE</h4>
-        <div class="text-secondary fs-6">
-          Periode: <strong class="text-dark">'.$monthName.' '.$year.'</strong> &nbsp;|&nbsp; 
-          Cabang / Lokasi: <strong class="text-dark">'.e($cabangName).'</strong>
+  <!-- Main Printable Report Sheet -->
+  <div class="report-page">
+    <!-- Kop Surat & Judul Laporan -->
+    <div class="report-header">
+      <div class="d-flex justify-content-between align-items-end flex-wrap gap-2">
+        <div>
+          <h4 class="fw-bold mb-1 text-dark" style="letter-spacing: 0.5px;">LAPORAN REKAPITULASI MAINTENANCE IT & HARDWARE</h4>
+          <div class="text-secondary" style="font-size: 10.5pt;">
+            Periode: <strong class="text-dark">'.$monthName.' '.$year.'</strong> &nbsp;|&nbsp; 
+            Cabang / Lokasi: <strong class="text-dark">'.e($cabangName).'</strong>
+          </div>
+        </div>
+        <div class="text-end small text-muted">
+          <div>Tanggal Cetak: <strong>'.date('d-m-Y').'</strong> ('.date('H:i').' WITA)</div>
+          <div>Sistem: QR Maintenance</div>
         </div>
       </div>
-      <div class="text-end small text-muted">
-        <div>Tanggal Cetak: <strong>'.date('d-m-Y').'</strong></div>
-        <div>Waktu: '.date('H:i').' WITA</div>
-        <div>Sistem: QR Maintenance</div>
-      </div>
     </div>
-  </div>
 
-  <!-- Ringkasan Statistik Eksekutif -->
-  <div class="row g-2 mb-4">
-    <div class="col-3">
-      <div class="stat-card">
-        <div class="stat-lbl">Total Komputer / Aset</div>
-        <div class="stat-val text-dark">'.$total.'</div>
+    <!-- Ringkasan Statistik Eksekutif (Horizontal Bar) -->
+    <div class="summary-bar">
+      <div class="summary-card">
+        <div class="lbl">Total Aset</div>
+        <div class="val text-dark">'.$total.'</div>
+      </div>
+      <div class="summary-card">
+        <div class="lbl">Sudah Maintenance</div>
+        <div class="val text-success">'.$done.' <small style="font-size: 9pt; font-weight: normal; color: #555;">('.$percent.'%)</small></div>
+      </div>
+      <div class="summary-card">
+        <div class="lbl">Belum Maintenance</div>
+        <div class="val text-warning">'.$pending.'</div>
+      </div>
+      <div class="summary-card">
+        <div class="lbl">Temuan Kerusakan</div>
+        <div class="val text-danger">'.$findingsCount.'</div>
       </div>
     </div>
-    <div class="col-3">
-      <div class="stat-card">
-        <div class="stat-lbl">Sudah Maintenance</div>
-        <div class="stat-val text-success">'.$done.' <small class="fs-6 fw-normal text-muted">('.$percent.'%)</small></div>
-      </div>
-    </div>
-    <div class="col-3">
-      <div class="stat-card">
-        <div class="stat-lbl">Belum Maintenance</div>
-        <div class="stat-val text-warning">'.$pending.'</div>
-      </div>
-    </div>
-    <div class="col-3">
-      <div class="stat-card">
-        <div class="stat-lbl">Temuan Kerusakan</div>
-        <div class="stat-val text-danger">'.$findingsCount.'</div>
-      </div>
-    </div>
-  </div>
 
-  <!-- Tabel 1: Selesai Maintenance -->
-  <div class="d-flex justify-content-between align-items-center mb-2 mt-4">
-    <h6 class="fw-bold text-dark mb-0">1. DAFTAR KOMPUTER / ASET SELESAI MAINTENANCE ('.$done.')</h6>
-  </div>
-  <table class="table-report">
-    <thead>
-      <tr>
-        <th style="width: 35px;" class="text-center">No</th>
-        <th style="width: 130px;">Waktu Scan</th>
-        <th style="width: 120px;">Kode Inventaris</th>
-        <th>Perangkat (Merk & Tipe)</th>
-        <th>Pengguna / Pemilik</th>
-        <th>Cabang</th>
-        <th>Teknisi</th>
-        <th style="width: 90px;" class="text-center">Status</th>
-      </tr>
-    </thead>
-    <tbody>
-      '.$doneTrs.'
-    </tbody>
-  </table>';
+    <!-- Tabel 1: Selesai Maintenance -->
+    <div class="section-heading">1. DAFTAR KOMPUTER / ASET SELESAI MAINTENANCE ('.$done.')</div>
+    <table class="table-report">
+      <thead>
+        <tr>
+          <th class="col-no">No</th>
+          <th style="width: 140px;" class="col-nowrap">Waktu Scan</th>
+          <th style="width: 120px;" class="col-nowrap">Kode Inventaris</th>
+          <th>Perangkat (Merk & Tipe)</th>
+          <th>Pengguna / Pemilik</th>
+          <th>Cabang</th>
+          <th style="width: 110px;" class="col-nowrap">Teknisi</th>
+          <th style="width: 90px;" class="col-nowrap text-center">Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        '.$doneTrs.'
+      </tbody>
+    </table>';
 
 // Tabel Temuan Kerusakan jika ada
 if (!empty($findingsRows)) {
     $body .= '
-    <div class="d-flex justify-content-between align-items-center mb-2 mt-4">
-      <h6 class="fw-bold text-danger mb-0">2. DAFTAR TEMUAN & KERUSAKAN ('.$findingsCount.')</h6>
-    </div>
+    <div class="section-heading text-danger mt-3">2. DAFTAR TEMUAN & KERUSAKAN ('.$findingsCount.')</div>
     <table class="table-report">
       <thead>
         <tr>
-          <th style="width: 35px;" class="text-center">No</th>
-          <th style="width: 120px;">Kode</th>
+          <th class="col-no">No</th>
+          <th style="width: 120px;" class="col-nowrap">Kode</th>
           <th>Perangkat & Pengguna</th>
           <th>Deskripsi Temuan / Kerusakan</th>
           <th>Tindakan yang Dilakukan</th>
-          <th style="width: 80px;" class="text-center">Tingkat</th>
-          <th style="width: 110px;" class="text-center">Status Solusi</th>
+          <th style="width: 80px;" class="col-nowrap text-center">Tingkat</th>
+          <th style="width: 110px;" class="col-nowrap text-center">Status Solusi</th>
         </tr>
       </thead>
       <tbody>
@@ -285,40 +429,39 @@ if (!empty($findingsRows)) {
 $sectionNum = !empty($findingsRows) ? '3' : '2';
 
 $body .= '
-  <!-- Tabel Belum Maintenance -->
-  <div class="d-flex justify-content-between align-items-center mb-2 mt-4">
-    <h6 class="fw-bold text-secondary mb-0">'.$sectionNum.'. DAFTAR KOMPUTER / ASET BELUM MAINTENANCE ('.$pending.')</h6>
-  </div>
-  <table class="table-report">
-    <thead>
-      <tr>
-        <th style="width: 35px;" class="text-center">No</th>
-        <th style="width: 130px;">Kode Inventaris</th>
-        <th>Perangkat (Merk & Tipe)</th>
-        <th>Pengguna / Pemilik</th>
-        <th>Cabang & Divisi</th>
-        <th style="width: 90px;" class="text-center">Status</th>
-      </tr>
-    </thead>
-    <tbody>
-      '.$pendingTrs.'
-    </tbody>
-  </table>
+    <!-- Tabel Belum Maintenance -->
+    <div class="section-heading text-secondary mt-3">'.$sectionNum.'. DAFTAR KOMPUTER / ASET BELUM MAINTENANCE ('.$pending.')</div>
+    <table class="table-report">
+      <thead>
+        <tr>
+          <th class="col-no">No</th>
+          <th style="width: 130px;" class="col-nowrap">Kode Inventaris</th>
+          <th>Perangkat (Merk & Tipe)</th>
+          <th>Pengguna / Pemilik</th>
+          <th>Cabang & Divisi</th>
+          <th style="width: 90px;" class="col-nowrap text-center">Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        '.$pendingTrs.'
+      </tbody>
+    </table>
 
-  <!-- Bagian Tanda Tangan & Pengesahan -->
-  <div class="signature-section">
-    <div class="row">
-      <div class="col-6 signature-box">
-        <div>Dibuat Oleh:</div>
-        <div class="small text-muted">Teknisi Pelaksana IT</div>
-        <div class="signature-line"></div>
-        <div class="fw-bold">'.e(current_user_name()).'</div>
-      </div>
-      <div class="col-6 signature-box">
-        <div>Mengetahui / Menyetujui:</div>
-        <div class="small text-muted">Kepala Cabang / IT Manager</div>
-        <div class="signature-line"></div>
-        <div class="fw-bold">( .................................................. )</div>
+    <!-- Bagian Tanda Tangan & Pengesahan -->
+    <div class="signature-section">
+      <div class="row">
+        <div class="col-6 signature-box">
+          <div>Dibuat Oleh:</div>
+          <div class="small text-muted">Teknisi Pelaksana IT</div>
+          <div class="signature-line"></div>
+          <div class="fw-bold">'.e(current_user_name()).'</div>
+        </div>
+        <div class="col-6 signature-box">
+          <div>Mengetahui / Menyetujui:</div>
+          <div class="small text-muted">Kepala Cabang / IT Manager</div>
+          <div class="signature-line"></div>
+          <div class="fw-bold">( .................................................. )</div>
+        </div>
       </div>
     </div>
   </div>

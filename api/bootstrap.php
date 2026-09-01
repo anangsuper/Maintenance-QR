@@ -1184,7 +1184,7 @@ body{background:#f6f8fb}
 .stat{font-size:1.75rem;font-weight:700}
 .small-muted{font-size:.875rem;color:#6c757d}
 .qr-label{background:#fff;border:1px solid #dee2e6;border-radius:14px;padding:14px;break-inside:avoid}
-@media print{.no-print,nav{display:none!important}.qr-label{box-shadow:none}}
+@media print{.no-print,nav,header{display:none!important}.qr-label{box-shadow:none}.container{max-width:none!important;width:100%!important;padding:0!important;margin:0!important}}
 </style>
 '.$extraHead.'
 </head>
