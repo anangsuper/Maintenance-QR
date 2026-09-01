@@ -262,16 +262,21 @@ function get_static_qr_token(int $assetId): string {
     return substr(hash('sha256', 'STATIC_QR_MAINTENANCE_KEY_SALT_' . $assetId), 0, 32);
 }
 
-function map_sheets_assets(): array {
+function map_sheets_assets(bool $refresh = false): array {
+    static $cachedAssets = null;
+    if ($cachedAssets !== null && !$refresh) {
+        return $cachedAssets;
+    }
+
     $client = google_sheets_v4_client();
     if (!$client) return [];
 
-    $assets = $client->getSheetData('Assets');
-    $cabangRows = $client->getSheetData('Cabang');
-    $divRows = $client->getSheetData('Divisi');
-    $karRows = $client->getSheetData('Karyawan');
-    $katRows = $client->getSheetData('Kategori_Aset');
-    $qrRows = $client->getSheetData('Asset_QR_Tokens');
+    $assets = $client->getSheetData('Assets', $refresh);
+    $cabangRows = $client->getSheetData('Cabang', $refresh);
+    $divRows = $client->getSheetData('Divisi', $refresh);
+    $karRows = $client->getSheetData('Karyawan', $refresh);
+    $katRows = $client->getSheetData('Kategori_Aset', $refresh);
+    $qrRows = $client->getSheetData('Asset_QR_Tokens', $refresh);
 
     $cabangMap = []; foreach ($cabangRows as $r) $cabangMap[$r['id'] ?? 0] = $r['nama_cabang'] ?? $r['nama'] ?? '';
     $divMap = []; foreach ($divRows as $r) $divMap[$r['id'] ?? 0] = $r['nama_divisi'] ?? $r['nama'] ?? '';
@@ -279,7 +284,7 @@ function map_sheets_assets(): array {
     $katMap = []; foreach ($katRows as $r) $katMap[$r['id'] ?? 0] = $r['nama_kategori'] ?? $r['nama'] ?? '';
     $qrMap = []; foreach ($qrRows as $r) { $aid = (int)($r['asset_id'] ?? 0); if ($aid > 0) $qrMap[$aid] = $r; }
 
-    return array_map(function($a) use ($cabangMap, $divMap, $karMap, $katMap, $qrMap) {
+    $cachedAssets = array_map(function($a) use ($cabangMap, $divMap, $karMap, $katMap, $qrMap) {
         $id = (int)($a['id'] ?? 0);
         $qr = $qrMap[$id] ?? [];
         $isAct = strtolower(trim((string)($qr['is_active'] ?? '1')));
@@ -309,6 +314,8 @@ function map_sheets_assets(): array {
             'qr_active' => $qrActive
         ];
     }, $assets);
+
+    return $cachedAssets;
 }
 
 function get_cabang_list(): array {
@@ -671,8 +678,17 @@ function get_asset_by_token(string $token): ?array {
     if (is_google_cloud_mode()) {
         $assets = map_sheets_assets();
         foreach ($assets as $a) {
-            $staticTok = get_static_qr_token((int)$a['id']);
-            if ((strcasecmp((string)$a['qr_token'], $token) === 0 || strcasecmp($staticTok, $token) === 0) && (int)$a['qr_active'] === 1) {
+            $aid = (int)($a['id'] ?? 0);
+            $staticTok = get_static_qr_token($aid);
+            $qrToken = (string)($a['qr_token'] ?? '');
+            $kode = (string)($a['kode_inventaris'] ?? '');
+
+            if (
+                strcasecmp($qrToken, $token) === 0 ||
+                strcasecmp($staticTok, $token) === 0 ||
+                (is_numeric($token) && (int)$token === $aid) ||
+                ($kode !== '' && strcasecmp($kode, $token) === 0)
+            ) {
                 return $a;
             }
         }
@@ -682,7 +698,7 @@ function get_asset_by_token(string $token): ?array {
             $qrRows = $client->getSheetData('Asset_QR_Tokens');
             foreach ($qrRows as $q) {
                 $qToken = trim((string)($q['token'] ?? ''));
-                if (strcasecmp($qToken, $token) === 0) {
+                if ($qToken !== '' && strcasecmp($qToken, $token) === 0) {
                     $targetAssetId = (int)($q['asset_id'] ?? 0);
                     foreach ($assets as $a) {
                         if ((int)$a['id'] === $targetAssetId) {
@@ -695,9 +711,10 @@ function get_asset_by_token(string $token): ?array {
         return null;
     }
 
-    $sql = asset_query_base() . " WHERE q.token = ? AND q.is_active = 1 LIMIT 1";
+    $sql = asset_query_base() . " WHERE (q.token = ? OR a.kode_inventaris = ? " . (is_numeric($token) ? " OR a.id = ? " : "") . ") LIMIT 1";
     $st = db()->prepare($sql);
-    $st->execute([$token]);
+    $params = is_numeric($token) ? [$token, $token, (int)$token] : [$token, $token];
+    $st->execute($params);
     $asset = $st->fetch();
     return $asset ?: null;
 }

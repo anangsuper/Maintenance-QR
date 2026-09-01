@@ -4,13 +4,14 @@ error_reporting(E_ALL & ~E_DEPRECATED);
 
 /**
  * GOOGLE SHEETS API V4 CLIENT (DIRECT GOOGLE CLOUD API)
- * Menggunakan Google Cloud Service Account (OAuth2 JWT)
+ * Dilengkapi Smart Caching, Retry Handler, dan Header Normalization
  */
 class GoogleSheetsV4Client {
     private string $spreadsheetId;
     private string $clientEmail;
     private string $privateKey;
     private static ?string $cachedAccessToken = null;
+    private static array $runtimeCache = [];
 
     public function __construct(string $spreadsheetId, string $clientEmail, string $privateKey) {
         $this->spreadsheetId = trim($spreadsheetId);
@@ -22,16 +23,27 @@ class GoogleSheetsV4Client {
         $ch = curl_init($url);
         curl_setopt_array($ch, $opts + [
             CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_TIMEOUT => 15,
-            CURLOPT_SSL_VERIFYPEER => false,
+            CURLOPT_TIMEOUT => 20,
+            CURLOPT_SSL_VERIFYPEER => true,
             CURLOPT_FOLLOWLOCATION => true,
         ]);
         $response = curl_exec($ch);
+        if ($response === false) {
+            // Fallback jika sertifikat lokal Windows tidak lengkap
+            curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+            $response = curl_exec($ch);
+        }
         return (string)$response;
     }
 
-    private function getAccessToken(): ?string {
+    public function getAccessToken(): ?string {
         if (self::$cachedAccessToken !== null) {
+            return self::$cachedAccessToken;
+        }
+
+        // Cek cache session agar tidak request token berulang-ulang
+        if (!empty($_SESSION['_gs_access_token']) && !empty($_SESSION['_gs_token_exp']) && $_SESSION['_gs_token_exp'] > time() + 120) {
+            self::$cachedAccessToken = (string)$_SESSION['_gs_access_token'];
             return self::$cachedAccessToken;
         }
 
@@ -67,6 +79,10 @@ class GoogleSheetsV4Client {
         $data = json_decode($response, true);
         if (!empty($data['access_token'])) {
             self::$cachedAccessToken = (string)$data['access_token'];
+            if (session_status() === PHP_SESSION_ACTIVE) {
+                $_SESSION['_gs_access_token'] = self::$cachedAccessToken;
+                $_SESSION['_gs_token_exp'] = $now + 3500;
+            }
             return self::$cachedAccessToken;
         }
 
@@ -84,12 +100,31 @@ class GoogleSheetsV4Client {
             urlencode($range)
         );
 
-        $response = $this->curlExec($url, [
-            CURLOPT_HTTPHEADER => ['Authorization: Bearer ' . $token],
-        ]);
+        $attempt = 0;
+        $maxAttempts = 2;
+        while ($attempt < $maxAttempts) {
+            $attempt++;
+            $response = $this->curlExec($url, [
+                CURLOPT_HTTPHEADER => ['Authorization: Bearer ' . $token],
+            ]);
 
-        $data = json_decode($response, true);
-        return $data['values'] ?? [];
+            $data = json_decode($response, true);
+            if (isset($data['values'])) {
+                return $data['values'];
+            }
+
+            // Jika token kedaluwarsa, hapus cache dan coba lagi
+            if (!empty($data['error']['code']) && $data['error']['code'] == 401) {
+                self::$cachedAccessToken = null;
+                if (session_status() === PHP_SESSION_ACTIVE) {
+                    unset($_SESSION['_gs_access_token'], $_SESSION['_gs_token_exp']);
+                }
+                $token = $this->getAccessToken();
+                if (!$token) break;
+            }
+        }
+
+        return [];
     }
 
     public function appendValues(string $range, array $rows): bool {
@@ -112,6 +147,8 @@ class GoogleSheetsV4Client {
         ]);
 
         $data = json_decode($response, true);
+        $sheetName = explode('!', $range)[0];
+        $this->clearCache($sheetName);
         return isset($data['updates']);
     }
 
@@ -135,12 +172,49 @@ class GoogleSheetsV4Client {
         ]);
 
         $data = json_decode($response, true);
+        $sheetName = explode('!', $range)[0];
+        $this->clearCache($sheetName);
         return isset($data['updatedCells']);
     }
 
-    public function getSheetData(string $sheetName): array {
+    public function clearCache(?string $sheetName = null): void {
+        if ($sheetName) {
+            unset(self::$runtimeCache[$sheetName]);
+            if (session_status() === PHP_SESSION_ACTIVE) {
+                unset($_SESSION['_gs_cache_' . $sheetName]);
+            }
+        } else {
+            self::$runtimeCache = [];
+            if (session_status() === PHP_SESSION_ACTIVE) {
+                foreach (array_keys($_SESSION) as $k) {
+                    if (str_starts_with($k, '_gs_cache_')) unset($_SESSION[$k]);
+                }
+            }
+        }
+    }
+
+    public function getSheetData(string $sheetName, bool $forceRefresh = false): array {
+        // 1. Cek runtime memory cache di proses saat ini
+        if (!$forceRefresh && isset(self::$runtimeCache[$sheetName])) {
+            return self::$runtimeCache[$sheetName];
+        }
+
+        // 2. Ambil data dari Google Sheets API
         $rows = $this->getValues($sheetName . '!A1:Z1000');
-        if (count($rows) <= 1) return [];
+
+        // 3. Jika API gagal (misal rate limit/timeout), gunakan session cache sebelumnya agar data tidak hilang tiba-tiba
+        if (empty($rows)) {
+            if (session_status() === PHP_SESSION_ACTIVE && !empty($_SESSION['_gs_cache_' . $sheetName])) {
+                self::$runtimeCache[$sheetName] = $_SESSION['_gs_cache_' . $sheetName];
+                return self::$runtimeCache[$sheetName];
+            }
+            return [];
+        }
+
+        if (count($rows) <= 1) {
+            self::$runtimeCache[$sheetName] = [];
+            return [];
+        }
 
         $headers = $rows[0];
         $result = [];
@@ -148,10 +222,24 @@ class GoogleSheetsV4Client {
             $row = $rows[$i];
             $obj = ['_row_num' => $i + 1];
             foreach ($headers as $idx => $header) {
-                $obj[$header] = $row[$idx] ?? '';
+                $val = $row[$idx] ?? '';
+                // Simpan key asli
+                $obj[$header] = $val;
+                // Simpan key ternormalisasi (huruf kecil & tanpa spasi) agar pencarian selalu cocok
+                $normKey = strtolower(preg_replace('/[^a-zA-Z0-9_]/', '_', trim((string)$header)));
+                if ($normKey !== '') {
+                    $obj[$normKey] = $val;
+                }
             }
             $result[] = $obj;
         }
+
+        // Simpan ke cache
+        self::$runtimeCache[$sheetName] = $result;
+        if (session_status() === PHP_SESSION_ACTIVE) {
+            $_SESSION['_gs_cache_' . $sheetName] = $result;
+        }
+
         return $result;
     }
 
