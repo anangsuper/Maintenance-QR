@@ -891,6 +891,86 @@ function record_finding_issue(int $logId, int $assetId, string $finding, string 
     }
 }
 
+function get_findings_report(int $month, int $year, int $cabangId): array {
+    if (is_google_cloud_mode()) {
+        $client = google_sheets_v4_client();
+        if (!$client) return [];
+        $findings = $client->getSheetData('Maintenance_Findings');
+        $scans = $client->getSheetData('Maintenance_Scan');
+        $scanMap = []; foreach ($scans as $s) $scanMap[$s['id'] ?? 0] = $s;
+        $assets = map_sheets_assets();
+        $assetMap = []; foreach ($assets as $a) $assetMap[$a['id'] ?? 0] = $a;
+
+        $results = [];
+        foreach ($findings as $f) {
+            $scanId = (int)($f['maintenance_scan_id'] ?? 0);
+            $scan = $scanMap[$scanId] ?? [];
+            if ($month > 0 && (int)($scan['maintenance_month'] ?? 0) !== $month) continue;
+            if ($year > 0 && (int)($scan['maintenance_year'] ?? 0) !== $year) continue;
+
+            $aid = (int)($f['asset_id'] ?? $scan['asset_id'] ?? 0);
+            $a = $assetMap[$aid] ?? [];
+            if ($cabangId > 0 && (int)($a['id_cabang'] ?? 0) !== $cabangId) continue;
+
+            $results[] = [
+                'id' => $f['id'] ?? 0,
+                'kode_inventaris' => $a['kode_inventaris'] ?? '-',
+                'merk_model' => trim(($a['merk'] ?? '').' '.($a['model'] ?? '')),
+                'karyawan_nama' => $a['karyawan_nama'] ?? '-',
+                'cabang_nama' => $a['cabang_nama'] ?? '-',
+                'finding' => $f['finding'] ?? $f['deskripsi_temuan'] ?? '-',
+                'action_taken' => $f['action_taken'] ?? $f['tindakan_diperlukan'] ?? '-',
+                'severity' => $f['severity'] ?? $f['kategori_temuan'] ?? 'Ringan',
+                'repair_status' => $f['repair_status'] ?? $f['status'] ?? 'Open',
+                'created_at' => substr((string)($f['created_at'] ?? $f['reported_at'] ?? ''), 0, 10),
+            ];
+        }
+        return $results;
+    }
+
+    // MySQL Mode
+    try {
+        $cName = name_column('cabang') ?: 'id';
+        $kName = name_column('karyawan') ?: 'id';
+        $sql = "
+            SELECT mf.*, a.kode_inventaris, a.merk, a.model,
+                   c.`{$cName}` AS cabang_nama,
+                   k.`{$kName}` AS karyawan_nama
+            FROM maintenance_findings mf
+            JOIN maintenance_scan ms ON ms.id = mf.maintenance_scan_id
+            JOIN assets a ON a.id = mf.asset_id
+            LEFT JOIN cabang c ON c.id = a.id_cabang
+            LEFT JOIN karyawan k ON k.id = a.id_karyawan
+            WHERE ms.maintenance_month = ? AND ms.maintenance_year = ?
+        ";
+        $params = [$month, $year];
+        if ($cabangId > 0) {
+            $sql .= " AND a.id_cabang = ? ";
+            $params[] = $cabangId;
+        }
+        $sql .= " ORDER BY mf.id DESC";
+        $st = db()->prepare($sql);
+        $st->execute($params);
+        $rows = $st->fetchAll();
+        return array_map(function($r) {
+            return [
+                'id' => $r['id'],
+                'kode_inventaris' => $r['kode_inventaris'] ?? '-',
+                'merk_model' => trim(($r['merk'] ?? '').' '.($r['model'] ?? '')),
+                'karyawan_nama' => $r['karyawan_nama'] ?? '-',
+                'cabang_nama' => $r['cabang_nama'] ?? '-',
+                'finding' => $r['finding'] ?? '-',
+                'action_taken' => $r['action_taken'] ?? '-',
+                'severity' => $r['severity'] ?? 'Ringan',
+                'repair_status' => $r['repair_status'] ?? 'Perlu Tindak Lanjut',
+                'created_at' => substr((string)($r['created_at'] ?? ''), 0, 10),
+            ];
+        }, $rows);
+    } catch (Throwable $e) {
+        return [];
+    }
+}
+
 function get_history_rows(int $month, int $year, int $cabangId, string $status = ''): array {
     if (is_google_cloud_mode()) {
         $client = google_sheets_v4_client();
