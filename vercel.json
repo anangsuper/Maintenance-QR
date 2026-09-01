@@ -1,20 +1,11 @@
 {
   "version": 2,
   "functions": {
-    "api/*.php": {
+    "api/**/*.php": {
       "runtime": "vercel-php@0.9.0"
     }
   },
   "routes": [
-    { "src": "/dashboard.php", "dest": "/api/dashboard.php" },
-    { "src": "/scan.php", "dest": "/api/scan.php" },
-    { "src": "/finding.php", "dest": "/api/finding.php" },
-    { "src": "/history.php", "dest": "/api/history.php" },
-    { "src": "/qr_admin.php", "dest": "/api/qr_admin.php" },
-    { "src": "/export_csv.php", "dest": "/api/export_csv.php" },
-    { "src": "/print_qr.php", "dest": "/api/print_qr.php" },
-    { "src": "/print_report.php", "dest": "/api/print_report.php" },
-    { "src": "/index.php", "dest": "/api/index.php" },
     { "src": "/(.*)\\.php", "dest": "/api/$1.php" },
     { "src": "/", "dest": "/api/dashboard.php" }
   ]

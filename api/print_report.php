@@ -17,14 +17,14 @@ $monthName = $monthNames[$month] ?? date('F');
 $data = get_dashboard_data($month, $year, $cabangId);
 $historyRows = get_history_rows($month, $year, $cabangId);
 
-$total = $data['total'];
-$done = $data['done'];
-$findings = $data['findings'];
-$pendingRows = $data['pendingRows'];
-$cabangs = $data['cabangs'];
+$total = (int)($data['total'] ?? 0);
+$done = (int)($data['done'] ?? 0);
+$findings = (int)($data['findings'] ?? 0);
+$pendingRows = $data['pendingRows'] ?? [];
+$cabangs = $data['cabangs'] ?? [];
 
 $cabangName = 'Semua Cabang';
-if ($cabangId > 0) {
+if ($cabangId > 0 && is_array($cabangs)) {
     foreach ($cabangs as $c) {
         if ((int)($c['id'] ?? 0) === $cabangId) {
             $cabangName = $c['nama'] ?? $c['nama_cabang'] ?? ('Cabang #' . $cabangId);
@@ -39,23 +39,25 @@ $percent = $total > 0 ? round(($done / $total) * 100) : 0;
 // History Rows HTML
 $doneTrs = '';
 $i = 0;
-foreach ($historyRows as $r) {
-    $i++;
-    $tech = $r['teknisi_nama'] ?? $r['technician_name'] ?? '-';
-    $statusBadge = ($r['status'] ?? '') === 'Temuan' 
-        ? '<span class="badge text-bg-danger">Temuan</span>' 
-        : '<span class="badge text-bg-success">Selesai</span>';
+if (is_array($historyRows)) {
+    foreach ($historyRows as $r) {
+        $i++;
+        $tech = $r['teknisi_nama'] ?? $r['technician_name'] ?? '-';
+        $statusBadge = ($r['status'] ?? '') === 'Temuan' 
+            ? '<span class="badge text-bg-danger">Temuan</span>' 
+            : '<span class="badge text-bg-success">Selesai</span>';
 
-    $doneTrs .= '<tr>
-      <td class="text-center">'.$i.'</td>
-      <td>'.e(format_id_date($r['maintenance_date'])).' '.e(substr($r['maintenance_time'],0,5)).'</td>
-      <td><strong>'.e($r['kode_inventaris'] ?? '-').'</strong></td>
-      <td>'.e(trim(($r['merk'] ?? '').' '.($r['model'] ?? ''))).'</td>
-      <td>'.e($r['karyawan_nama'] ?? '-').'</td>
-      <td>'.e($r['cabang_nama'] ?? '-').'</td>
-      <td>'.e($tech).'</td>
-      <td class="text-center">'.$statusBadge.'</td>
-    </tr>';
+        $doneTrs .= '<tr>
+          <td class="text-center">'.$i.'</td>
+          <td>'.e(format_id_date((string)($r['maintenance_date'] ?? ''))).' '.e(substr((string)($r['maintenance_time'] ?? ''), 0, 5)).'</td>
+          <td><strong>'.e($r['kode_inventaris'] ?? '-').'</strong></td>
+          <td>'.e(trim(($r['merk'] ?? '').' '.($r['model'] ?? ''))).'</td>
+          <td>'.e($r['karyawan_nama'] ?? '-').'</td>
+          <td>'.e($r['cabang_nama'] ?? '-').'</td>
+          <td>'.e($tech).'</td>
+          <td class="text-center">'.$statusBadge.'</td>
+        </tr>';
+    }
 }
 if (!$doneTrs) {
     $doneTrs = '<tr><td colspan="8" class="text-center py-3 text-secondary">Belum ada maintenance yang tercatat untuk periode ini.</td></tr>';
@@ -64,16 +66,18 @@ if (!$doneTrs) {
 // Pending Rows HTML
 $pendingTrs = '';
 $j = 0;
-foreach ($pendingRows as $r) {
-    $j++;
-    $pendingTrs .= '<tr>
-      <td class="text-center">'.$j.'</td>
-      <td><strong>'.e($r['kode_inventaris'] ?? '-').'</strong></td>
-      <td>'.e(asset_title($r)).'</td>
-      <td>'.e($r['karyawan_nama'] ?? '-').'</td>
-      <td>'.e($r['cabang_nama'] ?? '-').'</td>
-      <td class="text-center"><span class="badge text-bg-warning">Belum</span></td>
-    </tr>';
+if (is_array($pendingRows)) {
+    foreach ($pendingRows as $r) {
+        $j++;
+        $pendingTrs .= '<tr>
+          <td class="text-center">'.$j.'</td>
+          <td><strong>'.e($r['kode_inventaris'] ?? '-').'</strong></td>
+          <td>'.e(asset_title($r)).'</td>
+          <td>'.e($r['karyawan_nama'] ?? '-').'</td>
+          <td>'.e($r['cabang_nama'] ?? '-').'</td>
+          <td class="text-center"><span class="badge text-bg-warning">Belum</span></td>
+        </tr>';
+    }
 }
 if (!$pendingTrs) {
     $pendingTrs = '<tr><td colspan="6" class="text-center py-3 text-success">✓ Semua aset telah selesai di-maintenance pada periode ini.</td></tr>';
