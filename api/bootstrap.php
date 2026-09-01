@@ -1049,19 +1049,27 @@ function regenerate_qr_token(int $assetId): bool {
     return false;
 }
 
-function render_page(string $title, string $content, string $extraHead = '', string $extraScript = ''): void {
-    $nav = '
-    <nav class="navbar navbar-expand-lg bg-primary navbar-dark mb-4">
-      <div class="container">
-        <a class="navbar-brand fw-semibold" href="'.e(module_url('dashboard.php')).'">QR Maintenance</a>
-        <div class="d-flex flex-wrap gap-2 align-items-center">
-          <a class="btn btn-sm btn-light" href="'.e(module_url('dashboard.php')).'">Dashboard</a>
-          <a class="btn btn-sm btn-outline-light" href="'.e(module_url('history.php')).'">Riwayat</a>
-          <a class="btn btn-sm btn-outline-light" href="'.e(module_url('qr_admin.php')).'">QR Aset</a>
-          <a class="btn btn-sm btn-warning text-dark fw-semibold" href="'.e(module_url('asset_add.php')).'">+ Tambah Komputer</a>
-        </div>
-      </div>
-    </nav>';
+function render_page(string $title, string $content, string $extraHead = '', string $extraScript = '', bool $showNav = true): void {
+    $nav = '';
+    if ($showNav) {
+        $nav = '
+        <nav class="navbar navbar-expand-lg bg-primary navbar-dark mb-4">
+          <div class="container">
+            <a class="navbar-brand fw-semibold" href="'.e(module_url('dashboard.php')).'">QR Maintenance</a>
+            <div class="d-flex flex-wrap gap-2 align-items-center">
+              <a class="btn btn-sm btn-light" href="'.e(module_url('dashboard.php')).'">Dashboard</a>
+              <a class="btn btn-sm btn-outline-light" href="'.e(module_url('history.php')).'">Riwayat</a>
+              <a class="btn btn-sm btn-outline-light" href="'.e(module_url('qr_admin.php')).'">QR Aset</a>
+              <a class="btn btn-sm btn-warning text-dark fw-semibold" href="'.e(module_url('asset_add.php')).'">+ Tambah Komputer</a>
+            </div>
+          </div>
+        </nav>';
+    } else {
+        $nav = '
+        <header class="text-center py-3 mb-4 bg-white border-bottom shadow-sm">
+          <span class="fw-bold text-primary fs-5"><i class="bi bi-qr-code-scan me-2"></i>QR Maintenance System</span>
+        </header>';
+    }
 
     echo '<!doctype html>
 <html lang="id">

@@ -5,7 +5,7 @@ require __DIR__ . '/bootstrap.php';
 $token = trim((string)($_GET['t'] ?? $_POST['t'] ?? ''));
 if ($token === '' || !preg_match('/^[a-zA-Z0-9\-_]{1,128}$/', $token)) {
     http_response_code(400);
-    render_page('QR Tidak Valid', '<div class="alert alert-danger"><strong>QR tidak valid.</strong><br>Token QR tidak dikenali.</div>');
+    render_page('QR Tidak Valid', '<div class="alert alert-danger"><strong>QR tidak valid.</strong><br>Token QR tidak dikenali.</div>', '', '', false);
     exit;
 }
 
@@ -13,7 +13,7 @@ $asset = get_asset_by_token($token);
 
 if (!$asset) {
     http_response_code(404);
-    render_page('QR Tidak Ditemukan', '<div class="alert alert-danger"><strong>QR tidak ditemukan atau sudah dinonaktifkan.</strong></div>');
+    render_page('QR Tidak Ditemukan', '<div class="alert alert-danger"><strong>QR tidak ditemukan atau sudah dinonaktifkan.</strong></div>', '', '', false);
     exit;
 }
 
@@ -42,7 +42,7 @@ if (!empty($res['is_duplicate'])) {
 
     $body = '
     <div class="row justify-content-center">
-      <div class="col-md-8 col-lg-7">
+      <div class="col-md-8 col-lg-6">
         <div class="card p-4 border-0 shadow-sm">
           <div class="alert alert-warning mb-4">
             <h4 class="alert-heading fw-bold mb-1"><i class="bi bi-info-circle-fill me-2"></i>Sudah Maintenance Bulan Ini</h4>
@@ -53,7 +53,7 @@ if (!empty($res['is_duplicate'])) {
           <dl class="row mb-0">
             <dt class="col-5 text-secondary">Perangkat</dt><dd class="col-7 fw-bold">'.e(asset_title($asset)).'</dd>
             <dt class="col-5 text-secondary">Kode Inventaris</dt><dd class="col-7"><span class="badge text-bg-primary">'.e($asset['kode_inventaris'] ?? '-').'</span></dd>
-            <dt class="col-5 text-secondary">Pengguna / Pemilik</dt><dd class="col-7">'.e($asset['karyawan_nama'] ?? '-').'</dd>
+            <dt class="col-5 text-secondary">Pengguna</dt><dd class="col-7">'.e($asset['karyawan_nama'] ?? '-').'</dd>
             <dt class="col-5 text-secondary">Divisi & Cabang</dt><dd class="col-7">'.e(($asset['divisi_nama'] ?? '-').' · '.($asset['cabang_nama'] ?? '-')).'</dd>
             <dt class="col-5 text-secondary">Tanggal Terakhir</dt><dd class="col-7">'.e(format_id_date($oldDate)).' pukul '.e(substr($oldTime,0,5)).' WITA</dd>
             <dt class="col-5 text-secondary">Teknisi</dt><dd class="col-7">'.e($tech).'</dd>
@@ -68,20 +68,12 @@ if (!empty($res['is_duplicate'])) {
             <a class="btn btn-outline-warning text-dark fw-semibold" href="'.e(module_url('scan.php', ['t' => $token, 'force' => 1])).'" onclick="return confirm(\'Update waktu dan teknisi maintenance untuk bulan ini?\')">
               <i class="bi bi-arrow-repeat me-1"></i> Update Waktu Maintenance Ulang
             </a>
-            <div class="row g-2 mt-2">
-              <div class="col-6">
-                <a class="btn btn-outline-primary w-100" href="'.e(module_url('dashboard.php')).'"><i class="bi bi-speedometer2 me-1"></i> Dashboard</a>
-              </div>
-              <div class="col-6">
-                <a class="btn btn-outline-secondary w-100" href="'.e(module_url('history.php')).'"><i class="bi bi-clock-history me-1"></i> Riwayat</a>
-              </div>
-            </div>
           </div>
         </div>
       </div>
     </div>';
 
-    render_page('Sudah Maintenance', $body);
+    render_page('Sudah Maintenance', $body, '', '', false);
     exit;
 }
 
@@ -93,7 +85,7 @@ $alertClass = $isUpdated ? 'alert-info' : 'alert-success';
 
 $body = '
 <div class="row justify-content-center">
-  <div class="col-md-8 col-lg-7">
+  <div class="col-md-8 col-lg-6">
     <div class="card p-4 border-0 shadow-sm">
       <div class="alert '.$alertClass.' mb-4">
         <h4 class="alert-heading fw-bold mb-1"><i class="bi bi-check-circle-fill me-2"></i>'.$alertHeading.'</h4>
@@ -104,7 +96,7 @@ $body = '
       <dl class="row mb-0">
         <dt class="col-5 text-secondary">Perangkat</dt><dd class="col-7 fw-bold">'.e(asset_title($asset)).'</dd>
         <dt class="col-5 text-secondary">Kode Inventaris</dt><dd class="col-7"><span class="badge text-bg-primary">'.e($asset['kode_inventaris'] ?? '-').'</span></dd>
-        <dt class="col-5 text-secondary">Pengguna / Pemilik</dt><dd class="col-7">'.e($asset['karyawan_nama'] ?? '-').'</dd>
+        <dt class="col-5 text-secondary">Pengguna</dt><dd class="col-7">'.e($asset['karyawan_nama'] ?? '-').'</dd>
         <dt class="col-5 text-secondary">Divisi & Cabang</dt><dd class="col-7">'.e(($asset['divisi_nama'] ?? '-').' · '.($asset['cabang_nama'] ?? '-')).'</dd>
         <dt class="col-5 text-secondary">Waktu Scan</dt><dd class="col-7">'.e(date('d-m-Y')).' pukul '.e(date('H:i')).' WITA</dd>
         <dt class="col-5 text-secondary">Teknisi</dt><dd class="col-7">'.e($techName).'</dd>
@@ -116,21 +108,9 @@ $body = '
         <a class="btn btn-danger btn-lg fw-semibold" href="'.e(module_url('finding.php', ['log_id' => $logId])).'">
           <i class="bi bi-exclamation-triangle-fill me-1"></i> Ada Temuan / Kerusakan
         </a>
-        <div class="row g-2 mt-2">
-          <div class="col-6">
-            <a class="btn btn-primary w-100 fw-semibold" href="'.e(module_url('dashboard.php')).'">
-              <i class="bi bi-speedometer2 me-1"></i> Buka Dashboard
-            </a>
-          </div>
-          <div class="col-6">
-            <a class="btn btn-outline-secondary w-100" href="'.e(module_url('history.php')).'">
-              <i class="bi bi-clock-history me-1"></i> Riwayat
-            </a>
-          </div>
-        </div>
       </div>
     </div>
   </div>
 </div>';
 
-render_page('Maintenance Tercatat', $body);
+render_page('Maintenance Tercatat', $body, '', '', false);

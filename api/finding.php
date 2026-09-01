@@ -30,14 +30,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         record_finding_issue($logId, (int)$log['asset_id'], $finding, $action, $severity, current_user_name());
         $body = '
         <div class="row justify-content-center"><div class="col-md-7">
-          <div class="card p-4">
-            <div class="alert alert-success"><strong>Temuan berhasil dicatat.</strong></div>
+          <div class="card p-4 border-0 shadow-sm">
+            <div class="alert alert-success"><strong>✓ Temuan kerusakan berhasil dicatat.</strong></div>
             <div><strong>'.e($log['kode_inventaris'] ?? '-').'</strong> · '.e(trim(($log['merk'] ?? '').' '.($log['model'] ?? ''))).'</div>
-            <div class="mt-3">'.nl2br(e($finding)).'</div>
-            <a class="btn btn-primary mt-4" href="'.e(module_url('dashboard.php')).'">Kembali ke Dashboard</a>
+            <div class="mt-3 bg-light p-3 rounded">'.nl2br(e($finding)).'</div>
           </div>
         </div></div>';
-        render_page('Temuan Tercatat', $body);
+        render_page('Temuan Tercatat', $body, '', '', false);
         exit;
     }
 }
@@ -48,32 +47,33 @@ $body = '
 <div class="row justify-content-center">
   <div class="col-md-7">
     '.$errorHtml.'
-    <div class="card p-4">
-      <h3>Ada Temuan / Kerusakan</h3>
+    <div class="card p-4 border-0 shadow-sm">
+      <h4 class="fw-bold text-danger"><i class="bi bi-exclamation-triangle-fill me-2"></i>Catat Temuan / Kerusakan</h4>
       <div class="text-secondary mb-4">'.e($log['kode_inventaris'] ?? '-').' · '.e(trim(($log['merk'] ?? '').' '.($log['model'] ?? ''))).'</div>
       <form method="post">
         <input type="hidden" name="_csrf" value="'.e(csrf_token()).'">
         <input type="hidden" name="log_id" value="'.$logId.'">
         <div class="mb-3">
-          <label class="form-label">Temuan</label>
-          <textarea class="form-control" name="finding" rows="4" required placeholder="Contoh: printer bergaris, RAM kendor, LAN putus..."></textarea>
+          <label class="form-label fw-semibold">Deskripsi Temuan / Kerusakan <span class="text-danger">*</span></label>
+          <textarea class="form-control" name="finding" rows="4" required placeholder="Contoh: printer bergaris, RAM kendor, kabel LAN putus, bluescreen..."></textarea>
         </div>
         <div class="mb-3">
-          <label class="form-label">Tindakan yang sudah dilakukan</label>
-          <textarea class="form-control" name="action_taken" rows="3" placeholder="Opsional"></textarea>
+          <label class="form-label fw-semibold">Tindakan Awal yang Dilakukan</label>
+          <textarea class="form-control" name="action_taken" rows="3" placeholder="Opsional (misal: sudah direstart, kabel sudah diganti)"></textarea>
         </div>
         <div class="mb-3">
-          <label class="form-label">Tingkat</label>
+          <label class="form-label fw-semibold">Tingkat Kerusakan</label>
           <select class="form-select" name="severity">
             <option>Ringan</option>
             <option>Sedang</option>
             <option>Berat</option>
           </select>
         </div>
-        <button class="btn btn-danger">Simpan Temuan</button>
-        <a class="btn btn-outline-secondary" href="'.e(module_url('dashboard.php')).'">Batal</a>
+        <div class="d-grid gap-2">
+          <button class="btn btn-danger btn-lg fw-semibold"><i class="bi bi-save me-1"></i> Simpan Temuan</button>
+        </div>
       </form>
     </div>
   </div>
 </div>';
-render_page('Catat Temuan', $body);
+render_page('Catat Temuan', $body, '', '', false);
