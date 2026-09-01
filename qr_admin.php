@@ -3,34 +3,14 @@ require __DIR__ . '/bootstrap.php';
 require_admin();
 
 $cabangId = max(0, (int)($_GET['cabang'] ?? 0));
-$cName = name_column('cabang') ?: 'id';
-$cabangs = db()->query("SELECT id, `{$cName}` AS nama FROM cabang ORDER BY `{$cName}`")->fetchAll();
+$cabangs = get_cabang_list();
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     verify_csrf();
     $action = $_POST['action'] ?? '';
 
     if ($action === 'generate_missing') {
-        $where = " WHERE (a.status = 'Aktif' OR a.status = 'aktif' OR a.status IS NULL OR a.status = '') ";
-        $params = [];
-        if ($cabangId) {
-            $where .= " AND a.id_cabang = ? ";
-            $params[] = $cabangId;
-        }
-        $st = db()->prepare("
-            SELECT a.id FROM assets a
-            LEFT JOIN asset_qr_tokens q ON q.asset_id = a.id
-            {$where} AND q.id IS NULL
-        ");
-        $st->execute($params);
-        $ids = $st->fetchAll(PDO::FETCH_COLUMN);
-
-        $ins = db()->prepare("INSERT IGNORE INTO asset_qr_tokens (asset_id, token) VALUES (?, ?)");
-        $created = 0;
-        foreach ($ids as $id) {
-            $ins->execute([(int)$id, bin2hex(random_bytes(16))]);
-            $created += $ins->rowCount();
-        }
+        $created = generate_missing_qr_tokens($cabangId);
         $_SESSION['flash'] = "{$created} QR baru berhasil dibuat.";
         header('Location: ' . module_url('qr_admin.php', ['cabang'=>$cabangId]));
         exit;
@@ -39,13 +19,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($action === 'regenerate') {
         $assetId = (int)($_POST['asset_id'] ?? 0);
         if ($assetId > 0) {
-            $new = bin2hex(random_bytes(16));
-            $st = db()->prepare("
-                INSERT INTO asset_qr_tokens (asset_id, token, is_active)
-                VALUES (?, ?, 1)
-                ON DUPLICATE KEY UPDATE token = VALUES(token), is_active = 1
-            ");
-            $st->execute([$assetId, $new]);
+            regenerate_qr_token($assetId);
             $_SESSION['flash'] = "QR aset berhasil dibuat ulang. QR lama otomatis tidak berlaku.";
         }
         header('Location: ' . module_url('qr_admin.php', ['cabang'=>$cabangId]));
@@ -56,20 +30,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 $flash = $_SESSION['flash'] ?? '';
 unset($_SESSION['flash']);
 
-$where = " WHERE (a.status = 'Aktif' OR a.status = 'aktif' OR a.status IS NULL OR a.status = '') ";
-$params = [];
-if ($cabangId) {
-    $where .= " AND a.id_cabang = ? ";
-    $params[] = $cabangId;
-}
-
-$st = db()->prepare(asset_query_base() . $where . " ORDER BY cabang_nama, karyawan_nama, a.kode_inventaris LIMIT 1000");
-$st->execute($params);
-$rows = $st->fetchAll();
+$rows = get_qr_admin_rows($cabangId);
 
 $opts = '';
 foreach ($cabangs as $c) {
-    $opts .= '<option value="'.(int)$c['id'].'"'.((int)$c['id']===$cabangId?' selected':'').'>'.e($c['nama']).'</option>';
+    $cId = (int)($c['id'] ?? 0);
+    $cNama = $c['nama'] ?? $c['nama_cabang'] ?? 'Cabang #' . $cId;
+    $opts .= '<option value="'.$cId.'"'.($cId===$cabangId?' selected':'').'>'.e($cNama).'</option>';
 }
 
 $table = '';

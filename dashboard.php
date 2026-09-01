@@ -6,87 +6,24 @@ $month = max(1, min(12, (int)($_GET['bulan'] ?? date('n'))));
 $year = max(2020, min(2100, (int)($_GET['tahun'] ?? date('Y'))));
 $cabangId = max(0, (int)($_GET['cabang'] ?? 0));
 
-$cName = name_column('cabang') ?: 'id';
-$cabangs = db()->query("SELECT id, `{$cName}` AS nama FROM cabang ORDER BY `{$cName}`")->fetchAll();
+$data = get_dashboard_data($month, $year, $cabangId);
 
-$params = [];
-$where = " WHERE (a.status = 'Aktif' OR a.status = 'aktif' OR a.status IS NULL OR a.status = '') ";
-if ($cabangId) {
-    $where .= " AND a.id_cabang = ? ";
-    $params[] = $cabangId;
-}
-
-$totalSt = db()->prepare("SELECT COUNT(*) FROM assets a {$where}");
-$totalSt->execute($params);
-$total = (int)$totalSt->fetchColumn();
-
-$scannedSql = "
-SELECT COUNT(*)
-FROM maintenance_scan ms
-JOIN assets a ON a.id = ms.asset_id
-{$where}
-AND ms.maintenance_month = ?
-AND ms.maintenance_year = ?
-";
-$st = db()->prepare($scannedSql);
-$st->execute(array_merge($params, [$month, $year]));
-$done = (int)$st->fetchColumn();
-
-$findSql = "
-SELECT COUNT(*)
-FROM maintenance_scan ms
-JOIN assets a ON a.id = ms.asset_id
-{$where}
-AND ms.maintenance_month = ?
-AND ms.maintenance_year = ?
-AND ms.status = 'Temuan'
-";
-$st = db()->prepare($findSql);
-$st->execute(array_merge($params, [$month, $year]));
-$findings = (int)$st->fetchColumn();
+$total = $data['total'];
+$done = $data['done'];
+$findings = $data['findings'];
+$pendingRows = $data['pendingRows'];
+$recentRows = $data['recentRows'];
+$cabangs = $data['cabangs'];
 
 $pending = max(0, $total - $done);
 $percent = $total > 0 ? round(($done / $total) * 100) : 0;
 
-$assetBase = asset_query_base();
-$pendingSql = $assetBase . "
-{$where}
-AND NOT EXISTS (
-    SELECT 1 FROM maintenance_scan ms
-    WHERE ms.asset_id = a.id
-      AND ms.maintenance_month = ?
-      AND ms.maintenance_year = ?
-)
-ORDER BY c.`{$cName}`, karyawan_nama, a.kode_inventaris
-LIMIT 300
-";
-$st = db()->prepare($pendingSql);
-$st->execute(array_merge($params, [$month, $year]));
-$pendingRows = $st->fetchAll();
-
-$recentSql = "
-SELECT ms.*, a.kode_inventaris, a.merk, a.model,
-       c.`{$cName}` AS cabang_nama,
-       ".(name_column('karyawan') ? "k.`".name_column('karyawan')."`" : "k.id")." AS karyawan_nama
-FROM maintenance_scan ms
-JOIN assets a ON a.id = ms.asset_id
-LEFT JOIN cabang c ON c.id = a.id_cabang
-LEFT JOIN karyawan k ON k.id = a.id_karyawan
-WHERE ms.maintenance_month = ? AND ms.maintenance_year = ?
-".($cabangId ? " AND a.id_cabang = ? " : "")."
-ORDER BY ms.maintenance_date DESC, ms.maintenance_time DESC
-LIMIT 12
-";
-$recentParams = [$month, $year];
-if ($cabangId) $recentParams[] = $cabangId;
-$st = db()->prepare($recentSql);
-$st->execute($recentParams);
-$recentRows = $st->fetchAll();
-
 $options = '';
 foreach ($cabangs as $c) {
-    $sel = ((int)$c['id'] === $cabangId) ? ' selected' : '';
-    $options .= '<option value="'.(int)$c['id'].'"'.$sel.'>'.e($c['nama']).'</option>';
+    $cId = (int)($c['id'] ?? 0);
+    $cNama = $c['nama'] ?? $c['nama_cabang'] ?? 'Cabang #' . $cId;
+    $sel = ($cId === $cabangId) ? ' selected' : '';
+    $options .= '<option value="'.$cId.'"'.$sel.'>'.e($cNama).'</option>';
 }
 
 $pendingHtml = '';
@@ -109,14 +46,17 @@ foreach ($recentRows as $r) {
       <td>'.e(trim(($r['merk'] ?? '').' '.($r['model'] ?? ''))).'</td>
       <td>'.e($r['karyawan_nama'] ?? '-').'</td>
       <td>'.e($r['cabang_nama'] ?? '-').'</td>
-      <td>'.($r['status'] === 'Temuan' ? '<span class="badge text-bg-danger">Temuan</span>' : '<span class="badge text-bg-success">Selesai</span>').'</td>
+      <td>'.(($r['status'] ?? '') === 'Temuan' ? '<span class="badge text-bg-danger">Temuan</span>' : '<span class="badge text-bg-success">Selesai</span>').'</td>
     </tr>';
 }
 if ($recentHtml === '') $recentHtml = '<tr><td colspan="6" class="text-center text-secondary py-4">Belum ada scan pada periode ini.</td></tr>';
 
+$modeBadge = is_spreadsheet_mode() ? '<span class="badge text-bg-info mb-2">Mode: Google Spreadsheet API</span>' : '<span class="badge text-bg-secondary mb-2">Mode: MySQL Database</span>';
+
 $body = '
 <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-3">
   <div>
+    '.$modeBadge.'
     <h2 class="mb-1">Maintenance Bulanan</h2>
     <div class="text-secondary">Scan QR setelah maintenance selesai.</div>
   </div>

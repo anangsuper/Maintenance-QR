@@ -6,50 +6,27 @@ $month = max(1, min(12, (int)($_GET['bulan'] ?? date('n'))));
 $year = max(2020, min(2100, (int)($_GET['tahun'] ?? date('Y'))));
 $cabangId = max(0, (int)($_GET['cabang'] ?? 0));
 
-$cName = name_column('cabang') ?: 'id';
-$kName = name_column('karyawan') ?: 'id';
-$uName = name_column('users') ?: 'id';
-
-$cabangs = db()->query("SELECT id, `{$cName}` AS nama FROM cabang ORDER BY `{$cName}`")->fetchAll();
-
-$sql = "
-SELECT ms.*, a.kode_inventaris, a.merk, a.model,
-       c.`{$cName}` AS cabang_nama,
-       k.`{$kName}` AS karyawan_nama,
-       u.`{$uName}` AS teknisi_nama
-FROM maintenance_scan ms
-JOIN assets a ON a.id = ms.asset_id
-LEFT JOIN cabang c ON c.id = a.id_cabang
-LEFT JOIN karyawan k ON k.id = a.id_karyawan
-LEFT JOIN users u ON u.id = ms.technician_user_id
-WHERE ms.maintenance_month = ? AND ms.maintenance_year = ?
-";
-$params = [$month, $year];
-if ($cabangId) {
-    $sql .= " AND a.id_cabang = ? ";
-    $params[] = $cabangId;
-}
-$sql .= " ORDER BY ms.maintenance_date DESC, ms.maintenance_time DESC LIMIT 1000";
-
-$st = db()->prepare($sql);
-$st->execute($params);
-$rows = $st->fetchAll();
+$cabangs = get_cabang_list();
+$rows = get_history_rows($month, $year, $cabangId);
 
 $opts = '';
 foreach ($cabangs as $c) {
-    $opts .= '<option value="'.(int)$c['id'].'"'.((int)$c['id']===$cabangId?' selected':'').'>'.e($c['nama']).'</option>';
+    $cId = (int)($c['id'] ?? 0);
+    $cNama = $c['nama'] ?? $c['nama_cabang'] ?? 'Cabang #' . $cId;
+    $opts .= '<option value="'.$cId.'"'.($cId===$cabangId?' selected':'').'>'.e($cNama).'</option>';
 }
 
 $trs = '';
 foreach ($rows as $r) {
+    $tech = $r['teknisi_nama'] ?? $r['technician_name'] ?? '-';
     $trs .= '<tr>
       <td>'.e(format_id_date($r['maintenance_date'])).' '.e(substr($r['maintenance_time'],0,5)).'</td>
       <td>'.e($r['kode_inventaris'] ?? '-').'</td>
       <td>'.e(trim(($r['merk'] ?? '').' '.($r['model'] ?? ''))).'</td>
       <td>'.e($r['karyawan_nama'] ?? '-').'</td>
       <td>'.e($r['cabang_nama'] ?? '-').'</td>
-      <td>'.e($r['teknisi_nama'] ?? '-').'</td>
-      <td>'.($r['status']==='Temuan'?'<span class="badge text-bg-danger">Temuan</span>':'<span class="badge text-bg-success">Selesai</span>').'</td>
+      <td>'.e($tech).'</td>
+      <td>'.(($r['status'] ?? '')==='Temuan'?'<span class="badge text-bg-danger">Temuan</span>':'<span class="badge text-bg-success">Selesai</span>').'</td>
     </tr>';
 }
 if (!$trs) $trs = '<tr><td colspan="7" class="text-center py-4 text-secondary">Belum ada data.</td></tr>';

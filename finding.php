@@ -9,15 +9,7 @@ if (!$logId) {
     exit;
 }
 
-$st = db()->prepare("
-    SELECT ms.*, a.kode_inventaris, a.merk, a.model
-    FROM maintenance_scan ms
-    JOIN assets a ON a.id = ms.asset_id
-    WHERE ms.id = ?
-    LIMIT 1
-");
-$st->execute([$logId]);
-$log = $st->fetch();
+$log = get_log_by_id($logId);
 
 if (!$log) {
     http_response_code(404);
@@ -35,34 +27,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($finding === '') {
         $error = 'Temuan wajib diisi.';
     } else {
-        db()->beginTransaction();
-        try {
-            $ins = db()->prepare("
-                INSERT INTO maintenance_findings
-                (maintenance_scan_id, asset_id, finding, action_taken, severity, repair_status, created_by)
-                VALUES (?, ?, ?, ?, ?, 'Perlu Tindak Lanjut', ?)
-            ");
-            $ins->execute([$logId, (int)$log['asset_id'], $finding, $action ?: null, $severity, current_user_id()]);
-
-            $up = db()->prepare("UPDATE maintenance_scan SET status = 'Temuan' WHERE id = ?");
-            $up->execute([$logId]);
-
-            db()->commit();
-            $body = '
-            <div class="row justify-content-center"><div class="col-md-7">
-              <div class="card p-4">
-                <div class="alert alert-success"><strong>Temuan berhasil dicatat.</strong></div>
-                <div><strong>'.e($log['kode_inventaris'] ?? '-').'</strong> · '.e(trim(($log['merk'] ?? '').' '.($log['model'] ?? ''))).'</div>
-                <div class="mt-3">'.nl2br(e($finding)).'</div>
-                <a class="btn btn-primary mt-4" href="'.e(module_url('dashboard.php')).'">Kembali ke Dashboard</a>
-              </div>
-            </div></div>';
-            render_page('Temuan Tercatat', $body);
-            exit;
-        } catch (Throwable $e) {
-            db()->rollBack();
-            throw $e;
-        }
+        record_finding_issue($logId, (int)$log['asset_id'], $finding, $action, $severity, current_user_name());
+        $body = '
+        <div class="row justify-content-center"><div class="col-md-7">
+          <div class="card p-4">
+            <div class="alert alert-success"><strong>Temuan berhasil dicatat.</strong></div>
+            <div><strong>'.e($log['kode_inventaris'] ?? '-').'</strong> · '.e(trim(($log['merk'] ?? '').' '.($log['model'] ?? ''))).'</div>
+            <div class="mt-3">'.nl2br(e($finding)).'</div>
+            <a class="btn btn-primary mt-4" href="'.e(module_url('dashboard.php')).'">Kembali ke Dashboard</a>
+          </div>
+        </div></div>';
+        render_page('Temuan Tercatat', $body);
+        exit;
     }
 }
 

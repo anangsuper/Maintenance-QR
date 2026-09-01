@@ -5,24 +5,17 @@ require_admin();
 $assetId = max(0, (int)($_GET['asset_id'] ?? 0));
 $cabangId = max(0, (int)($_GET['cabang'] ?? 0));
 
-$where = " WHERE q.token IS NOT NULL AND q.is_active = 1 ";
-$params = [];
-if ($assetId) {
-    $where .= " AND a.id = ? ";
-    $params[] = $assetId;
+$rows = get_qr_admin_rows($cabangId);
+if ($assetId > 0) {
+    $rows = array_filter($rows, function($r) use ($assetId) {
+        return (int)($r['id'] ?? 0) === $assetId;
+    });
 }
-if ($cabangId) {
-    $where .= " AND a.id_cabang = ? ";
-    $params[] = $cabangId;
-}
-
-$st = db()->prepare(asset_query_base() . $where . " ORDER BY cabang_nama, karyawan_nama, a.kode_inventaris LIMIT 1000");
-$st->execute($params);
-$rows = $st->fetchAll();
 
 $cards = '';
 $i = 0;
 foreach ($rows as $r) {
+    if (empty($r['qr_token'])) continue;
     $i++;
     $url = module_url('scan.php', ['t'=>$r['qr_token']]);
     $cards .= '
