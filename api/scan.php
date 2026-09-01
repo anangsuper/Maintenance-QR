@@ -3,7 +3,7 @@ require __DIR__ . '/bootstrap.php';
 require_login();
 
 $token = trim((string)($_GET['t'] ?? $_POST['t'] ?? ''));
-if (!preg_match('/^[a-f0-9]{32}$/', $token)) {
+if ($token === '' || !preg_match('/^[a-zA-Z0-9\-_]{1,128}$/', $token)) {
     http_response_code(400);
     render_page('QR Tidak Valid', '<div class="alert alert-danger"><strong>QR tidak valid.</strong><br>Token QR tidak dikenali.</div>');
     exit;
