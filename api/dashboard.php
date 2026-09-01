@@ -60,7 +60,10 @@ $body = '
     <h2 class="mb-1">Maintenance Bulanan</h2>
     <div class="text-secondary">Scan QR setelah maintenance selesai.</div>
   </div>
-  <a class="btn btn-outline-success" href="'.e(module_url('export_csv.php', ['bulan'=>$month,'tahun'=>$year,'cabang'=>$cabangId])).'">Export CSV</a>
+  <div class="d-flex gap-2 flex-wrap">
+    <a class="btn btn-primary" target="_blank" href="'.e(module_url('print_report.php', ['bulan'=>$month,'tahun'=>$year,'cabang'=>$cabangId])).'">🖨️ Cetak Laporan Bulanan</a>
+    <a class="btn btn-outline-success" href="'.e(module_url('export_csv.php', ['bulan'=>$month,'tahun'=>$year,'cabang'=>$cabangId])).'">Export CSV</a>
+  </div>
 </div>
 
 <div class="card p-3 mb-4">
