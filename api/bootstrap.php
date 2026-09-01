@@ -258,6 +258,10 @@ function technician_name(int $userId): string {
 
 // DATA ABSTRACTION LAYER FOR GOOGLE CLOUD SHEETS API V4 VS MYSQL
 
+function get_static_qr_token(int $assetId): string {
+    return substr(hash('sha256', 'STATIC_QR_MAINTENANCE_KEY_SALT_' . $assetId), 0, 32);
+}
+
 function map_sheets_assets(): array {
     $client = google_sheets_v4_client();
     if (!$client) return [];
@@ -280,6 +284,10 @@ function map_sheets_assets(): array {
         $qr = $qrMap[$id] ?? [];
         $isAct = strtolower(trim((string)($qr['is_active'] ?? '1')));
         $qrActive = ($isAct === '0' || $isAct === 'false' || $isAct === 'off') ? 0 : 1;
+        $token = trim((string)($qr['token'] ?? ''));
+        if ($token === '' && $id > 0) {
+            $token = get_static_qr_token($id);
+        }
         return [
             'id' => $id,
             'kode_inventaris' => $a['kode_inventaris'] ?? '',
@@ -296,8 +304,8 @@ function map_sheets_assets(): array {
             'divisi_nama' => $divMap[$a['id_divisi'] ?? 0] ?? '-',
             'karyawan_nama' => $karMap[$a['id_karyawan'] ?? 0] ?? '-',
             'kategori_nama' => $katMap[$a['id_kategori'] ?? 0] ?? '-',
-            'qr_token' => trim((string)($qr['token'] ?? '')),
-            'placement_label' => $qr['placement_label'] ?? '',
+            'qr_token' => $token,
+            'placement_label' => $qr['placement_label'] ?? 'Bodi Top',
             'qr_active' => $qrActive
         ];
     }, $assets);
@@ -482,7 +490,8 @@ function get_asset_by_token(string $token): ?array {
     if (is_google_cloud_mode()) {
         $assets = map_sheets_assets();
         foreach ($assets as $a) {
-            if (strcasecmp((string)$a['qr_token'], $token) === 0 && (int)$a['qr_active'] === 1) {
+            $staticTok = get_static_qr_token((int)$a['id']);
+            if ((strcasecmp((string)$a['qr_token'], $token) === 0 || strcasecmp($staticTok, $token) === 0) && (int)$a['qr_active'] === 1) {
                 return $a;
             }
         }
