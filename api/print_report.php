@@ -5,6 +5,7 @@ require_login();
 $month = max(1, min(12, (int)($_GET['bulan'] ?? date('n'))));
 $year = max(2020, min(2100, (int)($_GET['tahun'] ?? date('Y'))));
 $cabangId = max(0, (int)($_GET['cabang'] ?? 0));
+$filterStatus = trim((string)($_GET['status'] ?? 'all')); // all, selesai, belum, temuan
 
 $monthNames = [
     1 => 'Januari', 2 => 'Februari', 3 => 'Maret', 4 => 'April',
@@ -37,6 +38,57 @@ if ($cabangId > 0 && is_array($cabangs)) {
 $pending = max(0, $total - $done);
 $percent = $total > 0 ? round(($done / $total) * 100) : 0;
 
+// Mapping Map Temuan per Asset ID
+$findingMap = [];
+foreach ($findingsRows as $f) {
+    $findingMap[$f['kode_inventaris']] = $f;
+}
+
+// Mapping All Assets into a Single Unified Table
+// 1. History scanned
+$allRows = [];
+foreach ($historyRows as $r) {
+    $kode = $r['kode_inventaris'] ?? '-';
+    $fData = $findingMap[$kode] ?? null;
+    $allRows[] = [
+        'is_done' => true,
+        'status_type' => ($r['status'] ?? '') === 'Temuan' ? 'temuan' : 'selesai',
+        'waktu' => format_id_date((string)($r['maintenance_date'] ?? '')).' '.substr((string)($r['maintenance_time'] ?? ''), 0, 5),
+        'kode' => $kode,
+        'perangkat' => trim(($r['merk'] ?? '').' '.($r['model'] ?? '')),
+        'pemilik' => $r['karyawan_nama'] ?? '-',
+        'cabang_divisi' => $r['cabang_nama'] ?? '-',
+        'teknisi' => $r['teknisi_nama'] ?? $r['technician_name'] ?? 'Teknisi',
+        'status_label' => ($r['status'] ?? '') === 'Temuan' ? 'Ada Temuan' : 'Selesai',
+        'finding_note' => $fData ? $fData['finding'] : '',
+    ];
+}
+
+// 2. Pending assets
+foreach ($pendingRows as $r) {
+    $allRows[] = [
+        'is_done' => false,
+        'status_type' => 'belum',
+        'waktu' => '-',
+        'kode' => $r['kode_inventaris'] ?? '-',
+        'perangkat' => asset_title($r),
+        'pemilik' => $r['karyawan_nama'] ?? '-',
+        'cabang_divisi' => ($r['cabang_nama'] ?? '-').' ('.($r['divisi_nama'] ?? '-').')',
+        'teknisi' => '-',
+        'status_label' => 'Belum',
+        'finding_note' => '',
+    ];
+}
+
+// Filter Status if selected
+if ($filterStatus === 'selesai') {
+    $allRows = array_filter($allRows, fn($r) => $r['status_type'] === 'selesai');
+} elseif ($filterStatus === 'belum') {
+    $allRows = array_filter($allRows, fn($r) => $r['status_type'] === 'belum');
+} elseif ($filterStatus === 'temuan') {
+    $allRows = array_filter($allRows, fn($r) => $r['status_type'] === 'temuan');
+}
+
 // Filter Dropdown Options
 $cabangOpts = '';
 foreach ($cabangs as $c) {
@@ -46,90 +98,51 @@ foreach ($cabangs as $c) {
     $cabangOpts .= '<option value="'.$cId.'"'.$sel.'>'.e($cNama).'</option>';
 }
 
-// 1. Table Selesai Maintenance
-$doneTrs = '';
-$i = 0;
-if (!empty($historyRows)) {
-    foreach ($historyRows as $r) {
-        $i++;
-        $tech = $r['teknisi_nama'] ?? $r['technician_name'] ?? '-';
-        $statusBadge = ($r['status'] ?? '') === 'Temuan' 
-            ? '<span class="badge-print badge-print-danger">Ada Temuan</span>' 
-            : '<span class="badge-print badge-print-success">Selesai</span>';
+// Build Unified Compact Table Rows
+$trs = '';
+$num = 0;
+foreach ($allRows as $r) {
+    $num++;
+    $badge = match($r['status_type']) {
+        'selesai' => '<span class="badge-compact bg-selesai">✓ Selesai</span>',
+        'temuan' => '<span class="badge-compact bg-temuan">⚠️ Temuan</span>',
+        default => '<span class="badge-compact bg-belum">Belum</span>'
+    };
 
-        $waktuStr = e(format_id_date((string)($r['maintenance_date'] ?? ''))).' '.e(substr((string)($r['maintenance_time'] ?? ''), 0, 5));
-
-        $doneTrs .= '<tr>
-          <td class="col-no">'.$i.'</td>
-          <td class="col-nowrap">'.$waktuStr.'</td>
-          <td class="col-nowrap fw-bold">'.e($r['kode_inventaris'] ?? '-').'</td>
-          <td>'.e(trim(($r['merk'] ?? '').' '.($r['model'] ?? ''))).'</td>
-          <td>'.e($r['karyawan_nama'] ?? '-').'</td>
-          <td>'.e(($r['cabang_nama'] ?? '-')).'</td>
-          <td class="col-nowrap">'.e($tech).'</td>
-          <td class="col-nowrap text-center">'.$statusBadge.'</td>
-        </tr>';
+    $noteHtml = '';
+    if (!empty($r['finding_note'])) {
+        $noteHtml = '<div class="finding-desc"><small><strong>Ket:</strong> '.e($r['finding_note']).'</small></div>';
     }
-}
-if (!$doneTrs) {
-    $doneTrs = '<tr><td colspan="8" class="text-center py-3 text-muted">Belum ada data maintenance pada periode ini.</td></tr>';
+
+    $trs .= '<tr>
+      <td class="col-center">'.$num.'</td>
+      <td class="col-nowrap fw-bold">'.e($r['kode']).'</td>
+      <td>'.e($r['perangkat']).'</td>
+      <td>'.e($r['pemilik']).'</td>
+      <td>'.e($r['cabang_divisi']).'</td>
+      <td class="col-nowrap text-center">'.e($r['waktu']).'</td>
+      <td class="col-nowrap">'.e($r['teknisi']).'</td>
+      <td class="col-nowrap text-center">'.$badge.$noteHtml.'</td>
+    </tr>';
 }
 
-// 2. Table Temuan Kerusakan
-$findingTrs = '';
-$k = 0;
-if (!empty($findingsRows)) {
-    foreach ($findingsRows as $f) {
-        $k++;
-        $sevClass = match($f['severity']) {
-            'Berat' => 'badge-print-danger',
-            'Sedang' => 'badge-print-warning',
-            default => 'badge-print-info'
-        };
-
-        $findingTrs .= '<tr>
-          <td class="col-no">'.$k.'</td>
-          <td class="col-nowrap fw-bold">'.e($f['kode_inventaris']).'</td>
-          <td>'.e($f['merk_model']).'<br><small class="text-muted">'.e($f['karyawan_nama']).' ('.e($f['cabang_nama']).')</small></td>
-          <td>'.nl2br(e($f['finding'])).'</td>
-          <td>'.nl2br(e($f['action_taken'] ?: '-')).'</td>
-          <td class="col-nowrap text-center"><span class="badge-print '.$sevClass.'">'.e($f['severity']).'</span></td>
-          <td class="col-nowrap text-center"><strong>'.e($f['repair_status']).'</strong></td>
-        </tr>';
-    }
-}
-
-// 3. Table Belum Maintenance
-$pendingTrs = '';
-$j = 0;
-if (!empty($pendingRows)) {
-    foreach ($pendingRows as $r) {
-        $j++;
-        $pendingTrs .= '<tr>
-          <td class="col-no">'.$j.'</td>
-          <td class="col-nowrap fw-bold">'.e($r['kode_inventaris'] ?? '-').'</td>
-          <td>'.e(asset_title($r)).'</td>
-          <td>'.e($r['karyawan_nama'] ?? '-').'</td>
-          <td>'.e($r['cabang_nama'] ?? '-').' ('.e($r['divisi_nama'] ?? '-').')</td>
-          <td class="col-nowrap text-center"><span class="badge-print badge-print-secondary">Belum</span></td>
-        </tr>';
-    }
-}
-if (!$pendingTrs) {
-    $pendingTrs = '<tr><td colspan="6" class="text-center py-3 text-success fw-semibold">✓ Seluruh aset telah selesai dilakukan maintenance untuk periode ini.</td></tr>';
+if (!$trs) {
+    $trs = '<tr><td colspan="8" class="text-center py-2 text-muted">Tidak ada data untuk filter yang dipilih.</td></tr>';
 }
 
 $head = '<style>
-/* Reset & Page Setup */
+/* Page Setup: A4 Landscape, tight margins for maximum space efficiency */
 @page {
   size: A4 landscape;
-  margin: 10mm 12mm;
+  margin: 6mm 8mm;
 }
 
 body {
   background: #eaedf2;
-  font-family: "Segoe UI", Tahoma, Arial, sans-serif;
-  color: #212529;
+  font-family: "Segoe UI", Arial, sans-serif;
+  color: #111;
+  font-size: 8.5pt;
+  line-height: 1.2;
 }
 
 .report-wrapper {
@@ -138,133 +151,130 @@ body {
 }
 
 .report-page {
-  width: 100%;
   background: #fff;
-  border-radius: 8px;
-  box-shadow: 0 4px 20px rgba(0,0,0,0.08);
-  padding: 30px 35px;
+  border-radius: 6px;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+  padding: 18px 22px;
   box-sizing: border-box;
 }
 
+/* Compact Header */
 .report-header {
   border-bottom: 2px solid #222;
-  padding-bottom: 12px;
-  margin-bottom: 18px;
+  padding-bottom: 6px;
+  margin-bottom: 10px;
 }
 
-/* Compact Executive Summary Row */
-.summary-bar {
+.report-title {
+  font-size: 11pt;
+  font-weight: 700;
+  margin: 0 0 2px 0;
+  letter-spacing: 0.3px;
+}
+
+.report-sub {
+  font-size: 8.5pt;
+  color: #444;
+  margin: 0;
+}
+
+/* 1-Line Compact Summary Strip */
+.summary-strip {
   display: flex;
   flex-wrap: wrap;
-  gap: 12px;
-  margin-bottom: 22px;
+  justify-content: space-between;
+  background: #f1f4f8;
+  border: 1px solid #c5d0de;
+  border-radius: 4px;
+  padding: 5px 12px;
+  margin-bottom: 10px;
+  font-size: 8.5pt;
 }
 
-.summary-card {
-  flex: 1 1 0;
-  min-width: 140px;
-  background: #f8f9fa;
-  border: 1px solid #dee2e6;
-  border-radius: 6px;
-  padding: 10px 14px;
+.summary-strip .item {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
 }
 
-.summary-card .lbl {
-  font-size: 0.75rem;
+.summary-strip .val {
   font-weight: 700;
-  color: #6c757d;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  margin-bottom: 2px;
 }
 
-.summary-card .val {
-  font-size: 1.4rem;
-  font-weight: 700;
-  line-height: 1.2;
-}
-
-/* Tables */
-.table-report {
+/* Ultra Compact High-Density Table */
+.table-compact {
   width: 100%;
   border-collapse: collapse;
-  margin-bottom: 22px;
-  font-size: 9.5pt;
-  table-layout: auto;
-}
-
-.table-report th {
-  background: #f1f3f5;
-  color: #111;
-  font-weight: 600;
-  border: 1px solid #999;
-  padding: 7px 10px;
-  vertical-align: middle;
-}
-
-.table-report td {
-  border: 1px solid #bbb;
-  padding: 6px 10px;
-  vertical-align: middle;
-}
-
-.col-no {
-  width: 35px;
-  text-align: center;
-  white-space: nowrap;
-}
-
-.col-nowrap {
-  white-space: nowrap !important;
-}
-
-.badge-print {
-  display: inline-block;
-  padding: 2px 7px;
+  margin-bottom: 12px;
   font-size: 8pt;
-  font-weight: 600;
-  border-radius: 4px;
-  border: 1px solid transparent;
-  white-space: nowrap;
 }
 
-.badge-print-success { background: #d1e7dd; color: #0f5132; border-color: #badbcc; }
-.badge-print-danger { background: #f8d7da; color: #842029; border-color: #f5c2c7; }
-.badge-print-warning { background: #fff3cd; color: #664d03; border-color: #ffecb5; }
-.badge-print-info { background: #cff4fc; color: #055160; border-color: #b6effb; }
-.badge-print-secondary { background: #e2e3e5; color: #41464b; border-color: #d3d6d8; }
-
-.section-heading {
-  font-size: 10.5pt;
+.table-compact th {
+  background: #e9ecef;
+  color: #000;
   font-weight: 700;
-  margin-bottom: 8px;
-  color: #111;
+  border: 1px solid #555;
+  padding: 4px 6px;
+  vertical-align: middle;
+  text-align: left;
 }
 
-/* Signature Block */
-.signature-section {
-  margin-top: 35px;
+.table-compact td {
+  border: 1px solid #777;
+  padding: 3px 6px;
+  vertical-align: middle;
+}
+
+.col-center { text-align: center !important; }
+.col-nowrap { white-space: nowrap !important; }
+
+/* Status Badges */
+.badge-compact {
+  display: inline-block;
+  padding: 1px 5px;
+  font-size: 7.5pt;
+  font-weight: 700;
+  border-radius: 3px;
+  border: 1px solid transparent;
+  line-height: 1.1;
+}
+
+.bg-selesai { background: #d1e7dd; color: #0f5132; border-color: #badbcc; }
+.bg-temuan { background: #f8d7da; color: #842029; border-color: #f5c2c7; }
+.bg-belum { background: #fff3cd; color: #664d03; border-color: #ffecb5; }
+
+.finding-desc {
+  font-size: 7.5pt;
+  color: #842029;
+  margin-top: 1px;
+  line-height: 1.1;
+}
+
+/* Compact Signature Block */
+.signature-strip {
+  margin-top: 15px;
   page-break-inside: avoid;
 }
 
-.signature-box {
+.sig-box {
   text-align: center;
+  font-size: 8.5pt;
 }
 
-.signature-line {
-  width: 200px;
-  margin: 55px auto 4px auto;
+.sig-line {
+  width: 170px;
+  margin: 35px auto 2px auto;
   border-bottom: 1px solid #000;
 }
 
-/* Print CSS */
+/* Print CSS Optimization */
 @media print {
   body {
     background: #fff !important;
     margin: 0 !important;
     padding: 0 !important;
-    font-size: 9pt;
-    color: #000;
+    font-size: 8pt !important;
+    color: #000 !important;
   }
 
   .no-print, nav, header {
@@ -280,27 +290,22 @@ body {
     border-radius: 0 !important;
   }
 
-  .table-report th {
-    background: #e9ecef !important;
-    color: #000 !important;
+  .table-compact th {
+    background: #f0f0f0 !important;
+    border: 1px solid #333 !important;
+  }
+
+  .table-compact td {
     border: 1px solid #444 !important;
   }
 
-  .table-report td {
-    border: 1px solid #555 !important;
-  }
-
-  .summary-card {
-    border: 1px solid #777 !important;
-    background: #fff !important;
+  .summary-strip {
+    background: #f8f8f8 !important;
+    border: 1px solid #666 !important;
   }
 
   tr {
     page-break-inside: avoid;
-  }
-
-  .page-break {
-    page-break-before: always;
   }
 }
 </style>';
@@ -308,159 +313,106 @@ body {
 $body = '
 <div class="report-wrapper">
   <!-- Interactive Controls Bar (Hidden during Print) -->
-  <div class="no-print mb-4 p-3 bg-white rounded-3 shadow-sm">
-    <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 border-bottom pb-3 mb-3">
+  <div class="no-print mb-3 p-3 bg-white rounded-3 shadow-sm">
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 border-bottom pb-2 mb-2">
       <div class="d-flex align-items-center gap-2">
-        <a class="btn btn-outline-secondary btn-sm" href="'.e(module_url('dashboard.php', ['bulan'=>$month,'tahun'=>$year,'cabang'=>$cabangId])).'"><i class="bi bi-arrow-left"></i> Dashboard</a>
-        <h5 class="mb-0 fw-bold text-dark"><i class="bi bi-printer me-2 text-primary"></i>Cetak Rekap Maintenance (Format A4 Landscape)</h5>
+        <a class="btn btn-outline-secondary btn-sm py-1" href="'.e(module_url('dashboard.php', ['bulan'=>$month,'tahun'=>$year,'cabang'=>$cabangId])).'"><i class="bi bi-arrow-left"></i> Dashboard</a>
+        <span class="fw-bold fs-6 text-dark"><i class="bi bi-printer me-1 text-primary"></i>Cetak Rekap Bulanan (Format Ringkas Hemat Kertas)</span>
       </div>
-      <div class="d-flex gap-2">
-        <button class="btn btn-primary fw-semibold px-4" onclick="window.print()"><i class="bi bi-printer-fill me-1"></i> Print / Download PDF</button>
-      </div>
+      <button class="btn btn-primary btn-sm fw-semibold px-3 py-1" onclick="window.print()"><i class="bi bi-printer-fill me-1"></i> Print / Simpan PDF</button>
     </div>
 
     <form method="get" class="row g-2 align-items-end">
-      <div class="col-6 col-md-3">
-        <label class="form-label small fw-semibold">Bulan</label>
+      <div class="col-6 col-md-2">
+        <label class="form-label small mb-1 fw-semibold">Bulan</label>
         <select class="form-select form-select-sm" name="bulan">';
 for ($m=1;$m<=12;$m++) {
     $body .= '<option value="'.$m.'"'.($m===$month?' selected':'').'>'.$monthNames[$m].'</option>';
 }
 $body .= '</select>
       </div>
-      <div class="col-6 col-md-3">
-        <label class="form-label small fw-semibold">Tahun</label>
+      <div class="col-6 col-md-2">
+        <label class="form-label small mb-1 fw-semibold">Tahun</label>
         <input type="number" class="form-control form-control-sm" name="tahun" value="'.$year.'" min="2020" max="2100">
       </div>
-      <div class="col-md-4">
-        <label class="form-label small fw-semibold">Cabang</label>
+      <div class="col-md-3">
+        <label class="form-label small mb-1 fw-semibold">Cabang</label>
         <select class="form-select form-select-sm" name="cabang">
           <option value="0">Semua Cabang</option>
           '.$cabangOpts.'
         </select>
       </div>
+      <div class="col-md-3">
+        <label class="form-label small mb-1 fw-semibold">Filter Status</label>
+        <select class="form-select form-select-sm" name="status">
+          <option value="all"'.($filterStatus==='all'?' selected':'').'>Semua Aset (Rekap Lengkap)</option>
+          <option value="selesai"'.($filterStatus==='selesai'?' selected':'').'>Hanya Yang Selesai</option>
+          <option value="temuan"'.($filterStatus==='temuan'?' selected':'').'>Hanya Yang Ada Temuan</option>
+          <option value="belum"'.($filterStatus==='belum'?' selected':'').'>Hanya Yang Belum</option>
+        </select>
+      </div>
       <div class="col-md-2">
-        <button type="submit" class="btn btn-outline-primary btn-sm w-100"><i class="bi bi-filter me-1"></i> Tampilkan</button>
+        <button type="submit" class="btn btn-outline-primary btn-sm w-100 py-1"><i class="bi bi-filter"></i> Tampilkan</button>
       </div>
     </form>
   </div>
 
-  <!-- Main Printable Report Sheet -->
+  <!-- Printable Report Page -->
   <div class="report-page">
-    <!-- Kop Surat & Judul Laporan -->
-    <div class="report-header">
-      <div class="d-flex justify-content-between align-items-end flex-wrap gap-2">
-        <div>
-          <h4 class="fw-bold mb-1 text-dark" style="letter-spacing: 0.5px;">LAPORAN REKAPITULASI MAINTENANCE IT & HARDWARE</h4>
-          <div class="text-secondary" style="font-size: 10.5pt;">
-            Periode: <strong class="text-dark">'.$monthName.' '.$year.'</strong> &nbsp;|&nbsp; 
-            Cabang / Lokasi: <strong class="text-dark">'.e($cabangName).'</strong>
-          </div>
+    <!-- Header -->
+    <div class="report-header d-flex justify-content-between align-items-end">
+      <div>
+        <div class="report-title">LAPORAN REKAPITULASI MAINTENANCE IT & HARDWARE</div>
+        <div class="report-sub">
+          Periode: <strong>'.$monthName.' '.$year.'</strong> &nbsp;|&nbsp; 
+          Lokasi/Cabang: <strong>'.e($cabangName).'</strong>
         </div>
-        <div class="text-end small text-muted">
-          <div>Tanggal Cetak: <strong>'.date('d-m-Y').'</strong> ('.date('H:i').' WITA)</div>
-          <div>Sistem: QR Maintenance</div>
-        </div>
+      </div>
+      <div class="text-end small text-muted" style="font-size: 7.5pt;">
+        <div>Tanggal Cetak: '.date('d-m-Y H:i').' WITA</div>
+        <div>Total: '.$total.' Komputer</div>
       </div>
     </div>
 
-    <!-- Ringkasan Statistik Eksekutif (Horizontal Bar) -->
-    <div class="summary-bar">
-      <div class="summary-card">
-        <div class="lbl">Total Aset</div>
-        <div class="val text-dark">'.$total.'</div>
-      </div>
-      <div class="summary-card">
-        <div class="lbl">Sudah Maintenance</div>
-        <div class="val text-success">'.$done.' <small style="font-size: 9pt; font-weight: normal; color: #555;">('.$percent.'%)</small></div>
-      </div>
-      <div class="summary-card">
-        <div class="lbl">Belum Maintenance</div>
-        <div class="val text-warning">'.$pending.'</div>
-      </div>
-      <div class="summary-card">
-        <div class="lbl">Temuan Kerusakan</div>
-        <div class="val text-danger">'.$findingsCount.'</div>
-      </div>
+    <!-- 1-Line Compact Summary Strip -->
+    <div class="summary-strip">
+      <div class="item"><span>Total Komputer:</span> <span class="val">'.$total.'</span></div>
+      <div class="item"><span>Selesai:</span> <span class="val text-success">'.$done.' ('.$percent.'%)</span></div>
+      <div class="item"><span>Belum Maintenance:</span> <span class="val text-warning">'.$pending.'</span></div>
+      <div class="item"><span>Temuan Kerusakan:</span> <span class="val text-danger">'.$findingsCount.'</span></div>
     </div>
 
-    <!-- Tabel 1: Selesai Maintenance -->
-    <div class="section-heading">1. DAFTAR KOMPUTER / ASET SELESAI MAINTENANCE ('.$done.')</div>
-    <table class="table-report">
+    <!-- Single Unified High-Density Table -->
+    <table class="table-compact">
       <thead>
         <tr>
-          <th class="col-no">No</th>
-          <th style="width: 140px;" class="col-nowrap">Waktu Scan</th>
-          <th style="width: 120px;" class="col-nowrap">Kode Inventaris</th>
+          <th class="col-center" style="width: 25px;">No</th>
+          <th class="col-nowrap" style="width: 95px;">Kode Inventaris</th>
           <th>Perangkat (Merk & Tipe)</th>
           <th>Pengguna / Pemilik</th>
-          <th>Cabang</th>
-          <th style="width: 110px;" class="col-nowrap">Teknisi</th>
-          <th style="width: 90px;" class="col-nowrap text-center">Status</th>
+          <th>Cabang / Divisi</th>
+          <th class="col-nowrap col-center" style="width: 110px;">Waktu Maintenance</th>
+          <th class="col-nowrap" style="width: 85px;">Teknisi</th>
+          <th class="col-nowrap col-center" style="width: 85px;">Status</th>
         </tr>
       </thead>
       <tbody>
-        '.$doneTrs.'
-      </tbody>
-    </table>';
-
-// Tabel Temuan Kerusakan jika ada
-if (!empty($findingsRows)) {
-    $body .= '
-    <div class="section-heading text-danger mt-3">2. DAFTAR TEMUAN & KERUSAKAN ('.$findingsCount.')</div>
-    <table class="table-report">
-      <thead>
-        <tr>
-          <th class="col-no">No</th>
-          <th style="width: 120px;" class="col-nowrap">Kode</th>
-          <th>Perangkat & Pengguna</th>
-          <th>Deskripsi Temuan / Kerusakan</th>
-          <th>Tindakan yang Dilakukan</th>
-          <th style="width: 80px;" class="col-nowrap text-center">Tingkat</th>
-          <th style="width: 110px;" class="col-nowrap text-center">Status Solusi</th>
-        </tr>
-      </thead>
-      <tbody>
-        '.$findingTrs.'
-      </tbody>
-    </table>';
-}
-
-$sectionNum = !empty($findingsRows) ? '3' : '2';
-
-$body .= '
-    <!-- Tabel Belum Maintenance -->
-    <div class="section-heading text-secondary mt-3">'.$sectionNum.'. DAFTAR KOMPUTER / ASET BELUM MAINTENANCE ('.$pending.')</div>
-    <table class="table-report">
-      <thead>
-        <tr>
-          <th class="col-no">No</th>
-          <th style="width: 130px;" class="col-nowrap">Kode Inventaris</th>
-          <th>Perangkat (Merk & Tipe)</th>
-          <th>Pengguna / Pemilik</th>
-          <th>Cabang & Divisi</th>
-          <th style="width: 90px;" class="col-nowrap text-center">Status</th>
-        </tr>
-      </thead>
-      <tbody>
-        '.$pendingTrs.'
+        '.$trs.'
       </tbody>
     </table>
 
-    <!-- Bagian Tanda Tangan & Pengesahan -->
-    <div class="signature-section">
+    <!-- Minimalist Signature Block -->
+    <div class="signature-strip">
       <div class="row">
-        <div class="col-6 signature-box">
-          <div>Dibuat Oleh:</div>
-          <div class="small text-muted">Teknisi Pelaksana IT</div>
-          <div class="signature-line"></div>
-          <div class="fw-bold">'.e(current_user_name()).'</div>
+        <div class="col-6 sig-box">
+          <div>Dibuat Oleh,</div>
+          <div class="sig-line"></div>
+          <div><strong>'.e(current_user_name()).'</strong> <small class="text-muted">(Teknisi IT)</small></div>
         </div>
-        <div class="col-6 signature-box">
-          <div>Mengetahui / Menyetujui:</div>
-          <div class="small text-muted">Kepala Cabang / IT Manager</div>
-          <div class="signature-line"></div>
-          <div class="fw-bold">( .................................................. )</div>
+        <div class="col-6 sig-box">
+          <div>Mengetahui,</div>
+          <div class="sig-line"></div>
+          <div><strong>( .................................................. )</strong> <small class="text-muted">(Kepala Cabang / Manager)</small></div>
         </div>
       </div>
     </div>
