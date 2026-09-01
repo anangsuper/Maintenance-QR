@@ -517,6 +517,7 @@ function record_scan(int $assetId, int $userId, string $techName, string $date, 
         $client = google_sheets_v4_client();
         if (!$client) return ['success' => false, 'error' => 'Sheets Client unavailable'];
 
+        $client->createSheetIfNotExists('Maintenance_Scan');
         $scans = $client->getSheetData('Maintenance_Scan');
         foreach ($scans as $s) {
             if ((int)($s['asset_id'] ?? 0) === $assetId && (int)($s['maintenance_month'] ?? 0) === $month && (int)($s['maintenance_year'] ?? 0) === $year) {
