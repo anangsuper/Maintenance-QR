@@ -23,64 +23,114 @@ $year = (int)date('Y');
 $date = date('Y-m-d');
 $time = date('H:i:s');
 $techName = current_user_name();
+$force = (!empty($_GET['force']) || !empty($_POST['force']));
 
-$res = record_scan((int)$asset['id'], $uid, $techName, $date, $time, $month, $year);
+$res = record_scan((int)$asset['id'], $uid, $techName, $date, $time, $month, $year, $force);
 
+// Jika Aset Sudah Pernah Dicatat Bulan Ini
 if (!empty($res['is_duplicate'])) {
     $old = $res['existing'] ?? [];
     $tech = $old['technician_name'] ?? technician_name((int)($old['technician_user_id'] ?? 0));
     $oldDate = $old['maintenance_date'] ?? date('Y-m-d');
     $oldTime = $old['maintenance_time'] ?? date('H:i:s');
+    $oldLogId = (int)($old['id'] ?? 0);
+    $statusScan = $old['status'] ?? 'Selesai';
+
+    $statusBadge = ($statusScan === 'Temuan') 
+        ? '<span class="badge text-bg-danger ms-2">Ada Temuan</span>' 
+        : '<span class="badge text-bg-success ms-2">Selesai</span>';
+
     $body = '
     <div class="row justify-content-center">
-      <div class="col-md-7 col-lg-6">
-        <div class="card p-4">
+      <div class="col-md-8 col-lg-7">
+        <div class="card p-4 border-0 shadow-sm">
           <div class="alert alert-warning mb-4">
-            <h4 class="alert-heading">Sudah Maintenance</h4>
-            QR ini sudah tercatat pada periode '.e(date('F Y')).'.
+            <h4 class="alert-heading fw-bold mb-1"><i class="bi bi-info-circle-fill me-2"></i>Sudah Maintenance Bulan Ini</h4>
+            <div>Perangkat ini sudah tercatat maintenance untuk periode <strong>'.e(date('F Y')).'</strong>.'.$statusBadge.'</div>
           </div>
+
+          <h6 class="text-secondary fw-semibold border-bottom pb-2 mb-3">Informasi Perangkat:</h6>
           <dl class="row mb-0">
-            <dt class="col-5">Perangkat</dt><dd class="col-7">'.e(asset_title($asset)).'</dd>
-            <dt class="col-5">Kode Inventaris</dt><dd class="col-7">'.e($asset['kode_inventaris'] ?? '-').'</dd>
-            <dt class="col-5">Pemilik</dt><dd class="col-7">'.e($asset['karyawan_nama'] ?? '-').'</dd>
-            <dt class="col-5">Cabang</dt><dd class="col-7">'.e($asset['cabang_nama'] ?? '-').'</dd>
-            <dt class="col-5">Tanggal</dt><dd class="col-7">'.e(format_id_date($oldDate)).'</dd>
-            <dt class="col-5">Jam</dt><dd class="col-7">'.e(substr($oldTime,0,5)).' WITA</dd>
-            <dt class="col-5">Teknisi</dt><dd class="col-7">'.e($tech).'</dd>
+            <dt class="col-5 text-secondary">Perangkat</dt><dd class="col-7 fw-bold">'.e(asset_title($asset)).'</dd>
+            <dt class="col-5 text-secondary">Kode Inventaris</dt><dd class="col-7"><span class="badge text-bg-primary">'.e($asset['kode_inventaris'] ?? '-').'</span></dd>
+            <dt class="col-5 text-secondary">Pengguna / Pemilik</dt><dd class="col-7">'.e($asset['karyawan_nama'] ?? '-').'</dd>
+            <dt class="col-5 text-secondary">Divisi & Cabang</dt><dd class="col-7">'.e(($asset['divisi_nama'] ?? '-').' · '.($asset['cabang_nama'] ?? '-')).'</dd>
+            <dt class="col-5 text-secondary">Tanggal Terakhir</dt><dd class="col-7">'.e(format_id_date($oldDate)).' pukul '.e(substr($oldTime,0,5)).' WITA</dd>
+            <dt class="col-5 text-secondary">Teknisi</dt><dd class="col-7">'.e($tech).'</dd>
           </dl>
-          <a class="btn btn-outline-primary mt-4" href="'.e(module_url('dashboard.php')).'">Kembali ke Dashboard</a>
+
+          <hr class="my-4">
+
+          <div class="d-grid gap-2">
+            <a class="btn btn-danger btn-lg fw-semibold" href="'.e(module_url('finding.php', ['log_id' => $oldLogId])).'">
+              <i class="bi bi-exclamation-triangle-fill me-1"></i> Ada Temuan / Laporkan Kerusakan
+            </a>
+            <a class="btn btn-outline-warning text-dark fw-semibold" href="'.e(module_url('scan.php', ['t' => $token, 'force' => 1])).'" onclick="return confirm(\'Update waktu dan teknisi maintenance untuk bulan ini?\')">
+              <i class="bi bi-arrow-repeat me-1"></i> Update Waktu Maintenance Ulang
+            </a>
+            <div class="row g-2 mt-2">
+              <div class="col-6">
+                <a class="btn btn-outline-primary w-100" href="'.e(module_url('dashboard.php')).'"><i class="bi bi-speedometer2 me-1"></i> Dashboard</a>
+              </div>
+              <div class="col-6">
+                <a class="btn btn-outline-secondary w-100" href="'.e(module_url('history.php')).'"><i class="bi bi-clock-history me-1"></i> Riwayat</a>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>';
+
     render_page('Sudah Maintenance', $body);
     exit;
 }
 
+// Maintenance Baru Berhasil Dicatat (atau baru saja Diperbarui)
 $logId = (int)($res['log_id'] ?? 0);
+$isUpdated = !empty($res['is_updated']);
+$alertHeading = $isUpdated ? '✓ Waktu Maintenance Berhasil Diperbarui' : '✓ Maintenance Berhasil Dicatat';
+$alertClass = $isUpdated ? 'alert-info' : 'alert-success';
 
 $body = '
 <div class="row justify-content-center">
-  <div class="col-md-7 col-lg-6">
-    <div class="card p-4">
-      <div class="alert alert-success mb-4">
-        <h4 class="alert-heading">✓ Maintenance Berhasil Dicatat</h4>
-        Tidak perlu mengisi form tambahan.
+  <div class="col-md-8 col-lg-7">
+    <div class="card p-4 border-0 shadow-sm">
+      <div class="alert '.$alertClass.' mb-4">
+        <h4 class="alert-heading fw-bold mb-1"><i class="bi bi-check-circle-fill me-2"></i>'.$alertHeading.'</h4>
+        <div>Maintenance periode <strong>'.e(date('F Y')).'</strong> telah otomatis tersimpan ke sistem.</div>
       </div>
+
+      <h6 class="text-secondary fw-semibold border-bottom pb-2 mb-3">Detail Maintenance:</h6>
       <dl class="row mb-0">
-        <dt class="col-5">Perangkat</dt><dd class="col-7">'.e(asset_title($asset)).'</dd>
-        <dt class="col-5">Kode Inventaris</dt><dd class="col-7">'.e($asset['kode_inventaris'] ?? '-').'</dd>
-        <dt class="col-5">Pemilik</dt><dd class="col-7">'.e($asset['karyawan_nama'] ?? '-').'</dd>
-        <dt class="col-5">Divisi</dt><dd class="col-7">'.e($asset['divisi_nama'] ?? '-').'</dd>
-        <dt class="col-5">Cabang</dt><dd class="col-7">'.e($asset['cabang_nama'] ?? '-').'</dd>
-        <dt class="col-5">Tanggal</dt><dd class="col-7">'.e(date('d-m-Y')).'</dd>
-        <dt class="col-5">Jam</dt><dd class="col-7">'.e(date('H:i')).' WITA</dd>
-        <dt class="col-5">Teknisi</dt><dd class="col-7">'.e($techName).'</dd>
+        <dt class="col-5 text-secondary">Perangkat</dt><dd class="col-7 fw-bold">'.e(asset_title($asset)).'</dd>
+        <dt class="col-5 text-secondary">Kode Inventaris</dt><dd class="col-7"><span class="badge text-bg-primary">'.e($asset['kode_inventaris'] ?? '-').'</span></dd>
+        <dt class="col-5 text-secondary">Pengguna / Pemilik</dt><dd class="col-7">'.e($asset['karyawan_nama'] ?? '-').'</dd>
+        <dt class="col-5 text-secondary">Divisi & Cabang</dt><dd class="col-7">'.e(($asset['divisi_nama'] ?? '-').' · '.($asset['cabang_nama'] ?? '-')).'</dd>
+        <dt class="col-5 text-secondary">Waktu Scan</dt><dd class="col-7">'.e(date('d-m-Y')).' pukul '.e(date('H:i')).' WITA</dd>
+        <dt class="col-5 text-secondary">Teknisi</dt><dd class="col-7">'.e($techName).'</dd>
       </dl>
-      <div class="d-grid gap-2 mt-4">
-        <a class="btn btn-danger" href="'.e(module_url('finding.php', ['log_id' => $logId])).'">Ada Temuan / Kerusakan</a>
-        <a class="btn btn-outline-primary" href="'.e(module_url('dashboard.php')).'">Dashboard Maintenance</a>
+
+      <hr class="my-4">
+
+      <div class="d-grid gap-2">
+        <a class="btn btn-danger btn-lg fw-semibold" href="'.e(module_url('finding.php', ['log_id' => $logId])).'">
+          <i class="bi bi-exclamation-triangle-fill me-1"></i> Ada Temuan / Kerusakan
+        </a>
+        <div class="row g-2 mt-2">
+          <div class="col-6">
+            <a class="btn btn-primary w-100 fw-semibold" href="'.e(module_url('dashboard.php')).'">
+              <i class="bi bi-speedometer2 me-1"></i> Buka Dashboard
+            </a>
+          </div>
+          <div class="col-6">
+            <a class="btn btn-outline-secondary w-100" href="'.e(module_url('history.php')).'">
+              <i class="bi bi-clock-history me-1"></i> Riwayat
+            </a>
+          </div>
+        </div>
       </div>
     </div>
   </div>
 </div>';
+
 render_page('Maintenance Tercatat', $body);

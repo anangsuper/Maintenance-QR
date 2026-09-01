@@ -702,7 +702,7 @@ function get_asset_by_token(string $token): ?array {
     return $asset ?: null;
 }
 
-function record_scan(int $assetId, int $userId, string $techName, string $date, string $time, int $month, int $year): array {
+function record_scan(int $assetId, int $userId, string $techName, string $date, string $time, int $month, int $year, bool $force = false): array {
     if (is_google_cloud_mode()) {
         $client = google_sheets_v4_client();
         if (!$client) return ['success' => false, 'error' => 'Sheets Client unavailable'];
@@ -711,6 +711,15 @@ function record_scan(int $assetId, int $userId, string $techName, string $date, 
         $scans = $client->getSheetData('Maintenance_Scan');
         foreach ($scans as $s) {
             if ((int)($s['asset_id'] ?? 0) === $assetId && (int)($s['maintenance_month'] ?? 0) === $month && (int)($s['maintenance_year'] ?? 0) === $year) {
+                if ($force) {
+                    $rowNum = (int)($s['_row_num'] ?? 0);
+                    if ($rowNum > 1) {
+                        $client->updateValues("Maintenance_Scan!C{$rowNum}:H{$rowNum}", [[
+                            $userId, $techName, $date, $time, $month, $year
+                        ]]);
+                    }
+                    return ['success' => true, 'log_id' => (int)($s['id'] ?? 0), 'is_updated' => true];
+                }
                 return ['success' => false, 'is_duplicate' => true, 'existing' => $s];
             }
         }
@@ -741,6 +750,15 @@ function record_scan(int $assetId, int $userId, string $techName, string $date, 
     $existing->execute([$assetId, $month, $year]);
     $old = $existing->fetch();
     if ($old) {
+        if ($force) {
+            $up = db()->prepare("
+                UPDATE maintenance_scan
+                SET technician_user_id = ?, maintenance_date = ?, maintenance_time = ?
+                WHERE id = ?
+            ");
+            $up->execute([$userId, $date, $time, $old['id']]);
+            return ['success' => true, 'log_id' => (int)$old['id'], 'is_updated' => true];
+        }
         return ['success' => false, 'is_duplicate' => true, 'existing' => $old];
     }
 
