@@ -273,11 +273,13 @@ function map_sheets_assets(): array {
     $divMap = []; foreach ($divRows as $r) $divMap[$r['id'] ?? 0] = $r['nama_divisi'] ?? $r['nama'] ?? '';
     $karMap = []; foreach ($karRows as $r) $karMap[$r['id'] ?? 0] = $r['nama_karyawan'] ?? $r['nama'] ?? '';
     $katMap = []; foreach ($katRows as $r) $katMap[$r['id'] ?? 0] = $r['nama_kategori'] ?? $r['nama'] ?? '';
-    $qrMap = []; foreach ($qrRows as $r) $qrMap[$r['asset_id'] ?? 0] = $r;
+    $qrMap = []; foreach ($qrRows as $r) { $aid = (int)($r['asset_id'] ?? 0); if ($aid > 0) $qrMap[$aid] = $r; }
 
     return array_map(function($a) use ($cabangMap, $divMap, $karMap, $katMap, $qrMap) {
         $id = (int)($a['id'] ?? 0);
         $qr = $qrMap[$id] ?? [];
+        $isAct = strtolower(trim((string)($qr['is_active'] ?? '1')));
+        $qrActive = ($isAct === '0' || $isAct === 'false' || $isAct === 'off') ? 0 : 1;
         return [
             'id' => $id,
             'kode_inventaris' => $a['kode_inventaris'] ?? '',
@@ -294,9 +296,9 @@ function map_sheets_assets(): array {
             'divisi_nama' => $divMap[$a['id_divisi'] ?? 0] ?? '-',
             'karyawan_nama' => $karMap[$a['id_karyawan'] ?? 0] ?? '-',
             'kategori_nama' => $katMap[$a['id_kategori'] ?? 0] ?? '-',
-            'qr_token' => $qr['token'] ?? '',
+            'qr_token' => trim((string)($qr['token'] ?? '')),
             'placement_label' => $qr['placement_label'] ?? '',
-            'qr_active' => (!empty($qr['is_active']) && (int)$qr['is_active'] === 1) ? 1 : 0
+            'qr_active' => $qrActive
         ];
     }, $assets);
 }
@@ -474,11 +476,30 @@ function get_dashboard_data(int $month, int $year, int $cabangId): array {
 }
 
 function get_asset_by_token(string $token): ?array {
+    $token = trim($token);
+    if ($token === '') return null;
+
     if (is_google_cloud_mode()) {
         $assets = map_sheets_assets();
         foreach ($assets as $a) {
-            if ($a['qr_token'] === $token && $a['qr_active'] === 1) {
+            if (strcasecmp((string)$a['qr_token'], $token) === 0 && (int)$a['qr_active'] === 1) {
                 return $a;
+            }
+        }
+        // Direct fallback check on Asset_QR_Tokens tab
+        $client = google_sheets_v4_client();
+        if ($client) {
+            $qrRows = $client->getSheetData('Asset_QR_Tokens');
+            foreach ($qrRows as $q) {
+                $qToken = trim((string)($q['token'] ?? ''));
+                if (strcasecmp($qToken, $token) === 0) {
+                    $targetAssetId = (int)($q['asset_id'] ?? 0);
+                    foreach ($assets as $a) {
+                        if ((int)$a['id'] === $targetAssetId) {
+                            return $a;
+                        }
+                    }
+                }
             }
         }
         return null;
