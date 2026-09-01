@@ -17,37 +17,6 @@ if (!$asset) {
     exit;
 }
 
-if ($_SERVER['REQUEST_METHOD'] === 'GET') {
-    $csrf = csrf_token();
-    $assetName = e(asset_title($asset));
-    $body = '
-    <div class="row justify-content-center">
-      <div class="col-md-7 col-lg-6">
-        <div class="card p-4 text-center">
-          <div class="spinner-border text-primary mx-auto mb-3" role="status" aria-hidden="true"></div>
-          <h4 class="mb-2">Mencatat maintenance...</h4>
-          <div class="text-secondary mb-4">'.$assetName.'</div>
-          <form id="autoScanForm" method="post" action="'.e(module_url('scan.php')).'">
-            <input type="hidden" name="_csrf" value="'.e($csrf).'">
-            <input type="hidden" name="t" value="'.e($token).'">
-            <button class="btn btn-primary w-100" type="submit">Catat Maintenance</button>
-          </form>
-          <div class="small-muted mt-3">Halaman akan mencatat otomatis. Tombol di atas hanya cadangan jika JavaScript tidak aktif.</div>
-        </div>
-      </div>
-    </div>';
-    $script = '<script>
-      setTimeout(function(){
-        var f=document.getElementById("autoScanForm");
-        if(f) f.submit();
-      }, 120);
-    </script>';
-    render_page('Mencatat Maintenance', $body, '', $script);
-    exit;
-}
-
-verify_csrf();
-
 $uid = current_user_id();
 $month = (int)date('n');
 $year = (int)date('Y');
