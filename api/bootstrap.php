@@ -117,6 +117,8 @@ function module_base_url(): string {
     $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
     $script = str_replace('\\', '/', $_SERVER['SCRIPT_NAME'] ?? '/');
     $dir = rtrim(dirname($script), '/');
+    // Strip /api prefix for Vercel deployment (routes rewrite /xxx.php -> /api/xxx.php)
+    $dir = preg_replace('~/api$~', '', $dir);
     return $scheme . '://' . $host . ($dir === '/' ? '' : $dir);
 }
 
