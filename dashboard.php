@@ -51,7 +51,7 @@ foreach ($recentRows as $r) {
 }
 if ($recentHtml === '') $recentHtml = '<tr><td colspan="6" class="text-center text-secondary py-4">Belum ada scan pada periode ini.</td></tr>';
 
-$modeBadge = is_spreadsheet_mode() ? '<span class="badge text-bg-info mb-2">Mode: Google Spreadsheet API</span>' : '<span class="badge text-bg-secondary mb-2">Mode: MySQL Database</span>';
+$modeBadge = is_google_cloud_mode() ? '<span class="badge text-bg-info mb-2">Mode: Google Cloud Sheets API v4</span>' : '<span class="badge text-bg-secondary mb-2">Mode: MySQL Database</span>';
 
 $body = '
 <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-3">

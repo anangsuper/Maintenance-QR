@@ -7,7 +7,7 @@ if (session_status() !== PHP_SESSION_ACTIVE) {
 
 date_default_timezone_set('Asia/Makassar');
 
-require_once __DIR__ . '/spreadsheet_api.php';
+require_once __DIR__ . '/google_sheets_v4.php';
 
 function envv(string $key, ?string $fallback = null): ?string {
     $v = getenv($key);
@@ -37,17 +37,22 @@ function cfg(string $key, ?string $fallback = null): ?string {
     return $fallback;
 }
 
-function is_spreadsheet_mode(): bool {
-    $url = cfg('spreadsheet_api_url', envv('SPREADSHEET_API_URL', ''));
-    return !empty($url);
+function is_google_cloud_mode(): bool {
+    $sheetId = cfg('google_spreadsheet_id', envv('GOOGLE_SPREADSHEET_ID', ''));
+    $email = cfg('google_client_email', envv('GOOGLE_CLIENT_EMAIL', ''));
+    return (!empty($sheetId) && !empty($email));
 }
 
-function spreadsheet_client(): ?SpreadsheetApiClient {
+function google_sheets_v4_client(): ?GoogleSheetsV4Client {
     static $client = null;
     if ($client !== null) return $client;
-    $url = cfg('spreadsheet_api_url', envv('SPREADSHEET_API_URL', ''));
-    if ($url) {
-        $client = new SpreadsheetApiClient($url);
+
+    $sheetId = cfg('google_spreadsheet_id', envv('GOOGLE_SPREADSHEET_ID', ''));
+    $email = cfg('google_client_email', envv('GOOGLE_CLIENT_EMAIL', ''));
+    $key = cfg('google_private_key', envv('GOOGLE_PRIVATE_KEY', ''));
+
+    if ($sheetId && $email && $key) {
+        $client = new GoogleSheetsV4Client($sheetId, $email, $key);
     }
     return $client;
 }
@@ -77,7 +82,7 @@ function current_user_id(): int {
             return (int)$_SESSION[$k];
         }
     }
-    if (is_spreadsheet_mode() && empty($_SESSION['user_id'])) {
+    if (is_google_cloud_mode() && empty($_SESSION['user_id'])) {
         return 1;
     }
     return 0;
@@ -130,7 +135,7 @@ function login_url(): string {
 }
 
 function require_login(): void {
-    if (is_spreadsheet_mode()) return;
+    if (is_google_cloud_mode()) return;
     if (current_user_id() > 0) return;
     $_SESSION['after_login'] = request_uri_full();
     header('Location: ' . login_url());
@@ -236,7 +241,7 @@ function asset_title(array $a): string {
 }
 
 function technician_name(int $userId): string {
-    if (is_spreadsheet_mode()) return current_user_name();
+    if (is_google_cloud_mode()) return current_user_name();
     try {
         $nameCol = name_column('users');
         if (!$nameCol) return current_user_name();
@@ -249,12 +254,55 @@ function technician_name(int $userId): string {
     }
 }
 
-// DATA ABSTRACTION LAYER FOR SPREADSHEET VS MYSQL
+// DATA ABSTRACTION LAYER FOR GOOGLE CLOUD SHEETS API V4 VS MYSQL
+
+function map_sheets_assets(): array {
+    $client = google_sheets_v4_client();
+    if (!$client) return [];
+
+    $assets = $client->getSheetData('Assets');
+    $cabangRows = $client->getSheetData('Cabang');
+    $divRows = $client->getSheetData('Divisi');
+    $karRows = $client->getSheetData('Karyawan');
+    $katRows = $client->getSheetData('Kategori_Aset');
+    $qrRows = $client->getSheetData('Asset_QR_Tokens');
+
+    $cabangMap = []; foreach ($cabangRows as $r) $cabangMap[$r['id'] ?? 0] = $r['nama_cabang'] ?? $r['nama'] ?? '';
+    $divMap = []; foreach ($divRows as $r) $divMap[$r['id'] ?? 0] = $r['nama_divisi'] ?? $r['nama'] ?? '';
+    $karMap = []; foreach ($karRows as $r) $karMap[$r['id'] ?? 0] = $r['nama_karyawan'] ?? $r['nama'] ?? '';
+    $katMap = []; foreach ($katRows as $r) $katMap[$r['id'] ?? 0] = $r['nama_kategori'] ?? $r['nama'] ?? '';
+    $qrMap = []; foreach ($qrRows as $r) $qrMap[$r['asset_id'] ?? 0] = $r;
+
+    return array_map(function($a) use ($cabangMap, $divMap, $karMap, $katMap, $qrMap) {
+        $id = (int)($a['id'] ?? 0);
+        $qr = $qrMap[$id] ?? [];
+        return [
+            'id' => $id,
+            'kode_inventaris' => $a['kode_inventaris'] ?? '',
+            'merk' => $a['merk'] ?? '',
+            'model' => $a['model'] ?? '',
+            'serial_number' => $a['serial_number'] ?? '',
+            'id_kategori' => (int)($a['id_kategori'] ?? 0),
+            'id_cabang' => (int)($a['id_cabang'] ?? 0),
+            'id_divisi' => (int)($a['id_divisi'] ?? 0),
+            'id_karyawan' => (int)($a['id_karyawan'] ?? 0),
+            'status' => $a['status'] ?? 'Aktif',
+            'keterangan' => $a['keterangan'] ?? '',
+            'cabang_nama' => $cabangMap[$a['id_cabang'] ?? 0] ?? '-',
+            'divisi_nama' => $divMap[$a['id_divisi'] ?? 0] ?? '-',
+            'karyawan_nama' => $karMap[$a['id_karyawan'] ?? 0] ?? '-',
+            'kategori_nama' => $katMap[$a['id_kategori'] ?? 0] ?? '-',
+            'qr_token' => $qr['token'] ?? '',
+            'placement_label' => $qr['placement_label'] ?? '',
+            'qr_active' => (!empty($qr['is_active']) && (int)$qr['is_active'] === 1) ? 1 : 0
+        ];
+    }, $assets);
+}
 
 function get_cabang_list(): array {
-    if (is_spreadsheet_mode()) {
-        $res = spreadsheet_client()->get('getCabangList');
-        return $res['data'] ?? [];
+    if (is_google_cloud_mode()) {
+        $client = google_sheets_v4_client();
+        return $client ? $client->getSheetData('Cabang') : [];
     }
     try {
         $cName = name_column('cabang') ?: 'id';
@@ -265,25 +313,80 @@ function get_cabang_list(): array {
 }
 
 function get_dashboard_data(int $month, int $year, int $cabangId): array {
-    if (is_spreadsheet_mode()) {
-        $res = spreadsheet_client()->get('getDashboardData', [
-            'bulan' => $month,
-            'tahun' => $year,
-            'cabang' => $cabangId
-        ]);
-        if ($res['success'] ?? false) {
-            return [
-                'total' => (int)($res['total'] ?? 0),
-                'done' => (int)($res['done'] ?? 0),
-                'findings' => (int)($res['findings'] ?? 0),
-                'pendingRows' => $res['pendingRows'] ?? [],
-                'recentRows' => $res['recentRows'] ?? [],
-                'cabangs' => $res['cabangs'] ?? []
-            ];
+    if (is_google_cloud_mode()) {
+        $client = google_sheets_v4_client();
+        if (!$client) return ['total' => 0, 'done' => 0, 'findings' => 0, 'pendingRows' => [], 'recentRows' => [], 'cabangs' => []];
+
+        $assets = array_filter(map_sheets_assets(), function($a) use ($cabangId) {
+            $st = strtolower($a['status']);
+            $active = ($st === 'aktif' || $st === '');
+            if (!$active) return false;
+            if ($cabangId > 0 && $a['id_cabang'] !== $cabangId) return false;
+            return true;
+        });
+
+        $scans = $client->getSheetData('Maintenance_Scan');
+        $scannedAssetIds = [];
+        $findingAssetIds = [];
+
+        foreach ($scans as $s) {
+            if ((int)($s['maintenance_month'] ?? 0) === $month && (int)($s['maintenance_year'] ?? 0) === $year) {
+                $aid = (int)($s['asset_id'] ?? 0);
+                $scannedAssetIds[$aid] = true;
+                if (($s['status'] ?? '') === 'Temuan') {
+                    $findingAssetIds[$aid] = true;
+                }
+            }
         }
-        return ['total' => 0, 'done' => 0, 'findings' => 0, 'pendingRows' => [], 'recentRows' => [], 'cabangs' => []];
+
+        $total = count($assets);
+        $done = 0;
+        $findings = 0;
+        $pendingRows = [];
+
+        foreach ($assets as $a) {
+            if (!empty($scannedAssetIds[$a['id']])) {
+                $done++;
+                if (!empty($findingAssetIds[$a['id']])) $findings++;
+            } else {
+                $pendingRows[] = $a;
+            }
+        }
+
+        $assetMap = []; foreach (map_sheets_assets() as $a) $assetMap[$a['id']] = $a;
+        $recentRows = [];
+
+        foreach ($scans as $s) {
+            if ((int)($s['maintenance_month'] ?? 0) === $month && (int)($s['maintenance_year'] ?? 0) === $year) {
+                $a = $assetMap[(int)($s['asset_id'] ?? 0)] ?? [];
+                if ($cabangId > 0 && ($a['id_cabang'] ?? 0) !== $cabangId) continue;
+
+                $recentRows[] = [
+                    'id' => $s['id'] ?? 0,
+                    'asset_id' => $s['asset_id'] ?? 0,
+                    'maintenance_date' => substr((string)($s['maintenance_date'] ?? ''), 0, 10),
+                    'maintenance_time' => substr((string)($s['maintenance_time'] ?? ''), 0, 8),
+                    'status' => $s['status'] ?? 'Selesai',
+                    'kode_inventaris' => $a['kode_inventaris'] ?? '-',
+                    'merk' => $a['merk'] ?? '',
+                    'model' => $a['model'] ?? '',
+                    'karyawan_nama' => $a['karyawan_nama'] ?? '-',
+                    'cabang_nama' => $a['cabang_nama'] ?? '-'
+                ];
+            }
+        }
+
+        return [
+            'total' => $total,
+            'done' => $done,
+            'findings' => $findings,
+            'pendingRows' => array_values($pendingRows),
+            'recentRows' => array_values($recentRows),
+            'cabangs' => get_cabang_list()
+        ];
     }
 
+    // MySQL mode
     $cName = name_column('cabang') ?: 'id';
     $cabangs = db()->query("SELECT id, `{$cName}` AS nama FROM cabang ORDER BY `{$cName}`")->fetchAll();
 
@@ -369,9 +472,14 @@ function get_dashboard_data(int $month, int $year, int $cabangId): array {
 }
 
 function get_asset_by_token(string $token): ?array {
-    if (is_spreadsheet_mode()) {
-        $res = spreadsheet_client()->get('getAssetByToken', ['token' => $token]);
-        return ($res['success'] ?? false) ? ($res['asset'] ?? null) : null;
+    if (is_google_cloud_mode()) {
+        $assets = map_sheets_assets();
+        foreach ($assets as $a) {
+            if ($a['qr_token'] === $token && $a['qr_active'] === 1) {
+                return $a;
+            }
+        }
+        return null;
     }
 
     $sql = asset_query_base() . " WHERE q.token = ? AND q.is_active = 1 LIMIT 1";
@@ -382,18 +490,33 @@ function get_asset_by_token(string $token): ?array {
 }
 
 function record_scan(int $assetId, int $userId, string $techName, string $date, string $time, int $month, int $year): array {
-    if (is_spreadsheet_mode()) {
-        return spreadsheet_client()->post('saveMaintenanceScan', [
-            'asset_id' => $assetId,
-            'technician_user_id' => $userId,
-            'technician_name' => $techName,
-            'maintenance_date' => $date,
-            'maintenance_time' => $time,
-            'maintenance_month' => $month,
-            'maintenance_year' => $year,
-            'status' => 'Selesai',
-            'source' => 'QR'
-        ]);
+    if (is_google_cloud_mode()) {
+        $client = google_sheets_v4_client();
+        if (!$client) return ['success' => false, 'error' => 'Sheets Client unavailable'];
+
+        $scans = $client->getSheetData('Maintenance_Scan');
+        foreach ($scans as $s) {
+            if ((int)($s['asset_id'] ?? 0) === $assetId && (int)($s['maintenance_month'] ?? 0) === $month && (int)($s['maintenance_year'] ?? 0) === $year) {
+                return ['success' => false, 'is_duplicate' => true, 'existing' => $s];
+            }
+        }
+
+        $newId = count($scans) + 1;
+        $newRow = [
+            $newId,
+            $assetId,
+            $userId,
+            $techName,
+            $date,
+            $time,
+            $month,
+            $year,
+            'Selesai',
+            'QR',
+            date('Y-m-d H:i:s')
+        ];
+        $client->appendValues('Maintenance_Scan!A:K', [$newRow]);
+        return ['success' => true, 'log_id' => $newId];
     }
 
     $existing = db()->prepare("
@@ -425,7 +548,7 @@ function record_scan(int $assetId, int $userId, string $techName, string $date, 
 }
 
 function get_log_by_id(int $logId): ?array {
-    if (is_spreadsheet_mode()) {
+    if (is_google_cloud_mode()) {
         $history = get_history_rows(0, 0, 0);
         foreach ($history as $h) {
             if ((int)($h['id'] ?? 0) === $logId) return $h;
@@ -445,15 +568,40 @@ function get_log_by_id(int $logId): ?array {
 }
 
 function record_finding_issue(int $logId, int $assetId, string $finding, string $action, string $severity, string $reporter): array {
-    if (is_spreadsheet_mode()) {
-        return spreadsheet_client()->post('saveFinding', [
-            'maintenance_scan_id' => $logId,
-            'asset_id' => $assetId,
-            'kategori_temuan' => $severity,
-            'deskripsi_temuan' => $finding,
-            'tindakan_diperlukan' => $action,
-            'reported_by' => $reporter
-        ]);
+    if (is_google_cloud_mode()) {
+        $client = google_sheets_v4_client();
+        if (!$client) return ['success' => false];
+
+        $findings = $client->getSheetData('Maintenance_Findings');
+        $newId = count($findings) + 1;
+        $newRow = [
+            $newId,
+            $logId,
+            $assetId,
+            $severity,
+            $finding,
+            $action,
+            'Open',
+            $reporter,
+            date('Y-m-d H:i:s'),
+            '',
+            '',
+            ''
+        ];
+        $client->appendValues('Maintenance_Findings!A:L', [$newRow]);
+
+        // Update scan status to 'Temuan'
+        $scans = $client->getSheetData('Maintenance_Scan');
+        foreach ($scans as $s) {
+            if ((int)($s['id'] ?? 0) === $logId) {
+                $rowNum = (int)($s['_row_num'] ?? 0);
+                if ($rowNum > 1) {
+                    $client->updateValues("Maintenance_Scan!I{$rowNum}", [['Temuan']]);
+                }
+                break;
+            }
+        }
+        return ['success' => true, 'finding_id' => $newId];
     }
     db()->beginTransaction();
     try {
@@ -476,14 +624,39 @@ function record_finding_issue(int $logId, int $assetId, string $finding, string 
 }
 
 function get_history_rows(int $month, int $year, int $cabangId, string $status = ''): array {
-    if (is_spreadsheet_mode()) {
-        $res = spreadsheet_client()->get('getHistory', [
-            'bulan' => $month,
-            'tahun' => $year,
-            'cabang' => $cabangId,
-            'status' => $status
-        ]);
-        return $res['rows'] ?? [];
+    if (is_google_cloud_mode()) {
+        $client = google_sheets_v4_client();
+        if (!$client) return [];
+
+        $scans = $client->getSheetData('Maintenance_Scan');
+        $assetMap = []; foreach (map_sheets_assets() as $a) $assetMap[$a['id']] = $a;
+
+        $rows = [];
+        foreach ($scans as $s) {
+            if ($month > 0 && (int)($s['maintenance_month'] ?? 0) !== $month) continue;
+            if ($year > 0 && (int)($s['maintenance_year'] ?? 0) !== $year) continue;
+            if ($status !== '' && ($s['status'] ?? '') !== $status) continue;
+
+            $a = $assetMap[(int)($s['asset_id'] ?? 0)] ?? [];
+            if ($cabangId > 0 && ($a['id_cabang'] ?? 0) !== $cabangId) continue;
+
+            $rows[] = [
+                'id' => (int)($s['id'] ?? 0),
+                'asset_id' => (int)($s['asset_id'] ?? 0),
+                'maintenance_date' => substr((string)($s['maintenance_date'] ?? ''), 0, 10),
+                'maintenance_time' => substr((string)($s['maintenance_time'] ?? ''), 0, 8),
+                'status' => $s['status'] ?? 'Selesai',
+                'technician_name' => $s['technician_name'] ?? 'Teknisi',
+                'kode_inventaris' => $a['kode_inventaris'] ?? '-',
+                'serial_number' => $a['serial_number'] ?? '-',
+                'merk' => $a['merk'] ?? '',
+                'model' => $a['model'] ?? '',
+                'kategori_nama' => $a['kategori_nama'] ?? '-',
+                'karyawan_nama' => $a['karyawan_nama'] ?? '-',
+                'cabang_nama' => $a['cabang_nama'] ?? '-'
+            ];
+        }
+        return array_values($rows);
     }
 
     $cName = name_column('cabang') ?: 'id';
@@ -491,7 +664,7 @@ function get_history_rows(int $month, int $year, int $cabangId, string $status =
     $uName = name_column('users') ?: 'id';
 
     $sql = "
-    SELECT ms.*, a.kode_inventaris, a.merk, a.model,
+    SELECT ms.*, a.kode_inventaris, a.serial_number, a.merk, a.model,
            c.`{$cName}` AS cabang_nama,
            k.`{$kName}` AS karyawan_nama,
            u.`{$uName}` AS teknisi_nama
@@ -516,9 +689,14 @@ function get_history_rows(int $month, int $year, int $cabangId, string $status =
 }
 
 function get_qr_admin_rows(int $cabangId): array {
-    if (is_spreadsheet_mode()) {
-        $res = spreadsheet_client()->get('getQrTokens', ['cabang' => $cabangId]);
-        return $res['rows'] ?? [];
+    if (is_google_cloud_mode()) {
+        $assets = map_sheets_assets();
+        if ($cabangId > 0) {
+            $assets = array_filter($assets, function($a) use ($cabangId) {
+                return $a['id_cabang'] === $cabangId;
+            });
+        }
+        return array_values($assets);
     }
     $where = " WHERE (a.status = 'Aktif' OR a.status = 'aktif' OR a.status IS NULL OR a.status = '') ";
     $params = [];
@@ -532,9 +710,37 @@ function get_qr_admin_rows(int $cabangId): array {
 }
 
 function generate_missing_qr_tokens(int $cabangId): int {
-    if (is_spreadsheet_mode()) {
-        // Mode spreadsheet otomatis membuat QR token
-        return 0;
+    if (is_google_cloud_mode()) {
+        $client = google_sheets_v4_client();
+        if (!$client) return 0;
+
+        $assets = map_sheets_assets();
+        $qrRows = $client->getSheetData('Asset_QR_Tokens');
+        $existingAssetIds = [];
+        foreach ($qrRows as $q) $existingAssetIds[(int)($q['asset_id'] ?? 0)] = true;
+
+        $created = 0;
+        $nextId = count($qrRows) + 1;
+        $newRows = [];
+
+        foreach ($assets as $a) {
+            if ($cabangId > 0 && $a['id_cabang'] !== $cabangId) continue;
+            if (empty($existingAssetIds[$a['id']])) {
+                $newRows[] = [
+                    $nextId++,
+                    $a['id'],
+                    bin2hex(random_bytes(16)),
+                    'Bodi Top',
+                    1,
+                    date('Y-m-d H:i:s')
+                ];
+                $created++;
+            }
+        }
+        if ($newRows) {
+            $client->appendValues('Asset_QR_Tokens!A:F', $newRows);
+        }
+        return $created;
     }
     $where = " WHERE (a.status = 'Aktif' OR a.status = 'aktif' OR a.status IS NULL OR a.status = '') ";
     $params = [];
@@ -560,7 +766,25 @@ function generate_missing_qr_tokens(int $cabangId): int {
 }
 
 function regenerate_qr_token(int $assetId): bool {
-    if (is_spreadsheet_mode()) {
+    if (is_google_cloud_mode()) {
+        $client = google_sheets_v4_client();
+        if (!$client) return false;
+
+        $qrRows = $client->getSheetData('Asset_QR_Tokens');
+        $newToken = bin2hex(random_bytes(16));
+
+        foreach ($qrRows as $q) {
+            if ((int)($q['asset_id'] ?? 0) === $assetId) {
+                $rowNum = (int)($q['_row_num'] ?? 0);
+                if ($rowNum > 1) {
+                    $client->updateValues("Asset_QR_Tokens!C{$rowNum}:E{$rowNum}", [[$newToken, 'Bodi Top', 1]]);
+                    return true;
+                }
+            }
+        }
+        // If not found, append
+        $newId = count($qrRows) + 1;
+        $client->appendValues('Asset_QR_Tokens!A:F', [[$newId, $assetId, $newToken, 'Bodi Top', 1, date('Y-m-d H:i:s')]]);
         return true;
     }
     if ($assetId > 0) {

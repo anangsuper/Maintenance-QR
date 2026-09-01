@@ -1,6 +1,6 @@
 # QR Maintenance — Scan QR = Maintenance Selesai
 
-Modul ini dibuat untuk sistem Rekap IT berbasis PHP dengan dukungan **MySQL Database** maupun **Google Spreadsheet API** (tanpa database serverless di Vercel).
+Modul ini dibuat untuk sistem Rekap IT berbasis PHP dengan dukungan **MySQL Database** maupun **Google Cloud API v4 (Google Sheets API)** tanpa serverless database di Vercel.
 
 ## Tujuan
 
@@ -15,82 +15,58 @@ Teknisi melakukan maintenance seperti biasa. Setelah selesai:
 
 ---
 
-## ⚡ Deployment ke Vercel & Google Spreadsheet API
+## ⚡ Deployment ke Vercel dengan Google Cloud API (Google Sheets API v4)
 
-Anda dapat menjalankan modul ini secara gratis di **Vercel** menggunakan **Google Sheets** sebagai database-nya.
+Anda dapat menghubungkan modul ini langsung ke **Google Sheets API v4 (REST API)** resmi menggunakan **Google Cloud Service Account** tanpa Apps Script.
 
-### Langkah Setup Google Sheets (API):
+### 1. Buat Service Account di Google Cloud Console:
 
-1. **Buka Google Sheets Baru** atau spreadsheet rekap yang sudah ada.
-2. Klik menu **Ekstensi** -> **Apps Script**.
-3. Buka berkas [google_apps_script.js](file:///c:/Users/MIS%20&%20IT/Downloads/qr_maintenance_rekap_it_full/qr_maintenance_module/google_apps_script.js), lalu **salin dan tempel (copy-paste)** seluruh kodenya ke editor Apps Script.
-4. Klik tombol **Deploy** di pojok kanan atas -> **New deployment**.
-5. Klik ikon gerigi (Select type) -> pilih **Web app**.
-6. Atur pengaturan berikut:
-   - **Description**: `QR Maintenance API`
-   - **Execute as**: `Me` (Email Google Anda)
-   - **Who has access**: `Anyone` (Siapa saja, agar server Vercel dapat membaca & menulis ke sheet)
-7. Klik **Deploy** dan berikan izin akses (**Authorize Access**).
-8. Salin **Web App URL** (URL berakhiran `/exec`).
+1. Buka [Google Cloud Console](https://console.cloud.google.com/).
+2. Buat Project baru atau pilih Project yang sudah ada.
+3. Buka menu **APIs & Services** -> **Library** -> Cari **Google Sheets API** -> Klik **Enable**.
+4. Buka menu **APIs & Services** -> **Credentials** -> Klik **Create Credentials** -> Pilih **Service Account**.
+5. Isi nama Service Account (misal: `qr-maintenance-sa`), lalu klik **Create and Continue** -> **Done**.
+6. Klik pada Service Account yang baru dibuat -> Masuk ke tab **Keys** -> Klik **Add Key** -> **Create new key** -> Pilih **JSON**.
+7. Berkas JSON kredensial akan terunduh ke komputer Anda. Buka berkas JSON tersebut dengan Text Editor.
 
-### Langkah Deployment ke Vercel:
+### 2. Bagikan Google Sheet ke Service Account:
 
-1. Push folder ini ke GitHub: `https://github.com/anangsuper/Maintenance-QR.git`.
-2. Buka dashboard [Vercel](https://vercel.com) dan klik **Add New Project** -> **Import Git Repository**.
-3. Tambahkan **Environment Variable** di Vercel:
-   - Name: `SPREADSHEET_API_URL`
-   - Value: *(URL Web App Google Apps Script dari langkah di atas)*
-4. Klik **Deploy**. Modul akan otomatis aktif dan berjalan di Vercel!
+1. Buka Google Sheet rekap aset Anda.
+2. Salin email Service Account dari JSON (kolom `"client_email"`, contoh: `qr-maintenance-sa@project-name.iam.gserviceaccount.com`).
+3. Klik tombol **Bagikan (Share)** di Google Sheet -> Tempel email Service Account -> Berikan akses **Editor** -> Klik **Kirim (Send)**.
+4. Salin **Spreadsheet ID** dari URL Google Sheet Anda:
+   - URL: `https://docs.google.com/spreadsheets/d/1aBcDeFgHiJkLmNoPqRsTuVwXyZ/edit`
+   - ID: `1aBcDeFgHiJkLmNoPqRsTuVwXyZ`
 
----
+### 3. Masukkan Environment Variable di Vercel:
 
-## Struktur yang Diasumsikan dari Rekap IT (Mode MySQL)
+Buka dashboard [Vercel](https://vercel.com) -> Masuk ke project Anda -> **Settings** -> **Environment Variables** -> Tambahkan 3 variabel berikut:
 
-Jika menggunakan MySQL, project utama memiliki tabel:
+1. `GOOGLE_SPREADSHEET_ID`: *(Spreadsheet ID Anda)*
+2. `GOOGLE_CLIENT_EMAIL`: *(Isi `"client_email"` dari JSON)*
+3. `GOOGLE_PRIVATE_KEY`: *(Isi `"private_key"` dari JSON, termasuk `-----BEGIN PRIVATE KEY-----` dan `-----END PRIVATE KEY-----`)*
 
-- `users`
-- `cabang`
-- `divisi`
-- `karyawan`
-- `kategori_aset`
-- `assets`
-
-Kolom aset yang digunakan:
-
-- `assets.id`
-- `assets.kode_inventaris`
-- `assets.serial_number`
-- `assets.merk`
-- `assets.model`
-- `assets.id_cabang`
-- `assets.id_divisi`
-- `assets.id_karyawan`
-- `assets.id_kategori`
-- `assets.status`
+Klik **Deploy** atau **Redeploy**. Modul akan otomatis berjalan menggunakan Google Cloud Sheets API v4!
 
 ---
 
-## 1. Import SQL (Mode MySQL)
+## Struktur Tabel Google Sheet yang Digunakan:
 
-Jika menggunakan MySQL lokal/server, import file:
-
-```text
-sql/01_qr_maintenance.sql
-```
-
-Tabel baru:
-
-- `asset_qr_tokens`
-- `maintenance_scan`
-- `maintenance_findings`
+Modul ini membaca/menulis tab sheet berikut di Google Sheet Anda:
+- `Assets`
+- `Cabang`
+- `Divisi`
+- `Karyawan`
+- `Kategori_Aset`
+- `Asset_QR_Tokens`
+- `Maintenance_Scan`
+- `Maintenance_Findings`
 
 ---
 
-## 2. Database Connection
+## Mode MySQL (Opsional)
 
-### Railway / Serverless MySQL
-
-Modul membaca variabel:
+Jika menggunakan MySQL lokal/server (seperti Railway), cukup atur variabel database berikut:
 
 ```text
 DB_HOST
@@ -100,17 +76,14 @@ DB_USER
 DB_PASS
 ```
 
-### Google Spreadsheet Mode (Vercel)
-
-Cukup tambahkan variabel:
-
+Import file SQL:
 ```text
-SPREADSHEET_API_URL=https://script.google.com/macros/s/.../exec
+sql/01_qr_maintenance.sql
 ```
 
 ---
 
-## 3. Generate & Cetak QR
+## Generate & Cetak QR
 
 Buka menu **QR Aset** -> Tekan **Generate QR yang Belum Ada** -> **Cetak Semua QR**.
 
