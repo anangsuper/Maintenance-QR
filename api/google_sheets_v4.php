@@ -1,5 +1,6 @@
 <?php
 declare(strict_types=1);
+error_reporting(E_ALL & ~E_DEPRECATED);
 
 /**
  * GOOGLE SHEETS API V4 CLIENT (DIRECT GOOGLE CLOUD API)
@@ -15,6 +16,18 @@ class GoogleSheetsV4Client {
         $this->spreadsheetId = trim($spreadsheetId);
         $this->clientEmail = trim($clientEmail);
         $this->privateKey = str_replace(['\\n', "\r"], ["\n", ''], trim($privateKey));
+    }
+
+    private function curlExec(string $url, array $opts = []): string {
+        $ch = curl_init($url);
+        curl_setopt_array($ch, $opts + [
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_TIMEOUT => 15,
+            CURLOPT_SSL_VERIFYPEER => false,
+            CURLOPT_FOLLOWLOCATION => true,
+        ]);
+        $response = curl_exec($ch);
+        return (string)$response;
     }
 
     private function getAccessToken(): ?string {
@@ -43,21 +56,15 @@ class GoogleSheetsV4Client {
 
         $jwt = $toSign . '.' . base64url_encode($signature);
 
-        $ch = curl_init('https://oauth2.googleapis.com/token');
-        curl_setopt_array($ch, [
+        $response = $this->curlExec('https://oauth2.googleapis.com/token', [
             CURLOPT_POST => true,
             CURLOPT_POSTFIELDS => http_build_query([
                 'grant_type' => 'urn:ietf:params:oauth:grant-type:jwt-bearer',
                 'assertion' => $jwt,
             ]),
-            CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_TIMEOUT => 10,
-            CURLOPT_SSL_VERIFYPEER => false,
         ]);
-        $response = curl_exec($ch);
-        curl_close($ch);
 
-        $data = json_decode((string)$response, true);
+        $data = json_decode($response, true);
         if (!empty($data['access_token'])) {
             self::$cachedAccessToken = (string)$data['access_token'];
             return self::$cachedAccessToken;
@@ -77,17 +84,11 @@ class GoogleSheetsV4Client {
             urlencode($range)
         );
 
-        $ch = curl_init($url);
-        curl_setopt_array($ch, [
+        $response = $this->curlExec($url, [
             CURLOPT_HTTPHEADER => ['Authorization: Bearer ' . $token],
-            CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_TIMEOUT => 10,
-            CURLOPT_SSL_VERIFYPEER => false,
         ]);
-        $response = curl_exec($ch);
-        curl_close($ch);
 
-        $data = json_decode((string)$response, true);
+        $data = json_decode($response, true);
         return $data['values'] ?? [];
     }
 
@@ -101,24 +102,16 @@ class GoogleSheetsV4Client {
             urlencode($range)
         );
 
-        $payload = json_encode(['values' => $rows]);
-
-        $ch = curl_init($url);
-        curl_setopt_array($ch, [
+        $response = $this->curlExec($url, [
             CURLOPT_POST => true,
-            CURLOPT_POSTFIELDS => $payload,
+            CURLOPT_POSTFIELDS => json_encode(['values' => $rows]),
             CURLOPT_HTTPHEADER => [
                 'Authorization: Bearer ' . $token,
                 'Content-Type: application/json',
             ],
-            CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_TIMEOUT => 10,
-            CURLOPT_SSL_VERIFYPEER => false,
         ]);
-        $response = curl_exec($ch);
-        curl_close($ch);
 
-        $data = json_decode((string)$response, true);
+        $data = json_decode($response, true);
         return isset($data['updates']);
     }
 
@@ -132,24 +125,16 @@ class GoogleSheetsV4Client {
             urlencode($range)
         );
 
-        $payload = json_encode(['values' => $rows]);
-
-        $ch = curl_init($url);
-        curl_setopt_array($ch, [
+        $response = $this->curlExec($url, [
             CURLOPT_CUSTOMREQUEST => 'PUT',
-            CURLOPT_POSTFIELDS => $payload,
+            CURLOPT_POSTFIELDS => json_encode(['values' => $rows]),
             CURLOPT_HTTPHEADER => [
                 'Authorization: Bearer ' . $token,
                 'Content-Type: application/json',
             ],
-            CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_TIMEOUT => 10,
-            CURLOPT_SSL_VERIFYPEER => false,
         ]);
-        $response = curl_exec($ch);
-        curl_close($ch);
 
-        $data = json_decode((string)$response, true);
+        $data = json_decode($response, true);
         return isset($data['updatedCells']);
     }
 
@@ -168,6 +153,36 @@ class GoogleSheetsV4Client {
             $result[] = $obj;
         }
         return $result;
+    }
+
+    /**
+     * Buat sheet/tab baru jika belum ada
+     */
+    public function createSheetIfNotExists(string $sheetName): bool {
+        $token = $this->getAccessToken();
+        if (!$token) return false;
+
+        $url = sprintf(
+            'https://sheets.googleapis.com/v4/spreadsheets/%s:batchUpdate',
+            urlencode($this->spreadsheetId)
+        );
+
+        $response = $this->curlExec($url, [
+            CURLOPT_POST => true,
+            CURLOPT_POSTFIELDS => json_encode([
+                'requests' => [[
+                    'addSheet' => [
+                        'properties' => ['title' => $sheetName]
+                    ]
+                ]]
+            ]),
+            CURLOPT_HTTPHEADER => [
+                'Authorization: Bearer ' . $token,
+                'Content-Type: application/json',
+            ],
+        ]);
+
+        return true;
     }
 }
 
