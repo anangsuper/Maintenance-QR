@@ -394,6 +394,7 @@ function create_new_asset(array $data): array {
     $idCab = (int)($data['id_cabang'] ?? 0);
     $idDiv = (int)($data['id_divisi'] ?? 0);
     $idKar = (int)($data['id_karyawan'] ?? 0);
+    $namaKar = trim((string)($data['nama_karyawan'] ?? $data['custom_karyawan'] ?? ''));
     $status = trim((string)($data['status'] ?? 'Aktif')) ?: 'Aktif';
     $ket = trim((string)($data['keterangan'] ?? ''));
     $placement = trim((string)($data['placement_label'] ?? 'Bodi Casing')) ?: 'Bodi Casing';
@@ -404,13 +405,24 @@ function create_new_asset(array $data): array {
             return ['success' => false, 'error' => 'Google Sheets client tidak tersedia'];
         }
 
-        // Handle custom karyawan jika diinput teks bebas
-        $customKar = trim((string)($data['custom_karyawan'] ?? ''));
-        if ($idKar === 0 && $customKar !== '') {
+        // Cari atau buat karyawan jika nama diisi
+        if ($namaKar !== '') {
             $karRows = $client->getSheetData('Karyawan');
-            $newKarId = count($karRows) + 1;
-            $client->appendValues('Karyawan!A:D', [[$newKarId, $customKar, $idCab, $idDiv]]);
-            $idKar = $newKarId;
+            $foundKarId = 0;
+            foreach ($karRows as $kr) {
+                $kName = trim((string)($kr['nama_karyawan'] ?? $kr['nama'] ?? ''));
+                if (strcasecmp($kName, $namaKar) === 0) {
+                    $foundKarId = (int)($kr['id'] ?? 0);
+                    break;
+                }
+            }
+            if ($foundKarId > 0) {
+                $idKar = $foundKarId;
+            } else {
+                $newKarId = count($karRows) + 1;
+                $client->appendValues('Karyawan!A:D', [[$newKarId, $namaKar, $idCab, $idDiv]]);
+                $idKar = $newKarId;
+            }
         }
 
         $assets = $client->getSheetData('Assets');
@@ -462,19 +474,25 @@ function create_new_asset(array $data): array {
             'success' => true,
             'asset_id' => $newAssetId,
             'kode_inventaris' => $kode,
-            'qr_token' => $token
+            'qr_token' => $token,
+            'karyawan_nama' => $namaKar
         ];
     }
 
     // MySQL Mode
     try {
-        // Handle custom karyawan jika diinput teks bebas
-        $customKar = trim((string)($data['custom_karyawan'] ?? ''));
-        if ($idKar === 0 && $customKar !== '') {
+        if ($namaKar !== '') {
             $kName = name_column('karyawan') ?: 'nama_karyawan';
-            $insKar = db()->prepare("INSERT INTO karyawan (`{$kName}`, id_cabang, id_divisi) VALUES (?, ?, ?)");
-            $insKar->execute([$customKar, $idCab, $idDiv]);
-            $idKar = (int)db()->lastInsertId();
+            $findSt = db()->prepare("SELECT id FROM karyawan WHERE LOWER(`{$kName}`) = LOWER(?) LIMIT 1");
+            $findSt->execute([$namaKar]);
+            $existingKarId = (int)$findSt->fetchColumn();
+            if ($existingKarId > 0) {
+                $idKar = $existingKarId;
+            } else {
+                $insKar = db()->prepare("INSERT INTO karyawan (`{$kName}`, id_cabang, id_divisi) VALUES (?, ?, ?)");
+                $insKar->execute([$namaKar, $idCab, $idDiv]);
+                $idKar = (int)db()->lastInsertId();
+            }
         }
 
         if ($kode === '') {
@@ -505,7 +523,8 @@ function create_new_asset(array $data): array {
             'success' => true,
             'asset_id' => $assetId,
             'kode_inventaris' => $kode,
-            'qr_token' => $token
+            'qr_token' => $token,
+            'karyawan_nama' => $namaKar
         ];
     } catch (Throwable $e) {
         return ['success' => false, 'error' => $e->getMessage()];

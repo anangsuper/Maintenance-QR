@@ -7,7 +7,7 @@ $divisis = get_divisi_list();
 $kategoris = get_kategori_list();
 $karyawans = get_karyawan_list();
 
-// Fallback kategori standar jika master data kosong
+// Fallback master data jika kosong
 if (empty($kategoris)) {
     $kategoris = [
         ['id' => 1, 'nama_kategori' => 'Laptop', 'nama' => 'Laptop'],
@@ -20,7 +20,6 @@ if (empty($kategoris)) {
     ];
 }
 
-// Fallback cabang standar jika master data kosong
 if (empty($cabangs)) {
     $cabangs = [
         ['id' => 1, 'nama_cabang' => 'Head Office', 'nama' => 'Head Office'],
@@ -28,7 +27,6 @@ if (empty($cabangs)) {
     ];
 }
 
-// Fallback divisi standar jika master data kosong
 if (empty($divisis)) {
     $divisis = [
         ['id' => 1, 'nama_divisi' => 'IT / MIS', 'nama' => 'IT / MIS'],
@@ -52,8 +50,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $idKat = (int)($_POST['id_kategori'] ?? 0);
     $idCab = (int)($_POST['id_cabang'] ?? 0);
     $idDiv = (int)($_POST['id_divisi'] ?? 0);
-    $idKar = (int)($_POST['id_karyawan'] ?? 0);
-    $customKar = trim((string)($_POST['custom_karyawan'] ?? ''));
+    $namaKar = trim((string)($_POST['nama_karyawan'] ?? ''));
     $placement = trim((string)($_POST['placement_label'] ?? 'Bodi Casing'));
     $status = trim((string)($_POST['status'] ?? 'Aktif'));
     $ket = trim((string)($_POST['keterangan'] ?? ''));
@@ -69,8 +66,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'id_kategori' => $idKat,
             'id_cabang' => $idCab,
             'id_divisi' => $idDiv,
-            'id_karyawan' => $idKar,
-            'custom_karyawan' => $customKar,
+            'nama_karyawan' => $namaKar,
             'placement_label' => $placement,
             'status' => $status,
             'keterangan' => $ket,
@@ -78,32 +74,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         $res = create_new_asset($payload);
         if (!empty($res['success'])) {
+            $cabangNama = '';
+            foreach ($cabangs as $c) {
+                if ((int)($c['id'] ?? 0) === $idCab) {
+                    $cabangNama = $c['nama_cabang'] ?? $c['nama'] ?? '';
+                    break;
+                }
+            }
+
             $successData = [
                 'asset_id' => $res['asset_id'],
                 'kode_inventaris' => $res['kode_inventaris'],
                 'merk' => $merk,
                 'model' => $model,
                 'qr_token' => $res['qr_token'] ?? '',
-                'cabang_nama' => '',
-                'karyawan_nama' => $customKar ?: '',
+                'cabang_nama' => $cabangNama,
+                'karyawan_nama' => $namaKar ?: '-',
             ];
-
-            // Cari nama cabang
-            foreach ($cabangs as $c) {
-                if ((int)($c['id'] ?? 0) === $idCab) {
-                    $successData['cabang_nama'] = $c['nama_cabang'] ?? $c['nama'] ?? '';
-                    break;
-                }
-            }
-            // Cari nama karyawan
-            if (!$customKar && $idKar > 0) {
-                foreach ($karyawans as $k) {
-                    if ((int)($k['id'] ?? 0) === $idKar) {
-                        $successData['karyawan_nama'] = $k['nama_karyawan'] ?? $k['nama'] ?? '';
-                        break;
-                    }
-                }
-            }
         } else {
             $error = $res['error'] ?? 'Terjadi kesalahan saat menyimpan aset baru.';
         }
@@ -113,7 +100,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 // Tampilan Sukses Setelah Input
 if ($successData) {
     $printUrl = module_url('print_qr.php', ['asset_id' => $successData['asset_id']]);
-    $scanUrl = module_url('scan.php', ['t' => $successData['qr_token']]);
 
     $body = '
     <div class="row justify-content-center">
@@ -134,7 +120,7 @@ if ($successData) {
               <dd class="col-sm-8 fw-semibold mb-2">'.e(trim($successData['merk'].' '.$successData['model'])).'</dd>
 
               <dt class="col-sm-4 text-secondary">Pengguna / Pemilik</dt>
-              <dd class="col-sm-8 mb-2">'.e($successData['karyawan_nama'] ?: '-').'</dd>
+              <dd class="col-sm-8 mb-2">'.e($successData['karyawan_nama']).'</dd>
 
               <dt class="col-sm-4 text-secondary">Cabang</dt>
               <dd class="col-sm-8 mb-2">'.e($successData['cabang_nama'] ?: '-').'</dd>
@@ -187,12 +173,17 @@ foreach ($divisis as $div) {
     $optDiv .= '<option value="'.$dId.'">'.e($dNama).'</option>';
 }
 
-// Opsi Dropdown Karyawan
-$optKar = '<option value="0">-- Pilih Karyawan Terdaftar atau Ketik Baru --</option>';
+// Daftar saran Karyawan untuk Datalist
+$datalistKaryawan = '';
+$badgeKaryawan = '';
+$uniqueNames = [];
 foreach ($karyawans as $kar) {
-    $karId = (int)($kar['id'] ?? 0);
-    $karNama = $kar['nama_karyawan'] ?? $kar['nama'] ?? 'Karyawan #' . $karId;
-    $optKar .= '<option value="'.$karId.'">'.e($karNama).'</option>';
+    $kn = trim((string)($kar['nama_karyawan'] ?? $kar['nama'] ?? ''));
+    if ($kn !== '' && !isset($uniqueNames[$kn])) {
+        $uniqueNames[$kn] = true;
+        $datalistKaryawan .= '<option value="'.e($kn).'">';
+        $badgeKaryawan .= '<button type="button" class="btn btn-sm btn-light border me-1 mb-1 py-0 px-2" onclick="setKaryawan(\''.e(addslashes($kn)).'\')">'.e($kn).'</button>';
+    }
 }
 
 $errorHtml = $error ? '<div class="alert alert-danger alert-dismissible fade show" role="alert"><i class="bi bi-exclamation-triangle-fill me-2"></i>'.e($error).'<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>' : '';
@@ -219,7 +210,7 @@ $body = '
       <form method="post" id="formAddAsset">
         <input type="hidden" name="_csrf" value="'.e(csrf_token()).'">
 
-        <!-- Section 1: Informasi Pokok Perangkat -->
+        <!-- Section 1: Identitas Perangkat -->
         <h5 class="fw-bold text-primary border-bottom pb-2 mb-3"><i class="bi bi-info-circle me-2"></i>1. Identitas Perangkat</h5>
         <div class="row g-3 mb-4">
           <div class="col-md-6">
@@ -294,12 +285,21 @@ $body = '
           </div>
 
           <div class="col-md-6">
-            <label class="form-label fw-semibold">Pengguna / Karyawan</label>
-            <select class="form-select mb-2" name="id_karyawan" id="selectKaryawan" onchange="toggleCustomKaryawan(this)">
-              '.$optKar.'
-              <option value="-1">➕ Input Nama Karyawan Baru...</option>
-            </select>
-            <input type="text" class="form-control d-none" id="inputCustomKaryawan" name="custom_karyawan" placeholder="Ketik nama lengkap pengguna / karyawan">
+            <label class="form-label fw-semibold">Pengguna / Pemilik Komputer</label>
+            <div class="input-group">
+              <span class="input-group-text"><i class="bi bi-person"></i></span>
+              <input type="text" class="form-control" name="nama_karyawan" id="inputNamaKaryawan" list="listKaryawan" placeholder="Pilih nama atau ketik nama pemilik baru..." autocomplete="off">
+            </div>
+            <datalist id="listKaryawan">
+              '.$datalistKaryawan.'
+            </datalist>
+            <div class="form-text mt-1">
+              Bisa ketik nama pemilik baru langsung atau klik pilihan cepat:
+              <div class="mt-1">
+                '.$badgeKaryawan.'
+                <button type="button" class="btn btn-sm btn-outline-primary border py-0 px-2 mb-1" onclick="document.getElementById(\'inputNamaKaryawan\').focus()">+ Ketik Nama Lain</button>
+              </div>
+            </div>
           </div>
 
           <div class="col-md-6">
@@ -343,17 +343,10 @@ function autoGenerateKode() {
   document.getElementById("kodeInventaris").value = "INV-IT-" + rand;
 }
 
-function toggleCustomKaryawan(sel) {
-  var inp = document.getElementById("inputCustomKaryawan");
-  if (sel.value === "-1") {
-    inp.classList.remove("d-none");
-    inp.required = true;
-    inp.focus();
-  } else {
-    inp.classList.add("d-none");
-    inp.required = false;
-    inp.value = "";
-  }
+function setKaryawan(name) {
+  var inp = document.getElementById("inputNamaKaryawan");
+  inp.value = name;
+  inp.focus();
 }
 </script>';
 
