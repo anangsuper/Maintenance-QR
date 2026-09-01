@@ -118,7 +118,7 @@ foreach ($allRows as $r) {
       <td>'.e($r['perangkat']).'</td>
       <td>'.e($r['pemilik']).'</td>
       <td>'.e($r['cabang_divisi']).'</td>
-      <td class="col-nowrap text-center">'.e($r['waktu']).'</td>
+      <td class="col-nowrap text-center col-waktu">'.e($r['waktu']).'</td>
       <td class="col-nowrap">'.e($r['teknisi']).'</td>
       <td class="col-nowrap text-center">'.$badge.$noteHtml.'</td>
     </tr>';
@@ -137,7 +137,7 @@ body {
 }
 
 .report-wrapper {
-  max-width: 1200px;
+  max-width: 1100px;
   margin: 0 auto;
 }
 
@@ -155,7 +155,7 @@ body {
 }
 
 .report-title {
-  font-size: 1.4rem;
+  font-size: 1.35rem;
   font-weight: 700;
   color: #0d6efd;
   margin-bottom: 4px;
@@ -182,13 +182,13 @@ body {
   color: #495057;
   font-weight: 600;
   border: 1px solid #dee2e6;
-  padding: 10px 12px;
+  padding: 9px 12px;
   vertical-align: middle;
 }
 
 .table-report td {
   border: 1px solid #dee2e6;
-  padding: 10px 12px;
+  padding: 8px 12px;
   vertical-align: middle;
 }
 
@@ -211,12 +211,12 @@ body {
 }
 
 /* =========================================================
-   PRINT VIEW (KHUSUS SAAT DICETAK / PDF)
-   Ultra-Compact, High-Density, Paper-Saving A4 Landscape
+   PRINT VIEW (KHUSUS SAAT DICETAK / PDF: PORTRAIT A4)
+   Ultra-Compact, High-Density, Paper-Saving
 ========================================================= */
 @page {
-  size: A4 landscape;
-  margin: 6mm 8mm;
+  size: A4 portrait;
+  margin: 7mm 7mm;
 }
 
 @media print {
@@ -252,7 +252,7 @@ body {
   .report-header {
     border-bottom: 1.5px solid #000 !important;
     padding-bottom: 4px !important;
-    margin-bottom: 8px !important;
+    margin-bottom: 6px !important;
   }
 
   .report-title {
@@ -273,49 +273,54 @@ body {
     background: #f8f8f8 !important;
     border: 1px solid #555 !important;
     border-radius: 3px !important;
-    padding: 4px 10px !important;
-    margin-bottom: 8px !important;
-    font-size: 8pt !important;
+    padding: 3px 8px !important;
+    margin-bottom: 6px !important;
+    font-size: 7.5pt !important;
   }
 
   .summary-strip .val {
     font-weight: 700 !important;
   }
 
-  /* Ultra High-Density Table */
+  /* Ultra High-Density Table for Portrait */
   .table-report {
-    margin-bottom: 10px !important;
-    font-size: 8pt !important;
+    margin-bottom: 8px !important;
+    font-size: 7.5pt !important;
+    width: 100% !important;
   }
 
   .table-report th {
     background: #eaeaea !important;
     color: #000 !important;
     border: 1px solid #333 !important;
-    padding: 3px 5px !important;
+    padding: 3px 4px !important;
     font-weight: 700 !important;
   }
 
   .table-report td {
     border: 1px solid #555 !important;
-    padding: 2.5px 5px !important;
+    padding: 2px 4px !important;
     line-height: 1.15 !important;
   }
 
+  .col-waktu {
+    font-size: 7pt !important;
+  }
+
   .badge-compact {
-    padding: 1px 4px !important;
-    font-size: 7.5pt !important;
+    padding: 1px 3px !important;
+    font-size: 7pt !important;
     border-radius: 2px !important;
   }
 
   .signature-section {
-    margin-top: 15px !important;
+    margin-top: 12px !important;
     page-break-inside: avoid !important;
   }
 
   .sig-line {
-    width: 170px !important;
-    margin: 35px auto 2px auto !important;
+    width: 160px !important;
+    margin: 30px auto 2px auto !important;
     border-bottom: 1px solid #000 !important;
   }
 
@@ -332,7 +337,7 @@ $body = '
     <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 border-bottom pb-3 mb-3">
       <div class="d-flex align-items-center gap-2">
         <a class="btn btn-outline-secondary btn-sm" href="'.e(module_url('dashboard.php', ['bulan'=>$month,'tahun'=>$year,'cabang'=>$cabangId])).'"><i class="bi bi-arrow-left"></i> Dashboard</a>
-        <h5 class="mb-0 fw-bold text-dark"><i class="bi bi-printer me-2 text-primary"></i>Cetak Laporan Rekapitulasi Maintenance</h5>
+        <h5 class="mb-0 fw-bold text-dark"><i class="bi bi-printer me-2 text-primary"></i>Cetak Laporan Maintenance (Format Portrait)</h5>
       </div>
       <button class="btn btn-primary fw-semibold px-4" onclick="window.print()"><i class="bi bi-printer-fill me-1"></i> Print / Download PDF</button>
     </div>
@@ -429,14 +434,14 @@ $body .= '</select>
     <table class="table-report">
       <thead>
         <tr>
-          <th class="col-center" style="width: 35px;">No</th>
-          <th class="col-nowrap" style="width: 120px;">Kode Inventaris</th>
+          <th class="col-center" style="width: 25px;">No</th>
+          <th class="col-nowrap" style="width: 95px;">Kode Inventaris</th>
           <th>Perangkat (Merk & Tipe)</th>
           <th>Pengguna / Pemilik</th>
           <th>Cabang & Divisi</th>
-          <th class="col-nowrap col-center" style="width: 130px;">Waktu Maintenance</th>
-          <th class="col-nowrap" style="width: 100px;">Teknisi</th>
-          <th class="col-nowrap col-center" style="width: 90px;">Status</th>
+          <th class="col-nowrap col-center" style="width: 105px;">Waktu Maintenance</th>
+          <th class="col-nowrap" style="width: 75px;">Teknisi</th>
+          <th class="col-nowrap col-center" style="width: 70px;">Status</th>
         </tr>
       </thead>
       <tbody>
