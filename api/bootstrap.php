@@ -324,6 +324,187 @@ function get_cabang_list(): array {
     }
 }
 
+function get_divisi_list(): array {
+    if (is_google_cloud_mode()) {
+        $client = google_sheets_v4_client();
+        return $client ? $client->getSheetData('Divisi') : [];
+    }
+    try {
+        $dName = name_column('divisi') ?: 'id';
+        return db()->query("SELECT id, `{$dName}` AS nama, `{$dName}` AS nama_divisi FROM divisi ORDER BY `{$dName}`")->fetchAll();
+    } catch (Throwable $e) {
+        return [];
+    }
+}
+
+function get_kategori_list(): array {
+    if (is_google_cloud_mode()) {
+        $client = google_sheets_v4_client();
+        return $client ? $client->getSheetData('Kategori_Aset') : [];
+    }
+    try {
+        $kName = name_column('kategori_aset') ?: 'id';
+        return db()->query("SELECT id, `{$kName}` AS nama, `{$kName}` AS nama_kategori FROM kategori_aset ORDER BY `{$kName}`")->fetchAll();
+    } catch (Throwable $e) {
+        return [];
+    }
+}
+
+function get_karyawan_list(int $cabangId = 0): array {
+    if (is_google_cloud_mode()) {
+        $client = google_sheets_v4_client();
+        $rows = $client ? $client->getSheetData('Karyawan') : [];
+        if ($cabangId > 0) {
+            $rows = array_filter($rows, function($k) use ($cabangId) {
+                return (int)($k['id_cabang'] ?? 0) === $cabangId;
+            });
+        }
+        return array_values($rows);
+    }
+    try {
+        $kName = name_column('karyawan') ?: 'id';
+        $sql = "SELECT id, `{$kName}` AS nama, `{$kName}` AS nama_karyawan, id_cabang, id_divisi FROM karyawan";
+        $params = [];
+        if ($cabangId > 0) {
+            $sql .= " WHERE id_cabang = ?";
+            $params[] = $cabangId;
+        }
+        $sql .= " ORDER BY `{$kName}`";
+        $st = db()->prepare($sql);
+        $st->execute($params);
+        return $st->fetchAll();
+    } catch (Throwable $e) {
+        return [];
+    }
+}
+
+function create_new_asset(array $data): array {
+    $kode = trim((string)($data['kode_inventaris'] ?? ''));
+    $merk = trim((string)($data['merk'] ?? ''));
+    $model = trim((string)($data['model'] ?? ''));
+    $sn = trim((string)($data['serial_number'] ?? ''));
+    $idKat = (int)($data['id_kategori'] ?? 0);
+    $idCab = (int)($data['id_cabang'] ?? 0);
+    $idDiv = (int)($data['id_divisi'] ?? 0);
+    $idKar = (int)($data['id_karyawan'] ?? 0);
+    $status = trim((string)($data['status'] ?? 'Aktif')) ?: 'Aktif';
+    $ket = trim((string)($data['keterangan'] ?? ''));
+    $placement = trim((string)($data['placement_label'] ?? 'Bodi Casing')) ?: 'Bodi Casing';
+
+    if (is_google_cloud_mode()) {
+        $client = google_sheets_v4_client();
+        if (!$client) {
+            return ['success' => false, 'error' => 'Google Sheets client tidak tersedia'];
+        }
+
+        // Handle custom karyawan jika diinput teks bebas
+        $customKar = trim((string)($data['custom_karyawan'] ?? ''));
+        if ($idKar === 0 && $customKar !== '') {
+            $karRows = $client->getSheetData('Karyawan');
+            $newKarId = count($karRows) + 1;
+            $client->appendValues('Karyawan!A:D', [[$newKarId, $customKar, $idCab, $idDiv]]);
+            $idKar = $newKarId;
+        }
+
+        $assets = $client->getSheetData('Assets');
+        $maxId = 0;
+        foreach ($assets as $a) {
+            $aid = (int)($a['id'] ?? 0);
+            if ($aid > $maxId) $maxId = $aid;
+        }
+        $newAssetId = max(count($assets) + 1, $maxId + 1);
+
+        if ($kode === '') {
+            $kode = sprintf('INV-IT-%03d', $newAssetId);
+        }
+
+        $assetRow = [
+            $newAssetId,
+            $kode,
+            $merk,
+            $model,
+            $sn,
+            $idKat,
+            $idCab,
+            $idDiv,
+            $idKar,
+            $status,
+            $ket
+        ];
+
+        $appended = $client->appendValues('Assets!A:K', [$assetRow]);
+        if (!$appended) {
+            return ['success' => false, 'error' => 'Gagal menyimpan data ke tab Assets'];
+        }
+
+        // Generate Token QR
+        $qrRows = $client->getSheetData('Asset_QR_Tokens');
+        $nextQrId = count($qrRows) + 1;
+        $token = bin2hex(random_bytes(16));
+
+        $client->appendValues('Asset_QR_Tokens!A:F', [[
+            $nextQrId,
+            $newAssetId,
+            $token,
+            $placement,
+            1,
+            date('Y-m-d H:i:s')
+        ]]);
+
+        return [
+            'success' => true,
+            'asset_id' => $newAssetId,
+            'kode_inventaris' => $kode,
+            'qr_token' => $token
+        ];
+    }
+
+    // MySQL Mode
+    try {
+        // Handle custom karyawan jika diinput teks bebas
+        $customKar = trim((string)($data['custom_karyawan'] ?? ''));
+        if ($idKar === 0 && $customKar !== '') {
+            $kName = name_column('karyawan') ?: 'nama_karyawan';
+            $insKar = db()->prepare("INSERT INTO karyawan (`{$kName}`, id_cabang, id_divisi) VALUES (?, ?, ?)");
+            $insKar->execute([$customKar, $idCab, $idDiv]);
+            $idKar = (int)db()->lastInsertId();
+        }
+
+        if ($kode === '') {
+            $countSt = db()->query("SELECT MAX(id) FROM assets");
+            $nextVal = ((int)$countSt->fetchColumn()) + 1;
+            $kode = sprintf('INV-IT-%03d', $nextVal);
+        }
+
+        $ins = db()->prepare("
+            INSERT INTO assets
+            (kode_inventaris, merk, model, serial_number, id_kategori, id_cabang, id_divisi, id_karyawan, status, keterangan)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ");
+        $ins->execute([
+            $kode, $merk, $model, $sn, $idKat, $idCab, $idDiv, $idKar, $status, $ket
+        ]);
+        $assetId = (int)db()->lastInsertId();
+
+        $token = bin2hex(random_bytes(16));
+        $insQr = db()->prepare("
+            INSERT INTO asset_qr_tokens (asset_id, token, placement_label, is_active)
+            VALUES (?, ?, ?, 1)
+            ON DUPLICATE KEY UPDATE token = VALUES(token), placement_label = VALUES(placement_label), is_active = 1
+        ");
+        $insQr->execute([$assetId, $token, $placement]);
+
+        return [
+            'success' => true,
+            'asset_id' => $assetId,
+            'kode_inventaris' => $kode,
+            'qr_token' => $token
+        ];
+    } catch (Throwable $e) {
+        return ['success' => false, 'error' => $e->getMessage()];
+    }
+}
+
 function get_dashboard_data(int $month, int $year, int $cabangId): array {
     if (is_google_cloud_mode()) {
         $client = google_sheets_v4_client();
@@ -838,10 +1019,11 @@ function render_page(string $title, string $content, string $extraHead = '', str
     <nav class="navbar navbar-expand-lg bg-primary navbar-dark mb-4">
       <div class="container">
         <a class="navbar-brand fw-semibold" href="'.e(module_url('dashboard.php')).'">QR Maintenance</a>
-        <div class="d-flex flex-wrap gap-2">
+        <div class="d-flex flex-wrap gap-2 align-items-center">
           <a class="btn btn-sm btn-light" href="'.e(module_url('dashboard.php')).'">Dashboard</a>
           <a class="btn btn-sm btn-outline-light" href="'.e(module_url('history.php')).'">Riwayat</a>
           <a class="btn btn-sm btn-outline-light" href="'.e(module_url('qr_admin.php')).'">QR Aset</a>
+          <a class="btn btn-sm btn-warning text-dark fw-semibold" href="'.e(module_url('asset_add.php')).'">+ Tambah Komputer</a>
         </div>
       </div>
     </nav>';
@@ -853,6 +1035,7 @@ function render_page(string $title, string $content, string $extraHead = '', str
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>'.e($title).'</title>
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
 <style>
 body{background:#f6f8fb}
 .card{border:0;box-shadow:0 8px 24px rgba(0,0,0,.05)}

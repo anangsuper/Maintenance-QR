@@ -76,7 +76,10 @@ $body = $flashHtml.'
     <h2 class="mb-1">QR Aset</h2>
     <div class="text-secondary">Generate dan cetak QR untuk ditempel pada meja, CPU, atau laptop.</div>
   </div>
-  <a class="btn btn-outline-primary" target="_blank" href="'.e(module_url('print_qr.php', ['cabang'=>$cabangId])).'">Cetak Semua QR</a>
+  <div class="d-flex gap-2 flex-wrap">
+    <a class="btn btn-warning text-dark fw-semibold" href="'.e(module_url('asset_add.php')).'"><i class="bi bi-plus-lg"></i> Tambah Komputer</a>
+    <a class="btn btn-outline-primary" target="_blank" href="'.e(module_url('print_qr.php', ['cabang'=>$cabangId])).'">Cetak Semua QR</a>
+  </div>
 </div>
 
 <div class="card p-3 mb-4">

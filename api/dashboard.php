@@ -61,6 +61,7 @@ $body = '
     <div class="text-secondary">Scan QR setelah maintenance selesai.</div>
   </div>
   <div class="d-flex gap-2 flex-wrap">
+    <a class="btn btn-warning text-dark fw-semibold" href="'.e(module_url('asset_add.php')).'"><i class="bi bi-plus-lg"></i> Tambah Komputer</a>
     <a class="btn btn-primary" target="_blank" href="'.e(module_url('print_report.php', ['bulan'=>$month,'tahun'=>$year,'cabang'=>$cabangId])).'">🖨️ Cetak Laporan Bulanan</a>
     <a class="btn btn-outline-success" href="'.e(module_url('export_csv.php', ['bulan'=>$month,'tahun'=>$year,'cabang'=>$cabangId])).'">Export CSV</a>
   </div>
