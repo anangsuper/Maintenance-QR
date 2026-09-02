@@ -180,6 +180,7 @@ $body = '
     </div>
     <div class="d-flex gap-2 flex-wrap">
       <a class="btn btn-action-add fw-bold" href="'.e(module_url('asset_add.php')).'"><i class="bi bi-plus-lg me-1"></i> Tambah Komputer</a>
+      <a class="btn btn-warning fw-bold text-dark px-3" href="'.e(module_url('import_kpo.php')).'"><i class="bi bi-cloud-arrow-up-fill me-1"></i> Import 44 Data KPO</a>
       <a class="btn btn-primary fw-semibold px-3" target="_blank" href="'.e(module_url('print_report.php', ['bulan'=>$month,'tahun'=>$year,'cabang'=>$cabangId])).'"><i class="bi bi-printer-fill me-1"></i> Cetak Laporan</a>
       <a class="btn btn-outline-success fw-semibold" href="'.e(module_url('export_csv.php', ['bulan'=>$month,'tahun'=>$year,'cabang'=>$cabangId])).'"><i class="bi bi-file-earmark-spreadsheet me-1"></i> Export CSV</a>
     </div>
