@@ -1576,15 +1576,18 @@ function render_page(string $title, string $content, string $extraHead = '', str
 
     if ($showNav) {
         $nav = '
-        <nav class="navbar navbar-expand-lg bg-primary navbar-dark mb-4 shadow-sm">
+        <nav class="navbar navbar-expand-lg navbar-dark main-navbar mb-4 sticky-top">
           <div class="container">
-            <a class="navbar-brand fw-bold" href="'.e(module_url('dashboard.php')).'"><i class="bi bi-qr-code-scan me-2"></i>QR Maintenance</a>
+            <a class="navbar-brand d-flex align-items-center gap-2 fw-bold" href="'.e(module_url('dashboard.php')).'">
+              <span class="brand-icon"><i class="bi bi-qr-code-scan"></i></span>
+              <span class="brand-text">QR Maintenance</span>
+            </a>
             <div class="d-flex flex-wrap gap-2 align-items-center">
-              <a class="btn btn-sm '.($currentPage==='dashboard.php'?'btn-light fw-semibold text-primary':'btn-outline-light').'" href="'.e(module_url('dashboard.php')).'"><i class="bi bi-speedometer2 me-1"></i> Dashboard</a>
-              <a class="btn btn-sm '.($currentPage==='history.php'?'btn-light fw-semibold text-primary':'btn-outline-light').'" href="'.e(module_url('history.php')).'"><i class="bi bi-clock-history me-1"></i> Riwayat</a>
-              <a class="btn btn-sm '.($currentPage==='qr_admin.php'?'btn-light fw-semibold text-primary':'btn-outline-light').'" href="'.e(module_url('qr_admin.php')).'"><i class="bi bi-qr-code me-1"></i> QR Aset</a>
-              <a class="btn btn-sm '.($currentPage==='cabang_admin.php'?'btn-light fw-semibold text-primary':'btn-outline-light').'" href="'.e(module_url('cabang_admin.php')).'"><i class="bi bi-buildings me-1"></i> Cabang</a>
-              <a class="btn btn-sm '.($currentPage==='asset_add.php'?'btn-warning text-dark fw-bold border-2':'btn-warning text-dark fw-semibold').'" href="'.e(module_url('asset_add.php')).'"><i class="bi bi-plus-lg me-1"></i> + Tambah Komputer</a>
+              <a class="nav-pill-btn '.($currentPage==='dashboard.php'?'active':'').'" href="'.e(module_url('dashboard.php')).'"><i class="bi bi-speedometer2"></i> Dashboard</a>
+              <a class="nav-pill-btn '.($currentPage==='history.php'?'active':'').'" href="'.e(module_url('history.php')).'"><i class="bi bi-clock-history"></i> Riwayat</a>
+              <a class="nav-pill-btn '.($currentPage==='qr_admin.php'?'active':'').'" href="'.e(module_url('qr_admin.php')).'"><i class="bi bi-qr-code"></i> QR Aset</a>
+              <a class="nav-pill-btn '.($currentPage==='cabang_admin.php'?'active':'').'" href="'.e(module_url('cabang_admin.php')).'"><i class="bi bi-buildings"></i> Cabang</a>
+              <a class="btn btn-sm btn-action-add fw-bold" href="'.e(module_url('asset_add.php')).'"><i class="bi bi-plus-circle-fill me-1"></i> + Tambah Komputer</a>
             </div>
           </div>
         </nav>';
@@ -1600,17 +1603,212 @@ function render_page(string $title, string $content, string $extraHead = '', str
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>'.e($title).'</title>
+<title>'.e($title).' · QR Maintenance</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
 <style>
-body{background:#f6f8fb}
-.card{border:0;box-shadow:0 8px 24px rgba(0,0,0,.05)}
-.stat{font-size:1.75rem;font-weight:700}
-.small-muted{font-size:.875rem;color:#6c757d}
-.qr-label{background:#fff;border:1px solid #dee2e6;border-radius:14px;padding:14px;break-inside:avoid}
-#top-progress-bar{position:fixed;top:0;left:0;height:3px;background:#22c55e;z-index:9999;transition:width .2s ease;width:0}
-@media print{.no-print,nav,header,#top-progress-bar{display:none!important}.qr-label{box-shadow:none}.container{max-width:none!important;width:100%!important;padding:0!important;margin:0!important}}
+:root {
+  --primary-gradient: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%);
+  --success-gradient: linear-gradient(135deg, #059669 0%, #10b981 100%);
+  --warning-gradient: linear-gradient(135deg, #d97706 0%, #f59e0b 100%);
+  --danger-gradient: linear-gradient(135deg, #dc2626 0%, #ef4444 100%);
+}
+
+body {
+  background: #f8fafc;
+  font-family: "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  color: #1e293b;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Navbar Modern */
+.main-navbar {
+  background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 50%, #2563eb 100%);
+  backdrop-filter: blur(12px);
+  box-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.15);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 0.75rem 0;
+}
+
+.brand-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  background: rgba(255, 255, 255, 0.18);
+  border-radius: 9px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+}
+
+.brand-text {
+  font-size: 1.15rem;
+  letter-spacing: -0.3px;
+}
+
+.nav-pill-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.85);
+  text-decoration: none;
+  border-radius: 20px;
+  transition: all 0.2s ease;
+}
+
+.nav-pill-btn:hover {
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.15);
+  transform: translateY(-1px);
+}
+
+.nav-pill-btn.active {
+  color: #1e3a8a;
+  background: #ffffff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+}
+
+.btn-action-add {
+  background: #fbbf24;
+  color: #78350f;
+  border: none;
+  border-radius: 20px;
+  padding: 6px 16px;
+  box-shadow: 0 3px 10px rgba(251, 191, 36, 0.35);
+  transition: all 0.2s ease;
+}
+
+.btn-action-add:hover {
+  background: #f59e0b;
+  color: #451a03;
+  transform: translateY(-1px);
+  box-shadow: 0 5px 14px rgba(251, 191, 36, 0.45);
+}
+
+/* Card & Elevated Components */
+.card {
+  border: 1px solid rgba(226, 232, 240, 0.8);
+  border-radius: 16px;
+  background: #ffffff;
+  box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.04), 0 2px 6px -1px rgba(0, 0, 0, 0.02);
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.card-hover:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 14px 28px -4px rgba(15, 23, 42, 0.08), 0 4px 10px -2px rgba(15, 23, 42, 0.03);
+}
+
+.stat-card {
+  position: relative;
+  overflow: hidden;
+}
+
+.stat-icon-wrapper {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.25rem;
+}
+
+.stat {
+  font-size: 1.85rem;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+  line-height: 1.1;
+}
+
+.small-muted {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* Modern Form Controls */
+.form-control, .form-select {
+  border: 1.5px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 0.55rem 0.85rem;
+  font-size: 0.9rem;
+  transition: all 0.2s ease;
+}
+
+.form-control:focus, .form-select:focus {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.12);
+}
+
+/* Modern Badges & Chips */
+.badge-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.chip-success { background: #dcfce7; color: #15803d; }
+.chip-warning { background: #fef3c7; color: #b45309; }
+.chip-danger { background: #fee2e2; color: #b91c1c; }
+.chip-primary { background: #dbeafe; color: #1d4ed8; }
+.chip-secondary { background: #f1f5f9; color: #475569; }
+
+/* Table Enhancements */
+.table {
+  font-size: 0.9rem;
+}
+
+.table thead th {
+  background: #f8fafc;
+  color: #475569;
+  font-weight: 700;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  border-bottom: 2px solid #e2e8f0;
+  padding: 12px 14px;
+}
+
+.table tbody td {
+  padding: 12px 14px;
+  border-bottom: 1px solid #f1f5f9;
+  vertical-align: middle;
+}
+
+.table-hover tbody tr:hover {
+  background-color: #f8fafc;
+}
+
+/* Loading Progress Bar */
+#top-progress-bar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 3px;
+  background: #22c55e;
+  z-index: 9999;
+  transition: width .2s ease;
+  width: 0;
+}
+
+@media print {
+  .no-print, nav, header, #top-progress-bar { display: none !important; }
+  .qr-label { box-shadow: none; }
+  .container { max-width: none !important; width: 100% !important; padding: 0 !important; margin: 0 !important; }
+}
 </style>
 '.$extraHead.'
 </head>
