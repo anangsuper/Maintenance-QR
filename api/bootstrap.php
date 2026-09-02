@@ -1459,6 +1459,104 @@ function get_asset_yearly_maintenance_grid(int $assetId, int $year): array {
     return $grid;
 }
 
+function get_asset_yearly_card_matrix(int $assetId, int $year): array {
+    $yrSuffix = sprintf('%02d', $year % 100);
+    $matrix = [];
+    for ($m = 1; $m <= 12; $m++) {
+        $matrix[$m] = [
+            'month' => $m,
+            'month_tag' => sprintf('/%02d/%s', $m, $yrSuffix),
+            'date_str' => sprintf('/%02d/%s', $m, $yrSuffix),
+            'is_done' => false,
+            'log_id' => 0,
+            'checklists' => [1=>0, 2=>0, 3=>0, 4=>0, 5=>0, 6=>0, 7=>0, 8=>0, 9=>0],
+            'paraf' => '',
+            'status' => ''
+        ];
+    }
+
+    if (is_google_cloud_mode()) {
+        $client = google_sheets_v4_client();
+        if ($client) {
+            $scans = $client->getSheetData('Maintenance_Scan');
+            $chkRows = $client->getSheetData('Maintenance_Checklists');
+
+            $chkMap = [];
+            foreach ($chkRows as $c) {
+                $mid = (int)($c['maintenance_id'] ?? 0);
+                $num = (int)($c['checklist_number'] ?? 0);
+                $checked = !empty($c['checked']) ? 1 : 0;
+                if ($mid > 0 && $num >= 1 && $num <= 9) {
+                    $chkMap[$mid][$num] = $checked;
+                }
+            }
+
+            foreach ($scans as $s) {
+                if ((int)($s['asset_id'] ?? 0) === $assetId) {
+                    $sYear = (int)($s['maintenance_year'] ?? (int)date('Y', strtotime($s['maintenance_date'] ?? '')));
+                    $sMonth = (int)($s['maintenance_month'] ?? (int)date('n', strtotime($s['maintenance_date'] ?? '')));
+                    if ($sYear === $year && isset($matrix[$sMonth])) {
+                        $logId = (int)($s['id'] ?? 0);
+                        $d = substr((string)($s['maintenance_date'] ?? ''), 0, 10);
+                        $dDay = $d ? date('d', strtotime($d)) : '';
+                        $dateFormatted = $dDay ? "{$dDay}/" . sprintf('%02d/%s', $sMonth, $yrSuffix) : sprintf('/%02d/%s', $sMonth, $yrSuffix);
+
+                        $matrix[$sMonth]['is_done'] = true;
+                        $matrix[$sMonth]['log_id'] = $logId;
+                        $matrix[$sMonth]['date_str'] = $dateFormatted;
+                        $matrix[$sMonth]['paraf'] = $s['technician_name'] ?? 'Teknisi';
+                        $matrix[$sMonth]['status'] = $s['status'] ?? 'Selesai';
+                        if (isset($chkMap[$logId])) {
+                            $matrix[$sMonth]['checklists'] = $chkMap[$logId];
+                        } else {
+                            $matrix[$sMonth]['checklists'] = [1=>1, 2=>1, 3=>1, 4=>1, 5=>1, 6=>1, 7=>1, 8=>1, 9=>1];
+                        }
+                    }
+                }
+            }
+        }
+        return $matrix;
+    }
+
+    // MySQL Mode
+    $st = db()->prepare("
+        SELECT ms.* 
+        FROM maintenance_scan ms
+        WHERE ms.asset_id = ? AND ms.maintenance_year = ?
+        ORDER BY ms.maintenance_date ASC
+    ");
+    $st->execute([$assetId, $year]);
+    $scans = $st->fetchAll();
+
+    foreach ($scans as $s) {
+        $sMonth = (int)($s['maintenance_month'] ?? (int)date('n', strtotime($s['maintenance_date'] ?? '')));
+        if (isset($matrix[$sMonth])) {
+            $logId = (int)$s['id'];
+            $d = substr((string)($s['maintenance_date'] ?? ''), 0, 10);
+            $dDay = $d ? date('d', strtotime($d)) : '';
+            $dateFormatted = $dDay ? "{$dDay}/" . sprintf('%02d/%s', $sMonth, $yrSuffix) : sprintf('/%02d/%s', $sMonth, $yrSuffix);
+
+            $matrix[$sMonth]['is_done'] = true;
+            $matrix[$sMonth]['log_id'] = $logId;
+            $matrix[$sMonth]['date_str'] = $dateFormatted;
+            $matrix[$sMonth]['paraf'] = $s['technician_name'] ?: 'Teknisi';
+            $matrix[$sMonth]['status'] = $s['status'] ?: 'Selesai';
+
+            $chkSt = db()->prepare("SELECT checklist_number, checked FROM maintenance_checklists WHERE maintenance_id = ?");
+            $chkSt->execute([$logId]);
+            $chks = $chkSt->fetchAll();
+            if ($chks) {
+                foreach ($chks as $c) {
+                    $matrix[$sMonth]['checklists'][(int)$c['checklist_number']] = (int)$c['checked'];
+                }
+            } else {
+                $matrix[$sMonth]['checklists'] = [1=>1, 2=>1, 3=>1, 4=>1, 5=>1, 6=>1, 7=>1, 8=>1, 9=>1];
+            }
+        }
+    }
+    return $matrix;
+}
+
 function save_maintenance_record(array $data): array {
     $assetId = (int)($data['asset_id'] ?? 0);
     if ($assetId <= 0) return ['success' => false, 'error' => 'Asset ID tidak valid'];

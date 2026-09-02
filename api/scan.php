@@ -424,26 +424,38 @@ if ($currentMonthLog) {
     </div>';
 }
 
-// Komponen Riwayat Bulanan Tahun 2026 (12 Bulan Grid)
-$gridHtml = '';
-foreach ($yearlyGrid as $mNum => $mInfo) {
-    $mIsDone = !empty($mInfo['is_done']);
-    $cellClass = $mIsDone ? 'bg-success bg-opacity-10 text-success border-success' : 'bg-light text-muted border';
-    $cellIcon = $mIsDone ? '<i class="bi bi-check-circle-fill text-success"></i>' : '<span class="text-muted fw-bold">-</span>';
-    $linkWrapOpen = ($mIsDone && $mInfo['log_id'] > 0) ? '<a href="'.e(module_url('maintenance_detail.php', ['id' => $mInfo['log_id']])).'" class="text-decoration-none" title="Klik untuk lihat detail">' : '<div>';
-    $linkWrapClose = ($mIsDone && $mInfo['log_id'] > 0) ? '</a>' : '</div>';
+// =========================================================================
+// KARTU KONTROL CHECKLIST TAHUNAN (12 BULAN MATRIX 1..9 & PARAF)
+// =========================================================================
+$cardMatrix = get_asset_yearly_card_matrix($assetId, $year);
+$cardMatrixRows = '';
+for ($m = 1; $m <= 12; $m++) {
+    $row = $cardMatrix[$m];
+    $dateLabel = $row['date_str'];
+    $isDone = $row['is_done'];
+    $paraf = $isDone ? e($row['paraf']) : '&nbsp;';
 
-    $gridHtml .= '
-    <div class="col-4 col-md-3 col-lg-2">
-      '.$linkWrapOpen.'
-        <div class="p-2 rounded text-center border '.$cellClass.'">
-          <div class="small fw-bold text-truncate">'.substr($mInfo['month_name'], 0, 3).'</div>
-          <div class="fs-5 my-1">'.$cellIcon.'</div>
-          <div class="small text-truncate" style="font-size: 0.72rem;">'.($mIsDone ? e($mInfo['date']) : 'Belum').'</div>
-        </div>
-      '.$linkWrapClose.'
-    </div>';
+    $cols1to9 = '';
+    for ($num = 1; $num <= 9; $num++) {
+        $chkVal = $row['checklists'][$num] ?? 0;
+        if ($isDone) {
+            $cols1to9 .= '<td style="border: 1px solid #000; width: 34px;" class="fw-bold text-success text-center">'.($chkVal ? '✓' : '-').'</td>';
+        } else {
+            $cols1to9 .= '<td style="border: 1px solid #000; width: 34px;">&nbsp;</td>';
+        }
+    }
+
+    $cardMatrixRows .= '
+    <tr style="height: 28px;">
+      <td style="border: 1px solid #000; width: 95px;" class="fw-bold text-dark text-center font-monospace">'.e($dateLabel).'</td>
+      '.$cols1to9.'
+      <td style="border: 1px solid #000; min-width: 90px;" class="text-center font-monospace small">'.$paraf.'</td>
+    </tr>';
 }
+
+$userDisplay = !empty($asset['karyawan_nama']) && $asset['karyawan_nama'] !== '-' ? $asset['karyawan_nama'] : '';
+$ipDisplay = !empty($asset['ip_address']) ? $asset['ip_address'] : (!empty($asset['ip']) ? $asset['ip'] : '');
+$printerDisplay = !empty($asset['printer']) ? $asset['printer'] : '';
 
 // Komponen Tabel Histori Sebelumnya
 $historyRowsHtml = '';
@@ -482,7 +494,7 @@ $lastMaintStr = !empty($historyList[0])
 
 $body = '
 <div class="row justify-content-center">
-  <div class="col-md-10 col-lg-8">
+  <div class="col-md-10 col-lg-9">
 
     <!-- Card Detail Perangkat Utama -->
     <div class="card p-3 p-md-4 border-0 shadow-sm mb-4">
@@ -537,13 +549,82 @@ $body = '
     <!-- Card Status Maintenance Bulan Berjalan -->
     '.$statusCardHtml.'
 
-    <!-- Card Riwayat Maintenance Tahun Ini (Grid 12 Bulan) -->
+    <!-- KARTU KONTROL CHECKLIST 12 BULAN (SESUAI FORMAT GAMBAR) -->
     <div class="card p-3 p-md-4 border-0 shadow-sm mb-4">
-      <h6 class="fw-bold text-dark mb-3"><i class="bi bi-calendar3 text-primary me-2"></i>Riwayat Maintenance Tahun '.$year.':</h6>
-      <div class="row g-2 mb-2">
-        '.$gridHtml.'
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <h5 class="fw-bold text-dark mb-0"><i class="bi bi-card-checklist text-primary me-2"></i>KARTU KONTROL CHECKLIST MAINTENANCE '.$year.'</h5>
+        <button class="btn btn-sm btn-outline-primary" onclick="window.print()"><i class="bi bi-printer me-1"></i> Cetak Kartu</button>
       </div>
-      <div class="small text-muted mt-2">Keterangan: <span class="text-success fw-bold">✓ Sudah</span> · <span class="text-muted fw-bold">- Belum</span> (Klik bulan untuk melihat rincian).</div>
+
+      <div class="p-3 bg-white border rounded-3">
+        <!-- Identitas Kartu -->
+        <div class="table-responsive mb-2">
+          <table class="table table-borderless table-sm mb-0 font-monospace text-dark" style="font-size: 0.95rem;">
+            <tr>
+              <td style="width: 90px;" class="fw-bold py-1">NAMA</td>
+              <td style="width: 15px;" class="fw-bold py-1">:</td>
+              <td class="fw-bold text-primary border-bottom py-1">'.e($userDisplay).'</td>
+            </tr>
+            <tr>
+              <td class="fw-bold py-1">IP</td>
+              <td class="fw-bold py-1">:</td>
+              <td class="fw-semibold text-dark border-bottom py-1">'.e($ipDisplay).'</td>
+            </tr>
+            <tr>
+              <td class="fw-bold py-1">PRINTER</td>
+              <td class="fw-bold py-1">:</td>
+              <td class="fw-semibold text-dark border-bottom py-1">'.e($printerDisplay).'</td>
+            </tr>
+          </table>
+        </div>
+
+        <!-- Tabel Matrix 12 Bulan -->
+        <div class="table-responsive">
+          <table class="table table-bordered table-sm align-middle mb-2 text-center" style="font-size: 0.84rem; border-color: #000;">
+            <thead style="background-color: #93c5fd; color: #000;">
+              <tr class="fw-bold">
+                <th style="width: 95px; background-color: #93c5fd; border: 1.2px solid #000;">TANGGAL</th>
+                <th style="width: 34px; background-color: #93c5fd; border: 1.2px solid #000;">1</th>
+                <th style="width: 34px; background-color: #93c5fd; border: 1.2px solid #000;">2</th>
+                <th style="width: 34px; background-color: #93c5fd; border: 1.2px solid #000;">3</th>
+                <th style="width: 34px; background-color: #93c5fd; border: 1.2px solid #000;">4</th>
+                <th style="width: 34px; background-color: #93c5fd; border: 1.2px solid #000;">5</th>
+                <th style="width: 34px; background-color: #93c5fd; border: 1.2px solid #000;">6</th>
+                <th style="width: 34px; background-color: #93c5fd; border: 1.2px solid #000;">7</th>
+                <th style="width: 34px; background-color: #93c5fd; border: 1.2px solid #000;">8</th>
+                <th style="width: 34px; background-color: #93c5fd; border: 1.2px solid #000;">9</th>
+                <th style="min-width: 90px; background-color: #93c5fd; border: 1.2px solid #000;">PARAF</th>
+              </tr>
+            </thead>
+            <tbody>
+              '.$cardMatrixRows.'
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Legend Keterangan 9 Item -->
+        <div class="mt-2 pt-2 border-top text-dark" style="font-size: 0.8rem; line-height: 1.5;">
+          <div class="fw-bold mb-1">Ket</div>
+          <div class="row g-1">
+            <div class="col-md-4 col-12">
+              <div>1. Scan Virus</div>
+              <div>2. Update Anti Virus</div>
+              <div>3. Deleting Temporary File</div>
+            </div>
+            <div class="col-md-4 col-12">
+              <div>4. Cek Keyboard</div>
+              <div>5. Cek Mouse</div>
+              <div>6. Cek CPU & Monitor</div>
+            </div>
+            <div class="col-md-4 col-12">
+              <div>7. Cek Tinta</div>
+              <div>8. Cek Cartidge</div>
+              <div>9. Cek Nozel</div>
+            </div>
+          </div>
+        </div>
+
+      </div>
     </div>
 
     <!-- Card Tabel Semua Histori Perangkat Ini -->
