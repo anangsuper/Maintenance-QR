@@ -137,10 +137,15 @@ function login_url(): string {
 }
 
 function require_login(): void {
-    if (is_google_cloud_mode()) return;
-    if (current_user_id() > 0) return;
+    // Sudah login via session
+    if (!empty($_SESSION['user_id']) && (int)$_SESSION['user_id'] > 0) return;
+
+    // MySQL mode: cek session lama (kompatibilitas)
+    if (!is_google_cloud_mode() && current_user_id() > 0) return;
+
+    // Belum login: redirect ke halaman login
     $_SESSION['after_login'] = request_uri_full();
-    header('Location: ' . login_url());
+    header('Location: ' . module_url('login.php'));
     exit;
 }
 
@@ -149,9 +154,96 @@ function require_admin(): void {
     $role = current_user_role();
     if ($role !== '' && !in_array($role, ['admin', 'administrator'], true)) {
         http_response_code(403);
-        render_page('Akses Ditolak', '<div class="alert alert-danger">Menu ini hanya untuk admin.</div>');
+        render_page('Akses Ditolak', '<div class="alert alert-danger border-0 shadow-sm"><i class="bi bi-shield-exclamation me-2"></i>Menu ini hanya untuk admin.</div>');
         exit;
     }
+}
+
+function authenticate_user(string $username, string $password): array {
+    $username = trim($username);
+    $password = trim($password);
+
+    if ($username === '' || $password === '') {
+        return ['success' => false, 'error' => 'Username dan password wajib diisi.'];
+    }
+
+    // 1. Cek kredensial built-in dari environment / config (untuk deployment cepat)
+    $envUser = cfg('admin_username', envv('ADMIN_USERNAME', ''));
+    $envPass = cfg('admin_password', envv('ADMIN_PASSWORD', ''));
+
+    if ($envUser !== '' && $envPass !== '') {
+        if ($username === $envUser && $password === $envPass) {
+            $_SESSION['user_id'] = 1;
+            $_SESSION['nama'] = $envUser;
+            $_SESSION['username'] = $envUser;
+            $_SESSION['role'] = 'admin';
+            return ['success' => true, 'name' => $envUser];
+        }
+    }
+
+    // 2. Default admin: admin / admin123 (jika tidak ada env dan tidak ada MySQL)
+    if ($envUser === '' && $envPass === '') {
+        $defaultUsers = [
+            ['username' => 'admin', 'password' => 'admin123', 'name' => 'Administrator', 'role' => 'admin'],
+            ['username' => 'teknisi', 'password' => 'teknisi123', 'name' => 'Teknisi IT', 'role' => 'teknisi'],
+        ];
+
+        foreach ($defaultUsers as $du) {
+            if ($username === $du['username'] && $password === $du['password']) {
+                $_SESSION['user_id'] = ($du['role'] === 'admin') ? 1 : 2;
+                $_SESSION['nama'] = $du['name'];
+                $_SESSION['username'] = $du['username'];
+                $_SESSION['role'] = $du['role'];
+                return ['success' => true, 'name' => $du['name']];
+            }
+        }
+    }
+
+    // 3. Cek dari tabel users MySQL (jika mode MySQL)
+    if (!is_google_cloud_mode()) {
+        try {
+            $nameCol = name_column('users') ?: 'nama';
+            $st = db()->prepare("SELECT id, `{$nameCol}` AS nama, username, password, role FROM users WHERE username = ? LIMIT 1");
+            $st->execute([$username]);
+            $user = $st->fetch();
+
+            if ($user) {
+                $passMatch = false;
+                $storedPass = (string)($user['password'] ?? '');
+
+                // Support password_hash atau plain (legacy)
+                if (str_starts_with($storedPass, '$2y$') || str_starts_with($storedPass, '$2a$')) {
+                    $passMatch = password_verify($password, $storedPass);
+                } else {
+                    $passMatch = ($password === $storedPass);
+                }
+
+                if ($passMatch) {
+                    $_SESSION['user_id'] = (int)$user['id'];
+                    $_SESSION['nama'] = (string)($user['nama'] ?? $user['username']);
+                    $_SESSION['username'] = (string)$user['username'];
+                    $_SESSION['role'] = strtolower((string)($user['role'] ?? 'teknisi'));
+                    return ['success' => true, 'name' => (string)($user['nama'] ?? $user['username'])];
+                }
+            }
+        } catch (Throwable $e) {
+            // Tabel users tidak ada, lanjut ke default
+        }
+    }
+
+    return ['success' => false, 'error' => 'Username atau password salah.'];
+}
+
+function logout_user(): void {
+    $_SESSION = [];
+    if (ini_get('session.use_cookies')) {
+        $params = session_get_cookie_params();
+        setcookie(session_name(), '', time() - 42000,
+            $params['path'], $params['domain'],
+            $params['secure'], $params['httponly']
+        );
+    }
+    session_destroy();
 }
 
 function csrf_token(): string {
@@ -1588,6 +1680,8 @@ function render_page(string $title, string $content, string $extraHead = '', str
               <a class="nav-pill-btn '.($currentPage==='qr_admin.php'?'active':'').'" href="'.e(module_url('qr_admin.php')).'"><i class="bi bi-qr-code"></i> QR Aset</a>
               <a class="nav-pill-btn '.($currentPage==='cabang_admin.php'?'active':'').'" href="'.e(module_url('cabang_admin.php')).'"><i class="bi bi-buildings"></i> Cabang</a>
               <a class="btn btn-sm btn-action-add fw-bold" href="'.e(module_url('asset_add.php')).'"><i class="bi bi-plus-circle-fill me-1"></i> + Tambah Komputer</a>
+              <span class="d-none d-lg-inline-flex align-items-center gap-1 ms-2 text-white-50 small"><i class="bi bi-person-circle"></i> '.e(current_user_name()).'</span>
+              <a class="nav-pill-btn text-danger-emphasis" href="'.e(module_url('logout.php')).'" title="Keluar / Logout"><i class="bi bi-box-arrow-right"></i></a>
             </div>
           </div>
         </nav>';
