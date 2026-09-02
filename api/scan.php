@@ -109,7 +109,7 @@ if ($successData) {
             </span>
           </div>
           <h3 class="fw-bold text-success mb-1">Maintenance Berhasil Disimpan!</h3>
-          <p class="text-secondary small mb-4">Data pemeliharaan perangkat telah tercatat ke dalam histori sistem & audit trail.</p>
+          <p class="text-secondary small mb-4">Hasil checklist pemeliharaan telah dicatat ke dalam Kartu Kontrol & Database.</p>
 
           <div class="bg-light p-3 rounded-3 text-start mb-4 border">
             <div class="row g-2 small">
@@ -127,11 +127,11 @@ if ($successData) {
           </div>
 
           <div class="d-grid gap-2">
-            <a class="btn btn-primary fw-bold py-3 shadow-sm" href="'.e(module_url('maintenance_detail.php', ['id' => $successData['log_id']])).'">
-              <i class="bi bi-file-earmark-text me-1"></i> Lihat Detail Hasil Maintenance
+            <a class="btn btn-primary fw-bold py-3 shadow-sm" href="'.e(module_url('scan.php', ['t' => $token])).'">
+              <i class="bi bi-card-checklist me-1"></i> Lihat Kartu Kontrol Perangkat
             </a>
-            <a class="btn btn-outline-secondary py-2" href="'.e(module_url('scan.php', ['t' => $token])).'">
-              <i class="bi bi-arrow-left me-1"></i> Kembali ke Detail Perangkat
+            <a class="btn btn-outline-secondary py-2" href="'.e(module_url('maintenance_detail.php', ['id' => $successData['log_id']])).'">
+              <i class="bi bi-file-earmark-text me-1"></i> Rincian Audit Lengkap
             </a>
           </div>
         </div>
@@ -170,13 +170,13 @@ if ($action === 'start' || $action === 'form' || $action === 'ulang') {
         $defNote = $defaultNotes[$num] ?? 'Normal';
         $checklistRowsHtml .= '
         <tr>
-          <td class="text-center fw-bold text-muted" style="width: 40px;">'.$num.'</td>
-          <td class="fw-bold text-dark">'.e($name).'</td>
-          <td class="text-center" style="width: 90px;">
+          <td class="text-center fw-bold text-muted" style="width: 40px; border: 1px solid #cbd5e1;">'.$num.'</td>
+          <td class="fw-semibold text-dark" style="border: 1px solid #cbd5e1;">'.e($name).'</td>
+          <td class="text-center" style="width: 80px; border: 1px solid #cbd5e1;">
             <input class="form-check-input chk-box fs-5" type="checkbox" id="chk_'.$num.'" name="chk_'.$num.'" value="1" checked>
           </td>
-          <td>
-            <input type="text" class="form-control form-control-sm note-input" id="notes_'.$num.'" name="notes_'.$num.'" value="'.e($defNote).'" placeholder="Keterangan (contoh: Normal, Bersih, OK)">
+          <td style="border: 1px solid #cbd5e1;">
+            <input type="text" class="form-control form-control-sm note-input bg-light" id="notes_'.$num.'" name="notes_'.$num.'" value="'.e($defNote).'" placeholder="Keterangan">
           </td>
         </tr>';
     }
@@ -230,7 +230,7 @@ if ($action === 'start' || $action === 'form' || $action === 'ulang') {
 
             <!-- 1. 9 Items Checklist Table -->
             <div class="d-flex justify-content-between align-items-center mb-2">
-              <h6 class="fw-bold text-dark mb-0"><i class="bi bi-check2-square text-primary me-2"></i>9 Checklist Pemeliharaan:</h6>
+              <h6 class="fw-bold text-dark mb-0"><i class="bi bi-check2-square text-primary me-2"></i>9 Item Checklist Pemeliharaan:</h6>
               <div class="btn-group btn-group-sm">
                 <button type="button" class="btn btn-outline-primary btn-sm" onclick="setAllCheck(true)"><i class="bi bi-check-all"></i> Centang Semua</button>
                 <button type="button" class="btn btn-outline-secondary btn-sm" onclick="setAllCheck(false)"><i class="bi bi-dash"></i> Batal Semua</button>
@@ -238,13 +238,13 @@ if ($action === 'start' || $action === 'form' || $action === 'ulang') {
             </div>
 
             <div class="table-responsive rounded-3 border bg-white mb-4">
-              <table class="table table-bordered table-sm align-middle mb-0" style="font-size: 0.88rem;">
-                <thead class="table-light">
+              <table class="table table-bordered table-sm align-middle mb-0" style="font-size: 0.88rem; border-color: #cbd5e1;">
+                <thead style="background-color: #93c5fd; color: #0f172a;">
                   <tr class="text-center fw-bold">
-                    <th style="width: 40px;">No</th>
-                    <th class="text-start">Checklist</th>
-                    <th style="width: 90px;">Checklist</th>
-                    <th class="text-start">Keterangan</th>
+                    <th style="width: 40px; border: 1px solid #64748b;">No</th>
+                    <th class="text-start" style="border: 1px solid #64748b;">Checklist</th>
+                    <th style="width: 80px; border: 1px solid #64748b;">Checklist</th>
+                    <th class="text-start" style="border: 1px solid #64748b;">Keterangan</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -314,14 +314,14 @@ if ($action === 'start' || $action === 'form' || $action === 'ulang') {
 }
 
 // =========================================================================
-// 4. TAMPILAN UTAMA: DETAIL PERANGKAT & STATUS BULAN BERJALAN (STEP 1)
+// 4. TAMPILAN UTAMA: DETAIL PERANGKAT & KARTU KONTROL CHECKLIST 12 BULAN
 // =========================================================================
 
-// Histori & Yearly Grid
+// Histori & Yearly Card Matrix
 $historyList = get_asset_maintenance_history($assetId);
-$yearlyGrid = get_asset_yearly_maintenance_grid($assetId, $year);
+$cardMatrix = get_asset_yearly_card_matrix($assetId, $year);
 
-// Komponen Status Bulan Berjalan
+// Status Bulan Berjalan
 if ($currentMonthLog) {
     $cDate = $currentMonthLog['maintenance_date'] ?? date('Y-m-d');
     $cTech = $currentMonthLog['technician_name'] ?? 'Teknisi';
@@ -329,64 +329,6 @@ if ($currentMonthLog) {
     $cLogId = (int)($currentMonthLog['id'] ?? 0);
     $cFindings = $currentMonthLog['findings'] ?? '';
     $cRecom = $currentMonthLog['recommendation'] ?? '';
-
-    $mDetail = $cLogId > 0 ? get_maintenance_detail($cLogId) : null;
-    $chkListItems = $mDetail ? $mDetail['checklists'] : [];
-
-    // Render 9 Item Checklist dalam Format Tabel Rapi
-    $chkTableRows = '';
-    if (!empty($chkListItems)) {
-        foreach ($chkListItems as $num => $chk) {
-            $isChk = !empty($chk['checked']);
-            $chkIcon = $isChk 
-                ? '<span class="badge bg-success bg-opacity-15 text-success fs-6 fw-bold px-2 py-1"><i class="bi bi-check2"></i> ✓</span>' 
-                : '<span class="text-muted fw-bold">-</span>';
-            $noteText = !empty($chk['notes']) ? e($chk['notes']) : ($isChk ? 'Normal' : '-');
-
-            $chkTableRows .= '
-            <tr class="'.($isChk ? '' : 'table-light text-muted').'">
-              <td class="text-center fw-bold" style="width: 40px;">'.$num.'</td>
-              <td class="fw-semibold text-dark">'.e($chk['name']).'</td>
-              <td class="text-center" style="width: 90px;">'.$chkIcon.'</td>
-              <td><span class="fw-medium text-dark">'.$noteText.'</span></td>
-            </tr>';
-        }
-    }
-
-    $chkDisplayHtml = '';
-    if ($chkTableRows !== '') {
-        $chkDisplayHtml = '
-        <div class="mt-3 pt-3 border-top border-success border-opacity-25">
-          <div class="d-flex justify-content-between align-items-center mb-2">
-            <span class="fw-bold text-dark small"><i class="bi bi-clipboard-check text-success me-1"></i> HASIL CHECKLIST MAINTENANCE:</span>
-            <span class="badge bg-success text-white small px-2 py-1"><i class="bi bi-check-circle-fill me-1"></i> Lengkap</span>
-          </div>
-          <div class="table-responsive rounded-3 border bg-white mb-2 shadow-sm">
-            <table class="table table-bordered table-sm align-middle mb-0" style="font-size: 0.88rem;">
-              <thead class="table-light">
-                <tr class="text-center fw-bold">
-                  <th style="width: 40px;">No</th>
-                  <th class="text-start">Checklist</th>
-                  <th style="width: 90px;">Checklist</th>
-                  <th class="text-start">Keterangan</th>
-                </tr>
-              </thead>
-              <tbody>
-                '.$chkTableRows.'
-              </tbody>
-            </table>
-          </div>
-        </div>';
-    }
-
-    $findingsDisplayHtml = '';
-    if ($cFindings !== '' || $cRecom !== '') {
-        $findingsDisplayHtml = '
-        <div class="row g-2 mt-2 pt-2 border-top border-success border-opacity-25 small">
-          '.($cFindings !== '' ? '<div class="col-12"><div class="p-2 rounded bg-white border border-danger text-danger"><strong><i class="bi bi-exclamation-triangle-fill me-1"></i>Temuan:</strong> '.e($cFindings).'</div></div>' : '').'
-          '.($cRecom !== '' ? '<div class="col-12"><div class="p-2 rounded bg-white border border-success text-success"><strong><i class="bi bi-lightbulb-fill me-1"></i>Rekomendasi:</strong> '.e($cRecom).'</div></div>' : '').'
-        </div>';
-    }
 
     $badgeColor = ($cStatus === 'Temuan' || $cStatus === 'Perlu Perbaikan') ? 'danger' : ($cStatus === 'Proses' ? 'warning text-dark' : 'success');
     $badgeIcon = ($cStatus === 'Temuan' || $cStatus === 'Perlu Perbaikan') ? 'bi-exclamation-triangle-fill' : ($cStatus === 'Proses' ? 'bi-hourglass-split' : 'bi-check-circle-fill');
@@ -400,12 +342,12 @@ if ($currentMonthLog) {
       <h5 class="fw-bold text-dark mb-1">Periode: '.$monthName.' '.$year.'</h5>
       <p class="text-secondary small mb-2">Perangkat ini <strong>sudah dilakukan maintenance</strong> pada <strong>'.e(format_id_date($cDate)).'</strong> oleh <strong>'.e($cTech).'</strong>.</p>
       
-      '.$chkDisplayHtml.'
-      '.$findingsDisplayHtml.'
+      '.($cFindings !== '' ? '<div class="alert alert-danger py-2 px-3 small my-2"><strong><i class="bi bi-exclamation-triangle-fill me-1"></i>Temuan:</strong> '.e($cFindings).'</div>' : '').'
+      '.($cRecom !== '' ? '<div class="alert alert-info py-2 px-3 small my-2"><strong><i class="bi bi-lightbulb-fill me-1"></i>Rekomendasi:</strong> '.e($cRecom).'</div>' : '').'
 
       <div class="d-flex flex-wrap gap-2 mt-3 pt-2">
-        '.($cLogId > 0 ? '<a class="btn btn-primary fw-semibold" href="'.e(module_url('maintenance_detail.php', ['id' => $cLogId])).'"><i class="bi bi-file-earmark-text me-1"></i> LIHAT DETAIL LENGKAP</a>' : '').'
         <a class="btn btn-outline-primary fw-semibold" href="'.e(module_url('scan.php', ['t' => $token, 'action' => 'ulang'])).'"><i class="bi bi-arrow-repeat me-1"></i> MAINTENANCE ULANG</a>
+        '.($cLogId > 0 ? '<a class="btn btn-primary fw-semibold" href="'.e(module_url('maintenance_detail.php', ['id' => $cLogId])).'"><i class="bi bi-file-earmark-text me-1"></i> DETAIL LENGKAP AUDIT</a>' : '').'
       </div>
     </div>';
 } else {
@@ -424,10 +366,7 @@ if ($currentMonthLog) {
     </div>';
 }
 
-// =========================================================================
-// KARTU KONTROL CHECKLIST TAHUNAN (12 BULAN MATRIX 1..9 & PARAF)
-// =========================================================================
-$cardMatrix = get_asset_yearly_card_matrix($assetId, $year);
+// Build Matrix Table Rows 12 Bulan (Persis Excel)
 $cardMatrixRows = '';
 for ($m = 1; $m <= 12; $m++) {
     $row = $cardMatrix[$m];
@@ -439,17 +378,17 @@ for ($m = 1; $m <= 12; $m++) {
     for ($num = 1; $num <= 9; $num++) {
         $chkVal = $row['checklists'][$num] ?? 0;
         if ($isDone) {
-            $cols1to9 .= '<td style="border: 1px solid #000; width: 34px;" class="fw-bold text-success text-center">'.($chkVal ? '✓' : '-').'</td>';
+            $cols1to9 .= '<td style="border: 1px solid #000; width: 34px; padding: 3px 0;" class="fw-bold text-dark text-center">'.($chkVal ? '✓' : '-').'</td>';
         } else {
-            $cols1to9 .= '<td style="border: 1px solid #000; width: 34px;">&nbsp;</td>';
+            $cols1to9 .= '<td style="border: 1px solid #000; width: 34px; padding: 3px 0;">&nbsp;</td>';
         }
     }
 
     $cardMatrixRows .= '
-    <tr style="height: 28px;">
-      <td style="border: 1px solid #000; width: 95px;" class="fw-bold text-dark text-center font-monospace">'.e($dateLabel).'</td>
+    <tr style="height: 27px;">
+      <td style="border: 1px solid #000; width: 95px; padding: 3px 4px;" class="fw-bold text-dark text-center font-monospace">'.e($dateLabel).'</td>
       '.$cols1to9.'
-      <td style="border: 1px solid #000; min-width: 90px;" class="text-center font-monospace small">'.$paraf.'</td>
+      <td style="border: 1px solid #000; min-width: 90px; padding: 3px 6px;" class="text-center font-monospace small text-dark">'.$paraf.'</td>
     </tr>';
 }
 
@@ -457,44 +396,74 @@ $userDisplay = !empty($asset['karyawan_nama']) && $asset['karyawan_nama'] !== '-
 $ipDisplay = !empty($asset['ip_address']) ? $asset['ip_address'] : (!empty($asset['ip']) ? $asset['ip'] : '');
 $printerDisplay = !empty($asset['printer']) ? $asset['printer'] : '';
 
-// Komponen Tabel Histori Sebelumnya
-$historyRowsHtml = '';
-if (!empty($historyList)) {
-    $hNum = 0;
-    foreach ($historyList as $h) {
-        $hNum++;
-        $hStatus = $h['status'] ?? 'Selesai';
-        $hBadge = ($hStatus === 'Temuan' || $hStatus === 'Perlu Perbaikan')
-            ? '<span class="badge-chip chip-danger"><i class="bi bi-exclamation-triangle-fill"></i> '.$hStatus.'</span>'
-            : ($hStatus === 'Proses'
-                ? '<span class="badge-chip chip-warning"><i class="bi bi-hourglass-split"></i> '.$hStatus.'</span>'
-                : '<span class="badge-chip chip-success"><i class="bi bi-check-circle-fill"></i> '.$hStatus.'</span>');
-
-        $historyRowsHtml .= '
-        <tr>
-          <td class="text-center text-muted">'.$hNum.'</td>
-          <td class="fw-semibold">'.e(format_id_date($h['maintenance_date'] ?? '')).'</td>
-          <td>'.e($monthNames[(int)($h['maintenance_month'] ?? 0)] ?? '-').'</td>
-          <td>'.e($h['maintenance_year'] ?? '-').'</td>
-          <td class="fw-semibold text-dark">'.e($h['technician_name'] ?? 'Teknisi').'</td>
-          <td>'.$hBadge.'</td>
-          <td class="text-end">
-            <a class="btn btn-sm btn-outline-primary" href="'.e(module_url('maintenance_detail.php', ['id' => (int)$h['id']])).'"><i class="bi bi-file-earmark-text"></i> Detail</a>
-          </td>
-        </tr>';
-    }
-} else {
-    $historyRowsHtml = '<tr><td colspan="7" class="text-center py-4 text-secondary">Belum ada riwayat maintenance sebelumnya untuk perangkat ini.</td></tr>';
-}
-
 // Maintenance Terakhir
 $lastMaintStr = !empty($historyList[0])
     ? format_id_date($historyList[0]['maintenance_date'] ?? '') . ' oleh ' . ($historyList[0]['technician_name'] ?? 'Teknisi')
     : 'Belum pernah';
 
+$headStyle = '<style>
+.excel-card-wrapper {
+  background: #ffffff;
+  border: 1.5px solid #000000;
+  border-radius: 4px;
+  padding: 16px 20px;
+  font-family: Arial, "Helvetica Neue", Helvetica, sans-serif;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+}
+.excel-header-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 10px;
+  font-weight: bold;
+  font-size: 11pt;
+  color: #000000;
+}
+.excel-header-table td {
+  padding: 3px 2px;
+}
+.excel-header-line {
+  border-bottom: 1.5px solid #000000;
+  min-width: 250px;
+  padding-left: 6px;
+  font-family: "Segoe UI", Arial, sans-serif;
+  font-weight: 600;
+}
+.excel-grid-table {
+  width: 100%;
+  border-collapse: collapse;
+  border: 1.5px solid #000000;
+  margin-bottom: 10px;
+  color: #000000;
+}
+.excel-grid-table th {
+  background-color: #8ea9db !important;
+  color: #000000 !important;
+  border: 1.5px solid #000000 !important;
+  font-weight: bold;
+  font-size: 9.5pt;
+  text-align: center;
+  padding: 5px 2px;
+}
+.excel-grid-table td {
+  border: 1px solid #000000;
+  font-size: 9pt;
+}
+.excel-legend-box {
+  font-size: 8.5pt;
+  color: #000000;
+  line-height: 1.45;
+}
+@media print {
+  body { background: #fff !important; margin: 0 !important; }
+  .no-print, nav, header { display: none !important; }
+  .container, main.container { max-width: 100% !important; width: 100% !important; padding: 0 !important; margin: 0 !important; }
+  .excel-card-wrapper { box-shadow: none !important; border: 1.5px solid #000 !important; margin: 0 auto !important; }
+}
+</style>';
+
 $body = '
 <div class="row justify-content-center">
-  <div class="col-md-10 col-lg-9">
+  <div class="col-md-11 col-lg-10">
 
     <!-- Card Detail Perangkat Utama -->
     <div class="card p-3 p-md-4 border-0 shadow-sm mb-4">
@@ -538,62 +507,59 @@ $body = '
           <div class="text-secondary">Maintenance Terakhir:</div>
           <div class="fw-semibold text-dark"><i class="bi bi-clock-history me-1 text-secondary"></i>'.e($lastMaintStr).'</div>
         </div>
-        '.(!empty($asset['keterangan']) ? '
-        <div class="col-12">
-          <div class="text-secondary">Catatan / Spesifikasi:</div>
-          <div class="p-2 bg-light rounded text-dark fst-italic">'.e($asset['keterangan']).'</div>
-        </div>' : '').'
       </div>
     </div>
 
     <!-- Card Status Maintenance Bulan Berjalan -->
     '.$statusCardHtml.'
 
-    <!-- KARTU KONTROL CHECKLIST 12 BULAN (SESUAI FORMAT GAMBAR) -->
+    <!-- KARTU KONTROL CHECKLIST 12 BULAN (PERSIS FORMAT GAMBAR) -->
     <div class="card p-3 p-md-4 border-0 shadow-sm mb-4">
       <div class="d-flex justify-content-between align-items-center mb-3">
-        <h5 class="fw-bold text-dark mb-0"><i class="bi bi-card-checklist text-primary me-2"></i>KARTU KONTROL CHECKLIST MAINTENANCE '.$year.'</h5>
-        <button class="btn btn-sm btn-outline-primary" onclick="window.print()"><i class="bi bi-printer me-1"></i> Cetak Kartu</button>
+        <h5 class="fw-bold text-dark mb-0"><i class="bi bi-card-checklist text-primary me-2"></i>KARTU CHECKLIST MAINTENANCE IT '.$year.'</h5>
+        <div class="d-flex gap-2">
+          <a class="btn btn-sm btn-outline-primary fw-semibold" target="_blank" href="'.e(module_url('print_card.php', ['id'=>$assetId, 'tahun'=>$year])).'"><i class="bi bi-printer me-1"></i> Cetak Kartu</a>
+        </div>
       </div>
 
-      <div class="p-3 bg-white border rounded-3">
-        <!-- Identitas Kartu -->
-        <div class="table-responsive mb-2">
-          <table class="table table-borderless table-sm mb-0 font-monospace text-dark" style="font-size: 0.95rem;">
-            <tr>
-              <td style="width: 90px;" class="fw-bold py-1">NAMA</td>
-              <td style="width: 15px;" class="fw-bold py-1">:</td>
-              <td class="fw-bold text-primary border-bottom py-1">'.e($userDisplay).'</td>
-            </tr>
-            <tr>
-              <td class="fw-bold py-1">IP</td>
-              <td class="fw-bold py-1">:</td>
-              <td class="fw-semibold text-dark border-bottom py-1">'.e($ipDisplay).'</td>
-            </tr>
-            <tr>
-              <td class="fw-bold py-1">PRINTER</td>
-              <td class="fw-bold py-1">:</td>
-              <td class="fw-semibold text-dark border-bottom py-1">'.e($printerDisplay).'</td>
-            </tr>
-          </table>
-        </div>
+      <!-- Excel Style Card Box -->
+      <div class="excel-card-wrapper">
+        
+        <!-- Header Info -->
+        <table class="excel-header-table">
+          <tr>
+            <td style="width: 100px;">NAMA</td>
+            <td style="width: 20px;">:</td>
+            <td class="excel-header-line">'.e($userDisplay).'</td>
+          </tr>
+          <tr>
+            <td>IP</td>
+            <td>:</td>
+            <td class="excel-header-line">'.e($ipDisplay).'</td>
+          </tr>
+          <tr>
+            <td>PRINTER</td>
+            <td>:</td>
+            <td class="excel-header-line">'.e($printerDisplay).'</td>
+          </tr>
+        </table>
 
-        <!-- Tabel Matrix 12 Bulan -->
+        <!-- Table Matrix 12 Bulan -->
         <div class="table-responsive">
-          <table class="table table-bordered table-sm align-middle mb-2 text-center" style="font-size: 0.84rem; border-color: #000;">
-            <thead style="background-color: #93c5fd; color: #000;">
-              <tr class="fw-bold">
-                <th style="width: 95px; background-color: #93c5fd; border: 1.2px solid #000;">TANGGAL</th>
-                <th style="width: 34px; background-color: #93c5fd; border: 1.2px solid #000;">1</th>
-                <th style="width: 34px; background-color: #93c5fd; border: 1.2px solid #000;">2</th>
-                <th style="width: 34px; background-color: #93c5fd; border: 1.2px solid #000;">3</th>
-                <th style="width: 34px; background-color: #93c5fd; border: 1.2px solid #000;">4</th>
-                <th style="width: 34px; background-color: #93c5fd; border: 1.2px solid #000;">5</th>
-                <th style="width: 34px; background-color: #93c5fd; border: 1.2px solid #000;">6</th>
-                <th style="width: 34px; background-color: #93c5fd; border: 1.2px solid #000;">7</th>
-                <th style="width: 34px; background-color: #93c5fd; border: 1.2px solid #000;">8</th>
-                <th style="width: 34px; background-color: #93c5fd; border: 1.2px solid #000;">9</th>
-                <th style="min-width: 90px; background-color: #93c5fd; border: 1.2px solid #000;">PARAF</th>
+          <table class="excel-grid-table">
+            <thead>
+              <tr>
+                <th style="width: 100px;">TANGGAL</th>
+                <th style="width: 32px;">1</th>
+                <th style="width: 32px;">2</th>
+                <th style="width: 32px;">3</th>
+                <th style="width: 32px;">4</th>
+                <th style="width: 32px;">5</th>
+                <th style="width: 32px;">6</th>
+                <th style="width: 32px;">7</th>
+                <th style="width: 32px;">8</th>
+                <th style="width: 32px;">9</th>
+                <th style="min-width: 90px;">PARAF</th>
               </tr>
             </thead>
             <tbody>
@@ -603,7 +569,7 @@ $body = '
         </div>
 
         <!-- Legend Keterangan 9 Item -->
-        <div class="mt-2 pt-2 border-top text-dark" style="font-size: 0.8rem; line-height: 1.5;">
+        <div class="excel-legend-box">
           <div class="fw-bold mb-1">Ket</div>
           <div class="row g-1">
             <div class="col-md-4 col-12">
@@ -627,28 +593,7 @@ $body = '
       </div>
     </div>
 
-    <!-- Card Tabel Semua Histori Perangkat Ini -->
-    <div class="card p-3 p-md-4 border-0 shadow-sm mb-4">
-      <h6 class="fw-bold text-dark mb-3"><i class="bi bi-clock-history text-primary me-2"></i>Histori Maintenance Keseluruhan:</h6>
-      <div class="table-responsive rounded-3 border">
-        <table class="table table-hover align-middle mb-0 small">
-          <thead>
-            <tr>
-              <th style="width:30px" class="text-center">No</th>
-              <th>Tanggal</th>
-              <th>Bulan</th>
-              <th>Tahun</th>
-              <th>Petugas</th>
-              <th>Status</th>
-              <th class="text-end">Aksi</th>
-            </tr>
-          </thead>
-          <tbody>'.$historyRowsHtml.'</tbody>
-        </table>
-      </div>
-    </div>
-
   </div>
 </div>';
 
-render_page('Detail Perangkat · ' . ($asset['kode_inventaris'] ?? 'QR'), $body, '', '', false);
+render_page('Detail Perangkat · ' . ($asset['kode_inventaris'] ?? 'QR'), $body, $headStyle, '', false);
