@@ -181,28 +181,40 @@ class GoogleSheetsV4Client {
         if ($sheetName) {
             unset(self::$runtimeCache[$sheetName]);
             if (session_status() === PHP_SESSION_ACTIVE) {
-                unset($_SESSION['_gs_cache_' . $sheetName]);
+                unset($_SESSION['_gs_cache_' . $sheetName], $_SESSION['_gs_time_' . $sheetName]);
             }
         } else {
             self::$runtimeCache = [];
             if (session_status() === PHP_SESSION_ACTIVE) {
                 foreach (array_keys($_SESSION) as $k) {
-                    if (str_starts_with($k, '_gs_cache_')) unset($_SESSION[$k]);
+                    if (str_starts_with($k, '_gs_cache_') || str_starts_with($k, '_gs_time_')) {
+                        unset($_SESSION[$k]);
+                    }
                 }
             }
         }
     }
 
     public function getSheetData(string $sheetName, bool $forceRefresh = false): array {
-        // 1. Cek runtime memory cache di proses saat ini
+        // 1. Cek runtime memory cache di request PHP saat ini
         if (!$forceRefresh && isset(self::$runtimeCache[$sheetName])) {
             return self::$runtimeCache[$sheetName];
         }
 
-        // 2. Ambil data dari Google Sheets API
+        // 2. Cek warm session cache (TTL: 120 detik) untuk pergantian halaman secepat kilat (0.01 detik)
+        if (!$forceRefresh && session_status() === PHP_SESSION_ACTIVE) {
+            $cacheKey = '_gs_cache_' . $sheetName;
+            $timeKey = '_gs_time_' . $sheetName;
+            if (!empty($_SESSION[$cacheKey]) && !empty($_SESSION[$timeKey]) && (time() - (int)$_SESSION[$timeKey] < 120)) {
+                self::$runtimeCache[$sheetName] = $_SESSION[$cacheKey];
+                return self::$runtimeCache[$sheetName];
+            }
+        }
+
+        // 3. Ambil data dari Google Sheets API jika cache kedaluwarsa / force refresh
         $rows = $this->getValues($sheetName . '!A1:Z1000');
 
-        // 3. Jika API gagal (misal rate limit/timeout), gunakan session cache sebelumnya agar data tidak hilang tiba-tiba
+        // 4. Jika API gagal (misal rate limit/timeout), gunakan session cache sebelumnya agar data tidak hilang
         if (empty($rows)) {
             if (session_status() === PHP_SESSION_ACTIVE && !empty($_SESSION['_gs_cache_' . $sheetName])) {
                 self::$runtimeCache[$sheetName] = $_SESSION['_gs_cache_' . $sheetName];
@@ -213,6 +225,10 @@ class GoogleSheetsV4Client {
 
         if (count($rows) <= 1) {
             self::$runtimeCache[$sheetName] = [];
+            if (session_status() === PHP_SESSION_ACTIVE) {
+                $_SESSION['_gs_cache_' . $sheetName] = [];
+                $_SESSION['_gs_time_' . $sheetName] = time();
+            }
             return [];
         }
 
@@ -225,7 +241,7 @@ class GoogleSheetsV4Client {
                 $val = $row[$idx] ?? '';
                 // Simpan key asli
                 $obj[$header] = $val;
-                // Simpan key ternormalisasi (huruf kecil & tanpa spasi) agar pencarian selalu cocok
+                // Simpan key ternormalisasi (huruf kecil & tanpa spasi)
                 $normKey = strtolower(preg_replace('/[^a-zA-Z0-9_]/', '_', trim((string)$header)));
                 if ($normKey !== '') {
                     $obj[$normKey] = $val;
@@ -234,10 +250,11 @@ class GoogleSheetsV4Client {
             $result[] = $obj;
         }
 
-        // Simpan ke cache
+        // Simpan ke cache runtime & session dengan timestamp
         self::$runtimeCache[$sheetName] = $result;
         if (session_status() === PHP_SESSION_ACTIVE) {
             $_SESSION['_gs_cache_' . $sheetName] = $result;
+            $_SESSION['_gs_time_' . $sheetName] = time();
         }
 
         return $result;

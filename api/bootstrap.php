@@ -1323,16 +1323,18 @@ function regenerate_qr_token(int $assetId): bool {
 
 function render_page(string $title, string $content, string $extraHead = '', string $extraScript = '', bool $showNav = true): void {
     $nav = '';
+    $currentPage = basename($_SERVER['SCRIPT_NAME'] ?? '');
+
     if ($showNav) {
         $nav = '
-        <nav class="navbar navbar-expand-lg bg-primary navbar-dark mb-4">
+        <nav class="navbar navbar-expand-lg bg-primary navbar-dark mb-4 shadow-sm">
           <div class="container">
-            <a class="navbar-brand fw-semibold" href="'.e(module_url('dashboard.php')).'">QR Maintenance</a>
+            <a class="navbar-brand fw-bold" href="'.e(module_url('dashboard.php')).'"><i class="bi bi-qr-code-scan me-2"></i>QR Maintenance</a>
             <div class="d-flex flex-wrap gap-2 align-items-center">
-              <a class="btn btn-sm btn-light" href="'.e(module_url('dashboard.php')).'">Dashboard</a>
-              <a class="btn btn-sm btn-outline-light" href="'.e(module_url('history.php')).'">Riwayat</a>
-              <a class="btn btn-sm btn-outline-light" href="'.e(module_url('qr_admin.php')).'">QR Aset</a>
-              <a class="btn btn-sm btn-warning text-dark fw-semibold" href="'.e(module_url('asset_add.php')).'">+ Tambah Komputer</a>
+              <a class="btn btn-sm '.($currentPage==='dashboard.php'?'btn-light fw-semibold text-primary':'btn-outline-light').'" href="'.e(module_url('dashboard.php')).'"><i class="bi bi-speedometer2 me-1"></i> Dashboard</a>
+              <a class="btn btn-sm '.($currentPage==='history.php'?'btn-light fw-semibold text-primary':'btn-outline-light').'" href="'.e(module_url('history.php')).'"><i class="bi bi-clock-history me-1"></i> Riwayat</a>
+              <a class="btn btn-sm '.($currentPage==='qr_admin.php'?'btn-light fw-semibold text-primary':'btn-outline-light').'" href="'.e(module_url('qr_admin.php')).'"><i class="bi bi-qr-code me-1"></i> QR Aset</a>
+              <a class="btn btn-sm '.($currentPage==='asset_add.php'?'btn-warning text-dark fw-bold border-2':'btn-warning text-dark fw-semibold').'" href="'.e(module_url('asset_add.php')).'"><i class="bi bi-plus-lg me-1"></i> + Tambah Komputer</a>
             </div>
           </div>
         </nav>';
@@ -1357,15 +1359,53 @@ body{background:#f6f8fb}
 .stat{font-size:1.75rem;font-weight:700}
 .small-muted{font-size:.875rem;color:#6c757d}
 .qr-label{background:#fff;border:1px solid #dee2e6;border-radius:14px;padding:14px;break-inside:avoid}
-@media print{.no-print,nav,header{display:none!important}.qr-label{box-shadow:none}.container{max-width:none!important;width:100%!important;padding:0!important;margin:0!important}}
+#top-progress-bar{position:fixed;top:0;left:0;height:3px;background:#22c55e;z-index:9999;transition:width .2s ease;width:0}
+@media print{.no-print,nav,header,#top-progress-bar{display:none!important}.qr-label{box-shadow:none}.container{max-width:none!important;width:100%!important;padding:0!important;margin:0!important}}
 </style>
 '.$extraHead.'
 </head>
 <body>
+<div id="top-progress-bar"></div>
 '.$nav.'
 <main class="container pb-5">
 '.$content.'
 </main>
+<script>
+// Ultra-fast instant prefetching on hover / touch
+(function(){
+  var preloaded = {};
+  function doPrefetch(url) {
+    if (!url || preloaded[url]) return;
+    if (url.indexOf("javascript:") === 0 || url.indexOf("#") !== -1) return;
+    try {
+      var u = new URL(url, location.href);
+      if (u.origin !== location.origin) return;
+      preloaded[url] = true;
+      var link = document.createElement("link");
+      link.rel = "prefetch";
+      link.href = url;
+      document.head.appendChild(link);
+    } catch(e){}
+  }
+  document.addEventListener("mouseover", function(e){
+    var a = e.target.closest("a");
+    if (a && a.href && !a.target && a.origin === location.origin) doPrefetch(a.href);
+  }, {passive: true});
+  document.addEventListener("touchstart", function(e){
+    var a = e.target.closest("a");
+    if (a && a.href && !a.target && a.origin === location.origin) doPrefetch(a.href);
+  }, {passive: true});
+  
+  // Smooth click feedback
+  document.addEventListener("click", function(e){
+    var a = e.target.closest("a");
+    if (a && a.href && !a.target && a.origin === location.origin && a.href.indexOf("#") === -1 && a.getAttribute("target") !== "_blank") {
+      var bar = document.getElementById("top-progress-bar");
+      if (bar) { bar.style.width = "70%"; }
+    }
+  });
+})();
+</script>
 '.$extraScript.'
 </body>
 </html>';
