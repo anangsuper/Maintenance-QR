@@ -154,22 +154,31 @@ if ($action === 'start' || $action === 'form' || $action === 'ulang') {
     $isUlang = ($action === 'ulang' || ($currentMonthLog && $action === 'start'));
 
     $checklistRowsHtml = '';
+    $defaultNotes = [
+        1 => 'Bersih',
+        2 => 'Sudah update',
+        3 => 'Sudah dibersihkan',
+        4 => 'Normal',
+        5 => 'Normal',
+        6 => 'Normal',
+        7 => 'Normal',
+        8 => 'Normal',
+        9 => 'Normal',
+    ];
+
     foreach ($fixedItems as $num => $name) {
+        $defNote = $defaultNotes[$num] ?? 'Normal';
         $checklistRowsHtml .= '
-        <div class="p-3 border rounded-3 mb-2 bg-white checklist-item">
-          <div class="d-flex align-items-center justify-content-between mb-2">
-            <div class="form-check form-switch fs-5 mb-0">
-              <input class="form-check-input" type="checkbox" role="switch" id="chk_'.$num.'" name="chk_'.$num.'" value="1">
-              <label class="form-check-label fw-bold fs-6 text-dark ms-2" for="chk_'.$num.'">
-                '.$num.'. '.e($name).'
-              </label>
-            </div>
-            <span class="badge bg-light text-secondary border small">Item #'.$num.'</span>
-          </div>
-          <div class="ps-md-4">
-            <input type="text" class="form-control form-control-sm bg-light" name="notes_'.$num.'" placeholder="Keterangan / Catatan (Contoh: Normal, Bersih, OK, dll)">
-          </div>
-        </div>';
+        <tr>
+          <td class="text-center fw-bold text-muted" style="width: 40px;">'.$num.'</td>
+          <td class="fw-bold text-dark">'.e($name).'</td>
+          <td class="text-center" style="width: 90px;">
+            <input class="form-check-input chk-box fs-5" type="checkbox" id="chk_'.$num.'" name="chk_'.$num.'" value="1" checked>
+          </td>
+          <td>
+            <input type="text" class="form-control form-control-sm note-input" id="notes_'.$num.'" name="notes_'.$num.'" value="'.e($defNote).'" placeholder="Keterangan (contoh: Normal, Bersih, OK)">
+          </td>
+        </tr>';
     }
 
     $techDefault = current_user_name();
@@ -187,7 +196,7 @@ if ($action === 'start' || $action === 'form' || $action === 'ulang') {
 
     $body = '
     <div class="row justify-content-center">
-      <div class="col-md-9 col-lg-7">
+      <div class="col-md-9 col-lg-8">
         <div class="card p-3 p-md-4 border-0 shadow-sm mb-4">
           <div class="d-flex align-items-center justify-content-between border-bottom pb-3 mb-3">
             <div>
@@ -219,11 +228,29 @@ if ($action === 'start' || $action === 'form' || $action === 'ulang') {
             <input type="hidden" name="t" value="'.e($token).'">
             <input type="hidden" name="maintenance_type" value="'.e($mTypeVal).'">
 
-            <!-- 1. 9 Items Checklist -->
-            <h6 class="fw-bold text-dark mb-2"><i class="bi bi-check2-square text-primary me-2"></i>9 Checklist Pemeliharaan:</h6>
-            <div class="small text-muted mb-3">Centang item yang dikerjakan & isi catatan jika diperlukan:</div>
-            <div class="mb-4">
-              '.$checklistRowsHtml.'
+            <!-- 1. 9 Items Checklist Table -->
+            <div class="d-flex justify-content-between align-items-center mb-2">
+              <h6 class="fw-bold text-dark mb-0"><i class="bi bi-check2-square text-primary me-2"></i>9 Checklist Pemeliharaan:</h6>
+              <div class="btn-group btn-group-sm">
+                <button type="button" class="btn btn-outline-primary btn-sm" onclick="setAllCheck(true)"><i class="bi bi-check-all"></i> Centang Semua</button>
+                <button type="button" class="btn btn-outline-secondary btn-sm" onclick="setAllCheck(false)"><i class="bi bi-dash"></i> Batal Semua</button>
+              </div>
+            </div>
+
+            <div class="table-responsive rounded-3 border bg-white mb-4">
+              <table class="table table-bordered table-sm align-middle mb-0" style="font-size: 0.88rem;">
+                <thead class="table-light">
+                  <tr class="text-center fw-bold">
+                    <th style="width: 40px;">No</th>
+                    <th class="text-start">Checklist</th>
+                    <th style="width: 90px;">Checklist</th>
+                    <th class="text-start">Keterangan</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  '.$checklistRowsHtml.'
+                </tbody>
+              </table>
             </div>
 
             <!-- 2. Data Pelaksanaan Maintenance -->
@@ -273,7 +300,16 @@ if ($action === 'start' || $action === 'form' || $action === 'ulang') {
       </div>
     </div>';
 
-    render_page($formTitle, $body, '', '', false);
+    $formScript = '
+    <script>
+    function setAllCheck(val) {
+      document.querySelectorAll(".chk-box").forEach(function(el){
+        el.checked = val;
+      });
+    }
+    </script>';
+
+    render_page($formTitle, $body, '', $formScript, false);
     exit;
 }
 
@@ -297,45 +333,50 @@ if ($currentMonthLog) {
     $mDetail = $cLogId > 0 ? get_maintenance_detail($cLogId) : null;
     $chkListItems = $mDetail ? $mDetail['checklists'] : [];
 
-    // Render 9 Item Checklist dengan Logo / Ikon Centang
-    $chkDisplayHtml = '';
+    // Render 9 Item Checklist dalam Format Tabel Rapi
+    $chkTableRows = '';
     if (!empty($chkListItems)) {
-        $chkDisplayHtml .= '
-        <div class="mt-3 pt-3 border-top border-success border-opacity-25">
-          <div class="d-flex justify-content-between align-items-center mb-2">
-            <span class="fw-bold text-dark small"><i class="bi bi-check2-all text-success me-1"></i> HASIL 9 CHECKLIST PEMELIHARAAN:</span>
-            <span class="badge bg-success bg-opacity-25 text-success small">Tercatat</span>
-          </div>
-          <div class="row g-2">';
-        
         foreach ($chkListItems as $num => $chk) {
             $isChk = !empty($chk['checked']);
-            $chkNote = !empty($chk['notes']) ? '<div class="text-muted small fst-italic" style="font-size:0.75rem;"><i class="bi bi-chat-left-text me-1"></i>'.e($chk['notes']).'</div>' : '';
+            $chkIcon = $isChk 
+                ? '<span class="badge bg-success bg-opacity-15 text-success fs-6 fw-bold px-2 py-1"><i class="bi bi-check2"></i> ✓</span>' 
+                : '<span class="text-muted fw-bold">-</span>';
+            $noteText = !empty($chk['notes']) ? e($chk['notes']) : ($isChk ? 'Normal' : '-');
 
-            if ($isChk) {
-                $chkDisplayHtml .= '
-                <div class="col-12 col-md-6">
-                  <div class="p-2 rounded-2 bg-white border border-success d-flex align-items-start gap-2 shadow-sm">
-                    <span class="text-success fs-5 lh-1"><i class="bi bi-check-circle-fill"></i></span>
-                    <div class="small">
-                      <div class="fw-bold text-dark">'.$num.'. '.e($chk['name']).'</div>
-                      '.$chkNote.'
-                    </div>
-                  </div>
-                </div>';
-            } else {
-                $chkDisplayHtml .= '
-                <div class="col-12 col-md-6">
-                  <div class="p-2 rounded-2 bg-white border d-flex align-items-start gap-2 opacity-75">
-                    <span class="text-muted fs-5 lh-1"><i class="bi bi-circle"></i></span>
-                    <div class="small">
-                      <div class="text-secondary">'.$num.'. '.e($chk['name']).'</div>
-                    </div>
-                  </div>
-                </div>';
-            }
+            $chkTableRows .= '
+            <tr class="'.($isChk ? '' : 'table-light text-muted').'">
+              <td class="text-center fw-bold" style="width: 40px;">'.$num.'</td>
+              <td class="fw-semibold text-dark">'.e($chk['name']).'</td>
+              <td class="text-center" style="width: 90px;">'.$chkIcon.'</td>
+              <td><span class="fw-medium text-dark">'.$noteText.'</span></td>
+            </tr>';
         }
-        $chkDisplayHtml .= '</div></div>';
+    }
+
+    $chkDisplayHtml = '';
+    if ($chkTableRows !== '') {
+        $chkDisplayHtml = '
+        <div class="mt-3 pt-3 border-top border-success border-opacity-25">
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <span class="fw-bold text-dark small"><i class="bi bi-clipboard-check text-success me-1"></i> HASIL CHECKLIST MAINTENANCE:</span>
+            <span class="badge bg-success text-white small px-2 py-1"><i class="bi bi-check-circle-fill me-1"></i> Lengkap</span>
+          </div>
+          <div class="table-responsive rounded-3 border bg-white mb-2 shadow-sm">
+            <table class="table table-bordered table-sm align-middle mb-0" style="font-size: 0.88rem;">
+              <thead class="table-light">
+                <tr class="text-center fw-bold">
+                  <th style="width: 40px;">No</th>
+                  <th class="text-start">Checklist</th>
+                  <th style="width: 90px;">Checklist</th>
+                  <th class="text-start">Keterangan</th>
+                </tr>
+              </thead>
+              <tbody>
+                '.$chkTableRows.'
+              </tbody>
+            </table>
+          </div>
+        </div>';
     }
 
     $findingsDisplayHtml = '';

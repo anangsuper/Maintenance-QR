@@ -31,14 +31,16 @@ $chkTableRows = '';
 foreach ($checklists as $num => $c) {
     $isDone = !empty($c['checked']);
     $icon = $isDone
-        ? '<span class="text-success fw-bold"><i class="bi bi-check-circle-fill fs-5"></i></span>'
-        : '<span class="text-muted"><i class="bi bi-circle fs-5"></i></span>';
+        ? '<span class="badge bg-success bg-opacity-15 text-success fs-6 fw-bold px-2 py-1"><i class="bi bi-check2"></i> ✓</span>'
+        : '<span class="text-muted fw-bold">-</span>';
+    $noteText = !empty($c['notes']) ? e($c['notes']) : ($isDone ? 'Normal' : '-');
+
     $chkTableRows .= '
-    <tr class="'.($isDone ? 'table-success bg-opacity-10' : '').'">
+    <tr class="'.($isDone ? '' : 'table-light text-muted').'">
       <td class="text-center fw-bold" style="width: 40px;">'.$num.'</td>
       <td class="fw-semibold text-dark">'.e($c['name']).'</td>
-      <td class="text-center" style="width: 80px;">'.$icon.'</td>
-      <td>'.(!empty($c['notes']) ? '<span class="badge bg-light text-dark border">'.e($c['notes']).'</span>' : '<span class="text-muted small">-</span>').'</td>
+      <td class="text-center" style="width: 90px;">'.$icon.'</td>
+      <td><span class="fw-medium text-dark">'.$noteText.'</span></td>
     </tr>';
 }
 
@@ -126,13 +128,13 @@ $body = '
       <!-- 3. Checklist 9 Item -->
       <h6 class="fw-bold text-dark mb-2"><i class="bi bi-check2-square text-primary me-1"></i>HASIL 9 CHECKLIST PEMELIHARAAN:</h6>
       <div class="table-responsive rounded-3 border mb-4">
-        <table class="table table-hover align-middle mb-0 small">
+        <table class="table table-bordered align-middle mb-0 small">
           <thead class="table-light">
-            <tr>
-              <th class="text-center">No</th>
-              <th>Nama Checklist</th>
-              <th class="text-center">Status</th>
-              <th>Keterangan / Catatan</th>
+            <tr class="text-center fw-bold">
+              <th style="width: 40px;">No</th>
+              <th class="text-start">Checklist</th>
+              <th style="width: 90px;">Checklist</th>
+              <th class="text-start">Keterangan</th>
             </tr>
           </thead>
           <tbody>'.$chkTableRows.'</tbody>
