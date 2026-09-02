@@ -114,6 +114,10 @@ foreach ($recentRows as $r) {
         ? '<span class="badge-chip chip-danger"><i class="bi bi-exclamation-triangle-fill"></i> Ada Temuan</span>' 
         : '<span class="badge-chip chip-success"><i class="bi bi-check-circle-fill"></i> Selesai</span>';
 
+    $actionBtn = !empty($r['id'])
+        ? '<a class="btn btn-sm btn-outline-primary" href="'.e(module_url('maintenance_detail.php', ['id'=>(int)$r['id']])).'"><i class="bi bi-file-earmark-medical me-1"></i> Detail</a>'
+        : '-';
+
     $recentHtml .= '<tr>
       <td class="text-secondary small"><i class="bi bi-calendar-event me-1"></i>'.e(format_id_date($r['maintenance_date'])).' <span class="badge bg-light text-dark border">'.e(substr($r['maintenance_time'],0,5)).'</span></td>
       <td class="fw-bold text-primary">'.e($r['kode_inventaris'] ?? '-').'</td>
@@ -121,10 +125,11 @@ foreach ($recentRows as $r) {
       <td>'.e($r['karyawan_nama'] ?? '-').'</td>
       <td><span class="badge-chip chip-secondary">'.e($r['cabang_nama'] ?? '-').'</span></td>
       <td>'.$statusChip.'</td>
+      <td class="text-end">'.$actionBtn.'</td>
     </tr>';
 }
 if ($recentHtml === '') {
-    $recentHtml = '<tr><td colspan="6" class="text-center text-secondary py-4">Belum ada scan maintenance pada periode ini.</td></tr>';
+    $recentHtml = '<tr><td colspan="7" class="text-center text-secondary py-4">Belum ada scan maintenance pada periode ini.</td></tr>';
 }
 
 $modeBadge = is_google_cloud_mode() ? '<span class="badge-chip chip-primary"><i class="bi bi-google"></i> Google Cloud Sheets API v4</span>' : '<span class="badge-chip chip-secondary"><i class="bi bi-database"></i> MySQL Database</span>';
@@ -299,7 +304,7 @@ $body .= '</select>
   <h5 class="fw-bold text-dark mb-3"><i class="bi bi-check-circle-fill text-success me-2"></i>Riwayat Scan Terbaru — '.e($selectedCabangName).'</h5>
   <div class="table-responsive rounded-3 border">
     <table class="table table-hover align-middle mb-0">
-      <thead><tr><th>Waktu Scan</th><th>Kode</th><th>Perangkat</th><th>Pengguna</th><th>Cabang</th><th>Status</th></tr></thead>
+      <thead><tr><th>Waktu Scan</th><th>Kode</th><th>Perangkat</th><th>Pengguna</th><th>Cabang</th><th>Status</th><th class="text-end">Aksi</th></tr></thead>
       <tbody>'.$recentHtml.'</tbody>
     </table>
   </div>

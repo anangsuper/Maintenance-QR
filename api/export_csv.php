@@ -4,30 +4,58 @@ require_login();
 
 $month = max(1, min(12, (int)($_GET['bulan'] ?? date('n'))));
 $year = max(2020, min(2100, (int)($_GET['tahun'] ?? date('Y'))));
-$cabangId = max(0, (int)($_GET['cabang'] ?? 0));
+$cabangId = (int)($_GET['cabang'] ?? 0);
 
-$rows = get_history_rows($month, $year, $cabangId);
+$audit = get_audit_maintenance_data([
+    'bulan' => $month,
+    'tahun' => $year,
+    'cabang' => $cabangId
+]);
+$rows = $audit['rows'];
 
-$filename = sprintf('maintenance_%04d_%02d.csv', $year, $month);
+$filename = sprintf('Audit_Maintenance_IT_%04d_%02d.csv', $year, $month);
 header('Content-Type: text/csv; charset=UTF-8');
 header('Content-Disposition: attachment; filename="'.$filename.'"');
 
 $out = fopen('php://output', 'w');
-fwrite($out, "\xEF\xBB\xBF");
-fputcsv($out, ['Tanggal','Jam','Kode Inventaris','Serial Number','Merk','Model','Pemilik','Cabang','Teknisi','Status'], ';');
+fwrite($out, "\xEF\xBB\xBF"); // UTF-8 BOM for Excel
+
+// Header Row
+$headers = [
+    'No',
+    'Tanggal Maintenance',
+    'Kode Inventaris',
+    'Serial Number',
+    'Perangkat',
+    'Pengguna / User',
+    'Divisi',
+    'Cabang',
+    'Teknisi Pelaksana',
+    'Status Pemeliharaan',
+    'Temuan Masalah',
+    'Rekomendasi Tindakan'
+];
+
+fputcsv($out, $headers, ';');
+
+$no = 0;
 foreach ($rows as $r) {
+    $no++;
     fputcsv($out, [
-        $r['maintenance_date'] ?? '',
-        substr($r['maintenance_time'] ?? '', 0, 5),
-        $r['kode_inventaris'] ?? '',
-        $r['serial_number'] ?? '',
-        $r['merk'] ?? '',
-        $r['model'] ?? '',
-        $r['karyawan_nama'] ?? '',
-        $r['cabang_nama'] ?? '',
-        $r['teknisi_nama'] ?? $r['technician_name'] ?? '',
-        $r['status'] ?? '',
+        $no,
+        $r['maintenance_date'] ?? '-',
+        $r['kode_inventaris'] ?? '-',
+        $r['serial_number'] ?? '-',
+        $r['perangkat'] ?? '-',
+        $r['karyawan_nama'] ?? '-',
+        $r['divisi_nama'] ?? '-',
+        $r['cabang_nama'] ?? '-',
+        $r['technician_name'] ?? '-',
+        $r['status'] ?? '-',
+        $r['findings'] ?? '-',
+        $r['recommendation'] ?? '-',
     ], ';');
 }
+
 fclose($out);
 exit;

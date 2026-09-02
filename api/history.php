@@ -32,19 +32,24 @@ foreach ($rows as $r) {
         ? '<span class="badge-chip chip-danger"><i class="bi bi-exclamation-triangle-fill"></i> Ada Temuan</span>' 
         : '<span class="badge-chip chip-success"><i class="bi bi-check-circle-fill"></i> Selesai</span>';
 
+    $actionBtn = !empty($r['id'])
+        ? '<a class="btn btn-sm btn-outline-primary" href="'.e(module_url('maintenance_detail.php', ['id'=>(int)$r['id']])).'"><i class="bi bi-file-earmark-medical me-1"></i> Detail</a>'
+        : '-';
+
     $trs .= '<tr>
       <td class="text-center text-muted">'.$num.'</td>
       <td class="text-secondary small"><i class="bi bi-calendar-check me-1"></i>'.e(format_id_date($r['maintenance_date'])).' <span class="badge bg-light text-dark border">'.e(substr($r['maintenance_time'],0,5)).'</span></td>
-      <td class="fw-bold text-primary">'.e($r['kode_inventaris'] ?? '-').'</td>
+      <td><span class="fw-bold text-primary">'.e($r['kode_inventaris'] ?? '-').'</span></td>
       <td class="fw-semibold text-dark">'.e(trim(($r['merk'] ?? '').' '.($r['model'] ?? ''))).'</td>
       <td><span class="d-inline-flex align-items-center gap-1"><i class="bi bi-person-circle text-secondary"></i> '.e($r['karyawan_nama'] ?? '-').'</span></td>
       <td><span class="badge-chip chip-secondary">'.e($r['cabang_nama'] ?? '-').'</span></td>
       <td class="small fw-semibold text-dark">'.e($tech).'</td>
       <td class="text-center">'.$statusChip.'</td>
+      <td class="text-end">'.$actionBtn.'</td>
     </tr>';
 }
 if (!$trs) {
-    $trs = '<tr><td colspan="8" class="text-center py-5 text-secondary"><i class="bi bi-inbox fs-1 d-block mb-2 opacity-50"></i>Belum ada riwayat maintenance yang tercatat untuk periode ini.</td></tr>';
+    $trs = '<tr><td colspan="9" class="text-center py-5 text-secondary"><i class="bi bi-inbox fs-1 d-block mb-2 opacity-50"></i>Belum ada riwayat maintenance yang tercatat untuk periode ini.</td></tr>';
 }
 
 $body = '

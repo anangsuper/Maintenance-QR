@@ -1337,31 +1337,166 @@ function get_asset_by_token(string $token): ?array {
     return $asset ?: null;
 }
 
-function record_scan(int $assetId, int $userId, string $techName, string $date, string $time, int $month, int $year, bool $force = false): array {
+function get_fixed_checklists(): array {
+    return [
+        1 => 'Scan Virus',
+        2 => 'Update Anti Virus',
+        3 => 'Deleting Temporary File',
+        4 => 'Cek Keyboard',
+        5 => 'Cek Mouse',
+        6 => 'Cek CPU & Monitor',
+        7 => 'Cek Tinta',
+        8 => 'Cek Cartridge',
+        9 => 'Cek Nozzle'
+    ];
+}
+
+function get_asset_maintenance_status_month(int $assetId, int $month, int $year): ?array {
+    if ($assetId <= 0) return null;
     if (is_google_cloud_mode()) {
         $client = google_sheets_v4_client();
-        if (!$client) return ['success' => false, 'error' => 'Sheets Client unavailable'];
-
-        $client->createSheetIfNotExists('Maintenance_Scan');
+        if (!$client) return null;
         $scans = $client->getSheetData('Maintenance_Scan');
+        $latest = null;
         foreach ($scans as $s) {
             if ((int)($s['asset_id'] ?? 0) === $assetId && (int)($s['maintenance_month'] ?? 0) === $month && (int)($s['maintenance_year'] ?? 0) === $year) {
-                if ($force) {
-                    $rowNum = (int)($s['_row_num'] ?? 0);
-                    if ($rowNum > 1) {
-                        $client->updateValues("Maintenance_Scan!C{$rowNum}:H{$rowNum}", [[
-                            $userId, $techName, $date, $time, $month, $year
-                        ]]);
-                    }
-                    return ['success' => true, 'log_id' => (int)($s['id'] ?? 0), 'is_updated' => true];
-                }
-                return ['success' => false, 'is_duplicate' => true, 'existing' => $s];
+                $latest = $s;
             }
         }
+        return $latest;
+    }
+    try {
+        $st = db()->prepare("
+            SELECT ms.*, u.nama AS teknisi_nama
+            FROM maintenance_scan ms
+            LEFT JOIN users u ON u.id = ms.technician_user_id
+            WHERE ms.asset_id = ? AND ms.maintenance_month = ? AND ms.maintenance_year = ?
+            ORDER BY ms.id DESC LIMIT 1
+        ");
+        $st->execute([$assetId, $month, $year]);
+        $row = $st->fetch();
+        return $row ?: null;
+    } catch (Throwable $e) {
+        return null;
+    }
+}
 
-        $newId = count($scans) + 1;
-        $newRow = [
-            $newId,
+function get_asset_maintenance_history(int $assetId): array {
+    if ($assetId <= 0) return [];
+    if (is_google_cloud_mode()) {
+        $client = google_sheets_v4_client();
+        if (!$client) return [];
+        $scans = $client->getSheetData('Maintenance_Scan');
+        $history = [];
+        foreach ($scans as $s) {
+            if ((int)($s['asset_id'] ?? 0) === $assetId) {
+                $history[] = [
+                    'id' => (int)($s['id'] ?? 0),
+                    'asset_id' => (int)($s['asset_id'] ?? 0),
+                    'maintenance_date' => substr((string)($s['maintenance_date'] ?? ''), 0, 10),
+                    'maintenance_time' => substr((string)($s['maintenance_time'] ?? ''), 0, 8),
+                    'maintenance_month' => (int)($s['maintenance_month'] ?? 0),
+                    'maintenance_year' => (int)($s['maintenance_year'] ?? 0),
+                    'technician_name' => $s['technician_name'] ?? 'Teknisi',
+                    'maintenance_type' => $s['source'] ?? $s['maintenance_type'] ?? 'Maintenance',
+                    'findings' => $s['findings'] ?? '',
+                    'recommendation' => $s['recommendation'] ?? '',
+                    'status' => $s['status'] ?? 'Selesai'
+                ];
+            }
+        }
+        usort($history, function($a, $b) {
+            return strcmp((string)($b['maintenance_date'] ?? ''), (string)($a['maintenance_date'] ?? ''));
+        });
+        return $history;
+    }
+    try {
+        $st = db()->prepare("
+            SELECT ms.*, COALESCE(ms.technician_name, u.nama, 'Teknisi') AS technician_name
+            FROM maintenance_scan ms
+            LEFT JOIN users u ON u.id = ms.technician_user_id
+            WHERE ms.asset_id = ?
+            ORDER BY ms.maintenance_date DESC, ms.id DESC
+        ");
+        $st->execute([$assetId]);
+        return $st->fetchAll();
+    } catch (Throwable $e) {
+        return [];
+    }
+}
+
+function get_asset_yearly_maintenance_grid(int $assetId, int $year): array {
+    $monthNames = [
+        1 => 'Januari', 2 => 'Februari', 3 => 'Maret', 4 => 'April',
+        5 => 'Mei', 6 => 'Juni', 7 => 'Juli', 8 => 'Agustus',
+        9 => 'September', 10 => 'Oktober', 11 => 'November', 12 => 'Desember'
+    ];
+    $grid = [];
+    for ($m = 1; $m <= 12; $m++) {
+        $grid[$m] = [
+            'month' => $m,
+            'month_name' => $monthNames[$m],
+            'status' => 'pending', // 'done' or 'pending'
+            'is_done' => false,
+            'date' => '',
+            'technician' => '',
+            'log_id' => 0
+        ];
+    }
+
+    $history = get_asset_maintenance_history($assetId);
+    foreach ($history as $h) {
+        $hYear = (int)($h['maintenance_year'] ?? (int)date('Y', strtotime($h['maintenance_date'] ?? '')));
+        $hMonth = (int)($h['maintenance_month'] ?? (int)date('n', strtotime($h['maintenance_date'] ?? '')));
+        if ($hYear === $year && isset($grid[$hMonth])) {
+            $grid[$hMonth]['status'] = 'done';
+            $grid[$hMonth]['is_done'] = true;
+            $grid[$hMonth]['date'] = substr((string)($h['maintenance_date'] ?? ''), 0, 10);
+            $grid[$hMonth]['technician'] = $h['technician_name'] ?? 'Teknisi';
+            $grid[$hMonth]['log_id'] = (int)($h['id'] ?? 0);
+        }
+    }
+    return $grid;
+}
+
+function save_maintenance_record(array $data): array {
+    $assetId = (int)($data['asset_id'] ?? 0);
+    if ($assetId <= 0) return ['success' => false, 'error' => 'Asset ID tidak valid'];
+
+    $date = !empty($data['maintenance_date']) ? substr((string)$data['maintenance_date'], 0, 10) : date('Y-m-d');
+    $time = !empty($data['maintenance_time']) ? substr((string)$data['maintenance_time'], 0, 8) : date('H:i:s');
+    $month = (int)date('n', strtotime($date));
+    $year = (int)date('Y', strtotime($date));
+    $userId = (int)($data['technician_user_id'] ?? current_user_id());
+    $techName = trim((string)($data['technician_name'] ?? ''));
+    if ($techName === '') {
+        $techName = current_user_name();
+    }
+    $status = trim((string)($data['status'] ?? 'Selesai'));
+    if (!in_array($status, ['Selesai', 'Proses', 'Perlu Perbaikan', 'Temuan'], true)) {
+        $status = 'Selesai';
+    }
+    $mType = trim((string)($data['maintenance_type'] ?? 'Maintenance'));
+    $findings = trim((string)($data['findings'] ?? ''));
+    $recommendation = trim((string)($data['recommendation'] ?? ''));
+    $checklists = (array)($data['checklists'] ?? []);
+
+    if (is_google_cloud_mode()) {
+        $client = google_sheets_v4_client();
+        if (!$client) return ['success' => false, 'error' => 'Google Sheets client tidak tersedia'];
+
+        // 1. Simpan ke Maintenance_Scan
+        $client->createSheetIfNotExists('Maintenance_Scan');
+        $scans = $client->getSheetData('Maintenance_Scan');
+        $maxId = 0;
+        foreach ($scans as $s) {
+            $sid = (int)($s['id'] ?? 0);
+            if ($sid > $maxId) $maxId = $sid;
+        }
+        $newScanId = max(count($scans) + 1, $maxId + 1);
+
+        $newScanRow = [
+            $newScanId,
             $assetId,
             $userId,
             $techName,
@@ -1369,49 +1504,229 @@ function record_scan(int $assetId, int $userId, string $techName, string $date, 
             $time,
             $month,
             $year,
-            'Selesai',
-            'QR',
-            date('Y-m-d H:i:s')
+            $status,
+            $mType,
+            date('Y-m-d H:i:s'),
+            $findings,
+            $recommendation
         ];
-        $client->appendValues('Maintenance_Scan!A:K', [$newRow]);
-        return ['success' => true, 'log_id' => $newId];
-    }
+        $client->appendValues('Maintenance_Scan!A:M', [$newScanRow]);
 
-    $existing = db()->prepare("
-        SELECT * FROM maintenance_scan
-        WHERE asset_id = ? AND maintenance_month = ? AND maintenance_year = ?
-        LIMIT 1
-    ");
-    $existing->execute([$assetId, $month, $year]);
-    $old = $existing->fetch();
-    if ($old) {
-        if ($force) {
-            $up = db()->prepare("
-                UPDATE maintenance_scan
-                SET technician_user_id = ?, maintenance_date = ?, maintenance_time = ?
-                WHERE id = ?
-            ");
-            $up->execute([$userId, $date, $time, $old['id']]);
-            return ['success' => true, 'log_id' => (int)$old['id'], 'is_updated' => true];
+        // 2. Simpan 9 items ke Maintenance_Checklists
+        $client->createSheetIfNotExists('Maintenance_Checklists');
+        $existingChk = $client->getSheetData('Maintenance_Checklists');
+        $maxChkId = 0;
+        foreach ($existingChk as $c) {
+            $cid = (int)($c['id'] ?? 0);
+            if ($cid > $maxChkId) $maxChkId = $cid;
         }
-        return ['success' => false, 'is_duplicate' => true, 'existing' => $old];
+        $nextChkId = $maxChkId + 1;
+
+        $chkRows = [];
+        $fixedItems = get_fixed_checklists();
+        foreach ($fixedItems as $num => $name) {
+            $chkItem = $checklists[$num] ?? [];
+            $checked = !empty($chkItem['checked']) ? 1 : 0;
+            $notes = trim((string)($chkItem['notes'] ?? ''));
+            $chkRows[] = [
+                $nextChkId,
+                $newScanId,
+                $assetId,
+                $num,
+                $name,
+                $checked,
+                $notes,
+                date('Y-m-d H:i:s')
+            ];
+            $nextChkId++;
+        }
+        $client->appendValues('Maintenance_Checklists!A:H', $chkRows);
+
+        // 3. Jika ada temuan / kerusakan, catat juga di Maintenance_Findings
+        if ($findings !== '' || $status === 'Perlu Perbaikan' || $status === 'Proses') {
+            $client->createSheetIfNotExists('Maintenance_Findings');
+            $existingFindings = $client->getSheetData('Maintenance_Findings');
+            $newFindId = count($existingFindings) + 1;
+            $client->appendValues('Maintenance_Findings!A:L', [[
+                $newFindId,
+                $newScanId,
+                $assetId,
+                'Maintenance Temuan',
+                $findings,
+                $recommendation,
+                $status,
+                $techName,
+                date('Y-m-d H:i:s'),
+                '', '', ''
+            ]]);
+        }
+
+        $client->clearCache();
+        return ['success' => true, 'log_id' => $newScanId];
     }
 
+    // MySQL Mode
     try {
+        db()->exec("
+            CREATE TABLE IF NOT EXISTS maintenance_scan (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                asset_id INT NOT NULL,
+                technician_user_id INT NULL,
+                technician_name VARCHAR(150) NULL,
+                maintenance_date DATE NOT NULL,
+                maintenance_time TIME NOT NULL,
+                maintenance_month TINYINT NOT NULL,
+                maintenance_year SMALLINT NOT NULL,
+                status VARCHAR(50) DEFAULT 'Selesai',
+                source VARCHAR(50) DEFAULT 'Maintenance',
+                findings TEXT NULL,
+                recommendation TEXT NULL,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            );
+            CREATE TABLE IF NOT EXISTS maintenance_checklists (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                maintenance_id INT NOT NULL,
+                asset_id INT NOT NULL,
+                checklist_number TINYINT NOT NULL,
+                checklist_name VARCHAR(150) NOT NULL,
+                checked TINYINT(1) DEFAULT 0,
+                notes VARCHAR(255) NULL,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            );
+        ");
+
         $ins = db()->prepare("
             INSERT INTO maintenance_scan
-            (asset_id, technician_user_id, maintenance_date, maintenance_time, maintenance_month, maintenance_year, status, source)
-            VALUES (?, ?, ?, ?, ?, ?, 'Selesai', 'QR')
+            (asset_id, technician_user_id, technician_name, maintenance_date, maintenance_time, maintenance_month, maintenance_year, status, source, findings, recommendation, created_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())
         ");
-        $ins->execute([$assetId, $userId, $date, $time, $month, $year]);
+        $ins->execute([$assetId, $userId, $techName, $date, $time, $month, $year, $status, $mType, $findings, $recommendation]);
         $logId = (int)db()->lastInsertId();
-        return ['success' => true, 'log_id' => $logId];
-    } catch (PDOException $e) {
-        if (($e->errorInfo[1] ?? 0) == 1062) {
-            return ['success' => false, 'is_duplicate' => true];
+
+        $fixedItems = get_fixed_checklists();
+        $chkSt = db()->prepare("
+            INSERT INTO maintenance_checklists
+            (maintenance_id, asset_id, checklist_number, checklist_name, checked, notes, created_at)
+            VALUES (?, ?, ?, ?, ?, ?, NOW())
+        ");
+        foreach ($fixedItems as $num => $name) {
+            $chkItem = $checklists[$num] ?? [];
+            $checked = !empty($chkItem['checked']) ? 1 : 0;
+            $notes = trim((string)($chkItem['notes'] ?? ''));
+            $chkSt->execute([$logId, $assetId, $num, $name, $checked, $notes]);
         }
-        throw $e;
+
+        return ['success' => true, 'log_id' => $logId];
+    } catch (Throwable $e) {
+        return ['success' => false, 'error' => $e->getMessage()];
     }
+}
+
+function get_maintenance_detail(int $logId): ?array {
+    if ($logId <= 0) return null;
+    $fixedItems = get_fixed_checklists();
+
+    if (is_google_cloud_mode()) {
+        $client = google_sheets_v4_client();
+        if (!$client) return null;
+
+        $scans = $client->getSheetData('Maintenance_Scan');
+        $targetScan = null;
+        foreach ($scans as $s) {
+            if ((int)($s['id'] ?? 0) === $logId) {
+                $targetScan = $s;
+                break;
+            }
+        }
+        if (!$targetScan) return null;
+
+        $assetId = (int)($targetScan['asset_id'] ?? 0);
+        $asset = get_asset_by_id($assetId);
+
+        // Checklist items
+        $chkRows = $client->getSheetData('Maintenance_Checklists');
+        $checklists = [];
+        foreach ($fixedItems as $num => $name) {
+            $checklists[$num] = [
+                'number' => $num,
+                'name' => $name,
+                'checked' => 0,
+                'notes' => ''
+            ];
+        }
+        foreach ($chkRows as $c) {
+            if ((int)($c['maintenance_id'] ?? 0) === $logId) {
+                $cnum = (int)($c['checklist_number'] ?? 0);
+                if (isset($checklists[$cnum])) {
+                    $isCh = strtolower(trim((string)($c['checked'] ?? '0')));
+                    $checklists[$cnum]['checked'] = ($isCh === '1' || $isCh === 'true' || $isCh === 'yes' || $isCh === 'v' || $isCh === '✓') ? 1 : 0;
+                    $checklists[$cnum]['notes'] = (string)($c['notes'] ?? '');
+                }
+            }
+        }
+
+        return [
+            'scan' => $targetScan,
+            'asset' => $asset,
+            'checklists' => $checklists
+        ];
+    }
+
+    // MySQL Mode
+    try {
+        $st = db()->prepare("
+            SELECT ms.*, COALESCE(ms.technician_name, u.nama, 'Teknisi') AS technician_name
+            FROM maintenance_scan ms
+            LEFT JOIN users u ON u.id = ms.technician_user_id
+            WHERE ms.id = ? LIMIT 1
+        ");
+        $st->execute([$logId]);
+        $scan = $st->fetch();
+        if (!$scan) return null;
+
+        $asset = get_asset_by_id((int)$scan['asset_id']);
+
+        $chkSt = db()->prepare("SELECT * FROM maintenance_checklists WHERE maintenance_id = ? ORDER BY checklist_number ASC");
+        $chkSt->execute([$logId]);
+        $chkRows = $chkSt->fetchAll();
+
+        $checklists = [];
+        foreach ($fixedItems as $num => $name) {
+            $checklists[$num] = [
+                'number' => $num,
+                'name' => $name,
+                'checked' => 0,
+                'notes' => ''
+            ];
+        }
+        foreach ($chkRows as $c) {
+            $cnum = (int)($c['checklist_number'] ?? 0);
+            if (isset($checklists[$cnum])) {
+                $checklists[$cnum]['checked'] = (int)($c['checked'] ?? 0);
+                $checklists[$cnum]['notes'] = (string)($c['notes'] ?? '');
+            }
+        }
+
+        return [
+            'scan' => $scan,
+            'asset' => $asset,
+            'checklists' => $checklists
+        ];
+    } catch (Throwable $e) {
+        return null;
+    }
+}
+
+function record_scan(int $assetId, int $userId, string $techName, string $date, string $time, int $month, int $year, bool $force = false): array {
+    return save_maintenance_record([
+        'asset_id' => $assetId,
+        'technician_user_id' => $userId,
+        'technician_name' => $techName,
+        'maintenance_date' => $date,
+        'maintenance_time' => $time,
+        'status' => 'Selesai',
+        'maintenance_type' => $force ? 'Maintenance Ulang' : 'Maintenance'
+    ]);
 }
 
 function get_log_by_id(int $logId): ?array {
@@ -1594,6 +1909,9 @@ function get_history_rows(int $month, int $year, int $cabangId, string $status =
                 'maintenance_time' => substr((string)($s['maintenance_time'] ?? ''), 0, 8),
                 'status' => $s['status'] ?? 'Selesai',
                 'technician_name' => $s['technician_name'] ?? 'Teknisi',
+                'maintenance_type' => $s['source'] ?? $s['maintenance_type'] ?? 'Maintenance',
+                'findings' => $s['findings'] ?? '',
+                'recommendation' => $s['recommendation'] ?? '',
                 'kode_inventaris' => $a['kode_inventaris'] ?? '-',
                 'serial_number' => $a['serial_number'] ?? '-',
                 'merk' => $a['merk'] ?? '',
@@ -1603,6 +1921,7 @@ function get_history_rows(int $month, int $year, int $cabangId, string $status =
                 'cabang_nama' => $a['cabang_nama'] ?? '-'
             ];
         }
+        usort($rows, fn($a, $b) => strcmp($b['maintenance_date'], $a['maintenance_date']));
         return array_values($rows);
     }
 
@@ -1614,7 +1933,7 @@ function get_history_rows(int $month, int $year, int $cabangId, string $status =
     SELECT ms.*, a.kode_inventaris, a.serial_number, a.merk, a.model,
            c.`{$cName}` AS cabang_nama,
            k.`{$kName}` AS karyawan_nama,
-           u.`{$uName}` AS teknisi_nama
+           COALESCE(ms.technician_name, u.`{$uName}`, 'Teknisi') AS technician_name
     FROM maintenance_scan ms
     JOIN assets a ON a.id = ms.asset_id
     LEFT JOIN cabang c ON c.id = a.id_cabang
@@ -1628,11 +1947,252 @@ function get_history_rows(int $month, int $year, int $cabangId, string $status =
     if ($cabangId > 0) { $sql .= " AND a.id_cabang = ? "; $params[] = $cabangId; }
     if ($status !== '') { $sql .= " AND ms.status = ? "; $params[] = $status; }
 
-    $sql .= " ORDER BY ms.maintenance_date DESC, ms.maintenance_time DESC LIMIT 1000";
+    $sql .= " ORDER BY ms.maintenance_date DESC, ms.id DESC LIMIT 1000";
 
     $st = db()->prepare($sql);
     $st->execute($params);
     return $st->fetchAll();
+}
+
+function get_audit_maintenance_data(array $filters): array {
+    $month = (int)($filters['bulan'] ?? date('n'));
+    $year = (int)($filters['tahun'] ?? date('Y'));
+    $cabangId = (int)($filters['cabang'] ?? 0);
+    $divisiId = (int)($filters['divisi'] ?? 0);
+    $filterKat = (int)($filters['kategori'] ?? 0);
+    $filterTech = trim((string)($filters['teknisi'] ?? ''));
+    $filterStatus = trim((string)($filters['status'] ?? ''));
+
+    // 1. Ambil semua master aset aktif
+    if (is_google_cloud_mode()) {
+        $client = google_sheets_v4_client();
+        $allAssets = array_filter(map_sheets_assets(), function($a) use ($cabangId, $divisiId, $filterKat) {
+            $st = strtolower($a['status']);
+            if ($st !== 'aktif' && $st !== '') return false;
+            if ($cabangId > 0 && (int)($a['id_cabang'] ?? 0) !== $cabangId) return false;
+            if ($divisiId > 0 && (int)($a['id_divisi'] ?? 0) !== $divisiId) return false;
+            if ($filterKat > 0 && (int)($a['id_kategori'] ?? 0) !== $filterKat) return false;
+            return true;
+        });
+
+        $scans = $client ? $client->getSheetData('Maintenance_Scan') : [];
+        $chkRows = $client ? $client->getSheetData('Maintenance_Checklists') : [];
+        
+        // Buat map checklist per maintenance_id
+        $chkMap = [];
+        foreach ($chkRows as $c) {
+            $mid = (int)($c['maintenance_id'] ?? 0);
+            if ($mid > 0) {
+                $chkMap[$mid][] = $c;
+            }
+        }
+
+        // Map maintenance terbaru per asset_id untuk bulan & tahun ini
+        $assetScanMap = [];
+        foreach ($scans as $s) {
+            if ((int)($s['maintenance_month'] ?? 0) === $month && (int)($s['maintenance_year'] ?? 0) === $year) {
+                $aid = (int)($s['asset_id'] ?? 0);
+                // Jika teknisi difilter
+                if ($filterTech !== '' && strcasecmp(trim($s['technician_name'] ?? ''), $filterTech) !== 0) {
+                    continue;
+                }
+                $assetScanMap[$aid] = $s;
+            }
+        }
+
+        $rows = [];
+        $total = 0;
+        $done = 0;
+        $pending = 0;
+        $repair = 0;
+
+        foreach ($allAssets as $a) {
+            $aid = (int)$a['id'];
+            $scan = $assetScanMap[$aid] ?? null;
+
+            $isDone = ($scan !== null);
+            $st = $isDone ? ($scan['status'] ?? 'Selesai') : 'Belum Maintenance';
+            
+            // Filter status
+            if ($filterStatus !== '') {
+                if ($filterStatus === 'done' && !$isDone) continue;
+                if ($filterStatus === 'pending' && $isDone) continue;
+                if ($filterStatus === 'repair' && (!in_array($st, ['Temuan', 'Perlu Perbaikan', 'Proses'], true))) continue;
+                if (!in_array($filterStatus, ['done', 'pending', 'repair'], true) && strcasecmp($st, $filterStatus) !== 0) continue;
+            }
+
+            $total++;
+            if ($isDone) {
+                $done++;
+                if (in_array($st, ['Temuan', 'Perlu Perbaikan', 'Proses'], true)) {
+                    $repair++;
+                }
+            } else {
+                $pending++;
+            }
+
+            $mid = $scan ? (int)($scan['id'] ?? 0) : 0;
+            $chks = $mid > 0 ? ($chkMap[$mid] ?? []) : [];
+
+            $rows[] = [
+                'asset_id' => $aid,
+                'kode_inventaris' => $a['kode_inventaris'] ?? '-',
+                'serial_number' => $a['serial_number'] ?? '-',
+                'perangkat' => trim(($a['merk'] ?? '').' '.($a['model'] ?? '')),
+                'merk' => $a['merk'] ?? '',
+                'model' => $a['model'] ?? '',
+                'karyawan_nama' => $a['karyawan_nama'] ?? '-',
+                'divisi_nama' => $a['divisi_nama'] ?? '-',
+                'cabang_nama' => $a['cabang_nama'] ?? '-',
+                'kategori_nama' => $a['kategori_nama'] ?? 'Perangkat IT',
+                'is_done' => $isDone,
+                'status' => $st,
+                'log_id' => $mid,
+                'maintenance_date' => $scan ? substr((string)($scan['maintenance_date'] ?? ''), 0, 10) : '-',
+                'technician_name' => $scan ? ($scan['technician_name'] ?? 'Teknisi') : '-',
+                'findings' => $scan ? ($scan['findings'] ?? '-') : '-',
+                'recommendation' => $scan ? ($scan['recommendation'] ?? '-') : '-',
+                'checklists' => $chks
+            ];
+        }
+
+        $percent = $total > 0 ? round(($done / $total) * 100) : 0;
+        return [
+            'stats' => ['total' => $total, 'done' => $done, 'pending' => $pending, 'repair' => $repair, 'percent' => $percent],
+            'rows' => $rows
+        ];
+    }
+
+    // MySQL Mode
+    $where = " WHERE (a.status = 'Aktif' OR a.status = 'aktif' OR a.status IS NULL OR a.status = '') ";
+    $params = [];
+    if ($cabangId > 0) { $where .= " AND a.id_cabang = ? "; $params[] = $cabangId; }
+    if ($divisiId > 0) { $where .= " AND a.id_divisi = ? "; $params[] = $divisiId; }
+    if ($filterKat > 0) { $where .= " AND a.id_kategori = ? "; $params[] = $filterKat; }
+
+    $cName = name_column('cabang') ?: 'id';
+    $kName = name_column('karyawan') ?: 'id';
+    $dName = name_column('divisi') ?: 'id';
+    $katName = name_column('kategori_aset') ?: 'id';
+    $uName = name_column('users') ?: 'id';
+
+    $sql = "
+        SELECT a.id AS asset_id, a.kode_inventaris, a.serial_number, a.merk, a.model,
+               c.`{$cName}` AS cabang_nama,
+               k.`{$kName}` AS karyawan_nama,
+               d.`{$dName}` AS divisi_nama,
+               kat.`{$katName}` AS kategori_nama,
+               ms.id AS log_id,
+               ms.maintenance_date,
+               ms.status AS scan_status,
+               ms.findings,
+               ms.recommendation,
+               COALESCE(ms.technician_name, u.`{$uName}`, 'Teknisi') AS technician_name
+        FROM assets a
+        LEFT JOIN cabang c ON c.id = a.id_cabang
+        LEFT JOIN karyawan k ON k.id = a.id_karyawan
+        LEFT JOIN divisi d ON d.id = a.id_divisi
+        LEFT JOIN kategori_aset kat ON kat.id = a.id_kategori
+        LEFT JOIN maintenance_scan ms ON ms.asset_id = a.id AND ms.maintenance_month = {$month} AND ms.maintenance_year = {$year}
+        LEFT JOIN users u ON u.id = ms.technician_user_id
+        {$where}
+        ORDER BY c.`{$cName}`, a.kode_inventaris ASC
+    ";
+    $st = db()->prepare($sql);
+    $st->execute($params);
+    $allRows = $st->fetchAll();
+
+    $rows = [];
+    $total = 0;
+    $done = 0;
+    $pending = 0;
+    $repair = 0;
+
+    foreach ($allRows as $r) {
+        $isDone = !empty($r['log_id']);
+        $stVal = $isDone ? ($r['scan_status'] ?: 'Selesai') : 'Belum Maintenance';
+
+        if ($filterTech !== '' && $isDone && strcasecmp(trim($r['technician_name'] ?? ''), $filterTech) !== 0) {
+            continue;
+        }
+
+        if ($filterStatus !== '') {
+            if ($filterStatus === 'done' && !$isDone) continue;
+            if ($filterStatus === 'pending' && $isDone) continue;
+            if ($filterStatus === 'repair' && (!in_array($stVal, ['Temuan', 'Perlu Perbaikan', 'Proses'], true))) continue;
+            if (!in_array($filterStatus, ['done', 'pending', 'repair'], true) && strcasecmp($stVal, $filterStatus) !== 0) continue;
+        }
+
+        $total++;
+        if ($isDone) {
+            $done++;
+            if (in_array($stVal, ['Temuan', 'Perlu Perbaikan', 'Proses'], true)) $repair++;
+        } else {
+            $pending++;
+        }
+
+        $rows[] = [
+            'asset_id' => (int)$r['asset_id'],
+            'kode_inventaris' => $r['kode_inventaris'] ?? '-',
+            'serial_number' => $r['serial_number'] ?? '-',
+            'perangkat' => trim(($r['merk'] ?? '').' '.($r['model'] ?? '')),
+            'merk' => $r['merk'] ?? '',
+            'model' => $r['model'] ?? '',
+            'karyawan_nama' => $r['karyawan_nama'] ?? '-',
+            'divisi_nama' => $r['divisi_nama'] ?? '-',
+            'cabang_nama' => $r['cabang_nama'] ?? '-',
+            'kategori_nama' => $r['kategori_nama'] ?? 'Perangkat IT',
+            'is_done' => $isDone,
+            'status' => $stVal,
+            'log_id' => (int)($r['log_id'] ?? 0),
+            'maintenance_date' => $isDone ? substr((string)($r['maintenance_date'] ?? ''), 0, 10) : '-',
+            'technician_name' => $isDone ? ($r['technician_name'] ?? 'Teknisi') : '-',
+            'findings' => $isDone ? ($r['findings'] ?? '-') : '-',
+            'recommendation' => $isDone ? ($r['recommendation'] ?? '-') : '-',
+            'checklists' => []
+        ];
+    }
+
+    $percent = $total > 0 ? round(($done / $total) * 100) : 0;
+    return [
+        'stats' => ['total' => $total, 'done' => $done, 'pending' => $pending, 'repair' => $repair, 'percent' => $percent],
+        'rows' => $rows
+    ];
+}
+
+function get_monthly_overview(int $year, int $cabangId = 0): array {
+    $monthNames = [
+        1 => 'Januari', 2 => 'Februari', 3 => 'Maret', 4 => 'April',
+        5 => 'Mei', 6 => 'Juni', 7 => 'Juli', 8 => 'Agustus',
+        9 => 'September', 10 => 'Oktober', 11 => 'November', 12 => 'Desember'
+    ];
+    $currentMonth = (int)date('n');
+    $currentYear = (int)date('Y');
+
+    $overview = [];
+    for ($m = 1; $m <= 12; $m++) {
+        $audit = get_audit_maintenance_data([
+            'bulan' => $m,
+            'tahun' => $year,
+            'cabang' => $cabangId
+        ]);
+        $stats = $audit['stats'];
+        $isFuture = ($year > $currentYear) || ($year === $currentYear && $m > $currentMonth);
+        $isCurrent = ($year === $currentYear && $m === $currentMonth);
+
+        $overview[$m] = [
+            'month' => $m,
+            'month_name' => $monthNames[$m],
+            'total' => $stats['total'],
+            'done' => $stats['done'],
+            'pending' => $stats['pending'],
+            'repair' => $stats['repair'],
+            'percent' => $stats['percent'],
+            'is_future' => $isFuture,
+            'is_current' => $isCurrent
+        ];
+    }
+    return $overview;
 }
 
 function get_qr_admin_rows(int $cabangId): array {
@@ -1761,6 +2321,8 @@ function render_page(string $title, string $content, string $extraHead = '', str
             </a>
             <div class="d-flex flex-wrap gap-2 align-items-center">
               <a class="nav-pill-btn '.($currentPage==='dashboard.php'?'active':'').'" href="'.e(module_url('dashboard.php')).'"><i class="bi bi-speedometer2"></i> Dashboard</a>
+              <a class="nav-pill-btn '.($currentPage==='audit.php'?'active':'').'" href="'.e(module_url('audit.php')).'"><i class="bi bi-shield-check"></i> Audit</a>
+              <a class="nav-pill-btn '.($currentPage==='monthly_history.php'?'active':'').'" href="'.e(module_url('monthly_history.php')).'"><i class="bi bi-calendar-check"></i> Bulanan</a>
               <a class="nav-pill-btn '.($currentPage==='history.php'?'active':'').'" href="'.e(module_url('history.php')).'"><i class="bi bi-clock-history"></i> Riwayat</a>
               <a class="nav-pill-btn '.($currentPage==='qr_admin.php'?'active':'').'" href="'.e(module_url('qr_admin.php')).'"><i class="bi bi-qr-code"></i> QR Aset</a>
               <a class="nav-pill-btn '.($currentPage==='cabang_admin.php'?'active':'').'" href="'.e(module_url('cabang_admin.php')).'"><i class="bi bi-buildings"></i> Cabang</a>

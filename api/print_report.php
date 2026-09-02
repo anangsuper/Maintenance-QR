@@ -382,7 +382,8 @@ $body .= '</select>
     <!-- Header Dokumen -->
     <div class="report-header d-flex justify-content-between align-items-end flex-wrap gap-2">
       <div>
-        <div class="report-title">LAPORAN REKAPITULASI MAINTENANCE IT & HARDWARE</div>
+        <div class="small fw-bold text-secondary text-uppercase tracking-wider">PT BPR MITRATAMA ARTHABUANA</div>
+        <div class="report-title">CHECKLIST MAINTENANCE PERANGKAT IT</div>
         <div class="report-sub">
           Periode: <strong class="text-dark">'.$monthName.' '.$year.'</strong> &nbsp;|&nbsp; 
           Cabang / Lokasi: <strong class="text-dark">'.e($cabangName).'</strong>
@@ -390,7 +391,7 @@ $body .= '</select>
       </div>
       <div class="text-end small text-muted">
         <div>Tanggal Cetak: <strong>'.date('d-m-Y').'</strong> ('.date('H:i').' WITA)</div>
-        <div>Modul QR Maintenance</div>
+        <div>Modul QR Maintenance System</div>
       </div>
     </div>
 
