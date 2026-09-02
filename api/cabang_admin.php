@@ -24,7 +24,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         ]);
 
         if (!empty($res['success'])) {
-            $_SESSION['flash'] = "Cabang '{$nama}' berhasil ditambahkan ke sistem.";
+            $_SESSION['flash'] = "Cabang '{$nama}' berhasil ditambahkan.";
             header('Location: ' . module_url('cabang_admin.php'));
             exit;
         } else {
@@ -57,9 +57,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 $flash = $_SESSION['flash'] ?? '';
 unset($_SESSION['flash']);
 
+$editId = max(0, (int)($_GET['edit'] ?? 0));
+$editCabang = null;
+if ($editId > 0) {
+    $editCabang = get_cabang_by_id($editId);
+}
+
 $month = (int)date('n');
 $year = (int)date('Y');
 $branchSummaries = get_branch_maintenance_summary($month, $year);
+$allCabangs = get_cabang_list();
+$cabangMap = [];
+foreach ($allCabangs as $cb) {
+    $cabangMap[(int)($cb['id'] ?? 0)] = $cb;
+}
 
 $cabangRowsHtml = '';
 $no = 0;
@@ -71,13 +82,27 @@ foreach ($branchSummaries as $bs) {
     $done = $bs['done'];
     $pending = $bs['pending'];
     $pct = $bs['percent'];
+    $isBeingEdited = ($editId === $cId);
+
+    $raw = $cabangMap[$cId] ?? [];
+    $alamat = $raw['alamat'] ?? $raw['lokasi'] ?? '';
+    $pj = $raw['penanggung_jawab'] ?? $raw['kepala_cabang'] ?? '';
+
+    $extraInfo = '';
+    if ($alamat || $pj) {
+        $extraInfo = '<div class="small text-secondary mt-1">';
+        if ($alamat) $extraInfo .= '<i class="bi bi-geo-alt me-1"></i>'.e($alamat).' &nbsp;';
+        if ($pj) $extraInfo .= '<i class="bi bi-person me-1"></i>'.e($pj);
+        $extraInfo .= '</div>';
+    }
 
     $cabangRowsHtml .= '
-    <tr>
+    <tr class="'.($isBeingEdited ? 'table-warning' : '').'">
       <td class="text-center">'.$no.'</td>
       <td>
         <div class="fw-bold text-dark fs-6"><i class="bi bi-building text-primary me-2"></i>'.e($cName).'</div>
-        <small class="text-muted">ID Cabang: #'.$cId.'</small>
+        <small class="text-muted">ID: #'.$cId.'</small>
+        '.$extraInfo.'
       </td>
       <td class="text-center">
         <span class="badge text-bg-primary fs-6">'.$tot.' Unit</span>
@@ -92,10 +117,10 @@ foreach ($branchSummaries as $bs) {
         </div>
       </td>
       <td class="text-nowrap text-end">
-        <a class="btn btn-sm btn-outline-primary me-1" href="'.e(module_url('dashboard.php', ['cabang'=>$cId])).'"><i class="bi bi-speedometer2 me-1"></i> Dashboard</a>
-        <a class="btn btn-sm btn-outline-secondary me-1" target="_blank" href="'.e(module_url('print_report.php', ['cabang'=>$cId])).'"><i class="bi bi-printer me-1"></i> Rekap</a>
-        <a class="btn btn-sm btn-outline-secondary me-1" target="_blank" href="'.e(module_url('print_qr.php', ['cabang'=>$cId])).'"><i class="bi bi-qr-code me-1"></i> QR</a>
-        <a class="btn btn-sm btn-warning text-dark fw-semibold" href="'.e(module_url('asset_add.php')).'?cabang='.$cId.'"><i class="bi bi-plus"></i> Tambah Aset</a>
+        <a class="btn btn-sm btn-outline-secondary me-1" href="'.e(module_url('cabang_admin.php', ['edit'=>$cId])).'"><i class="bi bi-pencil-square me-1"></i> Edit</a>
+        <a class="btn btn-sm btn-outline-primary me-1" href="'.e(module_url('dashboard.php', ['cabang'=>$cId])).'"><i class="bi bi-speedometer2"></i> Dashboard</a>
+        <a class="btn btn-sm btn-outline-secondary me-1" target="_blank" href="'.e(module_url('print_report.php', ['cabang'=>$cId])).'"><i class="bi bi-printer"></i></a>
+        <a class="btn btn-sm btn-outline-secondary" target="_blank" href="'.e(module_url('print_qr.php', ['cabang'=>$cId])).'"><i class="bi bi-qr-code"></i></a>
       </td>
     </tr>';
 }
@@ -108,6 +133,77 @@ $flashHtml = $flash ? '<div class="alert alert-success alert-dismissible fade sh
 $errorHtml = $error ? '<div class="alert alert-danger alert-dismissible fade show"><i class="bi bi-exclamation-triangle-fill me-2"></i>'.e($error).'<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>' : '';
 
 $modeBadge = is_google_cloud_mode() ? '<span class="badge text-bg-info mb-2"><i class="bi bi-google me-1"></i> Google Cloud Sheets API v4</span>' : '<span class="badge text-bg-secondary mb-2"><i class="bi bi-database me-1"></i> MySQL Database</span>';
+
+// Form State: Add vs Edit
+if ($editCabang) {
+    $editName = $editCabang['nama_cabang'] ?? $editCabang['nama'] ?? '';
+    $editAlamat = $editCabang['alamat'] ?? $editCabang['lokasi'] ?? '';
+    $editTelepon = $editCabang['telepon'] ?? $editCabang['kontak'] ?? '';
+    $editPJ = $editCabang['penanggung_jawab'] ?? $editCabang['kepala_cabang'] ?? '';
+
+    $formCardTitle = '<h5 class="fw-bold text-warning mb-3 border-bottom pb-2"><i class="bi bi-pencil-square me-2"></i>Edit Data Cabang</h5>';
+    $formContent = '
+    <form method="post">
+      <input type="hidden" name="_csrf" value="'.e(csrf_token()).'">
+      <input type="hidden" name="action" value="edit">
+      <input type="hidden" name="cabang_id" value="'.(int)$editCabang['id'].'">
+
+      <div class="mb-3">
+        <label class="form-label fw-semibold">Nama Cabang / Unit <span class="text-danger">*</span></label>
+        <input type="text" class="form-control fw-bold" name="nama_cabang" required value="'.e($editName).'" placeholder="Contoh: Cabang Semarang, Cabang Bali...">
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label fw-semibold">Kota / Alamat</label>
+        <input type="text" class="form-control" name="alamat" value="'.e($editAlamat).'" placeholder="Contoh: Jl. Pemuda No. 45, Semarang">
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label fw-semibold">No. Telepon / Kontak</label>
+        <input type="text" class="form-control" name="telepon" value="'.e($editTelepon).'" placeholder="Contoh: (024) 8765432 / 0812...">
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label fw-semibold">Penanggung Jawab / Kepala Cabang</label>
+        <input type="text" class="form-control" name="penanggung_jawab" value="'.e($editPJ).'" placeholder="Contoh: Bpk. Hendra">
+      </div>
+
+      <div class="d-flex gap-2">
+        <a class="btn btn-outline-secondary flex-fill" href="'.e(module_url('cabang_admin.php')).'">Batal</a>
+        <button type="submit" class="btn btn-warning text-dark flex-fill fw-bold py-2"><i class="bi bi-save me-1"></i> Simpan Perubahan</button>
+      </div>
+    </form>';
+} else {
+    $formCardTitle = '<h5 class="fw-bold text-primary mb-3 border-bottom pb-2"><i class="bi bi-plus-circle me-2"></i>Tambah Cabang Baru</h5>';
+    $formContent = '
+    <form method="post">
+      <input type="hidden" name="_csrf" value="'.e(csrf_token()).'">
+      <input type="hidden" name="action" value="add">
+
+      <div class="mb-3">
+        <label class="form-label fw-semibold">Nama Cabang / Unit <span class="text-danger">*</span></label>
+        <input type="text" class="form-control" name="nama_cabang" required placeholder="Contoh: Cabang Semarang, Cabang Bali, Gudang Barat...">
+        <div class="form-text">Nama cabang yang akan muncul di dropdown dan laporan.</div>
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label fw-semibold">Kota / Alamat</label>
+        <input type="text" class="form-control" name="alamat" placeholder="Contoh: Jl. Pemuda No. 45, Semarang">
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label fw-semibold">No. Telepon / Kontak</label>
+        <input type="text" class="form-control" name="telepon" placeholder="Contoh: (024) 8765432 / 0812...">
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label fw-semibold">Penanggung Jawab / Kepala Cabang</label>
+        <input type="text" class="form-control" name="penanggung_jawab" placeholder="Contoh: Bpk. Hendra">
+      </div>
+
+      <button type="submit" class="btn btn-primary w-100 fw-bold py-2"><i class="bi bi-save me-1"></i> Simpan Cabang Baru</button>
+    </form>';
+}
 
 $body = '
 '.$flashHtml.'
@@ -139,7 +235,7 @@ $body = '
               <th style="width: 40px;" class="text-center">No</th>
               <th>Nama Cabang</th>
               <th class="text-center">Total Komputer</th>
-              <th style="width: 220px;">Progres Maintenance</th>
+              <th style="width: 190px;">Progres Maintenance</th>
               <th class="text-end">Aksi</th>
             </tr>
           </thead>
@@ -151,37 +247,11 @@ $body = '
     </div>
   </div>
 
-  <!-- Kolom Kanan: Form Tambah Cabang Baru -->
+  <!-- Kolom Kanan: Form Tambah / Edit Cabang -->
   <div class="col-lg-4">
-    <div class="card p-4 border-0 shadow-sm">
-      <h5 class="fw-bold text-primary mb-3 border-bottom pb-2"><i class="bi bi-plus-circle me-2"></i>Tambah Cabang Baru</h5>
-      <form method="post">
-        <input type="hidden" name="_csrf" value="'.e(csrf_token()).'">
-        <input type="hidden" name="action" value="add">
-
-        <div class="mb-3">
-          <label class="form-label fw-semibold">Nama Cabang / Unit <span class="text-danger">*</span></label>
-          <input type="text" class="form-control" name="nama_cabang" required placeholder="Contoh: Cabang Semarang, Cabang Bali, Gudang Barat...">
-          <div class="form-text">Nama cabang yang akan muncul di dropdown dan laporan.</div>
-        </div>
-
-        <div class="mb-3">
-          <label class="form-label fw-semibold">Kota / Alamat</label>
-          <input type="text" class="form-control" name="alamat" placeholder="Contoh: Jl. Pemuda No. 45, Semarang">
-        </div>
-
-        <div class="mb-3">
-          <label class="form-label fw-semibold">No. Telepon / Kontak</label>
-          <input type="text" class="form-control" name="telepon" placeholder="Contoh: (024) 8765432 / 0812...">
-        </div>
-
-        <div class="mb-3">
-          <label class="form-label fw-semibold">Penanggung Jawab / Kepala Cabang</label>
-          <input type="text" class="form-control" name="penanggung_jawab" placeholder="Contoh: Bpk. Hendra">
-        </div>
-
-        <button type="submit" class="btn btn-primary w-100 fw-bold py-2"><i class="bi bi-save me-1"></i> Simpan Cabang Baru</button>
-      </form>
+    <div class="card p-4 border-0 shadow-sm '.($editCabang ? 'border-warning border-2' : '').'">
+      '.$formCardTitle.'
+      '.$formContent.'
     </div>
   </div>
 </div>';
