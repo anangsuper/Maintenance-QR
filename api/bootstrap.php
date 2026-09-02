@@ -2429,9 +2429,7 @@ function render_page(string $title, string $content, string $extraHead = '', str
             </a>
             <div class="d-flex flex-wrap gap-2 align-items-center">
               <a class="nav-pill-btn '.($currentPage==='dashboard.php'?'active':'').'" href="'.e(module_url('dashboard.php')).'"><i class="bi bi-speedometer2"></i> Dashboard</a>
-              <a class="nav-pill-btn '.($currentPage==='audit.php'?'active':'').'" href="'.e(module_url('audit.php')).'"><i class="bi bi-shield-check"></i> Audit</a>
-              <a class="nav-pill-btn '.($currentPage==='monthly_history.php'?'active':'').'" href="'.e(module_url('monthly_history.php')).'"><i class="bi bi-calendar-check"></i> Bulanan</a>
-              <a class="nav-pill-btn '.($currentPage==='history.php'?'active':'').'" href="'.e(module_url('history.php')).'"><i class="bi bi-clock-history"></i> Riwayat</a>
+              <a class="nav-pill-btn '.(in_array($currentPage, ['audit.php', 'monthly_history.php', 'history.php', 'maintenance_detail.php'], true)?'active':'').'" href="'.e(module_url('audit.php')).'"><i class="bi bi-clock-history"></i> Riwayat Maintenance</a>
               <a class="nav-pill-btn '.($currentPage==='qr_admin.php'?'active':'').'" href="'.e(module_url('qr_admin.php')).'"><i class="bi bi-qr-code"></i> QR Aset</a>
               <a class="nav-pill-btn '.($currentPage==='cabang_admin.php'?'active':'').'" href="'.e(module_url('cabang_admin.php')).'"><i class="bi bi-buildings"></i> Cabang</a>
               <a class="btn btn-sm btn-action-add fw-bold" href="'.e(module_url('asset_add.php')).'"><i class="bi bi-plus-circle-fill me-1"></i> + Tambah Komputer</a>
