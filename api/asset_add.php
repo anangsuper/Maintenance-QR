@@ -293,13 +293,7 @@ $body = '
             <datalist id="listKaryawan">
               '.$datalistKaryawan.'
             </datalist>
-            <div class="form-text mt-1">
-              Bisa ketik nama pemilik baru langsung atau klik pilihan cepat:
-              <div class="mt-1">
-                '.$badgeKaryawan.'
-                <button type="button" class="btn btn-sm btn-outline-primary border py-0 px-2 mb-1" onclick="document.getElementById(\'inputNamaKaryawan\').focus()">+ Ketik Nama Lain</button>
-              </div>
-            </div>
+            <div class="form-text">Bisa pilih dari daftar atau ketik nama pemilik baru secara langsung.</div>
           </div>
 
           <div class="col-md-6">

@@ -321,12 +321,7 @@ $body = '
             <datalist id="listKaryawan">
               '.$datalistKaryawan.'
             </datalist>
-            <div class="form-text mt-1">
-              Pilihan cepat:
-              <div class="mt-1">
-                '.$badgeKaryawan.'
-              </div>
-            </div>
+            <div class="form-text">Bisa pilih dari daftar atau ketik nama pemilik baru secara langsung.</div>
           </div>
 
           <div class="col-md-6">
