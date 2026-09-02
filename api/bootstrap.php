@@ -136,12 +136,22 @@ function login_url(): string {
     return $scheme . '://' . $host . '/' . ltrim($u, '/');
 }
 
+function is_logged_in(): bool {
+    $timeout = (int)cfg('session_timeout', envv('SESSION_TIMEOUT', '900'));
+    $hasUser = (!empty($_SESSION['user_id']) && (int)$_SESSION['user_id'] > 0)
+        || (!is_google_cloud_mode() && current_user_id() > 0);
+    if (!$hasUser) return false;
+    if (!empty($_SESSION['last_activity']) && (time() - (int)$_SESSION['last_activity'] > $timeout)) {
+        return false;
+    }
+    return true;
+}
+
 function require_login(): void {
     $timeout = (int)cfg('session_timeout', envv('SESSION_TIMEOUT', '900')); // 15 menit default (900 detik)
 
     // Cek apakah user sudah login
-    $isLoggedIn = (!empty($_SESSION['user_id']) && (int)$_SESSION['user_id'] > 0)
-        || (!is_google_cloud_mode() && current_user_id() > 0);
+    $isLoggedIn = is_logged_in();
 
     if ($isLoggedIn) {
         // Cek sesi kedaluwarsa karena tidak ada aktivitas (idle)

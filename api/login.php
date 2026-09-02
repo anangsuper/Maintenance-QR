@@ -5,6 +5,9 @@ require __DIR__ . '/bootstrap.php';
 if (!empty($_SESSION['user_id']) && (int)$_SESSION['user_id'] > 0) {
     header('Location: ' . module_url('dashboard.php'));
     exit;
+// Simpan redirect URL jika dikirim via GET
+if (!empty($_GET['redirect'])) {
+    $_SESSION['after_login'] = (string)$_GET['redirect'];
 }
 
 $error = '';

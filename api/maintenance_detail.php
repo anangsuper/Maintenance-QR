@@ -1,5 +1,6 @@
 <?php
 require __DIR__ . '/bootstrap.php';
+require_login();
 
 $id = max(0, (int)($_GET['id'] ?? 0));
 if ($id <= 0) {

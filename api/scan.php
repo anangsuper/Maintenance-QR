@@ -147,9 +147,11 @@ $currentMonthLog = get_asset_maintenance_status_month($assetId, $month, $year);
 $action = trim((string)($_GET['action'] ?? ''));
 
 // =========================================================================
-// 3. TAMPILAN FORM CHECKLIST 9 ITEM (action = start ATAU form)
+// 3. TAMPILAN FORM CHECKLIST 9 ITEM (action = start ATAU form) -> HARUS LOGIN
 // =========================================================================
 if ($action === 'start' || $action === 'form' || $action === 'ulang') {
+    require_login(); // Teknisi / Petugas wajib login untuk mengisi checklist maintenance
+
     $fixedItems = get_fixed_checklists();
     $isUlang = ($action === 'ulang' || ($currentMonthLog && $action === 'start'));
 
@@ -320,6 +322,7 @@ if ($action === 'start' || $action === 'form' || $action === 'ulang') {
 // Histori & Yearly Card Matrix
 $historyList = get_asset_maintenance_history($assetId);
 $cardMatrix = get_asset_yearly_card_matrix($assetId, $year);
+$loggedIn = is_logged_in();
 
 // Status Bulan Berjalan
 if ($currentMonthLog) {
@@ -332,6 +335,16 @@ if ($currentMonthLog) {
 
     $badgeColor = ($cStatus === 'Temuan' || $cStatus === 'Perlu Perbaikan') ? 'danger' : ($cStatus === 'Proses' ? 'warning text-dark' : 'success');
     $badgeIcon = ($cStatus === 'Temuan' || $cStatus === 'Perlu Perbaikan') ? 'bi-exclamation-triangle-fill' : ($cStatus === 'Proses' ? 'bi-hourglass-split' : 'bi-check-circle-fill');
+
+    $btnDetail = $cLogId > 0
+        ? ($loggedIn
+            ? '<a class="btn btn-primary fw-semibold" href="'.e(module_url('maintenance_detail.php', ['id' => $cLogId])).'"><i class="bi bi-file-earmark-text me-1"></i> DETAIL LENGKAP AUDIT</a>'
+            : '<a class="btn btn-outline-primary fw-semibold" href="'.e(module_url('login.php', ['redirect' => module_url('maintenance_detail.php', ['id' => $cLogId])])).'"><i class="bi bi-shield-lock me-1"></i> LOGIN UNTUK DETAIL AUDIT</a>')
+        : '';
+
+    $btnUlang = $loggedIn
+        ? '<a class="btn btn-outline-primary fw-semibold" href="'.e(module_url('scan.php', ['t' => $token, 'action' => 'ulang'])).'"><i class="bi bi-arrow-repeat me-1"></i> MAINTENANCE ULANG</a>'
+        : '<a class="btn btn-outline-secondary fw-semibold" href="'.e(module_url('login.php', ['redirect' => module_url('scan.php', ['t' => $token, 'action' => 'ulang'])])).'"><i class="bi bi-lock me-1"></i> LOGIN UNTUK MAINTENANCE ULANG</a>';
 
     $statusCardHtml = '
     <div class="card border-0 shadow-sm mb-4 bg-success bg-opacity-10 border-start border-success border-4 p-3 p-md-4">
@@ -346,11 +359,19 @@ if ($currentMonthLog) {
       '.($cRecom !== '' ? '<div class="alert alert-info py-2 px-3 small my-2"><strong><i class="bi bi-lightbulb-fill me-1"></i>Rekomendasi:</strong> '.e($cRecom).'</div>' : '').'
 
       <div class="d-flex flex-wrap gap-2 mt-3 pt-2">
-        <a class="btn btn-outline-primary fw-semibold" href="'.e(module_url('scan.php', ['t' => $token, 'action' => 'ulang'])).'"><i class="bi bi-arrow-repeat me-1"></i> MAINTENANCE ULANG</a>
-        '.($cLogId > 0 ? '<a class="btn btn-primary fw-semibold" href="'.e(module_url('maintenance_detail.php', ['id' => $cLogId])).'"><i class="bi bi-file-earmark-text me-1"></i> DETAIL LENGKAP AUDIT</a>' : '').'
+        '.$btnUlang.'
+        '.$btnDetail.'
       </div>
     </div>';
 } else {
+    $startMaintUrl = $loggedIn
+        ? module_url('scan.php', ['t' => $token, 'action' => 'start'])
+        : module_url('login.php', ['redirect' => module_url('scan.php', ['t' => $token, 'action' => 'start'])]);
+
+    $startMaintBtnText = $loggedIn
+        ? '<i class="bi bi-play-circle-fill me-2"></i> MULAI MAINTENANCE SEKARANG'
+        : '<i class="bi bi-shield-lock-fill me-2"></i> LOGIN TEKNISI UNTUK MULAI MAINTENANCE';
+
     $statusCardHtml = '
     <div class="card border-0 shadow-sm mb-4 bg-danger bg-opacity-10 border-start border-danger border-4 p-3 p-md-4">
       <div class="d-flex align-items-center justify-content-between mb-2">
@@ -360,8 +381,8 @@ if ($currentMonthLog) {
       <h5 class="fw-bold text-dark mb-1">Periode: '.$monthName.' '.$year.'</h5>
       <p class="text-secondary small mb-3">Perangkat ini belum dilakukan pemeliharaan hardware & OS untuk bulan ini.</p>
       
-      <a class="btn btn-success btn-lg fw-bold py-3 px-4 shadow-sm w-100" href="'.e(module_url('scan.php', ['t' => $token, 'action' => 'start'])).'">
-        <i class="bi bi-play-circle-fill me-2"></i> MULAI MAINTENANCE SEKARANG
+      <a class="btn btn-success btn-lg fw-bold py-3 px-4 shadow-sm w-100" href="'.e($startMaintUrl).'">
+        '.$startMaintBtnText.'
       </a>
     </div>';
 }
@@ -461,9 +482,25 @@ $headStyle = '<style>
 }
 </style>';
 
+$userStatusStrip = $loggedIn
+    ? '<div class="d-flex flex-wrap justify-content-between align-items-center bg-white p-2 px-3 rounded-3 shadow-sm mb-3 border gap-2">
+         <span class="small fw-bold text-dark"><i class="bi bi-person-check-fill text-success me-1"></i> Status Login: <span class="text-primary">'.e(current_user_name()).'</span></span>
+         <div class="d-flex gap-2">
+           <a href="'.e(module_url('dashboard.php')).'" class="btn btn-sm btn-outline-primary"><i class="bi bi-speedometer2 me-1"></i> Dashboard</a>
+           <a href="'.e(module_url('logout.php')).'" class="btn btn-sm btn-outline-danger" title="Keluar"><i class="bi bi-box-arrow-right"></i> Keluar</a>
+         </div>
+       </div>'
+    : '<div class="d-flex flex-wrap justify-content-between align-items-center bg-white p-2 px-3 rounded-3 shadow-sm mb-3 border gap-2">
+         <span class="small text-secondary"><i class="bi bi-info-circle text-primary me-1"></i> Mode Cek Info Perangkat (Publik / Karyawan)</span>
+         <a href="'.e(module_url('login.php', ['redirect' => module_url('scan.php', ['t' => $token])])).'" class="btn btn-sm btn-primary fw-semibold"><i class="bi bi-box-arrow-in-right me-1"></i> Login Teknisi / Admin</a>
+       </div>';
+
 $body = '
 <div class="row justify-content-center">
   <div class="col-md-11 col-lg-10">
+
+    <!-- Status Strip Login / Tamu -->
+    '.$userStatusStrip.'
 
     <!-- Card Detail Perangkat Utama -->
     <div class="card p-3 p-md-4 border-0 shadow-sm mb-4">
