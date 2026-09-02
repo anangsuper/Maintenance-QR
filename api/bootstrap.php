@@ -331,6 +331,147 @@ function get_cabang_list(): array {
     }
 }
 
+function get_cabang_by_id(int $id): ?array {
+    if ($id <= 0) return null;
+    $cabangs = get_cabang_list();
+    foreach ($cabangs as $c) {
+        if ((int)($c['id'] ?? 0) === $id) return $c;
+    }
+    return null;
+}
+
+function create_new_cabang(array $data): array {
+    $nama = trim((string)($data['nama_cabang'] ?? $data['nama'] ?? ''));
+    $alamat = trim((string)($data['alamat'] ?? ''));
+    $telepon = trim((string)($data['telepon'] ?? ''));
+    $penanggungJawab = trim((string)($data['penanggung_jawab'] ?? ''));
+
+    if ($nama === '') {
+        return ['success' => false, 'error' => 'Nama cabang wajib diisi'];
+    }
+
+    if (is_google_cloud_mode()) {
+        $client = google_sheets_v4_client();
+        if (!$client) return ['success' => false, 'error' => 'Google Sheets client tidak tersedia'];
+
+        $rows = $client->getSheetData('Cabang', true);
+        $maxId = 0;
+        foreach ($rows as $r) {
+            $cid = (int)($r['id'] ?? 0);
+            if ($cid > $maxId) $maxId = $cid;
+            $existName = trim((string)($r['nama_cabang'] ?? $r['nama'] ?? ''));
+            if (strcasecmp($existName, $nama) === 0) {
+                return ['success' => false, 'error' => 'Nama cabang sudah terdaftar'];
+            }
+        }
+
+        $newId = max(count($rows) + 1, $maxId + 1);
+        $appended = $client->appendValues('Cabang!A:E', [[
+            $newId,
+            $nama,
+            $alamat,
+            $telepon,
+            $penanggungJawab
+        ]]);
+
+        if (!$appended) {
+            return ['success' => false, 'error' => 'Gagal menyimpan data cabang ke Google Sheets'];
+        }
+
+        $client->clearCache('Cabang');
+
+        return [
+            'success' => true,
+            'id' => $newId,
+            'nama' => $nama
+        ];
+    }
+
+    // MySQL Mode
+    try {
+        $cName = name_column('cabang') ?: 'nama_cabang';
+        $checkSt = db()->prepare("SELECT id FROM cabang WHERE LOWER(`{$cName}`) = LOWER(?) LIMIT 1");
+        $checkSt->execute([$nama]);
+        if ($checkSt->fetchColumn()) {
+            return ['success' => false, 'error' => 'Nama cabang sudah terdaftar'];
+        }
+
+        $ins = db()->prepare("INSERT INTO cabang (`{$cName}`) VALUES (?)");
+        $ins->execute([$nama]);
+        $newId = (int)db()->lastInsertId();
+
+        return [
+            'success' => true,
+            'id' => $newId,
+            'nama' => $nama
+        ];
+    } catch (Throwable $e) {
+        return ['success' => false, 'error' => $e->getMessage()];
+    }
+}
+
+function update_cabang(int $id, array $data): array {
+    if ($id <= 0) return ['success' => false, 'error' => 'ID cabang tidak valid'];
+    $nama = trim((string)($data['nama_cabang'] ?? $data['nama'] ?? ''));
+    $alamat = trim((string)($data['alamat'] ?? ''));
+    $telepon = trim((string)($data['telepon'] ?? ''));
+    $penanggungJawab = trim((string)($data['penanggung_jawab'] ?? ''));
+
+    if ($nama === '') {
+        return ['success' => false, 'error' => 'Nama cabang wajib diisi'];
+    }
+
+    if (is_google_cloud_mode()) {
+        $client = google_sheets_v4_client();
+        if (!$client) return ['success' => false, 'error' => 'Google Sheets client tidak tersedia'];
+
+        $rows = $client->getSheetData('Cabang', true);
+        $targetRow = null;
+        foreach ($rows as $r) {
+            if ((int)($r['id'] ?? 0) === $id) {
+                $targetRow = $r;
+                break;
+            }
+        }
+
+        if (!$targetRow) {
+            return ['success' => false, 'error' => 'Data cabang tidak ditemukan'];
+        }
+
+        $rowNum = (int)($targetRow['_row_num'] ?? 0);
+        if ($rowNum <= 1) {
+            return ['success' => false, 'error' => 'Gagal menentukan baris data cabang'];
+        }
+
+        $updated = $client->updateValues("Cabang!A{$rowNum}:E{$rowNum}", [[
+            $id,
+            $nama,
+            $alamat,
+            $telepon,
+            $penanggungJawab
+        ]]);
+
+        if (!$updated) {
+            return ['success' => false, 'error' => 'Gagal memperbarui data di Google Sheets'];
+        }
+
+        $client->clearCache('Cabang');
+        map_sheets_assets(true);
+
+        return ['success' => true, 'id' => $id, 'nama' => $nama];
+    }
+
+    // MySQL Mode
+    try {
+        $cName = name_column('cabang') ?: 'nama_cabang';
+        $up = db()->prepare("UPDATE cabang SET `{$cName}` = ? WHERE id = ?");
+        $up->execute([$nama, $id]);
+        return ['success' => true, 'id' => $id, 'nama' => $nama];
+    } catch (Throwable $e) {
+        return ['success' => false, 'error' => $e->getMessage()];
+    }
+}
+
 function get_divisi_list(): array {
     if (is_google_cloud_mode()) {
         $client = google_sheets_v4_client();
@@ -1442,6 +1583,7 @@ function render_page(string $title, string $content, string $extraHead = '', str
               <a class="btn btn-sm '.($currentPage==='dashboard.php'?'btn-light fw-semibold text-primary':'btn-outline-light').'" href="'.e(module_url('dashboard.php')).'"><i class="bi bi-speedometer2 me-1"></i> Dashboard</a>
               <a class="btn btn-sm '.($currentPage==='history.php'?'btn-light fw-semibold text-primary':'btn-outline-light').'" href="'.e(module_url('history.php')).'"><i class="bi bi-clock-history me-1"></i> Riwayat</a>
               <a class="btn btn-sm '.($currentPage==='qr_admin.php'?'btn-light fw-semibold text-primary':'btn-outline-light').'" href="'.e(module_url('qr_admin.php')).'"><i class="bi bi-qr-code me-1"></i> QR Aset</a>
+              <a class="btn btn-sm '.($currentPage==='cabang_admin.php'?'btn-light fw-semibold text-primary':'btn-outline-light').'" href="'.e(module_url('cabang_admin.php')).'"><i class="bi bi-buildings me-1"></i> Cabang</a>
               <a class="btn btn-sm '.($currentPage==='asset_add.php'?'btn-warning text-dark fw-bold border-2':'btn-warning text-dark fw-semibold').'" href="'.e(module_url('asset_add.php')).'"><i class="bi bi-plus-lg me-1"></i> + Tambah Komputer</a>
             </div>
           </div>

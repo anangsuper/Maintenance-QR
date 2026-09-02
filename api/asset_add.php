@@ -271,7 +271,7 @@ $body = '
         <h5 class="fw-bold text-primary border-bottom pb-2 mb-3"><i class="bi bi-geo-alt me-2"></i>2. Lokasi & Penanggung Jawab</h5>
         <div class="row g-3 mb-4">
           <div class="col-md-6">
-            <label class="form-label fw-semibold">Cabang / Lokasi <span class="text-danger">*</span></label>
+            <label class="form-label fw-semibold">Cabang / Lokasi <span class="text-danger">*</span> <a href="'.e(module_url('cabang_admin.php')).'" class="small text-primary text-decoration-none float-end" target="_blank">+ Tambah Cabang Baru</a></label>
             <select class="form-select" name="id_cabang" required>
               '.$optCab.'
             </select>
