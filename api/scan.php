@@ -147,11 +147,9 @@ $currentMonthLog = get_asset_maintenance_status_month($assetId, $month, $year);
 $action = trim((string)($_GET['action'] ?? ''));
 
 // =========================================================================
-// 3. TAMPILAN FORM CHECKLIST 9 ITEM (action = start ATAU form) -> HARUS LOGIN
+// 3. TAMPILAN FORM CHECKLIST 9 ITEM (action = start ATAU form)
 // =========================================================================
 if ($action === 'start' || $action === 'form' || $action === 'ulang') {
-    require_login(); // Teknisi / Petugas wajib login untuk mengisi checklist maintenance
-
     $fixedItems = get_fixed_checklists();
     $isUlang = ($action === 'ulang' || ($currentMonthLog && $action === 'start'));
 
@@ -337,14 +335,10 @@ if ($currentMonthLog) {
     $badgeIcon = ($cStatus === 'Temuan' || $cStatus === 'Perlu Perbaikan') ? 'bi-exclamation-triangle-fill' : ($cStatus === 'Proses' ? 'bi-hourglass-split' : 'bi-check-circle-fill');
 
     $btnDetail = $cLogId > 0
-        ? ($loggedIn
-            ? '<a class="btn btn-primary fw-semibold" href="'.e(module_url('maintenance_detail.php', ['id' => $cLogId])).'"><i class="bi bi-file-earmark-text me-1"></i> DETAIL LENGKAP AUDIT</a>'
-            : '<a class="btn btn-outline-primary fw-semibold" href="'.e(module_url('login.php', ['redirect' => module_url('maintenance_detail.php', ['id' => $cLogId])])).'"><i class="bi bi-shield-lock me-1"></i> LOGIN UNTUK DETAIL AUDIT</a>')
+        ? '<a class="btn btn-primary fw-semibold" href="'.e(module_url('maintenance_detail.php', ['id' => $cLogId])).'"><i class="bi bi-file-earmark-text me-1"></i> DETAIL LENGKAP AUDIT</a>'
         : '';
 
-    $btnUlang = $loggedIn
-        ? '<a class="btn btn-outline-primary fw-semibold" href="'.e(module_url('scan.php', ['t' => $token, 'action' => 'ulang'])).'"><i class="bi bi-arrow-repeat me-1"></i> MAINTENANCE ULANG</a>'
-        : '<a class="btn btn-outline-secondary fw-semibold" href="'.e(module_url('login.php', ['redirect' => module_url('scan.php', ['t' => $token, 'action' => 'ulang'])])).'"><i class="bi bi-lock me-1"></i> LOGIN UNTUK MAINTENANCE ULANG</a>';
+    $btnUlang = '<a class="btn btn-outline-primary fw-semibold" href="'.e(module_url('scan.php', ['t' => $token, 'action' => 'ulang'])).'"><i class="bi bi-arrow-repeat me-1"></i> MAINTENANCE ULANG</a>';
 
     $statusCardHtml = '
     <div class="card border-0 shadow-sm mb-4 bg-success bg-opacity-10 border-start border-success border-4 p-3 p-md-4">
@@ -364,13 +358,7 @@ if ($currentMonthLog) {
       </div>
     </div>';
 } else {
-    $startMaintUrl = $loggedIn
-        ? module_url('scan.php', ['t' => $token, 'action' => 'start'])
-        : module_url('login.php', ['redirect' => module_url('scan.php', ['t' => $token, 'action' => 'start'])]);
-
-    $startMaintBtnText = $loggedIn
-        ? '<i class="bi bi-play-circle-fill me-2"></i> MULAI MAINTENANCE SEKARANG'
-        : '<i class="bi bi-shield-lock-fill me-2"></i> LOGIN TEKNISI UNTUK MULAI MAINTENANCE';
+    $startMaintUrl = module_url('scan.php', ['t' => $token, 'action' => 'start']);
 
     $statusCardHtml = '
     <div class="card border-0 shadow-sm mb-4 bg-danger bg-opacity-10 border-start border-danger border-4 p-3 p-md-4">
@@ -382,7 +370,7 @@ if ($currentMonthLog) {
       <p class="text-secondary small mb-3">Perangkat ini belum dilakukan pemeliharaan hardware & OS untuk bulan ini.</p>
       
       <a class="btn btn-success btn-lg fw-bold py-3 px-4 shadow-sm w-100" href="'.e($startMaintUrl).'">
-        '.$startMaintBtnText.'
+        <i class="bi bi-play-circle-fill me-2"></i> MULAI MAINTENANCE SEKARANG
       </a>
     </div>';
 }

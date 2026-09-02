@@ -2,6 +2,13 @@
 declare(strict_types=1);
 
 if (session_status() !== PHP_SESSION_ACTIVE) {
+    ini_set('session.gc_maxlifetime', '2592000');
+    session_set_cookie_params([
+        'lifetime' => 2592000,
+        'path' => '/',
+        'httponly' => true,
+        'samesite' => 'Lax'
+    ]);
     session_start();
 }
 
@@ -137,7 +144,7 @@ function login_url(): string {
 }
 
 function is_logged_in(): bool {
-    $timeout = (int)cfg('session_timeout', envv('SESSION_TIMEOUT', '900'));
+    $timeout = (int)cfg('session_timeout', envv('SESSION_TIMEOUT', '2592000')); // 30 hari default
     $hasUser = (!empty($_SESSION['user_id']) && (int)$_SESSION['user_id'] > 0)
         || (!is_google_cloud_mode() && current_user_id() > 0);
     if (!$hasUser) return false;
@@ -148,7 +155,7 @@ function is_logged_in(): bool {
 }
 
 function require_login(): void {
-    $timeout = (int)cfg('session_timeout', envv('SESSION_TIMEOUT', '900')); // 15 menit default (900 detik)
+    $timeout = (int)cfg('session_timeout', envv('SESSION_TIMEOUT', '2592000')); // 30 hari default
 
     // Cek apakah user sudah login
     $isLoggedIn = is_logged_in();
