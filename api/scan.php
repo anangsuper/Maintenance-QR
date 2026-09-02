@@ -291,6 +291,61 @@ if ($currentMonthLog) {
     $cTech = $currentMonthLog['technician_name'] ?? 'Teknisi';
     $cStatus = $currentMonthLog['status'] ?? 'Selesai';
     $cLogId = (int)($currentMonthLog['id'] ?? 0);
+    $cFindings = $currentMonthLog['findings'] ?? '';
+    $cRecom = $currentMonthLog['recommendation'] ?? '';
+
+    $mDetail = $cLogId > 0 ? get_maintenance_detail($cLogId) : null;
+    $chkListItems = $mDetail ? $mDetail['checklists'] : [];
+
+    // Render 9 Item Checklist dengan Logo / Ikon Centang
+    $chkDisplayHtml = '';
+    if (!empty($chkListItems)) {
+        $chkDisplayHtml .= '
+        <div class="mt-3 pt-3 border-top border-success border-opacity-25">
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <span class="fw-bold text-dark small"><i class="bi bi-check2-all text-success me-1"></i> HASIL 9 CHECKLIST PEMELIHARAAN:</span>
+            <span class="badge bg-success bg-opacity-25 text-success small">Tercatat</span>
+          </div>
+          <div class="row g-2">';
+        
+        foreach ($chkListItems as $num => $chk) {
+            $isChk = !empty($chk['checked']);
+            $chkNote = !empty($chk['notes']) ? '<div class="text-muted small fst-italic" style="font-size:0.75rem;"><i class="bi bi-chat-left-text me-1"></i>'.e($chk['notes']).'</div>' : '';
+
+            if ($isChk) {
+                $chkDisplayHtml .= '
+                <div class="col-12 col-md-6">
+                  <div class="p-2 rounded-2 bg-white border border-success d-flex align-items-start gap-2 shadow-sm">
+                    <span class="text-success fs-5 lh-1"><i class="bi bi-check-circle-fill"></i></span>
+                    <div class="small">
+                      <div class="fw-bold text-dark">'.$num.'. '.e($chk['name']).'</div>
+                      '.$chkNote.'
+                    </div>
+                  </div>
+                </div>';
+            } else {
+                $chkDisplayHtml .= '
+                <div class="col-12 col-md-6">
+                  <div class="p-2 rounded-2 bg-white border d-flex align-items-start gap-2 opacity-75">
+                    <span class="text-muted fs-5 lh-1"><i class="bi bi-circle"></i></span>
+                    <div class="small">
+                      <div class="text-secondary">'.$num.'. '.e($chk['name']).'</div>
+                    </div>
+                  </div>
+                </div>';
+            }
+        }
+        $chkDisplayHtml .= '</div></div>';
+    }
+
+    $findingsDisplayHtml = '';
+    if ($cFindings !== '' || $cRecom !== '') {
+        $findingsDisplayHtml = '
+        <div class="row g-2 mt-2 pt-2 border-top border-success border-opacity-25 small">
+          '.($cFindings !== '' ? '<div class="col-12"><div class="p-2 rounded bg-white border border-danger text-danger"><strong><i class="bi bi-exclamation-triangle-fill me-1"></i>Temuan:</strong> '.e($cFindings).'</div></div>' : '').'
+          '.($cRecom !== '' ? '<div class="col-12"><div class="p-2 rounded bg-white border border-success text-success"><strong><i class="bi bi-lightbulb-fill me-1"></i>Rekomendasi:</strong> '.e($cRecom).'</div></div>' : '').'
+        </div>';
+    }
 
     $badgeColor = ($cStatus === 'Temuan' || $cStatus === 'Perlu Perbaikan') ? 'danger' : ($cStatus === 'Proses' ? 'warning text-dark' : 'success');
     $badgeIcon = ($cStatus === 'Temuan' || $cStatus === 'Perlu Perbaikan') ? 'bi-exclamation-triangle-fill' : ($cStatus === 'Proses' ? 'bi-hourglass-split' : 'bi-check-circle-fill');
@@ -302,10 +357,13 @@ if ($currentMonthLog) {
         <span class="badge bg-'.$badgeColor.' px-3 py-2 fs-6"><i class="bi '.$badgeIcon.' me-1"></i> '.e($cStatus).'</span>
       </div>
       <h5 class="fw-bold text-dark mb-1">Periode: '.$monthName.' '.$year.'</h5>
-      <p class="text-secondary small mb-3">Perangkat ini <strong>sudah dilakukan maintenance</strong> pada <strong>'.e(format_id_date($cDate)).'</strong> oleh <strong>'.e($cTech).'</strong>.</p>
+      <p class="text-secondary small mb-2">Perangkat ini <strong>sudah dilakukan maintenance</strong> pada <strong>'.e(format_id_date($cDate)).'</strong> oleh <strong>'.e($cTech).'</strong>.</p>
       
-      <div class="d-flex flex-wrap gap-2">
-        '.($cLogId > 0 ? '<a class="btn btn-primary fw-semibold" href="'.e(module_url('maintenance_detail.php', ['id' => $cLogId])).'"><i class="bi bi-file-earmark-text me-1"></i> LIHAT DETAIL</a>' : '').'
+      '.$chkDisplayHtml.'
+      '.$findingsDisplayHtml.'
+
+      <div class="d-flex flex-wrap gap-2 mt-3 pt-2">
+        '.($cLogId > 0 ? '<a class="btn btn-primary fw-semibold" href="'.e(module_url('maintenance_detail.php', ['id' => $cLogId])).'"><i class="bi bi-file-earmark-text me-1"></i> LIHAT DETAIL LENGKAP</a>' : '').'
         <a class="btn btn-outline-primary fw-semibold" href="'.e(module_url('scan.php', ['t' => $token, 'action' => 'ulang'])).'"><i class="bi bi-arrow-repeat me-1"></i> MAINTENANCE ULANG</a>
       </div>
     </div>';
