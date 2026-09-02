@@ -863,6 +863,114 @@ function get_dashboard_data(int $month, int $year, int $cabangId): array {
     ];
 }
 
+function get_branch_maintenance_summary(int $month, int $year): array {
+    $cabangs = get_cabang_list();
+    $results = [];
+
+    if (is_google_cloud_mode()) {
+        $client = google_sheets_v4_client();
+        $allAssets = array_filter(map_sheets_assets(), function($a) {
+            $st = strtolower($a['status']);
+            return ($st === 'aktif' || $st === '');
+        });
+
+        $scans = $client ? $client->getSheetData('Maintenance_Scan') : [];
+        $scannedAssetIds = [];
+        $findingAssetIds = [];
+
+        foreach ($scans as $s) {
+            if ((int)($s['maintenance_month'] ?? 0) === $month && (int)($s['maintenance_year'] ?? 0) === $year) {
+                $aid = (int)($s['asset_id'] ?? 0);
+                $scannedAssetIds[$aid] = true;
+                if (($s['status'] ?? '') === 'Temuan') {
+                    $findingAssetIds[$aid] = true;
+                }
+            }
+        }
+
+        foreach ($cabangs as $c) {
+            $cId = (int)($c['id'] ?? 0);
+            $cName = $c['nama'] ?? $c['nama_cabang'] ?? 'Cabang #' . $cId;
+            
+            $bAssets = array_filter($allAssets, fn($a) => (int)($a['id_cabang'] ?? 0) === $cId);
+            $total = count($bAssets);
+            $done = 0;
+            $findings = 0;
+
+            foreach ($bAssets as $a) {
+                if (!empty($scannedAssetIds[$a['id']])) {
+                    $done++;
+                    if (!empty($findingAssetIds[$a['id']])) $findings++;
+                }
+            }
+
+            $pending = max(0, $total - $done);
+            $percent = $total > 0 ? round(($done / $total) * 100) : 0;
+
+            $results[] = [
+                'id' => $cId,
+                'nama' => $cName,
+                'total' => $total,
+                'done' => $done,
+                'pending' => $pending,
+                'findings' => $findings,
+                'percent' => $percent
+            ];
+        }
+
+        return $results;
+    }
+
+    // MySQL Mode
+    $cName = name_column('cabang') ?: 'id';
+    foreach ($cabangs as $c) {
+        $cId = (int)($c['id'] ?? 0);
+        $cNama = $c['nama'] ?? $c['nama_cabang'] ?? 'Cabang #' . $cId;
+
+        $totSt = db()->prepare("SELECT COUNT(*) FROM assets WHERE (status = 'Aktif' OR status = 'aktif' OR status IS NULL OR status = '') AND id_cabang = ?");
+        $totSt->execute([$cId]);
+        $total = (int)$totSt->fetchColumn();
+
+        $doneSt = db()->prepare("
+            SELECT COUNT(*) FROM maintenance_scan ms
+            JOIN assets a ON a.id = ms.asset_id
+            WHERE (a.status = 'Aktif' OR a.status = 'aktif' OR a.status IS NULL OR a.status = '')
+              AND a.id_cabang = ?
+              AND ms.maintenance_month = ?
+              AND ms.maintenance_year = ?
+        ");
+        $doneSt->execute([$cId, $month, $year]);
+        $done = (int)$doneSt->fetchColumn();
+
+        $findSt = db()->prepare("
+            SELECT COUNT(*) FROM maintenance_scan ms
+            JOIN assets a ON a.id = ms.asset_id
+            WHERE (a.status = 'Aktif' OR a.status = 'aktif' OR a.status IS NULL OR a.status = '')
+              AND a.id_cabang = ?
+              AND ms.maintenance_month = ?
+              AND ms.maintenance_year = ?
+              AND ms.status = 'Temuan'
+        ");
+        $findSt->execute([$cId, $month, $year]);
+        $findings = (int)$findSt->fetchColumn();
+
+        $pending = max(0, $total - $done);
+        $percent = $total > 0 ? round(($done / $total) * 100) : 0;
+
+        $results[] = [
+            'id' => $cId,
+            'nama' => $cNama,
+            'total' => $total,
+            'done' => $done,
+            'pending' => $pending,
+            'findings' => $findings,
+            'percent' => $percent
+        ];
+    }
+
+    return $results;
+}
+
 function get_asset_by_token(string $token): ?array {
     $token = trim($token);
     if ($token === '') return null;
