@@ -26,11 +26,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-$errorHtml = $error ? '<div class="alert alert-danger border-0 shadow-sm py-2 px-3 d-flex align-items-center gap-2"><i class="bi bi-shield-exclamation fs-5"></i><span>'.e($error).'</span></div>' : '';
+$errorHtml = $error ? '<div class="alert alert-danger border-0 shadow-sm py-2 px-3 d-flex align-items-center gap-2 mb-3"><i class="bi bi-shield-exclamation fs-5"></i><span>'.e($error).'</span></div>' : '';
 
 $flashLogin = $_SESSION['flash_login'] ?? '';
 unset($_SESSION['flash_login']);
-$successHtml = $flashLogin ? '<div class="alert alert-success border-0 shadow-sm py-2 px-3 d-flex align-items-center gap-2"><i class="bi bi-check-circle-fill fs-5"></i><span>'.e($flashLogin).'</span></div>' : '';
+$successHtml = $flashLogin ? '<div class="alert alert-success border-0 shadow-sm py-2 px-3 d-flex align-items-center gap-2 mb-3"><i class="bi bi-check-circle-fill fs-5"></i><span>'.e($flashLogin).'</span></div>' : '';
+
+$expiredHtml = (!empty($_GET['expired']) && !$error && !$flashLogin)
+    ? '<div class="alert alert-warning border-0 shadow-sm py-2 px-3 d-flex align-items-center gap-2 mb-3"><i class="bi bi-clock-history fs-5 text-warning-emphasis"></i><span class="small">Sesi Anda telah berakhir karena tidak ada aktivitas selama 15 menit. Masuk kembali untuk melanjutkan.</span></div>'
+    : '';
 
 echo '<!doctype html>
 <html lang="id">
@@ -200,6 +204,7 @@ body {
     <p class="login-subtitle">Masuk untuk mengelola data pemeliharaan komputer.</p>
 
     '.$successHtml.'
+    '.$expiredHtml.'
     '.$errorHtml.'
 
     <form method="post" autocomplete="off">

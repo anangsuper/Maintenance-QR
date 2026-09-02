@@ -137,11 +137,29 @@ function login_url(): string {
 }
 
 function require_login(): void {
-    // Sudah login via session
-    if (!empty($_SESSION['user_id']) && (int)$_SESSION['user_id'] > 0) return;
+    $timeout = (int)cfg('session_timeout', envv('SESSION_TIMEOUT', '900')); // 15 menit default (900 detik)
 
-    // MySQL mode: cek session lama (kompatibilitas)
-    if (!is_google_cloud_mode() && current_user_id() > 0) return;
+    // Cek apakah user sudah login
+    $isLoggedIn = (!empty($_SESSION['user_id']) && (int)$_SESSION['user_id'] > 0)
+        || (!is_google_cloud_mode() && current_user_id() > 0);
+
+    if ($isLoggedIn) {
+        // Cek sesi kedaluwarsa karena tidak ada aktivitas (idle)
+        if (!empty($_SESSION['last_activity']) && (time() - (int)$_SESSION['last_activity'] > $timeout)) {
+            $savedRedirect = request_uri_full();
+            logout_user();
+            if (session_status() !== PHP_SESSION_ACTIVE) {
+                session_start();
+            }
+            $_SESSION['after_login'] = $savedRedirect;
+            header('Location: ' . module_url('login.php', ['expired' => 1]));
+            exit;
+        }
+
+        // Perbarui waktu aktivitas terakhir
+        $_SESSION['last_activity'] = time();
+        return;
+    }
 
     // Belum login: redirect ke halaman login
     $_SESSION['after_login'] = request_uri_full();
@@ -177,6 +195,7 @@ function authenticate_user(string $username, string $password): array {
             $_SESSION['nama'] = $envUser;
             $_SESSION['username'] = $envUser;
             $_SESSION['role'] = 'admin';
+            $_SESSION['last_activity'] = time();
             return ['success' => true, 'name' => $envUser];
         }
     }
@@ -194,6 +213,7 @@ function authenticate_user(string $username, string $password): array {
                 $_SESSION['nama'] = $du['name'];
                 $_SESSION['username'] = $du['username'];
                 $_SESSION['role'] = $du['role'];
+                $_SESSION['last_activity'] = time();
                 return ['success' => true, 'name' => $du['name']];
             }
         }
@@ -223,6 +243,7 @@ function authenticate_user(string $username, string $password): array {
                     $_SESSION['nama'] = (string)($user['nama'] ?? $user['username']);
                     $_SESSION['username'] = (string)$user['username'];
                     $_SESSION['role'] = strtolower((string)($user['role'] ?? 'teknisi'));
+                    $_SESSION['last_activity'] = time();
                     return ['success' => true, 'name' => (string)($user['nama'] ?? $user['username'])];
                 }
             }
@@ -2002,14 +2023,19 @@ body {
     if (a && a.href && !a.target && a.origin === location.origin) doPrefetch(a.href);
   }, {passive: true});
   
-  // Smooth click feedback
-  document.addEventListener("click", function(e){
-    var a = e.target.closest("a");
-    if (a && a.href && !a.target && a.origin === location.origin && a.href.indexOf("#") === -1 && a.getAttribute("target") !== "_blank") {
-      var bar = document.getElementById("top-progress-bar");
-      if (bar) { bar.style.width = "70%"; }
-    }
+  // Auto-Lock jika ditinggal lama tanpa aktivitas (15 menit = 900 detik)
+  var idleTimeoutMs = 900 * 1000;
+  var idleTimer;
+  function resetIdleTimer() {
+    clearTimeout(idleTimer);
+    idleTimer = setTimeout(function(){
+      window.location.href = "'.e(module_url('login.php', ['expired' => 1])).'";
+    }, idleTimeoutMs);
+  }
+  ["mousemove", "mousedown", "keydown", "scroll", "touchstart", "click"].forEach(function(evt){
+    document.addEventListener(evt, resetIdleTimer, {passive: true});
   });
+  resetIdleTimer();
 })();
 </script>
 '.$extraScript.'
