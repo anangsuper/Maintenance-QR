@@ -177,6 +177,30 @@ class GoogleSheetsV4Client {
         return isset($data['updatedCells']);
     }
 
+    public function clearValues(string $range): bool {
+        $token = $this->getAccessToken();
+        if (!$token) return false;
+
+        $url = sprintf(
+            'https://sheets.googleapis.com/v4/spreadsheets/%s/values/%s:clear',
+            urlencode($this->spreadsheetId),
+            urlencode($range)
+        );
+
+        $this->curlExec($url, [
+            CURLOPT_POST => true,
+            CURLOPT_POSTFIELDS => '{}',
+            CURLOPT_HTTPHEADER => [
+                'Authorization: Bearer ' . $token,
+                'Content-Type: application/json',
+            ],
+        ]);
+
+        $sheetName = explode('!', $range)[0];
+        $this->clearCache($sheetName);
+        return true;
+    }
+
     public function clearCache(?string $sheetName = null): void {
         if ($sheetName) {
             unset(self::$runtimeCache[$sheetName]);

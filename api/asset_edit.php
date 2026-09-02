@@ -347,10 +347,15 @@ $body = '
           </div>
         </div>
 
-        <!-- Submit Buttons -->
-        <div class="d-flex justify-content-between gap-2 pt-3 border-top">
-          <a class="btn btn-outline-secondary px-4" href="'.e(module_url('qr_admin.php')).'">Batal</a>
-          <button type="submit" class="btn btn-primary px-4 fw-semibold"><i class="bi bi-save me-1"></i> Simpan Perubahan</button>
+        <!-- Submit & Delete Buttons -->
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 pt-3 border-top">
+          <div class="d-flex gap-2">
+            <a class="btn btn-outline-secondary px-3" href="'.e(module_url('qr_admin.php')).'"><i class="bi bi-arrow-left me-1"></i> Batal</a>
+            <a class="btn btn-outline-danger px-3" href="'.e(module_url('asset_delete.php', ['id' => $id])).'" onclick="return confirm(\'Apakah Anda yakin ingin menghapus aset '.e(addslashes($asset['kode_inventaris'] ?? '')).' ini?\')">
+              <i class="bi bi-trash3-fill me-1"></i> Hapus Aset
+            </a>
+          </div>
+          <button type="submit" class="btn btn-primary px-4 fw-bold"><i class="bi bi-save me-1"></i> Simpan Perubahan</button>
         </div>
       </form>
     </div>

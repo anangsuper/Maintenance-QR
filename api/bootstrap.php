@@ -364,6 +364,10 @@ function map_sheets_assets(bool $refresh = false): array {
     if (!$client) return [];
 
     $assets = $client->getSheetData('Assets', $refresh);
+    // Filter baris kosong / yang sudah dihapus
+    $assets = array_values(array_filter($assets, function($a) {
+        return !empty($a['id']) && (int)$a['id'] > 0;
+    }));
     $cabangRows = $client->getSheetData('Cabang', $refresh);
     $divRows = $client->getSheetData('Divisi', $refresh);
     $karRows = $client->getSheetData('Karyawan', $refresh);
@@ -934,6 +938,66 @@ function update_asset(int $id, array $data): array {
         ];
     } catch (Throwable $e) {
         return ['success' => false, 'error' => $e->getMessage()];
+    }
+}
+
+function delete_asset(int $id): array {
+    if ($id <= 0) return ['success' => false, 'error' => 'ID aset tidak valid'];
+
+    if (is_google_cloud_mode()) {
+        $client = google_sheets_v4_client();
+        if (!$client) {
+            return ['success' => false, 'error' => 'Google Sheets client tidak tersedia'];
+        }
+
+        $assets = $client->getSheetData('Assets', true);
+        $targetRow = null;
+        foreach ($assets as $a) {
+            if ((int)($a['id'] ?? 0) === $id) {
+                $targetRow = $a;
+                break;
+            }
+        }
+
+        if (!$targetRow) {
+            return ['success' => false, 'error' => 'Data aset tidak ditemukan'];
+        }
+
+        $rowNum = (int)($targetRow['_row_num'] ?? 0);
+        if ($rowNum > 1) {
+            $client->clearValues("Assets!A{$rowNum}:K{$rowNum}");
+        }
+
+        // Hapus token QR terkait jika ada
+        $qrRows = $client->getSheetData('Asset_QR_Tokens', true);
+        foreach ($qrRows as $q) {
+            if ((int)($q['asset_id'] ?? 0) === $id) {
+                $qrRowNum = (int)($q['_row_num'] ?? 0);
+                if ($qrRowNum > 1) {
+                    $client->clearValues("Asset_QR_Tokens!A{$qrRowNum}:F{$qrRowNum}");
+                }
+            }
+        }
+
+        $client->clearCache();
+        map_sheets_assets(true);
+        return ['success' => true];
+    }
+
+    // MySQL Mode
+    try {
+        $st = db()->prepare("DELETE FROM asset_qr_tokens WHERE asset_id = ?");
+        $st->execute([$id]);
+
+        $st = db()->prepare("DELETE FROM maintenance_sessions WHERE asset_id = ?");
+        $st->execute([$id]);
+
+        $st = db()->prepare("DELETE FROM assets WHERE id = ?");
+        $st->execute([$id]);
+
+        return ['success' => true];
+    } catch (Throwable $e) {
+        return ['success' => false, 'error' => 'Gagal menghapus aset dari database: ' . $e->getMessage()];
     }
 }
 

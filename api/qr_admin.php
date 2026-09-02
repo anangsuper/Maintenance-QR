@@ -48,16 +48,17 @@ foreach ($rows as $r) {
         ? '<span class="badge-chip chip-success"><i class="bi bi-check-circle-fill"></i> Siap Cetak</span>'
         : '<span class="badge-chip chip-secondary"><i class="bi bi-dash-circle"></i> Belum Dibuat</span>';
 
-    $action = '<a class="btn btn-sm btn-outline-secondary me-1" href="'.e(module_url('asset_edit.php', ['id'=>(int)$r['id']])).'"><i class="bi bi-pencil-square me-1"></i> Edit</a> ';
+    $action = '<a class="btn btn-sm btn-outline-secondary me-1" href="'.e(module_url('asset_edit.php', ['id'=>(int)$r['id']])).'" title="Edit Data"><i class="bi bi-pencil-square"></i></a> ';
     if ($url) {
-        $action .= '<a class="btn btn-sm btn-outline-primary me-1" target="_blank" href="'.e(module_url('print_qr.php', ['asset_id'=>(int)$r['id']])).'"><i class="bi bi-printer me-1"></i> Cetak QR</a> ';
+        $action .= '<a class="btn btn-sm btn-outline-primary me-1" target="_blank" href="'.e(module_url('print_qr.php', ['asset_id'=>(int)$r['id']])).'" title="Cetak QR"><i class="bi bi-printer"></i></a> ';
     }
     $action .= '<form method="post" class="d-inline">
       <input type="hidden" name="_csrf" value="'.e(csrf_token()).'">
       <input type="hidden" name="action" value="regenerate">
       <input type="hidden" name="asset_id" value="'.(int)$r['id'].'">
-      <button class="btn btn-sm btn-outline-danger" onclick="return confirm(\'Buat ulang QR? QR lama akan tidak berlaku.\')"><i class="bi bi-arrow-repeat"></i></button>
+      <button class="btn btn-sm btn-outline-warning me-1" title="Generate Ulang QR" onclick="return confirm(\'Buat ulang QR? QR lama akan tidak berlaku.\')"><i class="bi bi-arrow-repeat"></i></button>
     </form>';
+    $action .= '<a class="btn btn-sm btn-outline-danger" href="'.e(module_url('asset_delete.php', ['id'=>(int)$r['id']])).'" title="Hapus Aset" onclick="return confirm(\'Hapus aset '.e(addslashes($r['kode_inventaris'] ?? '')).' ini dari sistem?\')"><i class="bi bi-trash3-fill"></i></a>';
 
     $table .= '<tr>
       <td class="text-center text-muted">'.$num.'</td>
