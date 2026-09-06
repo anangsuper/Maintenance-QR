@@ -28,27 +28,30 @@ foreach ($rows as $r) {
     $cards .= '
     <div class="qr-sticker-wrapper">
       <div class="qr-sticker">
-        <!-- Header Minimalis -->
+        <!-- Header Berwarna & Modern -->
         <div class="qr-top-bar">
-          <span class="qr-org">PT BPR MITRATAMA ARTHABUANA</span>
+          <div class="d-flex align-items-center gap-1">
+            <span class="qr-dot"></span>
+            <span class="qr-org">PT BPR MITRATAMA ARTHABUANA</span>
+          </div>
           <span class="qr-cabang">'.e($cabangLabel).'</span>
         </div>
 
-        <!-- Body: QR Code & Detail Singkat -->
+        <!-- Body: QR Code & Detail Berwarna -->
         <div class="qr-main-body">
           <div class="qr-box-wrap">
             <div id="qr-'.$i.'" class="qrbox" data-qr="'.e($url).'"></div>
           </div>
           <div class="qr-text-wrap">
-            <div class="qr-kode-inv">'.e($kode).'</div>
-            <div class="qr-device-name" title="'.e($deviceTitle).'">'.e($deviceTitle).'</div>
-            <div class="qr-user-name"><i class="bi bi-person-fill"></i> '.e($userFull).'</div>
+            <div class="qr-kode-badge">'.e($kode).'</div>
+            <div class="qr-device-name" title="'.e($deviceTitle).'"><i class="bi bi-laptop text-primary"></i> '.e($deviceTitle).'</div>
+            <div class="qr-user-name"><i class="bi bi-person-circle text-success"></i> '.e($userFull).'</div>
           </div>
         </div>
 
-        <!-- Footer Simpel -->
+        <!-- Footer Berwarna -->
         <div class="qr-bot-bar">
-          <span>SCAN UNTUK MAINTENANCE IT</span>
+          <i class="bi bi-qr-code-scan me-1"></i> SCAN UNTUK PEMELIHARAAN IT
         </div>
       </div>
     </div>';
@@ -60,18 +63,24 @@ if (!$cards) {
 
 $head = '<style id="stickerStyle">
 /* =========================================================================
-   DESAIN STIKER QR MODERN, MINIMALIS & SUPER SIMPEL
-   Default: 7.0 x 4.4 cm (Kompak, Bersih, Sangat Tajam & Mudah Di-scan)
+   DESAIN STIKER QR MODERN, VIBRANT & BERWARNA
+   Default: 7.0 x 4.4 cm (Kompak, Eye-Catching, Tajam & Mudah Di-scan)
    ========================================================================= */
 @page {
   size: A4 portrait;
-  margin: 7mm 6mm;
+  margin: 6mm 5mm;
+}
+
+* {
+  box-sizing: border-box;
 }
 
 body {
-  background: #f8fafc;
+  background: #f1f5f9;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   color: #0f172a;
+  -webkit-print-color-adjust: exact !important;
+  print-color-adjust: exact !important;
 }
 
 .qr-container {
@@ -94,45 +103,56 @@ body {
   width: 70mm;
   height: 44mm;
   background: #ffffff;
-  border: 1.2px solid #1e293b;
-  border-radius: 2.5mm;
-  padding: 2mm 2.5mm;
+  border: 1.5px solid #2563eb;
+  border-radius: 2.8mm;
+  padding: 1.8mm 2.2mm;
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
   overflow: hidden;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.12);
+  position: relative;
 }
 
 .qr-top-bar {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  border-bottom: 1px solid #e2e8f0;
-  padding-bottom: 0.8mm;
+  background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%);
+  margin: -1.8mm -2.2mm 0 -2.2mm;
+  padding: 1.2mm 2.2mm;
+}
+
+.qr-dot {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: #38bdf8;
+  display: inline-block;
 }
 
 .qr-org {
-  font-size: 5.2pt;
+  font-size: 5pt;
   font-weight: 800;
-  color: #0f172a;
+  color: #ffffff;
   letter-spacing: 0.3px;
   text-transform: uppercase;
 }
 
 .qr-cabang {
-  font-size: 5pt;
-  font-weight: 700;
-  color: #2563eb;
-  background: #eff6ff;
-  padding: 0.2mm 1.2mm;
+  font-size: 4.8pt;
+  font-weight: 800;
+  color: #854d0e;
+  background: #fef08a;
+  padding: 0.2mm 1.4mm;
   border-radius: 0.6mm;
   text-transform: uppercase;
   max-width: 25mm;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.1);
 }
 
 .qr-main-body {
@@ -150,11 +170,12 @@ body {
   align-items: center;
   justify-content: center;
   background: #ffffff;
-  padding: 0.4mm;
-  border: 1px solid #cbd5e1;
-  border-radius: 1mm;
+  padding: 0.5mm;
+  border: 1.5px solid #3b82f6;
+  border-radius: 1.5mm;
   flex-shrink: 0;
   box-sizing: border-box;
+  box-shadow: 0 1px 4px rgba(37, 99, 235, 0.15);
 }
 
 .qr-box-wrap img, .qr-box-wrap canvas {
@@ -169,22 +190,27 @@ body {
   display: flex;
   flex-direction: column;
   justify-content: center;
-  gap: 0.6mm;
+  gap: 0.7mm;
 }
 
-.qr-kode-inv {
-  font-size: 8pt;
+.qr-kode-badge {
+  font-size: 7.6pt;
   font-weight: 800;
-  color: #0f172a;
+  color: #1e40af;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  padding: 0.4mm 1.4mm;
+  border-radius: 1mm;
   line-height: 1.1;
   word-break: break-word;
+  display: inline-block;
   letter-spacing: -0.2px;
 }
 
 .qr-device-name {
   font-size: 6.2pt;
-  font-weight: 600;
-  color: #334155;
+  font-weight: 700;
+  color: #1e293b;
   line-height: 1.15;
   white-space: nowrap;
   overflow: hidden;
@@ -193,23 +219,28 @@ body {
 
 .qr-user-name {
   font-size: 5.6pt;
-  color: #64748b;
+  color: #047857;
+  background: #ecfdf5;
+  border: 0.5px solid #a7f3d0;
+  padding: 0.3mm 1.2mm;
+  border-radius: 0.8mm;
   line-height: 1.1;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  font-weight: 500;
+  font-weight: 600;
 }
 
 .qr-bot-bar {
   text-align: center;
-  background: #f8fafc;
-  border-top: 1px dashed #cbd5e1;
-  padding: 0.6mm 0;
+  background: linear-gradient(90deg, #1e3a8a 0%, #2563eb 100%);
+  margin: 0 -2.2mm -1.8mm -2.2mm;
+  padding: 0.8mm 0;
   font-size: 4.8pt;
-  font-weight: 700;
-  color: #475569;
+  font-weight: 800;
+  color: #ffffff;
   letter-spacing: 0.4px;
+  text-transform: uppercase;
 }
 
 /* =========================================================================

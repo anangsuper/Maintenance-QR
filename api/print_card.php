@@ -43,6 +43,7 @@ function render_card_grid8(array $asset, int $year): string {
     $kodeInv = $asset['kode_inventaris'] ?? ('ASET-' . $assetId);
     $deviceTitle = asset_title($asset);
     $printerDisplay = !empty($asset['printer']) ? $asset['printer'] : '-';
+    $cabangLabel = !empty($asset['cabang_nama']) && $asset['cabang_nama'] !== '-' ? $asset['cabang_nama'] : 'KPO';
 
     $tableRows = '';
     for ($m = 1; $m <= 12; $m++) {
@@ -50,19 +51,21 @@ function render_card_grid8(array $asset, int $year): string {
         $dateLabel = $row['date_str'];
         $isDone = $row['is_done'];
         $paraf = $isDone ? e($row['paraf']) : '&nbsp;';
+        $rowClass = ($m % 2 === 0) ? 'even-row' : 'odd-row';
+        if ($isDone) $rowClass .= ' done-row';
 
         $cols1to9 = '';
         for ($num = 1; $num <= 9; $num++) {
             $chkVal = $row['checklists'][$num] ?? 0;
             if ($isDone) {
-                $cols1to9 .= '<td class="chk-col">'.($chkVal ? '✓' : '-').'</td>';
+                $cols1to9 .= '<td class="chk-col '.($chkVal ? 'chk-yes' : 'chk-no').'">'.($chkVal ? '✓' : '-').'</td>';
             } else {
                 $cols1to9 .= '<td class="chk-col">&nbsp;</td>';
             }
         }
 
         $tableRows .= '
-        <tr>
+        <tr class="'.$rowClass.'">
           <td class="tgl-col">'.e($dateLabel).'</td>
           '.$cols1to9.'
           <td class="paraf-col">'.$paraf.'</td>
@@ -71,22 +74,28 @@ function render_card_grid8(array $asset, int $year): string {
 
     return '
     <div class="card-item-8">
+      <!-- Header Banner Berwarna -->
+      <div class="grid8-top-banner">
+        <span><i class="bi bi-card-checklist"></i> KARTU KONTROL IT · '.$year.'</span>
+        <span class="grid8-branch-pill">'.e($cabangLabel).'</span>
+      </div>
+
       <!-- Header Info -->
       <table class="grid8-info-table">
         <tr>
-          <td style="width: 42px;" class="info-k">NAMA</td>
-          <td style="width: 6px;">:</td>
+          <td style="width: 46px;"><span class="badge-lbl badge-blue">NAMA</span></td>
+          <td style="width: 4px;">:</td>
           <td class="info-v"><strong>'.e($userWithDiv).'</strong></td>
         </tr>
         <tr>
-          <td class="info-k">IP / KODE</td>
+          <td><span class="badge-lbl badge-green">IP / KODE</span></td>
           <td>:</td>
-          <td class="info-v">'.e($ipDisplay).' · <span class="text-dark fw-bold">'.e($kodeInv).'</span></td>
+          <td class="info-v"><span class="text-success fw-bold">'.e($ipDisplay).'</span> · <span class="badge-kode">'.e($kodeInv).'</span></td>
         </tr>
         <tr>
-          <td class="info-k">UNIT / PRT</td>
+          <td><span class="badge-lbl badge-purple">UNIT/PRT</span></td>
           <td>:</td>
-          <td class="info-v">'.e($deviceTitle).' · Prt: '.e($printerDisplay).'</td>
+          <td class="info-v">'.e($deviceTitle).' · <span class="text-secondary">'.e($printerDisplay).'</span></td>
         </tr>
       </table>
 
@@ -94,7 +103,7 @@ function render_card_grid8(array $asset, int $year): string {
       <table class="grid8-matrix-table">
         <thead>
           <tr>
-            <th class="tgl-h">TANGGAL</th>
+            <th class="tgl-h">TGL</th>
             <th class="chk-h">1</th>
             <th class="chk-h">2</th>
             <th class="chk-h">3</th>
@@ -112,9 +121,11 @@ function render_card_grid8(array $asset, int $year): string {
         </tbody>
       </table>
 
-      <!-- 9 Item Legend Footer -->
+      <!-- 9 Item Legend Footer Berwarna -->
       <div class="grid8-ket-box">
-        <span class="fw-bold">Ket:</span> 1.Scan Virus · 2.Update AV · 3.Del Temp · 4.Cek Keyboard · 5.Cek Mouse · 6.Cek CPU/Mon · 7.Tinta · 8.Cartridge · 9.Nozzle
+        <span class="leg-tag leg-blue">1-3: Virus/Software</span>
+        <span class="leg-tag leg-purple">4-6: Hardware/PC</span>
+        <span class="leg-tag leg-teal">7-9: Printer/Tinta</span>
       </div>
     </div>';
 }
@@ -127,6 +138,8 @@ function render_card_single(array $asset, int $year): string {
     $userDisplay = !empty($asset['karyawan_nama']) && $asset['karyawan_nama'] !== '-' ? $asset['karyawan_nama'] : '';
     $ipDisplay = !empty($asset['ip_address']) ? $asset['ip_address'] : (!empty($asset['ip']) ? $asset['ip'] : '');
     $printerDisplay = !empty($asset['printer']) ? $asset['printer'] : '';
+    $kodeInv = $asset['kode_inventaris'] ?? ('ASET-' . $assetId);
+    $deviceTitle = asset_title($asset);
 
     $tableRows = '';
     for ($m = 1; $m <= 12; $m++) {
@@ -134,46 +147,53 @@ function render_card_single(array $asset, int $year): string {
         $dateLabel = $row['date_str'];
         $isDone = $row['is_done'];
         $paraf = $isDone ? e($row['paraf']) : '&nbsp;';
+        $rowClass = ($m % 2 === 0) ? 'even-row' : 'odd-row';
+        if ($isDone) $rowClass .= ' done-row';
 
         $cols1to9 = '';
         for ($num = 1; $num <= 9; $num++) {
             $chkVal = $row['checklists'][$num] ?? 0;
             if ($isDone) {
-                $cols1to9 .= '<td style="border: 1.5px solid #000; width: 34px;" class="fw-bold text-dark text-center">'.($chkVal ? '✓' : '-').'</td>';
+                $cols1to9 .= '<td style="border: 1.5px solid #2563eb; width: 34px;" class="fw-bold '.($chkVal ? 'text-success' : 'text-muted').' text-center">'.($chkVal ? '✓' : '-').'</td>';
             } else {
-                $cols1to9 .= '<td style="border: 1.5px solid #000; width: 34px;">&nbsp;</td>';
+                $cols1to9 .= '<td style="border: 1.5px solid #cbd5e1; width: 34px;">&nbsp;</td>';
             }
         }
 
         $tableRows .= '
-        <tr style="height: 28px;">
-          <td style="border: 1.5px solid #000; width: 100px;" class="fw-bold text-dark text-center font-monospace">'.e($dateLabel).'</td>
+        <tr class="'.$rowClass.'" style="height: 28px;">
+          <td style="border: 1.5px solid #2563eb; width: 100px;" class="fw-bold text-primary text-center font-monospace">'.e($dateLabel).'</td>
           '.$cols1to9.'
-          <td style="border: 1.5px solid #000; min-width: 90px;" class="text-center font-monospace small">'.$paraf.'</td>
+          <td style="border: 1.5px solid #2563eb; min-width: 90px;" class="text-center font-monospace small">'.$paraf.'</td>
         </tr>';
     }
 
     return '
     <div class="print-card-wrapper-single mb-4">
+      <div class="d-flex justify-content-between align-items-center bg-primary text-white p-2 rounded-2 mb-3 shadow-sm">
+        <h5 class="fw-bold mb-0"><i class="bi bi-card-checklist me-2"></i>KARTU KONTROL PEMELIHARAAN IT '.$year.'</h5>
+        <span class="badge bg-light text-primary fw-bold fs-6">'.e($kodeInv).'</span>
+      </div>
+
       <table class="info-table-single">
         <tr>
-          <td style="width: 110px;">NAMA</td>
-          <td style="width: 20px;">:</td>
-          <td class="info-line-single">'.e($userDisplay).'</td>
+          <td style="width: 120px;"><span class="badge bg-primary bg-opacity-10 text-primary px-2 py-1">NAMA PENGGUNA</span></td>
+          <td style="width: 15px;">:</td>
+          <td class="info-line-single"><strong>'.e($userDisplay).'</strong></td>
         </tr>
         <tr>
-          <td>IP</td>
+          <td><span class="badge bg-success bg-opacity-10 text-success px-2 py-1">IP & PERANGKAT</span></td>
           <td>:</td>
-          <td class="info-line-single">'.e($ipDisplay).'</td>
+          <td class="info-line-single">'.e($ipDisplay).' · <strong>'.e($deviceTitle).'</strong></td>
         </tr>
         <tr>
-          <td>PRINTER</td>
+          <td><span class="badge bg-info bg-opacity-10 text-info text-dark px-2 py-1">PRINTER TERHUBUNG</span></td>
           <td>:</td>
           <td class="info-line-single">'.e($printerDisplay).'</td>
         </tr>
       </table>
 
-      <table class="card-table-single mt-2">
+      <table class="card-table-single mt-3">
         <thead>
           <tr>
             <th style="width: 100px;">TANGGAL</th>
@@ -195,22 +215,31 @@ function render_card_single(array $asset, int $year): string {
       </table>
 
       <div class="ket-box-single">
-        <div class="fw-bold mb-1">Ket</div>
-        <div class="row g-1">
+        <div class="fw-bold mb-1 text-primary"><i class="bi bi-info-circle me-1"></i>Keterangan 9 Item Pemeriksaan:</div>
+        <div class="row g-2">
           <div class="col-4">
-            <div>1. Scan Virus</div>
-            <div>2. Update Anti Virus</div>
-            <div>3. Deleting Temporary File</div>
+            <div class="p-2 bg-light rounded border border-primary border-opacity-25">
+              <strong class="text-primary d-block mb-1">Software & Sistem:</strong>
+              <div>1. Scan Virus</div>
+              <div>2. Update Anti Virus</div>
+              <div>3. Deleting Temp File</div>
+            </div>
           </div>
           <div class="col-4">
-            <div>4. Cek Keyboard</div>
-            <div>5. Cek Mouse</div>
-            <div>6. Cek CPU & Monitor</div>
+            <div class="p-2 bg-light rounded border border-indigo border-opacity-25">
+              <strong class="text-indigo d-block mb-1" style="color: #4f46e5;">Hardware & Input:</strong>
+              <div>4. Cek Keyboard</div>
+              <div>5. Cek Mouse</div>
+              <div>6. Cek CPU & Monitor</div>
+            </div>
           </div>
           <div class="col-4">
-            <div>7. Cek Tinta</div>
-            <div>8. Cek Cartidge</div>
-            <div>9. Cek Nozel</div>
+            <div class="p-2 bg-light rounded border border-success border-opacity-25">
+              <strong class="text-success d-block mb-1">Perangkat Printer:</strong>
+              <div>7. Cek Tinta</div>
+              <div>8. Cek Cartridge</div>
+              <div>9. Cek Nozzle</div>
+            </div>
           </div>
         </div>
       </div>
@@ -285,9 +314,9 @@ body {
   width: 96mm;
   height: 68mm;
   background: #ffffff;
-  border: 1.2px solid #000000;
-  border-radius: 2px;
-  padding: 2mm 2.5mm;
+  border: 1.4px solid #2563eb;
+  border-radius: 2.5mm;
+  padding: 1.8mm 2.2mm;
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
@@ -295,104 +324,152 @@ body {
   page-break-inside: avoid;
   break-inside: avoid;
   overflow: hidden;
+  box-shadow: 0 2px 6px rgba(37, 99, 235, 0.08);
+}
+
+/* Top Banner Header */
+.grid8-top-banner {
+  background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%);
+  color: #ffffff;
+  padding: 1px 3.5px;
+  border-radius: 1.2mm;
+  font-weight: 800;
+  font-size: 6.4pt;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.2mm;
+}
+.grid8-branch-pill {
+  background: #fef08a;
+  color: #854d0e;
+  font-size: 5.2pt;
+  font-weight: 800;
+  padding: 0.2mm 1.2mm;
+  border-radius: 0.6mm;
+  text-transform: uppercase;
 }
 
 /* Header Table Mini */
 .grid8-info-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 7.2pt;
+  font-size: 6.8pt;
   line-height: 1.15;
-  margin-bottom: 1.5mm;
+  margin-bottom: 1.2mm;
 }
 .grid8-info-table td {
-  padding: 0.8px 1px;
+  padding: 0.6px 1px;
   vertical-align: middle;
 }
-.grid8-info-table .info-k {
-  font-weight: bold;
-  color: #000;
+.badge-lbl {
+  font-size: 5.6pt;
+  font-weight: 800;
+  padding: 0.4px 2.5px;
+  border-radius: 0.6mm;
+  display: inline-block;
+  text-align: center;
   white-space: nowrap;
 }
+.badge-blue { background: #dbeafe; color: #1e40af; border: 0.5px solid #bfdbfe; }
+.badge-green { background: #dcfce7; color: #15803d; border: 0.5px solid #bbf7d0; }
+.badge-purple { background: #f3e8ff; color: #6b21a8; border: 0.5px solid #e9d5ff; }
+.badge-kode { background: #f1f5f9; color: #0f172a; padding: 0.2px 2px; border-radius: 0.6mm; font-weight: bold; border: 0.5px solid #cbd5e1; }
+
 .grid8-info-table .info-v {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  max-width: 70mm;
+  max-width: 68mm;
 }
 
 /* 12 Months Matrix Table */
 .grid8-matrix-table {
   width: 100%;
   border-collapse: collapse;
-  border: 1.2px solid #000000;
-  font-size: 6.6pt;
+  border: 1px solid #1e40af;
+  font-size: 6.5pt;
 }
 .grid8-matrix-table th {
-  background-color: #8ea9db !important;
-  color: #000000 !important;
-  border: 1px solid #000000;
+  background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%) !important;
+  color: #ffffff !important;
+  border: 0.8px solid #1e3a8a;
   font-weight: bold;
   text-align: center;
-  padding: 1.2px 0;
-  height: 14px;
+  padding: 1px 0;
+  height: 13px;
 }
 .grid8-matrix-table td {
-  border: 1px solid #000000;
+  border: 0.8px solid #cbd5e1;
   text-align: center;
   padding: 0;
-  height: 12.8px;
+  height: 12.2px;
 }
-.grid8-matrix-table .tgl-h { width: 23mm; }
-.grid8-matrix-table .tgl-col { font-weight: bold; font-family: "Courier New", monospace; font-size: 6.8pt; }
+.grid8-matrix-table tr.even-row { background-color: #f8fafc; }
+.grid8-matrix-table tr.done-row { background-color: #f0fdf4; }
+.grid8-matrix-table tr.done-row td { border-color: #86efac; }
+.grid8-matrix-table .tgl-h { width: 22mm; }
+.grid8-matrix-table .tgl-col { font-weight: bold; font-family: "Courier New", monospace; font-size: 6.6pt; color: #1e3a8a; }
 .grid8-matrix-table .chk-h { width: 4.8mm; }
 .grid8-matrix-table .chk-col { font-weight: bold; font-size: 7.2pt; }
+.grid8-matrix-table .chk-yes { color: #16a34a; font-weight: 900; }
+.grid8-matrix-table .chk-no { color: #94a3b8; }
 .grid8-matrix-table .paraf-h { min-width: 18mm; }
-.grid8-matrix-table .paraf-col { font-size: 6.2pt; font-family: "Courier New", monospace; }
+.grid8-matrix-table .paraf-col { font-size: 6pt; font-family: "Courier New", monospace; color: #334155; }
 
 /* Legend Box Mini */
 .grid8-ket-box {
-  font-size: 5.6pt;
-  line-height: 1.15;
-  color: #111;
+  display: flex;
+  justify-content: space-between;
+  gap: 1mm;
   margin-top: 1mm;
   padding-top: 1px;
-  border-top: 0.5px solid #666;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
+.leg-tag {
+  font-size: 5pt;
+  font-weight: 700;
+  padding: 0.3px 1.8px;
+  border-radius: 0.6mm;
+  white-space: nowrap;
+}
+.leg-blue { background: #eff6ff; color: #1d4ed8; border: 0.5px solid #bfdbfe; }
+.leg-purple { background: #faf5ff; color: #7e22ce; border: 0.5px solid #e9d5ff; }
+.leg-teal { background: #f0fdfa; color: #0f766e; border: 0.5px solid #99f6e4; }
 
 /* =========================================================
    SINGLE CARD FORMAT (1 PER HALAMAN)
    ========================================================= */
 .print-card-wrapper-single {
   background: #ffffff;
-  border: 1.5px solid #000000;
+  border: 2px solid #2563eb;
+  border-radius: 4px;
   padding: 20px 24px;
   max-width: 720px;
   margin: 0 auto;
   page-break-inside: avoid;
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.1);
 }
 .info-table-single {
   width: 100%;
   margin-bottom: 8px;
   font-weight: bold;
-  font-size: 11pt;
+  font-size: 10.5pt;
 }
-.info-table-single td { padding: 3px 2px; }
-.info-line-single { border-bottom: 1.5px solid #000; padding-left: 6px; }
-.card-table-single { width: 100%; border-collapse: collapse; border: 1.5px solid #000; }
-.card-table-single th { background-color: #8ea9db !important; border: 1.5px solid #000 !important; font-weight: bold; padding: 5px 2px; text-align: center; font-size: 9.5pt; }
-.card-table-single td { border: 1.5px solid #000; font-size: 9pt; padding: 3px 2px; }
-.ket-box-single { font-size: 8.5pt; margin-top: 8px; line-height: 1.4; }
+.info-table-single td { padding: 4px 2px; }
+.info-line-single { border-bottom: 1.5px solid #2563eb; padding-left: 6px; }
+.card-table-single { width: 100%; border-collapse: collapse; border: 1.5px solid #2563eb; }
+.card-table-single th { background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%) !important; color: #ffffff !important; border: 1.5px solid #1e3a8a !important; font-weight: bold; padding: 5px 2px; text-align: center; font-size: 9.5pt; }
+.card-table-single td { border: 1px solid #93c5fd; font-size: 9pt; padding: 3px 2px; }
+.card-table-single tr.even-row { background-color: #f8fafc; }
+.card-table-single tr.done-row { background-color: #f0fdf4; }
+.ket-box-single { font-size: 8.5pt; margin-top: 10px; line-height: 1.4; }
 
 /* Print Media Query */
 @media print {
   body { background: #ffffff !important; }
   .no-print { display: none !important; }
   .page-grid-8 { margin: 0 auto !important; }
-  .print-card-wrapper-single { box-shadow: none !important; border: 1.5px solid #000 !important; margin: 0 auto !important; }
+  .print-card-wrapper-single { box-shadow: none !important; border: 1.5px solid #2563eb !important; margin: 0 auto !important; }
 }
 </style>';
 
