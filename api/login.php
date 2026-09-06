@@ -1,15 +1,17 @@
 <?php
 require __DIR__ . '/bootstrap.php';
 
-// Jika sudah login, redirect ke dashboard
-if (!empty($_SESSION['user_id']) && (int)$_SESSION['user_id'] > 0) {
-    header('Location: ' . module_url('dashboard.php'));
-    exit;
-}
-
 // Simpan redirect URL jika dikirim via GET
 if (!empty($_GET['redirect'])) {
     $_SESSION['after_login'] = (string)$_GET['redirect'];
+}
+
+// Jika sudah login, langsung redirect ke halaman tujuan atau dashboard
+if (is_logged_in()) {
+    $redirect = $_SESSION['after_login'] ?? module_url('dashboard.php');
+    unset($_SESSION['after_login']);
+    header('Location: ' . $redirect);
+    exit;
 }
 
 $error = '';
@@ -38,7 +40,7 @@ unset($_SESSION['flash_login']);
 $successHtml = $flashLogin ? '<div class="alert alert-success border-0 shadow-sm py-2 px-3 d-flex align-items-center gap-2 mb-3"><i class="bi bi-check-circle-fill fs-5"></i><span>'.e($flashLogin).'</span></div>' : '';
 
 $expiredHtml = (!empty($_GET['expired']) && !$error && !$flashLogin)
-    ? '<div class="alert alert-warning border-0 shadow-sm py-2 px-3 d-flex align-items-center gap-2 mb-3"><i class="bi bi-clock-history fs-5 text-warning-emphasis"></i><span class="small">Sesi Anda telah berakhir karena tidak ada aktivitas selama 15 menit. Masuk kembali untuk melanjutkan.</span></div>'
+    ? '<div class="alert alert-warning border-0 shadow-sm py-2 px-3 d-flex align-items-center gap-2 mb-3"><i class="bi bi-clock-history fs-5 text-warning-emphasis"></i><span class="small">Sesi Anda telah berakhir. Silakan masuk kembali untuk melanjutkan.</span></div>'
     : '';
 
 echo '<!doctype html>

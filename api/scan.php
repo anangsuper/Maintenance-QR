@@ -34,6 +34,13 @@ $successData = null;
 $error = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && (($_POST['action'] ?? '') === 'save_maintenance')) {
+    if (!is_logged_in()) {
+        $redir = module_url('scan.php', ['t' => $token, 'action' => 'start']);
+        $_SESSION['after_login'] = $redir;
+        header('Location: ' . module_url('login.php', ['redirect' => $redir]));
+        exit;
+    }
+
     verify_csrf();
 
     $techName = trim((string)($_POST['technician_name'] ?? ''));
@@ -150,6 +157,14 @@ $action = trim((string)($_GET['action'] ?? ''));
 // 3. TAMPILAN FORM CHECKLIST 9 ITEM (action = start ATAU form)
 // =========================================================================
 if ($action === 'start' || $action === 'form' || $action === 'ulang') {
+    // Wajib login sebelum mengisi checklist pemeliharaan
+    if (!is_logged_in()) {
+        $redir = module_url('scan.php', ['t' => $token, 'action' => $action]);
+        $_SESSION['after_login'] = $redir;
+        header('Location: ' . module_url('login.php', ['redirect' => $redir]));
+        exit;
+    }
+
     $fixedItems = get_fixed_checklists();
     $isUlang = ($action === 'ulang' || ($currentMonthLog && $action === 'start'));
 
@@ -532,7 +547,10 @@ if ($currentMonthLog) {
         ? '<a class="btn btn-primary fw-semibold" href="'.e(module_url('maintenance_detail.php', ['id' => $cLogId])).'"><i class="bi bi-file-earmark-text me-1"></i> DETAIL LENGKAP AUDIT</a>'
         : '';
 
-    $btnUlang = '<a class="btn btn-outline-primary fw-semibold" href="'.e(module_url('scan.php', ['t' => $token, 'action' => 'ulang'])).'"><i class="bi bi-arrow-repeat me-1"></i> MAINTENANCE ULANG</a>';
+    $ulangUrl = $loggedIn
+        ? module_url('scan.php', ['t' => $token, 'action' => 'ulang'])
+        : module_url('login.php', ['redirect' => module_url('scan.php', ['t' => $token, 'action' => 'ulang'])]);
+    $btnUlang = '<a class="btn btn-outline-primary fw-semibold" href="'.e($ulangUrl).'"><i class="bi bi-arrow-repeat me-1"></i> MAINTENANCE ULANG</a>';
 
     $statusCardHtml = '
     <div class="card border-0 shadow-sm mb-4 bg-success bg-opacity-10 border-start border-success border-4 p-3 p-md-4">
@@ -552,7 +570,9 @@ if ($currentMonthLog) {
       </div>
     </div>';
 } else {
-    $startMaintUrl = module_url('scan.php', ['t' => $token, 'action' => 'start']);
+    $startMaintUrl = $loggedIn
+        ? module_url('scan.php', ['t' => $token, 'action' => 'start'])
+        : module_url('login.php', ['redirect' => module_url('scan.php', ['t' => $token, 'action' => 'start'])]);
 
     $statusCardHtml = '
     <div class="card border-0 shadow-sm mb-4 bg-danger bg-opacity-10 border-start border-danger border-4 p-3 p-md-4">
@@ -566,6 +586,7 @@ if ($currentMonthLog) {
       <a class="btn btn-success btn-lg fw-bold py-3 px-4 shadow-sm w-100" href="'.e($startMaintUrl).'">
         <i class="bi bi-play-circle-fill me-2"></i> MULAI MAINTENANCE SEKARANG
       </a>
+      '.(!$loggedIn ? '<div class="text-center mt-2"><small class="text-muted"><i class="bi bi-shield-lock me-1"></i>Teknisi perlu login sekali di HP untuk mulai mengisi.</small></div>' : '').'
     </div>';
 }
 

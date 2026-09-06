@@ -2,10 +2,16 @@
 declare(strict_types=1);
 
 if (session_status() !== PHP_SESSION_ACTIVE) {
-    ini_set('session.gc_maxlifetime', '2592000');
+    $lifetime = (int)cfg('session_timeout', envv('SESSION_TIMEOUT', '2592000')); // 30 hari (2592000 detik)
+    ini_set('session.gc_maxlifetime', (string)$lifetime);
+    $isHttps = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
+        || (!empty($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https');
+
     session_set_cookie_params([
-        'lifetime' => 2592000,
+        'lifetime' => $lifetime,
         'path' => '/',
+        'domain' => '',
+        'secure' => $isHttps,
         'httponly' => true,
         'samesite' => 'Lax'
     ]);
@@ -89,9 +95,6 @@ function current_user_id(): int {
             return (int)$_SESSION[$k];
         }
     }
-    if (is_google_cloud_mode() && empty($_SESSION['user_id'])) {
-        return 1;
-    }
     return 0;
 }
 
@@ -145,12 +148,13 @@ function login_url(): string {
 
 function is_logged_in(): bool {
     $timeout = (int)cfg('session_timeout', envv('SESSION_TIMEOUT', '2592000')); // 30 hari default
-    $hasUser = (!empty($_SESSION['user_id']) && (int)$_SESSION['user_id'] > 0)
-        || (!is_google_cloud_mode() && current_user_id() > 0);
+    $hasUser = current_user_id() > 0;
     if (!$hasUser) return false;
     if (!empty($_SESSION['last_activity']) && (time() - (int)$_SESSION['last_activity'] > $timeout)) {
         return false;
     }
+    // Refresh waktu aktivitas jika masih aktif
+    $_SESSION['last_activity'] = time();
     return true;
 }
 
