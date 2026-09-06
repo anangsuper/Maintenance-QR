@@ -86,6 +86,7 @@ foreach ($branchSummaries as $bs) {
         <div class="d-flex gap-2 mt-auto pt-2 border-top">
           <a class="btn btn-sm btn-primary flex-fill fw-semibold" href="'.e(module_url('dashboard.php', ['bulan'=>$month,'tahun'=>$year,'cabang'=>$bId])).'"><i class="bi bi-folder2-open me-1"></i> Buka Cabang</a>
           <a class="btn btn-sm btn-outline-secondary" target="_blank" href="'.e(module_url('print_report.php', ['bulan'=>$month,'tahun'=>$year,'cabang'=>$bId])).'" title="Cetak Rekap Cabang Ini"><i class="bi bi-printer"></i></a>
+          <a class="btn btn-sm btn-outline-primary" target="_blank" href="'.e(module_url('print_card.php', ['cabang'=>$bId, 'layout'=>'grid8', 'tahun'=>$year])).'" title="Cetak Semua Kartu Maintenance Cabang Ini (8/A4 HVS)"><i class="bi bi-card-checklist"></i></a>
           <a class="btn btn-sm btn-outline-secondary" target="_blank" href="'.e(module_url('print_qr.php', ['cabang'=>$bId])).'" title="Cetak Semua QR Cabang Ini"><i class="bi bi-qr-code"></i></a>
         </div>
       </div>
@@ -186,6 +187,7 @@ $body = '
     <div class="d-flex gap-2 flex-wrap">
       <a class="btn btn-action-add fw-bold" href="'.e(module_url('asset_add.php')).'"><i class="bi bi-plus-lg me-1"></i> Tambah Komputer</a>
       <a class="btn btn-warning fw-bold text-dark px-3" href="'.e(module_url('import_kpo.php')).'"><i class="bi bi-cloud-arrow-up-fill me-1"></i> Import 44 Data KPO</a>
+      <a class="btn btn-outline-primary fw-semibold px-3" target="_blank" href="'.e(module_url('print_card.php', ['cabang'=>$cabangId, 'layout'=>'grid8', 'tahun'=>$year])).'"><i class="bi bi-card-checklist me-1"></i> Cetak Kartu (8/A4)</a>
       <a class="btn btn-primary fw-semibold px-3" target="_blank" href="'.e(module_url('print_report.php', ['bulan'=>$month,'tahun'=>$year,'cabang'=>$cabangId])).'"><i class="bi bi-printer-fill me-1"></i> Cetak Laporan</a>
       <a class="btn btn-outline-success fw-semibold" href="'.e(module_url('export_csv.php', ['bulan'=>$month,'tahun'=>$year,'cabang'=>$cabangId])).'"><i class="bi bi-file-earmark-spreadsheet me-1"></i> Export CSV</a>
     </div>
