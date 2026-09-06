@@ -153,7 +153,30 @@ if ($action === 'start' || $action === 'form' || $action === 'ulang') {
     $fixedItems = get_fixed_checklists();
     $isUlang = ($action === 'ulang' || ($currentMonthLog && $action === 'start'));
 
-    $checklistRowsHtml = '';
+    $itemIcons = [
+        1 => 'bi-shield-check',
+        2 => 'bi-arrow-repeat',
+        3 => 'bi-trash3',
+        4 => 'bi-keyboard',
+        5 => 'bi-mouse',
+        6 => 'bi-display',
+        7 => 'bi-droplet-half',
+        8 => 'bi-box-seam',
+        9 => 'bi-printer',
+    ];
+
+    $itemCategoryLabels = [
+        1 => 'Keamanan / Software',
+        2 => 'Update Sistem',
+        3 => 'Pembersihan Storage',
+        4 => 'Hardware / Input',
+        5 => 'Hardware / Input',
+        6 => 'Hardware Utama',
+        7 => 'Perangkat Printer',
+        8 => 'Perangkat Printer',
+        9 => 'Perangkat Printer',
+    ];
+
     $defaultNotes = [
         1 => 'Bersih',
         2 => 'Sudah update',
@@ -166,19 +189,61 @@ if ($action === 'start' || $action === 'form' || $action === 'ulang') {
         9 => 'Normal',
     ];
 
+    $itemTagSuggestions = [
+        1 => ['Bersih', 'Scan Bersih', 'Ada Virus Dibersihkan', 'N/A'],
+        2 => ['Sudah update', 'Update Terbaru', 'Gagal Update', 'N/A'],
+        3 => ['Sudah dibersihkan', 'Temp Bersih', 'Disk Penuh', 'N/A'],
+        4 => ['Normal', 'Tombol Lengket', 'Ada Tombol Rusak', 'N/A'],
+        5 => ['Normal', 'Scroll Macet', 'Optik Lemah', 'N/A'],
+        6 => ['Normal', 'Kipas Bunyi', 'Debu Tebal', 'Layar Bergaris', 'N/A'],
+        7 => ['Normal', 'Tinta Cukup', 'Tinta Habis', 'N/A (Bukan Printer)'],
+        8 => ['Normal', 'Cartridge OK', 'Perlu Ganti', 'N/A (Bukan Printer)'],
+        9 => ['Normal', 'Nozzle Bersih', 'Nozzle Tersumbat', 'N/A (Bukan Printer)'],
+    ];
+
+    $checklistCardsHtml = '';
     foreach ($fixedItems as $num => $name) {
         $defNote = $defaultNotes[$num] ?? 'Normal';
-        $checklistRowsHtml .= '
-        <tr>
-          <td class="text-center fw-bold text-muted" style="width: 40px; border: 1px solid #cbd5e1;">'.$num.'</td>
-          <td class="fw-semibold text-dark" style="border: 1px solid #cbd5e1;">'.e($name).'</td>
-          <td class="text-center" style="width: 80px; border: 1px solid #cbd5e1;">
-            <input class="form-check-input chk-box fs-5" type="checkbox" id="chk_'.$num.'" name="chk_'.$num.'" value="1" checked>
-          </td>
-          <td style="border: 1px solid #cbd5e1;">
-            <input type="text" class="form-control form-control-sm note-input bg-light" id="notes_'.$num.'" name="notes_'.$num.'" value="'.e($defNote).'" placeholder="Keterangan">
-          </td>
-        </tr>';
+        $icon = $itemIcons[$num] ?? 'bi-check2-circle';
+        $catLabel = $itemCategoryLabels[$num] ?? 'Pemeliharaan';
+        $tags = $itemTagSuggestions[$num] ?? ['Normal', 'Bersih', 'Bermasalah', 'N/A'];
+
+        $tagChipsHtml = '';
+        foreach ($tags as $tagText) {
+            $tagChipsHtml .= '<button type="button" class="btn btn-tag-chip" onclick="setNote('.$num.', \''.e(addslashes($tagText)).'\')">'.e($tagText).'</button>';
+        }
+
+        $checklistCardsHtml .= '
+        <div class="card p-3 mb-2 rounded-3 checklist-card border-success border-opacity-50" id="card_item_'.$num.'">
+          <div class="d-flex align-items-center justify-content-between mb-2">
+            <div class="d-flex align-items-center gap-2">
+              <span class="badge bg-primary bg-opacity-10 text-primary fw-bold px-2 py-1 rounded-pill">#'.$num.'</span>
+              <div>
+                <div class="d-flex align-items-center gap-2">
+                  <i class="bi '.$icon.' text-primary fs-5"></i>
+                  <strong class="text-dark fs-6">'.e($name).'</strong>
+                </div>
+                <small class="text-secondary" style="font-size: 0.78rem;">'.e($catLabel).'</small>
+              </div>
+            </div>
+            <div class="d-flex align-items-center gap-2">
+              <span class="badge bg-success bg-opacity-10 text-success fw-bold status-pill d-none d-sm-inline-block" id="pill_'.$num.'">✓ OK</span>
+              <div class="form-check form-switch mb-0">
+                <input class="form-check-input chk-box" type="checkbox" role="switch" id="chk_'.$num.'" name="chk_'.$num.'" value="1" checked onchange="toggleItem('.$num.')">
+              </div>
+            </div>
+          </div>
+          
+          <div class="mt-2 pt-2 border-top border-light">
+            <div class="input-group input-group-sm">
+              <span class="input-group-text bg-white border-end-0 text-muted"><i class="bi bi-pencil-square"></i></span>
+              <input type="text" class="form-control border-start-0 note-input bg-white" id="notes_'.$num.'" name="notes_'.$num.'" value="'.e($defNote).'" placeholder="Catatan/keterangan...">
+            </div>
+            <div class="d-flex flex-wrap gap-1 mt-2">
+              '.$tagChipsHtml.'
+            </div>
+          </div>
+        </div>';
     }
 
     $techDefault = current_user_name();
@@ -194,6 +259,54 @@ if ($action === 'start' || $action === 'form' || $action === 'ulang') {
     $formTitle = $isUlang ? 'Form Maintenance Ulang' : 'Form Checklist Maintenance';
     $mTypeVal = $isUlang ? 'Maintenance Ulang' : 'Maintenance';
 
+    $formHeadStyle = '
+    <style>
+    .checklist-card {
+      transition: all 0.2s ease-in-out;
+      border: 1.5px solid #e2e8f0;
+      background: #ffffff;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.03);
+    }
+    .checklist-card.border-success {
+      border-color: #10b981 !important;
+      background-color: #f0fdf4 !important;
+    }
+    .checklist-card.border-warning {
+      border-color: #f59e0b !important;
+      background-color: #fffbeb !important;
+    }
+    .btn-tag-chip {
+      font-size: 0.74rem;
+      padding: 2px 9px;
+      border-radius: 999px;
+      background-color: #f1f5f9;
+      border: 1px solid #cbd5e1;
+      color: #334155;
+      font-weight: 500;
+      transition: all 0.15s ease;
+      cursor: pointer;
+    }
+    .btn-tag-chip:hover {
+      background-color: #2563eb;
+      color: #ffffff;
+      border-color: #2563eb;
+      transform: translateY(-1px);
+    }
+    .form-switch .form-check-input {
+      width: 2.85em;
+      height: 1.5em;
+      cursor: pointer;
+    }
+    .form-check-input:checked {
+      background-color: #10b981;
+      border-color: #10b981;
+    }
+    .quick-action-box {
+      background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+      border: 1.5px solid #93c5fd;
+    }
+    </style>';
+
     $body = '
     <div class="row justify-content-center">
       <div class="col-md-9 col-lg-8">
@@ -207,7 +320,7 @@ if ($action === 'start' || $action === 'form' || $action === 'ulang') {
           </div>
 
           <!-- Ringkasan Perangkat -->
-          <div class="p-3 bg-light rounded-3 mb-4 border">
+          <div class="p-3 bg-light rounded-3 mb-3 border">
             <div class="row g-2 small">
               <div class="col-4 text-muted">Perangkat:</div>
               <div class="col-8 fw-bold text-dark">'.e(asset_title($asset)).'</div>
@@ -228,29 +341,32 @@ if ($action === 'start' || $action === 'form' || $action === 'ulang') {
             <input type="hidden" name="t" value="'.e($token).'">
             <input type="hidden" name="maintenance_type" value="'.e($mTypeVal).'">
 
-            <!-- 1. 9 Items Checklist Table -->
-            <div class="d-flex justify-content-between align-items-center mb-2">
-              <h6 class="fw-bold text-dark mb-0"><i class="bi bi-check2-square text-primary me-2"></i>9 Item Checklist Pemeliharaan:</h6>
-              <div class="btn-group btn-group-sm">
-                <button type="button" class="btn btn-outline-primary btn-sm" onclick="setAllCheck(true)"><i class="bi bi-check-all"></i> Centang Semua</button>
-                <button type="button" class="btn btn-outline-secondary btn-sm" onclick="setAllCheck(false)"><i class="bi bi-dash"></i> Batal Semua</button>
+            <!-- Quick Action Box 1-Klik -->
+            <div class="quick-action-box p-3 rounded-3 shadow-sm mb-3">
+              <div class="d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center gap-2">
+                <div>
+                  <div class="fw-bold text-primary"><i class="bi bi-lightning-charge-fill text-warning me-1"></i> Aksi Cepat Teknisi</div>
+                  <div class="text-secondary small">Isi otomatis seluruh item jika kondisi perangkat normal</div>
+                </div>
+                <div class="d-flex flex-wrap gap-2 w-100 w-sm-auto">
+                  <button type="button" class="btn btn-success fw-bold shadow-sm flex-fill flex-sm-grow-0" id="btnQuickNormal" onclick="setAllNormal()">
+                    <i class="bi bi-check2-all me-1"></i> ⚡ SEMUA NORMAL (1-KLIK)
+                  </button>
+                  <button type="button" class="btn btn-outline-secondary btn-sm" onclick="setAllCheck(false)" title="Kosongkan centang">
+                    <i class="bi bi-dash-circle"></i> Reset
+                  </button>
+                </div>
               </div>
             </div>
 
-            <div class="table-responsive rounded-3 border bg-white mb-4">
-              <table class="table table-bordered table-sm align-middle mb-0" style="font-size: 0.88rem; border-color: #cbd5e1;">
-                <thead style="background-color: #93c5fd; color: #0f172a;">
-                  <tr class="text-center fw-bold">
-                    <th style="width: 40px; border: 1px solid #64748b;">No</th>
-                    <th class="text-start" style="border: 1px solid #64748b;">Checklist</th>
-                    <th style="width: 80px; border: 1px solid #64748b;">Checklist</th>
-                    <th class="text-start" style="border: 1px solid #64748b;">Keterangan</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  '.$checklistRowsHtml.'
-                </tbody>
-              </table>
+            <!-- 1. 9 Items Checklist Modern Cards -->
+            <div class="d-flex justify-content-between align-items-center mb-2">
+              <h6 class="fw-bold text-dark mb-0"><i class="bi bi-check2-square text-primary me-2"></i>9 Item Checklist Pemeliharaan:</h6>
+              <span class="text-muted small">Sentuh switch untuk ubah status</span>
+            </div>
+
+            <div class="mb-4">
+              '.$checklistCardsHtml.'
             </div>
 
             <!-- 2. Data Pelaksanaan Maintenance -->
@@ -258,11 +374,11 @@ if ($action === 'start' || $action === 'form' || $action === 'ulang') {
             <div class="row g-3 mb-3">
               <div class="col-md-6">
                 <label class="form-label small fw-bold text-secondary">Tanggal Maintenance</label>
-                <input type="date" class="form-control" name="maintenance_date" value="'.$currentDateStr.'" required>
+                <input type="date" class="form-control py-2" name="maintenance_date" value="'.$currentDateStr.'" required>
               </div>
               <div class="col-md-6">
                 <label class="form-label small fw-bold text-secondary">Petugas / Teknisi</label>
-                <input type="text" class="form-control" name="technician_name" list="listTeknisi" value="'.e($techDefault).'" placeholder="Nama teknisi" required>
+                <input type="text" class="form-control py-2" name="technician_name" list="listTeknisi" value="'.e($techDefault).'" placeholder="Nama teknisi" required>
                 <datalist id="listTeknisi">'.$techOptions.'</datalist>
               </div>
             </div>
@@ -281,7 +397,7 @@ if ($action === 'start' || $action === 'form' || $action === 'ulang') {
             <!-- 4. Status Hasil Maintenance -->
             <div class="mb-4">
               <label class="form-label small fw-bold text-secondary">Status Hasil Maintenance</label>
-              <select class="form-select fw-bold py-2" name="status">
+              <select class="form-select fw-bold py-2" name="status" id="selectStatus">
                 <option value="Selesai" class="text-success" selected>✓ Selesai (Kondisi Normal & Berfungsi Baik)</option>
                 <option value="Proses" class="text-warning">⏳ Proses (Sedang Ditangani / Butuh Waktu)</option>
                 <option value="Perlu Perbaikan" class="text-danger">⚠️ Perlu Perbaikan (Ada Kerusakan / Perlu Sparepart)</option>
@@ -289,8 +405,8 @@ if ($action === 'start' || $action === 'form' || $action === 'ulang') {
             </div>
 
             <!-- Submit Button -->
-            <div class="d-grid gap-2">
-              <button type="submit" class="btn btn-success btn-lg fw-bold py-3 shadow-sm" onclick="return confirm(\'Simpan hasil checklist maintenance sekarang?\')">
+            <div class="d-grid gap-2 pt-2">
+              <button type="submit" class="btn btn-success btn-lg fw-bold py-3 shadow" onclick="return confirm(\'Simpan hasil checklist maintenance sekarang?\')">
                 <i class="bi bi-save-fill me-2"></i> SIMPAN MAINTENANCE
               </button>
               <a class="btn btn-outline-secondary py-2" href="'.e(module_url('scan.php', ['t' => $token])).'">Batal</a>
@@ -302,14 +418,92 @@ if ($action === 'start' || $action === 'form' || $action === 'ulang') {
 
     $formScript = '
     <script>
+    const defaultItemNotes = {
+      1: "Bersih",
+      2: "Sudah update",
+      3: "Sudah dibersihkan",
+      4: "Normal",
+      5: "Normal",
+      6: "Normal",
+      7: "Normal",
+      8: "Normal",
+      9: "Normal"
+    };
+
+    function toggleItem(num) {
+      const chk = document.getElementById("chk_" + num);
+      const card = document.getElementById("card_item_" + num);
+      const pill = document.getElementById("pill_" + num);
+      if (!chk || !card) return;
+
+      if (chk.checked) {
+        card.classList.remove("border-warning");
+        card.classList.add("border-success");
+        if (pill) {
+          pill.className = "badge bg-success bg-opacity-10 text-success fw-bold status-pill d-none d-sm-inline-block";
+          pill.innerHTML = "✓ OK";
+        }
+      } else {
+        card.classList.remove("border-success");
+        card.classList.add("border-warning");
+        if (pill) {
+          pill.className = "badge bg-warning text-dark fw-bold status-pill d-none d-sm-inline-block";
+          pill.innerHTML = "⚠️ Perlu Dicek";
+        }
+      }
+    }
+
+    function setNote(num, text) {
+      const input = document.getElementById("notes_" + num);
+      if (input) {
+        input.value = text;
+        input.focus();
+      }
+    }
+
+    function setAllNormal() {
+      for (let i = 1; i <= 9; i++) {
+        const chk = document.getElementById("chk_" + i);
+        const note = document.getElementById("notes_" + i);
+        if (chk) {
+          chk.checked = true;
+          toggleItem(i);
+        }
+        if (note && defaultItemNotes[i]) {
+          note.value = defaultItemNotes[i];
+        }
+      }
+      const selectStatus = document.getElementById("selectStatus");
+      if (selectStatus) {
+        selectStatus.value = "Selesai";
+      }
+
+      const btn = document.getElementById("btnQuickNormal");
+      if (btn) {
+        const orig = btn.innerHTML;
+        btn.innerHTML = "<i class=\"bi bi-check-circle-fill me-1\"></i> Terisi Normal!";
+        btn.classList.remove("btn-success");
+        btn.classList.add("btn-dark");
+        setTimeout(() => {
+          btn.innerHTML = orig;
+          btn.classList.remove("btn-dark");
+          btn.classList.add("btn-success");
+        }, 1200);
+      }
+    }
+
     function setAllCheck(val) {
-      document.querySelectorAll(".chk-box").forEach(function(el){
-        el.checked = val;
-      });
+      for (let i = 1; i <= 9; i++) {
+        const chk = document.getElementById("chk_" + i);
+        if (chk) {
+          chk.checked = val;
+          toggleItem(i);
+        }
+      }
     }
     </script>';
 
-    render_page($formTitle, $body, '', $formScript, false);
+    render_page($formTitle, $body, $formHeadStyle, $formScript, false);
     exit;
 }
 
