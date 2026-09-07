@@ -407,7 +407,7 @@ $head = '
 <style>
 @page {
   size: A4 portrait;
-  margin: 5mm 5mm 5mm 5mm;
+  margin: 6mm 5mm 6mm 5mm;
 }
 * {
   box-sizing: border-box;
@@ -423,27 +423,27 @@ body {
 }
 
 /* =========================================================
-   GRID 6 PER LEMBAR A4 (2 KOLOM x 3 BARIS) - LEGA & SANGAT JELAS
+   GRID 6 PER LEMBAR A4 (2 KOLOM x 3 BARIS) - FIT PRESISI & LEGA
    ========================================================= */
 .page-grid-6 {
-  width: 198mm;
+  width: 192mm;
   display: grid;
-  grid-template-columns: 96mm 96mm;
-  grid-auto-rows: 88mm;
-  gap: 4mm 4mm;
+  grid-template-columns: 94mm 94mm;
+  grid-auto-rows: 85mm;
+  gap: 3mm 4mm;
   justify-content: center;
-  margin: 0 auto 12mm auto;
+  margin: 0 auto 10mm auto;
   page-break-after: always;
   break-after: page;
 }
 
 .card-item-6 {
-  width: 96mm;
-  height: 88mm;
+  width: 94mm;
+  height: 85mm;
   background: #ffffff;
-  border: 1.5px solid #2563eb;
-  border-radius: 2.5mm;
-  padding: 2.2mm 2.8mm;
+  border: 1.4px solid #2563eb;
+  border-radius: 2.2mm;
+  padding: 2mm 2.5mm;
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
@@ -456,10 +456,10 @@ body {
 .grid6-top-banner {
   background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%);
   color: #ffffff;
-  padding: 1.2px 4px;
-  border-radius: 1mm;
+  padding: 1px 4px;
+  border-radius: 0.8mm;
   font-weight: 800;
-  font-size: 7.2pt;
+  font-size: 7pt;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -467,21 +467,21 @@ body {
 .grid6-branch-pill {
   background: #fef08a;
   color: #854d0e;
-  font-size: 5.8pt;
+  font-size: 5.6pt;
   font-weight: 800;
-  padding: 0.3px 1.5px;
-  border-radius: 0.6mm;
+  padding: 0.2px 1.5px;
+  border-radius: 0.5mm;
   text-transform: uppercase;
 }
 
 .grid6-info-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 7.2pt;
-  line-height: 1.2;
+  font-size: 6.9pt;
+  line-height: 1.15;
 }
 .grid6-info-table td {
-  padding: 0.4px 1px;
+  padding: 0.3px 1px;
   vertical-align: middle;
 }
 
@@ -489,7 +489,7 @@ body {
   width: 100%;
   border-collapse: collapse;
   border: 1px solid #1e40af;
-  font-size: 6.8pt;
+  font-size: 6.6pt;
 }
 .grid6-matrix-table th {
   background: #1e40af !important;
@@ -497,52 +497,52 @@ body {
   border: 0.6px solid #1e3a8a;
   font-weight: bold;
   text-align: center;
-  padding: 1px 0;
-  height: 12.5px;
+  padding: 0.8px 0;
+  height: 11.5px;
 }
 .grid6-matrix-table td {
   border: 0.6px solid #cbd5e1;
   text-align: center;
   padding: 0;
-  height: 11.8px;
+  height: 11.2px;
 }
 .grid6-matrix-table tr.even-row { background-color: #f8fafc; }
 .grid6-matrix-table tr.done-row { background-color: #f0fdf4; }
 .grid6-matrix-table tr.done-row td { border-color: #86efac; }
-.grid6-matrix-table .tgl-h { width: 21mm; }
-.grid6-matrix-table .tgl-col { font-weight: bold; font-family: "Courier New", monospace; font-size: 7pt; color: #1e3a8a; }
-.grid6-matrix-table .chk-h { width: 4.6mm; }
-.grid6-matrix-table .chk-col { font-weight: bold; font-size: 7.5pt; }
+.grid6-matrix-table .tgl-h { width: 20mm; }
+.grid6-matrix-table .tgl-col { font-weight: bold; font-family: "Courier New", monospace; font-size: 6.8pt; color: #1e3a8a; }
+.grid6-matrix-table .chk-h { width: 4.5mm; }
+.grid6-matrix-table .chk-col { font-weight: bold; font-size: 7.2pt; }
 .grid6-matrix-table .chk-yes { color: #16a34a; font-weight: 900; }
 .grid6-matrix-table .chk-no { color: #94a3b8; }
-.grid6-matrix-table .paraf-h { min-width: 16mm; }
-.grid6-matrix-table .paraf-col { font-size: 6.2pt; font-family: "Courier New", monospace; color: #334155; }
+.grid6-matrix-table .paraf-h { min-width: 15mm; }
+.grid6-matrix-table .paraf-col { font-size: 6pt; font-family: "Courier New", monospace; color: #334155; }
 
 .grid6-ket-box {
   background: #f8fafc;
-  border: 0.8px solid #94a3b8;
-  border-radius: 1.2mm;
-  padding: 1mm 1.5mm;
+  border: 0.7px solid #94a3b8;
+  border-radius: 1mm;
+  padding: 0.8mm 1.2mm;
 }
 .grid6-ket-title {
-  font-size: 5.6pt;
+  font-size: 5.4pt;
   font-weight: 800;
   color: #1e40af;
-  margin-bottom: 0.5mm;
+  margin-bottom: 0.3mm;
   text-transform: uppercase;
   letter-spacing: 0.2px;
 }
 .grid6-ket-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 0.4mm 1mm;
+  gap: 0.3mm 0.8mm;
 }
 
 /* Badges & Pills */
 .badge-lbl {
-  font-size: 5.8pt;
+  font-size: 5.6pt;
   font-weight: 800;
-  padding: 0.3px 2.5px;
+  padding: 0.2px 2.2px;
   border-radius: 0.5mm;
   display: inline-block;
   text-align: center;
@@ -551,17 +551,17 @@ body {
 .badge-blue { background: #dbeafe; color: #1e40af; border: 0.5px solid #bfdbfe; }
 .badge-green { background: #dcfce7; color: #15803d; border: 0.5px solid #bbf7d0; }
 .badge-purple { background: #f3e8ff; color: #6b21a8; border: 0.5px solid #e9d5ff; }
-.badge-kode { background: #f1f5f9; color: #0f172a; padding: 0.2px 2.5px; border-radius: 0.5mm; font-weight: bold; border: 0.5px solid #cbd5e1; }
+.badge-kode { background: #f1f5f9; color: #0f172a; padding: 0.2px 2.2px; border-radius: 0.5mm; font-weight: bold; border: 0.5px solid #cbd5e1; }
 
 .leg-tag {
-  font-size: 5.4pt;
+  font-size: 5.2pt;
   font-weight: 600;
-  padding: 0.3px 1.8px;
+  padding: 0.2px 1.5px;
   border-radius: 0.5mm;
   white-space: nowrap;
   display: inline-flex;
   align-items: center;
-  gap: 1.5px;
+  gap: 1.2px;
 }
 .leg-tag b {
   font-weight: 800;
@@ -575,23 +575,23 @@ body {
    GRID 8 PER LEMBAR A4 (2 KOLOM x 4 BARIS)
    ========================================================= */
 .page-grid-8 {
-  width: 198mm;
+  width: 192mm;
   display: grid;
-  grid-template-columns: 96mm 96mm;
-  grid-auto-rows: 68.5mm;
-  gap: 2.5mm 3.5mm;
+  grid-template-columns: 94mm 94mm;
+  grid-auto-rows: 64mm;
+  gap: 2mm 4mm;
   justify-content: center;
   margin: 0 auto 10mm auto;
   page-break-after: always;
   break-after: page;
 }
 .card-item-8 {
-  width: 96mm;
-  height: 68.5mm;
+  width: 94mm;
+  height: 64mm;
   background: #ffffff;
-  border: 1.4px solid #2563eb;
-  border-radius: 2mm;
-  padding: 1.2mm 1.8mm;
+  border: 1.3px solid #2563eb;
+  border-radius: 1.8mm;
+  padding: 1mm 1.5mm;
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
@@ -603,10 +603,10 @@ body {
 .grid8-top-banner {
   background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%);
   color: #ffffff;
-  padding: 0.6px 3px;
-  border-radius: 0.8mm;
+  padding: 0.5px 3px;
+  border-radius: 0.6mm;
   font-weight: 800;
-  font-size: 5.8pt;
+  font-size: 5.6pt;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -614,7 +614,7 @@ body {
 .grid8-branch-pill {
   background: #fef08a;
   color: #854d0e;
-  font-size: 4.8pt;
+  font-size: 4.6pt;
   font-weight: 800;
   padding: 0.2mm 0.8mm;
   border-radius: 0.4mm;
@@ -623,15 +623,15 @@ body {
 .grid8-info-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 6.1pt;
+  font-size: 5.9pt;
   line-height: 1.1;
 }
-.grid8-info-table td { padding: 0.2px 0.6px; vertical-align: middle; }
+.grid8-info-table td { padding: 0.2px 0.5px; vertical-align: middle; }
 .grid8-matrix-table {
   width: 100%;
   border-collapse: collapse;
-  border: 0.9px solid #1e40af;
-  font-size: 5.7pt;
+  border: 0.8px solid #1e40af;
+  font-size: 5.5pt;
 }
 .grid8-matrix-table th {
   background: #1e40af !important;
@@ -639,38 +639,38 @@ body {
   border: 0.5px solid #1e3a8a;
   font-weight: bold;
   text-align: center;
-  padding: 0.4px 0;
-  height: 10.5px;
+  padding: 0.3px 0;
+  height: 9.8px;
 }
-.grid8-matrix-table td { border: 0.5px solid #cbd5e1; text-align: center; padding: 0; height: 9.6px; }
+.grid8-matrix-table td { border: 0.5px solid #cbd5e1; text-align: center; padding: 0; height: 9.2px; }
 .grid8-matrix-table tr.even-row { background-color: #f8fafc; }
 .grid8-matrix-table tr.done-row { background-color: #f0fdf4; }
 .grid8-matrix-table tr.done-row td { border-color: #86efac; }
-.grid8-matrix-table .tgl-h { width: 19mm; }
-.grid8-matrix-table .tgl-col { font-weight: bold; font-family: "Courier New", monospace; font-size: 5.8pt; color: #1e3a8a; }
-.grid8-matrix-table .chk-h { width: 4.4mm; }
-.grid8-matrix-table .chk-col { font-weight: bold; font-size: 6.2pt; }
+.grid8-matrix-table .tgl-h { width: 18mm; }
+.grid8-matrix-table .tgl-col { font-weight: bold; font-family: "Courier New", monospace; font-size: 5.6pt; color: #1e3a8a; }
+.grid8-matrix-table .chk-h { width: 4.2mm; }
+.grid8-matrix-table .chk-col { font-weight: bold; font-size: 6pt; }
 .grid8-matrix-table .chk-yes { color: #16a34a; font-weight: 900; }
 .grid8-matrix-table .chk-no { color: #94a3b8; }
-.grid8-matrix-table .paraf-h { min-width: 16mm; }
-.grid8-matrix-table .paraf-col { font-size: 5.2pt; font-family: "Courier New", monospace; color: #334155; }
+.grid8-matrix-table .paraf-h { min-width: 15mm; }
+.grid8-matrix-table .paraf-col { font-size: 5pt; font-family: "Courier New", monospace; color: #334155; }
 .grid8-ket-box {
   background: #f8fafc;
   border: 0.6px solid #94a3b8;
-  border-radius: 0.8mm;
-  padding: 0.4mm 0.8mm;
+  border-radius: 0.6mm;
+  padding: 0.3mm 0.6mm;
 }
 .grid8-ket-title {
-  font-size: 4.6pt;
+  font-size: 4.4pt;
   font-weight: 800;
   color: #1e40af;
-  margin-bottom: 0.3mm;
+  margin-bottom: 0.2mm;
   text-transform: uppercase;
 }
 .grid8-ket-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 0.2mm 0.8mm;
+  gap: 0.2mm 0.6mm;
 }
 
 /* =========================================================
@@ -703,10 +703,68 @@ body {
 
 /* Print Media Query */
 @media print {
-  body { background: #ffffff !important; }
-  .no-print { display: none !important; }
-  .page-grid-6, .page-grid-8 { margin: 0 auto !important; }
-  .print-card-wrapper-single { box-shadow: none !important; border: 1.5px solid #2563eb !important; margin: 0 auto !important; }
+  html, body {
+    background: #ffffff !important;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+  .no-print, nav, header, footer {
+    display: none !important;
+  }
+  .container-fluid, .container, main {
+    max-width: 100% !important;
+    width: 100% !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+  .cards-print-area {
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+  .page-grid-6 {
+    width: 192mm !important;
+    max-width: 192mm !important;
+    margin: 0 auto !important;
+    padding: 0 !important;
+    page-break-after: always !important;
+    break-after: page !important;
+  }
+  .page-grid-6:last-child {
+    page-break-after: auto !important;
+    break-after: auto !important;
+  }
+  .page-grid-8 {
+    width: 192mm !important;
+    max-width: 192mm !important;
+    margin: 0 auto !important;
+    padding: 0 !important;
+    page-break-after: always !important;
+    break-after: page !important;
+  }
+  .page-grid-8:last-child {
+    page-break-after: auto !important;
+    break-after: auto !important;
+  }
+  .card-item-6, .card-item-8 {
+    box-shadow: none !important;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+  .print-card-wrapper-single {
+    box-shadow: none !important;
+    border: 1.5px solid #2563eb !important;
+    margin: 0 auto !important;
+    page-break-after: always !important;
+    break-after: page !important;
+  }
+  .print-card-wrapper-single:last-child {
+    page-break-after: auto !important;
+    break-after: auto !important;
+  }
 }
 </style>';
 

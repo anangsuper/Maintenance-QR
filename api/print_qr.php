@@ -321,19 +321,20 @@ body {
    CETAK (PRINT)
    ========================================================================= */
 @media print {
-  body {
+  html, body {
     background: #fff !important;
+    width: 100% !important;
     margin: 0 !important;
     padding: 0 !important;
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
   }
 
-  .no-print, nav, header {
+  .no-print, nav, header, footer {
     display: none !important;
   }
 
-  .container, main.container {
+  .container, main.container, .container-fluid {
     max-width: 100% !important;
     width: 100% !important;
     padding: 0 !important;
@@ -342,19 +343,25 @@ body {
 
   .qr-container {
     display: block !important;
-    text-align: center;
+    text-align: center !important;
     padding: 0 !important;
+    margin: 0 auto !important;
+    width: 100% !important;
   }
 
   .qr-sticker-wrapper {
     display: inline-block !important;
-    margin: 1.5mm !important;
+    margin: 1.2mm !important;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
   }
 
   .qr-sticker {
     box-shadow: none !important;
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
   }
 
   .qr-top-bar, .qr-bot-bar, .qr-kode-badge, .qr-user-name, .qr-cabang {
