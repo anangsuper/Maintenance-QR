@@ -1726,6 +1726,394 @@ function get_dashboard_data(int $month, int $year, int $cabangId): array {
     ];
 }
 
+function get_comprehensive_dashboard_data(int $month, int $year, int $cabangId = 0, string $statusAset = '', string $statusMaint = ''): array {
+    $cabangs = get_cabang_list();
+    $cabangMap = [];
+    foreach ($cabangs as $c) {
+        $cId = (int)($c['id'] ?? 0);
+        $cabangMap[$cId] = $c['nama'] ?? $c['nama_cabang'] ?? ('Cabang #' . $cId);
+    }
+
+    if (is_google_cloud_mode()) {
+        $client = google_sheets_v4_client();
+        $allRawAssets = map_sheets_assets();
+        $scans = $client ? $client->getSheetData('Maintenance_Scan') : [];
+        $rawFindings = $client ? $client->getSheetData('Maintenance_Findings') : [];
+        
+        $assetMap = [];
+        foreach ($allRawAssets as $a) {
+            $assetMap[(int)$a['id']] = $a;
+        }
+
+        $currentMonthScans = [];
+        $scannedAssetIds = [];
+        $findingAssetIds = [];
+
+        foreach ($scans as $s) {
+            $sMonth = (int)($s['maintenance_month'] ?? 0);
+            $sYear = (int)($s['maintenance_year'] ?? 0);
+            $aid = (int)($s['asset_id'] ?? 0);
+            if ($sMonth === $month && $sYear === $year) {
+                $currentMonthScans[$aid] = $s;
+                $scannedAssetIds[$aid] = true;
+                if (($s['status'] ?? '') === 'Temuan') {
+                    $findingAssetIds[$aid] = true;
+                }
+            }
+        }
+
+        $totalAll = 0;
+        $totalActive = 0;
+        $totalBroken = 0;
+        $totalDone = 0;
+        $totalDue = 0;
+
+        $filteredAssets = [];
+
+        foreach ($allRawAssets as $a) {
+            $aid = (int)$a['id'];
+            $cId = (int)($a['id_cabang'] ?? 0);
+            $st = strtolower(trim((string)($a['status'] ?? '')));
+            $isActive = ($st === 'aktif' || $st === '');
+            $isBroken = (in_array($st, ['rusak', 'perlu perbaikan', 'rusak ringan', 'rusak berat', 'temuan'], true) || !empty($findingAssetIds[$aid]));
+
+            if ($cabangId > 0 && $cId !== $cabangId) {
+                continue;
+            }
+
+            $totalAll++;
+            if ($isActive) $totalActive++;
+            if ($isBroken) $totalBroken++;
+
+            $isDoneThisMonth = !empty($scannedAssetIds[$aid]);
+            if ($isActive) {
+                if ($isDoneThisMonth) {
+                    $totalDone++;
+                } else {
+                    $totalDue++;
+                }
+            }
+
+            if ($statusAset !== '') {
+                if ($statusAset === 'aktif' && !$isActive) continue;
+                if ($statusAset === 'rusak' && !$isBroken) continue;
+                if ($statusAset === 'nonaktif' && ($isActive || $isBroken)) continue;
+            }
+
+            if ($statusMaint !== '') {
+                if ($statusMaint === 'done' && !$isDoneThisMonth) continue;
+                if ($statusMaint === 'pending' && $isDoneThisMonth) continue;
+                if ($statusMaint === 'repair' && empty($findingAssetIds[$aid])) continue;
+            }
+
+            $filteredAssets[] = $a;
+        }
+
+        $unresolvedFindingsList = [];
+        foreach ($rawFindings as $f) {
+            $fStatus = trim((string)($f['repair_status'] ?? $f['status'] ?? 'Open'));
+            $isUnresolved = !in_array(strtolower($fStatus), ['resolved', 'closed', 'selesai', 'done'], true);
+            if (!$isUnresolved) continue;
+
+            $aid = (int)($f['asset_id'] ?? 0);
+            $a = $assetMap[$aid] ?? [];
+            if ($cabangId > 0 && (int)($a['id_cabang'] ?? 0) !== $cabangId) continue;
+
+            $unresolvedFindingsList[] = [
+                'id' => (int)($f['id'] ?? 0),
+                'log_id' => (int)($f['maintenance_scan_id'] ?? 0),
+                'asset_id' => $aid,
+                'kode_inventaris' => $a['kode_inventaris'] ?? ('ASET #' . $aid),
+                'nama_perangkat' => trim(($a['merk'] ?? '').' '.($a['model'] ?? '')),
+                'cabang_nama' => $a['cabang_nama'] ?? ($cabangMap[(int)($a['id_cabang'] ?? 0)] ?? '-'),
+                'finding' => (string)($f['finding'] ?? $f['description'] ?? '-'),
+                'action_taken' => (string)($f['action_taken'] ?? '-'),
+                'severity' => (string)($f['severity'] ?? 'Sedang'),
+                'status' => $fStatus ?: 'Open',
+                'reporter' => (string)($f['created_by'] ?? $f['reporter'] ?? 'Teknisi'),
+                'created_at' => substr((string)($f['created_at'] ?? ''), 0, 16)
+            ];
+        }
+
+        if (empty($unresolvedFindingsList)) {
+            foreach ($scans as $s) {
+                if (($s['status'] ?? '') === 'Temuan' || (!empty($s['findings']) && $s['findings'] !== '-')) {
+                    $aid = (int)($s['asset_id'] ?? 0);
+                    $a = $assetMap[$aid] ?? [];
+                    if ($cabangId > 0 && (int)($a['id_cabang'] ?? 0) !== $cabangId) continue;
+
+                    $unresolvedFindingsList[] = [
+                        'id' => (int)($s['id'] ?? 0),
+                        'log_id' => (int)($s['id'] ?? 0),
+                        'asset_id' => $aid,
+                        'kode_inventaris' => $a['kode_inventaris'] ?? '-',
+                        'nama_perangkat' => trim(($a['merk'] ?? '').' '.($a['model'] ?? '')),
+                        'cabang_nama' => $a['cabang_nama'] ?? ($cabangMap[(int)($a['id_cabang'] ?? 0)] ?? '-'),
+                        'finding' => (string)($s['findings'] ?? 'Pemeriksaan lanjutan perangkat'),
+                        'action_taken' => (string)($s['recommendation'] ?? '-'),
+                        'severity' => 'Sedang',
+                        'status' => 'Perlu Tindak Lanjut',
+                        'reporter' => (string)($s['technician_name'] ?? 'Teknisi'),
+                        'created_at' => (string)($s['maintenance_date'] ?? '')
+                    ];
+                }
+            }
+        }
+        $totalUnresolvedFindings = count($unresolvedFindingsList);
+
+        usort($unresolvedFindingsList, function($a, $b) {
+            return strcmp((string)($b['created_at'] ?? ''), (string)($a['created_at'] ?? ''));
+        });
+        $topUnresolvedFindings = array_slice($unresolvedFindingsList, 0, 5);
+
+        $recentLogs = [];
+        $sortedScans = $scans;
+        usort($sortedScans, function($a, $b) {
+            $dtA = ($a['maintenance_date'] ?? '') . ' ' . ($a['maintenance_time'] ?? '');
+            $dtB = ($b['maintenance_date'] ?? '') . ' ' . ($b['maintenance_time'] ?? '');
+            return strcmp($dtB, $dtA);
+        });
+
+        foreach ($sortedScans as $s) {
+            if (empty($s['id']) && empty($s['asset_id'])) continue;
+            $aid = (int)($s['asset_id'] ?? 0);
+            $a = $assetMap[$aid] ?? [];
+            if ($cabangId > 0 && (int)($a['id_cabang'] ?? 0) !== $cabangId) continue;
+
+            $recentLogs[] = [
+                'id' => (int)($s['id'] ?? 0),
+                'asset_id' => $aid,
+                'kode_inventaris' => $a['kode_inventaris'] ?? '-',
+                'nama_perangkat' => trim(($a['merk'] ?? '').' '.($a['model'] ?? '')),
+                'karyawan_nama' => $a['karyawan_nama'] ?? '-',
+                'cabang_nama' => $a['cabang_nama'] ?? ($cabangMap[(int)($a['id_cabang'] ?? 0)] ?? '-'),
+                'technician_name' => $s['technician_name'] ?? 'Teknisi',
+                'maintenance_date' => substr((string)($s['maintenance_date'] ?? ''), 0, 10),
+                'maintenance_time' => substr((string)($s['maintenance_time'] ?? ''), 0, 8),
+                'status' => $s['status'] ?? 'Selesai',
+                'findings' => $s['findings'] ?? '-'
+            ];
+            if (count($recentLogs) >= 10) break;
+        }
+
+        $upcomingList = [];
+        $daysInMonth = (int)date('t', mktime(0, 0, 0, $month, 1, $year));
+        $targetDueDateStr = sprintf('%04d-%02d-%02d', $year, $month, $daysInMonth);
+        $todayTs = strtotime(date('Y-m-d'));
+        $targetDueTs = strtotime($targetDueDateStr);
+        $diffDays = (int)round(($targetDueTs - $todayTs) / 86400);
+
+        foreach ($allRawAssets as $a) {
+            $aid = (int)$a['id'];
+            $st = strtolower(trim((string)($a['status'] ?? '')));
+            if ($st !== 'aktif' && $st !== '') continue;
+            if ($cabangId > 0 && (int)($a['id_cabang'] ?? 0) !== $cabangId) continue;
+
+            if (empty($scannedAssetIds[$aid])) {
+                $upcomingList[] = [
+                    'asset_id' => $aid,
+                    'kode_inventaris' => $a['kode_inventaris'] ?? '-',
+                    'nama_perangkat' => trim(($a['merk'] ?? '').' '.($a['model'] ?? '')),
+                    'cabang_nama' => $a['cabang_nama'] ?? ($cabangMap[(int)($a['id_cabang'] ?? 0)] ?? '-'),
+                    'divisi_nama' => $a['divisi_nama'] ?? '-',
+                    'karyawan_nama' => $a['karyawan_nama'] ?? '-',
+                    'due_date' => $targetDueDateStr,
+                    'sisa_hari' => $diffDays
+                ];
+            }
+        }
+        $topUpcomingList = array_slice($upcomingList, 0, 10);
+
+        $branchAssetDistribution = [];
+        foreach ($cabangs as $c) {
+            $cId = (int)($c['id'] ?? 0);
+            $cName = $c['nama'] ?? $c['nama_cabang'] ?? ('Cabang #' . $cId);
+            $cnt = 0;
+            foreach ($allRawAssets as $a) {
+                if ((int)($a['id_cabang'] ?? 0) === $cId) {
+                    $cnt++;
+                }
+            }
+            if ($cnt > 0) {
+                $branchAssetDistribution[] = [
+                    'id' => $cId,
+                    'nama' => $cName,
+                    'count' => $cnt
+                ];
+            }
+        }
+
+        $monthlyOverview = get_monthly_overview($year, $cabangId);
+
+        return [
+            'total_all' => $totalAll,
+            'total_active' => $totalActive,
+            'total_broken' => $totalBroken,
+            'total_done' => $totalDone,
+            'total_due' => $totalDue,
+            'total_unresolved_findings' => $totalUnresolvedFindings,
+            'recent_logs' => $recentLogs,
+            'upcoming_list' => $topUpcomingList,
+            'unresolved_findings' => $topUnresolvedFindings,
+            'branch_distribution' => $branchAssetDistribution,
+            'monthly_overview' => $monthlyOverview,
+            'cabangs' => $cabangs
+        ];
+    }
+
+    // MySQL Mode
+    $cName = name_column('cabang') ?: 'id';
+    $whereBranch = $cabangId > 0 ? " AND a.id_cabang = {$cabangId} " : "";
+
+    $totalAll = (int)db()->query("SELECT COUNT(*) FROM assets a WHERE 1=1 {$whereBranch}")->fetchColumn();
+    $totalActive = (int)db()->query("SELECT COUNT(*) FROM assets a WHERE (a.status = 'Aktif' OR a.status = 'aktif' OR a.status IS NULL OR a.status = '') {$whereBranch}")->fetchColumn();
+    $totalBroken = (int)db()->query("SELECT COUNT(*) FROM assets a WHERE (a.status IN ('Rusak', 'rusak', 'Perlu Perbaikan', 'Temuan')) {$whereBranch}")->fetchColumn();
+
+    $doneSt = db()->prepare("
+        SELECT COUNT(DISTINCT ms.asset_id)
+        FROM maintenance_scan ms
+        JOIN assets a ON a.id = ms.asset_id
+        WHERE ms.maintenance_month = ? AND ms.maintenance_year = ?
+        ".($cabangId > 0 ? " AND a.id_cabang = ? " : "")."
+    ");
+    $doneParams = [$month, $year];
+    if ($cabangId > 0) $doneParams[] = $cabangId;
+    $doneSt->execute($doneParams);
+    $totalDone = (int)$doneSt->fetchColumn();
+    $totalDue = max(0, $totalActive - $totalDone);
+
+    try {
+        $findSt = db()->prepare("
+            SELECT mf.id, mf.maintenance_scan_id AS log_id, mf.asset_id, mf.finding, mf.action_taken, mf.severity,
+                   COALESCE(mf.repair_status, 'Open') AS status, mf.created_at,
+                   a.kode_inventaris, a.merk, a.model,
+                   c.`{$cName}` AS cabang_nama,
+                   COALESCE(u.nama, u.username, 'Teknisi') AS reporter
+            FROM maintenance_findings mf
+            JOIN assets a ON a.id = mf.asset_id
+            LEFT JOIN cabang c ON c.id = a.id_cabang
+            LEFT JOIN users u ON u.id = mf.created_by
+            WHERE COALESCE(mf.repair_status, 'Open') NOT IN ('Resolved', 'Closed', 'Selesai', 'Done')
+            ".($cabangId > 0 ? " AND a.id_cabang = ? " : "")."
+            ORDER BY mf.created_at DESC
+            LIMIT 5
+        ");
+        $findSt->execute($cabangId > 0 ? [$cabangId] : []);
+        $topUnresolvedFindings = $findSt->fetchAll();
+        $totalUnresolvedFindings = count($topUnresolvedFindings);
+    } catch (Throwable $e) {
+        $topUnresolvedFindings = [];
+        $totalUnresolvedFindings = 0;
+    }
+
+    $kName = name_column('karyawan') ?: 'id';
+    $uName = name_column('users') ?: 'id';
+    $recentSt = db()->prepare("
+        SELECT ms.id, ms.asset_id, ms.maintenance_date, ms.maintenance_time, ms.status, ms.findings,
+               COALESCE(ms.technician_name, u.`{$uName}`, 'Teknisi') AS technician_name,
+               a.kode_inventaris, a.merk, a.model,
+               c.`{$cName}` AS cabang_nama,
+               k.`{$kName}` AS karyawan_nama
+        FROM maintenance_scan ms
+        JOIN assets a ON a.id = ms.asset_id
+        LEFT JOIN cabang c ON c.id = a.id_cabang
+        LEFT JOIN karyawan k ON k.id = a.id_karyawan
+        LEFT JOIN users u ON u.id = ms.technician_user_id
+        WHERE 1=1 ".($cabangId > 0 ? " AND a.id_cabang = ? " : "")."
+        ORDER BY ms.maintenance_date DESC, ms.maintenance_time DESC
+        LIMIT 10
+    ");
+    $recentSt->execute($cabangId > 0 ? [$cabangId] : []);
+    $recentRowsRaw = $recentSt->fetchAll();
+    $recentLogs = [];
+    foreach ($recentRowsRaw as $r) {
+        $recentLogs[] = [
+            'id' => (int)$r['id'],
+            'asset_id' => (int)$r['asset_id'],
+            'kode_inventaris' => $r['kode_inventaris'] ?? '-',
+            'nama_perangkat' => trim(($r['merk'] ?? '').' '.($r['model'] ?? '')),
+            'karyawan_nama' => $r['karyawan_nama'] ?? '-',
+            'cabang_nama' => $r['cabang_nama'] ?? '-',
+            'technician_name' => $r['technician_name'] ?? 'Teknisi',
+            'maintenance_date' => substr((string)($r['maintenance_date'] ?? ''), 0, 10),
+            'maintenance_time' => substr((string)($r['maintenance_time'] ?? ''), 0, 8),
+            'status' => $r['status'] ?? 'Selesai',
+            'findings' => $r['findings'] ?? '-'
+        ];
+    }
+
+    $dName = name_column('divisi') ?: 'id';
+    $daysInMonth = (int)date('t', mktime(0, 0, 0, $month, 1, $year));
+    $targetDueDateStr = sprintf('%04d-%02d-%02d', $year, $month, $daysInMonth);
+    $todayTs = strtotime(date('Y-m-d'));
+    $targetDueTs = strtotime($targetDueDateStr);
+    $diffDays = (int)round(($targetDueTs - $todayTs) / 86400);
+
+    $upSt = db()->prepare("
+        SELECT a.id AS asset_id, a.kode_inventaris, a.merk, a.model,
+               c.`{$cName}` AS cabang_nama,
+               d.`{$dName}` AS divisi_nama,
+               k.`{$kName}` AS karyawan_nama
+        FROM assets a
+        LEFT JOIN cabang c ON c.id = a.id_cabang
+        LEFT JOIN divisi d ON d.id = a.id_divisi
+        LEFT JOIN karyawan k ON k.id = a.id_karyawan
+        WHERE (a.status = 'Aktif' OR a.status = 'aktif' OR a.status IS NULL OR a.status = '')
+          ".($cabangId > 0 ? " AND a.id_cabang = ? " : "")."
+          AND NOT EXISTS (
+              SELECT 1 FROM maintenance_scan ms
+              WHERE ms.asset_id = a.id
+                AND ms.maintenance_month = ?
+                AND ms.maintenance_year = ?
+          )
+        ORDER BY c.`{$cName}`, a.kode_inventaris
+        LIMIT 10
+    ");
+    $upParams = $cabangId > 0 ? [$cabangId, $month, $year] : [$month, $year];
+    $upSt->execute($upParams);
+    $upRowsRaw = $upSt->fetchAll();
+    $upcomingList = [];
+    foreach ($upRowsRaw as $r) {
+        $upcomingList[] = [
+            'asset_id' => (int)$r['asset_id'],
+            'kode_inventaris' => $r['kode_inventaris'] ?? '-',
+            'nama_perangkat' => trim(($r['merk'] ?? '').' '.($r['model'] ?? '')),
+            'cabang_nama' => $r['cabang_nama'] ?? '-',
+            'divisi_nama' => $r['divisi_nama'] ?? '-',
+            'karyawan_nama' => $r['karyawan_nama'] ?? '-',
+            'due_date' => $targetDueDateStr,
+            'sisa_hari' => $diffDays
+        ];
+    }
+
+    $distSt = db()->query("
+        SELECT c.id, c.`{$cName}` AS nama, COUNT(a.id) AS count
+        FROM cabang c
+        LEFT JOIN assets a ON a.id_cabang = c.id
+        GROUP BY c.id, c.`{$cName}`
+        HAVING count > 0
+        ORDER BY count DESC
+    ");
+    $branchAssetDistribution = $distSt->fetchAll();
+
+    $monthlyOverview = get_monthly_overview($year, $cabangId);
+
+    return [
+        'total_all' => $totalAll,
+        'total_active' => $totalActive,
+        'total_broken' => $totalBroken,
+        'total_done' => $totalDone,
+        'total_due' => $totalDue,
+        'total_unresolved_findings' => $totalUnresolvedFindings,
+        'recent_logs' => $recentLogs,
+        'upcoming_list' => $upcomingList,
+        'unresolved_findings' => $topUnresolvedFindings,
+        'branch_distribution' => $branchAssetDistribution,
+        'monthly_overview' => $monthlyOverview,
+        'cabangs' => $cabangs
+    ];
+}
+
 function get_branch_maintenance_summary(int $month, int $year): array {
     $cabangs = get_cabang_list();
     $results = [];
