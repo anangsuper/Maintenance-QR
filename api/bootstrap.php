@@ -202,6 +202,20 @@ function get_user_list(): array {
     if (is_google_cloud_mode()) {
         $client = google_sheets_v4_client();
         if (!$client) return [];
+
+        $client->createSheetIfNotExists('Users');
+        $existingHeader = $client->getValues('Users!A1:H1');
+        if (empty($existingHeader)) {
+            $adminHash = password_hash('admin123', PASSWORD_BCRYPT);
+            $teknisiHash = password_hash('teknisi123', PASSWORD_BCRYPT);
+            $client->appendValues('Users!A:H', [
+                ['id', 'username', 'password', 'nama', 'role', 'telepon', 'status', 'created_at'],
+                [1, 'admin', $adminHash, 'Administrator', 'admin', '081234567890', 'Aktif', date('Y-m-d H:i:s')],
+                [2, 'teknisi', $teknisiHash, 'Teknisi IT', 'teknisi', '081234567891', 'Aktif', date('Y-m-d H:i:s')],
+            ]);
+            $client->clearCache('Users');
+        }
+
         $rows = $client->getSheetData('Users');
         if (empty($rows)) {
             return [
@@ -245,10 +259,14 @@ function get_user_list(): array {
 
         $users = db()->query("SELECT id, `{$nameCol}` AS nama, username, role, {$telCol}, {$stCol}, created_at FROM users ORDER BY id ASC")->fetchAll();
         if (empty($users)) {
-            return [
-                ['id' => 1, 'nama' => 'Administrator', 'username' => 'admin', 'role' => 'admin', 'telepon' => '-', 'status' => 'Aktif'],
-                ['id' => 2, 'nama' => 'Teknisi IT', 'username' => 'teknisi', 'role' => 'teknisi', 'telepon' => '-', 'status' => 'Aktif'],
-            ];
+            $adminHash = password_hash('admin123', PASSWORD_BCRYPT);
+            $teknisiHash = password_hash('teknisi123', PASSWORD_BCRYPT);
+            db()->exec("
+                INSERT IGNORE INTO users (`{$nameCol}`, username, password, role, telepon, status, created_at)
+                VALUES ('Administrator', 'admin', '{$adminHash}', 'admin', '081234567890', 'Aktif', NOW()),
+                       ('Teknisi IT', 'teknisi', '{$teknisiHash}', 'teknisi', '081234567891', 'Aktif', NOW())
+            ");
+            $users = db()->query("SELECT id, `{$nameCol}` AS nama, username, role, {$telCol}, {$stCol}, created_at FROM users ORDER BY id ASC")->fetchAll();
         }
         return $users;
     } catch (Throwable $e) {
@@ -385,6 +403,19 @@ function update_user(int $id, array $data): array {
         $client = google_sheets_v4_client();
         if (!$client) return ['success' => false, 'error' => 'Google Sheets client tidak tersedia'];
 
+        $client->createSheetIfNotExists('Users');
+        $existingHeader = $client->getValues('Users!A1:H1');
+        if (empty($existingHeader)) {
+            $adminHash = password_hash('admin123', PASSWORD_BCRYPT);
+            $teknisiHash = password_hash('teknisi123', PASSWORD_BCRYPT);
+            $client->appendValues('Users!A:H', [
+                ['id', 'username', 'password', 'nama', 'role', 'telepon', 'status', 'created_at'],
+                [1, 'admin', $adminHash, 'Administrator', 'admin', '081234567890', 'Aktif', date('Y-m-d H:i:s')],
+                [2, 'teknisi', $teknisiHash, 'Teknisi IT', 'teknisi', '081234567891', 'Aktif', date('Y-m-d H:i:s')],
+            ]);
+            $client->clearCache('Users');
+        }
+
         $rows = $client->getSheetData('Users', true);
         $targetRow = null;
         foreach ($rows as $r) {
@@ -394,7 +425,27 @@ function update_user(int $id, array $data): array {
             }
         }
 
-        if (!$targetRow) return ['success' => false, 'error' => 'Pengguna tidak ditemukan'];
+        if (!$targetRow) {
+            // Jika ID 1 atau 2 belum tercatat di sheet tapi ingin di-edit, buat barisnya
+            if ($id === 1 || $id === 2) {
+                $username = ($id === 1) ? 'admin' : 'teknisi';
+                $hashedPass = $password !== '' ? password_hash($password, PASSWORD_BCRYPT) : password_hash(($id === 1 ? 'admin123' : 'teknisi123'), PASSWORD_BCRYPT);
+                $client->appendValues('Users!A:H', [[
+                    $id,
+                    $username,
+                    $hashedPass,
+                    $nama,
+                    $role,
+                    $telepon,
+                    $status,
+                    date('Y-m-d H:i:s')
+                ]]);
+                $client->clearCache('Users');
+                return ['success' => true, 'id' => $id, 'nama' => $nama];
+            }
+            return ['success' => false, 'error' => 'Pengguna tidak ditemukan'];
+        }
+
         $rowNum = (int)($targetRow['_row_num'] ?? 0);
         if ($rowNum <= 1) return ['success' => false, 'error' => 'Gagal menentukan baris data pengguna'];
 
@@ -3207,6 +3258,7 @@ function render_page(string $title, string $content, string $extraHead = '', str
     $currentPage = basename($_SERVER['SCRIPT_NAME'] ?? '');
 
     if ($showNav) {
+        $isMasterActive = in_array($currentPage, ['cabang_admin.php', 'divisi_admin.php', 'users_admin.php'], true);
         $nav = '
         <nav class="navbar navbar-expand-lg navbar-dark main-navbar mb-4 sticky-top">
           <div class="container">
@@ -3214,16 +3266,35 @@ function render_page(string $title, string $content, string $extraHead = '', str
               <span class="brand-icon"><i class="bi bi-qr-code-scan"></i></span>
               <span class="brand-text">QR Maintenance</span>
             </a>
-            <div class="d-flex flex-wrap gap-2 align-items-center">
-              <a class="nav-pill-btn '.($currentPage==='dashboard.php'?'active':'').'" href="'.e(module_url('dashboard.php')).'"><i class="bi bi-speedometer2"></i> Dashboard</a>
-              <a class="nav-pill-btn '.(in_array($currentPage, ['audit.php', 'monthly_history.php', 'history.php', 'maintenance_detail.php'], true)?'active':'').'" href="'.e(module_url('audit.php')).'"><i class="bi bi-clock-history"></i> Riwayat Maintenance</a>
-              <a class="nav-pill-btn '.($currentPage==='qr_admin.php'?'active':'').'" href="'.e(module_url('qr_admin.php')).'"><i class="bi bi-qr-code"></i> QR Aset</a>
-              <a class="nav-pill-btn '.($currentPage==='cabang_admin.php'?'active':'').'" href="'.e(module_url('cabang_admin.php')).'"><i class="bi bi-buildings"></i> Cabang</a>
-              <a class="nav-pill-btn '.($currentPage==='divisi_admin.php'?'active':'').'" href="'.e(module_url('divisi_admin.php')).'"><i class="bi bi-diagram-3"></i> Divisi</a>
-              <a class="nav-pill-btn '.($currentPage==='users_admin.php'?'active':'').'" href="'.e(module_url('users_admin.php')).'"><i class="bi bi-people"></i> Pengguna</a>
-              <a class="btn btn-sm btn-action-add fw-bold" href="'.e(module_url('asset_add.php')).'"><i class="bi bi-plus-circle-fill me-1"></i> + Tambah Komputer</a>
-              <span class="d-none d-lg-inline-flex align-items-center gap-1 ms-2 text-white-50 small"><i class="bi bi-person-circle"></i> '.e(current_user_name()).'</span>
-              <a class="nav-pill-btn text-danger-emphasis" href="'.e(module_url('logout.php')).'" title="Keluar / Logout"><i class="bi bi-box-arrow-right"></i></a>
+            <button class="navbar-toggler border-0 shadow-none" type="button" data-bs-toggle="collapse" data-bs-target="#mainNavbarNav" aria-controls="mainNavbarNav" aria-expanded="false" aria-label="Toggle navigation">
+              <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse justify-content-end" id="mainNavbarNav">
+              <div class="d-flex flex-column flex-lg-row gap-2 align-items-lg-center pt-2 pt-lg-0">
+                <a class="nav-pill-btn '.($currentPage==='dashboard.php'?'active':'').'" href="'.e(module_url('dashboard.php')).'"><i class="bi bi-speedometer2"></i> Dashboard</a>
+                <a class="nav-pill-btn '.(in_array($currentPage, ['audit.php', 'monthly_history.php', 'history.php', 'maintenance_detail.php'], true)?'active':'').'" href="'.e(module_url('audit.php')).'"><i class="bi bi-clock-history"></i> Riwayat</a>
+                <a class="nav-pill-btn '.($currentPage==='qr_admin.php'?'active':'').'" href="'.e(module_url('qr_admin.php')).'"><i class="bi bi-qr-code"></i> QR Aset</a>
+
+                <!-- Dropdown Kelola Data Master -->
+                <div class="dropdown">
+                  <button class="nav-pill-btn dropdown-toggle border-0 w-100 text-start '.($isMasterActive?'active':'').'" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                    <i class="bi bi-gear-fill"></i> Kelola Data
+                  </button>
+                  <ul class="dropdown-menu dropdown-menu-dark shadow border-0 mt-2">
+                    <li><a class="dropdown-item py-2 '.($currentPage==='cabang_admin.php'?'active':'').'" href="'.e(module_url('cabang_admin.php')).'"><i class="bi bi-buildings me-2 text-primary"></i> Data Cabang</a></li>
+                    <li><a class="dropdown-item py-2 '.($currentPage==='divisi_admin.php'?'active':'').'" href="'.e(module_url('divisi_admin.php')).'"><i class="bi bi-diagram-3 me-2 text-info"></i> Data Divisi</a></li>
+                    <li><hr class="dropdown-divider border-secondary opacity-50"></li>
+                    <li><a class="dropdown-item py-2 '.($currentPage==='users_admin.php'?'active':'').'" href="'.e(module_url('users_admin.php')).'"><i class="bi bi-people me-2 text-warning"></i> Akun Pengguna / Teknisi</a></li>
+                  </ul>
+                </div>
+
+                <a class="btn btn-sm btn-action-add fw-bold px-3 ms-lg-1" href="'.e(module_url('asset_add.php')).'"><i class="bi bi-plus-circle-fill me-1"></i> + Tambah Komputer</a>
+                
+                <div class="d-flex align-items-center gap-2 ms-lg-2 pt-2 pt-lg-0 border-top border-lg-0 border-secondary border-opacity-25">
+                  <span class="d-inline-flex align-items-center gap-1 text-white-50 small"><i class="bi bi-person-circle"></i> '.e(current_user_name()).'</span>
+                  <a class="nav-pill-btn text-danger-emphasis" href="'.e(module_url('logout.php')).'" title="Keluar / Logout"><i class="bi bi-box-arrow-right"></i></a>
+                </div>
+              </div>
             </div>
           </div>
         </nav>';
@@ -3454,6 +3525,7 @@ body {
 <main class="container pb-5">
 '.$content.'
 </main>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script>
 // Ultra-fast instant prefetching on hover / touch
 (function(){

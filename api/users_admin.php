@@ -238,8 +238,8 @@ $body = '
     <div class="text-secondary">Daftar akun petugas IT, teknisi lapangan, dan hak akses sistem QR Maintenance.</div>
   </div>
   <div class="d-flex gap-2">
-    <a class="btn btn-outline-secondary" href="'.e(module_url('dashboard.php')).'"><i class="bi bi-arrow-left"></i> Ke Dashboard</a>
-    <a class="btn btn-warning text-dark fw-bold" href="'.e(module_url('asset_add.php')).'"><i class="bi bi-plus-lg"></i> Tambah Komputer</a>
+    <a class="btn btn-outline-secondary" href="'.e(module_url('dashboard.php')).'"><i class="bi bi-arrow-left me-1"></i> Ke Dashboard</a>
+    <a class="btn btn-primary fw-bold" href="'.e(module_url('users_admin.php')).'"><i class="bi bi-person-plus-fill me-1"></i> + Buat Akun Baru</a>
   </div>
 </div>
 
