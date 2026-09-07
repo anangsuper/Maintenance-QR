@@ -407,7 +407,7 @@ $head = '
 <style>
 @page {
   size: A4 portrait;
-  margin: 6mm 5mm 6mm 5mm;
+  margin: 7mm 8mm 7mm 8mm;
 }
 * {
   box-sizing: border-box;
@@ -426,11 +426,12 @@ body {
    GRID 6 PER LEMBAR A4 (2 KOLOM x 3 BARIS) - FIT PRESISI & LEGA
    ========================================================= */
 .page-grid-6 {
-  width: 192mm;
+  width: 184mm;
+  max-width: 184mm;
   display: grid;
-  grid-template-columns: 94mm 94mm;
+  grid-template-columns: 89mm 89mm;
   grid-auto-rows: 85mm;
-  gap: 3mm 4mm;
+  gap: 3mm 6mm;
   justify-content: center;
   margin: 0 auto 10mm auto;
   page-break-after: always;
@@ -438,19 +439,19 @@ body {
 }
 
 .card-item-6 {
-  width: 94mm;
+  width: 89mm;
   height: 85mm;
   background: #ffffff;
   border: 1.4px solid #2563eb;
   border-radius: 2.2mm;
-  padding: 2mm 2.5mm;
+  padding: 2mm 2.2mm;
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
   page-break-inside: avoid;
   break-inside: avoid;
-  box-shadow: 0 1px 4px rgba(37, 99, 235, 0.08);
+  overflow: hidden;
 }
 
 .grid6-top-banner {
@@ -575,18 +576,19 @@ body {
    GRID 8 PER LEMBAR A4 (2 KOLOM x 4 BARIS)
    ========================================================= */
 .page-grid-8 {
-  width: 192mm;
+  width: 184mm;
+  max-width: 184mm;
   display: grid;
-  grid-template-columns: 94mm 94mm;
+  grid-template-columns: 89mm 89mm;
   grid-auto-rows: 64mm;
-  gap: 2mm 4mm;
+  gap: 2mm 6mm;
   justify-content: center;
   margin: 0 auto 10mm auto;
   page-break-after: always;
   break-after: page;
 }
 .card-item-8 {
-  width: 94mm;
+  width: 89mm;
   height: 64mm;
   background: #ffffff;
   border: 1.3px solid #2563eb;
@@ -598,7 +600,7 @@ body {
   justify-content: space-between;
   page-break-inside: avoid;
   break-inside: avoid;
-  box-shadow: 0 1px 4px rgba(37, 99, 235, 0.08);
+  overflow: hidden;
 }
 .grid8-top-banner {
   background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%);
@@ -724,8 +726,8 @@ body {
     padding: 0 !important;
   }
   .page-grid-6 {
-    width: 192mm !important;
-    max-width: 192mm !important;
+    width: 184mm !important;
+    max-width: 184mm !important;
     margin: 0 auto !important;
     padding: 0 !important;
     page-break-after: always !important;
@@ -736,8 +738,8 @@ body {
     break-after: auto !important;
   }
   .page-grid-8 {
-    width: 192mm !important;
-    max-width: 192mm !important;
+    width: 184mm !important;
+    max-width: 184mm !important;
     margin: 0 auto !important;
     padding: 0 !important;
     page-break-after: always !important;
