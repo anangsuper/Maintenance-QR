@@ -35,13 +35,18 @@ if (empty($existing)) {
 
 // ====== 2. Tab Divisi ======
 $client->createSheetIfNotExists('Divisi');
-$existing = $client->getValues('Divisi!A1:B1');
+$existing = $client->getValues('Divisi!A1:C1');
 if (empty($existing)) {
-    $client->appendValues('Divisi!A:B', [
-        ['id', 'nama_divisi'],
-        [1, 'IT / MIS'],
-        [2, 'Operasional'],
-        [3, 'Finance'],
+    $client->appendValues('Divisi!A:C', [
+        ['id', 'nama_divisi', 'keterangan'],
+        [1, 'IT / MIS', 'Teknologi Informasi & Sistem Manajemen'],
+        [2, 'Operasional', 'Operasional Layanan & Transaksi'],
+        [3, 'Finance & Accounting', 'Keuangan & Akuntansi'],
+        [4, 'SDM / HRD', 'Sumber Daya Manusia & Personalia'],
+        [5, 'Marketing / Sales', 'Pemasaran & Bisnis'],
+        [6, 'Audit / SKAI', 'Satuan Kerja Audit Intern'],
+        [7, 'Kepatuhan & Manajemen Risiko', 'Kepatuhan Regulasi & Manajemen Risiko'],
+        [8, 'Umum / GA', 'General Affair & Logistik'],
     ]);
     $results[] = "✅ Tab Divisi — dibuat + data contoh";
 } else {

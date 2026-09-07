@@ -53,6 +53,11 @@ if (empty($divisis)) {
         ['id' => 3, 'nama_divisi' => 'Finance & Accounting', 'nama' => 'Finance & Accounting'],
         ['id' => 4, 'nama_divisi' => 'SDM / HRD', 'nama' => 'SDM / HRD'],
         ['id' => 5, 'nama_divisi' => 'Marketing / Sales', 'nama' => 'Marketing / Sales'],
+        ['id' => 6, 'nama_divisi' => 'Audit / SKAI', 'nama' => 'Audit / SKAI'],
+        ['id' => 7, 'nama_divisi' => 'Kepatuhan & Manajemen Risiko', 'nama' => 'Kepatuhan & Manajemen Risiko'],
+        ['id' => 8, 'nama_divisi' => 'Umum / GA', 'nama' => 'Umum / GA'],
+        ['id' => 9, 'nama_divisi' => 'Customer Service / Pelayanan', 'nama' => 'Customer Service / Pelayanan'],
+        ['id' => 10, 'nama_divisi' => 'Kasir / Teller', 'nama' => 'Kasir / Teller'],
     ];
 }
 
@@ -299,14 +304,14 @@ $body = '
         <h5 class="fw-bold text-primary border-bottom pb-2 mb-3"><i class="bi bi-geo-alt me-2"></i>2. Lokasi & Penanggung Jawab</h5>
         <div class="row g-3 mb-4">
           <div class="col-md-6">
-            <label class="form-label fw-semibold">Cabang / Lokasi <span class="text-danger">*</span></label>
+            <label class="form-label fw-semibold">Cabang / Lokasi <span class="text-danger">*</span> <a href="'.e(module_url('cabang_admin.php')).'" class="small text-primary text-decoration-none float-end" target="_blank">+ Tambah Cabang</a></label>
             <select class="form-select" name="id_cabang" required>
               '.$optCab.'
             </select>
           </div>
 
           <div class="col-md-6">
-            <label class="form-label fw-semibold">Divisi / Unit Kerja <span class="text-danger">*</span></label>
+            <label class="form-label fw-semibold">Divisi / Unit Kerja <span class="text-danger">*</span> <a href="'.e(module_url('divisi_admin.php')).'" class="small text-primary text-decoration-none float-end" target="_blank">+ Tambah Divisi</a></label>
             <select class="form-select" name="id_divisi" required>
               '.$optDiv.'
             </select>

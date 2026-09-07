@@ -623,6 +623,151 @@ function get_divisi_list(): array {
     }
 }
 
+function get_divisi_by_id(int $id): ?array {
+    if ($id <= 0) return null;
+    $divisis = get_divisi_list();
+    foreach ($divisis as $d) {
+        if ((int)($d['id'] ?? 0) === $id) return $d;
+    }
+    return null;
+}
+
+function create_new_divisi(array $data): array {
+    $nama = trim((string)($data['nama_divisi'] ?? $data['nama'] ?? ''));
+    $keterangan = trim((string)($data['keterangan'] ?? ''));
+
+    if ($nama === '') {
+        return ['success' => false, 'error' => 'Nama divisi wajib diisi'];
+    }
+
+    if (is_google_cloud_mode()) {
+        $client = google_sheets_v4_client();
+        if (!$client) return ['success' => false, 'error' => 'Google Sheets client tidak tersedia'];
+
+        $rows = $client->getSheetData('Divisi', true);
+        $maxId = 0;
+        foreach ($rows as $r) {
+            $did = (int)($r['id'] ?? 0);
+            if ($did > $maxId) $maxId = $did;
+            $existName = trim((string)($r['nama_divisi'] ?? $r['nama'] ?? ''));
+            if (strcasecmp($existName, $nama) === 0) {
+                return ['success' => false, 'error' => 'Nama divisi sudah terdaftar'];
+            }
+        }
+
+        $newId = max(count($rows) + 1, $maxId + 1);
+        $appended = $client->appendValues('Divisi!A:C', [[
+            $newId,
+            $nama,
+            $keterangan
+        ]]);
+
+        if (!$appended) {
+            return ['success' => false, 'error' => 'Gagal menyimpan data divisi ke Google Sheets'];
+        }
+
+        $client->clearCache('Divisi');
+
+        return [
+            'success' => true,
+            'id' => $newId,
+            'nama' => $nama
+        ];
+    }
+
+    // MySQL Mode
+    try {
+        $dName = name_column('divisi') ?: 'nama_divisi';
+        $checkSt = db()->prepare("SELECT id FROM divisi WHERE LOWER(`{$dName}`) = LOWER(?) LIMIT 1");
+        $checkSt->execute([$nama]);
+        if ($checkSt->fetchColumn()) {
+            return ['success' => false, 'error' => 'Nama divisi sudah terdaftar'];
+        }
+
+        $cols = table_columns('divisi');
+        if (in_array('keterangan', $cols, true)) {
+            $ins = db()->prepare("INSERT INTO divisi (`{$dName}`, `keterangan`) VALUES (?, ?)");
+            $ins->execute([$nama, $keterangan]);
+        } else {
+            $ins = db()->prepare("INSERT INTO divisi (`{$dName}`) VALUES (?)");
+            $ins->execute([$nama]);
+        }
+        $newId = (int)db()->lastInsertId();
+
+        return [
+            'success' => true,
+            'id' => $newId,
+            'nama' => $nama
+        ];
+    } catch (Throwable $e) {
+        return ['success' => false, 'error' => $e->getMessage()];
+    }
+}
+
+function update_divisi(int $id, array $data): array {
+    if ($id <= 0) return ['success' => false, 'error' => 'ID divisi tidak valid'];
+    $nama = trim((string)($data['nama_divisi'] ?? $data['nama'] ?? ''));
+    $keterangan = trim((string)($data['keterangan'] ?? ''));
+
+    if ($nama === '') {
+        return ['success' => false, 'error' => 'Nama divisi wajib diisi'];
+    }
+
+    if (is_google_cloud_mode()) {
+        $client = google_sheets_v4_client();
+        if (!$client) return ['success' => false, 'error' => 'Google Sheets client tidak tersedia'];
+
+        $rows = $client->getSheetData('Divisi', true);
+        $targetRow = null;
+        foreach ($rows as $r) {
+            if ((int)($r['id'] ?? 0) === $id) {
+                $targetRow = $r;
+                break;
+            }
+        }
+
+        if (!$targetRow) {
+            return ['success' => false, 'error' => 'Data divisi tidak ditemukan'];
+        }
+
+        $rowNum = (int)($targetRow['_row_num'] ?? 0);
+        if ($rowNum <= 1) {
+            return ['success' => false, 'error' => 'Gagal menentukan baris data divisi'];
+        }
+
+        $updated = $client->updateValues("Divisi!A{$rowNum}:C{$rowNum}", [[
+            $id,
+            $nama,
+            $keterangan
+        ]]);
+
+        if (!$updated) {
+            return ['success' => false, 'error' => 'Gagal memperbarui data divisi di Google Sheets'];
+        }
+
+        $client->clearCache('Divisi');
+        map_sheets_assets(true);
+
+        return ['success' => true, 'id' => $id, 'nama' => $nama];
+    }
+
+    // MySQL Mode
+    try {
+        $dName = name_column('divisi') ?: 'nama_divisi';
+        $cols = table_columns('divisi');
+        if (in_array('keterangan', $cols, true)) {
+            $up = db()->prepare("UPDATE divisi SET `{$dName}` = ?, `keterangan` = ? WHERE id = ?");
+            $up->execute([$nama, $keterangan, $id]);
+        } else {
+            $up = db()->prepare("UPDATE divisi SET `{$dName}` = ? WHERE id = ?");
+            $up->execute([$nama, $id]);
+        }
+        return ['success' => true, 'id' => $id, 'nama' => $nama];
+    } catch (Throwable $e) {
+        return ['success' => false, 'error' => $e->getMessage()];
+    }
+}
+
 function get_kategori_list(): array {
     if (is_google_cloud_mode()) {
         $client = google_sheets_v4_client();
@@ -1299,6 +1444,124 @@ function get_branch_maintenance_summary(int $month, int $year): array {
         $results[] = [
             'id' => $cId,
             'nama' => $cNama,
+            'total' => $total,
+            'done' => $done,
+            'pending' => $pending,
+            'findings' => $findings,
+            'percent' => $percent
+        ];
+    }
+
+    return $results;
+}
+
+function get_divisi_maintenance_summary(int $month = 0, int $year = 0): array {
+    if ($month <= 0) $month = (int)date('n');
+    if ($year <= 0) $year = (int)date('Y');
+
+    $divisis = get_divisi_list();
+    $results = [];
+
+    if (is_google_cloud_mode()) {
+        $client = google_sheets_v4_client();
+        $allAssets = array_filter(map_sheets_assets(), function($a) {
+            $st = strtolower($a['status'] ?? '');
+            return ($st === 'aktif' || $st === '');
+        });
+
+        $scans = $client ? $client->getSheetData('Maintenance_Scan') : [];
+        $scannedAssetIds = [];
+        $findingAssetIds = [];
+
+        foreach ($scans as $s) {
+            if ((int)($s['maintenance_month'] ?? 0) === $month && (int)($s['maintenance_year'] ?? 0) === $year) {
+                $aid = (int)($s['asset_id'] ?? 0);
+                $scannedAssetIds[$aid] = true;
+                if (($s['status'] ?? '') === 'Temuan') {
+                    $findingAssetIds[$aid] = true;
+                }
+            }
+        }
+
+        foreach ($divisis as $d) {
+            $dId = (int)($d['id'] ?? 0);
+            $dName = $d['nama_divisi'] ?? $d['nama'] ?? 'Divisi #' . $dId;
+            $dKet = $d['keterangan'] ?? '';
+
+            $dAssets = array_filter($allAssets, fn($a) => (int)($a['id_divisi'] ?? 0) === $dId);
+            $total = count($dAssets);
+            $done = 0;
+            $findings = 0;
+
+            foreach ($dAssets as $a) {
+                if (!empty($scannedAssetIds[$a['id']])) {
+                    $done++;
+                    if (!empty($findingAssetIds[$a['id']])) $findings++;
+                }
+            }
+
+            $pending = max(0, $total - $done);
+            $percent = $total > 0 ? round(($done / $total) * 100) : 0;
+
+            $results[] = [
+                'id' => $dId,
+                'nama' => $dName,
+                'keterangan' => $dKet,
+                'total' => $total,
+                'done' => $done,
+                'pending' => $pending,
+                'findings' => $findings,
+                'percent' => $percent
+            ];
+        }
+
+        return $results;
+    }
+
+    // MySQL Mode
+    foreach ($divisis as $d) {
+        $dId = (int)($d['id'] ?? 0);
+        $dNama = $d['nama_divisi'] ?? $d['nama'] ?? 'Divisi #' . $dId;
+        $dKet = $d['keterangan'] ?? '';
+
+        try {
+            $totSt = db()->prepare("SELECT COUNT(*) FROM assets WHERE (status = 'Aktif' OR status = 'aktif' OR status IS NULL OR status = '') AND id_divisi = ?");
+            $totSt->execute([$dId]);
+            $total = (int)$totSt->fetchColumn();
+
+            $doneSt = db()->prepare("
+                SELECT COUNT(*) FROM maintenance_scan ms
+                JOIN assets a ON a.id = ms.asset_id
+                WHERE (a.status = 'Aktif' OR a.status = 'aktif' OR a.status IS NULL OR a.status = '')
+                  AND a.id_divisi = ?
+                  AND ms.maintenance_month = ?
+                  AND ms.maintenance_year = ?
+            ");
+            $doneSt->execute([$dId, $month, $year]);
+            $done = (int)$doneSt->fetchColumn();
+
+            $findSt = db()->prepare("
+                SELECT COUNT(*) FROM maintenance_scan ms
+                JOIN assets a ON a.id = ms.asset_id
+                WHERE (a.status = 'Aktif' OR a.status = 'aktif' OR a.status IS NULL OR a.status = '')
+                  AND a.id_divisi = ?
+                  AND ms.maintenance_month = ?
+                  AND ms.maintenance_year = ?
+                  AND ms.status = 'Temuan'
+            ");
+            $findSt->execute([$dId, $month, $year]);
+            $findings = (int)$findSt->fetchColumn();
+        } catch (Throwable $e) {
+            $total = 0; $done = 0; $findings = 0;
+        }
+
+        $pending = max(0, $total - $done);
+        $percent = $total > 0 ? round(($done / $total) * 100) : 0;
+
+        $results[] = [
+            'id' => $dId,
+            'nama' => $dNama,
+            'keterangan' => $dKet,
             'total' => $total,
             'done' => $done,
             'pending' => $pending,
@@ -2443,6 +2706,7 @@ function render_page(string $title, string $content, string $extraHead = '', str
               <a class="nav-pill-btn '.(in_array($currentPage, ['audit.php', 'monthly_history.php', 'history.php', 'maintenance_detail.php'], true)?'active':'').'" href="'.e(module_url('audit.php')).'"><i class="bi bi-clock-history"></i> Riwayat Maintenance</a>
               <a class="nav-pill-btn '.($currentPage==='qr_admin.php'?'active':'').'" href="'.e(module_url('qr_admin.php')).'"><i class="bi bi-qr-code"></i> QR Aset</a>
               <a class="nav-pill-btn '.($currentPage==='cabang_admin.php'?'active':'').'" href="'.e(module_url('cabang_admin.php')).'"><i class="bi bi-buildings"></i> Cabang</a>
+              <a class="nav-pill-btn '.($currentPage==='divisi_admin.php'?'active':'').'" href="'.e(module_url('divisi_admin.php')).'"><i class="bi bi-diagram-3"></i> Divisi</a>
               <a class="btn btn-sm btn-action-add fw-bold" href="'.e(module_url('asset_add.php')).'"><i class="bi bi-plus-circle-fill me-1"></i> + Tambah Komputer</a>
               <span class="d-none d-lg-inline-flex align-items-center gap-1 ms-2 text-white-50 small"><i class="bi bi-person-circle"></i> '.e(current_user_name()).'</span>
               <a class="nav-pill-btn text-danger-emphasis" href="'.e(module_url('logout.php')).'" title="Keluar / Logout"><i class="bi bi-box-arrow-right"></i></a>
