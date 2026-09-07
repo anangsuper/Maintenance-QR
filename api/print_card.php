@@ -121,11 +121,19 @@ function render_card_grid8(array $asset, int $year): string {
         </tbody>
       </table>
 
-      <!-- 9 Item Legend Footer Berwarna -->
+      <!-- 9 Item Legend Footer Lengkap (1-9) -->
       <div class="grid8-ket-box">
-        <span class="leg-tag leg-blue">1-3: Virus/Software</span>
-        <span class="leg-tag leg-purple">4-6: Hardware/PC</span>
-        <span class="leg-tag leg-teal">7-9: Printer/Tinta</span>
+        <div class="grid8-ket-grid">
+          <span class="leg-tag leg-blue"><b>1.</b>Scan Virus</span>
+          <span class="leg-tag leg-blue"><b>2.</b>Update AV</span>
+          <span class="leg-tag leg-blue"><b>3.</b>Temp File</span>
+          <span class="leg-tag leg-purple"><b>4.</b>Keyboard</span>
+          <span class="leg-tag leg-purple"><b>5.</b>Mouse</span>
+          <span class="leg-tag leg-purple"><b>6.</b>CPU & Mon</span>
+          <span class="leg-tag leg-teal"><b>7.</b>Cek Tinta</span>
+          <span class="leg-tag leg-teal"><b>8.</b>Cartridge</span>
+          <span class="leg-tag leg-teal"><b>9.</b>Cek Nozzle</span>
+        </div>
       </div>
     </div>';
 }
@@ -302,51 +310,52 @@ body {
   width: 198mm;
   display: grid;
   grid-template-columns: 96mm 96mm;
-  grid-auto-rows: 68mm;
-  gap: 3mm 4mm;
+  grid-auto-rows: 68.5mm;
+  gap: 2.5mm 3.5mm;
   justify-content: center;
-  margin: 0 auto 12mm auto;
+  margin: 0 auto 10mm auto;
   page-break-after: always;
   break-after: page;
 }
 
 .card-item-8 {
   width: 96mm;
-  height: 68mm;
+  height: 68.5mm;
   background: #ffffff;
   border: 1.4px solid #2563eb;
-  border-radius: 2.5mm;
-  padding: 1.8mm 2.2mm;
+  border-radius: 2mm;
+  padding: 1.2mm 1.8mm;
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
+  justify-content: flex-start;
+  gap: 0.6mm;
   page-break-inside: avoid;
   break-inside: avoid;
   overflow: hidden;
-  box-shadow: 0 2px 6px rgba(37, 99, 235, 0.08);
+  box-shadow: 0 1px 4px rgba(37, 99, 235, 0.08);
 }
 
 /* Top Banner Header */
 .grid8-top-banner {
   background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%);
   color: #ffffff;
-  padding: 1px 3.5px;
-  border-radius: 1.2mm;
+  padding: 0.6px 3px;
+  border-radius: 0.8mm;
   font-weight: 800;
-  font-size: 6.4pt;
+  font-size: 5.8pt;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 1.2mm;
+  margin-bottom: 0.2mm;
 }
 .grid8-branch-pill {
   background: #fef08a;
   color: #854d0e;
-  font-size: 5.2pt;
+  font-size: 4.8pt;
   font-weight: 800;
-  padding: 0.2mm 1.2mm;
-  border-radius: 0.6mm;
+  padding: 0.2mm 0.8mm;
+  border-radius: 0.4mm;
   text-transform: uppercase;
 }
 
@@ -354,19 +363,19 @@ body {
 .grid8-info-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 6.8pt;
-  line-height: 1.15;
-  margin-bottom: 1.2mm;
+  font-size: 6.1pt;
+  line-height: 1.1;
+  margin-bottom: 0.2mm;
 }
 .grid8-info-table td {
-  padding: 0.6px 1px;
+  padding: 0.2px 0.6px;
   vertical-align: middle;
 }
 .badge-lbl {
-  font-size: 5.6pt;
+  font-size: 5.1pt;
   font-weight: 800;
-  padding: 0.4px 2.5px;
-  border-radius: 0.6mm;
+  padding: 0.2px 2px;
+  border-radius: 0.4mm;
   display: inline-block;
   text-align: center;
   white-space: nowrap;
@@ -374,7 +383,7 @@ body {
 .badge-blue { background: #dbeafe; color: #1e40af; border: 0.5px solid #bfdbfe; }
 .badge-green { background: #dcfce7; color: #15803d; border: 0.5px solid #bbf7d0; }
 .badge-purple { background: #f3e8ff; color: #6b21a8; border: 0.5px solid #e9d5ff; }
-.badge-kode { background: #f1f5f9; color: #0f172a; padding: 0.2px 2px; border-radius: 0.6mm; font-weight: bold; border: 0.5px solid #cbd5e1; }
+.badge-kode { background: #f1f5f9; color: #0f172a; padding: 0.2px 2px; border-radius: 0.4mm; font-weight: bold; border: 0.5px solid #cbd5e1; }
 
 .grid8-info-table .info-v {
   white-space: nowrap;
@@ -387,54 +396,65 @@ body {
 .grid8-matrix-table {
   width: 100%;
   border-collapse: collapse;
-  border: 1px solid #1e40af;
-  font-size: 6.5pt;
+  border: 0.9px solid #1e40af;
+  font-size: 5.7pt;
 }
 .grid8-matrix-table th {
   background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%) !important;
   color: #ffffff !important;
-  border: 0.8px solid #1e3a8a;
+  border: 0.5px solid #1e3a8a;
   font-weight: bold;
   text-align: center;
-  padding: 1px 0;
-  height: 13px;
+  padding: 0.4px 0;
+  height: 10.5px;
 }
 .grid8-matrix-table td {
-  border: 0.8px solid #cbd5e1;
+  border: 0.5px solid #cbd5e1;
   text-align: center;
   padding: 0;
-  height: 12.2px;
+  height: 9.6px;
 }
 .grid8-matrix-table tr.even-row { background-color: #f8fafc; }
 .grid8-matrix-table tr.done-row { background-color: #f0fdf4; }
 .grid8-matrix-table tr.done-row td { border-color: #86efac; }
-.grid8-matrix-table .tgl-h { width: 22mm; }
-.grid8-matrix-table .tgl-col { font-weight: bold; font-family: "Courier New", monospace; font-size: 6.6pt; color: #1e3a8a; }
-.grid8-matrix-table .chk-h { width: 4.8mm; }
-.grid8-matrix-table .chk-col { font-weight: bold; font-size: 7.2pt; }
+.grid8-matrix-table .tgl-h { width: 19mm; }
+.grid8-matrix-table .tgl-col { font-weight: bold; font-family: "Courier New", monospace; font-size: 5.8pt; color: #1e3a8a; }
+.grid8-matrix-table .chk-h { width: 4.4mm; }
+.grid8-matrix-table .chk-col { font-weight: bold; font-size: 6.2pt; }
 .grid8-matrix-table .chk-yes { color: #16a34a; font-weight: 900; }
 .grid8-matrix-table .chk-no { color: #94a3b8; }
-.grid8-matrix-table .paraf-h { min-width: 18mm; }
-.grid8-matrix-table .paraf-col { font-size: 6pt; font-family: "Courier New", monospace; color: #334155; }
+.grid8-matrix-table .paraf-h { min-width: 16mm; }
+.grid8-matrix-table .paraf-col { font-size: 5.2pt; font-family: "Courier New", monospace; color: #334155; }
 
-/* Legend Box Mini */
+/* Legend Box Mini (9 Items Grid) */
 .grid8-ket-box {
-  display: flex;
-  justify-content: space-between;
-  gap: 1mm;
-  margin-top: 1mm;
-  padding-top: 1px;
+  background: #f8fafc;
+  border: 0.5px solid #cbd5e1;
+  border-radius: 0.6mm;
+  padding: 0.4mm 0.8mm;
+  margin-top: 0.2mm;
+}
+.grid8-ket-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.2mm 0.8mm;
 }
 .leg-tag {
-  font-size: 5pt;
-  font-weight: 700;
-  padding: 0.3px 1.8px;
-  border-radius: 0.6mm;
+  font-size: 4.6pt;
+  font-weight: 600;
+  padding: 0.1px 1.2px;
+  border-radius: 0.4mm;
   white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  gap: 1px;
 }
-.leg-blue { background: #eff6ff; color: #1d4ed8; border: 0.5px solid #bfdbfe; }
-.leg-purple { background: #faf5ff; color: #7e22ce; border: 0.5px solid #e9d5ff; }
-.leg-teal { background: #f0fdfa; color: #0f766e; border: 0.5px solid #99f6e4; }
+.leg-tag b {
+  font-weight: 800;
+}
+.leg-blue { background: #eff6ff; color: #1d4ed8; border: 0.4px solid #bfdbfe; }
+.leg-purple { background: #faf5ff; color: #7e22ce; border: 0.4px solid #e9d5ff; }
+.leg-teal { background: #f0fdfa; color: #0f766e; border: 0.4px solid #99f6e4; }
 
 /* =========================================================
    SINGLE CARD FORMAT (1 PER HALAMAN)
