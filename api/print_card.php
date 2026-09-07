@@ -123,6 +123,7 @@ function render_card_grid8(array $asset, int $year): string {
 
       <!-- 9 Item Legend Footer Lengkap (1-9) -->
       <div class="grid8-ket-box">
+        <div class="grid8-ket-title">Keterangan Item Checklist (1 - 9):</div>
         <div class="grid8-ket-grid">
           <span class="leg-tag leg-blue"><b>1.</b>Scan Virus</span>
           <span class="leg-tag leg-blue"><b>2.</b>Update AV</span>
@@ -429,10 +430,18 @@ body {
 /* Legend Box Mini (9 Items Grid) */
 .grid8-ket-box {
   background: #f8fafc;
-  border: 0.5px solid #cbd5e1;
-  border-radius: 0.6mm;
+  border: 0.6px solid #94a3b8;
+  border-radius: 0.8mm;
   padding: 0.4mm 0.8mm;
-  margin-top: 0.2mm;
+  margin-top: 0.3mm;
+}
+.grid8-ket-title {
+  font-size: 4.6pt;
+  font-weight: 800;
+  color: #1e3a8a;
+  margin-bottom: 0.3mm;
+  text-transform: uppercase;
+  letter-spacing: 0.2px;
 }
 .grid8-ket-grid {
   display: grid;
@@ -442,19 +451,20 @@ body {
 .leg-tag {
   font-size: 4.6pt;
   font-weight: 600;
-  padding: 0.1px 1.2px;
+  padding: 0.2px 1.2px;
   border-radius: 0.4mm;
   white-space: nowrap;
   display: inline-flex;
   align-items: center;
-  gap: 1px;
+  gap: 1.5px;
 }
 .leg-tag b {
   font-weight: 800;
+  color: #0f172a;
 }
-.leg-blue { background: #eff6ff; color: #1d4ed8; border: 0.4px solid #bfdbfe; }
-.leg-purple { background: #faf5ff; color: #7e22ce; border: 0.4px solid #e9d5ff; }
-.leg-teal { background: #f0fdfa; color: #0f766e; border: 0.4px solid #99f6e4; }
+.leg-blue { background: #dbeafe; color: #1e40af; border: 0.4px solid #93c5fd; }
+.leg-purple { background: #f3e8ff; color: #6b21a8; border: 0.4px solid #d8b4fe; }
+.leg-teal { background: #ccfbf1; color: #0f766e; border: 0.4px solid #5eead4; }
 
 /* =========================================================
    SINGLE CARD FORMAT (1 PER HALAMAN)
