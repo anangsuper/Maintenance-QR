@@ -64,7 +64,7 @@ if (!$cards) {
 $head = '<style id="stickerStyle">
 /* =========================================================================
    DESAIN STIKER QR MODERN, VIBRANT & BERWARNA
-   Default: 7.0 x 4.4 cm (Kompak, Eye-Catching, Tajam & Mudah Di-scan)
+   Ukuran: Kompak (7.0x4.4cm), Mini (6.0x3.8cm), ATM (8.5x5.4cm)
    ========================================================================= */
 @page {
   size: A4 portrait;
@@ -92,20 +92,14 @@ body {
 }
 
 .qr-sticker-wrapper {
-  width: 70mm;
-  height: 44mm;
   display: inline-block;
   box-sizing: border-box;
   page-break-inside: avoid;
 }
 
 .qr-sticker {
-  width: 70mm;
-  height: 44mm;
   background: #ffffff;
   border: 1.5px solid #2563eb;
-  border-radius: 2.8mm;
-  padding: 1.8mm 2.2mm;
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
@@ -113,66 +107,62 @@ body {
   overflow: hidden;
   box-shadow: 0 4px 12px rgba(37, 99, 235, 0.12);
   position: relative;
+  -webkit-print-color-adjust: exact !important;
+  print-color-adjust: exact !important;
 }
 
 .qr-top-bar {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%);
-  margin: -1.8mm -2.2mm 0 -2.2mm;
-  padding: 1.2mm 2.2mm;
+  background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%) !important;
+  -webkit-print-color-adjust: exact !important;
+  print-color-adjust: exact !important;
 }
 
 .qr-dot {
   width: 4px;
   height: 4px;
   border-radius: 50%;
-  background: #38bdf8;
+  background: #38bdf8 !important;
   display: inline-block;
+  -webkit-print-color-adjust: exact !important;
+  print-color-adjust: exact !important;
 }
 
 .qr-org {
-  font-size: 5pt;
   font-weight: 800;
-  color: #ffffff;
+  color: #ffffff !important;
   letter-spacing: 0.3px;
   text-transform: uppercase;
 }
 
 .qr-cabang {
-  font-size: 4.8pt;
   font-weight: 800;
-  color: #854d0e;
-  background: #fef08a;
-  padding: 0.2mm 1.4mm;
+  color: #854d0e !important;
+  background: #fef08a !important;
   border-radius: 0.6mm;
   text-transform: uppercase;
-  max-width: 25mm;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
   box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+  -webkit-print-color-adjust: exact !important;
+  print-color-adjust: exact !important;
 }
 
 .qr-main-body {
   display: flex;
-  gap: 2.2mm;
   align-items: center;
   flex: 1;
-  padding: 1mm 0;
 }
 
 .qr-box-wrap {
-  width: 26mm;
-  height: 26mm;
   display: flex;
   align-items: center;
   justify-content: center;
   background: #ffffff;
-  padding: 0.5mm;
   border: 1.5px solid #3b82f6;
-  border-radius: 1.5mm;
   flex-shrink: 0;
   box-sizing: border-box;
   box-shadow: 0 1px 4px rgba(37, 99, 235, 0.15);
@@ -190,27 +180,24 @@ body {
   display: flex;
   flex-direction: column;
   justify-content: center;
-  gap: 0.7mm;
 }
 
 .qr-kode-badge {
-  font-size: 7.6pt;
   font-weight: 800;
-  color: #1e40af;
-  background: #eff6ff;
-  border: 1px solid #bfdbfe;
-  padding: 0.4mm 1.4mm;
-  border-radius: 1mm;
+  color: #1e40af !important;
+  background: #eff6ff !important;
+  border: 1px solid #bfdbfe !important;
   line-height: 1.1;
   word-break: break-word;
   display: inline-block;
   letter-spacing: -0.2px;
+  -webkit-print-color-adjust: exact !important;
+  print-color-adjust: exact !important;
 }
 
 .qr-device-name {
-  font-size: 6.2pt;
   font-weight: 700;
-  color: #1e293b;
+  color: #1e293b !important;
   line-height: 1.15;
   white-space: nowrap;
   overflow: hidden;
@@ -218,30 +205,117 @@ body {
 }
 
 .qr-user-name {
-  font-size: 5.6pt;
-  color: #047857;
-  background: #ecfdf5;
-  border: 0.5px solid #a7f3d0;
-  padding: 0.3mm 1.2mm;
-  border-radius: 0.8mm;
+  color: #047857 !important;
+  background: #ecfdf5 !important;
+  border: 0.5px solid #a7f3d0 !important;
   line-height: 1.1;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
   font-weight: 600;
+  -webkit-print-color-adjust: exact !important;
+  print-color-adjust: exact !important;
 }
 
 .qr-bot-bar {
   text-align: center;
-  background: linear-gradient(90deg, #1e3a8a 0%, #2563eb 100%);
-  margin: 0 -2.2mm -1.8mm -2.2mm;
-  padding: 0.8mm 0;
-  font-size: 4.8pt;
+  background: linear-gradient(90deg, #1e3a8a 0%, #2563eb 100%) !important;
   font-weight: 800;
-  color: #ffffff;
+  color: #ffffff !important;
   letter-spacing: 0.4px;
   text-transform: uppercase;
+  -webkit-print-color-adjust: exact !important;
+  print-color-adjust: exact !important;
 }
+
+/* --- UKURAN 1: DEFAULT / MEDIUM / KOMPAK (7.0 x 4.4 cm) --- */
+.qr-container.size-medium .qr-sticker-wrapper,
+.qr-container:not(.size-mini):not(.size-atm) .qr-sticker-wrapper {
+  width: 70mm;
+  height: 44mm;
+}
+.qr-container.size-medium .qr-sticker,
+.qr-container:not(.size-mini):not(.size-atm) .qr-sticker {
+  width: 70mm;
+  height: 44mm;
+  border-radius: 2.8mm;
+  padding: 1.8mm 2.2mm;
+}
+.qr-container.size-medium .qr-top-bar,
+.qr-container:not(.size-mini):not(.size-atm) .qr-top-bar {
+  margin: -1.8mm -2.2mm 0 -2.2mm;
+  padding: 1.2mm 2.2mm;
+}
+.qr-container.size-medium .qr-org,
+.qr-container:not(.size-mini):not(.size-atm) .qr-org { font-size: 5pt; }
+.qr-container.size-medium .qr-cabang,
+.qr-container:not(.size-mini):not(.size-atm) .qr-cabang { font-size: 4.8pt; padding: 0.2mm 1.4mm; max-width: 25mm; }
+.qr-container.size-medium .qr-main-body,
+.qr-container:not(.size-mini):not(.size-atm) .qr-main-body { gap: 2.2mm; padding: 1mm 0; }
+.qr-container.size-medium .qr-box-wrap,
+.qr-container:not(.size-mini):not(.size-atm) .qr-box-wrap { width: 26mm; height: 26mm; padding: 0.5mm; border-radius: 1.5mm; }
+.qr-container.size-medium .qr-text-wrap,
+.qr-container:not(.size-mini):not(.size-atm) .qr-text-wrap { gap: 0.7mm; }
+.qr-container.size-medium .qr-kode-badge,
+.qr-container:not(.size-mini):not(.size-atm) .qr-kode-badge { font-size: 7.6pt; padding: 0.4mm 1.4mm; border-radius: 1mm; }
+.qr-container.size-medium .qr-device-name,
+.qr-container:not(.size-mini):not(.size-atm) .qr-device-name { font-size: 6.2pt; }
+.qr-container.size-medium .qr-user-name,
+.qr-container:not(.size-mini):not(.size-atm) .qr-user-name { font-size: 5.6pt; padding: 0.3mm 1.2mm; border-radius: 0.8mm; }
+.qr-container.size-medium .qr-bot-bar,
+.qr-container:not(.size-mini):not(.size-atm) .qr-bot-bar { margin: 0 -2.2mm -1.8mm -2.2mm; padding: 0.8mm 0; font-size: 4.8pt; }
+
+/* --- UKURAN 2: MINI (6.0 x 3.8 cm) --- */
+.qr-container.size-mini .qr-sticker-wrapper {
+  width: 60mm;
+  height: 38mm;
+}
+.qr-container.size-mini .qr-sticker {
+  width: 60mm;
+  height: 38mm;
+  border-radius: 2mm;
+  padding: 1.4mm 1.8mm;
+}
+.qr-container.size-mini .qr-top-bar {
+  margin: -1.4mm -1.8mm 0 -1.8mm;
+  padding: 0.9mm 1.8mm;
+}
+.qr-container.size-mini .qr-dot { width: 3.5px; height: 3.5px; }
+.qr-container.size-mini .qr-org { font-size: 4.5pt; }
+.qr-container.size-mini .qr-cabang { font-size: 4.2pt; padding: 0.2mm 1mm; max-width: 20mm; }
+.qr-container.size-mini .qr-main-body { gap: 1.8mm; padding: 0.6mm 0; }
+.qr-container.size-mini .qr-box-wrap { width: 22mm; height: 22mm; padding: 0.4mm; border-radius: 1mm; }
+.qr-container.size-mini .qr-text-wrap { gap: 0.5mm; }
+.qr-container.size-mini .qr-kode-badge { font-size: 6.8pt; padding: 0.3mm 1mm; border-radius: 0.8mm; }
+.qr-container.size-mini .qr-device-name { font-size: 5.4pt; }
+.qr-container.size-mini .qr-user-name { font-size: 4.8pt; padding: 0.2mm 1mm; border-radius: 0.6mm; }
+.qr-container.size-mini .qr-bot-bar { margin: 0 -1.8mm -1.4mm -1.8mm; padding: 0.6mm 0; font-size: 4.2pt; }
+
+/* --- UKURAN 3: ATM (8.5 x 5.4 cm) --- */
+.qr-container.size-atm .qr-sticker-wrapper {
+  width: 85.6mm;
+  height: 54mm;
+}
+.qr-container.size-atm .qr-sticker {
+  width: 85.6mm;
+  height: 54mm;
+  border-radius: 3.2mm;
+  padding: 2.2mm 2.8mm;
+}
+.qr-container.size-atm .qr-top-bar {
+  margin: -2.2mm -2.8mm 0 -2.8mm;
+  padding: 1.5mm 2.8mm;
+}
+.qr-container.size-atm .qr-dot { width: 5px; height: 5px; }
+.qr-container.size-atm .qr-org { font-size: 6.2pt; }
+.qr-container.size-atm .qr-cabang { font-size: 5.6pt; padding: 0.3mm 1.6mm; max-width: 32mm; }
+.qr-container.size-atm .qr-main-body { gap: 2.8mm; padding: 1.4mm 0; }
+.qr-container.size-atm .qr-box-wrap { width: 33mm; height: 33mm; padding: 0.6mm; border-radius: 2mm; }
+.qr-container.size-atm .qr-text-wrap { gap: 1mm; }
+.qr-container.size-atm .qr-kode-badge { font-size: 9.5pt; padding: 0.5mm 1.8mm; border-radius: 1.2mm; }
+.qr-container.size-atm .qr-device-name { font-size: 7.5pt; }
+.qr-container.size-atm .qr-user-name { font-size: 6.5pt; padding: 0.4mm 1.5mm; border-radius: 1mm; }
+.qr-container.size-atm .qr-bot-bar { margin: 0 -2.8mm -2.2mm -2.8mm; padding: 1mm 0; font-size: 5.5pt; }
 
 /* =========================================================================
    CETAK (PRINT)
@@ -251,6 +325,8 @@ body {
     background: #fff !important;
     margin: 0 !important;
     padding: 0 !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
   }
 
   .no-print, nav, header {
@@ -276,8 +352,12 @@ body {
   }
 
   .qr-sticker {
-    border: 1px solid #000 !important;
     box-shadow: none !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  .qr-top-bar, .qr-bot-bar, .qr-kode-badge, .qr-user-name, .qr-cabang {
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
   }
@@ -294,7 +374,7 @@ $body = '
     <div>
       <a class="btn btn-outline-secondary btn-sm mb-1" href="'.e(module_url('qr_admin.php', ['cabang'=>$cabangId])).'"><i class="bi bi-arrow-left"></i> Kembali ke QR Aset</a>
       <h4 class="mb-0 fw-bold text-dark"><i class="bi bi-qr-code me-2 text-primary"></i>'.$pageHeading.'</h4>
-      <div class="text-secondary small">Desain stiker simpel & tajam — Bersih, mudah dibaca & cepat di-scan oleh kamera HP.</div>
+      <div class="text-secondary small">Desain stiker modern & berwarna — Tajam, jelas, dan mudah di-scan oleh kamera HP.</div>
     </div>
     <div class="d-flex gap-2">
       <button class="btn btn-primary fw-semibold px-4 py-2" onclick="window.print()"><i class="bi bi-printer-fill me-1"></i> Print / Cetak Stiker</button>
@@ -311,7 +391,7 @@ $body = '
   </div>
 </div>
 
-<div class="qr-container" id="qrContainer">'.$cards.'</div>';
+<div class="qr-container size-medium" id="qrContainer">'.$cards.'</div>';
 
 $script = '
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
@@ -330,95 +410,17 @@ document.querySelectorAll(".qrbox").forEach(function(el){
 });
 
 function applySize(size) {
-  document.getElementById("btnMedium").classList.remove("active");
-  document.getElementById("btnMini").classList.remove("active");
-  document.getElementById("btnAtm").classList.remove("active");
+  var btnMedium = document.getElementById("btnMedium");
+  var btnMini = document.getElementById("btnMini");
+  var btnAtm = document.getElementById("btnAtm");
+  var container = document.getElementById("qrContainer");
 
-  var s = document.getElementById("stickerStyle");
-  if (size === "mini") {
-    document.getElementById("btnMini").classList.add("active");
-    s.innerHTML = `
-      @page { size: A4 portrait; margin: 6mm; }
-      body { background: #f8fafc; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
-      .qr-container { display: flex; flex-wrap: wrap; justify-content: center; gap: 3mm; padding: 10px 0; }
-      .qr-sticker-wrapper { width: 60mm; height: 38mm; display: inline-block; box-sizing: border-box; page-break-inside: avoid; }
-      .qr-sticker { width: 60mm; height: 38mm; background: #fff; border: 1.2px solid #1e293b; border-radius: 2mm; padding: 1.6mm 2mm; box-sizing: border-box; display: flex; flex-direction: column; justify-content: space-between; overflow: hidden; }
-      .qr-top-bar { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #e2e8f0; padding-bottom: 0.6mm; }
-      .qr-org { font-size: 4.6pt; font-weight: 800; color: #0f172a; letter-spacing: 0.2px; text-transform: uppercase; }
-      .qr-cabang { font-size: 4.4pt; font-weight: 700; color: #2563eb; background: #eff6ff; padding: 0.2mm 1mm; border-radius: 0.5mm; }
-      .qr-main-body { display: flex; gap: 1.8mm; align-items: center; flex: 1; padding: 0.8mm 0; }
-      .qr-box-wrap { width: 22mm; height: 22mm; display: flex; align-items: center; justify-content: center; background: #fff; border: 1px solid #cbd5e1; border-radius: 0.8mm; padding: 0.3mm; flex-shrink: 0; box-sizing: border-box; }
-      .qr-box-wrap img, .qr-box-wrap canvas { width: 100% !important; height: 100% !important; display: block; }
-      .qr-text-wrap { flex: 1; min-width: 0; display: flex; flex-direction: column; justify-content: center; gap: 0.4mm; }
-      .qr-kode-inv { font-size: 7pt; font-weight: 800; color: #0f172a; line-height: 1.1; word-break: break-word; }
-      .qr-device-name { font-size: 5.5pt; font-weight: 600; color: #334155; line-height: 1.1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-      .qr-user-name { font-size: 5pt; color: #64748b; line-height: 1.1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-      .qr-bot-bar { text-align: center; background: #f8fafc; border-top: 1px dashed #cbd5e1; padding: 0.4mm 0; font-size: 4.2pt; font-weight: 700; color: #475569; letter-spacing: 0.3px; }
-      @media print {
-        body { background: #fff !important; margin: 0 !important; padding: 0 !important; }
-        .no-print, nav, header { display: none !important; }
-        .container, main.container { max-width: 100% !important; width: 100% !important; padding: 0 !important; margin: 0 !important; }
-        .qr-container { display: block !important; text-align: center; padding: 0 !important; }
-        .qr-sticker-wrapper { display: inline-block !important; margin: 1.2mm !important; }
-        .qr-sticker { border: 1px solid #000 !important; box-shadow: none !important; print-color-adjust: exact !important; }
-      }
-    `;
-  } else if (size === "atm") {
-    document.getElementById("btnAtm").classList.add("active");
-    s.innerHTML = `
-      @page { size: A4 portrait; margin: 8mm 6mm; }
-      body { background: #f8fafc; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
-      .qr-container { display: flex; flex-wrap: wrap; justify-content: center; gap: 4mm; padding: 10px 0; }
-      .qr-sticker-wrapper { width: 85.6mm; height: 54mm; display: inline-block; box-sizing: border-box; page-break-inside: avoid; }
-      .qr-sticker { width: 85.6mm; height: 54mm; background: #fff; border: 1.2px solid #1e293b; border-radius: 3mm; padding: 2.5mm 3mm; box-sizing: border-box; display: flex; flex-direction: column; justify-content: space-between; overflow: hidden; }
-      .qr-top-bar { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #e2e8f0; padding-bottom: 1mm; }
-      .qr-org { font-size: 6.2pt; font-weight: 800; color: #0f172a; letter-spacing: 0.3px; text-transform: uppercase; }
-      .qr-cabang { font-size: 5.6pt; font-weight: 700; color: #2563eb; background: #eff6ff; padding: 0.3mm 1.4mm; border-radius: 0.8mm; }
-      .qr-main-body { display: flex; gap: 2.8mm; align-items: center; flex: 1; padding: 1.2mm 0; }
-      .qr-box-wrap { width: 33mm; height: 33mm; display: flex; align-items: center; justify-content: center; background: #fff; border: 1px solid #cbd5e1; border-radius: 1.2mm; padding: 0.6mm; flex-shrink: 0; box-sizing: border-box; }
-      .qr-box-wrap img, .qr-box-wrap canvas { width: 100% !important; height: 100% !important; display: block; }
-      .qr-text-wrap { flex: 1; min-width: 0; display: flex; flex-direction: column; justify-content: center; gap: 0.8mm; }
-      .qr-kode-inv { font-size: 9.5pt; font-weight: 800; color: #0f172a; line-height: 1.1; word-break: break-word; }
-      .qr-device-name { font-size: 7.2pt; font-weight: 600; color: #334155; line-height: 1.15; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-      .qr-user-name { font-size: 6.4pt; color: #64748b; line-height: 1.1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-      .qr-bot-bar { text-align: center; background: #f8fafc; border-top: 1px dashed #cbd5e1; padding: 0.8mm 0; font-size: 5.5pt; font-weight: 700; color: #475569; letter-spacing: 0.4px; }
-      @media print {
-        body { background: #fff !important; margin: 0 !important; padding: 0 !important; }
-        .no-print, nav, header { display: none !important; }
-        .container, main.container { max-width: 100% !important; width: 100% !important; padding: 0 !important; margin: 0 !important; }
-        .qr-container { display: block !important; text-align: center; padding: 0 !important; }
-        .qr-sticker-wrapper { display: inline-block !important; margin: 2mm 1.5mm !important; }
-        .qr-sticker { border: 1px solid #000 !important; box-shadow: none !important; print-color-adjust: exact !important; }
-      }
-    `;
-  } else {
-    document.getElementById("btnMedium").classList.add("active");
-    s.innerHTML = `
-      @page { size: A4 portrait; margin: 7mm 6mm; }
-      body { background: #f8fafc; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
-      .qr-container { display: flex; flex-wrap: wrap; justify-content: center; gap: 3.5mm; padding: 12px 0; }
-      .qr-sticker-wrapper { width: 70mm; height: 44mm; display: inline-block; box-sizing: border-box; page-break-inside: avoid; }
-      .qr-sticker { width: 70mm; height: 44mm; background: #ffffff; border: 1.2px solid #1e293b; border-radius: 2.5mm; padding: 2mm 2.5mm; box-sizing: border-box; display: flex; flex-direction: column; justify-content: space-between; overflow: hidden; }
-      .qr-top-bar { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #e2e8f0; padding-bottom: 0.8mm; }
-      .qr-org { font-size: 5.2pt; font-weight: 800; color: #0f172a; letter-spacing: 0.3px; text-transform: uppercase; }
-      .qr-cabang { font-size: 5pt; font-weight: 700; color: #2563eb; background: #eff6ff; padding: 0.2mm 1.2mm; border-radius: 0.6mm; text-transform: uppercase; }
-      .qr-main-body { display: flex; gap: 2.2mm; align-items: center; flex: 1; padding: 1mm 0; }
-      .qr-box-wrap { width: 26mm; height: 26mm; display: flex; align-items: center; justify-content: center; background: #ffffff; padding: 0.4mm; border: 1px solid #cbd5e1; border-radius: 1mm; flex-shrink: 0; box-sizing: border-box; }
-      .qr-box-wrap img, .qr-box-wrap canvas { width: 100% !important; height: 100% !important; display: block; }
-      .qr-text-wrap { flex: 1; min-width: 0; display: flex; flex-direction: column; justify-content: center; gap: 0.6mm; }
-      .qr-kode-inv { font-size: 8pt; font-weight: 800; color: #0f172a; line-height: 1.1; word-break: break-word; letter-spacing: -0.2px; }
-      .qr-device-name { font-size: 6.2pt; font-weight: 600; color: #334155; line-height: 1.15; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-      .qr-user-name { font-size: 5.6pt; color: #64748b; line-height: 1.1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: 500; }
-      .qr-bot-bar { text-align: center; background: #f8fafc; border-top: 1px dashed #cbd5e1; padding: 0.6mm 0; font-size: 4.8pt; font-weight: 700; color: #475569; letter-spacing: 0.4px; }
-      @media print {
-        body { background: #fff !important; margin: 0 !important; padding: 0 !important; }
-        .no-print, nav, header { display: none !important; }
-        .container, main.container { max-width: 100% !important; width: 100% !important; padding: 0 !important; margin: 0 !important; }
-        .qr-container { display: block !important; text-align: center; padding: 0 !important; }
-        .qr-sticker-wrapper { display: inline-block !important; margin: 1.5mm !important; }
-        .qr-sticker { border: 1px solid #000 !important; box-shadow: none !important; print-color-adjust: exact !important; }
-      }
-    `;
+  if (btnMedium) btnMedium.classList.toggle("active", size === "medium");
+  if (btnMini) btnMini.classList.toggle("active", size === "mini");
+  if (btnAtm) btnAtm.classList.toggle("active", size === "atm");
+
+  if (container) {
+    container.className = "qr-container size-" + size;
   }
 }
 </script>';
