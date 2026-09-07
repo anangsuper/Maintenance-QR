@@ -198,6 +198,246 @@ function require_admin(): void {
     }
 }
 
+function get_user_list(): array {
+    if (is_google_cloud_mode()) {
+        $client = google_sheets_v4_client();
+        if (!$client) return [];
+        $rows = $client->getSheetData('Users');
+        if (empty($rows)) {
+            return [
+                ['id' => 1, 'nama' => 'Administrator', 'username' => 'admin', 'role' => 'admin', 'telepon' => '-', 'status' => 'Aktif'],
+                ['id' => 2, 'nama' => 'Teknisi IT', 'username' => 'teknisi', 'role' => 'teknisi', 'telepon' => '-', 'status' => 'Aktif'],
+            ];
+        }
+        return array_map(function($u) {
+            return [
+                'id' => (int)($u['id'] ?? 0),
+                'nama' => (string)($u['nama'] ?? $u['name'] ?? $u['username'] ?? ''),
+                'username' => (string)($u['username'] ?? ''),
+                'role' => strtolower((string)($u['role'] ?? 'teknisi')),
+                'telepon' => (string)($u['telepon'] ?? $u['kontak'] ?? '-'),
+                'status' => (string)($u['status'] ?? 'Aktif'),
+                'created_at' => (string)($u['created_at'] ?? '')
+            ];
+        }, $rows);
+    }
+
+    // MySQL Mode
+    try {
+        db()->exec("
+            CREATE TABLE IF NOT EXISTS users (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                nama VARCHAR(150) NOT NULL,
+                username VARCHAR(100) NOT NULL UNIQUE,
+                password VARCHAR(255) NOT NULL,
+                role VARCHAR(50) NOT NULL DEFAULT 'teknisi',
+                telepon VARCHAR(50) NULL,
+                status VARCHAR(50) NOT NULL DEFAULT 'Aktif',
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+            );
+        ");
+
+        $cols = table_columns('users');
+        $nameCol = in_array('nama', $cols, true) ? 'nama' : (in_array('name', $cols, true) ? 'name' : 'username');
+        $telCol = in_array('telepon', $cols, true) ? 'telepon' : "'-' AS telepon";
+        $stCol = in_array('status', $cols, true) ? 'status' : "'Aktif' AS status";
+
+        $users = db()->query("SELECT id, `{$nameCol}` AS nama, username, role, {$telCol}, {$stCol}, created_at FROM users ORDER BY id ASC")->fetchAll();
+        if (empty($users)) {
+            return [
+                ['id' => 1, 'nama' => 'Administrator', 'username' => 'admin', 'role' => 'admin', 'telepon' => '-', 'status' => 'Aktif'],
+                ['id' => 2, 'nama' => 'Teknisi IT', 'username' => 'teknisi', 'role' => 'teknisi', 'telepon' => '-', 'status' => 'Aktif'],
+            ];
+        }
+        return $users;
+    } catch (Throwable $e) {
+        return [
+            ['id' => 1, 'nama' => 'Administrator', 'username' => 'admin', 'role' => 'admin', 'telepon' => '-', 'status' => 'Aktif'],
+            ['id' => 2, 'nama' => 'Teknisi IT', 'username' => 'teknisi', 'role' => 'teknisi', 'telepon' => '-', 'status' => 'Aktif'],
+        ];
+    }
+}
+
+function get_user_by_id(int $id): ?array {
+    if ($id <= 0) return null;
+    $users = get_user_list();
+    foreach ($users as $u) {
+        if ((int)($u['id'] ?? 0) === $id) return $u;
+    }
+    return null;
+}
+
+function create_new_user(array $data): array {
+    $username = strtolower(trim((string)($data['username'] ?? '')));
+    $password = trim((string)($data['password'] ?? ''));
+    $nama = trim((string)($data['nama'] ?? ''));
+    $role = strtolower(trim((string)($data['role'] ?? 'teknisi')));
+    $telepon = trim((string)($data['telepon'] ?? ''));
+    $status = trim((string)($data['status'] ?? 'Aktif')) ?: 'Aktif';
+
+    if ($username === '') return ['success' => false, 'error' => 'Username wajib diisi'];
+    if ($password === '') return ['success' => false, 'error' => 'Password wajib diisi'];
+    if ($nama === '') return ['success' => false, 'error' => 'Nama lengkap wajib diisi'];
+
+    if (!in_array($role, ['admin', 'teknisi', 'auditor'], true)) {
+        $role = 'teknisi';
+    }
+
+    $hashedPass = password_hash($password, PASSWORD_BCRYPT);
+
+    if (is_google_cloud_mode()) {
+        $client = google_sheets_v4_client();
+        if (!$client) return ['success' => false, 'error' => 'Google Sheets client tidak tersedia'];
+
+        $client->createSheetIfNotExists('Users');
+        $existingHeader = $client->getValues('Users!A1:H1');
+        if (empty($existingHeader)) {
+            $client->appendValues('Users!A:H', [
+                ['id', 'username', 'password', 'nama', 'role', 'telepon', 'status', 'created_at']
+            ]);
+        }
+
+        $rows = $client->getSheetData('Users', true);
+        $maxId = 0;
+        foreach ($rows as $r) {
+            $uid = (int)($r['id'] ?? 0);
+            if ($uid > $maxId) $maxId = $uid;
+            $existUser = strtolower(trim((string)($r['username'] ?? '')));
+            if ($existUser === $username) {
+                return ['success' => false, 'error' => 'Username sudah digunakan, silakan pilih username lain'];
+            }
+        }
+
+        $newId = max(count($rows) + 1, $maxId + 1);
+        $appended = $client->appendValues('Users!A:H', [[
+            $newId,
+            $username,
+            $hashedPass,
+            $nama,
+            $role,
+            $telepon,
+            $status,
+            date('Y-m-d H:i:s')
+        ]]);
+
+        if (!$appended) {
+            return ['success' => false, 'error' => 'Gagal menyimpan data pengguna ke Google Sheets'];
+        }
+
+        $client->clearCache('Users');
+        return ['success' => true, 'id' => $newId, 'username' => $username, 'nama' => $nama];
+    }
+
+    // MySQL Mode
+    try {
+        db()->exec("
+            CREATE TABLE IF NOT EXISTS users (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                nama VARCHAR(150) NOT NULL,
+                username VARCHAR(100) NOT NULL UNIQUE,
+                password VARCHAR(255) NOT NULL,
+                role VARCHAR(50) NOT NULL DEFAULT 'teknisi',
+                telepon VARCHAR(50) NULL,
+                status VARCHAR(50) NOT NULL DEFAULT 'Aktif',
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+            );
+        ");
+
+        $checkSt = db()->prepare("SELECT id FROM users WHERE LOWER(username) = ? LIMIT 1");
+        $checkSt->execute([$username]);
+        if ($checkSt->fetchColumn()) {
+            return ['success' => false, 'error' => 'Username sudah digunakan, silakan pilih username lain'];
+        }
+
+        $cols = table_columns('users');
+        $nameCol = in_array('nama', $cols, true) ? 'nama' : (in_array('name', $cols, true) ? 'name' : 'username');
+
+        $ins = db()->prepare("
+            INSERT INTO users (`{$nameCol}`, username, password, role, telepon, status, created_at)
+            VALUES (?, ?, ?, ?, ?, ?, NOW())
+        ");
+        $ins->execute([$nama, $username, $hashedPass, $role, $telepon, $status]);
+        $newId = (int)db()->lastInsertId();
+
+        return ['success' => true, 'id' => $newId, 'username' => $username, 'nama' => $nama];
+    } catch (Throwable $e) {
+        return ['success' => false, 'error' => $e->getMessage()];
+    }
+}
+
+function update_user(int $id, array $data): array {
+    if ($id <= 0) return ['success' => false, 'error' => 'ID pengguna tidak valid'];
+
+    $nama = trim((string)($data['nama'] ?? ''));
+    $role = strtolower(trim((string)($data['role'] ?? 'teknisi')));
+    $telepon = trim((string)($data['telepon'] ?? ''));
+    $status = trim((string)($data['status'] ?? 'Aktif')) ?: 'Aktif';
+    $password = trim((string)($data['password'] ?? ''));
+
+    if ($nama === '') return ['success' => false, 'error' => 'Nama lengkap wajib diisi'];
+    if (!in_array($role, ['admin', 'teknisi', 'auditor'], true)) {
+        $role = 'teknisi';
+    }
+
+    if (is_google_cloud_mode()) {
+        $client = google_sheets_v4_client();
+        if (!$client) return ['success' => false, 'error' => 'Google Sheets client tidak tersedia'];
+
+        $rows = $client->getSheetData('Users', true);
+        $targetRow = null;
+        foreach ($rows as $r) {
+            if ((int)($r['id'] ?? 0) === $id) {
+                $targetRow = $r;
+                break;
+            }
+        }
+
+        if (!$targetRow) return ['success' => false, 'error' => 'Pengguna tidak ditemukan'];
+        $rowNum = (int)($targetRow['_row_num'] ?? 0);
+        if ($rowNum <= 1) return ['success' => false, 'error' => 'Gagal menentukan baris data pengguna'];
+
+        $hashedPass = $password !== '' ? password_hash($password, PASSWORD_BCRYPT) : ($targetRow['password'] ?? '');
+        $username = (string)($targetRow['username'] ?? '');
+
+        $updated = $client->updateValues("Users!A{$rowNum}:H{$rowNum}", [[
+            $id,
+            $username,
+            $hashedPass,
+            $nama,
+            $role,
+            $telepon,
+            $status,
+            $targetRow['created_at'] ?? date('Y-m-d H:i:s')
+        ]]);
+
+        if (!$updated) return ['success' => false, 'error' => 'Gagal memperbarui data pengguna di Google Sheets'];
+
+        $client->clearCache('Users');
+        return ['success' => true, 'id' => $id, 'nama' => $nama];
+    }
+
+    // MySQL Mode
+    try {
+        $cols = table_columns('users');
+        $nameCol = in_array('nama', $cols, true) ? 'nama' : (in_array('name', $cols, true) ? 'name' : 'username');
+
+        if ($password !== '') {
+            $hashedPass = password_hash($password, PASSWORD_BCRYPT);
+            $up = db()->prepare("UPDATE users SET `{$nameCol}` = ?, role = ?, telepon = ?, status = ?, password = ? WHERE id = ?");
+            $up->execute([$nama, $role, $telepon, $status, $hashedPass, $id]);
+        } else {
+            $up = db()->prepare("UPDATE users SET `{$nameCol}` = ?, role = ?, telepon = ?, status = ? WHERE id = ?");
+            $up->execute([$nama, $role, $telepon, $status, $id]);
+        }
+
+        return ['success' => true, 'id' => $id, 'nama' => $nama];
+    } catch (Throwable $e) {
+        return ['success' => false, 'error' => $e->getMessage()];
+    }
+}
+
 function authenticate_user(string $username, string $password): array {
     $username = trim($username);
     $password = trim($password);
@@ -221,21 +461,36 @@ function authenticate_user(string $username, string $password): array {
         }
     }
 
-    // 2. Default admin: admin / admin123 (jika tidak ada env dan tidak ada MySQL)
-    if ($envUser === '' && $envPass === '') {
-        $defaultUsers = [
-            ['username' => 'admin', 'password' => 'admin123', 'name' => 'Administrator', 'role' => 'admin'],
-            ['username' => 'teknisi', 'password' => 'teknisi123', 'name' => 'Teknisi IT', 'role' => 'teknisi'],
-        ];
+    // 2. Cek dari tab Users di Google Sheets (jika Google Cloud Mode)
+    if (is_google_cloud_mode()) {
+        $client = google_sheets_v4_client();
+        if ($client) {
+            $users = $client->getSheetData('Users');
+            foreach ($users as $u) {
+                $uName = trim((string)($u['username'] ?? ''));
+                if (strcasecmp($uName, $username) === 0) {
+                    $uStatus = trim((string)($u['status'] ?? 'Aktif'));
+                    if (strcasecmp($uStatus, 'Nonaktif') === 0) {
+                        return ['success' => false, 'error' => 'Akun Anda dinonaktifkan. Silakan hubungi Administrator.'];
+                    }
 
-        foreach ($defaultUsers as $du) {
-            if ($username === $du['username'] && $password === $du['password']) {
-                $_SESSION['user_id'] = ($du['role'] === 'admin') ? 1 : 2;
-                $_SESSION['nama'] = $du['name'];
-                $_SESSION['username'] = $du['username'];
-                $_SESSION['role'] = $du['role'];
-                $_SESSION['last_activity'] = time();
-                return ['success' => true, 'name' => $du['name']];
+                    $storedPass = (string)($u['password'] ?? '');
+                    $passMatch = false;
+                    if (str_starts_with($storedPass, '$2y$') || str_starts_with($storedPass, '$2a$') || str_starts_with($storedPass, '$argon2')) {
+                        $passMatch = password_verify($password, $storedPass);
+                    } else {
+                        $passMatch = ($password === $storedPass);
+                    }
+
+                    if ($passMatch) {
+                        $_SESSION['user_id'] = (int)($u['id'] ?? 1);
+                        $_SESSION['nama'] = (string)($u['nama'] ?? $u['name'] ?? $u['username']);
+                        $_SESSION['username'] = $uName;
+                        $_SESSION['role'] = strtolower((string)($u['role'] ?? 'teknisi'));
+                        $_SESSION['last_activity'] = time();
+                        return ['success' => true, 'name' => (string)($u['nama'] ?? $u['name'] ?? $u['username'])];
+                    }
+                }
             }
         }
     }
@@ -243,17 +498,21 @@ function authenticate_user(string $username, string $password): array {
     // 3. Cek dari tabel users MySQL (jika mode MySQL)
     if (!is_google_cloud_mode()) {
         try {
-            $nameCol = name_column('users') ?: 'nama';
-            $st = db()->prepare("SELECT id, `{$nameCol}` AS nama, username, password, role FROM users WHERE username = ? LIMIT 1");
+            $cols = table_columns('users');
+            $nameCol = in_array('nama', $cols, true) ? 'nama' : (in_array('name', $cols, true) ? 'name' : 'username');
+            $st = db()->prepare("SELECT id, `{$nameCol}` AS nama, username, password, role, status FROM users WHERE LOWER(username) = LOWER(?) LIMIT 1");
             $st->execute([$username]);
             $user = $st->fetch();
 
             if ($user) {
+                if (!empty($user['status']) && strcasecmp($user['status'], 'Nonaktif') === 0) {
+                    return ['success' => false, 'error' => 'Akun Anda dinonaktifkan. Silakan hubungi Administrator.'];
+                }
+
                 $passMatch = false;
                 $storedPass = (string)($user['password'] ?? '');
 
-                // Support password_hash atau plain (legacy)
-                if (str_starts_with($storedPass, '$2y$') || str_starts_with($storedPass, '$2a$')) {
+                if (str_starts_with($storedPass, '$2y$') || str_starts_with($storedPass, '$2a$') || str_starts_with($storedPass, '$argon2')) {
                     $passMatch = password_verify($password, $storedPass);
                 } else {
                     $passMatch = ($password === $storedPass);
@@ -269,7 +528,24 @@ function authenticate_user(string $username, string $password): array {
                 }
             }
         } catch (Throwable $e) {
-            // Tabel users tidak ada, lanjut ke default
+            // Lanjut ke default
+        }
+    }
+
+    // 4. Fallback Default admin & teknisi
+    $defaultUsers = [
+        ['username' => 'admin', 'password' => 'admin123', 'name' => 'Administrator', 'role' => 'admin'],
+        ['username' => 'teknisi', 'password' => 'teknisi123', 'name' => 'Teknisi IT', 'role' => 'teknisi'],
+    ];
+
+    foreach ($defaultUsers as $du) {
+        if (strcasecmp($username, $du['username']) === 0 && $password === $du['password']) {
+            $_SESSION['user_id'] = ($du['role'] === 'admin') ? 1 : 2;
+            $_SESSION['nama'] = $du['name'];
+            $_SESSION['username'] = $du['username'];
+            $_SESSION['role'] = $du['role'];
+            $_SESSION['last_activity'] = time();
+            return ['success' => true, 'name' => $du['name']];
         }
     }
 
@@ -2944,6 +3220,7 @@ function render_page(string $title, string $content, string $extraHead = '', str
               <a class="nav-pill-btn '.($currentPage==='qr_admin.php'?'active':'').'" href="'.e(module_url('qr_admin.php')).'"><i class="bi bi-qr-code"></i> QR Aset</a>
               <a class="nav-pill-btn '.($currentPage==='cabang_admin.php'?'active':'').'" href="'.e(module_url('cabang_admin.php')).'"><i class="bi bi-buildings"></i> Cabang</a>
               <a class="nav-pill-btn '.($currentPage==='divisi_admin.php'?'active':'').'" href="'.e(module_url('divisi_admin.php')).'"><i class="bi bi-diagram-3"></i> Divisi</a>
+              <a class="nav-pill-btn '.($currentPage==='users_admin.php'?'active':'').'" href="'.e(module_url('users_admin.php')).'"><i class="bi bi-people"></i> Pengguna</a>
               <a class="btn btn-sm btn-action-add fw-bold" href="'.e(module_url('asset_add.php')).'"><i class="bi bi-plus-circle-fill me-1"></i> + Tambah Komputer</a>
               <span class="d-none d-lg-inline-flex align-items-center gap-1 ms-2 text-white-50 small"><i class="bi bi-person-circle"></i> '.e(current_user_name()).'</span>
               <a class="nav-pill-btn text-danger-emphasis" href="'.e(module_url('logout.php')).'" title="Keluar / Logout"><i class="bi bi-box-arrow-right"></i></a>

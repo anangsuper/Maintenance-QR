@@ -154,6 +154,22 @@ if (empty($existing)) {
     $results[] = "⏭️ Tab Maintenance_Checklists — sudah ada";
 }
 
+// ====== 10. Tab Users ======
+$client->createSheetIfNotExists('Users');
+$existing = $client->getValues('Users!A1:H1');
+if (empty($existing)) {
+    $adminHash = password_hash('admin123', PASSWORD_BCRYPT);
+    $teknisiHash = password_hash('teknisi123', PASSWORD_BCRYPT);
+    $client->appendValues('Users!A:H', [
+        ['id', 'username', 'password', 'nama', 'role', 'telepon', 'status', 'created_at'],
+        [1, 'admin', $adminHash, 'Administrator', 'admin', '081234567890', 'Aktif', date('Y-m-d H:i:s')],
+        [2, 'teknisi', $teknisiHash, 'Teknisi IT', 'teknisi', '081234567891', 'Aktif', date('Y-m-d H:i:s')],
+    ]);
+    $results[] = "✅ Tab Users — dibuat + 2 akun default (admin & teknisi)";
+} else {
+    $results[] = "⏭️ Tab Users — sudah ada";
+}
+
 // ====== Tampilkan Hasil ======
 $html = '<div class="card p-4"><h3>🔧 Setup Google Sheet — Selesai!</h3><hr>';
 foreach ($results as $r) {
