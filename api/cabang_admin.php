@@ -86,12 +86,14 @@ foreach ($branchSummaries as $bs) {
 
     $raw = $cabangMap[$cId] ?? [];
     $alamat = $raw['alamat'] ?? $raw['lokasi'] ?? '';
+    $tel = format_phone_number($raw['telepon'] ?? $raw['kontak'] ?? '');
     $pj = $raw['penanggung_jawab'] ?? $raw['kepala_cabang'] ?? '';
 
     $extraInfo = '';
-    if ($alamat || $pj) {
+    if ($alamat || $pj || ($tel !== '-' && $tel !== '')) {
         $extraInfo = '<div class="small text-secondary mt-1">';
         if ($alamat) $extraInfo .= '<i class="bi bi-geo-alt me-1"></i>'.e($alamat).' &nbsp;';
+        if ($tel !== '-' && $tel !== '') $extraInfo .= '<i class="bi bi-telephone me-1"></i>'.e($tel).' &nbsp;';
         if ($pj) $extraInfo .= '<i class="bi bi-person me-1"></i>'.e($pj);
         $extraInfo .= '</div>';
     }
@@ -138,7 +140,8 @@ $modeBadge = is_google_cloud_mode() ? '<span class="badge text-bg-info mb-2"><i 
 if ($editCabang) {
     $editName = $editCabang['nama_cabang'] ?? $editCabang['nama'] ?? '';
     $editAlamat = $editCabang['alamat'] ?? $editCabang['lokasi'] ?? '';
-    $editTelepon = $editCabang['telepon'] ?? $editCabang['kontak'] ?? '';
+    $editTelepon = format_phone_number($editCabang['telepon'] ?? $editCabang['kontak'] ?? '');
+    $editTeleponVal = ($editTelepon !== '-' && $editTelepon !== '') ? $editTelepon : '';
     $editPJ = $editCabang['penanggung_jawab'] ?? $editCabang['kepala_cabang'] ?? '';
 
     $formCardTitle = '<h5 class="fw-bold text-warning mb-3 border-bottom pb-2"><i class="bi bi-pencil-square me-2"></i>Edit Data Cabang</h5>';
@@ -160,7 +163,7 @@ if ($editCabang) {
 
       <div class="mb-3">
         <label class="form-label fw-semibold">No. Telepon / Kontak</label>
-        <input type="text" class="form-control" name="telepon" value="'.e($editTelepon).'" placeholder="Contoh: (024) 8765432 / 0812...">
+        <input type="text" class="form-control" name="telepon" value="'.e($editTeleponVal).'" placeholder="Contoh: (024) 8765432 / 0812...">
       </div>
 
       <div class="mb-3">

@@ -198,6 +198,27 @@ function require_admin(): void {
     }
 }
 
+function format_phone_number(?string $phone): string {
+    if ($phone === null) return '-';
+    $phone = trim($phone, " '\t\n\r\0\x0B");
+    if ($phone === '' || $phone === '-') return '-';
+
+    // Jika diawali 8 (misal 89523140757 karena 0-nya terpotong oleh spreadsheet), tambahkan 0 di depan
+    if (preg_match('/^8[0-9]{8,12}$/', $phone)) {
+        return '0' . $phone;
+    }
+    // Jika diawali 628, ubah ke 08
+    if (preg_match('/^628[0-9]{8,12}$/', $phone)) {
+        return '0' . substr($phone, 2);
+    }
+    // Jika diawali kode area tanpa 0 (misal 218765432, 248765432)
+    if (preg_match('/^[2-9][0-9]{6,10}$/', $phone) && strlen($phone) >= 7 && strlen($phone) <= 11) {
+        return '0' . $phone;
+    }
+
+    return $phone;
+}
+
 function get_user_list(): array {
     if (is_google_cloud_mode()) {
         $client = google_sheets_v4_client();
@@ -210,8 +231,8 @@ function get_user_list(): array {
             $teknisiHash = password_hash('teknisi123', PASSWORD_BCRYPT);
             $client->appendValues('Users!A:H', [
                 ['id', 'username', 'password', 'nama', 'role', 'telepon', 'status', 'created_at'],
-                [1, 'admin', $adminHash, 'Administrator', 'admin', '081234567890', 'Aktif', date('Y-m-d H:i:s')],
-                [2, 'teknisi', $teknisiHash, 'Teknisi IT', 'teknisi', '081234567891', 'Aktif', date('Y-m-d H:i:s')],
+                [1, 'admin', $adminHash, 'Administrator', 'admin', "'081234567890", 'Aktif', date('Y-m-d H:i:s')],
+                [2, 'teknisi', $teknisiHash, 'Teknisi IT', 'teknisi', "'081234567891", 'Aktif', date('Y-m-d H:i:s')],
             ]);
             $client->clearCache('Users');
         }
@@ -219,8 +240,8 @@ function get_user_list(): array {
         $rows = $client->getSheetData('Users');
         if (empty($rows)) {
             return [
-                ['id' => 1, 'nama' => 'Administrator', 'username' => 'admin', 'role' => 'admin', 'telepon' => '-', 'status' => 'Aktif'],
-                ['id' => 2, 'nama' => 'Teknisi IT', 'username' => 'teknisi', 'role' => 'teknisi', 'telepon' => '-', 'status' => 'Aktif'],
+                ['id' => 1, 'nama' => 'Administrator', 'username' => 'admin', 'role' => 'admin', 'telepon' => '081234567890', 'status' => 'Aktif'],
+                ['id' => 2, 'nama' => 'Teknisi IT', 'username' => 'teknisi', 'role' => 'teknisi', 'telepon' => '081234567891', 'status' => 'Aktif'],
             ];
         }
         return array_map(function($u) {
@@ -229,7 +250,7 @@ function get_user_list(): array {
                 'nama' => (string)($u['nama'] ?? $u['name'] ?? $u['username'] ?? ''),
                 'username' => (string)($u['username'] ?? ''),
                 'role' => strtolower((string)($u['role'] ?? 'teknisi')),
-                'telepon' => (string)($u['telepon'] ?? $u['kontak'] ?? '-'),
+                'telepon' => format_phone_number((string)($u['telepon'] ?? $u['kontak'] ?? '-')),
                 'status' => (string)($u['status'] ?? 'Aktif'),
                 'created_at' => (string)($u['created_at'] ?? '')
             ];
@@ -328,13 +349,17 @@ function create_new_user(array $data): array {
         }
 
         $newId = max(count($rows) + 1, $maxId + 1);
+        $teleponFormatted = format_phone_number($telepon);
+        $teleponStored = ($teleponFormatted !== '-' && $teleponFormatted !== '') ? $teleponFormatted : $telepon;
+        $teleponSheet = ($teleponStored !== '' && $teleponStored !== '-') ? "'" . $teleponStored : '-';
+
         $appended = $client->appendValues('Users!A:H', [[
             $newId,
             $username,
             $hashedPass,
             $nama,
             $role,
-            $telepon,
+            $teleponSheet,
             $status,
             date('Y-m-d H:i:s')
         ]]);
@@ -372,11 +397,14 @@ function create_new_user(array $data): array {
         $cols = table_columns('users');
         $nameCol = in_array('nama', $cols, true) ? 'nama' : (in_array('name', $cols, true) ? 'name' : 'username');
 
+        $teleponFormatted = format_phone_number($telepon);
+        $teleponStored = ($teleponFormatted !== '-' && $teleponFormatted !== '') ? $teleponFormatted : $telepon;
+
         $ins = db()->prepare("
             INSERT INTO users (`{$nameCol}`, username, password, role, telepon, status, created_at)
             VALUES (?, ?, ?, ?, ?, ?, NOW())
         ");
-        $ins->execute([$nama, $username, $hashedPass, $role, $telepon, $status]);
+        $ins->execute([$nama, $username, $hashedPass, $role, $teleponStored, $status]);
         $newId = (int)db()->lastInsertId();
 
         return ['success' => true, 'id' => $newId, 'username' => $username, 'nama' => $nama];
@@ -399,6 +427,10 @@ function update_user(int $id, array $data): array {
         $role = 'teknisi';
     }
 
+    $teleponFormatted = format_phone_number($telepon);
+    $teleponStored = ($teleponFormatted !== '-' && $teleponFormatted !== '') ? $teleponFormatted : $telepon;
+    $teleponSheet = ($teleponStored !== '' && $teleponStored !== '-') ? "'" . $teleponStored : '-';
+
     if (is_google_cloud_mode()) {
         $client = google_sheets_v4_client();
         if (!$client) return ['success' => false, 'error' => 'Google Sheets client tidak tersedia'];
@@ -410,8 +442,8 @@ function update_user(int $id, array $data): array {
             $teknisiHash = password_hash('teknisi123', PASSWORD_BCRYPT);
             $client->appendValues('Users!A:H', [
                 ['id', 'username', 'password', 'nama', 'role', 'telepon', 'status', 'created_at'],
-                [1, 'admin', $adminHash, 'Administrator', 'admin', '081234567890', 'Aktif', date('Y-m-d H:i:s')],
-                [2, 'teknisi', $teknisiHash, 'Teknisi IT', 'teknisi', '081234567891', 'Aktif', date('Y-m-d H:i:s')],
+                [1, 'admin', $adminHash, 'Administrator', 'admin', "'081234567890", 'Aktif', date('Y-m-d H:i:s')],
+                [2, 'teknisi', $teknisiHash, 'Teknisi IT', 'teknisi', "'081234567891", 'Aktif', date('Y-m-d H:i:s')],
             ]);
             $client->clearCache('Users');
         }
@@ -436,7 +468,7 @@ function update_user(int $id, array $data): array {
                     $hashedPass,
                     $nama,
                     $role,
-                    $telepon,
+                    $teleponSheet,
                     $status,
                     date('Y-m-d H:i:s')
                 ]]);
@@ -458,7 +490,7 @@ function update_user(int $id, array $data): array {
             $hashedPass,
             $nama,
             $role,
-            $telepon,
+            $teleponSheet,
             $status,
             $targetRow['created_at'] ?? date('Y-m-d H:i:s')
         ]]);
@@ -477,10 +509,10 @@ function update_user(int $id, array $data): array {
         if ($password !== '') {
             $hashedPass = password_hash($password, PASSWORD_BCRYPT);
             $up = db()->prepare("UPDATE users SET `{$nameCol}` = ?, role = ?, telepon = ?, status = ?, password = ? WHERE id = ?");
-            $up->execute([$nama, $role, $telepon, $status, $hashedPass, $id]);
+            $up->execute([$nama, $role, $teleponStored, $status, $hashedPass, $id]);
         } else {
             $up = db()->prepare("UPDATE users SET `{$nameCol}` = ?, role = ?, telepon = ?, status = ? WHERE id = ?");
-            $up->execute([$nama, $role, $telepon, $status, $id]);
+            $up->execute([$nama, $role, $teleponStored, $status, $id]);
         }
 
         return ['success' => true, 'id' => $id, 'nama' => $nama];
@@ -786,11 +818,23 @@ function map_sheets_assets(bool $refresh = false): array {
 function get_cabang_list(): array {
     if (is_google_cloud_mode()) {
         $client = google_sheets_v4_client();
-        return $client ? $client->getSheetData('Cabang') : [];
+        $rows = $client ? $client->getSheetData('Cabang') : [];
+        return array_map(function($c) {
+            if (isset($c['telepon'])) {
+                $c['telepon'] = format_phone_number((string)$c['telepon']);
+            }
+            return $c;
+        }, $rows);
     }
     try {
         $cName = name_column('cabang') ?: 'id';
-        return db()->query("SELECT id, `{$cName}` AS nama, `{$cName}` AS nama_cabang FROM cabang ORDER BY `{$cName}`")->fetchAll();
+        $rows = db()->query("SELECT id, `{$cName}` AS nama, `{$cName}` AS nama_cabang FROM cabang ORDER BY `{$cName}`")->fetchAll();
+        return array_map(function($c) {
+            if (isset($c['telepon'])) {
+                $c['telepon'] = format_phone_number((string)$c['telepon']);
+            }
+            return $c;
+        }, $rows);
     } catch (Throwable $e) {
         return [];
     }
@@ -815,6 +859,10 @@ function create_new_cabang(array $data): array {
         return ['success' => false, 'error' => 'Nama cabang wajib diisi'];
     }
 
+    $teleponFormatted = format_phone_number($telepon);
+    $teleponStored = ($teleponFormatted !== '-' && $teleponFormatted !== '') ? $teleponFormatted : $telepon;
+    $teleponSheet = ($teleponStored !== '' && $teleponStored !== '-') ? "'" . $teleponStored : '-';
+
     if (is_google_cloud_mode()) {
         $client = google_sheets_v4_client();
         if (!$client) return ['success' => false, 'error' => 'Google Sheets client tidak tersedia'];
@@ -835,7 +883,7 @@ function create_new_cabang(array $data): array {
             $newId,
             $nama,
             $alamat,
-            $telepon,
+            $teleponSheet,
             $penanggungJawab
         ]]);
 
@@ -886,6 +934,10 @@ function update_cabang(int $id, array $data): array {
         return ['success' => false, 'error' => 'Nama cabang wajib diisi'];
     }
 
+    $teleponFormatted = format_phone_number($telepon);
+    $teleponStored = ($teleponFormatted !== '-' && $teleponFormatted !== '') ? $teleponFormatted : $telepon;
+    $teleponSheet = ($teleponStored !== '' && $teleponStored !== '-') ? "'" . $teleponStored : '-';
+
     if (is_google_cloud_mode()) {
         $client = google_sheets_v4_client();
         if (!$client) return ['success' => false, 'error' => 'Google Sheets client tidak tersedia'];
@@ -912,7 +964,7 @@ function update_cabang(int $id, array $data): array {
             $id,
             $nama,
             $alamat,
-            $telepon,
+            $teleponSheet,
             $penanggungJawab
         ]]);
 

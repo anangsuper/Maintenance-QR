@@ -77,7 +77,7 @@ foreach ($users as $u) {
     $uNama = (string)($u['nama'] ?? '');
     $uUsername = (string)($u['username'] ?? '');
     $uRole = strtolower((string)($u['role'] ?? 'teknisi'));
-    $uTel = (string)($u['telepon'] ?? '-');
+    $uTel = format_phone_number((string)($u['telepon'] ?? '-'));
     $uStatus = (string)($u['status'] ?? 'Aktif');
     $isBeingEdited = ($editId === $uId);
 
@@ -123,7 +123,8 @@ if ($editUser) {
     $editNama = $editUser['nama'] ?? '';
     $editUsername = $editUser['username'] ?? '';
     $editRole = strtolower($editUser['role'] ?? 'teknisi');
-    $editTelepon = $editUser['telepon'] ?? '';
+    $editTelepon = format_phone_number((string)($editUser['telepon'] ?? ''));
+    $editTeleponVal = ($editTelepon !== '-' && $editTelepon !== '') ? $editTelepon : '';
     $editStatus = $editUser['status'] ?? 'Aktif';
 
     $formCardTitle = '<h5 class="fw-bold text-warning mb-3 border-bottom pb-2"><i class="bi bi-pencil-square me-2"></i>Edit Akun / Reset Password</h5>';
@@ -161,7 +162,7 @@ if ($editUser) {
 
       <div class="mb-3">
         <label class="form-label fw-semibold">No. HP / WhatsApp</label>
-        <input type="text" class="form-control" name="telepon" value="'.e($editTelepon !== '-' ? $editTelepon : '').'" placeholder="Contoh: 08123456789">
+        <input type="text" class="form-control" name="telepon" value="'.e($editTeleponVal).'" placeholder="Contoh: 08123456789">
       </div>
 
       <div class="mb-4">
