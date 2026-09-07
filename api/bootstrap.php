@@ -1635,6 +1635,20 @@ function get_fixed_checklists(): array {
     ];
 }
 
+function get_fixed_checklist_default_notes(): array {
+    return [
+        1 => 'Bersih',
+        2 => 'Sudah update',
+        3 => 'Sudah dibersihkan',
+        4 => 'Normal',
+        5 => 'Normal',
+        6 => 'Normal',
+        7 => 'Normal',
+        8 => 'Normal',
+        9 => 'Normal'
+    ];
+}
+
 function get_asset_maintenance_status_month(int $assetId, int $month, int $year): ?array {
     if ($assetId <= 0) return null;
     if (is_google_cloud_mode()) {
@@ -1863,12 +1877,33 @@ function save_maintenance_record(array $data): array {
     $recommendation = trim((string)($data['recommendation'] ?? ''));
     $checklists = (array)($data['checklists'] ?? []);
 
+    $fixedItems = get_fixed_checklists();
+    $defaultNotes = get_fixed_checklist_default_notes();
+
+    // Pastikan jika checklists kosong dan status Selesai, berikan checklist default
+    if (empty($checklists)) {
+        $isCompleted = ($status === 'Selesai');
+        foreach ($fixedItems as $num => $name) {
+            $checklists[$num] = [
+                'checked' => $isCompleted ? 1 : 0,
+                'notes' => $isCompleted ? ($defaultNotes[$num] ?? 'Normal') : ''
+            ];
+        }
+    }
+
     if (is_google_cloud_mode()) {
         $client = google_sheets_v4_client();
         if (!$client) return ['success' => false, 'error' => 'Google Sheets client tidak tersedia'];
 
         // 1. Simpan ke Maintenance_Scan
         $client->createSheetIfNotExists('Maintenance_Scan');
+        $existingScanHeader = $client->getValues('Maintenance_Scan!A1:M1');
+        if (empty($existingScanHeader)) {
+            $client->appendValues('Maintenance_Scan!A:M', [
+                ['id', 'asset_id', 'technician_user_id', 'technician_name', 'maintenance_date', 'maintenance_time', 'maintenance_month', 'maintenance_year', 'status', 'source', 'created_at', 'findings', 'recommendation']
+            ]);
+        }
+
         $scans = $client->getSheetData('Maintenance_Scan');
         $maxId = 0;
         foreach ($scans as $s) {
@@ -1896,6 +1931,13 @@ function save_maintenance_record(array $data): array {
 
         // 2. Simpan 9 items ke Maintenance_Checklists
         $client->createSheetIfNotExists('Maintenance_Checklists');
+        $existingChkHeader = $client->getValues('Maintenance_Checklists!A1:H1');
+        if (empty($existingChkHeader)) {
+            $client->appendValues('Maintenance_Checklists!A:H', [
+                ['id', 'maintenance_id', 'asset_id', 'checklist_number', 'checklist_name', 'checked', 'notes', 'created_at']
+            ]);
+        }
+
         $existingChk = $client->getSheetData('Maintenance_Checklists');
         $maxChkId = 0;
         foreach ($existingChk as $c) {
@@ -1905,11 +1947,10 @@ function save_maintenance_record(array $data): array {
         $nextChkId = $maxChkId + 1;
 
         $chkRows = [];
-        $fixedItems = get_fixed_checklists();
         foreach ($fixedItems as $num => $name) {
             $chkItem = $checklists[$num] ?? [];
             $checked = !empty($chkItem['checked']) ? 1 : 0;
-            $notes = trim((string)($chkItem['notes'] ?? ''));
+            $notes = trim((string)($chkItem['notes'] ?? ($checked ? ($defaultNotes[$num] ?? 'Normal') : '')));
             $chkRows[] = [
                 $nextChkId,
                 $newScanId,
@@ -1925,7 +1966,7 @@ function save_maintenance_record(array $data): array {
         $client->appendValues('Maintenance_Checklists!A:H', $chkRows);
 
         // 3. Jika ada temuan / kerusakan, catat juga di Maintenance_Findings
-        if ($findings !== '' || $status === 'Perlu Perbaikan' || $status === 'Proses') {
+        if ($findings !== '' || $status === 'Perlu Perbaikan' || $status === 'Proses' || $status === 'Temuan') {
             $client->createSheetIfNotExists('Maintenance_Findings');
             $existingFindings = $client->getSheetData('Maintenance_Findings');
             $newFindId = count($existingFindings) + 1;
@@ -1985,7 +2026,6 @@ function save_maintenance_record(array $data): array {
         $ins->execute([$assetId, $userId, $techName, $date, $time, $month, $year, $status, $mType, $findings, $recommendation]);
         $logId = (int)db()->lastInsertId();
 
-        $fixedItems = get_fixed_checklists();
         $chkSt = db()->prepare("
             INSERT INTO maintenance_checklists
             (maintenance_id, asset_id, checklist_number, checklist_name, checked, notes, created_at)
@@ -1994,7 +2034,7 @@ function save_maintenance_record(array $data): array {
         foreach ($fixedItems as $num => $name) {
             $chkItem = $checklists[$num] ?? [];
             $checked = !empty($chkItem['checked']) ? 1 : 0;
-            $notes = trim((string)($chkItem['notes'] ?? ''));
+            $notes = trim((string)($chkItem['notes'] ?? ($checked ? ($defaultNotes[$num] ?? 'Normal') : '')));
             $chkSt->execute([$logId, $assetId, $num, $name, $checked, $notes]);
         }
 
@@ -2007,6 +2047,7 @@ function save_maintenance_record(array $data): array {
 function get_maintenance_detail(int $logId): ?array {
     if ($logId <= 0) return null;
     $fixedItems = get_fixed_checklists();
+    $defaultNotes = get_fixed_checklist_default_notes();
 
     if (is_google_cloud_mode()) {
         $client = google_sheets_v4_client();
@@ -2036,14 +2077,32 @@ function get_maintenance_detail(int $logId): ?array {
                 'notes' => ''
             ];
         }
+
+        $foundCount = 0;
         foreach ($chkRows as $c) {
-            if ((int)($c['maintenance_id'] ?? 0) === $logId) {
-                $cnum = (int)($c['checklist_number'] ?? 0);
+            $mid = (int)($c['maintenance_id'] ?? $c['maintenance_scan_id'] ?? $c['id_maintenance'] ?? $c['log_id'] ?? $c['scan_id'] ?? 0);
+            if ($mid === $logId) {
+                $cnum = (int)($c['checklist_number'] ?? $c['number'] ?? $c['item_number'] ?? $c['no'] ?? $c['checklist_id'] ?? 0);
                 if (isset($checklists[$cnum])) {
-                    $isCh = strtolower(trim((string)($c['checked'] ?? '0')));
-                    $checklists[$cnum]['checked'] = ($isCh === '1' || $isCh === 'true' || $isCh === 'yes' || $isCh === 'v' || $isCh === '✓') ? 1 : 0;
-                    $checklists[$cnum]['notes'] = (string)($c['notes'] ?? '');
+                    $isCh = strtolower(trim((string)($c['checked'] ?? $c['status'] ?? $c['is_checked'] ?? '0')));
+                    $isDone = ($isCh === '1' || $isCh === 'true' || $isCh === 'yes' || $isCh === 'v' || $isCh === '✓' || $isCh === 'ok' || $isCh === 'selesai' || $isCh === 'normal');
+                    $checklists[$cnum]['checked'] = $isDone ? 1 : 0;
+                    $checklists[$cnum]['notes'] = (string)($c['notes'] ?? $c['keterangan'] ?? $c['catatan'] ?? '');
+                    if ($checklists[$cnum]['checked'] || $checklists[$cnum]['notes'] !== '') {
+                        $foundCount++;
+                    }
                 }
+            }
+        }
+
+        // Fallback cerdas: Jika belum ada baris terpisah di tab Maintenance_Checklists
+        // (misal log lama / scan cepat), isi otomatis sesuai status hasil maintenance
+        if ($foundCount === 0) {
+            $scanStatus = trim((string)($targetScan['status'] ?? 'Selesai'));
+            $isCompleted = ($scanStatus === 'Selesai' || $scanStatus === 'Normal' || $scanStatus === 'OK' || $scanStatus === '');
+            foreach ($fixedItems as $num => $name) {
+                $checklists[$num]['checked'] = $isCompleted ? 1 : 0;
+                $checklists[$num]['notes'] = $isCompleted ? ($defaultNotes[$num] ?? 'Normal') : ($targetScan['findings'] ?? '-');
             }
         }
 
@@ -2081,11 +2140,26 @@ function get_maintenance_detail(int $logId): ?array {
                 'notes' => ''
             ];
         }
+
+        $foundCount = 0;
         foreach ($chkRows as $c) {
             $cnum = (int)($c['checklist_number'] ?? 0);
             if (isset($checklists[$cnum])) {
                 $checklists[$cnum]['checked'] = (int)($c['checked'] ?? 0);
                 $checklists[$cnum]['notes'] = (string)($c['notes'] ?? '');
+                if ($checklists[$cnum]['checked'] || $checklists[$cnum]['notes'] !== '') {
+                    $foundCount++;
+                }
+            }
+        }
+
+        // Fallback cerdas untuk database yang belum memiliki detail checklist
+        if ($foundCount === 0) {
+            $scanStatus = trim((string)($scan['status'] ?? 'Selesai'));
+            $isCompleted = ($scanStatus === 'Selesai' || $scanStatus === 'Normal' || $scanStatus === 'OK' || $scanStatus === '');
+            foreach ($fixedItems as $num => $name) {
+                $checklists[$num]['checked'] = $isCompleted ? 1 : 0;
+                $checklists[$num]['notes'] = $isCompleted ? ($defaultNotes[$num] ?? 'Normal') : ($scan['findings'] ?? '-');
             }
         }
 
@@ -2096,6 +2170,169 @@ function get_maintenance_detail(int $logId): ?array {
         ];
     } catch (Throwable $e) {
         return null;
+    }
+}
+
+function update_maintenance_detail(int $logId, array $data): array {
+    if ($logId <= 0) return ['success' => false, 'error' => 'ID log tidak valid'];
+
+    $status = trim((string)($data['status'] ?? 'Selesai'));
+    if (!in_array($status, ['Selesai', 'Proses', 'Perlu Perbaikan', 'Temuan'], true)) {
+        $status = 'Selesai';
+    }
+    $findings = trim((string)($data['findings'] ?? ''));
+    $recommendation = trim((string)($data['recommendation'] ?? ''));
+    $checklists = (array)($data['checklists'] ?? []);
+    $fixedItems = get_fixed_checklists();
+    $defaultNotes = get_fixed_checklist_default_notes();
+
+    if (is_google_cloud_mode()) {
+        $client = google_sheets_v4_client();
+        if (!$client) return ['success' => false, 'error' => 'Google Sheets client tidak tersedia'];
+
+        // 1. Update Maintenance_Scan
+        $scans = $client->getSheetData('Maintenance_Scan', true);
+        $targetScan = null;
+        $scanRowNum = 0;
+        foreach ($scans as $s) {
+            if ((int)($s['id'] ?? 0) === $logId) {
+                $targetScan = $s;
+                $scanRowNum = (int)($s['_row_num'] ?? 0);
+                break;
+            }
+        }
+        if (!$targetScan || $scanRowNum <= 1) {
+            return ['success' => false, 'error' => 'Data maintenance scan tidak ditemukan'];
+        }
+
+        $assetId = (int)($targetScan['asset_id'] ?? 0);
+        $userId = (int)($targetScan['technician_user_id'] ?? 0);
+        $techName = (string)($targetScan['technician_name'] ?? '');
+        $date = (string)($targetScan['maintenance_date'] ?? date('Y-m-d'));
+        $time = (string)($targetScan['maintenance_time'] ?? date('H:i:s'));
+        $month = (int)($targetScan['maintenance_month'] ?? date('n'));
+        $year = (int)($targetScan['maintenance_year'] ?? date('Y'));
+        $mType = (string)($targetScan['source'] ?? $targetScan['maintenance_type'] ?? 'Maintenance');
+
+        $client->updateValues("Maintenance_Scan!A{$scanRowNum}:M{$scanRowNum}", [[
+            $logId,
+            $assetId,
+            $userId,
+            $techName,
+            $date,
+            $time,
+            $month,
+            $year,
+            $status,
+            $mType,
+            $targetScan['created_at'] ?? date('Y-m-d H:i:s'),
+            $findings,
+            $recommendation
+        ]]);
+
+        // 2. Update atau Tambah Checklist di Maintenance_Checklists
+        $client->createSheetIfNotExists('Maintenance_Checklists');
+        $existingHeader = $client->getValues('Maintenance_Checklists!A1:H1');
+        if (empty($existingHeader)) {
+            $client->appendValues('Maintenance_Checklists!A:H', [
+                ['id', 'maintenance_id', 'asset_id', 'checklist_number', 'checklist_name', 'checked', 'notes', 'created_at']
+            ]);
+        }
+
+        $chkRows = $client->getSheetData('Maintenance_Checklists', true);
+        $existingMap = [];
+        $maxChkId = 0;
+        foreach ($chkRows as $c) {
+            $cid = (int)($c['id'] ?? 0);
+            if ($cid > $maxChkId) $maxChkId = $cid;
+            $mid = (int)($c['maintenance_id'] ?? $c['maintenance_scan_id'] ?? $c['id_maintenance'] ?? $c['log_id'] ?? 0);
+            if ($mid === $logId) {
+                $cnum = (int)($c['checklist_number'] ?? $c['number'] ?? $c['item_number'] ?? $c['no'] ?? 0);
+                if ($cnum > 0) {
+                    $existingMap[$cnum] = (int)($c['_row_num'] ?? 0);
+                }
+            }
+        }
+
+        $rowsToAppend = [];
+        $nextChkId = $maxChkId + 1;
+        foreach ($fixedItems as $num => $name) {
+            $chkItem = $checklists[$num] ?? [];
+            $checked = !empty($chkItem['checked']) ? 1 : 0;
+            $notes = trim((string)($chkItem['notes'] ?? ($checked ? ($defaultNotes[$num] ?? 'Normal') : '')));
+
+            if (!empty($existingMap[$num]) && $existingMap[$num] > 1) {
+                $rNum = $existingMap[$num];
+                $client->updateValues("Maintenance_Checklists!A{$rNum}:H{$rNum}", [[
+                    $rNum - 1,
+                    $logId,
+                    $assetId,
+                    $num,
+                    $name,
+                    $checked,
+                    $notes,
+                    date('Y-m-d H:i:s')
+                ]]);
+            } else {
+                $rowsToAppend[] = [
+                    $nextChkId++,
+                    $logId,
+                    $assetId,
+                    $num,
+                    $name,
+                    $checked,
+                    $notes,
+                    date('Y-m-d H:i:s')
+                ];
+            }
+        }
+
+        if (!empty($rowsToAppend)) {
+            $client->appendValues('Maintenance_Checklists!A:H', $rowsToAppend);
+        }
+
+        $client->clearCache();
+        return ['success' => true];
+    }
+
+    // MySQL Mode
+    try {
+        $st = db()->prepare("
+            UPDATE maintenance_scan
+            SET status = ?, findings = ?, recommendation = ?
+            WHERE id = ?
+        ");
+        $st->execute([$status, $findings, $recommendation, $logId]);
+
+        // Get asset_id
+        $scanSt = db()->prepare("SELECT asset_id FROM maintenance_scan WHERE id = ? LIMIT 1");
+        $scanSt->execute([$logId]);
+        $assetId = (int)$scanSt->fetchColumn();
+
+        foreach ($fixedItems as $num => $name) {
+            $chkItem = $checklists[$num] ?? [];
+            $checked = !empty($chkItem['checked']) ? 1 : 0;
+            $notes = trim((string)($chkItem['notes'] ?? ($checked ? ($defaultNotes[$num] ?? 'Normal') : '')));
+
+            $chkCheck = db()->prepare("SELECT id FROM maintenance_checklists WHERE maintenance_id = ? AND checklist_number = ? LIMIT 1");
+            $chkCheck->execute([$logId, $num]);
+            $chkId = (int)$chkCheck->fetchColumn();
+
+            if ($chkId > 0) {
+                $up = db()->prepare("UPDATE maintenance_checklists SET checked = ?, notes = ? WHERE id = ?");
+                $up->execute([$checked, $notes, $chkId]);
+            } else {
+                $ins = db()->prepare("
+                    INSERT INTO maintenance_checklists (maintenance_id, asset_id, checklist_number, checklist_name, checked, notes, created_at)
+                    VALUES (?, ?, ?, ?, ?, ?, NOW())
+                ");
+                $ins->execute([$logId, $assetId, $num, $name, $checked, $notes]);
+            }
+        }
+
+        return ['success' => true];
+    } catch (Throwable $e) {
+        return ['success' => false, 'error' => $e->getMessage()];
     }
 }
 

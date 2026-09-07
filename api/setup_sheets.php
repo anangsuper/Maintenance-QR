@@ -142,6 +142,18 @@ if (empty($existing)) {
     $results[] = "⏭️ Tab Maintenance_Findings — sudah ada";
 }
 
+// ====== 9. Tab Maintenance_Checklists ======
+$client->createSheetIfNotExists('Maintenance_Checklists');
+$existing = $client->getValues('Maintenance_Checklists!A1:H1');
+if (empty($existing)) {
+    $client->appendValues('Maintenance_Checklists!A:H', [
+        ['id', 'maintenance_id', 'asset_id', 'checklist_number', 'checklist_name', 'checked', 'notes', 'created_at'],
+    ]);
+    $results[] = "✅ Tab Maintenance_Checklists — dibuat (header only)";
+} else {
+    $results[] = "⏭️ Tab Maintenance_Checklists — sudah ada";
+}
+
 // ====== Tampilkan Hasil ======
 $html = '<div class="card p-4"><h3>🔧 Setup Google Sheet — Selesai!</h3><hr>';
 foreach ($results as $r) {
