@@ -5,7 +5,7 @@ require_login();
 $assetId = max(0, (int)($_GET['id'] ?? $_GET['asset_id'] ?? 0));
 $cabangId = isset($_GET['cabang']) ? max(0, (int)$_GET['cabang']) : 0;
 $year = max(2020, min(2100, (int)($_GET['tahun'] ?? date('Y'))));
-$layout = trim((string)($_GET['layout'] ?? 'grid8')); // 'grid8' (default: 8 per A4) or 'single'
+$layout = trim((string)($_GET['layout'] ?? 'grid6')); // 'grid6' (default: 6 per A4), 'grid8', or 'single'
 
 // Ambil daftar aset yang akan dicetak
 $assetList = [];
@@ -29,6 +29,114 @@ foreach ($cabangs as $c) {
         $selectedCabangName = $c['nama'] ?? $c['nama_cabang'] ?? ('Cabang #' . $cabangId);
         break;
     }
+}
+
+// Function to generate 1 card in grid6 (6 per A4: 2 kolom x 3 baris) format
+function render_card_grid6(array $asset, int $year): string {
+    $assetId = (int)$asset['id'];
+    $matrix = get_asset_yearly_card_matrix($assetId, $year);
+
+    $userDisplay = !empty($asset['karyawan_nama']) && $asset['karyawan_nama'] !== '-' ? $asset['karyawan_nama'] : 'Umum / Pool';
+    $divisi = !empty($asset['divisi_nama']) && $asset['divisi_nama'] !== '-' ? $asset['divisi_nama'] : '';
+    $userWithDiv = $divisi ? "{$userDisplay} ({$divisi})" : $userDisplay;
+    $ipDisplay = !empty($asset['ip_address']) ? $asset['ip_address'] : (!empty($asset['ip']) ? $asset['ip'] : '-');
+    $kodeInv = $asset['kode_inventaris'] ?? ('ASET-' . $assetId);
+    $deviceTitle = asset_title($asset);
+    $printerDisplay = !empty($asset['printer']) ? $asset['printer'] : '-';
+    $cabangLabel = !empty($asset['cabang_nama']) && $asset['cabang_nama'] !== '-' ? $asset['cabang_nama'] : 'KPO';
+
+    $tableRows = '';
+    for ($m = 1; $m <= 12; $m++) {
+        $row = $matrix[$m];
+        $dateLabel = $row['date_str'];
+        $isDone = $row['is_done'];
+        $paraf = $isDone ? e($row['paraf']) : '&nbsp;';
+        $rowClass = ($m % 2 === 0) ? 'even-row' : 'odd-row';
+        if ($isDone) $rowClass .= ' done-row';
+
+        $cols1to9 = '';
+        for ($num = 1; $num <= 9; $num++) {
+            $chkVal = $row['checklists'][$num] ?? 0;
+            if ($isDone) {
+                $cols1to9 .= '<td class="chk-col '.($chkVal ? 'chk-yes' : 'chk-no').'">'.($chkVal ? '✓' : '-').'</td>';
+            } else {
+                $cols1to9 .= '<td class="chk-col">&nbsp;</td>';
+            }
+        }
+
+        $tableRows .= '
+        <tr class="'.$rowClass.'">
+          <td class="tgl-col">'.e($dateLabel).'</td>
+          '.$cols1to9.'
+          <td class="paraf-col">'.$paraf.'</td>
+        </tr>';
+    }
+
+    return '
+    <div class="card-item-6">
+      <!-- Header Banner Berwarna -->
+      <div class="grid6-top-banner">
+        <span><i class="bi bi-card-checklist"></i> KARTU KONTROL IT · '.$year.'</span>
+        <span class="grid6-branch-pill">'.e($cabangLabel).'</span>
+      </div>
+
+      <!-- Header Info -->
+      <table class="grid6-info-table">
+        <tr>
+          <td style="width: 52px;"><span class="badge-lbl badge-blue">NAMA</span></td>
+          <td style="width: 4px;">:</td>
+          <td class="info-v"><strong>'.e($userWithDiv).'</strong></td>
+        </tr>
+        <tr>
+          <td><span class="badge-lbl badge-green">IP / KODE</span></td>
+          <td>:</td>
+          <td class="info-v"><span class="text-success fw-bold">'.e($ipDisplay).'</span> · <span class="badge-kode">'.e($kodeInv).'</span></td>
+        </tr>
+        <tr>
+          <td><span class="badge-lbl badge-purple">UNIT/PRT</span></td>
+          <td>:</td>
+          <td class="info-v">'.e($deviceTitle).' · <span class="text-secondary">'.e($printerDisplay).'</span></td>
+        </tr>
+      </table>
+
+      <!-- 12 Months Matrix Table -->
+      <table class="grid6-matrix-table">
+        <thead>
+          <tr>
+            <th class="tgl-h">TGL</th>
+            <th class="chk-h">1</th>
+            <th class="chk-h">2</th>
+            <th class="chk-h">3</th>
+            <th class="chk-h">4</th>
+            <th class="chk-h">5</th>
+            <th class="chk-h">6</th>
+            <th class="chk-h">7</th>
+            <th class="chk-h">8</th>
+            <th class="chk-h">9</th>
+            <th class="paraf-h">PARAF</th>
+          </tr>
+        </thead>
+        <tbody>
+          '.$tableRows.'
+        </tbody>
+      </table>
+
+      <!-- 9 Item Legend Footer Lengkap (1-9) -->
+      <div class="grid6-ket-box">
+        <div class="grid6-ket-title"><i class="bi bi-info-circle-fill me-1"></i>KETERANGAN ITEM CHECKLIST (1 - 9):</div>
+        <div class="grid6-ket-grid">
+          <span class="leg-tag leg-blue"><b>1.</b>Scan Virus</span>
+          <span class="leg-tag leg-blue"><b>2.</b>Update AV</span>
+          <span class="leg-tag leg-blue"><b>3.</b>Temp File</span>
+          <span class="leg-tag leg-purple"><b>4.</b>Keyboard</span>
+          <span class="leg-tag leg-purple"><b>5.</b>Mouse</span>
+          <span class="leg-tag leg-purple"><b>6.</b>CPU & Mon</span>
+          <span class="leg-tag leg-teal"><b>7.</b>Cek Tinta</span>
+          <span class="leg-tag leg-teal"><b>8.</b>Cartridge</span>
+          <span class="leg-tag leg-teal"><b>9.</b>Cek Nozzle</span>
+        </div>
+      </div>
+    </div>';
 }
 
 // Function to generate 1 card in grid8 (8 per A4) format
@@ -264,13 +372,23 @@ if (empty($assetList)) {
         foreach ($assetList as $a) {
             $cardsHtml .= render_card_single($a, $year);
         }
-    } else {
+    } elseif ($layout === 'grid8') {
         // Grid 8: 8 kartu per halaman A4 (chunking by 8)
         $chunks = array_chunk($assetList, 8);
         foreach ($chunks as $chunk) {
             $cardsHtml .= '<div class="page-grid-8">';
             foreach ($chunk as $a) {
                 $cardsHtml .= render_card_grid8($a, $year);
+            }
+            $cardsHtml .= '</div>';
+        }
+    } else {
+        // Grid 6 (DEFAULT): 6 kartu per halaman A4 (2 kolom x 3 baris - Lega & Jelas)
+        $chunks = array_chunk($assetList, 6);
+        foreach ($chunks as $chunk) {
+            $cardsHtml .= '<div class="page-grid-6">';
+            foreach ($chunk as $a) {
+                $cardsHtml .= render_card_grid6($a, $year);
             }
             $cardsHtml .= '</div>';
         }
@@ -305,6 +423,155 @@ body {
 }
 
 /* =========================================================
+   GRID 6 PER LEMBAR A4 (2 KOLOM x 3 BARIS) - LEGA & SANGAT JELAS
+   ========================================================= */
+.page-grid-6 {
+  width: 198mm;
+  display: grid;
+  grid-template-columns: 96mm 96mm;
+  grid-auto-rows: 88mm;
+  gap: 4mm 4mm;
+  justify-content: center;
+  margin: 0 auto 12mm auto;
+  page-break-after: always;
+  break-after: page;
+}
+
+.card-item-6 {
+  width: 96mm;
+  height: 88mm;
+  background: #ffffff;
+  border: 1.5px solid #2563eb;
+  border-radius: 2.5mm;
+  padding: 2.2mm 2.8mm;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  page-break-inside: avoid;
+  break-inside: avoid;
+  box-shadow: 0 1px 4px rgba(37, 99, 235, 0.08);
+}
+
+.grid6-top-banner {
+  background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%);
+  color: #ffffff;
+  padding: 1.2px 4px;
+  border-radius: 1mm;
+  font-weight: 800;
+  font-size: 7.2pt;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.grid6-branch-pill {
+  background: #fef08a;
+  color: #854d0e;
+  font-size: 5.8pt;
+  font-weight: 800;
+  padding: 0.3px 1.5px;
+  border-radius: 0.6mm;
+  text-transform: uppercase;
+}
+
+.grid6-info-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 7.2pt;
+  line-height: 1.2;
+}
+.grid6-info-table td {
+  padding: 0.4px 1px;
+  vertical-align: middle;
+}
+
+.grid6-matrix-table {
+  width: 100%;
+  border-collapse: collapse;
+  border: 1px solid #1e40af;
+  font-size: 6.8pt;
+}
+.grid6-matrix-table th {
+  background: #1e40af !important;
+  color: #ffffff !important;
+  border: 0.6px solid #1e3a8a;
+  font-weight: bold;
+  text-align: center;
+  padding: 1px 0;
+  height: 12.5px;
+}
+.grid6-matrix-table td {
+  border: 0.6px solid #cbd5e1;
+  text-align: center;
+  padding: 0;
+  height: 11.8px;
+}
+.grid6-matrix-table tr.even-row { background-color: #f8fafc; }
+.grid6-matrix-table tr.done-row { background-color: #f0fdf4; }
+.grid6-matrix-table tr.done-row td { border-color: #86efac; }
+.grid6-matrix-table .tgl-h { width: 21mm; }
+.grid6-matrix-table .tgl-col { font-weight: bold; font-family: "Courier New", monospace; font-size: 7pt; color: #1e3a8a; }
+.grid6-matrix-table .chk-h { width: 4.6mm; }
+.grid6-matrix-table .chk-col { font-weight: bold; font-size: 7.5pt; }
+.grid6-matrix-table .chk-yes { color: #16a34a; font-weight: 900; }
+.grid6-matrix-table .chk-no { color: #94a3b8; }
+.grid6-matrix-table .paraf-h { min-width: 16mm; }
+.grid6-matrix-table .paraf-col { font-size: 6.2pt; font-family: "Courier New", monospace; color: #334155; }
+
+.grid6-ket-box {
+  background: #f8fafc;
+  border: 0.8px solid #94a3b8;
+  border-radius: 1.2mm;
+  padding: 1mm 1.5mm;
+}
+.grid6-ket-title {
+  font-size: 5.6pt;
+  font-weight: 800;
+  color: #1e40af;
+  margin-bottom: 0.5mm;
+  text-transform: uppercase;
+  letter-spacing: 0.2px;
+}
+.grid6-ket-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.4mm 1mm;
+}
+
+/* Badges & Pills */
+.badge-lbl {
+  font-size: 5.8pt;
+  font-weight: 800;
+  padding: 0.3px 2.5px;
+  border-radius: 0.5mm;
+  display: inline-block;
+  text-align: center;
+  white-space: nowrap;
+}
+.badge-blue { background: #dbeafe; color: #1e40af; border: 0.5px solid #bfdbfe; }
+.badge-green { background: #dcfce7; color: #15803d; border: 0.5px solid #bbf7d0; }
+.badge-purple { background: #f3e8ff; color: #6b21a8; border: 0.5px solid #e9d5ff; }
+.badge-kode { background: #f1f5f9; color: #0f172a; padding: 0.2px 2.5px; border-radius: 0.5mm; font-weight: bold; border: 0.5px solid #cbd5e1; }
+
+.leg-tag {
+  font-size: 5.4pt;
+  font-weight: 600;
+  padding: 0.3px 1.8px;
+  border-radius: 0.5mm;
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  gap: 1.5px;
+}
+.leg-tag b {
+  font-weight: 800;
+  color: #0f172a;
+}
+.leg-blue { background: #eff6ff; color: #1d4ed8; border: 0.5px solid #bfdbfe; }
+.leg-purple { background: #faf5ff; color: #7e22ce; border: 0.5px solid #e9d5ff; }
+.leg-teal { background: #f0fdfa; color: #0f766e; border: 0.5px solid #99f6e4; }
+
+/* =========================================================
    GRID 8 PER LEMBAR A4 (2 KOLOM x 4 BARIS)
    ========================================================= */
 .page-grid-8 {
@@ -318,7 +585,6 @@ body {
   page-break-after: always;
   break-after: page;
 }
-
 .card-item-8 {
   width: 96mm;
   height: 68.5mm;
@@ -329,15 +595,11 @@ body {
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
-  justify-content: flex-start;
-  gap: 0.6mm;
+  justify-content: space-between;
   page-break-inside: avoid;
   break-inside: avoid;
-  overflow: hidden;
   box-shadow: 0 1px 4px rgba(37, 99, 235, 0.08);
 }
-
-/* Top Banner Header */
 .grid8-top-banner {
   background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%);
   color: #ffffff;
@@ -348,7 +610,6 @@ body {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 0.2mm;
 }
 .grid8-branch-pill {
   background: #fef08a;
@@ -359,41 +620,13 @@ body {
   border-radius: 0.4mm;
   text-transform: uppercase;
 }
-
-/* Header Table Mini */
 .grid8-info-table {
   width: 100%;
   border-collapse: collapse;
   font-size: 6.1pt;
   line-height: 1.1;
-  margin-bottom: 0.2mm;
 }
-.grid8-info-table td {
-  padding: 0.2px 0.6px;
-  vertical-align: middle;
-}
-.badge-lbl {
-  font-size: 5.1pt;
-  font-weight: 800;
-  padding: 0.2px 2px;
-  border-radius: 0.4mm;
-  display: inline-block;
-  text-align: center;
-  white-space: nowrap;
-}
-.badge-blue { background: #dbeafe; color: #1e40af; border: 0.5px solid #bfdbfe; }
-.badge-green { background: #dcfce7; color: #15803d; border: 0.5px solid #bbf7d0; }
-.badge-purple { background: #f3e8ff; color: #6b21a8; border: 0.5px solid #e9d5ff; }
-.badge-kode { background: #f1f5f9; color: #0f172a; padding: 0.2px 2px; border-radius: 0.4mm; font-weight: bold; border: 0.5px solid #cbd5e1; }
-
-.grid8-info-table .info-v {
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 68mm;
-}
-
-/* 12 Months Matrix Table */
+.grid8-info-table td { padding: 0.2px 0.6px; vertical-align: middle; }
 .grid8-matrix-table {
   width: 100%;
   border-collapse: collapse;
@@ -401,7 +634,7 @@ body {
   font-size: 5.7pt;
 }
 .grid8-matrix-table th {
-  background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%) !important;
+  background: #1e40af !important;
   color: #ffffff !important;
   border: 0.5px solid #1e3a8a;
   font-weight: bold;
@@ -409,12 +642,7 @@ body {
   padding: 0.4px 0;
   height: 10.5px;
 }
-.grid8-matrix-table td {
-  border: 0.5px solid #cbd5e1;
-  text-align: center;
-  padding: 0;
-  height: 9.6px;
-}
+.grid8-matrix-table td { border: 0.5px solid #cbd5e1; text-align: center; padding: 0; height: 9.6px; }
 .grid8-matrix-table tr.even-row { background-color: #f8fafc; }
 .grid8-matrix-table tr.done-row { background-color: #f0fdf4; }
 .grid8-matrix-table tr.done-row td { border-color: #86efac; }
@@ -426,45 +654,24 @@ body {
 .grid8-matrix-table .chk-no { color: #94a3b8; }
 .grid8-matrix-table .paraf-h { min-width: 16mm; }
 .grid8-matrix-table .paraf-col { font-size: 5.2pt; font-family: "Courier New", monospace; color: #334155; }
-
-/* Legend Box Mini (9 Items Grid) */
 .grid8-ket-box {
   background: #f8fafc;
   border: 0.6px solid #94a3b8;
   border-radius: 0.8mm;
   padding: 0.4mm 0.8mm;
-  margin-top: 0.3mm;
 }
 .grid8-ket-title {
   font-size: 4.6pt;
   font-weight: 800;
-  color: #1e3a8a;
+  color: #1e40af;
   margin-bottom: 0.3mm;
   text-transform: uppercase;
-  letter-spacing: 0.2px;
 }
 .grid8-ket-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 0.2mm 0.8mm;
 }
-.leg-tag {
-  font-size: 4.6pt;
-  font-weight: 600;
-  padding: 0.2px 1.2px;
-  border-radius: 0.4mm;
-  white-space: nowrap;
-  display: inline-flex;
-  align-items: center;
-  gap: 1.5px;
-}
-.leg-tag b {
-  font-weight: 800;
-  color: #0f172a;
-}
-.leg-blue { background: #dbeafe; color: #1e40af; border: 0.4px solid #93c5fd; }
-.leg-purple { background: #f3e8ff; color: #6b21a8; border: 0.4px solid #d8b4fe; }
-.leg-teal { background: #ccfbf1; color: #0f766e; border: 0.4px solid #5eead4; }
 
 /* =========================================================
    SINGLE CARD FORMAT (1 PER HALAMAN)
@@ -488,7 +695,7 @@ body {
 .info-table-single td { padding: 4px 2px; }
 .info-line-single { border-bottom: 1.5px solid #2563eb; padding-left: 6px; }
 .card-table-single { width: 100%; border-collapse: collapse; border: 1.5px solid #2563eb; }
-.card-table-single th { background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%) !important; color: #ffffff !important; border: 1.5px solid #1e3a8a !important; font-weight: bold; padding: 5px 2px; text-align: center; font-size: 9.5pt; }
+.card-table-single th { background: #1e40af !important; color: #ffffff !important; border: 1.5px solid #1e3a8a !important; font-weight: bold; padding: 5px 2px; text-align: center; font-size: 9.5pt; }
 .card-table-single td { border: 1px solid #93c5fd; font-size: 9pt; padding: 3px 2px; }
 .card-table-single tr.even-row { background-color: #f8fafc; }
 .card-table-single tr.done-row { background-color: #f0fdf4; }
@@ -498,7 +705,7 @@ body {
 @media print {
   body { background: #ffffff !important; }
   .no-print { display: none !important; }
-  .page-grid-8 { margin: 0 auto !important; }
+  .page-grid-6, .page-grid-8 { margin: 0 auto !important; }
   .print-card-wrapper-single { box-shadow: none !important; border: 1.5px solid #2563eb !important; margin: 0 auto !important; }
 }
 </style>';
@@ -527,8 +734,9 @@ $body = '
           '.$cabangOptions.'
         </select>
 
-        <select class="form-select form-select-sm" name="layout" style="width: 190px;" onchange="this.form.submit()">
-          <option value="grid8"'.($layout === 'grid8' ? ' selected' : '').'>📄 8 Kartu / Lembar A4 (HVS)</option>
+        <select class="form-select form-select-sm fw-bold text-primary" name="layout" style="width: 200px;" onchange="this.form.submit()">
+          <option value="grid6"'.($layout === 'grid6' ? ' selected' : '').'>📄 6 Kartu / Lembar A4 (Rekomendasi)</option>
+          <option value="grid8"'.($layout === 'grid8' ? ' selected' : '').'>📄 8 Kartu / Lembar A4 (Padat)</option>
           <option value="single"'.($layout === 'single' ? ' selected' : '').'>📄 1 Kartu Besar / Lembar</option>
         </select>
 
@@ -542,7 +750,7 @@ $body = '
 
     <div class="alert alert-info py-2 px-3 small mt-3 mb-0 d-flex align-items-center justify-content-between">
       <span><i class="bi bi-info-circle-fill me-1"></i> <strong>Tips Cetak:</strong> Gunakan kertas <strong>A4 Portrait</strong>, Margin: <strong>Default / Minimum</strong>, dan centang opsi <strong>"Background Graphics"</strong> di menu printer browser.</span>
-      <span class="badge bg-primary fs-6">Layout: '.($layout === 'grid8' ? '8 Kartu per A4' : '1 Kartu Penuh').'</span>
+      <span class="badge bg-primary fs-6">Layout Aktif: '.($layout === 'grid6' ? '6 Kartu per A4' : ($layout === 'grid8' ? '8 Kartu per A4' : '1 Kartu Penuh')).'</span>
     </div>
   </div>
 
@@ -554,4 +762,3 @@ $body = '
 </div>';
 
 render_page($pageTitle, $body, $head, '', false);
-
