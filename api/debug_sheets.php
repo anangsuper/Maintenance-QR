@@ -35,6 +35,9 @@ $results[] = '<hr><h5>Detail 5 Scan Terakhir:</h5>';
 $allScans = $client->getSheetData('Maintenance_Scan');
 $lastScans = array_slice($allScans, -5);
 foreach ($lastScans as $sc) {
+    $results[] = "Scan ID: <strong>" . ($sc['id'] ?? '?') . "</strong> | Asset ID: " . ($sc['asset_id'] ?? '?') . " | Tgl: " . ($sc['maintenance_date'] ?? '?') . " | Teknisi: " . ($sc['technician_name'] ?? '?');
+}
+
 $results[] = '<hr><h5>Raw Maintenance_Checklists A63:H73:</h5>';
 $rawSlice = $client->getValues('Maintenance_Checklists!A63:H73');
 foreach ($rawSlice as $rIdx => $rVal) {
