@@ -38,16 +38,18 @@ foreach ($lastScans as $sc) {
     $results[] = "Scan ID: <strong>" . ($sc['id'] ?? '?') . "</strong> | Asset ID: " . ($sc['asset_id'] ?? '?') . " | Tgl: " . ($sc['maintenance_date'] ?? '?') . " | Teknisi: " . ($sc['technician_name'] ?? '?');
 }
 
-$results[] = '<hr><h5>Raw Top 3 Rows Maintenance_Checklists:</h5>';
-$rawTop = $client->getValues('Maintenance_Checklists!A1:Z3');
-foreach ($rawTop as $rIdx => $rVal) {
-    $results[] = "Row #" . ($rIdx + 1) . ": <code>" . htmlspecialchars(json_encode($rVal)) . "</code>";
-}
-
-$results[] = '<hr><h5>Raw Rows (A50:Z65) Maintenance_Checklists:</h5>';
-$rawBottom = $client->getValues('Maintenance_Checklists!A50:Z65');
-foreach ($rawBottom as $rIdx => $rVal) {
-    $results[] = "Row #" . ($rIdx + 50) . ": <code>" . htmlspecialchars(json_encode($rVal)) . "</code>";
+$results[] = '<hr><h5>Detail 9 Baris Terakhir Maintenance_Checklists (Ternormalisasi):</h5>';
+$allChks = $client->getSheetData('Maintenance_Checklists');
+$lastChks = array_slice($allChks, -9);
+foreach ($lastChks as $c) {
+    $cId = $c['id'] ?? '?';
+    $mId = $c['maintenance_id'] ?? '?';
+    $aId = $c['asset_id'] ?? '?';
+    $num = $c['checklist_number'] ?? '?';
+    $name = $c['checklist_name'] ?? '?';
+    $chk = !empty($c['checked']) ? '✅ Checklist' : '❌ Tidak Dicek (-)';
+    $notes = $c['notes'] ?? '';
+    $results[] = "ID: <strong>{$cId}</strong> | Maint ID: <strong>{$mId}</strong> | Item #{$num} ({$name}) → <strong>{$chk}</strong> | Catatan: {$notes}";
 }
 
 // 3. Cek QR Tokens detail
