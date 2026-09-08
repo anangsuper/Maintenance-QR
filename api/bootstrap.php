@@ -3790,7 +3790,7 @@ function render_page(string $title, string $content, string $extraHead = '', str
     $currentPage = basename($_SERVER['SCRIPT_NAME'] ?? '');
 
     if ($showNav) {
-        $isMasterActive = in_array($currentPage, ['cabang_admin.php', 'divisi_admin.php', 'users_admin.php'], true);
+        $isMasterActive = in_array($currentPage, ['cabang_admin.php', 'divisi_admin.php', 'users_admin.php', 'system_design.php'], true);
         $nav = '
         <nav class="navbar navbar-expand-lg navbar-dark main-navbar mb-4 sticky-top">
           <div class="container">
@@ -3815,8 +3815,9 @@ function render_page(string $title, string $content, string $extraHead = '', str
                   <ul class="dropdown-menu dropdown-menu-dark shadow border-0 mt-2">
                     <li><a class="dropdown-item py-2 '.($currentPage==='cabang_admin.php'?'active':'').'" href="'.e(module_url('cabang_admin.php')).'"><i class="bi bi-buildings me-2 text-primary"></i> Data Cabang</a></li>
                     <li><a class="dropdown-item py-2 '.($currentPage==='divisi_admin.php'?'active':'').'" href="'.e(module_url('divisi_admin.php')).'"><i class="bi bi-diagram-3 me-2 text-info"></i> Data Divisi</a></li>
-                    <li><hr class="dropdown-divider border-secondary opacity-50"></li>
                     <li><a class="dropdown-item py-2 '.($currentPage==='users_admin.php'?'active':'').'" href="'.e(module_url('users_admin.php')).'"><i class="bi bi-people me-2 text-warning"></i> Akun Pengguna / Teknisi</a></li>
+                    <li><hr class="dropdown-divider border-secondary opacity-50"></li>
+                    <li><a class="dropdown-item py-2 '.($currentPage==='system_design.php'?'active':'').'" href="'.e(module_url('system_design.php')).'"><i class="bi bi-file-earmark-pdf-fill me-2 text-danger"></i> Dokumen Desain (PDF)</a></li>
                   </ul>
                 </div>
 
