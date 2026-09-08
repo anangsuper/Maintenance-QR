@@ -3,8 +3,11 @@ require __DIR__ . '/bootstrap.php';
 require_login();
 
 $pageTitle = 'Dokumen Perancangan Sistem (DFD & Use Case) · QR Maintenance';
+$dashboardUrl = e(module_url('dashboard.php'));
+$currentDateStr = date('d F Y');
+$currentYearStr = date('Y');
 
-$head = '
+$head = <<<HTML
 <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
 <script>
   mermaid.initialize({
@@ -223,9 +226,10 @@ $head = '
       page-break-after: auto;
     }
   }
-</style>';
+</style>
+HTML;
 
-$body = '
+$body = <<<HTML
 <!-- Floating Toolbar -->
 <div class="doc-toolbar no-print text-white">
   <div class="d-flex align-items-center gap-2">
@@ -233,7 +237,7 @@ $body = '
     <span class="small opacity-75 d-none d-md-inline">Gunakan opsi <strong>"Save as PDF"</strong> saat jendela cetak terbuka</span>
   </div>
   <div class="d-flex align-items-center gap-2">
-    <a href="'.e(module_url('dashboard.php')).'" class="btn btn-sm btn-outline-light rounded-pill px-3">
+    <a href="{$dashboardUrl}" class="btn btn-sm btn-outline-light rounded-pill px-3">
       <i class="bi bi-arrow-left"></i> Dashboard
     </a>
     <button type="button" class="btn btn-sm btn-primary rounded-pill px-4 fw-bold shadow" onclick="window.print()">
@@ -253,7 +257,7 @@ $body = '
       </div>
       <div class="text-md-end small text-muted">
         <div>Versi: <strong class="text-dark">2.1 (Revisi Lapangan)</strong></div>
-        <div>Tanggal: <strong class="text-dark">'.date('d F Y').'</strong></div>
+        <div>Tanggal: <strong class="text-dark">{$currentDateStr}</strong></div>
         <div>Penyusun: <strong class="text-dark">Tim IT Support & Maintenance</strong></div>
       </div>
     </div>
@@ -333,7 +337,7 @@ flowchart LR
         <td><span class="code-tag">UC-03</span></td>
         <td><strong>Isi Checklist 10 Butir</strong></td>
         <td>Teknisi</td>
-        <td>Memeriksa item fisik, OS, antivirus, jaringan. Khusus poin 7, 8, 9 (printer) dapat dikosongkan bila meja tidak memiliki printer (tercatat sebagai strip \'-\').</td>
+        <td>Memeriksa item fisik, OS, antivirus, jaringan. Khusus poin 7, 8, 9 (printer) dapat dikosongkan bila meja tidak memiliki printer (tercatat sebagai strip -).</td>
       </tr>
       <tr>
         <td><span class="code-tag">UC-04</span></td>
@@ -456,7 +460,7 @@ sequenceDiagram
     alt Meja Memiliki Printer
         T->>HP: Ceklis Poin 7, 8, 9 (Mekanik, Cartridge, Test Page)
     else Tidak Ada Printer di Meja
-        T->>HP: Biarkan Poin 7, 8, 9 Tidak Tercentang (Tercatat '-')
+        T->>HP: Biarkan Poin 7, 8, 9 Tidak Tercentang (Tercatat Strip -)
     end
     T->>HP: Tulis Catatan / Temuan Khusus (Bila Ada)
     T->>HP: Klik Tombol "Simpan Maintenance"
@@ -549,14 +553,15 @@ sequenceDiagram
       <tr>
         <td><span class="code-tag">item_7 s/d item_9</span></td>
         <td>Boolean / Null</td>
-        <td>Poin Printer (0 = Ditandai strip \'-\' di Kartu Kontrol)</td>
+        <td>Poin Printer (0 = Ditandai strip - di Kartu Kontrol)</td>
       </tr>
     </tbody>
   </table>
 
   <div class="text-center text-muted small mt-5 pt-3 border-top">
-    Dokumen ini digenerate secara otomatis untuk standarisasi operasional sistem QR Maintenance · Hak Cipta © '.date('Y').'
+    Dokumen ini digenerate secara otomatis untuk standarisasi operasional sistem QR Maintenance · Hak Cipta © {$currentYearStr}
   </div>
-</div>';
+</div>
+HTML;
 
 render_page($pageTitle, $body, $head, '', true);
