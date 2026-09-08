@@ -44,10 +44,10 @@ foreach ($rawTop as $rIdx => $rVal) {
     $results[] = "Row #" . ($rIdx + 1) . ": <code>" . htmlspecialchars(json_encode($rVal)) . "</code>";
 }
 
-$results[] = '<hr><h5>Raw Bottom Rows (A60:Z75) Maintenance_Checklists:</h5>';
-$rawBottom = $client->getValues('Maintenance_Checklists!A60:Z75');
+$results[] = '<hr><h5>Raw Rows (A50:Z65) Maintenance_Checklists:</h5>';
+$rawBottom = $client->getValues('Maintenance_Checklists!A50:Z65');
 foreach ($rawBottom as $rIdx => $rVal) {
-    $results[] = "Row #" . ($rIdx + 60) . ": <code>" . htmlspecialchars(json_encode($rVal)) . "</code>";
+    $results[] = "Row #" . ($rIdx + 50) . ": <code>" . htmlspecialchars(json_encode($rVal)) . "</code>";
 }
 
 // 3. Cek QR Tokens detail
