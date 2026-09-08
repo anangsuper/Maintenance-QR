@@ -38,18 +38,16 @@ foreach ($lastScans as $sc) {
     $results[] = "Scan ID: <strong>" . ($sc['id'] ?? '?') . "</strong> | Asset ID: " . ($sc['asset_id'] ?? '?') . " | Tgl: " . ($sc['maintenance_date'] ?? '?') . " | Teknisi: " . ($sc['technician_name'] ?? '?');
 }
 
-$results[] = '<hr><h5>Detail 18 Checklist Terakhir:</h5>';
-$allChks = $client->getSheetData('Maintenance_Checklists', true);
-$lastChks = array_slice($allChks, -18);
-foreach ($lastChks as $ck) {
-    $cId = $ck['id'] ?? $ck['col_0'] ?? '?';
-    $mId = $ck['maintenance_id'] ?? $ck['maintenance_scan_id'] ?? $ck['col_1'] ?? '?';
-    $cNum = $ck['checklist_number'] ?? $ck['col_3'] ?? '?';
-    $cName = $ck['checklist_name'] ?? $ck['col_4'] ?? '?';
-    $isCh = strtolower(trim((string)($ck['checked'] ?? $ck['col_5'] ?? '0')));
-    $isDone = in_array($isCh, ['1', 'true', 'yes', 'v', '✓', 'ok', 'selesai', 'normal', 'checked'], true);
-    $cNote = $ck['notes'] ?? $ck['col_6'] ?? '-';
-    $results[] = "ID: {$cId} | Maint ID: <strong>{$mId}</strong> | Item #<strong>{$cNum}</strong> ({$cName}) | Checked: <strong>" . ($isDone ? '✓ (1)' : '❌ (0)') . "</strong> | Notes: {$cNote}";
+$results[] = '<hr><h5>Raw Top 3 Rows Maintenance_Checklists:</h5>';
+$rawTop = $client->getValues('Maintenance_Checklists!A1:Z3');
+foreach ($rawTop as $rIdx => $rVal) {
+    $results[] = "Row #" . ($rIdx + 1) . ": <code>" . htmlspecialchars(json_encode($rVal)) . "</code>";
+}
+
+$results[] = '<hr><h5>Raw Bottom Rows (A60:Z75) Maintenance_Checklists:</h5>';
+$rawBottom = $client->getValues('Maintenance_Checklists!A60:Z75');
+foreach ($rawBottom as $rIdx => $rVal) {
+    $results[] = "Row #" . ($rIdx + 60) . ": <code>" . htmlspecialchars(json_encode($rVal)) . "</code>";
 }
 
 // 3. Cek QR Tokens detail
