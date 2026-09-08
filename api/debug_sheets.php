@@ -21,13 +21,28 @@ if (!$client) {
 }
 
 // 2. Cek tab-tab
-$tabs = ['Cabang', 'Divisi', 'Karyawan', 'Kategori_Aset', 'Assets', 'Asset_QR_Tokens', 'Maintenance_Scan', 'Maintenance_Findings'];
+$tabs = ['Cabang', 'Divisi', 'Karyawan', 'Kategori_Aset', 'Assets', 'Asset_QR_Tokens', 'Maintenance_Scan', 'Maintenance_Checklists', 'Maintenance_Findings'];
 foreach ($tabs as $tab) {
     $data = $client->getSheetData($tab);
     $count = count($data);
     $results[] = ($count > 0)
         ? "✅ Tab <strong>{$tab}</strong> — {$count} baris data"
         : "⚠️ Tab <strong>{$tab}</strong> — KOSONG (0 baris)";
+}
+
+// 2b. Debug Data Maintenance_Scan & Maintenance_Checklists
+$results[] = '<hr><h5>Detail 5 Scan Terakhir:</h5>';
+$allScans = $client->getSheetData('Maintenance_Scan');
+$lastScans = array_slice($allScans, -5);
+foreach ($lastScans as $sc) {
+    $results[] = "Scan ID: <strong>" . ($sc['id'] ?? '?') . "</strong> | Asset ID: " . ($sc['asset_id'] ?? '?') . " | Tgl: " . ($sc['maintenance_date'] ?? '?') . " | Teknisi: " . ($sc['technician_name'] ?? '?');
+}
+
+$results[] = '<hr><h5>Detail 18 Checklist Terakhir:</h5>';
+$allChks = $client->getSheetData('Maintenance_Checklists');
+$lastChks = array_slice($allChks, -18);
+foreach ($lastChks as $ck) {
+    $results[] = "ID: " . ($ck['id'] ?? '?') . " | Maint ID: <strong>" . ($ck['maintenance_id'] ?? $ck['maintenance_scan_id'] ?? '?') . "</strong> | Item #" . ($ck['checklist_number'] ?? '?') . " (" . ($ck['checklist_name'] ?? '?') . ") | <strong>Checked: " . var_export($ck['checked'] ?? 'null', true) . "</strong> | Notes: " . ($ck['notes'] ?? '-');
 }
 
 // 3. Cek QR Tokens detail
