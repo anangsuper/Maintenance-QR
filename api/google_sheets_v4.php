@@ -236,7 +236,7 @@ class GoogleSheetsV4Client {
         }
 
         // 3. Ambil data dari Google Sheets API jika cache kedaluwarsa / force refresh
-        $rows = $this->getValues($sheetName . '!A1:Z1000');
+        $rows = $this->getValues($sheetName . '!A1:Z');
 
         // 4. Jika API gagal (misal rate limit/timeout), gunakan session cache sebelumnya agar data tidak hilang
         if (empty($rows)) {
@@ -247,20 +247,43 @@ class GoogleSheetsV4Client {
             return [];
         }
 
-        if (count($rows) <= 1) {
-            self::$runtimeCache[$sheetName] = [];
-            if (session_status() === PHP_SESSION_ACTIVE) {
-                $_SESSION['_gs_cache_' . $sheetName] = [];
-                $_SESSION['_gs_time_' . $sheetName] = time();
-            }
-            return [];
+        $defaultHeaders = [
+            'Cabang' => ['id', 'nama_cabang', 'alamat', 'telepon', 'penanggung_jawab'],
+            'Divisi' => ['id', 'nama_divisi', 'keterangan'],
+            'Karyawan' => ['id', 'nama_karyawan', 'cabang_id', 'divisi_id'],
+            'Kategori_Aset' => ['id', 'nama_kategori'],
+            'Assets' => ['id', 'kode_inventaris', 'nama_aset', 'kategori_id', 'cabang_id', 'divisi_id', 'karyawan_id', 'merk', 'model', 'serial_number', 'status'],
+            'Asset_QR_Tokens' => ['id', 'asset_id', 'token', 'label', 'is_active', 'created_at'],
+            'Maintenance_Scan' => ['id', 'asset_id', 'technician_user_id', 'technician_name', 'maintenance_date', 'maintenance_time', 'maintenance_month', 'maintenance_year', 'status', 'source', 'created_at', 'findings', 'recommendation'],
+            'Maintenance_Findings' => ['id', 'maintenance_scan_id', 'asset_id', 'kategori_temuan', 'deskripsi_temuan', 'tindakan_diperlukan', 'status', 'reported_by', 'reported_at', 'resolved_by', 'resolved_at', 'catatan_penyelesaian'],
+            'Maintenance_Checklists' => ['id', 'maintenance_id', 'asset_id', 'checklist_number', 'checklist_name', 'checked', 'notes', 'created_at'],
+            'Users' => ['id', 'username', 'password', 'nama', 'role', 'telepon', 'status', 'created_at'],
+        ];
+
+        $firstRow = $rows[0];
+        $firstCell = strtolower(trim((string)($firstRow[0] ?? '')));
+        // Deteksi apakah baris 0 adalah header teks atau data langsung (misal Maintenance_Checklists yang tidak memiliki header)
+        $isHeader = !is_numeric($firstCell) && ($firstCell === 'id' || $firstCell === 'no' || $firstCell === 'kode' || !empty($firstRow[0]));
+        if ($sheetName === 'Maintenance_Checklists' && (is_numeric($firstCell) || empty($firstCell))) {
+            $isHeader = false;
         }
 
-        $headers = $rows[0];
+        if ($isHeader) {
+            $headers = $firstRow;
+            $startIdx = 1;
+        } else {
+            $headers = $defaultHeaders[$sheetName] ?? [];
+            $startIdx = 0;
+        }
+
         $result = [];
-        for ($i = 1; $i < count($rows); $i++) {
+        for ($i = $startIdx; $i < count($rows); $i++) {
             $row = $rows[$i];
             $obj = ['_row_num' => $i + 1];
+            // Simpan indeks kolom numerik (col_0, col_1, ...) agar selalu dapat diakses secara pasti
+            foreach ($row as $colIdx => $colVal) {
+                $obj['col_' . $colIdx] = $colVal;
+            }
             foreach ($headers as $idx => $header) {
                 $val = $row[$idx] ?? '';
                 // Simpan key asli

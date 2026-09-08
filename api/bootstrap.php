@@ -2548,9 +2548,9 @@ function get_asset_yearly_card_matrix(int $assetId, int $year): array {
 
             $chkMap = [];
             foreach ($chkRows as $c) {
-                $mid = (int)($c['maintenance_id'] ?? $c['maintenance_scan_id'] ?? $c['id_maintenance'] ?? $c['log_id'] ?? $c['scan_id'] ?? 0);
-                $num = (int)($c['checklist_number'] ?? $c['number'] ?? $c['item_number'] ?? $c['no'] ?? $c['checklist_id'] ?? 0);
-                $isCh = strtolower(trim((string)($c['checked'] ?? $c['status'] ?? $c['is_checked'] ?? '0')));
+                $mid = (int)($c['maintenance_id'] ?? $c['maintenance_scan_id'] ?? $c['id_maintenance'] ?? $c['log_id'] ?? $c['scan_id'] ?? $c['col_1'] ?? 0);
+                $num = (int)($c['checklist_number'] ?? $c['number'] ?? $c['item_number'] ?? $c['no'] ?? $c['checklist_id'] ?? $c['col_3'] ?? 0);
+                $isCh = strtolower(trim((string)($c['checked'] ?? $c['status'] ?? $c['is_checked'] ?? $c['col_5'] ?? '0')));
                 $checked = in_array($isCh, ['1', 'true', 'yes', 'v', '✓', 'ok', 'selesai', 'normal', 'checked'], true) ? 1 : 0;
                 if ($mid > 0 && $num >= 1 && $num <= 9) {
                     if (!isset($chkMap[$mid])) {
@@ -2889,15 +2889,15 @@ function get_maintenance_detail(int $logId): ?array {
 
         $hasMatchingChecklistRows = false;
         foreach ($chkRows as $c) {
-            $mid = (int)($c['maintenance_id'] ?? $c['maintenance_scan_id'] ?? $c['id_maintenance'] ?? $c['log_id'] ?? $c['scan_id'] ?? 0);
+            $mid = (int)($c['maintenance_id'] ?? $c['maintenance_scan_id'] ?? $c['id_maintenance'] ?? $c['log_id'] ?? $c['scan_id'] ?? $c['col_1'] ?? 0);
             if ($mid === $logId) {
-                $cnum = (int)($c['checklist_number'] ?? $c['number'] ?? $c['item_number'] ?? $c['no'] ?? $c['checklist_id'] ?? 0);
+                $cnum = (int)($c['checklist_number'] ?? $c['number'] ?? $c['item_number'] ?? $c['no'] ?? $c['checklist_id'] ?? $c['col_3'] ?? 0);
                 if (isset($checklists[$cnum])) {
                     $hasMatchingChecklistRows = true;
-                    $isCh = strtolower(trim((string)($c['checked'] ?? $c['status'] ?? $c['is_checked'] ?? '0')));
+                    $isCh = strtolower(trim((string)($c['checked'] ?? $c['status'] ?? $c['is_checked'] ?? $c['col_5'] ?? '0')));
                     $isDone = in_array($isCh, ['1', 'true', 'yes', 'v', '✓', 'ok', 'selesai', 'normal', 'checked'], true);
                     $checklists[$cnum]['checked'] = $isDone ? 1 : 0;
-                    $checklists[$cnum]['notes'] = (string)($c['notes'] ?? $c['keterangan'] ?? $c['catatan'] ?? '');
+                    $checklists[$cnum]['notes'] = (string)($c['notes'] ?? $c['keterangan'] ?? $c['catatan'] ?? $c['col_6'] ?? '');
                 }
             }
         }
@@ -3058,11 +3058,11 @@ function update_maintenance_detail(int $logId, array $data): array {
         $existingMap = [];
         $maxChkId = 0;
         foreach ($chkRows as $c) {
-            $cid = (int)($c['id'] ?? 0);
+            $cid = (int)($c['id'] ?? $c['col_0'] ?? 0);
             if ($cid > $maxChkId) $maxChkId = $cid;
-            $mid = (int)($c['maintenance_id'] ?? $c['maintenance_scan_id'] ?? $c['id_maintenance'] ?? $c['log_id'] ?? 0);
+            $mid = (int)($c['maintenance_id'] ?? $c['maintenance_scan_id'] ?? $c['id_maintenance'] ?? $c['log_id'] ?? $c['col_1'] ?? 0);
             if ($mid === $logId) {
-                $cnum = (int)($c['checklist_number'] ?? $c['number'] ?? $c['item_number'] ?? $c['no'] ?? 0);
+                $cnum = (int)($c['checklist_number'] ?? $c['number'] ?? $c['item_number'] ?? $c['no'] ?? $c['col_3'] ?? 0);
                 if ($cnum > 0) {
                     $existingMap[$cnum] = (int)($c['_row_num'] ?? 0);
                 }
@@ -3453,7 +3453,7 @@ function get_audit_maintenance_data(array $filters): array {
         // Buat map checklist per maintenance_id
         $chkMap = [];
         foreach ($chkRows as $c) {
-            $mid = (int)($c['maintenance_id'] ?? $c['maintenance_scan_id'] ?? $c['id_maintenance'] ?? $c['log_id'] ?? $c['scan_id'] ?? 0);
+            $mid = (int)($c['maintenance_id'] ?? $c['maintenance_scan_id'] ?? $c['id_maintenance'] ?? $c['log_id'] ?? $c['scan_id'] ?? $c['col_1'] ?? 0);
             if ($mid > 0) {
                 $chkMap[$mid][] = $c;
             }
