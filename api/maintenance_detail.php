@@ -1,6 +1,6 @@
 <?php
 require __DIR__ . '/bootstrap.php';
-require_login();
+$isLoggedIn = is_logged_in();
 
 $id = max(0, (int)($_GET['id'] ?? 0));
 if ($id <= 0) {
@@ -15,11 +15,15 @@ unset($_SESSION['flash']);
 
 // Handle Edit / Update Checklist POST
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && (($_POST['action'] ?? '') === 'update_detail')) {
+    require_login();
     verify_csrf();
 
     $newStatus = trim((string)($_POST['status'] ?? 'Selesai'));
     $newFindings = trim((string)($_POST['findings'] ?? ''));
     $newRecommendation = trim((string)($_POST['recommendation'] ?? ''));
+    $newDate = trim((string)($_POST['maintenance_date'] ?? ''));
+    $newTime = trim((string)($_POST['maintenance_time'] ?? ''));
+    $newTechName = trim((string)($_POST['technician_name'] ?? ''));
 
     $newChecklists = [];
     $fixedItems = get_fixed_checklists();
@@ -36,15 +40,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (($_POST['action'] ?? '') === 'upda
         'status' => $newStatus,
         'findings' => $newFindings,
         'recommendation' => $newRecommendation,
+        'maintenance_date' => $newDate,
+        'maintenance_time' => $newTime,
+        'technician_name' => $newTechName,
         'checklists' => $newChecklists
     ]);
 
     if (!empty($res['success'])) {
-        $_SESSION['flash'] = "Data checklist maintenance #{$id} berhasil diperbarui.";
+        $_SESSION['flash'] = "Data maintenance #{$id} berhasil diperbarui.";
         header('Location: ' . module_url('maintenance_detail.php', ['id' => $id]));
         exit;
     } else {
-        $error = $res['error'] ?? 'Gagal memperbarui checklist maintenance.';
+        $error = $res['error'] ?? 'Gagal memperbarui data maintenance.';
     }
 }
 
@@ -108,8 +115,27 @@ $findings = $scan['findings'] ?? '-';
 $recommendation = $scan['recommendation'] ?? '-';
 $mType = $scan['source'] ?? $scan['maintenance_type'] ?? 'Maintenance';
 
+$karyawanList = get_karyawan_list();
+$techOptions = '';
+foreach ($karyawanList as $k) {
+    $kn = $k['nama_karyawan'] ?? $k['nama'] ?? '';
+    if ($kn !== '') {
+        $techOptions .= '<option value="'.e($kn).'">';
+    }
+}
+
 $flashHtml = $flash ? '<div class="alert alert-success alert-dismissible fade show no-print"><i class="bi bi-check-circle-fill me-2"></i>'.e($flash).'<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>' : '';
 $errorHtml = $error ? '<div class="alert alert-danger alert-dismissible fade show no-print"><i class="bi bi-exclamation-triangle-fill me-2"></i>'.e($error).'<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>' : '';
+
+$editBtnTop = $isLoggedIn
+    ? '<button type="button" class="btn btn-warning text-dark fw-bold" data-bs-toggle="modal" data-bs-target="#editChecklistModal"><i class="bi bi-pencil-square me-1"></i> Edit Data & Checklist</button>'
+    : '<a class="btn btn-outline-primary" href="'.e(module_url('login.php')).'"><i class="bi bi-box-arrow-in-right me-1"></i> Login untuk Edit</a>';
+
+$backBtnTop = $isLoggedIn
+    ? '<a class="btn btn-outline-secondary" href="'.e(module_url('audit.php')).'"><i class="bi bi-arrow-left me-1"></i> Riwayat Audit</a>'
+    : (!empty($asset['token'])
+        ? '<a class="btn btn-outline-secondary" href="'.e(module_url('scan.php', ['t' => $asset['token']])).'"><i class="bi bi-card-checklist me-1"></i> Kartu Perangkat</a>'
+        : '<a class="btn btn-outline-secondary" href="javascript:history.back()"><i class="bi bi-arrow-left me-1"></i> Kembali</a>');
 
 $body = '
 '.$flashHtml.'
@@ -124,8 +150,8 @@ $body = '
         <div class="text-secondary">Pencatatan 9 checklist pemeliharaan perangkat IT resmi untuk keperluan audit & verifikasi.</div>
       </div>
       <div class="d-flex gap-2">
-        <a class="btn btn-outline-secondary" href="'.e(module_url('audit.php')).'"><i class="bi bi-arrow-left me-1"></i> Riwayat Audit</a>
-        <button type="button" class="btn btn-warning text-dark fw-bold" data-bs-toggle="modal" data-bs-target="#editChecklistModal"><i class="bi bi-pencil-square me-1"></i> Edit Checklist</button>
+        '.$backBtnTop.'
+        '.$editBtnTop.'
         <button class="btn btn-primary fw-semibold" onclick="window.print()"><i class="bi bi-printer me-1"></i> Cetak Detail</button>
       </div>
     </div>
@@ -192,7 +218,7 @@ $body = '
       <!-- 3. Checklist 9 Item -->
       <div class="d-flex justify-content-between align-items-center mb-2">
         <h6 class="fw-bold text-dark mb-0"><i class="bi bi-check2-square text-primary me-1"></i>HASIL 9 CHECKLIST PEMELIHARAAN ('.$totalChecked.'/9 OK):</h6>
-        <button type="button" class="btn btn-sm btn-outline-primary no-print" data-bs-toggle="modal" data-bs-target="#editChecklistModal"><i class="bi bi-pencil me-1"></i> Ubah Catatan Checklist</button>
+        '.($isLoggedIn ? '<button type="button" class="btn btn-sm btn-outline-primary no-print" data-bs-toggle="modal" data-bs-target="#editChecklistModal"><i class="bi bi-pencil me-1"></i> Ubah Catatan Checklist</button>' : '').'
       </div>
       
       <div class="table-responsive rounded-3 border mb-4">
@@ -227,9 +253,12 @@ $body = '
     </div>
 
   </div>
-</div>
+</div>';
 
-<!-- Modal Edit Checklist -->
+// Render Modal Edit jika pengguna sudah login
+if ($isLoggedIn) {
+    $body .= '
+<!-- Modal Edit Checklist & Data Maintenance -->
 <div class="modal fade" id="editChecklistModal" tabindex="-1" aria-labelledby="editChecklistModalLabel" aria-hidden="true">
   <div class="modal-dialog modal-lg modal-dialog-centered">
     <div class="modal-content border-0 shadow">
@@ -238,11 +267,33 @@ $body = '
         <input type="hidden" name="action" value="update_detail">
 
         <div class="modal-header bg-primary text-white">
-          <h5 class="modal-title fw-bold" id="editChecklistModalLabel"><i class="bi bi-pencil-square me-2"></i>Perbarui 9 Checklist Maintenance #'.$id.'</h5>
+          <h5 class="modal-title fw-bold" id="editChecklistModalLabel"><i class="bi bi-pencil-square me-2"></i>Perbarui Data Maintenance & Checklist #'.$id.'</h5>
           <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
 
         <div class="modal-body p-4">
+          <!-- 1. Edit Tanggal & Petugas Pelaksana -->
+          <div class="p-3 bg-light rounded-3 border mb-4">
+            <h6 class="fw-bold text-dark mb-2"><i class="bi bi-calendar-event text-primary me-2"></i>Waktu Pelaksanaan & Petugas:</h6>
+            <div class="row g-3">
+              <div class="col-md-4">
+                <label class="form-label small fw-bold text-secondary">Tanggal Pelaksanaan <span class="text-danger">*</span></label>
+                <input type="date" class="form-control" name="maintenance_date" value="'.e(substr((string)($scan['maintenance_date'] ?? ''), 0, 10)).'" required>
+                <div class="form-text text-muted" style="font-size: 0.73rem;">Dapat diubah jika scan QR terlambat / beda hari. Bulan pada Kartu Kontrol akan otomatis disesuaikan.</div>
+              </div>
+              <div class="col-md-4">
+                <label class="form-label small fw-bold text-secondary">Jam / Waktu</label>
+                <input type="time" class="form-control" name="maintenance_time" value="'.e(substr((string)($scan['maintenance_time'] ?? '10:00'), 0, 5)).'">
+              </div>
+              <div class="col-md-4">
+                <label class="form-label small fw-bold text-secondary">Petugas / Teknisi <span class="text-danger">*</span></label>
+                <input type="text" class="form-control" name="technician_name" list="listTeknisiEdit" value="'.e($techName).'" required placeholder="Nama petugas">
+                <datalist id="listTeknisiEdit">'.$techOptions.'</datalist>
+              </div>
+            </div>
+          </div>
+
+          <!-- 2. Status, Temuan, Rekomendasi -->
           <div class="row g-3 mb-4">
             <div class="col-md-4">
               <label class="form-label fw-bold">Status Hasil Maintenance</label>
@@ -271,12 +322,12 @@ $body = '
 
         <div class="modal-footer bg-light">
           <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Batal</button>
-          <button type="submit" class="btn btn-primary fw-bold px-4"><i class="bi bi-save me-1"></i> Simpan Perubahan Checklist</button>
+          <button type="submit" class="btn btn-primary fw-bold px-4"><i class="bi bi-save me-1"></i> Simpan Perubahan</button>
         </div>
       </form>
     </div>
   </div>
-</div>
-';
+</div>';
+}
 
-render_page('Detail Maintenance #' . $id, $body);
+render_page('Detail Maintenance #' . $id, $body, '', '', $isLoggedIn);

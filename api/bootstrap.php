@@ -2953,6 +2953,10 @@ function update_maintenance_detail(int $logId, array $data): array {
     $fixedItems = get_fixed_checklists();
     $defaultNotes = get_fixed_checklist_default_notes();
 
+    $newDate = !empty($data['maintenance_date']) ? substr(trim((string)$data['maintenance_date']), 0, 10) : '';
+    $newTime = !empty($data['maintenance_time']) ? substr(trim((string)$data['maintenance_time']), 0, 8) : '';
+    $newTechName = isset($data['technician_name']) ? trim((string)$data['technician_name']) : '';
+
     if (is_google_cloud_mode()) {
         $client = google_sheets_v4_client();
         if (!$client) return ['success' => false, 'error' => 'Google Sheets client tidak tersedia'];
@@ -2974,12 +2978,18 @@ function update_maintenance_detail(int $logId, array $data): array {
 
         $assetId = (int)($targetScan['asset_id'] ?? 0);
         $userId = (int)($targetScan['technician_user_id'] ?? 0);
-        $techName = (string)($targetScan['technician_name'] ?? '');
+        $techName = $newTechName !== '' ? $newTechName : (string)($targetScan['technician_name'] ?? '');
         $date = (string)($targetScan['maintenance_date'] ?? date('Y-m-d'));
-        $time = (string)($targetScan['maintenance_time'] ?? date('H:i:s'));
+        $time = $newTime !== '' ? $newTime : (string)($targetScan['maintenance_time'] ?? date('H:i:s'));
         $month = (int)($targetScan['maintenance_month'] ?? date('n'));
         $year = (int)($targetScan['maintenance_year'] ?? date('Y'));
         $mType = (string)($targetScan['source'] ?? $targetScan['maintenance_type'] ?? 'Maintenance');
+
+        if ($newDate !== '' && preg_match('/^\d{4}-\d{2}-\d{2}$/', $newDate)) {
+            $date = $newDate;
+            $month = (int)date('n', strtotime($newDate));
+            $year = (int)date('Y', strtotime($newDate));
+        }
 
         $client->updateValues("Maintenance_Scan!A{$scanRowNum}:M{$scanRowNum}", [[
             $logId,
@@ -3064,12 +3074,46 @@ function update_maintenance_detail(int $logId, array $data): array {
 
     // MySQL Mode
     try {
-        $st = db()->prepare("
-            UPDATE maintenance_scan
-            SET status = ?, findings = ?, recommendation = ?
-            WHERE id = ?
-        ");
-        $st->execute([$status, $findings, $recommendation, $logId]);
+        // Pastikan kolom baru tersedia
+        try {
+            $cols = table_columns('maintenance_scan');
+            if (!empty($cols) && !in_array('technician_name', $cols, true)) {
+                db()->exec("ALTER TABLE maintenance_scan ADD COLUMN technician_name VARCHAR(150) NULL");
+            }
+            if (!empty($cols) && !in_array('findings', $cols, true)) {
+                db()->exec("ALTER TABLE maintenance_scan ADD COLUMN findings TEXT NULL");
+            }
+            if (!empty($cols) && !in_array('recommendation', $cols, true)) {
+                db()->exec("ALTER TABLE maintenance_scan ADD COLUMN recommendation TEXT NULL");
+            }
+        } catch (Throwable $e) {}
+
+        $updates = ["status = ?", "findings = ?", "recommendation = ?"];
+        $params = [$status, $findings, $recommendation];
+
+        if ($newDate !== '' && preg_match('/^\d{4}-\d{2}-\d{2}$/', $newDate)) {
+            $month = (int)date('n', strtotime($newDate));
+            $year = (int)date('Y', strtotime($newDate));
+            $updates[] = "maintenance_date = ?";
+            $updates[] = "maintenance_month = ?";
+            $updates[] = "maintenance_year = ?";
+            $params[] = $newDate;
+            $params[] = $month;
+            $params[] = $year;
+        }
+        if ($newTime !== '') {
+            $updates[] = "maintenance_time = ?";
+            $params[] = $newTime;
+        }
+        if ($newTechName !== '') {
+            $updates[] = "technician_name = ?";
+            $params[] = $newTechName;
+        }
+
+        $params[] = $logId;
+        $sql = "UPDATE maintenance_scan SET " . implode(', ', $updates) . " WHERE id = ?";
+        $st = db()->prepare($sql);
+        $st->execute($params);
 
         // Get asset_id
         $scanSt = db()->prepare("SELECT asset_id FROM maintenance_scan WHERE id = ? LIMIT 1");
@@ -3099,7 +3143,11 @@ function update_maintenance_detail(int $logId, array $data): array {
 
         return ['success' => true];
     } catch (Throwable $e) {
-        return ['success' => false, 'error' => $e->getMessage()];
+        $msg = $e->getMessage();
+        if (stripos($msg, 'Duplicate entry') !== false || stripos($msg, 'uq_maintenance_asset_period') !== false) {
+            $msg = 'Sudah ada data maintenance untuk perangkat ini pada periode bulan/tahun yang dipilih.';
+        }
+        return ['success' => false, 'error' => $msg];
     }
 }
 

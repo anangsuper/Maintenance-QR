@@ -27,33 +27,6 @@ $monthNames = [
 ];
 $monthName = $monthNames[$month] ?? date('F');
 
-// =========================================================================
-// 0. PROSES LOGIN POPUP TEKNISI (AJAX / POST)
-// =========================================================================
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && (($_POST['action'] ?? '') === 'ajax_login' || ($_POST['action'] ?? '') === 'modal_login')) {
-    $username = trim((string)($_POST['username'] ?? ''));
-    $password = trim((string)($_POST['password'] ?? ''));
-    $targetAction = trim((string)($_POST['target_action'] ?? 'start'));
-
-    $res = authenticate_user($username, $password);
-
-    if (!empty($_POST['is_ajax'])) {
-        header('Content-Type: application/json; charset=utf-8');
-        if (!empty($res['success'])) {
-            $redirectUrl = module_url('scan.php', ['t' => $token, 'action' => ($targetAction ?: 'start')]);
-            echo json_encode(['success' => true, 'redirect' => $redirectUrl, 'name' => $res['name'] ?? $username]);
-        } else {
-            echo json_encode(['success' => false, 'error' => $res['error'] ?? 'Username atau password salah.']);
-        }
-        exit;
-    }
-
-    if (!empty($res['success'])) {
-        $redirectUrl = module_url('scan.php', ['t' => $token, 'action' => ($targetAction ?: 'start')]);
-        header('Location: ' . $redirectUrl);
-        exit;
-    }
-}
 
 // =========================================================================
 // 1. PROSES SIMPAN FORM MAINTENANCE (POST)
@@ -62,16 +35,11 @@ $successData = null;
 $error = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && (($_POST['action'] ?? '') === 'save_maintenance')) {
-    if (!is_logged_in()) {
-        header('Location: ' . module_url('scan.php', ['t' => $token, 'open_login' => 1, 'target_action' => 'start']));
-        exit;
-    }
-
     verify_csrf();
 
     $techName = trim((string)($_POST['technician_name'] ?? ''));
     if ($techName === '') {
-        $techName = current_user_name();
+        $techName = is_logged_in() ? current_user_name() : 'Teknisi';
     }
     $mDate = trim((string)($_POST['maintenance_date'] ?? $currentDateStr));
     $mStatus = trim((string)($_POST['status'] ?? 'Selesai'));
@@ -93,7 +61,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (($_POST['action'] ?? '') === 'save
 
     $payload = [
         'asset_id' => $assetId,
-        'technician_user_id' => current_user_id(),
+        'technician_user_id' => is_logged_in() ? current_user_id() : 0,
         'technician_name' => $techName,
         'maintenance_date' => $mDate,
         'maintenance_time' => date('H:i:s'),
@@ -183,12 +151,8 @@ $autoOpenLogin = trim((string)($_GET['open_login'] ?? ''));
 // 3. TAMPILAN FORM CHECKLIST 9 ITEM (action = start ATAU form)
 // =========================================================================
 if ($action === 'start' || $action === 'form' || $action === 'ulang') {
-    // Jika belum login, jangan redirect ke website login penuh, tapi tampilkan pop-up login
-    if (!is_logged_in()) {
-        $autoOpenLogin = $action;
-    } else {
-        $fixedItems = get_fixed_checklists();
-        $isUlang = ($action === 'ulang' || ($currentMonthLog && $action === 'start'));
+    $fixedItems = get_fixed_checklists();
+    $isUlang = ($action === 'ulang' || ($currentMonthLog && $action === 'start'));
 
     $itemIcons = [
         1 => 'bi-shield-check',
@@ -283,7 +247,7 @@ if ($action === 'start' || $action === 'form' || $action === 'ulang') {
         </div>';
     }
 
-    $techDefault = current_user_name();
+    $techDefault = is_logged_in() ? current_user_name() : '';
     $karyawanList = get_karyawan_list();
     $techOptions = '';
     foreach ($karyawanList as $k) {
@@ -414,9 +378,10 @@ if ($action === 'start' || $action === 'form' || $action === 'ulang') {
                 <input type="date" class="form-control py-2" name="maintenance_date" value="'.$currentDateStr.'" required>
               </div>
               <div class="col-md-6">
-                <label class="form-label small fw-bold text-secondary">Petugas / Teknisi</label>
-                <input type="text" class="form-control py-2" name="technician_name" list="listTeknisi" value="'.e($techDefault).'" placeholder="Nama teknisi" required>
+                <label class="form-label small fw-bold text-secondary"><i class="bi bi-person me-1"></i>Petugas / Teknisi <span class="text-danger">*</span></label>
+                <input type="text" class="form-control py-2" name="technician_name" list="listTeknisi" value="'.e($techDefault).'" placeholder="Ketik atau pilih nama petugas..." required>
                 <datalist id="listTeknisi">'.$techOptions.'</datalist>
+                <div class="form-text text-muted" style="font-size: 0.75rem;">Pilih nama dari daftar atau ketikkan nama Anda.</div>
               </div>
             </div>
 
@@ -542,7 +507,6 @@ if ($action === 'start' || $action === 'form' || $action === 'ulang') {
 
     render_page($formTitle, $body, $formHeadStyle, $formScript, false);
     exit;
-  }
 }
 
 // =========================================================================
@@ -570,9 +534,7 @@ if ($currentMonthLog) {
         ? '<a class="btn btn-primary fw-semibold" href="'.e(module_url('maintenance_detail.php', ['id' => $cLogId])).'"><i class="bi bi-file-earmark-text me-1"></i> DETAIL LENGKAP AUDIT</a>'
         : '';
 
-    $btnUlang = $loggedIn
-        ? '<a class="btn btn-outline-primary fw-semibold" href="'.e(module_url('scan.php', ['t' => $token, 'action' => 'ulang'])).'"><i class="bi bi-arrow-repeat me-1"></i> MAINTENANCE ULANG</a>'
-        : '<button type="button" class="btn btn-outline-primary fw-semibold" onclick="openLoginModal(\'ulang\')"><i class="bi bi-arrow-repeat me-1"></i> MAINTENANCE ULANG</button>';
+    $btnUlang = '<a class="btn btn-outline-primary fw-semibold" href="'.e(module_url('scan.php', ['t' => $token, 'action' => 'ulang'])).'"><i class="bi bi-arrow-repeat me-1"></i> MAINTENANCE ULANG</a>';
 
     $statusCardHtml = '
     <div class="card border-0 shadow-sm mb-4 bg-success bg-opacity-10 border-start border-success border-4 p-3 p-md-4">
@@ -592,16 +554,10 @@ if ($currentMonthLog) {
       </div>
     </div>';
 } else {
-    if ($loggedIn) {
-        $btnStartAction = '<a class="btn btn-success btn-lg fw-bold py-3 px-4 shadow-sm w-100" href="'.e(module_url('scan.php', ['t' => $token, 'action' => 'start'])).'">
-          <i class="bi bi-play-circle-fill me-2"></i> MULAI MAINTENANCE SEKARANG
-        </a>';
-    } else {
-        $btnStartAction = '<button type="button" class="btn btn-success btn-lg fw-bold py-3 px-4 shadow-sm w-100" onclick="openLoginModal(\'start\')">
-          <i class="bi bi-play-circle-fill me-2"></i> MULAI MAINTENANCE SEKARANG
-        </button>
-        <div class="text-center mt-2"><small class="text-muted"><i class="bi bi-shield-lock me-1"></i>Teknisi cukup login sekali lewat pop-up untuk mulai mengisi checklist.</small></div>';
-    }
+    $btnStartAction = '<a class="btn btn-success btn-lg fw-bold py-3 px-4 shadow-sm w-100" href="'.e(module_url('scan.php', ['t' => $token, 'action' => 'start'])).'">
+      <i class="bi bi-play-circle-fill me-2"></i> MULAI MAINTENANCE SEKARANG
+    </a>
+    <div class="text-center mt-2"><small class="text-muted"><i class="bi bi-check2-circle text-success me-1"></i>Cukup pilih/masukkan nama petugas saat mengisi checklist (tidak wajib login).</small></div>';
 
     $statusCardHtml = '
     <div class="card border-0 shadow-sm mb-4 bg-danger bg-opacity-10 border-start border-danger border-4 p-3 p-md-4">
@@ -720,8 +676,8 @@ $userStatusStrip = $loggedIn
          </div>
        </div>'
     : '<div class="d-flex flex-wrap justify-content-between align-items-center bg-white p-2 px-3 rounded-3 shadow-sm mb-3 border gap-2">
-         <span class="small text-secondary"><i class="bi bi-info-circle text-primary me-1"></i> Mode Cek Info Perangkat (Publik / Karyawan)</span>
-         <button type="button" class="btn btn-sm btn-primary fw-semibold shadow-sm" onclick="openLoginModal(\'start\')"><i class="bi bi-box-arrow-in-right me-1"></i> Login Teknisi / Admin</button>
+         <span class="small text-secondary"><i class="bi bi-info-circle text-primary me-1"></i> Mode Cek Info Perangkat</span>
+         <a href="'.e(module_url('login.php')).'" class="btn btn-sm btn-outline-secondary"><i class="bi bi-box-arrow-in-right me-1"></i> Login Admin</a>
        </div>';
 
 $body = '
@@ -861,168 +817,5 @@ $body = '
 
   </div>
 </div>';
-
-$modalLoginHtml = '
-<!-- Modal Pop-up Login Teknisi IT -->
-<div class="modal fade" id="technicianLoginModal" tabindex="-1" aria-labelledby="techLoginModalLabel" aria-hidden="true" data-bs-backdrop="static">
-  <div class="modal-dialog modal-dialog-centered" style="max-width: 410px;">
-    <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
-      
-      <!-- Modal Header -->
-      <div class="modal-header border-0 pb-0 pt-4 px-4 position-relative">
-        <div class="w-100 text-center">
-          <div class="d-inline-flex align-items-center justify-content-center bg-primary bg-opacity-10 text-primary rounded-circle mb-2" style="width: 58px; height: 58px;">
-            <i class="bi bi-shield-lock-fill fs-2"></i>
-          </div>
-          <h5 class="modal-title fw-bold text-dark mb-1" id="techLoginModalLabel">Login Teknisi IT</h5>
-          <p class="text-secondary small mb-0">Masuk untuk mengisi checklist pemeliharaan perangkat ini.</p>
-        </div>
-        <button type="button" class="btn-close position-absolute top-0 end-0 m-3" data-bs-dismiss="modal" aria-label="Tutup"></button>
-      </div>
-
-      <!-- Modal Body -->
-      <div class="modal-body p-4 pt-3">
-        <div id="loginModalAlert" class="alert alert-danger py-2 px-3 small d-none mb-3 border-0 shadow-sm">
-          <i class="bi bi-exclamation-triangle-fill me-1"></i>
-          <span id="loginModalAlertText"></span>
-        </div>
-
-        <form id="techLoginForm" onsubmit="handleTechLogin(event)">
-          <input type="hidden" name="action" value="ajax_login">
-          <input type="hidden" name="is_ajax" value="1">
-          <input type="hidden" name="t" value="'.e($token).'">
-          <input type="hidden" id="modalTargetAction" name="target_action" value="start">
-
-          <div class="mb-3">
-            <label class="form-label small fw-bold text-secondary mb-1">Username / NIK</label>
-            <div class="input-group">
-              <span class="input-group-text bg-light border-end-0 text-secondary"><i class="bi bi-person-fill"></i></span>
-              <input type="text" name="username" id="modalUsername" class="form-control border-start-0 ps-0 bg-light" placeholder="Masukkan username" required autocomplete="username">
-            </div>
-          </div>
-
-          <div class="mb-3">
-            <label class="form-label small fw-bold text-secondary mb-1">Password</label>
-            <div class="input-group">
-              <span class="input-group-text bg-light border-end-0 text-secondary"><i class="bi bi-key-fill"></i></span>
-              <input type="password" name="password" id="modalPassword" class="form-control border-start-0 border-end-0 ps-0 bg-light" placeholder="Masukkan password" required autocomplete="current-password">
-              <button type="button" class="btn btn-outline-secondary border-start-0 bg-light text-secondary" onclick="toggleModalPassword()" title="Lihat Password">
-                <i class="bi bi-eye" id="togglePasswordIcon"></i>
-              </button>
-            </div>
-          </div>
-
-          <button type="submit" id="btnSubmitModalLogin" class="btn btn-primary fw-bold py-2 px-3 w-100 shadow-sm rounded-3 mt-2">
-            <i class="bi bi-box-arrow-in-right me-1"></i> Masuk & Mulai Maintenance
-          </button>
-        </form>
-
-        <div class="text-center mt-3 pt-2 border-top">
-          <small class="text-muted d-block" style="font-size: 0.78rem;">
-            <i class="bi bi-info-circle me-1"></i>Hanya akun <strong>Teknisi</strong> atau <strong>Admin</strong> yang dapat mengisi checklist.
-          </small>
-        </div>
-      </div>
-
-    </div>
-  </div>
-</div>';
-
-$body .= $modalLoginHtml;
-
-$mainScript = '
-<script>
-var loginModalInstance = null;
-
-function getLoginModal() {
-  var el = document.getElementById("technicianLoginModal");
-  if (!el) return null;
-  if (!loginModalInstance && typeof bootstrap !== "undefined") {
-    loginModalInstance = new bootstrap.Modal(el);
-  }
-  return loginModalInstance;
-}
-
-function openLoginModal(targetAction) {
-  var targetInp = document.getElementById("modalTargetAction");
-  if (targetInp) targetInp.value = targetAction || "start";
-
-  var alertBox = document.getElementById("loginModalAlert");
-  if (alertBox) alertBox.classList.add("d-none");
-
-  var passInp = document.getElementById("modalPassword");
-  if (passInp) passInp.value = "";
-
-  var modal = getLoginModal();
-  if (modal) {
-    modal.show();
-    setTimeout(function() {
-      var u = document.getElementById("modalUsername");
-      if (u) u.focus();
-    }, 350);
-  }
-}
-
-function toggleModalPassword() {
-  var passInp = document.getElementById("modalPassword");
-  var icon = document.getElementById("togglePasswordIcon");
-  if (!passInp || !icon) return;
-  if (passInp.type === "password") {
-    passInp.type = "text";
-    icon.className = "bi bi-eye-slash";
-  } else {
-    passInp.type = "password";
-    icon.className = "bi bi-eye";
-  }
-}
-
-async function handleTechLogin(e) {
-  e.preventDefault();
-  var form = document.getElementById("techLoginForm");
-  var btn = document.getElementById("btnSubmitModalLogin");
-  var alertBox = document.getElementById("loginModalAlert");
-  var alertText = document.getElementById("loginModalAlertText");
-
-  if (alertBox) alertBox.classList.add("d-none");
-  var origHtml = btn.innerHTML;
-  btn.disabled = true;
-  btn.innerHTML = "<span class=\"spinner-border spinner-border-sm me-2\" role=\"status\" aria-hidden=\"true\"></span>Memverifikasi...";
-
-  try {
-    var formData = new FormData(form);
-    var res = await fetch(window.location.href, {
-      method: "POST",
-      body: formData
-    });
-    var data = await res.json();
-    if (data.success) {
-      btn.className = "btn btn-success fw-bold py-2 px-3 w-100 shadow-sm rounded-3 mt-2";
-      btn.innerHTML = "<i class=\"bi bi-check2-circle me-1\"></i> Berhasil Masuk! Membuka form...";
-      setTimeout(function() {
-        window.location.href = data.redirect || window.location.href;
-      }, 400);
-    } else {
-      btn.disabled = false;
-      btn.innerHTML = origHtml;
-      if (alertBox && alertText) {
-        alertText.textContent = data.error || "Username atau password salah.";
-        alertBox.classList.remove("d-none");
-      }
-    }
-  } catch (err) {
-    btn.disabled = false;
-    btn.innerHTML = origHtml;
-    form.submit();
-  }
-}
-
-document.addEventListener("DOMContentLoaded", function() {
-  var autoOpen = ' . json_encode($autoOpenLogin) . ';
-  if (autoOpen) {
-    openLoginModal(autoOpen);
-  }
-});
-</script>';
-
-render_page('Detail Perangkat · ' . ($asset['kode_inventaris'] ?? 'QR'), $body, $headStyle, $mainScript, false);
+render_page('Detail Perangkat · ' . ($asset['kode_inventaris'] ?? 'QR'), $body, $headStyle, '', false);
 
