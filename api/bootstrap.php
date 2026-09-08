@@ -2548,34 +2548,64 @@ function get_asset_yearly_card_matrix(int $assetId, int $year): array {
 
             $chkMap = [];
             foreach ($chkRows as $c) {
-                $mid = (int)($c['maintenance_id'] ?? 0);
-                $num = (int)($c['checklist_number'] ?? 0);
-                $checked = !empty($c['checked']) ? 1 : 0;
+                $mid = (int)($c['maintenance_id'] ?? $c['maintenance_scan_id'] ?? $c['id_maintenance'] ?? $c['log_id'] ?? $c['scan_id'] ?? 0);
+                $num = (int)($c['checklist_number'] ?? $c['number'] ?? $c['item_number'] ?? $c['no'] ?? $c['checklist_id'] ?? 0);
+                $isCh = strtolower(trim((string)($c['checked'] ?? $c['status'] ?? $c['is_checked'] ?? '0')));
+                $checked = in_array($isCh, ['1', 'true', 'yes', 'v', '✓', 'ok', 'selesai', 'normal', 'checked'], true) ? 1 : 0;
                 if ($mid > 0 && $num >= 1 && $num <= 9) {
+                    if (!isset($chkMap[$mid])) {
+                        $chkMap[$mid] = [1=>0, 2=>0, 3=>0, 4=>0, 5=>0, 6=>0, 7=>0, 8=>0, 9=>0];
+                    }
                     $chkMap[$mid][$num] = $checked;
                 }
             }
 
+            // Filter & urutkan scan agar scan terbaru pada bulan tersebut yang digunakan
+            $assetScans = [];
             foreach ($scans as $s) {
                 if ((int)($s['asset_id'] ?? 0) === $assetId) {
                     $sYear = (int)($s['maintenance_year'] ?? (int)date('Y', strtotime($s['maintenance_date'] ?? '')));
-                    $sMonth = (int)($s['maintenance_month'] ?? (int)date('n', strtotime($s['maintenance_date'] ?? '')));
-                    if ($sYear === $year && isset($matrix[$sMonth])) {
-                        $logId = (int)($s['id'] ?? 0);
-                        $d = substr((string)($s['maintenance_date'] ?? ''), 0, 10);
-                        $dDay = $d ? date('d', strtotime($d)) : '';
-                        $dateFormatted = $dDay ? "{$dDay}/" . sprintf('%02d/%s', $sMonth, $yrSuffix) : sprintf('/%02d/%s', $sMonth, $yrSuffix);
+                    if ($sYear === $year) {
+                        $assetScans[] = $s;
+                    }
+                }
+            }
 
-                        $matrix[$sMonth]['is_done'] = true;
-                        $matrix[$sMonth]['log_id'] = $logId;
-                        $matrix[$sMonth]['date_str'] = $dateFormatted;
-                        $matrix[$sMonth]['paraf'] = $s['technician_name'] ?? 'Teknisi';
-                        $matrix[$sMonth]['status'] = $s['status'] ?? 'Selesai';
-                        if (isset($chkMap[$logId])) {
-                            $matrix[$sMonth]['checklists'] = $chkMap[$logId];
-                        } else {
-                            $matrix[$sMonth]['checklists'] = [1=>1, 2=>1, 3=>1, 4=>1, 5=>1, 6=>1, 7=>1, 8=>1, 9=>1];
-                        }
+            usort($assetScans, function($a, $b) {
+                $da = ($a['maintenance_date'] ?? '') . ' ' . ($a['maintenance_time'] ?? '');
+                $db = ($b['maintenance_date'] ?? '') . ' ' . ($b['maintenance_time'] ?? '');
+                if ($da === $db) {
+                    return ((int)($a['id'] ?? 0)) <=> ((int)($b['id'] ?? 0));
+                }
+                return strcmp($da, $db);
+            });
+
+            foreach ($assetScans as $s) {
+                $sMonth = (int)($s['maintenance_month'] ?? (int)date('n', strtotime($s['maintenance_date'] ?? '')));
+                if (isset($matrix[$sMonth])) {
+                    $logId = (int)($s['id'] ?? 0);
+                    $d = substr((string)($s['maintenance_date'] ?? ''), 0, 10);
+                    $dDay = $d ? date('d', strtotime($d)) : '';
+                    $dateFormatted = $dDay ? "{$dDay}/" . sprintf('%02d/%s', $sMonth, $yrSuffix) : sprintf('/%02d/%s', $sMonth, $yrSuffix);
+
+                    $matrix[$sMonth]['is_done'] = true;
+                    $matrix[$sMonth]['log_id'] = $logId;
+                    $matrix[$sMonth]['date_str'] = $dateFormatted;
+                    $matrix[$sMonth]['paraf'] = $s['technician_name'] ?? 'Teknisi';
+                    $matrix[$sMonth]['status'] = $s['status'] ?? 'Selesai';
+
+                    if (isset($chkMap[$logId])) {
+                        $matrix[$sMonth]['checklists'] = $chkMap[$logId];
+                    } else {
+                        // Fallback jika memang tidak ada data checklist terpisah (misal log lama)
+                        $scanStatus = trim((string)($s['status'] ?? 'Selesai'));
+                        $isCompleted = ($scanStatus === 'Selesai' || $scanStatus === 'Normal' || $scanStatus === 'OK' || $scanStatus === '');
+                        $defVal = $isCompleted ? 1 : 0;
+                        $matrix[$sMonth]['checklists'] = [
+                            1 => $defVal, 2 => $defVal, 3 => $defVal,
+                            4 => $defVal, 5 => $defVal, 6 => $defVal,
+                            7 => $defVal, 8 => $defVal, 9 => $defVal
+                        ];
                     }
                 }
             }
@@ -2588,7 +2618,7 @@ function get_asset_yearly_card_matrix(int $assetId, int $year): array {
         SELECT ms.* 
         FROM maintenance_scan ms
         WHERE ms.asset_id = ? AND ms.maintenance_year = ?
-        ORDER BY ms.maintenance_date ASC
+        ORDER BY ms.maintenance_date ASC, ms.id ASC
     ");
     $st->execute([$assetId, $year]);
     $scans = $st->fetchAll();
@@ -2610,12 +2640,24 @@ function get_asset_yearly_card_matrix(int $assetId, int $year): array {
             $chkSt = db()->prepare("SELECT checklist_number, checked FROM maintenance_checklists WHERE maintenance_id = ?");
             $chkSt->execute([$logId]);
             $chks = $chkSt->fetchAll();
-            if ($chks) {
+            if (!empty($chks)) {
+                $mChecklists = [1=>0, 2=>0, 3=>0, 4=>0, 5=>0, 6=>0, 7=>0, 8=>0, 9=>0];
                 foreach ($chks as $c) {
-                    $matrix[$sMonth]['checklists'][(int)$c['checklist_number']] = (int)$c['checked'];
+                    $cNum = (int)$c['checklist_number'];
+                    if ($cNum >= 1 && $cNum <= 9) {
+                        $mChecklists[$cNum] = (int)$c['checked'];
+                    }
                 }
+                $matrix[$sMonth]['checklists'] = $mChecklists;
             } else {
-                $matrix[$sMonth]['checklists'] = [1=>1, 2=>1, 3=>1, 4=>1, 5=>1, 6=>1, 7=>1, 8=>1, 9=>1];
+                $scanStatus = trim((string)($s['status'] ?: 'Selesai'));
+                $isCompleted = ($scanStatus === 'Selesai' || $scanStatus === 'Normal' || $scanStatus === 'OK' || $scanStatus === '');
+                $defVal = $isCompleted ? 1 : 0;
+                $matrix[$sMonth]['checklists'] = [
+                    1 => $defVal, 2 => $defVal, 3 => $defVal,
+                    4 => $defVal, 5 => $defVal, 6 => $defVal,
+                    7 => $defVal, 8 => $defVal, 9 => $defVal
+                ];
             }
         }
     }
@@ -2845,26 +2887,24 @@ function get_maintenance_detail(int $logId): ?array {
             ];
         }
 
-        $foundCount = 0;
+        $hasMatchingChecklistRows = false;
         foreach ($chkRows as $c) {
             $mid = (int)($c['maintenance_id'] ?? $c['maintenance_scan_id'] ?? $c['id_maintenance'] ?? $c['log_id'] ?? $c['scan_id'] ?? 0);
             if ($mid === $logId) {
                 $cnum = (int)($c['checklist_number'] ?? $c['number'] ?? $c['item_number'] ?? $c['no'] ?? $c['checklist_id'] ?? 0);
                 if (isset($checklists[$cnum])) {
+                    $hasMatchingChecklistRows = true;
                     $isCh = strtolower(trim((string)($c['checked'] ?? $c['status'] ?? $c['is_checked'] ?? '0')));
-                    $isDone = ($isCh === '1' || $isCh === 'true' || $isCh === 'yes' || $isCh === 'v' || $isCh === '✓' || $isCh === 'ok' || $isCh === 'selesai' || $isCh === 'normal');
+                    $isDone = in_array($isCh, ['1', 'true', 'yes', 'v', '✓', 'ok', 'selesai', 'normal', 'checked'], true);
                     $checklists[$cnum]['checked'] = $isDone ? 1 : 0;
                     $checklists[$cnum]['notes'] = (string)($c['notes'] ?? $c['keterangan'] ?? $c['catatan'] ?? '');
-                    if ($checklists[$cnum]['checked'] || $checklists[$cnum]['notes'] !== '') {
-                        $foundCount++;
-                    }
                 }
             }
         }
 
-        // Fallback cerdas: Jika belum ada baris terpisah di tab Maintenance_Checklists
-        // (misal log lama / scan cepat), isi otomatis sesuai status hasil maintenance
-        if ($foundCount === 0) {
+        // Fallback cerdas: HANYA jika memang belum ada baris terpisah sama sekali di tab Maintenance_Checklists
+        // (misal log lama / scan cepat tanpa checklist)
+        if (!$hasMatchingChecklistRows) {
             $scanStatus = trim((string)($targetScan['status'] ?? 'Selesai'));
             $isCompleted = ($scanStatus === 'Selesai' || $scanStatus === 'Normal' || $scanStatus === 'OK' || $scanStatus === '');
             foreach ($fixedItems as $num => $name) {
@@ -2908,20 +2948,18 @@ function get_maintenance_detail(int $logId): ?array {
             ];
         }
 
-        $foundCount = 0;
+        $hasMatchingChecklistRows = false;
         foreach ($chkRows as $c) {
             $cnum = (int)($c['checklist_number'] ?? 0);
             if (isset($checklists[$cnum])) {
+                $hasMatchingChecklistRows = true;
                 $checklists[$cnum]['checked'] = (int)($c['checked'] ?? 0);
                 $checklists[$cnum]['notes'] = (string)($c['notes'] ?? '');
-                if ($checklists[$cnum]['checked'] || $checklists[$cnum]['notes'] !== '') {
-                    $foundCount++;
-                }
             }
         }
 
         // Fallback cerdas untuk database yang belum memiliki detail checklist
-        if ($foundCount === 0) {
+        if (!$hasMatchingChecklistRows) {
             $scanStatus = trim((string)($scan['status'] ?? 'Selesai'));
             $isCompleted = ($scanStatus === 'Selesai' || $scanStatus === 'Normal' || $scanStatus === 'OK' || $scanStatus === '');
             foreach ($fixedItems as $num => $name) {
@@ -3415,7 +3453,7 @@ function get_audit_maintenance_data(array $filters): array {
         // Buat map checklist per maintenance_id
         $chkMap = [];
         foreach ($chkRows as $c) {
-            $mid = (int)($c['maintenance_id'] ?? 0);
+            $mid = (int)($c['maintenance_id'] ?? $c['maintenance_scan_id'] ?? $c['id_maintenance'] ?? $c['log_id'] ?? $c['scan_id'] ?? 0);
             if ($mid > 0) {
                 $chkMap[$mid][] = $c;
             }
