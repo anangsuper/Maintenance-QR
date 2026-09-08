@@ -264,7 +264,7 @@ $head = '
 }
 
 .dashboard-hero::before {
-  content: '';
+  content: "";
   position: absolute;
   top: -40%;
   right: -20%;
