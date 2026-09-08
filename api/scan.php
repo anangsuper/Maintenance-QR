@@ -615,24 +615,34 @@ $headStyle = '<style>
   padding: 16px 20px;
   font-family: Arial, "Helvetica Neue", Helvetica, sans-serif;
   box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+  box-sizing: border-box;
+  max-width: 100%;
+}
+@media (max-width: 576px) {
+  .excel-card-wrapper {
+    padding: 12px 10px;
+  }
 }
 .excel-header-table {
   width: 100%;
+  max-width: 100%;
   border-collapse: collapse;
-  margin-bottom: 10px;
+  margin-bottom: 12px;
   font-weight: bold;
   font-size: 11pt;
   color: #000000;
+  table-layout: auto;
 }
 .excel-header-table td {
   padding: 3px 2px;
 }
 .excel-header-line {
   border-bottom: 1.5px solid #000000;
-  min-width: 250px;
+  width: 100%;
   padding-left: 6px;
   font-family: "Segoe UI", Arial, sans-serif;
   font-weight: 600;
+  word-break: break-word;
 }
 .excel-grid-table {
   width: 100%;
@@ -747,21 +757,20 @@ $body = '
       <!-- Excel Style Card Box -->
       <div class="excel-card-wrapper">
         
-        <!-- Header Info -->
         <table class="excel-header-table">
           <tr>
-            <td style="width: 100px;">NAMA</td>
-            <td style="width: 20px;">:</td>
+            <td style="width: 80px; white-space: nowrap;">NAMA</td>
+            <td style="width: 15px; text-align: center;">:</td>
             <td class="excel-header-line">'.e($userDisplay).'</td>
           </tr>
           <tr>
-            <td>IP</td>
-            <td>:</td>
+            <td style="white-space: nowrap;">IP</td>
+            <td style="text-align: center;">:</td>
             <td class="excel-header-line">'.e($ipDisplay).'</td>
           </tr>
           <tr>
-            <td>PRINTER</td>
-            <td>:</td>
+            <td style="white-space: nowrap;">PRINTER</td>
+            <td style="text-align: center;">:</td>
             <td class="excel-header-line">'.e($printerDisplay).'</td>
           </tr>
         </table>
