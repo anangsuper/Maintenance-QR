@@ -2772,7 +2772,10 @@ function save_maintenance_record(array $data): array {
             ];
             $nextChkId++;
         }
-        $client->appendValues('Maintenance_Checklists!A:H', $chkRows);
+        $rawChk = $client->getValues('Maintenance_Checklists!A:A');
+        $nextRow = max(1, count($rawChk)) + 1;
+        $endRow = $nextRow + count($chkRows) - 1;
+        $client->updateValues("Maintenance_Checklists!A{$nextRow}:H{$endRow}", $chkRows);
 
         // 3. Jika ada temuan / kerusakan, catat juga di Maintenance_Findings
         if ($findings !== '' || $status === 'Perlu Perbaikan' || $status === 'Proses' || $status === 'Temuan') {
@@ -3103,7 +3106,10 @@ function update_maintenance_detail(int $logId, array $data): array {
         }
 
         if (!empty($rowsToAppend)) {
-            $client->appendValues('Maintenance_Checklists!A:H', $rowsToAppend);
+            $rawChk = $client->getValues('Maintenance_Checklists!A:A');
+            $nextRow = max(1, count($rawChk)) + 1;
+            $endRow = $nextRow + count($rowsToAppend) - 1;
+            $client->updateValues("Maintenance_Checklists!A{$nextRow}:H{$endRow}", $rowsToAppend);
         }
 
         $client->clearCache();

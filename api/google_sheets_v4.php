@@ -280,12 +280,33 @@ class GoogleSheetsV4Client {
         for ($i = $startIdx; $i < count($rows); $i++) {
             $row = $rows[$i];
             $obj = ['_row_num' => $i + 1];
-            // Simpan indeks kolom numerik (col_0, col_1, ...) agar selalu dapat diakses secara pasti
+
+            // Deteksi offset kolom jika baris bergeser ke kanan (misal baris Maintenance_Checklists di kolom H..O)
+            $colOffset = 0;
+            if ($sheetName === 'Maintenance_Checklists') {
+                if (empty($row[0]) && !empty($row[7])) {
+                    $colOffset = 7;
+                } elseif (empty($row[0])) {
+                    foreach ($row as $ci => $cv) {
+                        if ($cv !== '' && $cv !== null) {
+                            $colOffset = $ci;
+                            break;
+                        }
+                    }
+                }
+            }
+
+            // Simpan indeks kolom numerik (col_0, col_1, ...) dinormalisasi terhadap offset
             foreach ($row as $colIdx => $colVal) {
                 $obj['col_' . $colIdx] = $colVal;
+                if ($colOffset > 0 && $colIdx >= $colOffset) {
+                    $normColIdx = $colIdx - $colOffset;
+                    $obj['col_' . $normColIdx] = $colVal;
+                }
             }
+
             foreach ($headers as $idx => $header) {
-                $val = $row[$idx] ?? '';
+                $val = $row[$idx + $colOffset] ?? '';
                 // Simpan key asli
                 $obj[$header] = $val;
                 // Simpan key ternormalisasi (huruf kecil & tanpa spasi)

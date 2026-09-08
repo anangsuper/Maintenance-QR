@@ -154,6 +154,26 @@ if (empty($existing)) {
     $results[] = "⏭️ Tab Maintenance_Checklists — sudah ada";
 }
 
+// Auto-repair baris yang bergeser ke kanan (kolom H..O) di Maintenance_Checklists
+$allChkRaw = $client->getValues('Maintenance_Checklists!A1:Z100');
+$fixedRowsCount = 0;
+foreach ($allChkRaw as $rIdx => $rVals) {
+    $rowNum = $rIdx + 1;
+    if (empty($rVals[0]) && !empty($rVals[7])) {
+        $cleanRow = array_slice($rVals, 7, 8);
+        while (count($cleanRow) < 8) {
+            $cleanRow[] = '';
+        }
+        $client->updateValues("Maintenance_Checklists!A{$rowNum}:H{$rowNum}", [$cleanRow]);
+        $client->clearValues("Maintenance_Checklists!I{$rowNum}:Z{$rowNum}");
+        $fixedRowsCount++;
+    }
+}
+if ($fixedRowsCount > 0) {
+    $results[] = "🛠️ Auto-repair Maintenance_Checklists — {$fixedRowsCount} baris diperbaiki posisinya ke Kolom A:H";
+    $client->clearCache('Maintenance_Checklists');
+}
+
 // ====== 10. Tab Users ======
 $client->createSheetIfNotExists('Users');
 $existing = $client->getValues('Users!A1:H1');
