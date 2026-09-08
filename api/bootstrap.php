@@ -3895,22 +3895,69 @@ body {
   padding: 6px 14px;
   font-size: 0.85rem;
   font-weight: 600;
-  color: rgba(255, 255, 255, 0.85);
+  color: rgba(255, 255, 255, 0.9) !important;
   text-decoration: none;
   border-radius: 20px;
+  background: transparent;
+  border: none;
   transition: all 0.2s ease;
 }
 
 .nav-pill-btn:hover {
-  color: #ffffff;
-  background: rgba(255, 255, 255, 0.15);
+  color: #ffffff !important;
+  background: rgba(255, 255, 255, 0.18) !important;
   transform: translateY(-1px);
 }
 
-.nav-pill-btn.active {
-  color: #1e3a8a;
-  background: #ffffff;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+.nav-pill-btn:focus,
+.nav-pill-btn:focus-visible {
+  outline: none;
+  box-shadow: none;
+}
+
+.nav-pill-btn.active,
+.nav-pill-btn.active:hover,
+.nav-pill-btn.active:focus,
+.nav-pill-btn.show,
+.nav-pill-btn.show:hover,
+.nav-pill-btn.show:focus,
+.dropdown.show .nav-pill-btn,
+.show > .nav-pill-btn {
+  color: #0f172a !important;
+  background: #ffffff !important;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.18) !important;
+}
+
+.nav-pill-btn.active i,
+.nav-pill-btn.active:hover i,
+.nav-pill-btn.show i,
+.show > .nav-pill-btn i {
+  color: #1e3a8a !important;
+}
+
+.nav-pill-btn.active::after,
+.nav-pill-btn.show::after,
+.show > .nav-pill-btn::after {
+  border-top-color: #0f172a !important;
+}
+
+.dropdown-menu {
+  border-radius: 12px;
+  padding: 8px;
+}
+
+.dropdown-item {
+  border-radius: 8px;
+  font-weight: 500;
+  font-size: 0.88rem;
+  transition: all 0.15s ease;
+}
+
+.dropdown-item.active,
+.dropdown-item:active {
+  background: #2563eb !important;
+  color: #ffffff !important;
+  font-weight: 700;
 }
 
 .btn-action-add {
