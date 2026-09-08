@@ -39,10 +39,14 @@ foreach ($lastScans as $sc) {
 }
 
 $results[] = '<hr><h5>Detail 18 Checklist Terakhir:</h5>';
-$allChks = $client->getSheetData('Maintenance_Checklists');
+$allChks = $client->getSheetData('Maintenance_Checklists', true);
 $lastChks = array_slice($allChks, -18);
+if (!empty($lastChks)) {
+    $results[] = "Keys di row terakhir: <code>" . json_encode(array_keys(end($lastChks))) . "</code>";
+    $results[] = "Data row terakhir: <code>" . htmlspecialchars(json_encode(end($lastChks))) . "</code>";
+}
 foreach ($lastChks as $ck) {
-    $results[] = "ID: " . ($ck['id'] ?? '?') . " | Maint ID: <strong>" . ($ck['maintenance_id'] ?? $ck['maintenance_scan_id'] ?? '?') . "</strong> | Item #" . ($ck['checklist_number'] ?? '?') . " (" . ($ck['checklist_name'] ?? '?') . ") | <strong>Checked: " . var_export($ck['checked'] ?? 'null', true) . "</strong> | Notes: " . ($ck['notes'] ?? '-');
+    $results[] = "Raw: <code>" . htmlspecialchars(json_encode($ck)) . "</code>";
 }
 
 // 3. Cek QR Tokens detail
