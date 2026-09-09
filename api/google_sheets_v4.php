@@ -121,6 +121,26 @@ class GoogleSheetsV4Client {
                 }
                 $token = $this->getAccessToken();
                 if (!$token) break;
+            } else {
+                // Auto-retry jika range spesifik kolom ditolak karena grid limits (misal Sheet!A1:Z saat sheet hanya ada kolom A..K)
+                $errMsg = (string)($data['error']['message'] ?? $response);
+                if (str_contains($range, '!') && (stripos($errMsg, 'grid limits') !== false || stripos($errMsg, 'exceeds') !== false || stripos($errMsg, 'Unable to parse range') !== false || stripos($errMsg, 'column') !== false)) {
+                    $sheetOnly = explode('!', $range)[0];
+                    $fallbackUrl = sprintf(
+                        'https://sheets.googleapis.com/v4/spreadsheets/%s/values/%s',
+                        urlencode($this->spreadsheetId),
+                        urlencode($sheetOnly)
+                    );
+                    $fallbackResp = $this->curlExec($fallbackUrl, [
+                        CURLOPT_HTTPHEADER => ['Authorization: Bearer ' . $token],
+                    ]);
+                    $fallbackData = json_decode($fallbackResp, true);
+                    if (isset($fallbackData['values'])) {
+                        return $fallbackData['values'];
+                    }
+                }
+                error_log("Google Sheets getValues failed on '{$range}': " . substr($response, 0, 300));
+                break;
             }
         }
 
@@ -222,7 +242,34 @@ class GoogleSheetsV4Client {
         $data = json_decode($response, true);
         $sheetName = explode('!', $range)[0];
         $this->clearCache($sheetName);
-        return isset($data['updatedCells']);
+
+        if (isset($data['updatedCells'])) {
+            return true;
+        }
+
+        // Auto-fix: Jika gagal karena batas kolom sheet (misal Users!I2:K2 melebihi batas kolom sheet yang baru ada A..H),
+        // otomatis perluas sheet minimal 26 kolom lalu coba update lagi
+        $errMsg = (string)($data['error']['message'] ?? $response);
+        if (stripos($errMsg, 'grid limits') !== false || stripos($errMsg, 'exceeds') !== false || stripos($errMsg, 'column') !== false) {
+            $this->ensureMinColumns($sheetName, 26);
+            $retryResp = $this->curlExec($url, [
+                CURLOPT_CUSTOMREQUEST => 'PUT',
+                CURLOPT_POSTFIELDS => json_encode(['values' => $rows]),
+                CURLOPT_HTTPHEADER => [
+                    'Authorization: Bearer ' . $token,
+                    'Content-Type: application/json',
+                ],
+            ]);
+            $retryData = json_decode($retryResp, true);
+            if (isset($retryData['updatedCells'])) {
+                $this->clearCache($sheetName);
+                return true;
+            }
+            error_log("Google Sheets updateValues retry failed on '{$range}': " . substr($retryResp, 0, 500));
+        }
+
+        error_log("Google Sheets updateValues failed on '{$range}': " . substr($response, 0, 500));
+        return false;
     }
 
     public function clearValues(string $range): bool {
@@ -250,7 +297,7 @@ class GoogleSheetsV4Client {
     }
 
     private function getCacheFilePath(string $sheetName): string {
-        $hash = md5($this->spreadsheetId . '_' . $sheetName);
+        $hash = md5($this->spreadsheetId) . '_' . md5($sheetName);
         return sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'gs_' . $hash . '.json';
     }
 
@@ -287,20 +334,20 @@ class GoogleSheetsV4Client {
             return self::$runtimeCache[$sheetName];
         }
 
-        // 2. Cek warm session cache (TTL: 120 detik) untuk pergantian halaman secepat kilat (0.01 detik)
+        // 2. Cek warm session cache (TTL: 30 detik) untuk pergantian halaman secepat kilat (0.01 detik)
         if (!$forceRefresh && session_status() === PHP_SESSION_ACTIVE) {
             $cacheKey = '_gs_cache_' . $sheetName;
             $timeKey = '_gs_time_' . $sheetName;
-            if (!empty($_SESSION[$cacheKey]) && !empty($_SESSION[$timeKey]) && (time() - (int)$_SESSION[$timeKey] < 120)) {
+            if (!empty($_SESSION[$cacheKey]) && !empty($_SESSION[$timeKey]) && (time() - (int)$_SESSION[$timeKey] < 30)) {
                 self::$runtimeCache[$sheetName] = $_SESSION[$cacheKey];
                 return self::$runtimeCache[$sheetName];
             }
         }
 
-        // 3. Cek warm disk cache di /tmp (sangat cepat ~1ms, bertahan antar request dan antar sesi)
+        // 3. Cek warm disk cache di /tmp (TTL: 30 detik, bertahan antar request)
         if (!$forceRefresh) {
             $filePath = $this->getCacheFilePath($sheetName);
-            if (file_exists($filePath) && (time() - filemtime($filePath) < 120)) {
+            if (file_exists($filePath) && (time() - filemtime($filePath) < 30)) {
                 $cachedContent = @file_get_contents($filePath);
                 if ($cachedContent) {
                     $cachedJson = json_decode($cachedContent, true);
@@ -317,7 +364,10 @@ class GoogleSheetsV4Client {
         }
 
         // 4. Ambil data dari Google Sheets API jika cache kedaluwarsa / force refresh
-        $rows = $this->getValues($sheetName . '!A1:Z');
+        $rows = $this->getValues($sheetName);
+        if (empty($rows)) {
+            $rows = $this->getValues($sheetName . '!A1:Z');
+        }
 
         // 5. Jika API gagal (misal rate limit/timeout), gunakan session cache sebelumnya agar data tidak hilang
         if (empty($rows)) {

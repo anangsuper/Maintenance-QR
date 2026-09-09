@@ -240,12 +240,12 @@ function format_phone_number(?string $phone): string {
     return $phone;
 }
 
-function get_user_list(): array {
+function get_user_list(bool $forceRefresh = false): array {
     if (is_google_cloud_mode()) {
         $client = google_sheets_v4_client();
         if (!$client) return [];
 
-        $rows = $client->getSheetData('Users');
+        $rows = $client->getSheetData('Users', $forceRefresh);
         if (empty($rows)) {
             return [
                 ['id' => 1, 'nama' => 'Administrator', 'username' => 'admin', 'role' => 'admin', 'telepon' => '081234567890', 'status' => 'Aktif'],
@@ -361,9 +361,9 @@ function get_user_list(): array {
     }
 }
 
-function get_user_by_id(int $id): ?array {
+function get_user_by_id(int $id, bool $forceRefresh = false): ?array {
     if ($id <= 0) return null;
-    $users = get_user_list();
+    $users = get_user_list($forceRefresh);
     foreach ($users as $u) {
         if ((int)($u['id'] ?? 0) === $id) return $u;
     }
@@ -381,7 +381,11 @@ function save_user_biometrics(int $userId, string $descriptorJson, string $photo
         $client = google_sheets_v4_client();
         if (!$client) return ['success' => false, 'error' => 'Google Sheets client tidak tersedia'];
 
-        $rows = $client->getSheetData('Users');
+        // Pastikan kolom sheet Users mencukupi (minimal 26 kolom A..Z)
+        $client->ensureMinColumns('Users', 26);
+
+        // Ambil data terkini langsung dari Google Sheets
+        $rows = $client->getSheetData('Users', true);
         $targetRow = null;
         foreach ($rows as $u) {
             if ((int)($u['id'] ?? 0) === $userId) {
@@ -389,13 +393,22 @@ function save_user_biometrics(int $userId, string $descriptorJson, string $photo
                 break;
             }
         }
-        if (!$targetRow) return ['success' => false, 'error' => 'Pengguna tidak ditemukan'];
+        if (!$targetRow) return ['success' => false, 'error' => 'Pengguna tidak ditemukan di Google Sheets'];
 
         $rowNum = (int)($targetRow['_row_num'] ?? 0);
-        if ($rowNum <= 1) return ['success' => false, 'error' => 'Gagal menentukan baris pengguna'];
+        if ($rowNum <= 1) return ['success' => false, 'error' => 'Gagal menentukan baris data pengguna'];
 
-        $client->updateValues("Users!I{$rowNum}:K{$rowNum}", [[$descriptorJson, $photoBase64, $status]]);
+        // Pastikan header baris 1 memiliki nama kolom face_descriptor, face_photo, face_status jika belum ada
+        $client->updateValues("Users!I1:K1", [['face_descriptor', 'face_photo', 'face_status']]);
+
+        // Simpan vektor biometrik, foto, dan status verifikasi ke baris pengguna
+        $ok = $client->updateValues("Users!I{$rowNum}:K{$rowNum}", [[$descriptorJson, $photoBase64, $status]]);
         $client->clearCache('Users');
+
+        if (!$ok) {
+            return ['success' => false, 'error' => 'Gagal memperbarui data biometrik ke Google Sheets'];
+        }
+
         return ['success' => true];
     }
 
@@ -422,7 +435,8 @@ function update_user_face_status(int $userId, string $status): array {
         $client = google_sheets_v4_client();
         if (!$client) return ['success' => false, 'error' => 'Google Sheets client tidak tersedia'];
 
-        $rows = $client->getSheetData('Users');
+        $client->ensureMinColumns('Users', 26);
+        $rows = $client->getSheetData('Users', true);
         $targetRow = null;
         foreach ($rows as $u) {
             if ((int)($u['id'] ?? 0) === $userId) {
@@ -435,12 +449,20 @@ function update_user_face_status(int $userId, string $status): array {
         $rowNum = (int)($targetRow['_row_num'] ?? 0);
         if ($rowNum <= 1) return ['success' => false, 'error' => 'Gagal baris pengguna'];
 
+        // Pastikan header baris 1 terpasang
+        $client->updateValues("Users!I1:K1", [['face_descriptor', 'face_photo', 'face_status']]);
+
         if ($status === 'rejected' || $status === 'deleted') {
-            $client->updateValues("Users!I{$rowNum}:K{$rowNum}", [['', '', 'none']]);
+            $ok = $client->updateValues("Users!I{$rowNum}:K{$rowNum}", [['', '', 'none']]);
         } else {
-            $client->updateValues("Users!K{$rowNum}", [[$status]]);
+            $ok = $client->updateValues("Users!K{$rowNum}", [[$status]]);
         }
         $client->clearCache('Users');
+
+        if (!$ok) {
+            return ['success' => false, 'error' => 'Gagal memperbarui status verifikasi di Google Sheets'];
+        }
+
         return ['success' => true];
     }
 
@@ -459,8 +481,8 @@ function update_user_face_status(int $userId, string $status): array {
     }
 }
 
-function get_enrolled_technicians(): array {
-    $users = get_user_list();
+function get_enrolled_technicians(bool $forceRefresh = false): array {
+    $users = get_user_list($forceRefresh);
     $result = [];
     foreach ($users as $u) {
         $descStr = trim((string)($u['face_descriptor'] ?? ''));
@@ -2975,6 +2997,12 @@ function save_maintenance_record(array $data): array {
         $client = google_sheets_v4_client();
         if (!$client) return ['success' => false, 'error' => 'Google Sheets client tidak tersedia'];
 
+        // Pastikan sheet Maintenance_Scan dan Maintenance_Checklists minimal 26 kolom A..Z
+        $client->ensureMinColumns('Maintenance_Scan', 26);
+        $client->ensureMinColumns('Maintenance_Checklists', 26);
+
+        $fullScanHeaders = ['id', 'asset_id', 'technician_user_id', 'technician_name', 'maintenance_date', 'maintenance_time', 'maintenance_month', 'maintenance_year', 'status', 'source', 'created_at', 'findings', 'recommendation', 'biometric_verified', 'biometric_confidence', 'biometric_photo', 'latitude', 'longitude'];
+
         // 1. Dapatkan Scan ID berikutnya secara ultra-cepat (hanya ambil kolom A, hindari download ribuan cell & base64)
         $rawScanCol = $client->getValues('Maintenance_Scan!A:A');
         $maxId = 0;
@@ -2987,11 +3015,15 @@ function save_maintenance_record(array $data): array {
         $newScanId = max(count($rawScanCol), $maxId + 1);
         if ($newScanId <= 0) $newScanId = 1;
 
-        // Jika sheet Maintenance_Scan masih benar-benar kosong, buat header terlebih dahulu
+        // Jika sheet Maintenance_Scan masih kosong atau header belum lengkap 18 kolom
         if (empty($rawScanCol)) {
             $client->createSheetIfNotExists('Maintenance_Scan');
-            $fullScanHeaders = ['id', 'asset_id', 'technician_user_id', 'technician_name', 'maintenance_date', 'maintenance_time', 'maintenance_month', 'maintenance_year', 'status', 'source', 'created_at', 'findings', 'recommendation', 'biometric_verified', 'biometric_confidence', 'biometric_photo', 'latitude', 'longitude'];
             $client->appendValues('Maintenance_Scan', [$fullScanHeaders]);
+        } else {
+            $scanHead = $client->getValues('Maintenance_Scan!A1:R1');
+            if (empty($scanHead) || empty($scanHead[0]) || count($scanHead[0]) < count($fullScanHeaders)) {
+                $client->updateValues('Maintenance_Scan!A1:R1', [$fullScanHeaders]);
+            }
         }
 
         $newScanRow = [
@@ -3043,11 +3075,15 @@ function save_maintenance_record(array $data): array {
         $nextChkId = max(count($rawChkCol), $maxChkId + 1);
         if ($nextChkId <= 0) $nextChkId = 1;
 
+        $fullChkHeaders = ['id', 'maintenance_id', 'asset_id', 'checklist_number', 'checklist_name', 'checked', 'notes', 'created_at'];
         if (empty($rawChkCol)) {
             $client->createSheetIfNotExists('Maintenance_Checklists');
-            $client->appendValues('Maintenance_Checklists', [
-                ['id', 'maintenance_id', 'asset_id', 'checklist_number', 'checklist_name', 'checked', 'notes', 'created_at']
-            ]);
+            $client->appendValues('Maintenance_Checklists', [$fullChkHeaders]);
+        } else {
+            $chkHead = $client->getValues('Maintenance_Checklists!A1:H1');
+            if (empty($chkHead) || empty($chkHead[0]) || count($chkHead[0]) < count($fullChkHeaders)) {
+                $client->updateValues('Maintenance_Checklists!A1:H1', [$fullChkHeaders]);
+            }
         }
 
         $chkRows = [];
@@ -3070,7 +3106,7 @@ function save_maintenance_record(array $data): array {
 
         $chkOk = $client->appendValues('Maintenance_Checklists', $chkRows);
         if (!$chkOk) {
-            $client->ensureMinColumns('Maintenance_Checklists', 10);
+            $client->ensureMinColumns('Maintenance_Checklists', 26);
             $chkOk = $client->appendValues('Maintenance_Checklists', $chkRows);
             if (!$chkOk) {
                 $rawChk = $client->getValues('Maintenance_Checklists!A:A');
@@ -3101,6 +3137,9 @@ function save_maintenance_record(array $data): array {
             ]]);
         }
 
+        $client->clearCache('Maintenance_Scan');
+        $client->clearCache('Maintenance_Checklists');
+        $client->clearCache('Maintenance_Findings');
         $client->clearCache();
 
         // Simpan ke sesi agar tampilan kartu langsung terupdate 100% instan

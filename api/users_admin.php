@@ -84,10 +84,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 $editId = max(0, (int)($_GET['edit'] ?? 0));
 $editUser = null;
 if ($editId > 0) {
-    $editUser = get_user_by_id($editId);
+    $editUser = get_user_by_id($editId, true);
 }
 
-$users = get_user_list();
+$users = get_user_list(true);
 
 // Cek pengguna yang wajahnya berstatus 'pending' (menunggu verifikasi admin)
 $pendingFaceUsers = [];

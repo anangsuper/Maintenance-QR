@@ -222,7 +222,7 @@ $autoOpenLogin = trim((string)($_GET['open_login'] ?? ''));
 if ($action === 'start' || $action === 'form' || $action === 'ulang') {
     $fixedItems = get_fixed_checklists();
     $isUlang = ($action === 'ulang' || ($currentMonthLog && $action === 'start'));
-    $enrolledTechs = get_enrolled_technicians();
+    $enrolledTechs = get_enrolled_technicians(true);
     $hasEnrolledTechs = !empty($enrolledTechs);
 
     $itemIcons = [

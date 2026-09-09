@@ -1,8 +1,8 @@
 <?php
 require __DIR__ . '/bootstrap.php';
 
-// Ambil seluruh daftar pengguna / teknisi untuk dipilih di HP
-$allUsers = get_user_list();
+// Ambil seluruh daftar pengguna / teknisi untuk dipilih di HP (selalu fresh)
+$allUsers = get_user_list(true);
 $currId = current_user_id();
 $reqId = isset($_GET['id']) ? (int)$_GET['id'] : 0;
 $retUrl = trim((string)($_GET['ret'] ?? ''));
@@ -84,7 +84,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     exit;
 }
 
-$user = get_user_by_id($selectedUserId);
+$user = get_user_by_id($selectedUserId, true);
 if (!$user && !empty($allUsers)) {
     $user = $allUsers[0];
     $selectedUserId = (int)$user['id'];
