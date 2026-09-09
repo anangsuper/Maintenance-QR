@@ -35,7 +35,15 @@ $successData = null;
 $error = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && (($_POST['action'] ?? '') === 'save_maintenance')) {
-    verify_csrf();
+    // Verifikasi CSRF session jika ada, atau verifikasi token QR fisik jika sesi mobile serverless ter-reset
+    $sentCsrf = (string)($_POST['_csrf'] ?? '');
+    $sessionCsrf = (string)($_SESSION['_csrf'] ?? '');
+    $postToken = trim((string)($_POST['t'] ?? ''));
+    $csrfValid = ($sessionCsrf !== '' && $sentCsrf !== '' && hash_equals($sessionCsrf, $sentCsrf));
+    $tokenValid = ($postToken !== '' && hash_equals($token, $postToken));
+    if (!$csrfValid && !$tokenValid) {
+        verify_csrf();
+    }
 
     $techName = trim((string)($_POST['technician_name'] ?? ''));
     if ($techName === '') {
@@ -464,7 +472,7 @@ if ($action === 'start' || $action === 'form' || $action === 'ulang') {
 
           '.($error ? '<div class="alert alert-danger py-2 mb-3">'.e($error).'</div>' : '').'
 
-          <form method="post" id="formMaintenance">
+          <form method="post" action="'.e(module_url('scan.php', ['t' => $token, 'action' => $action])).'" id="formMaintenance">
             <input type="hidden" name="_csrf" value="'.e(csrf_token()).'">
             <input type="hidden" name="action" value="save_maintenance">
             <input type="hidden" name="t" value="'.e($token).'">
@@ -908,16 +916,16 @@ if ($action === 'start' || $action === 'form' || $action === 'ulang') {
 
     function captureBioSnapshot(videoEl) {
       const c = document.createElement("canvas");
-      c.width = 160;
-      c.height = 160;
+      c.width = 120;
+      c.height = 120;
       const ctx = c.getContext("2d");
       const s = Math.min(videoEl.videoWidth, videoEl.videoHeight);
       const sx = (videoEl.videoWidth - s) / 2;
       const sy = (videoEl.videoHeight - s) / 2;
-      ctx.translate(160, 0);
+      ctx.translate(120, 0);
       ctx.scale(-1, 1);
-      ctx.drawImage(videoEl, sx, sy, s, s, 0, 0, 160, 160);
-      return c.toDataURL("image/jpeg", 0.82);
+      ctx.drawImage(videoEl, sx, sy, s, s, 0, 0, 120, 120);
+      return c.toDataURL("image/jpeg", 0.70);
     }
 
     let isTrackingFrame = false;

@@ -348,6 +348,9 @@ function get_user_by_id(int $id): ?array {
 function save_user_biometrics(int $userId, string $descriptorJson, string $photoBase64 = '', string $status = 'pending'): array {
     if ($userId <= 0) return ['success' => false, 'error' => 'ID pengguna tidak valid'];
     if (empty($descriptorJson)) return ['success' => false, 'error' => 'Data biometrik tidak boleh kosong'];
+    if (strlen($photoBase64) > 40000) {
+        $photoBase64 = substr($photoBase64, 0, 40000);
+    }
 
     if (is_google_cloud_mode()) {
         $client = google_sheets_v4_client();
@@ -2618,7 +2621,7 @@ function get_asset_maintenance_status_month(int $assetId, int $month, int $year)
     if (is_google_cloud_mode()) {
         $client = google_sheets_v4_client();
         if (!$client) return null;
-        $scans = $client->getSheetData('Maintenance_Scan');
+        $scans = $client->getSheetData('Maintenance_Scan', true);
         $latest = null;
         foreach ($scans as $s) {
             if ((int)($s['asset_id'] ?? 0) === $assetId && (int)($s['maintenance_month'] ?? 0) === $month && (int)($s['maintenance_year'] ?? 0) === $year) {
@@ -2648,7 +2651,7 @@ function get_asset_maintenance_history(int $assetId): array {
     if (is_google_cloud_mode()) {
         $client = google_sheets_v4_client();
         if (!$client) return [];
-        $scans = $client->getSheetData('Maintenance_Scan');
+        $scans = $client->getSheetData('Maintenance_Scan', true);
         $history = [];
         foreach ($scans as $s) {
             if ((int)($s['asset_id'] ?? 0) === $assetId) {
@@ -2740,8 +2743,8 @@ function get_asset_yearly_card_matrix(int $assetId, int $year): array {
     if (is_google_cloud_mode()) {
         $client = google_sheets_v4_client();
         if ($client) {
-            $scans = $client->getSheetData('Maintenance_Scan');
-            $chkRows = $client->getSheetData('Maintenance_Checklists');
+            $scans = $client->getSheetData('Maintenance_Scan', true);
+            $chkRows = $client->getSheetData('Maintenance_Checklists', true);
 
             $chkMap = [];
             foreach ($chkRows as $c) {
@@ -2902,20 +2905,25 @@ function save_maintenance_record(array $data): array {
         }
     }
 
+    if (strlen($bioPhoto) > 40000) {
+        $bioPhoto = substr($bioPhoto, 0, 40000);
+    }
+
     if (is_google_cloud_mode()) {
         $client = google_sheets_v4_client();
         if (!$client) return ['success' => false, 'error' => 'Google Sheets client tidak tersedia'];
 
         // 1. Simpan ke Maintenance_Scan
         $client->createSheetIfNotExists('Maintenance_Scan');
+        $fullScanHeaders = ['id', 'asset_id', 'technician_user_id', 'technician_name', 'maintenance_date', 'maintenance_time', 'maintenance_month', 'maintenance_year', 'status', 'source', 'created_at', 'findings', 'recommendation', 'biometric_verified', 'biometric_confidence', 'biometric_photo', 'latitude', 'longitude'];
         $existingScanHeader = $client->getValues('Maintenance_Scan!A1:R1');
         if (empty($existingScanHeader)) {
-            $client->appendValues('Maintenance_Scan!A:R', [
-                ['id', 'asset_id', 'technician_user_id', 'technician_name', 'maintenance_date', 'maintenance_time', 'maintenance_month', 'maintenance_year', 'status', 'source', 'created_at', 'findings', 'recommendation', 'biometric_verified', 'biometric_confidence', 'biometric_photo', 'latitude', 'longitude']
-            ]);
+            $client->appendValues('Maintenance_Scan', [$fullScanHeaders]);
+        } elseif (count($existingScanHeader[0] ?? []) < count($fullScanHeaders)) {
+            $client->updateValues('Maintenance_Scan!A1:R1', [$fullScanHeaders]);
         }
 
-        $scans = $client->getSheetData('Maintenance_Scan');
+        $scans = $client->getSheetData('Maintenance_Scan', true);
         $maxId = 0;
         foreach ($scans as $s) {
             $sid = (int)($s['id'] ?? 0);
@@ -2943,13 +2951,19 @@ function save_maintenance_record(array $data): array {
             $latitude,
             $longitude
         ];
-        $client->appendValues('Maintenance_Scan!A:R', [$newScanRow]);
+
+        // Append ke sheet Maintenance_Scan (gunakan 'Maintenance_Scan' langsung agar tidak terkena limit kolom A..K)
+        $scanOk = $client->appendValues('Maintenance_Scan', [$newScanRow]);
+        if (!$scanOk) {
+            error_log("save_maintenance_record: appendValues Maintenance_Scan failed!");
+            return ['success' => false, 'error' => 'Gagal menyimpan rekaman maintenance ke Google Sheet. Silakan coba simpan kembali.'];
+        }
 
         // 2. Simpan 9 items ke Maintenance_Checklists
         $client->createSheetIfNotExists('Maintenance_Checklists');
         $existingChkHeader = $client->getValues('Maintenance_Checklists!A1:H1');
         if (empty($existingChkHeader)) {
-            $client->appendValues('Maintenance_Checklists!A:H', [
+            $client->appendValues('Maintenance_Checklists', [
                 ['id', 'maintenance_id', 'asset_id', 'checklist_number', 'checklist_name', 'checked', 'notes', 'created_at']
             ]);
         }
@@ -2979,17 +2993,22 @@ function save_maintenance_record(array $data): array {
             ];
             $nextChkId++;
         }
-        $rawChk = $client->getValues('Maintenance_Checklists!A:A');
-        $nextRow = max(1, count($rawChk)) + 1;
-        $endRow = $nextRow + count($chkRows) - 1;
-        $client->updateValues("Maintenance_Checklists!A{$nextRow}:H{$endRow}", $chkRows);
+
+        $chkOk = $client->appendValues('Maintenance_Checklists', $chkRows);
+        if (!$chkOk) {
+            // Fallback dengan updateValues
+            $rawChk = $client->getValues('Maintenance_Checklists!A:A');
+            $nextRow = max(1, count($rawChk)) + 1;
+            $endRow = $nextRow + count($chkRows) - 1;
+            $client->updateValues("Maintenance_Checklists!A{$nextRow}:H{$endRow}", $chkRows);
+        }
 
         // 3. Jika ada temuan / kerusakan, catat juga di Maintenance_Findings
         if ($findings !== '' || $status === 'Perlu Perbaikan' || $status === 'Proses' || $status === 'Temuan') {
             $client->createSheetIfNotExists('Maintenance_Findings');
             $existingFindings = $client->getSheetData('Maintenance_Findings');
             $newFindId = count($existingFindings) + 1;
-            $client->appendValues('Maintenance_Findings!A:L', [[
+            $client->appendValues('Maintenance_Findings', [[
                 $newFindId,
                 $newScanId,
                 $assetId,

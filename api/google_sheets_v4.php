@@ -149,7 +149,36 @@ class GoogleSheetsV4Client {
         $data = json_decode($response, true);
         $sheetName = explode('!', $range)[0];
         $this->clearCache($sheetName);
-        return isset($data['updates']);
+
+        if (isset($data['updates'])) {
+            return true;
+        }
+
+        // Fallback: Jika range spesifik kolom ditolak karena grid limit (misal Maintenance_Scan!A:R pada sheet kolom A..K),
+        // coba append langsung ke nama sheet tanpa batas kolom (Google Sheets otomatis membuat kolom baru)
+        if (str_contains($range, '!')) {
+            $fallbackUrl = sprintf(
+                'https://sheets.googleapis.com/v4/spreadsheets/%s/values/%s:append?valueInputOption=USER_ENTERED',
+                urlencode($this->spreadsheetId),
+                urlencode($sheetName)
+            );
+            $fallbackResp = $this->curlExec($fallbackUrl, [
+                CURLOPT_POST => true,
+                CURLOPT_POSTFIELDS => json_encode(['values' => $rows]),
+                CURLOPT_HTTPHEADER => [
+                    'Authorization: Bearer ' . $token,
+                    'Content-Type: application/json',
+                ],
+            ]);
+            $fallbackData = json_decode($fallbackResp, true);
+            if (isset($fallbackData['updates'])) {
+                return true;
+            }
+            error_log("Google Sheets appendValues fallback failed on '{$sheetName}': " . substr($fallbackResp, 0, 500));
+        }
+
+        error_log("Google Sheets appendValues failed on '{$range}': " . substr($response, 0, 500));
+        return false;
     }
 
     public function updateValues(string $range, array $rows): bool {
@@ -270,6 +299,13 @@ class GoogleSheetsV4Client {
 
         if ($isHeader) {
             $headers = $firstRow;
+            // Lengkapi header jika baris 1 di sheet Google Sheet lebih sedikit dari defaultHeaders (misal sheet lama)
+            if (!empty($defaultHeaders[$sheetName]) && count($headers) < count($defaultHeaders[$sheetName])) {
+                $defH = $defaultHeaders[$sheetName];
+                for ($hIdx = count($headers); $hIdx < count($defH); $hIdx++) {
+                    $headers[] = $defH[$hIdx];
+                }
+            }
             $startIdx = 1;
         } else {
             $headers = $defaultHeaders[$sheetName] ?? [];
@@ -345,7 +381,13 @@ class GoogleSheetsV4Client {
             CURLOPT_POSTFIELDS => json_encode([
                 'requests' => [[
                     'addSheet' => [
-                        'properties' => ['title' => $sheetName]
+                        'properties' => [
+                            'title' => $sheetName,
+                            'gridProperties' => [
+                                'rowCount' => 1000,
+                                'columnCount' => 26
+                            ]
+                        ]
                     ]
                 ]]
             ]),
