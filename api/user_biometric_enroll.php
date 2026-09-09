@@ -73,9 +73,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit;
     }
 
-    $res = save_user_biometrics($targetUserId, $descriptor, $photo);
+    $enrollStatus = is_admin() ? 'verified' : 'pending';
+    $res = save_user_biometrics($targetUserId, $descriptor, $photo, $enrollStatus);
     header('Content-Type: application/json');
-    echo json_encode($res);
+    echo json_encode(array_merge($res, ['face_status' => $enrollStatus]));
     exit;
 }
 
@@ -87,10 +88,17 @@ if (!$user && !empty($allUsers)) {
 
 $hasBiometrics = !empty($user['face_descriptor']);
 $existingPhoto = $user['face_photo'] ?? '';
+$userFaceStatus = strtolower(trim((string)($user['face_status'] ?? '')));
 
-$badgeStatus = $hasBiometrics 
-    ? '<span class="badge bg-success bg-opacity-15 text-success px-3 py-2 border border-success border-opacity-25"><i class="bi bi-shield-check me-1"></i> Sudah Ada Wajah Terdaftar</span>'
-    : '<span class="badge bg-warning bg-opacity-15 text-warning-emphasis px-3 py-2 border border-warning border-opacity-25"><i class="bi bi-exclamation-circle me-1"></i> Belum Didaftarkan</span>';
+if ($userFaceStatus === 'verified' || $userFaceStatus === 'terverifikasi') {
+    $badgeStatus = '<span class="badge bg-success bg-opacity-15 text-success px-3 py-2 border border-success border-opacity-25"><i class="bi bi-shield-check me-1"></i> Wajah Terverifikasi Admin</span>';
+} elseif ($userFaceStatus === 'pending' || $userFaceStatus === 'menunggu') {
+    $badgeStatus = '<span class="badge bg-warning text-dark px-3 py-2 border border-warning"><i class="bi bi-hourglass-split me-1"></i> Menunggu Verifikasi Admin</span>';
+} elseif ($userFaceStatus === 'rejected') {
+    $badgeStatus = '<span class="badge bg-danger bg-opacity-15 text-danger px-3 py-2 border border-danger"><i class="bi bi-x-circle me-1"></i> Ditolak Admin (Daftar Ulang)</span>';
+} else {
+    $badgeStatus = '<span class="badge bg-secondary bg-opacity-15 text-secondary px-3 py-2 border border-secondary border-opacity-25"><i class="bi bi-exclamation-circle me-1"></i> Belum Didaftarkan</span>';
+}
 
 $avatarHtml = '';
 if ($existingPhoto) {
@@ -111,8 +119,21 @@ foreach ($allUsers as $u) {
     $unama = $u['nama'] ?? $u['username'] ?? 'User';
     $urole = ucfirst($u['role'] ?? 'Teknisi');
     $uHasBio = !empty($u['face_descriptor']);
+    $uStat = strtolower(trim((string)($u['face_status'] ?? '')));
     $sel = ($uid === $selectedUserId) ? 'selected' : '';
-    $bioMark = $uHasBio ? ' [✓ Terdaftar]' : ' [⚠️ Belum Wajah]';
+    
+    $bioMark = ' [⚠️ Belum Wajah]';
+    if ($uHasBio) {
+        if ($uStat === 'verified' || $uStat === 'terverifikasi') {
+            $bioMark = ' [✓ Disetujui Admin]';
+        } elseif ($uStat === 'pending' || $uStat === 'menunggu') {
+            $bioMark = ' [⏳ Menunggu Verifikasi Admin]';
+        } elseif ($uStat === 'rejected') {
+            $bioMark = ' [✕ Ditolak]';
+        } else {
+            $bioMark = ' [✓ Terdaftar]';
+        }
+    }
     $userOptionsHtml .= '<option value="'.$uid.'" '.$sel.'>'.e($unama).' ('.e($urole).')'.$bioMark.'</option>';
 }
 $userOptionsHtml .= '<option value="-1">+ Tambah Nama Teknisi Baru (Ketik Sendiri)</option>';
@@ -271,10 +292,12 @@ $body = '
 
       <!-- Success Action Box (Tampil setelah berhasil) -->
       <div class="mt-3 p-3 bg-success bg-opacity-10 border border-success rounded-3 text-center d-none" id="successBox">
-        <h5 class="fw-bold text-success mb-1"><i class="bi bi-check-circle-fill me-1"></i> Wajah Berhasil Didaftarkan!</h5>
-        <div class="small text-secondary mb-3">Anda sekarang dapat menyelesaikan pemeliharaan dengan verifikasi scan wajah di HP.</div>
+        <h5 class="fw-bold text-success mb-1"><i class="bi bi-check-circle-fill me-1"></i> Wajah Berhasil Diunggah!</h5>
+        <div class="small text-dark mb-3" id="successDesc">
+          '.(is_admin() ? 'Wajah teknisi telah disimpan dan langsung <strong>Terverifikasi</strong> oleh Administrator.' : 'Wajah Anda berhasil disimpan dengan status: <span class="badge bg-warning text-dark"><i class="bi bi-hourglass-split me-1"></i> Menunggu Verifikasi Admin</span>.<br>Admin akan memeriksa & menyetujui wajah Anda di panel Admin Pengguna.').'
+        </div>
         <div class="d-grid gap-2">
-          '.($retUrl !== '' ? '<a href="'.e($retUrl).'" class="btn btn-success fw-bold"><i class="bi bi-arrow-return-left me-1"></i> Kembali Lanjutkan Maintenance</a>' : '<a href="'.e(module_url('dashboard.php')).'" class="btn btn-primary fw-bold"><i class="bi bi-qr-code-scan me-1"></i> Buka Scan QR Maintenance</a>').'
+          '.($retUrl !== '' ? '<a href="'.e($retUrl).'" class="btn btn-success fw-bold"><i class="bi bi-arrow-return-left me-1"></i> Kembali Lanjutkan Maintenance</a>' : '<a href="'.e(module_url('dashboard.php')).'" class="btn btn-primary fw-bold"><i class="bi bi-qr-code-scan me-1"></i> Buka Dashboard QR</a>').'
           <button type="button" class="btn btn-outline-secondary btn-sm" onclick="location.reload()">Daftarkan Teknisi Lain</button>
         </div>
       </div>

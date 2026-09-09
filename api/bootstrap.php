@@ -250,6 +250,13 @@ function get_user_list(): array {
             ];
         }
         return array_map(function($u) {
+            $fDesc = (string)($u['face_descriptor'] ?? '');
+            $fStatus = (string)($u['face_status'] ?? '');
+            if ($fStatus === '' && $fDesc !== '') {
+                $fStatus = 'verified'; // Default verified untuk legacy data
+            } elseif ($fStatus === '') {
+                $fStatus = 'none';
+            }
             return [
                 'id' => (int)($u['id'] ?? 0),
                 'nama' => (string)($u['nama'] ?? $u['name'] ?? $u['username'] ?? ''),
@@ -258,8 +265,9 @@ function get_user_list(): array {
                 'telepon' => format_phone_number((string)($u['telepon'] ?? $u['kontak'] ?? '-')),
                 'status' => (string)($u['status'] ?? 'Aktif'),
                 'created_at' => (string)($u['created_at'] ?? ''),
-                'face_descriptor' => (string)($u['face_descriptor'] ?? ''),
-                'face_photo' => (string)($u['face_photo'] ?? '')
+                'face_descriptor' => $fDesc,
+                'face_photo' => (string)($u['face_photo'] ?? ''),
+                'face_status' => $fStatus
             ];
         }, $rows);
     }
@@ -277,6 +285,7 @@ function get_user_list(): array {
                 status VARCHAR(50) NOT NULL DEFAULT 'Aktif',
                 face_descriptor TEXT NULL,
                 face_photo MEDIUMTEXT NULL,
+                face_status VARCHAR(50) DEFAULT 'none',
                 created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
                 updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
             );
@@ -284,7 +293,10 @@ function get_user_list(): array {
 
         $cols = table_columns('users');
         if (!in_array('face_descriptor', $cols, true)) {
-            try { db()->exec("ALTER TABLE users ADD COLUMN face_descriptor TEXT NULL, ADD COLUMN face_photo MEDIUMTEXT NULL"); } catch (Throwable $e) {}
+            try { db()->exec("ALTER TABLE users ADD COLUMN face_descriptor TEXT NULL, ADD COLUMN face_photo MEDIUMTEXT NULL, ADD COLUMN face_status VARCHAR(50) DEFAULT 'none'"); } catch (Throwable $e) {}
+            $cols = table_columns('users');
+        } elseif (!in_array('face_status', $cols, true)) {
+            try { db()->exec("ALTER TABLE users ADD COLUMN face_status VARCHAR(50) DEFAULT 'none'"); } catch (Throwable $e) {}
             $cols = table_columns('users');
         }
         $nameCol = in_array('nama', $cols, true) ? 'nama' : (in_array('name', $cols, true) ? 'name' : 'username');
@@ -292,8 +304,9 @@ function get_user_list(): array {
         $stCol = in_array('status', $cols, true) ? 'status' : "'Aktif' AS status";
         $faceDescCol = in_array('face_descriptor', $cols, true) ? 'face_descriptor' : "'' AS face_descriptor";
         $facePhotoCol = in_array('face_photo', $cols, true) ? 'face_photo' : "'' AS face_photo";
+        $faceStatCol = in_array('face_status', $cols, true) ? 'face_status' : "'none' AS face_status";
 
-        $users = db()->query("SELECT id, `{$nameCol}` AS nama, username, role, {$telCol}, {$stCol}, {$faceDescCol}, {$facePhotoCol}, created_at FROM users ORDER BY id ASC")->fetchAll();
+        $users = db()->query("SELECT id, `{$nameCol}` AS nama, username, role, {$telCol}, {$stCol}, {$faceDescCol}, {$facePhotoCol}, {$faceStatCol}, created_at FROM users ORDER BY id ASC")->fetchAll();
         if (empty($users)) {
             $adminHash = password_hash('admin123', PASSWORD_BCRYPT);
             $teknisiHash = password_hash('teknisi123', PASSWORD_BCRYPT);
@@ -302,13 +315,23 @@ function get_user_list(): array {
                 VALUES ('Administrator', 'admin', '{$adminHash}', 'admin', '081234567890', 'Aktif', NOW()),
                        ('Teknisi IT', 'teknisi', '{$teknisiHash}', 'teknisi', '081234567891', 'Aktif', NOW())
             ");
-            $users = db()->query("SELECT id, `{$nameCol}` AS nama, username, role, {$telCol}, {$stCol}, {$faceDescCol}, {$facePhotoCol}, created_at FROM users ORDER BY id ASC")->fetchAll();
+            $users = db()->query("SELECT id, `{$nameCol}` AS nama, username, role, {$telCol}, {$stCol}, {$faceDescCol}, {$facePhotoCol}, {$faceStatCol}, created_at FROM users ORDER BY id ASC")->fetchAll();
         }
-        return $users;
+        return array_map(function($u) {
+            $fDesc = (string)($u['face_descriptor'] ?? '');
+            $fStatus = (string)($u['face_status'] ?? '');
+            if ($fStatus === '' && $fDesc !== '') {
+                $fStatus = 'verified';
+            } elseif ($fStatus === '') {
+                $fStatus = 'none';
+            }
+            $u['face_status'] = $fStatus;
+            return $u;
+        }, $users);
     } catch (Throwable $e) {
         return [
-            ['id' => 1, 'nama' => 'Administrator', 'username' => 'admin', 'role' => 'admin', 'telepon' => '-', 'status' => 'Aktif', 'face_descriptor' => '', 'face_photo' => ''],
-            ['id' => 2, 'nama' => 'Teknisi IT', 'username' => 'teknisi', 'role' => 'teknisi', 'telepon' => '-', 'status' => 'Aktif', 'face_descriptor' => '', 'face_photo' => ''],
+            ['id' => 1, 'nama' => 'Administrator', 'username' => 'admin', 'role' => 'admin', 'telepon' => '-', 'status' => 'Aktif', 'face_descriptor' => '', 'face_photo' => '', 'face_status' => 'none'],
+            ['id' => 2, 'nama' => 'Teknisi IT', 'username' => 'teknisi', 'role' => 'teknisi', 'telepon' => '-', 'status' => 'Aktif', 'face_descriptor' => '', 'face_photo' => '', 'face_status' => 'none'],
         ];
     }
 }
@@ -322,7 +345,7 @@ function get_user_by_id(int $id): ?array {
     return null;
 }
 
-function save_user_biometrics(int $userId, string $descriptorJson, string $photoBase64 = ''): array {
+function save_user_biometrics(int $userId, string $descriptorJson, string $photoBase64 = '', string $status = 'pending'): array {
     if ($userId <= 0) return ['success' => false, 'error' => 'ID pengguna tidak valid'];
     if (empty($descriptorJson)) return ['success' => false, 'error' => 'Data biometrik tidak boleh kosong'];
 
@@ -343,7 +366,7 @@ function save_user_biometrics(int $userId, string $descriptorJson, string $photo
         $rowNum = (int)($targetRow['_row_num'] ?? 0);
         if ($rowNum <= 1) return ['success' => false, 'error' => 'Gagal menentukan baris pengguna'];
 
-        $client->updateValues("Users!I{$rowNum}:J{$rowNum}", [[$descriptorJson, $photoBase64]]);
+        $client->updateValues("Users!I{$rowNum}:K{$rowNum}", [[$descriptorJson, $photoBase64, $status]]);
         $client->clearCache('Users');
         return ['success' => true];
     }
@@ -352,10 +375,56 @@ function save_user_biometrics(int $userId, string $descriptorJson, string $photo
     try {
         $cols = table_columns('users');
         if (!in_array('face_descriptor', $cols, true)) {
-            try { db()->exec("ALTER TABLE users ADD COLUMN face_descriptor TEXT NULL, ADD COLUMN face_photo MEDIUMTEXT NULL"); } catch (Throwable $e) {}
+            try { db()->exec("ALTER TABLE users ADD COLUMN face_descriptor TEXT NULL, ADD COLUMN face_photo MEDIUMTEXT NULL, ADD COLUMN face_status VARCHAR(50) DEFAULT 'pending'"); } catch (Throwable $e) {}
+        } elseif (!in_array('face_status', $cols, true)) {
+            try { db()->exec("ALTER TABLE users ADD COLUMN face_status VARCHAR(50) DEFAULT 'pending'"); } catch (Throwable $e) {}
         }
-        $st = db()->prepare("UPDATE users SET face_descriptor = ?, face_photo = ? WHERE id = ?");
-        $st->execute([$descriptorJson, $photoBase64, $userId]);
+        $st = db()->prepare("UPDATE users SET face_descriptor = ?, face_photo = ?, face_status = ? WHERE id = ?");
+        $st->execute([$descriptorJson, $photoBase64, $status, $userId]);
+        return ['success' => true];
+    } catch (Throwable $e) {
+        return ['success' => false, 'error' => $e->getMessage()];
+    }
+}
+
+function update_user_face_status(int $userId, string $status): array {
+    if ($userId <= 0) return ['success' => false, 'error' => 'ID pengguna tidak valid'];
+
+    if (is_google_cloud_mode()) {
+        $client = google_sheets_v4_client();
+        if (!$client) return ['success' => false, 'error' => 'Google Sheets client tidak tersedia'];
+
+        $rows = $client->getSheetData('Users');
+        $targetRow = null;
+        foreach ($rows as $u) {
+            if ((int)($u['id'] ?? 0) === $userId) {
+                $targetRow = $u;
+                break;
+            }
+        }
+        if (!$targetRow) return ['success' => false, 'error' => 'Pengguna tidak ditemukan'];
+
+        $rowNum = (int)($targetRow['_row_num'] ?? 0);
+        if ($rowNum <= 1) return ['success' => false, 'error' => 'Gagal baris pengguna'];
+
+        if ($status === 'rejected' || $status === 'deleted') {
+            $client->updateValues("Users!I{$rowNum}:K{$rowNum}", [['', '', 'none']]);
+        } else {
+            $client->updateValues("Users!K{$rowNum}", [[$status]]);
+        }
+        $client->clearCache('Users');
+        return ['success' => true];
+    }
+
+    // MySQL Mode
+    try {
+        if ($status === 'rejected' || $status === 'deleted') {
+            $st = db()->prepare("UPDATE users SET face_descriptor = NULL, face_photo = NULL, face_status = 'none' WHERE id = ?");
+            $st->execute([$userId]);
+        } else {
+            $st = db()->prepare("UPDATE users SET face_status = ? WHERE id = ?");
+            $st->execute([$status, $userId]);
+        }
         return ['success' => true];
     } catch (Throwable $e) {
         return ['success' => false, 'error' => $e->getMessage()];
@@ -367,7 +436,10 @@ function get_enrolled_technicians(): array {
     $result = [];
     foreach ($users as $u) {
         $descStr = trim((string)($u['face_descriptor'] ?? ''));
-        if ($descStr !== '' && (strcasecmp($u['status'] ?? '', 'Nonaktif') !== 0)) {
+        $fStatus = strtolower(trim((string)($u['face_status'] ?? '')));
+        // Hanya teknisi yang wajahnya SUDAH DIVERIFIKASI ADMIN yang diikutsertakan!
+        $isVerified = ($fStatus === 'verified' || $fStatus === 'terverifikasi' || ($fStatus === '' && !empty($descStr)));
+        if ($descStr !== '' && $isVerified && (strcasecmp($u['status'] ?? '', 'Nonaktif') !== 0)) {
             $descArr = json_decode($descStr, true);
             if (is_array($descArr) && count($descArr) >= 64) {
                 $result[] = [

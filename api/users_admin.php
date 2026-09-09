@@ -58,6 +58,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } else {
             $error = $res['error'] ?? 'Gagal memperbarui data pengguna.';
         }
+    } elseif ($action === 'approve_face') {
+        $id = (int)($_POST['user_id'] ?? 0);
+        $res = update_user_face_status($id, 'verified');
+        if (!empty($res['success'])) {
+            $_SESSION['flash'] = "Biometrik wajah pengguna #{$id} telah berhasil DIVERIFIKASI & DISETUJUI.";
+            header('Location: ' . module_url('users_admin.php'));
+            exit;
+        } else {
+            $error = $res['error'] ?? 'Gagal memverifikasi biometrik wajah.';
+        }
+    } elseif ($action === 'reject_face') {
+        $id = (int)($_POST['user_id'] ?? 0);
+        $res = update_user_face_status($id, 'rejected');
+        if (!empty($res['success'])) {
+            $_SESSION['flash'] = "Biometrik wajah pengguna #{$id} telah ditolak/dihapus.";
+            header('Location: ' . module_url('users_admin.php'));
+            exit;
+        } else {
+            $error = $res['error'] ?? 'Gagal menolak biometrik wajah.';
+        }
     }
 }
 
@@ -69,6 +89,74 @@ if ($editId > 0) {
 
 $users = get_user_list();
 
+// Cek pengguna yang wajahnya berstatus 'pending' (menunggu verifikasi admin)
+$pendingFaceUsers = [];
+foreach ($users as $u) {
+    $fDesc = trim((string)($u['face_descriptor'] ?? ''));
+    $fStat = strtolower(trim((string)($u['face_status'] ?? '')));
+    if ($fDesc !== '' && ($fStat === 'pending' || $fStat === 'menunggu')) {
+        $pendingFaceUsers[] = $u;
+    }
+}
+
+$pendingBannerHtml = '';
+if (!empty($pendingFaceUsers)) {
+    $pendingItemsHtml = '';
+    foreach ($pendingFaceUsers as $pu) {
+        $puId = (int)$pu['id'];
+        $puPhoto = trim((string)($pu['face_photo'] ?? ''));
+        $puImg = $puPhoto !== ''
+            ? '<img src="'.e($puPhoto).'" class="rounded-circle border border-2 border-warning shadow-sm" style="width: 60px; height: 60px; object-fit: cover;">'
+            : '<div class="bg-warning bg-opacity-25 rounded-circle d-flex align-items-center justify-content-center text-dark fw-bold" style="width: 60px; height: 60px;"><i class="bi bi-person fs-3"></i></div>';
+
+        $pendingItemsHtml .= '
+        <div class="col-md-6 col-lg-4">
+          <div class="card border border-warning shadow-sm p-3 h-100 bg-white">
+            <div class="d-flex align-items-center gap-3 mb-2">
+              '.$puImg.'
+              <div>
+                <h6 class="fw-bold mb-0 text-dark">'.e($pu['nama']).'</h6>
+                <div class="small text-muted font-monospace">@'.e($pu['username']).' · '.ucfirst($pu['role']).'</div>
+                <span class="badge bg-warning text-dark small"><i class="bi bi-hourglass-split me-1"></i> Menunggu Persetujuan</span>
+              </div>
+            </div>
+            <div class="d-flex gap-2 mt-auto pt-2 border-top">
+              <form method="post" class="flex-fill" onsubmit="return confirm(\'Setujui dan verifikasi biometrik wajah '.addslashes($pu['nama']).'?\')">
+                <input type="hidden" name="_csrf" value="'.e(csrf_token()).'">
+                <input type="hidden" name="action" value="approve_face">
+                <input type="hidden" name="user_id" value="'.$puId.'">
+                <button type="submit" class="btn btn-success btn-sm fw-bold w-100">
+                  <i class="bi bi-check-circle-fill me-1"></i> SETUJUI
+                </button>
+              </form>
+              <form method="post" onsubmit="return confirm(\'Tolak sampel biometrik '.addslashes($pu['nama']).'?\')">
+                <input type="hidden" name="_csrf" value="'.e(csrf_token()).'">
+                <input type="hidden" name="action" value="reject_face">
+                <input type="hidden" name="user_id" value="'.$puId.'">
+                <button type="submit" class="btn btn-outline-danger btn-sm">
+                  <i class="bi bi-x-circle"></i> Tolak
+                </button>
+              </form>
+            </div>
+          </div>
+        </div>';
+    }
+
+    $pendingBannerHtml = '
+    <div class="card border border-warning border-2 shadow-sm rounded-4 mb-4 bg-warning bg-opacity-10 p-3 p-md-4">
+      <div class="d-flex flex-wrap align-items-center justify-content-between mb-3 gap-2">
+        <div>
+          <span class="badge bg-warning text-dark fw-bold px-2 py-1 mb-1"><i class="bi bi-exclamation-triangle-fill me-1"></i> Tindakan Diperlukan</span>
+          <h5 class="fw-bold text-dark mb-0"><i class="bi bi-person-bounding-box text-warning me-2"></i>Verifikasi Biometrik Wajah Teknisi ('.count($pendingFaceUsers).')</h5>
+          <div class="text-secondary small">Teknisi telah mendaftarkan wajahnya via HP. Admin wajib memverifikasi agar wajah tersebut dapat digunakan saat menyelesaikan maintenance.</div>
+        </div>
+      </div>
+      <div class="row g-3">
+        '.$pendingItemsHtml.'
+      </div>
+    </div>';
+}
+
 $userRowsHtml = '';
 $no = 0;
 foreach ($users as $u) {
@@ -79,6 +167,8 @@ foreach ($users as $u) {
     $uRole = strtolower((string)($u['role'] ?? 'teknisi'));
     $uTel = format_phone_number((string)($u['telepon'] ?? '-'));
     $uStatus = (string)($u['status'] ?? 'Aktif');
+    $fDesc = trim((string)($u['face_descriptor'] ?? ''));
+    $fStat = strtolower(trim((string)($u['face_status'] ?? '')));
     $isBeingEdited = ($editId === $uId);
 
     $roleBadge = ($uRole === 'admin')
@@ -91,10 +181,40 @@ foreach ($users as $u) {
         ? '<span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 px-2 py-1">Nonaktif</span>'
         : '<span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 px-2 py-1">Aktif</span>';
 
-    $hasBio = !empty($u['face_descriptor']);
-    $bioBadge = $hasBio
-        ? '<a href="'.e(module_url('user_biometric_enroll.php', ['id'=>$uId])).'" class="badge text-decoration-none bg-success bg-opacity-10 text-success border border-success border-opacity-25 px-2 py-1" title="Klik untuk perbarui sampel wajah"><i class="bi bi-person-check-fill me-1"></i> Terdaftar</a>'
-        : '<a href="'.e(module_url('user_biometric_enroll.php', ['id'=>$uId])).'" class="badge text-decoration-none bg-warning bg-opacity-15 text-warning-emphasis border border-warning border-opacity-25 px-2 py-1" title="Klik untuk mendaftarkan wajah"><i class="bi bi-camera-fill me-1"></i> Daftarkan</a>';
+    // Status Biometrik & Tombol Aksi Verifikasi Admin
+    if ($fDesc === '') {
+        $bioBadge = '<a href="'.e(module_url('user_biometric_enroll.php', ['id'=>$uId])).'" class="badge text-decoration-none bg-secondary bg-opacity-10 text-secondary border px-2 py-1"><i class="bi bi-camera-fill me-1"></i> Daftarkan</a>';
+    } elseif ($fStat === 'verified' || $fStat === 'terverifikasi') {
+        $bioBadge = '<div class="d-inline-flex align-items-center gap-1">
+          <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-50 px-2 py-1"><i class="bi bi-check-circle-fill me-1"></i> Terverifikasi</span>
+          <form method="post" class="d-inline" onsubmit="return confirm(\'Hapus/reset data biometrik wajah '.addslashes($uNama).'?\')">
+            <input type="hidden" name="_csrf" value="'.e(csrf_token()).'">
+            <input type="hidden" name="action" value="reject_face">
+            <input type="hidden" name="user_id" value="'.$uId.'">
+            <button type="submit" class="btn btn-sm btn-link text-danger p-0 text-decoration-none" title="Hapus Wajah"><i class="bi bi-x-circle"></i></button>
+          </form>
+        </div>';
+    } elseif ($fStat === 'pending' || $fStat === 'menunggu') {
+        $bioBadge = '<div class="d-flex flex-column align-items-center gap-1">
+          <span class="badge bg-warning text-dark border border-warning px-2 py-1"><i class="bi bi-hourglass-split me-1"></i> Menunggu Verifikasi</span>
+          <div class="d-flex gap-1 mt-1">
+            <form method="post" class="d-inline" onsubmit="return confirm(\'Setujui dan verifikasi biometrik wajah '.addslashes($uNama).'?\')">
+              <input type="hidden" name="_csrf" value="'.e(csrf_token()).'">
+              <input type="hidden" name="action" value="approve_face">
+              <input type="hidden" name="user_id" value="'.$uId.'">
+              <button type="submit" class="btn btn-xs btn-success py-0 px-2 fw-bold" style="font-size: 0.72rem;"><i class="bi bi-check-lg me-1"></i>Setujui</button>
+            </form>
+            <form method="post" class="d-inline" onsubmit="return confirm(\'Tolak wajah '.addslashes($uNama).'?\')">
+              <input type="hidden" name="_csrf" value="'.e(csrf_token()).'">
+              <input type="hidden" name="action" value="reject_face">
+              <input type="hidden" name="user_id" value="'.$uId.'">
+              <button type="submit" class="btn btn-xs btn-outline-danger py-0 px-2" style="font-size: 0.72rem;">Tolak</button>
+            </form>
+          </div>
+        </div>';
+    } else {
+        $bioBadge = '<span class="badge bg-danger bg-opacity-10 text-danger border border-danger px-2 py-1"><i class="bi bi-x-circle me-1"></i> Ditolak</span>';
+    }
 
     $telHtml = ($uTel !== '-' && $uTel !== '') ? '<div class="small text-secondary mt-1"><i class="bi bi-telephone me-1"></i>'.e($uTel).'</div>' : '';
 
@@ -238,6 +358,7 @@ if ($editUser) {
 $body = '
 '.$flashHtml.'
 '.$errorHtml.'
+'.$pendingBannerHtml.'
 
 <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
   <div>
