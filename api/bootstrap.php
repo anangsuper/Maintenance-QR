@@ -1,17 +1,27 @@
 <?php
 declare(strict_types=1);
 
+function is_https(): bool {
+    if (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') return true;
+    if (!empty($_SERVER['HTTP_X_FORWARDED_PROTO']) && strtolower((string)$_SERVER['HTTP_X_FORWARDED_PROTO']) === 'https') return true;
+    if (!empty($_SERVER['HTTP_X_FORWARDED_SSL']) && strtolower((string)$_SERVER['HTTP_X_FORWARDED_SSL']) === 'on') return true;
+    if (!empty($_SERVER['HTTP_FRONT_END_HTTPS']) && strtolower((string)$_SERVER['HTTP_FRONT_END_HTTPS']) === 'on') return true;
+    if (!empty($_SERVER['SERVER_PORT']) && (int)$_SERVER['SERVER_PORT'] === 443) return true;
+    if (!empty($_SERVER['VERCEL'])) return true;
+    $host = (string)($_SERVER['HTTP_HOST'] ?? '');
+    if (str_ends_with($host, '.vercel.app')) return true;
+    return false;
+}
+
 if (session_status() !== PHP_SESSION_ACTIVE) {
     $lifetime = (int)cfg('session_timeout', envv('SESSION_TIMEOUT', '2592000')); // 30 hari (2592000 detik)
     ini_set('session.gc_maxlifetime', (string)$lifetime);
-    $isHttps = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
-        || (!empty($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https');
 
     session_set_cookie_params([
         'lifetime' => $lifetime,
         'path' => '/',
         'domain' => '',
-        'secure' => $isHttps,
+        'secure' => is_https(),
         'httponly' => true,
         'samesite' => 'Lax'
     ]);
@@ -113,8 +123,8 @@ function current_user_role(): string {
 }
 
 function request_uri_full(): string {
-    $scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
-    $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
+    $scheme = is_https() ? 'https' : 'http';
+    $host = $_SERVER['HTTP_X_FORWARDED_HOST'] ?? $_SERVER['HTTP_HOST'] ?? 'localhost';
     $uri = $_SERVER['REQUEST_URI'] ?? '/';
     return $scheme . '://' . $host . $uri;
 }
@@ -123,8 +133,8 @@ function module_base_url(): string {
     $configured = cfg('app_url', envv('APP_URL', ''));
     if ($configured) return rtrim($configured, '/');
 
-    $scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
-    $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
+    $scheme = is_https() ? 'https' : 'http';
+    $host = $_SERVER['HTTP_X_FORWARDED_HOST'] ?? $_SERVER['HTTP_HOST'] ?? 'localhost';
     $script = str_replace('\\', '/', $_SERVER['SCRIPT_NAME'] ?? '/');
     $dir = rtrim(dirname($script), '/');
     // Strip /api prefix for Vercel deployment (routes rewrite /xxx.php -> /api/xxx.php)
@@ -141,8 +151,8 @@ function module_url(string $file = '', array $params = []): string {
 function login_url(): string {
     $u = cfg('login_url', envv('LOGIN_URL', '/login.php'));
     if (preg_match('~^https?://~i', $u)) return $u;
-    $scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
-    $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
+    $scheme = is_https() ? 'https' : 'http';
+    $host = $_SERVER['HTTP_X_FORWARDED_HOST'] ?? $_SERVER['HTTP_HOST'] ?? 'localhost';
     return $scheme . '://' . $host . '/' . ltrim($u, '/');
 }
 
@@ -2574,6 +2584,25 @@ function get_asset_by_token(string $token): ?array {
                             return $a;
                         }
                     }
+                    $single = get_asset_by_id($targetAssetId);
+                    if ($single) return $single;
+                }
+            }
+            // Second attempt with fresh data if not found in cache
+            $freshAssets = map_sheets_assets(true);
+            foreach ($freshAssets as $a) {
+                $aid = (int)($a['id'] ?? 0);
+                $staticTok = get_static_qr_token($aid);
+                $qrToken = (string)($a['qr_token'] ?? '');
+                $kode = (string)($a['kode_inventaris'] ?? '');
+
+                if (
+                    strcasecmp($qrToken, $token) === 0 ||
+                    strcasecmp($staticTok, $token) === 0 ||
+                    (is_numeric($token) && (int)$token === $aid) ||
+                    ($kode !== '' && strcasecmp($kode, $token) === 0)
+                ) {
+                    return $a;
                 }
             }
         }
@@ -2905,31 +2934,32 @@ function save_maintenance_record(array $data): array {
         }
     }
 
-    if (strlen($bioPhoto) > 40000) {
-        $bioPhoto = substr($bioPhoto, 0, 40000);
+    if (strlen($bioPhoto) > 20000) {
+        $bioPhoto = substr($bioPhoto, 0, 20000);
     }
 
     if (is_google_cloud_mode()) {
         $client = google_sheets_v4_client();
         if (!$client) return ['success' => false, 'error' => 'Google Sheets client tidak tersedia'];
 
-        // 1. Simpan ke Maintenance_Scan
-        $client->createSheetIfNotExists('Maintenance_Scan');
-        $fullScanHeaders = ['id', 'asset_id', 'technician_user_id', 'technician_name', 'maintenance_date', 'maintenance_time', 'maintenance_month', 'maintenance_year', 'status', 'source', 'created_at', 'findings', 'recommendation', 'biometric_verified', 'biometric_confidence', 'biometric_photo', 'latitude', 'longitude'];
-        $existingScanHeader = $client->getValues('Maintenance_Scan!A1:R1');
-        if (empty($existingScanHeader)) {
-            $client->appendValues('Maintenance_Scan', [$fullScanHeaders]);
-        } elseif (count($existingScanHeader[0] ?? []) < count($fullScanHeaders)) {
-            $client->updateValues('Maintenance_Scan!A1:R1', [$fullScanHeaders]);
-        }
-
-        $scans = $client->getSheetData('Maintenance_Scan', true);
+        // 1. Dapatkan Scan ID berikutnya secara ultra-cepat (hanya ambil kolom A, hindari download ribuan cell & base64)
+        $rawScanCol = $client->getValues('Maintenance_Scan!A:A');
         $maxId = 0;
-        foreach ($scans as $s) {
-            $sid = (int)($s['id'] ?? 0);
-            if ($sid > $maxId) $maxId = $sid;
+        if (!empty($rawScanCol)) {
+            foreach ($rawScanCol as $cRow) {
+                $val = (int)($cRow[0] ?? 0);
+                if ($val > $maxId) $maxId = $val;
+            }
         }
-        $newScanId = max(count($scans) + 1, $maxId + 1);
+        $newScanId = max(count($rawScanCol), $maxId + 1);
+        if ($newScanId <= 0) $newScanId = 1;
+
+        // Jika sheet Maintenance_Scan masih benar-benar kosong, buat header terlebih dahulu
+        if (empty($rawScanCol)) {
+            $client->createSheetIfNotExists('Maintenance_Scan');
+            $fullScanHeaders = ['id', 'asset_id', 'technician_user_id', 'technician_name', 'maintenance_date', 'maintenance_time', 'maintenance_month', 'maintenance_year', 'status', 'source', 'created_at', 'findings', 'recommendation', 'biometric_verified', 'biometric_confidence', 'biometric_photo', 'latitude', 'longitude'];
+            $client->appendValues('Maintenance_Scan', [$fullScanHeaders]);
+        }
 
         $newScanRow = [
             $newScanId,
@@ -2952,29 +2982,35 @@ function save_maintenance_record(array $data): array {
             $longitude
         ];
 
-        // Append ke sheet Maintenance_Scan (gunakan 'Maintenance_Scan' langsung agar tidak terkena limit kolom A..K)
+        // Append baris ke Maintenance_Scan
         $scanOk = $client->appendValues('Maintenance_Scan', [$newScanRow]);
         if (!$scanOk) {
-            error_log("save_maintenance_record: appendValues Maintenance_Scan failed!");
-            return ['success' => false, 'error' => 'Gagal menyimpan rekaman maintenance ke Google Sheet. Silakan coba simpan kembali.'];
+            $client->createSheetIfNotExists('Maintenance_Scan');
+            $scanOk = $client->appendValues('Maintenance_Scan', [$newScanRow]);
+            if (!$scanOk) {
+                error_log("save_maintenance_record: appendValues Maintenance_Scan failed!");
+                return ['success' => false, 'error' => 'Gagal menyimpan rekaman maintenance ke Google Sheet.'];
+            }
         }
 
-        // 2. Simpan 9 items ke Maintenance_Checklists
-        $client->createSheetIfNotExists('Maintenance_Checklists');
-        $existingChkHeader = $client->getValues('Maintenance_Checklists!A1:H1');
-        if (empty($existingChkHeader)) {
+        // 2. Dapatkan ID Checklist berikutnya secara cepat (hanya kolom A)
+        $rawChkCol = $client->getValues('Maintenance_Checklists!A:A');
+        $maxChkId = 0;
+        if (!empty($rawChkCol)) {
+            foreach ($rawChkCol as $cRow) {
+                $val = (int)($cRow[0] ?? 0);
+                if ($val > $maxChkId) $maxChkId = $val;
+            }
+        }
+        $nextChkId = max(count($rawChkCol), $maxChkId + 1);
+        if ($nextChkId <= 0) $nextChkId = 1;
+
+        if (empty($rawChkCol)) {
+            $client->createSheetIfNotExists('Maintenance_Checklists');
             $client->appendValues('Maintenance_Checklists', [
                 ['id', 'maintenance_id', 'asset_id', 'checklist_number', 'checklist_name', 'checked', 'notes', 'created_at']
             ]);
         }
-
-        $existingChk = $client->getSheetData('Maintenance_Checklists');
-        $maxChkId = 0;
-        foreach ($existingChk as $c) {
-            $cid = (int)($c['id'] ?? 0);
-            if ($cid > $maxChkId) $maxChkId = $cid;
-        }
-        $nextChkId = $maxChkId + 1;
 
         $chkRows = [];
         foreach ($fixedItems as $num => $name) {
@@ -2996,18 +3032,23 @@ function save_maintenance_record(array $data): array {
 
         $chkOk = $client->appendValues('Maintenance_Checklists', $chkRows);
         if (!$chkOk) {
-            // Fallback dengan updateValues
-            $rawChk = $client->getValues('Maintenance_Checklists!A:A');
-            $nextRow = max(1, count($rawChk)) + 1;
-            $endRow = $nextRow + count($chkRows) - 1;
-            $client->updateValues("Maintenance_Checklists!A{$nextRow}:H{$endRow}", $chkRows);
+            $client->createSheetIfNotExists('Maintenance_Checklists');
+            $chkOk = $client->appendValues('Maintenance_Checklists', $chkRows);
+            if (!$chkOk) {
+                $rawChk = $client->getValues('Maintenance_Checklists!A:A');
+                $nextRow = max(1, count($rawChk)) + 1;
+                $endRow = $nextRow + count($chkRows) - 1;
+                $client->updateValues("Maintenance_Checklists!A{$nextRow}:H{$endRow}", $chkRows);
+            }
         }
 
-        // 3. Jika ada temuan / kerusakan, catat juga di Maintenance_Findings
+        // 3. Jika ada temuan / kerusakan, catat di Maintenance_Findings
         if ($findings !== '' || $status === 'Perlu Perbaikan' || $status === 'Proses' || $status === 'Temuan') {
-            $client->createSheetIfNotExists('Maintenance_Findings');
-            $existingFindings = $client->getSheetData('Maintenance_Findings');
-            $newFindId = count($existingFindings) + 1;
+            $rawFindCol = $client->getValues('Maintenance_Findings!A:A');
+            $newFindId = max(1, count($rawFindCol) + 1);
+            if (empty($rawFindCol)) {
+                $client->createSheetIfNotExists('Maintenance_Findings');
+            }
             $client->appendValues('Maintenance_Findings', [[
                 $newFindId,
                 $newScanId,

@@ -4,7 +4,6 @@ $isLoggedIn = is_logged_in();
 
 $id = max(0, (int)($_GET['id'] ?? 0));
 if ($id <= 0) {
-    http_response_code(400);
     render_page('Parameter Tidak Valid', '<div class="alert alert-danger">ID log maintenance tidak valid.</div>');
     exit;
 }
@@ -57,7 +56,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (($_POST['action'] ?? '') === 'upda
 
 $detail = get_maintenance_detail($id);
 if (!$detail) {
-    http_response_code(404);
     render_page('Data Tidak Ditemukan', '<div class="alert alert-warning">Data rincian maintenance dengan ID #'.$id.' tidak ditemukan.</div>');
     exit;
 }

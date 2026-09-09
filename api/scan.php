@@ -3,7 +3,6 @@ require __DIR__ . '/bootstrap.php';
 
 $token = trim((string)($_GET['t'] ?? $_POST['t'] ?? ''));
 if ($token === '' || !preg_match('/^[a-zA-Z0-9\-_]{1,128}$/', $token)) {
-    http_response_code(400);
     render_page('QR Tidak Valid', '<div class="alert alert-danger border-0 shadow-sm"><i class="bi bi-exclamation-octagon-fill me-2"></i><strong>QR tidak valid.</strong> Token QR tidak dikenali.</div>', '', '', false);
     exit;
 }
@@ -11,8 +10,7 @@ if ($token === '' || !preg_match('/^[a-zA-Z0-9\-_]{1,128}$/', $token)) {
 $asset = get_asset_by_token($token);
 
 if (!$asset) {
-    http_response_code(404);
-    render_page('QR Tidak Ditemukan', '<div class="alert alert-danger border-0 shadow-sm"><i class="bi bi-exclamation-triangle-fill me-2"></i><strong>QR tidak ditemukan atau sudah dinonaktifkan.</strong></div>', '', '', false);
+    render_page('QR Tidak Ditemukan', '<div class="alert alert-danger border-0 shadow-sm"><i class="bi bi-exclamation-triangle-fill me-2"></i><strong>QR tidak ditemukan atau belum terdaftar di sistem.</strong> Pastikan kode QR sudah di-generate di menu admin QR Aset.</div>', '', '', false);
     exit;
 }
 
@@ -472,7 +470,7 @@ if ($action === 'start' || $action === 'form' || $action === 'ulang') {
 
           '.($error ? '<div class="alert alert-danger py-2 mb-3">'.e($error).'</div>' : '').'
 
-          <form method="post" action="'.e(module_url('scan.php', ['t' => $token, 'action' => $action])).'" id="formMaintenance">
+          <form method="post" action="scan.php?t='.urlencode($token).'&amp;action='.urlencode($action).'" id="formMaintenance">
             <input type="hidden" name="_csrf" value="'.e(csrf_token()).'">
             <input type="hidden" name="action" value="save_maintenance">
             <input type="hidden" name="t" value="'.e($token).'">
@@ -923,17 +921,23 @@ if ($action === 'start' || $action === 'form' || $action === 'ulang') {
     }
 
     function captureBioSnapshot(videoEl) {
-      const c = document.createElement("canvas");
-      c.width = 120;
-      c.height = 120;
-      const ctx = c.getContext("2d");
-      const s = Math.min(videoEl.videoWidth, videoEl.videoHeight);
-      const sx = (videoEl.videoWidth - s) / 2;
-      const sy = (videoEl.videoHeight - s) / 2;
-      ctx.translate(120, 0);
-      ctx.scale(-1, 1);
-      ctx.drawImage(videoEl, sx, sy, s, s, 0, 0, 120, 120);
-      return c.toDataURL("image/jpeg", 0.70);
+      try {
+        if (!videoEl || !videoEl.videoWidth || !videoEl.videoHeight) return "";
+        const c = document.createElement("canvas");
+        c.width = 100;
+        c.height = 100;
+        const ctx = c.getContext("2d");
+        const s = Math.min(videoEl.videoWidth, videoEl.videoHeight);
+        const sx = (videoEl.videoWidth - s) / 2;
+        const sy = (videoEl.videoHeight - s) / 2;
+        ctx.translate(100, 0);
+        ctx.scale(-1, 1);
+        ctx.drawImage(videoEl, sx, sy, s, s, 0, 0, 100, 100);
+        return c.toDataURL("image/jpeg", 0.65);
+      } catch (err) {
+        console.warn("Capture snapshot err:", err);
+        return "";
+      }
     }
 
     let isTrackingFrame = false;
@@ -1048,14 +1052,16 @@ if ($action === 'start' || $action === 'form' || $action === 'ulang') {
                   statusBox.innerHTML = \'<i class="bi bi-check-circle-fill me-1"></i> Wajah Dikenali: <strong>\' + bestTech.nama + \'</strong>! Menyimpan...\';
 
                   if (bioVideoStream) {
-                    bioVideoStream.getTracks().forEach(t => t.stop());
+                    try {
+                      bioVideoStream.getTracks().forEach(t => t.stop());
+                    } catch(e) {}
                   }
 
-                  // Otomatis submit form setelah 900ms
+                  // Otomatis submit form setelah 700ms
                   setTimeout(() => {
                     const formEl = document.getElementById("formMaintenance");
                     if (formEl) formEl.submit();
-                  }, 900);
+                  }, 700);
                   return;
                 } else {
                   statusBox.className = "alert alert-danger py-2 px-3 small fw-bold mb-3";

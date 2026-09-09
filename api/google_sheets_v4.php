@@ -368,6 +368,9 @@ class GoogleSheetsV4Client {
      * Buat sheet/tab baru jika belum ada
      */
     public function createSheetIfNotExists(string $sheetName): bool {
+        static $checkedSheets = [];
+        if (!empty($checkedSheets[$sheetName])) return true;
+
         $token = $this->getAccessToken();
         if (!$token) return false;
 
@@ -397,6 +400,7 @@ class GoogleSheetsV4Client {
             ],
         ]);
 
+        $checkedSheets[$sheetName] = true;
         return true;
     }
 }
