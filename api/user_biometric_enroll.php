@@ -119,7 +119,10 @@ if ($existingPhoto) {
 $userOptionsHtml = '';
 foreach ($allUsers as $u) {
     $uid = (int)($u['id'] ?? 0);
-    $unama = $u['nama'] ?? $u['username'] ?? 'User';
+    $unama = trim((string)($u['nama'] ?? $u['username'] ?? ''));
+    if ($uid <= 0 || strcasecmp($unama, 'nama') === 0 || $unama === '') {
+        continue;
+    }
     $urole = ucfirst($u['role'] ?? 'Teknisi');
     $uHasBio = !empty($u['face_descriptor']);
     $uStat = strtolower(trim((string)($u['face_status'] ?? '')));

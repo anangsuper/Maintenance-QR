@@ -249,11 +249,20 @@ class GoogleSheetsV4Client {
         return true;
     }
 
+    private function getCacheFilePath(string $sheetName): string {
+        $hash = md5($this->spreadsheetId . '_' . $sheetName);
+        return sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'gs_' . $hash . '.json';
+    }
+
     public function clearCache(?string $sheetName = null): void {
         if ($sheetName) {
             unset(self::$runtimeCache[$sheetName]);
             if (session_status() === PHP_SESSION_ACTIVE) {
                 unset($_SESSION['_gs_cache_' . $sheetName], $_SESSION['_gs_time_' . $sheetName]);
+            }
+            $filePath = $this->getCacheFilePath($sheetName);
+            if (file_exists($filePath)) {
+                @unlink($filePath);
             }
         } else {
             self::$runtimeCache = [];
@@ -263,6 +272,11 @@ class GoogleSheetsV4Client {
                         unset($_SESSION[$k]);
                     }
                 }
+            }
+            $pattern = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'gs_' . md5($this->spreadsheetId) . '_*.json';
+            $files = @glob($pattern);
+            if ($files) {
+                foreach ($files as $f) @unlink($f);
             }
         }
     }
@@ -283,10 +297,29 @@ class GoogleSheetsV4Client {
             }
         }
 
-        // 3. Ambil data dari Google Sheets API jika cache kedaluwarsa / force refresh
+        // 3. Cek warm disk cache di /tmp (sangat cepat ~1ms, bertahan antar request dan antar sesi)
+        if (!$forceRefresh) {
+            $filePath = $this->getCacheFilePath($sheetName);
+            if (file_exists($filePath) && (time() - filemtime($filePath) < 120)) {
+                $cachedContent = @file_get_contents($filePath);
+                if ($cachedContent) {
+                    $cachedJson = json_decode($cachedContent, true);
+                    if (is_array($cachedJson)) {
+                        self::$runtimeCache[$sheetName] = $cachedJson;
+                        if (session_status() === PHP_SESSION_ACTIVE) {
+                            $_SESSION['_gs_cache_' . $sheetName] = $cachedJson;
+                            $_SESSION['_gs_time_' . $sheetName] = time();
+                        }
+                        return $cachedJson;
+                    }
+                }
+            }
+        }
+
+        // 4. Ambil data dari Google Sheets API jika cache kedaluwarsa / force refresh
         $rows = $this->getValues($sheetName . '!A1:Z');
 
-        // 4. Jika API gagal (misal rate limit/timeout), gunakan session cache sebelumnya agar data tidak hilang
+        // 5. Jika API gagal (misal rate limit/timeout), gunakan session cache sebelumnya agar data tidak hilang
         if (empty($rows)) {
             if (session_status() === PHP_SESSION_ACTIVE && !empty($_SESSION['_gs_cache_' . $sheetName])) {
                 self::$runtimeCache[$sheetName] = $_SESSION['_gs_cache_' . $sheetName];
@@ -334,6 +367,32 @@ class GoogleSheetsV4Client {
         $result = [];
         for ($i = $startIdx; $i < count($rows); $i++) {
             $row = $rows[$i];
+
+            // Abaikan jika seluruh sel dalam baris kosong
+            $hasAnyValue = false;
+            foreach ($row as $cellVal) {
+                if (trim((string)$cellVal) !== '') {
+                    $hasAnyValue = true;
+                    break;
+                }
+            }
+            if (!$hasAnyValue) {
+                continue;
+            }
+
+            // Abaikan jika baris ini merupakan duplikat baris header
+            $c0 = strtolower(trim((string)($row[0] ?? '')));
+            if ($c0 === 'id' || $c0 === 'no') {
+                continue;
+            }
+            if ($sheetName === 'Users') {
+                $valNama = strtolower(trim((string)($row[3] ?? '')));
+                $valRole = strtolower(trim((string)($row[4] ?? '')));
+                if ($valNama === 'nama' || $valRole === 'role') {
+                    continue;
+                }
+            }
+
             $obj = ['_row_num' => $i + 1];
 
             // Deteksi offset kolom jika baris bergeser ke kanan (misal baris Maintenance_Checklists di kolom H..O)
@@ -373,12 +432,13 @@ class GoogleSheetsV4Client {
             $result[] = $obj;
         }
 
-        // Simpan ke cache runtime & session dengan timestamp
+        // Simpan ke cache runtime, session, dan file temp
         self::$runtimeCache[$sheetName] = $result;
         if (session_status() === PHP_SESSION_ACTIVE) {
             $_SESSION['_gs_cache_' . $sheetName] = $result;
             $_SESSION['_gs_time_' . $sheetName] = time();
         }
+        @file_put_contents($this->getCacheFilePath($sheetName), json_encode($result));
 
         return $result;
     }

@@ -239,19 +239,6 @@ function get_user_list(): array {
         $client = google_sheets_v4_client();
         if (!$client) return [];
 
-        $client->createSheetIfNotExists('Users');
-        $existingHeader = $client->getValues('Users!A1:H1');
-        if (empty($existingHeader)) {
-            $adminHash = password_hash('admin123', PASSWORD_BCRYPT);
-            $teknisiHash = password_hash('teknisi123', PASSWORD_BCRYPT);
-            $client->appendValues('Users!A:H', [
-                ['id', 'username', 'password', 'nama', 'role', 'telepon', 'status', 'created_at'],
-                [1, 'admin', $adminHash, 'Administrator', 'admin', "'081234567890", 'Aktif', date('Y-m-d H:i:s')],
-                [2, 'teknisi', $teknisiHash, 'Teknisi IT', 'teknisi', "'081234567891", 'Aktif', date('Y-m-d H:i:s')],
-            ]);
-            $client->clearCache('Users');
-        }
-
         $rows = $client->getSheetData('Users');
         if (empty($rows)) {
             return [
@@ -259,7 +246,19 @@ function get_user_list(): array {
                 ['id' => 2, 'nama' => 'Teknisi IT', 'username' => 'teknisi', 'role' => 'teknisi', 'telepon' => '081234567891', 'status' => 'Aktif'],
             ];
         }
-        return array_map(function($u) {
+
+        $users = [];
+        foreach ($rows as $u) {
+            $id = (int)($u['id'] ?? 0);
+            $nama = trim((string)($u['nama'] ?? $u['name'] ?? $u['username'] ?? ''));
+            $username = trim((string)($u['username'] ?? ''));
+            $role = strtolower(trim((string)($u['role'] ?? 'teknisi')));
+
+            // Abaikan jika bukan user valid atau merupakan baris header yang bocor
+            if ($id <= 0 || strcasecmp($nama, 'nama') === 0 || strcasecmp($username, 'username') === 0 || $nama === '') {
+                continue;
+            }
+
             $fDesc = (string)($u['face_descriptor'] ?? '');
             $fStatus = (string)($u['face_status'] ?? '');
             if ($fStatus === '' && $fDesc !== '') {
@@ -267,11 +266,12 @@ function get_user_list(): array {
             } elseif ($fStatus === '') {
                 $fStatus = 'none';
             }
-            return [
-                'id' => (int)($u['id'] ?? 0),
-                'nama' => (string)($u['nama'] ?? $u['name'] ?? $u['username'] ?? ''),
-                'username' => (string)($u['username'] ?? ''),
-                'role' => strtolower((string)($u['role'] ?? 'teknisi')),
+
+            $users[] = [
+                'id' => $id,
+                'nama' => $nama,
+                'username' => $username,
+                'role' => $role !== '' ? $role : 'teknisi',
                 'telepon' => format_phone_number((string)($u['telepon'] ?? $u['kontak'] ?? '-')),
                 'status' => (string)($u['status'] ?? 'Aktif'),
                 'created_at' => (string)($u['created_at'] ?? ''),
@@ -279,7 +279,16 @@ function get_user_list(): array {
                 'face_photo' => (string)($u['face_photo'] ?? ''),
                 'face_status' => $fStatus
             ];
-        }, $rows);
+        }
+
+        if (empty($users)) {
+            return [
+                ['id' => 1, 'nama' => 'Administrator', 'username' => 'admin', 'role' => 'admin', 'telepon' => '081234567890', 'status' => 'Aktif'],
+                ['id' => 2, 'nama' => 'Teknisi IT', 'username' => 'teknisi', 'role' => 'teknisi', 'telepon' => '081234567891', 'status' => 'Aktif'],
+            ];
+        }
+
+        return $users;
     }
 
     // MySQL Mode
@@ -491,15 +500,13 @@ function create_new_user(array $data): array {
         $client = google_sheets_v4_client();
         if (!$client) return ['success' => false, 'error' => 'Google Sheets client tidak tersedia'];
 
-        $client->createSheetIfNotExists('Users');
-        $existingHeader = $client->getValues('Users!A1:H1');
-        if (empty($existingHeader)) {
+        $rows = $client->getSheetData('Users', true);
+        if (empty($rows)) {
             $client->appendValues('Users!A:H', [
                 ['id', 'username', 'password', 'nama', 'role', 'telepon', 'status', 'created_at']
             ]);
+            $rows = [];
         }
-
-        $rows = $client->getSheetData('Users', true);
         $maxId = 0;
         foreach ($rows as $r) {
             $uid = (int)($r['id'] ?? 0);
@@ -596,19 +603,6 @@ function update_user(int $id, array $data): array {
     if (is_google_cloud_mode()) {
         $client = google_sheets_v4_client();
         if (!$client) return ['success' => false, 'error' => 'Google Sheets client tidak tersedia'];
-
-        $client->createSheetIfNotExists('Users');
-        $existingHeader = $client->getValues('Users!A1:H1');
-        if (empty($existingHeader)) {
-            $adminHash = password_hash('admin123', PASSWORD_BCRYPT);
-            $teknisiHash = password_hash('teknisi123', PASSWORD_BCRYPT);
-            $client->appendValues('Users!A:H', [
-                ['id', 'username', 'password', 'nama', 'role', 'telepon', 'status', 'created_at'],
-                [1, 'admin', $adminHash, 'Administrator', 'admin', "'081234567890", 'Aktif', date('Y-m-d H:i:s')],
-                [2, 'teknisi', $teknisiHash, 'Teknisi IT', 'teknisi', "'081234567891", 'Aktif', date('Y-m-d H:i:s')],
-            ]);
-            $client->clearCache('Users');
-        }
 
         $rows = $client->getSheetData('Users', true);
         $targetRow = null;
