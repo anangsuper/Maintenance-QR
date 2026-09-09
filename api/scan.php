@@ -1098,6 +1098,7 @@ if ($action === 'start' || $action === 'form' || $action === 'ulang') {
 
     render_page($formTitle, $body, $formHeadStyle, $formScript, false);
     exit;
+}
 
 // =========================================================================
 // 4. TAMPILAN UTAMA: DETAIL PERANGKAT & KARTU KONTROL CHECKLIST 12 BULAN
