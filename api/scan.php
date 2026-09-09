@@ -534,7 +534,12 @@ if ($action === 'start' || $action === 'form' || $action === 'ulang') {
                 <label class="form-label small fw-bold text-secondary"><i class="bi bi-person me-1"></i>Petugas / Teknisi <span class="text-danger">*</span></label>
                 <input type="text" class="form-control py-2" name="technician_name" id="technicianNameInput" list="listTeknisi" value="'.e($techDefault).'" placeholder="Ketik atau pilih nama petugas..." required>
                 <datalist id="listTeknisi">'.$techOptions.'</datalist>
-                <div class="form-text text-muted" style="font-size: 0.75rem;">'.($hasEnrolledTechs ? 'Nama teknisi akan terisi otomatis saat verifikasi wajah AI berhasil.' : 'Pilih nama dari daftar atau ketikkan nama Anda.').'</div>
+                <div class="d-flex justify-content-between align-items-center flex-wrap gap-1 mt-1">
+                  <div class="form-text text-muted mb-0" style="font-size: 0.75rem;">'.($hasEnrolledTechs ? 'Nama teknisi akan terisi otomatis via verifikasi wajah AI.' : 'Pilih nama dari daftar atau ketikkan nama Anda.').'</div>
+                  <a href="'.e(module_url('user_biometric_enroll.php', ['ret' => module_url('scan.php', ['t' => $token, 'action' => 'form'])])).'" class="badge bg-primary bg-opacity-10 text-primary text-decoration-none border border-primary border-opacity-25 py-1 px-2">
+                    <i class="bi bi-phone-fill me-1"></i> Daftar Wajah di HP
+                  </a>
+                </div>
               </div>
             </div>
 
@@ -575,9 +580,14 @@ if ($action === 'start' || $action === 'form' || $action === 'ulang') {
               <button type="submit" class="btn btn-success btn-lg fw-bold py-3 shadow" onclick="return confirm(\'Simpan hasil checklist maintenance sekarang?\')">
                 <i class="bi bi-save-fill me-2"></i> SIMPAN MAINTENANCE
               </button>
-              <div class="alert alert-light border py-2 px-3 small mb-0 d-flex align-items-center gap-2 text-muted">
-                <i class="bi bi-info-circle text-primary fs-5"></i>
-                <div>Belum ada data biometrik teknisi terdaftar. Daftarkan biometrik wajah di menu <strong>Admin Pengguna</strong> untuk mengaktifkan scan wajah otomatis.</div>
+              <div class="alert alert-light border py-2 px-3 small mb-0 d-flex align-items-center justify-content-between flex-wrap gap-2 text-muted">
+                <div class="d-flex align-items-center gap-2">
+                  <i class="bi bi-info-circle text-primary fs-5"></i>
+                  <div>Belum ada data biometrik teknisi terdaftar.</div>
+                </div>
+                <a href="'.e(module_url('user_biometric_enroll.php', ['ret' => module_url('scan.php', ['t' => $token, 'action' => 'form'])])).'" class="btn btn-sm btn-primary fw-bold">
+                  <i class="bi bi-phone-fill me-1"></i> Daftarkan Wajah di HP
+                </a>
               </div>
               <a class="btn btn-outline-secondary py-2" href="'.e(module_url('scan.php', ['t' => $token])).'">Batal</a>
               ').'
@@ -642,6 +652,13 @@ if ($action === 'start' || $action === 'form' || $action === 'ulang') {
               <span id="pillMatchId" class="badge bg-secondary bg-opacity-25 text-dark small py-2 px-3 border">
                 <i class="bi bi-check-all me-1"></i> Identitas Cocok
               </span>
+            </div>
+
+            <!-- Link Pendaftaran Wajah di HP jika belum terdaftar -->
+            <div class="mb-3">
+              <a href="'.e(module_url('user_biometric_enroll.php', ['ret' => module_url('scan.php', ['t' => $token, 'action' => 'form'])])).'" class="btn btn-outline-primary btn-sm w-100 rounded-pill">
+                <i class="bi bi-phone-fill me-1"></i> Wajah Belum Terdaftar? Daftarkan di HP Sekarang
+              </a>
             </div>
 
             <div class="d-flex justify-content-between align-items-center">

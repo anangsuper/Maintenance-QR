@@ -4008,6 +4008,7 @@ function render_page(string $title, string $content, string $extraHead = '', str
                     <li><a class="dropdown-item py-2 '.($currentPage==='cabang_admin.php'?'active':'').'" href="'.e(module_url('cabang_admin.php')).'"><i class="bi bi-buildings me-2 text-primary"></i> Data Cabang</a></li>
                     <li><a class="dropdown-item py-2 '.($currentPage==='divisi_admin.php'?'active':'').'" href="'.e(module_url('divisi_admin.php')).'"><i class="bi bi-diagram-3 me-2 text-info"></i> Data Divisi</a></li>
                     <li><a class="dropdown-item py-2 '.($currentPage==='users_admin.php'?'active':'').'" href="'.e(module_url('users_admin.php')).'"><i class="bi bi-people me-2 text-warning"></i> Akun Pengguna / Teknisi</a></li>
+                    <li><a class="dropdown-item py-2 '.($currentPage==='user_biometric_enroll.php'?'active':'').'" href="'.e(module_url('user_biometric_enroll.php')).'"><i class="bi bi-person-bounding-box me-2 text-success"></i> Daftar Wajah Teknisi (HP)</a></li>
                     <li><hr class="dropdown-divider border-secondary opacity-50"></li>
                     <li><a class="dropdown-item py-2 '.($currentPage==='system_design.php'?'active':'').'" href="'.e(module_url('system_design.php')).'"><i class="bi bi-file-earmark-pdf-fill me-2 text-danger"></i> Dokumen Desain (PDF)</a></li>
                   </ul>
