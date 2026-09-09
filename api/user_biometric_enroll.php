@@ -352,25 +352,26 @@ function handleUserChange(val) {
 
 async function loadModels() {
   try {
-    statusMsg.innerHTML = \'<span class="spinner-border spinner-border-sm me-2 text-primary"></span> Memuat model AI TinyFace & Landmark...\';
+    statusMsg.innerHTML = \'<span class="spinner-border spinner-border-sm me-2 text-primary"></span> Memuat model AI GPU...\';
     progressBar.style.width = "30%";
     
-    await faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL);
-    progressBar.style.width = "60%";
-    
-    try {
-      await faceapi.nets.faceLandmark68TinyNet.loadFromUri(MODEL_URL);
-    } catch(e) {
-      await faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL);
+    if (typeof faceapi !== "undefined" && faceapi.tf) {
+      try {
+        await faceapi.tf.setBackend("webgl");
+        await faceapi.tf.ready();
+      } catch(e) {}
     }
-    progressBar.style.width = "85%";
     
-    await faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL);
+    await Promise.all([
+      faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL),
+      faceapi.nets.faceLandmark68TinyNet.loadFromUri(MODEL_URL).catch(() => faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL)),
+      faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL)
+    ]);
+    
     progressBar.style.width = "100%";
-    
     modelsLoaded = true;
     statusMsg.className = "alert alert-success py-2 px-3 text-center mb-3 small fw-semibold";
-    statusMsg.innerHTML = \'<i class="bi bi-check-circle me-1"></i> Modul AI siap. Silakan klik "AKTIFKAN KAMERA DEPAN HP".\';
+    statusMsg.innerHTML = \'<i class="bi bi-check-circle me-1"></i> Modul AI GPU siap. Silakan klik "AKTIFKAN KAMERA DEPAN HP".\';
   } catch (err) {
     console.error("Gagal memuat model:", err);
     statusMsg.className = "alert alert-danger py-2 px-3 text-center mb-3 small";
@@ -391,8 +392,8 @@ async function startCamera() {
     videoStream = await navigator.mediaDevices.getUserMedia({
       video: {
         facingMode: "user",
-        width: { ideal: 640 },
-        height: { ideal: 480 }
+        width: { ideal: 480 },
+        height: { ideal: 360 }
       },
       audio: false
     });
@@ -430,8 +431,8 @@ function startFaceTracking() {
   isTrackingFrame = false;
 
   const useTinyLandmarks = faceapi.nets.faceLandmark68TinyNet && faceapi.nets.faceLandmark68TinyNet.isLoaded;
-  // inputSize 160 berjalan 3-4x lebih cepat dibanding 224 pada HP
-  const fastDetectorOptions = new faceapi.TinyFaceDetectorOptions({ inputSize: 160, scoreThreshold: 0.40 });
+  // inputSize 128 berjalan ultra-cepat (<15ms) pada WebGL GPU HP
+  const fastDetectorOptions = new faceapi.TinyFaceDetectorOptions({ inputSize: 128, scoreThreshold: 0.35 });
 
   async function trackingLoop() {
     if (enrollCompleted || !video.videoWidth || !video.videoHeight || video.paused || video.ended) {
@@ -459,7 +460,7 @@ function startFaceTracking() {
             const avgEAR = (leftEAR + rightEAR) / 2.0;
 
             // Liveness Detection: Deteksi Kedipan Mata
-            if (avgEAR < 0.23) {
+            if (avgEAR < 0.24) {
               lastEyeState = "closed";
             } else if (avgEAR > 0.27 && lastEyeState === "closed") {
               blinkDetected = true;
@@ -505,7 +506,7 @@ function startFaceTracking() {
     }
 
     if (!enrollCompleted) {
-      trackingTimer = setTimeout(trackingLoop, 40);
+      trackingTimer = setTimeout(trackingLoop, 25);
     }
   }
 

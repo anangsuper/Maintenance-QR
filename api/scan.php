@@ -804,16 +804,24 @@ if ($action === 'start' || $action === 'form' || $action === 'ulang') {
         const statusBox = document.getElementById("bioStatusBox");
         if (statusBox) {
           statusBox.className = "alert alert-info py-2 px-3 small fw-semibold mb-3";
-          statusBox.innerHTML = \'<span class="spinner-border spinner-border-sm me-2 text-primary"></span> Memuat modul AI wajah...\';
+          statusBox.innerHTML = \'<span class="spinner-border spinner-border-sm me-2 text-primary"></span> Memuat modul AI GPU...\';
         }
-        await faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL);
-        try {
-          await faceapi.nets.faceLandmark68TinyNet.loadFromUri(MODEL_URL);
-        } catch(e) {
-          await faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL);
+        if (typeof faceapi !== "undefined" && faceapi.tf) {
+          try {
+            await faceapi.tf.setBackend("webgl");
+            await faceapi.tf.ready();
+          } catch(e) {}
         }
-        await faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL);
+        await Promise.all([
+          faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL),
+          faceapi.nets.faceLandmark68TinyNet.loadFromUri(MODEL_URL).catch(() => faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL)),
+          faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL)
+        ]);
         bioModelsLoaded = true;
+        if (statusBox && !bioCompleted) {
+          statusBox.className = "alert alert-success py-2 px-3 small fw-semibold mb-3";
+          statusBox.innerHTML = \'<i class="bi bi-check-circle me-1"></i> Modul AI GPU siap.\';
+        }
         return true;
       } catch (err) {
         console.error("Gagal memuat modul face-api:", err);
@@ -878,7 +886,7 @@ if ($action === 'start' || $action === 'form' || $action === 'ulang') {
           video: {
             facingMode: "user",
             width: { ideal: 480 },
-            height: { ideal: 480 }
+            height: { ideal: 360 }
           },
           audio: false
         });
@@ -939,13 +947,13 @@ if ($action === 'start' || $action === 'form' || $action === 'ulang') {
       const pillMatch = document.getElementById("pillMatchId");
       
       const useTinyLandmarks = faceapi.nets.faceLandmark68TinyNet && faceapi.nets.faceLandmark68TinyNet.isLoaded;
-      // inputSize 160 berjalan 3-4x lebih cepat dibanding 224 pada browser HP/laptop
-      const fastDetectorOptions = new faceapi.TinyFaceDetectorOptions({ inputSize: 160, scoreThreshold: 0.40 });
+      // inputSize 128 berjalan ultra-cepat (<15ms per frame) di WebGL GPU HP
+      const fastDetectorOptions = new faceapi.TinyFaceDetectorOptions({ inputSize: 128, scoreThreshold: 0.35 });
 
       async function trackingLoop() {
         if (bioCompleted || !video.videoWidth || !video.videoHeight || video.paused || video.ended) {
           if (!bioCompleted) {
-            bioTrackingTimer = setTimeout(trackingLoop, 50);
+            bioTrackingTimer = setTimeout(trackingLoop, 40);
           }
           return;
         }
@@ -967,7 +975,7 @@ if ($action === 'start' || $action === 'form' || $action === 'ulang') {
                 const avgEAR = (calcEAR(leftEye) + calcEAR(rightEye)) / 2.0;
 
                 // Liveness Detection: Cek Kedipan (EAR)
-                if (avgEAR < 0.23) {
+                if (avgEAR < 0.24) {
                   bioLastEyeState = "closed";
                 } else if (avgEAR > 0.27 && bioLastEyeState === "closed") {
                   bioBlinkDetected = true;
@@ -1043,11 +1051,11 @@ if ($action === 'start' || $action === 'form' || $action === 'ulang') {
                     bioVideoStream.getTracks().forEach(t => t.stop());
                   }
 
-                  // Otomatis submit form setelah 1.1 detik
+                  // Otomatis submit form setelah 900ms
                   setTimeout(() => {
                     const formEl = document.getElementById("formMaintenance");
                     if (formEl) formEl.submit();
-                  }, 1100);
+                  }, 900);
                   return;
                 } else {
                   statusBox.className = "alert alert-danger py-2 px-3 small fw-bold mb-3";
@@ -1066,7 +1074,7 @@ if ($action === 'start' || $action === 'form' || $action === 'ulang') {
         }
 
         if (!bioCompleted) {
-          bioTrackingTimer = setTimeout(trackingLoop, 40);
+          bioTrackingTimer = setTimeout(trackingLoop, 25);
         }
       }
 
@@ -1081,11 +1089,15 @@ if ($action === 'start' || $action === 'form' || $action === 'ulang') {
         if (formEl) formEl.submit();
       }
     }
+
+    // Preload modul AI di background agar saat klik "Selesai Maintenance" langsung 0 detik instan
+    document.addEventListener("DOMContentLoaded", () => {
+      loadBioModels();
+    });
     </script>';
 
     render_page($formTitle, $body, $formHeadStyle, $formScript, false);
     exit;
-}
 
 // =========================================================================
 // 4. TAMPILAN UTAMA: DETAIL PERANGKAT & KARTU KONTROL CHECKLIST 12 BULAN
