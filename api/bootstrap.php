@@ -252,7 +252,9 @@ function get_user_list(): array {
                 'role' => strtolower((string)($u['role'] ?? 'teknisi')),
                 'telepon' => format_phone_number((string)($u['telepon'] ?? $u['kontak'] ?? '-')),
                 'status' => (string)($u['status'] ?? 'Aktif'),
-                'created_at' => (string)($u['created_at'] ?? '')
+                'created_at' => (string)($u['created_at'] ?? ''),
+                'face_descriptor' => (string)($u['face_descriptor'] ?? ''),
+                'face_photo' => (string)($u['face_photo'] ?? '')
             ];
         }, $rows);
     }
@@ -268,17 +270,25 @@ function get_user_list(): array {
                 role VARCHAR(50) NOT NULL DEFAULT 'teknisi',
                 telepon VARCHAR(50) NULL,
                 status VARCHAR(50) NOT NULL DEFAULT 'Aktif',
+                face_descriptor TEXT NULL,
+                face_photo MEDIUMTEXT NULL,
                 created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
                 updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
             );
         ");
 
         $cols = table_columns('users');
+        if (!in_array('face_descriptor', $cols, true)) {
+            try { db()->exec("ALTER TABLE users ADD COLUMN face_descriptor TEXT NULL, ADD COLUMN face_photo MEDIUMTEXT NULL"); } catch (Throwable $e) {}
+            $cols = table_columns('users');
+        }
         $nameCol = in_array('nama', $cols, true) ? 'nama' : (in_array('name', $cols, true) ? 'name' : 'username');
         $telCol = in_array('telepon', $cols, true) ? 'telepon' : "'-' AS telepon";
         $stCol = in_array('status', $cols, true) ? 'status' : "'Aktif' AS status";
+        $faceDescCol = in_array('face_descriptor', $cols, true) ? 'face_descriptor' : "'' AS face_descriptor";
+        $facePhotoCol = in_array('face_photo', $cols, true) ? 'face_photo' : "'' AS face_photo";
 
-        $users = db()->query("SELECT id, `{$nameCol}` AS nama, username, role, {$telCol}, {$stCol}, created_at FROM users ORDER BY id ASC")->fetchAll();
+        $users = db()->query("SELECT id, `{$nameCol}` AS nama, username, role, {$telCol}, {$stCol}, {$faceDescCol}, {$facePhotoCol}, created_at FROM users ORDER BY id ASC")->fetchAll();
         if (empty($users)) {
             $adminHash = password_hash('admin123', PASSWORD_BCRYPT);
             $teknisiHash = password_hash('teknisi123', PASSWORD_BCRYPT);
@@ -287,13 +297,13 @@ function get_user_list(): array {
                 VALUES ('Administrator', 'admin', '{$adminHash}', 'admin', '081234567890', 'Aktif', NOW()),
                        ('Teknisi IT', 'teknisi', '{$teknisiHash}', 'teknisi', '081234567891', 'Aktif', NOW())
             ");
-            $users = db()->query("SELECT id, `{$nameCol}` AS nama, username, role, {$telCol}, {$stCol}, created_at FROM users ORDER BY id ASC")->fetchAll();
+            $users = db()->query("SELECT id, `{$nameCol}` AS nama, username, role, {$telCol}, {$stCol}, {$faceDescCol}, {$facePhotoCol}, created_at FROM users ORDER BY id ASC")->fetchAll();
         }
         return $users;
     } catch (Throwable $e) {
         return [
-            ['id' => 1, 'nama' => 'Administrator', 'username' => 'admin', 'role' => 'admin', 'telepon' => '-', 'status' => 'Aktif'],
-            ['id' => 2, 'nama' => 'Teknisi IT', 'username' => 'teknisi', 'role' => 'teknisi', 'telepon' => '-', 'status' => 'Aktif'],
+            ['id' => 1, 'nama' => 'Administrator', 'username' => 'admin', 'role' => 'admin', 'telepon' => '-', 'status' => 'Aktif', 'face_descriptor' => '', 'face_photo' => ''],
+            ['id' => 2, 'nama' => 'Teknisi IT', 'username' => 'teknisi', 'role' => 'teknisi', 'telepon' => '-', 'status' => 'Aktif', 'face_descriptor' => '', 'face_photo' => ''],
         ];
     }
 }
@@ -305,6 +315,68 @@ function get_user_by_id(int $id): ?array {
         if ((int)($u['id'] ?? 0) === $id) return $u;
     }
     return null;
+}
+
+function save_user_biometrics(int $userId, string $descriptorJson, string $photoBase64 = ''): array {
+    if ($userId <= 0) return ['success' => false, 'error' => 'ID pengguna tidak valid'];
+    if (empty($descriptorJson)) return ['success' => false, 'error' => 'Data biometrik tidak boleh kosong'];
+
+    if (is_google_cloud_mode()) {
+        $client = google_sheets_v4_client();
+        if (!$client) return ['success' => false, 'error' => 'Google Sheets client tidak tersedia'];
+
+        $rows = $client->getSheetData('Users');
+        $targetRow = null;
+        foreach ($rows as $u) {
+            if ((int)($u['id'] ?? 0) === $userId) {
+                $targetRow = $u;
+                break;
+            }
+        }
+        if (!$targetRow) return ['success' => false, 'error' => 'Pengguna tidak ditemukan'];
+
+        $rowNum = (int)($targetRow['_row_num'] ?? 0);
+        if ($rowNum <= 1) return ['success' => false, 'error' => 'Gagal menentukan baris pengguna'];
+
+        $client->updateValues("Users!I{$rowNum}:J{$rowNum}", [[$descriptorJson, $photoBase64]]);
+        $client->clearCache('Users');
+        return ['success' => true];
+    }
+
+    // MySQL Mode
+    try {
+        $cols = table_columns('users');
+        if (!in_array('face_descriptor', $cols, true)) {
+            try { db()->exec("ALTER TABLE users ADD COLUMN face_descriptor TEXT NULL, ADD COLUMN face_photo MEDIUMTEXT NULL"); } catch (Throwable $e) {}
+        }
+        $st = db()->prepare("UPDATE users SET face_descriptor = ?, face_photo = ? WHERE id = ?");
+        $st->execute([$descriptorJson, $photoBase64, $userId]);
+        return ['success' => true];
+    } catch (Throwable $e) {
+        return ['success' => false, 'error' => $e->getMessage()];
+    }
+}
+
+function get_enrolled_technicians(): array {
+    $users = get_user_list();
+    $result = [];
+    foreach ($users as $u) {
+        $descStr = trim((string)($u['face_descriptor'] ?? ''));
+        if ($descStr !== '' && (strcasecmp($u['status'] ?? '', 'Nonaktif') !== 0)) {
+            $descArr = json_decode($descStr, true);
+            if (is_array($descArr) && count($descArr) >= 64) {
+                $result[] = [
+                    'id' => (int)$u['id'],
+                    'nama' => (string)$u['nama'],
+                    'username' => (string)$u['username'],
+                    'role' => (string)$u['role'],
+                    'descriptor' => $descArr,
+                    'photo' => (string)($u['face_photo'] ?? '')
+                ];
+            }
+        }
+    }
+    return $result;
 }
 
 function create_new_user(array $data): array {
@@ -802,6 +874,8 @@ function map_sheets_assets(bool $refresh = false): array {
             'id_karyawan' => (int)($a['id_karyawan'] ?? 0),
             'status' => $a['status'] ?? 'Aktif',
             'keterangan' => $a['keterangan'] ?? '',
+            'ip_address' => $a['ip_address'] ?? $a['ip'] ?? '',
+            'printer' => $a['printer'] ?? '',
             'cabang_nama' => $cabangMap[$a['id_cabang'] ?? 0] ?? '-',
             'divisi_nama' => $divMap[$a['id_divisi'] ?? 0] ?? '-',
             'karyawan_nama' => $karMap[$a['id_karyawan'] ?? 0] ?? '-',
@@ -1200,6 +1274,8 @@ function create_new_asset(array $data): array {
     $namaKar = trim((string)($data['nama_karyawan'] ?? $data['custom_karyawan'] ?? ''));
     $status = trim((string)($data['status'] ?? 'Aktif')) ?: 'Aktif';
     $ket = trim((string)($data['keterangan'] ?? ''));
+    $ip = trim((string)($data['ip_address'] ?? $data['ip'] ?? ''));
+    $printer = trim((string)($data['printer'] ?? ''));
     $placement = trim((string)($data['placement_label'] ?? 'Bodi Casing')) ?: 'Bodi Casing';
 
     if (is_google_cloud_mode()) {
@@ -1251,10 +1327,12 @@ function create_new_asset(array $data): array {
             $idDiv,
             $idKar,
             $status,
-            $ket
+            $ket,
+            $ip,
+            $printer
         ];
 
-        $appended = $client->appendValues('Assets!A:K', [$assetRow]);
+        $appended = $client->appendValues('Assets!A:M', [$assetRow]);
         if (!$appended) {
             return ['success' => false, 'error' => 'Gagal menyimpan data ke tab Assets'];
         }
@@ -1304,14 +1382,32 @@ function create_new_asset(array $data): array {
             $kode = sprintf('INV-IT-%03d', $nextVal);
         }
 
-        $ins = db()->prepare("
-            INSERT INTO assets
-            (kode_inventaris, merk, model, serial_number, id_kategori, id_cabang, id_divisi, id_karyawan, status, keterangan)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        ");
-        $ins->execute([
-            $kode, $merk, $model, $sn, $idKat, $idCab, $idDiv, $idKar, $status, $ket
-        ]);
+        $cols = table_columns('assets');
+        if (!in_array('ip_address', $cols, true)) {
+            try { db()->exec("ALTER TABLE assets ADD COLUMN ip_address VARCHAR(45) NULL, ADD COLUMN printer VARCHAR(100) NULL"); } catch (Throwable $e) {}
+            $cols = table_columns('assets');
+        }
+        $hasIp = in_array('ip_address', $cols, true);
+
+        if ($hasIp) {
+            $ins = db()->prepare("
+                INSERT INTO assets
+                (kode_inventaris, merk, model, serial_number, id_kategori, id_cabang, id_divisi, id_karyawan, status, keterangan, ip_address, printer)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ");
+            $ins->execute([
+                $kode, $merk, $model, $sn, $idKat, $idCab, $idDiv, $idKar, $status, $ket, $ip, $printer
+            ]);
+        } else {
+            $ins = db()->prepare("
+                INSERT INTO assets
+                (kode_inventaris, merk, model, serial_number, id_kategori, id_cabang, id_divisi, id_karyawan, status, keterangan)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ");
+            $ins->execute([
+                $kode, $merk, $model, $sn, $idKat, $idCab, $idDiv, $idKar, $status, $ket
+            ]);
+        }
         $assetId = (int)db()->lastInsertId();
 
         $token = bin2hex(random_bytes(16));
@@ -1371,6 +1467,8 @@ function update_asset(int $id, array $data): array {
     $namaKar = trim((string)($data['nama_karyawan'] ?? $data['custom_karyawan'] ?? ''));
     $status = trim((string)($data['status'] ?? 'Aktif')) ?: 'Aktif';
     $ket = trim((string)($data['keterangan'] ?? ''));
+    $ip = trim((string)($data['ip_address'] ?? $data['ip'] ?? ''));
+    $printer = trim((string)($data['printer'] ?? ''));
     $placement = trim((string)($data['placement_label'] ?? 'Bodi Casing')) ?: 'Bodi Casing';
 
     if (is_google_cloud_mode()) {
@@ -1432,10 +1530,12 @@ function update_asset(int $id, array $data): array {
             $idDiv,
             $idKar,
             $status,
-            $ket
+            $ket,
+            $ip,
+            $printer
         ];
 
-        $updated = $client->updateValues("Assets!A{$rowNum}:K{$rowNum}", [$assetRow]);
+        $updated = $client->updateValues("Assets!A{$rowNum}:M{$rowNum}", [$assetRow]);
         if (!$updated) {
             return ['success' => false, 'error' => 'Gagal memperbarui data di Google Sheets'];
         }
@@ -1482,16 +1582,36 @@ function update_asset(int $id, array $data): array {
             $kode = sprintf('INV-IT-%03d', $id);
         }
 
-        $upSt = db()->prepare("
-            UPDATE assets
-            SET kode_inventaris = ?, merk = ?, model = ?, serial_number = ?,
-                id_kategori = ?, id_cabang = ?, id_divisi = ?, id_karyawan = ?,
-                status = ?, keterangan = ?
-            WHERE id = ?
-        ");
-        $upSt->execute([
-            $kode, $merk, $model, $sn, $idKat, $idCab, $idDiv, $idKar, $status, $ket, $id
-        ]);
+        $cols = table_columns('assets');
+        if (!in_array('ip_address', $cols, true)) {
+            try { db()->exec("ALTER TABLE assets ADD COLUMN ip_address VARCHAR(45) NULL, ADD COLUMN printer VARCHAR(100) NULL"); } catch (Throwable $e) {}
+            $cols = table_columns('assets');
+        }
+        $hasIp = in_array('ip_address', $cols, true);
+
+        if ($hasIp) {
+            $upSt = db()->prepare("
+                UPDATE assets
+                SET kode_inventaris = ?, merk = ?, model = ?, serial_number = ?,
+                    id_kategori = ?, id_cabang = ?, id_divisi = ?, id_karyawan = ?,
+                    status = ?, keterangan = ?, ip_address = ?, printer = ?
+                WHERE id = ?
+            ");
+            $upSt->execute([
+                $kode, $merk, $model, $sn, $idKat, $idCab, $idDiv, $idKar, $status, $ket, $ip, $printer, $id
+            ]);
+        } else {
+            $upSt = db()->prepare("
+                UPDATE assets
+                SET kode_inventaris = ?, merk = ?, model = ?, serial_number = ?,
+                    id_kategori = ?, id_cabang = ?, id_divisi = ?, id_karyawan = ?,
+                    status = ?, keterangan = ?
+                WHERE id = ?
+            ");
+            $upSt->execute([
+                $kode, $merk, $model, $sn, $idKat, $idCab, $idDiv, $idKar, $status, $ket, $id
+            ]);
+        }
 
         $upQr = db()->prepare("UPDATE asset_qr_tokens SET placement_label = ? WHERE asset_id = ?");
         $upQr->execute([$placement, $id]);
@@ -2684,6 +2804,11 @@ function save_maintenance_record(array $data): array {
     $mType = trim((string)($data['maintenance_type'] ?? 'Maintenance'));
     $findings = trim((string)($data['findings'] ?? ''));
     $recommendation = trim((string)($data['recommendation'] ?? ''));
+    $bioVerified = !empty($data['biometric_verified']) ? 1 : 0;
+    $bioConfidence = (float)($data['biometric_confidence'] ?? 0);
+    $bioPhoto = trim((string)($data['biometric_photo'] ?? ''));
+    $latitude = trim((string)($data['latitude'] ?? ''));
+    $longitude = trim((string)($data['longitude'] ?? ''));
     $checklists = (array)($data['checklists'] ?? []);
 
     $fixedItems = get_fixed_checklists();
@@ -2706,10 +2831,10 @@ function save_maintenance_record(array $data): array {
 
         // 1. Simpan ke Maintenance_Scan
         $client->createSheetIfNotExists('Maintenance_Scan');
-        $existingScanHeader = $client->getValues('Maintenance_Scan!A1:M1');
+        $existingScanHeader = $client->getValues('Maintenance_Scan!A1:R1');
         if (empty($existingScanHeader)) {
-            $client->appendValues('Maintenance_Scan!A:M', [
-                ['id', 'asset_id', 'technician_user_id', 'technician_name', 'maintenance_date', 'maintenance_time', 'maintenance_month', 'maintenance_year', 'status', 'source', 'created_at', 'findings', 'recommendation']
+            $client->appendValues('Maintenance_Scan!A:R', [
+                ['id', 'asset_id', 'technician_user_id', 'technician_name', 'maintenance_date', 'maintenance_time', 'maintenance_month', 'maintenance_year', 'status', 'source', 'created_at', 'findings', 'recommendation', 'biometric_verified', 'biometric_confidence', 'biometric_photo', 'latitude', 'longitude']
             ]);
         }
 
@@ -2734,9 +2859,14 @@ function save_maintenance_record(array $data): array {
             $mType,
             date('Y-m-d H:i:s'),
             $findings,
-            $recommendation
+            $recommendation,
+            $bioVerified,
+            $bioConfidence,
+            $bioPhoto,
+            $latitude,
+            $longitude
         ];
-        $client->appendValues('Maintenance_Scan!A:M', [$newScanRow]);
+        $client->appendValues('Maintenance_Scan!A:R', [$newScanRow]);
 
         // 2. Simpan 9 items ke Maintenance_Checklists
         $client->createSheetIfNotExists('Maintenance_Checklists');
@@ -2816,6 +2946,11 @@ function save_maintenance_record(array $data): array {
                 source VARCHAR(50) DEFAULT 'Maintenance',
                 findings TEXT NULL,
                 recommendation TEXT NULL,
+                biometric_verified TINYINT(1) DEFAULT 0,
+                biometric_confidence FLOAT NULL,
+                biometric_photo MEDIUMTEXT NULL,
+                latitude VARCHAR(50) NULL,
+                longitude VARCHAR(50) NULL,
                 created_at DATETIME DEFAULT CURRENT_TIMESTAMP
             );
             CREATE TABLE IF NOT EXISTS maintenance_checklists (
@@ -2830,12 +2965,37 @@ function save_maintenance_record(array $data): array {
             );
         ");
 
-        $ins = db()->prepare("
-            INSERT INTO maintenance_scan
-            (asset_id, technician_user_id, technician_name, maintenance_date, maintenance_time, maintenance_month, maintenance_year, status, source, findings, recommendation, created_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())
-        ");
-        $ins->execute([$assetId, $userId, $techName, $date, $time, $month, $year, $status, $mType, $findings, $recommendation]);
+        $scanCols = table_columns('maintenance_scan');
+        if (!in_array('biometric_verified', $scanCols, true)) {
+            try {
+                db()->exec("
+                    ALTER TABLE maintenance_scan
+                    ADD COLUMN biometric_verified TINYINT(1) DEFAULT 0,
+                    ADD COLUMN biometric_confidence FLOAT NULL,
+                    ADD COLUMN biometric_photo MEDIUMTEXT NULL,
+                    ADD COLUMN latitude VARCHAR(50) NULL,
+                    ADD COLUMN longitude VARCHAR(50) NULL
+                ");
+            } catch (Throwable $e) {}
+            $scanCols = table_columns('maintenance_scan');
+        }
+        $hasBio = in_array('biometric_verified', $scanCols, true);
+
+        if ($hasBio) {
+            $ins = db()->prepare("
+                INSERT INTO maintenance_scan
+                (asset_id, technician_user_id, technician_name, maintenance_date, maintenance_time, maintenance_month, maintenance_year, status, source, findings, recommendation, biometric_verified, biometric_confidence, biometric_photo, latitude, longitude, created_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())
+            ");
+            $ins->execute([$assetId, $userId, $techName, $date, $time, $month, $year, $status, $mType, $findings, $recommendation, $bioVerified, $bioConfidence, $bioPhoto, $latitude, $longitude]);
+        } else {
+            $ins = db()->prepare("
+                INSERT INTO maintenance_scan
+                (asset_id, technician_user_id, technician_name, maintenance_date, maintenance_time, maintenance_month, maintenance_year, status, source, findings, recommendation, created_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())
+            ");
+            $ins->execute([$assetId, $userId, $techName, $date, $time, $month, $year, $status, $mType, $findings, $recommendation]);
+        }
         $logId = (int)db()->lastInsertId();
 
         $chkSt = db()->prepare("
@@ -3519,6 +3679,8 @@ function get_audit_maintenance_data(array $filters): array {
                 'perangkat' => trim(($a['merk'] ?? '').' '.($a['model'] ?? '')),
                 'merk' => $a['merk'] ?? '',
                 'model' => $a['model'] ?? '',
+                'ip_address' => $a['ip_address'] ?? '-',
+                'printer' => $a['printer'] ?? '-',
                 'karyawan_nama' => $a['karyawan_nama'] ?? '-',
                 'divisi_nama' => $a['divisi_nama'] ?? '-',
                 'cabang_nama' => $a['cabang_nama'] ?? '-',
@@ -3530,6 +3692,11 @@ function get_audit_maintenance_data(array $filters): array {
                 'technician_name' => $scan ? ($scan['technician_name'] ?? 'Teknisi') : '-',
                 'findings' => $scan ? ($scan['findings'] ?? '-') : '-',
                 'recommendation' => $scan ? ($scan['recommendation'] ?? '-') : '-',
+                'biometric_verified' => !empty($scan['biometric_verified']),
+                'biometric_confidence' => (float)($scan['biometric_confidence'] ?? 0),
+                'biometric_photo' => (string)($scan['biometric_photo'] ?? ''),
+                'latitude' => (string)($scan['latitude'] ?? ''),
+                'longitude' => (string)($scan['longitude'] ?? ''),
                 'checklists' => $chks
             ];
         }
@@ -3554,8 +3721,20 @@ function get_audit_maintenance_data(array $filters): array {
     $katName = name_column('kategori_aset') ?: 'id';
     $uName = name_column('users') ?: 'id';
 
+    $assetCols = table_columns('assets');
+    $ipCol = in_array('ip_address', $assetCols, true) ? 'a.ip_address' : "'-' AS ip_address";
+    $prtCol = in_array('printer', $assetCols, true) ? 'a.printer' : "'-' AS printer";
+
+    $scanCols = table_columns('maintenance_scan');
+    $bioVerCol = in_array('biometric_verified', $scanCols, true) ? 'ms.biometric_verified' : "0 AS biometric_verified";
+    $bioConfCol = in_array('biometric_confidence', $scanCols, true) ? 'ms.biometric_confidence' : "0 AS biometric_confidence";
+    $bioPhotoCol = in_array('biometric_photo', $scanCols, true) ? 'ms.biometric_photo' : "'' AS biometric_photo";
+    $latCol = in_array('latitude', $scanCols, true) ? 'ms.latitude' : "'' AS latitude";
+    $lngCol = in_array('longitude', $scanCols, true) ? 'ms.longitude' : "'' AS longitude";
+
     $sql = "
         SELECT a.id AS asset_id, a.kode_inventaris, a.serial_number, a.merk, a.model,
+               {$ipCol}, {$prtCol},
                c.`{$cName}` AS cabang_nama,
                k.`{$kName}` AS karyawan_nama,
                d.`{$dName}` AS divisi_nama,
@@ -3565,6 +3744,7 @@ function get_audit_maintenance_data(array $filters): array {
                ms.status AS scan_status,
                ms.findings,
                ms.recommendation,
+               {$bioVerCol}, {$bioConfCol}, {$bioPhotoCol}, {$latCol}, {$lngCol},
                COALESCE(ms.technician_name, u.`{$uName}`, 'Teknisi') AS technician_name
         FROM assets a
         LEFT JOIN cabang c ON c.id = a.id_cabang
@@ -3616,6 +3796,8 @@ function get_audit_maintenance_data(array $filters): array {
             'perangkat' => trim(($r['merk'] ?? '').' '.($r['model'] ?? '')),
             'merk' => $r['merk'] ?? '',
             'model' => $r['model'] ?? '',
+            'ip_address' => $r['ip_address'] ?? '-',
+            'printer' => $r['printer'] ?? '-',
             'karyawan_nama' => $r['karyawan_nama'] ?? '-',
             'divisi_nama' => $r['divisi_nama'] ?? '-',
             'cabang_nama' => $r['cabang_nama'] ?? '-',
@@ -3627,6 +3809,11 @@ function get_audit_maintenance_data(array $filters): array {
             'technician_name' => $isDone ? ($r['technician_name'] ?? 'Teknisi') : '-',
             'findings' => $isDone ? ($r['findings'] ?? '-') : '-',
             'recommendation' => $isDone ? ($r['recommendation'] ?? '-') : '-',
+            'biometric_verified' => !empty($r['biometric_verified']),
+            'biometric_confidence' => (float)($r['biometric_confidence'] ?? 0),
+            'biometric_photo' => (string)($r['biometric_photo'] ?? ''),
+            'latitude' => (string)($r['latitude'] ?? ''),
+            'longitude' => (string)($r['longitude'] ?? ''),
             'checklists' => []
         ];
     }

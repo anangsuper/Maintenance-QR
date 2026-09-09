@@ -25,12 +25,15 @@ $headers = [
     'No',
     'Tanggal Maintenance',
     'Kode Inventaris',
+    'Alamat IP',
+    'Printer Terhubung',
     'Serial Number',
     'Perangkat',
     'Pengguna / User',
     'Divisi',
     'Cabang',
     'Teknisi Pelaksana',
+    'Verifikasi Biometrik',
     'Status Pemeliharaan',
     'Temuan Masalah',
     'Rekomendasi Tindakan'
@@ -41,16 +44,20 @@ fputcsv($out, $headers, ';');
 $no = 0;
 foreach ($rows as $r) {
     $no++;
+    $bioText = !empty($r['biometric_verified']) ? 'Terverifikasi Wajah (' . round($r['biometric_confidence'] ?? 0) . '%)' : 'Manual / Non-Biometrik';
     fputcsv($out, [
         $no,
         $r['maintenance_date'] ?? '-',
         $r['kode_inventaris'] ?? '-',
+        $r['ip_address'] ?? '-',
+        $r['printer'] ?? '-',
         $r['serial_number'] ?? '-',
         $r['perangkat'] ?? '-',
         $r['karyawan_nama'] ?? '-',
         $r['divisi_nama'] ?? '-',
         $r['cabang_nama'] ?? '-',
         $r['technician_name'] ?? '-',
+        $bioText,
         $r['status'] ?? '-',
         $r['findings'] ?? '-',
         $r['recommendation'] ?? '-',

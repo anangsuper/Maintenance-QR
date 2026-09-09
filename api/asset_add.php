@@ -59,6 +59,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $placement = trim((string)($_POST['placement_label'] ?? 'Bodi Casing'));
     $status = trim((string)($_POST['status'] ?? 'Aktif'));
     $ket = trim((string)($_POST['keterangan'] ?? ''));
+    $ip = trim((string)($_POST['ip_address'] ?? ''));
+    $printer = trim((string)($_POST['printer'] ?? ''));
 
     if ($merk === '' && $model === '') {
         $error = 'Merk atau Model perangkat wajib diisi.';
@@ -75,6 +77,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'placement_label' => $placement,
             'status' => $status,
             'keterangan' => $ket,
+            'ip_address' => $ip,
+            'printer' => $printer,
         ];
 
         $res = create_new_asset($payload);
@@ -315,9 +319,21 @@ $body = '
           </div>
         </div>
 
-        <!-- Section 3: Spesifikasi & Catatan -->
-        <h5 class="fw-bold text-primary border-bottom pb-2 mb-3"><i class="bi bi-card-text me-2"></i>3. Spesifikasi & Keterangan Tambahan</h5>
+        <!-- Section 3: Jaringan, Printer & Spesifikasi -->
+        <h5 class="fw-bold text-primary border-bottom pb-2 mb-3"><i class="bi bi-hdd-network me-2"></i>3. Jaringan, Printer & Spesifikasi</h5>
         <div class="row g-3 mb-4">
+          <div class="col-md-6">
+            <label class="form-label fw-semibold"><i class="bi bi-hdd-network me-1 text-success"></i>Alamat IP (IP Address)</label>
+            <input type="text" class="form-control font-monospace" name="ip_address" placeholder="Contoh: 192.168.1.50 (atau DHCP)">
+            <div class="form-text">Alamat IP ini otomatis tercetak pada <strong>Kartu Maintenance</strong> & halaman scan teknisi.</div>
+          </div>
+
+          <div class="col-md-6">
+            <label class="form-label fw-semibold"><i class="bi bi-printer me-1 text-info"></i>Printer Terhubung</label>
+            <input type="text" class="form-control" name="printer" placeholder="Contoh: Epson L3110, HP LaserJet, atau -">
+            <div class="form-text">Printer di meja kerja ini (tercantum pada slot <strong>UNIT/PRT</strong> di kartu).</div>
+          </div>
+
           <div class="col-12">
             <label class="form-label fw-semibold">Spesifikasi / Catatan Hardware & OS</label>
             <textarea class="form-control" name="keterangan" rows="3" placeholder="Contoh: Core i5-12400 / RAM 16GB / SSD 512GB NVMe / Windows 11 Pro / Microsoft Office 2021"></textarea>

@@ -91,6 +91,11 @@ foreach ($users as $u) {
         ? '<span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 px-2 py-1">Nonaktif</span>'
         : '<span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 px-2 py-1">Aktif</span>';
 
+    $hasBio = !empty($u['face_descriptor']);
+    $bioBadge = $hasBio
+        ? '<a href="'.e(module_url('user_biometric_enroll.php', ['id'=>$uId])).'" class="badge text-decoration-none bg-success bg-opacity-10 text-success border border-success border-opacity-25 px-2 py-1" title="Klik untuk perbarui sampel wajah"><i class="bi bi-person-check-fill me-1"></i> Terdaftar</a>'
+        : '<a href="'.e(module_url('user_biometric_enroll.php', ['id'=>$uId])).'" class="badge text-decoration-none bg-warning bg-opacity-15 text-warning-emphasis border border-warning border-opacity-25 px-2 py-1" title="Klik untuk mendaftarkan wajah"><i class="bi bi-camera-fill me-1"></i> Daftarkan</a>';
+
     $telHtml = ($uTel !== '-' && $uTel !== '') ? '<div class="small text-secondary mt-1"><i class="bi bi-telephone me-1"></i>'.e($uTel).'</div>' : '';
 
     $userRowsHtml .= '
@@ -102,15 +107,17 @@ foreach ($users as $u) {
         '.$telHtml.'
       </td>
       <td>'.$roleBadge.'</td>
+      <td class="text-center">'.$bioBadge.'</td>
       <td class="text-center">'.$statusBadge.'</td>
       <td class="text-nowrap text-end">
-        <a class="btn btn-sm btn-outline-secondary" href="'.e(module_url('users_admin.php', ['edit'=>$uId])).'"><i class="bi bi-pencil-square me-1"></i> Edit / Reset</a>
+        <a class="btn btn-sm btn-outline-primary me-1" href="'.e(module_url('user_biometric_enroll.php', ['id'=>$uId])).'" title="Daftarkan / Perbarui Wajah Biometrik"><i class="bi bi-person-bounding-box me-1"></i> Wajah</a>
+        <a class="btn btn-sm btn-outline-secondary" href="'.e(module_url('users_admin.php', ['edit'=>$uId])).'"><i class="bi bi-pencil-square me-1"></i> Edit</a>
       </td>
     </tr>';
 }
 
 if (!$userRowsHtml) {
-    $userRowsHtml = '<tr><td colspan="5" class="text-center py-4 text-secondary">Belum ada data pengguna. Silakan buat akun teknisi pertama Anda melalui form di samping.</td></tr>';
+    $userRowsHtml = '<tr><td colspan="6" class="text-center py-4 text-secondary">Belum ada data pengguna. Silakan buat akun teknisi pertama Anda melalui form di samping.</td></tr>';
 }
 
 $flashHtml = $flash ? '<div class="alert alert-success alert-dismissible fade show"><i class="bi bi-check-circle-fill me-2"></i>'.e($flash).'<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>' : '';
@@ -258,6 +265,7 @@ $body = '
               <th style="width: 40px;" class="text-center">No</th>
               <th>Nama & Username</th>
               <th>Peran / Role</th>
+              <th class="text-center">Biometrik Wajah</th>
               <th class="text-center">Status</th>
               <th class="text-end">Aksi</th>
             </tr>

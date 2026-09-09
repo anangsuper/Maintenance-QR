@@ -252,12 +252,12 @@ class GoogleSheetsV4Client {
             'Divisi' => ['id', 'nama_divisi', 'keterangan'],
             'Karyawan' => ['id', 'nama_karyawan', 'cabang_id', 'divisi_id'],
             'Kategori_Aset' => ['id', 'nama_kategori'],
-            'Assets' => ['id', 'kode_inventaris', 'nama_aset', 'kategori_id', 'cabang_id', 'divisi_id', 'karyawan_id', 'merk', 'model', 'serial_number', 'status'],
+            'Assets' => ['id', 'kode_inventaris', 'merk', 'model', 'serial_number', 'id_kategori', 'id_cabang', 'id_divisi', 'id_karyawan', 'status', 'keterangan', 'ip_address', 'printer'],
             'Asset_QR_Tokens' => ['id', 'asset_id', 'token', 'label', 'is_active', 'created_at'],
-            'Maintenance_Scan' => ['id', 'asset_id', 'technician_user_id', 'technician_name', 'maintenance_date', 'maintenance_time', 'maintenance_month', 'maintenance_year', 'status', 'source', 'created_at', 'findings', 'recommendation'],
+            'Maintenance_Scan' => ['id', 'asset_id', 'technician_user_id', 'technician_name', 'maintenance_date', 'maintenance_time', 'maintenance_month', 'maintenance_year', 'status', 'source', 'created_at', 'findings', 'recommendation', 'biometric_verified', 'biometric_confidence', 'biometric_photo', 'latitude', 'longitude'],
             'Maintenance_Findings' => ['id', 'maintenance_scan_id', 'asset_id', 'kategori_temuan', 'deskripsi_temuan', 'tindakan_diperlukan', 'status', 'reported_by', 'reported_at', 'resolved_by', 'resolved_at', 'catatan_penyelesaian'],
             'Maintenance_Checklists' => ['id', 'maintenance_id', 'asset_id', 'checklist_number', 'checklist_name', 'checked', 'notes', 'created_at'],
-            'Users' => ['id', 'username', 'password', 'nama', 'role', 'telepon', 'status', 'created_at'],
+            'Users' => ['id', 'username', 'password', 'nama', 'role', 'telepon', 'status', 'created_at', 'face_descriptor', 'face_photo'],
         ];
 
         $firstRow = $rows[0];

@@ -58,6 +58,8 @@ foreach ($historyRows as $r) {
         'pemilik' => $r['karyawan_nama'] ?? '-',
         'cabang_divisi' => $r['cabang_nama'] ?? '-',
         'teknisi' => $r['teknisi_nama'] ?? $r['technician_name'] ?? 'Teknisi',
+        'is_bio' => !empty($r['biometric_verified']),
+        'bio_conf' => (int)($r['biometric_confidence'] ?? 0),
         'status_label' => ($r['status'] ?? '') === 'Temuan' ? 'Ada Temuan' : 'Selesai',
         'finding_note' => $fData ? $fData['finding'] : '',
     ];
@@ -119,7 +121,7 @@ foreach ($allRows as $r) {
       <td>'.e($r['pemilik']).'</td>
       <td>'.e($r['cabang_divisi']).'</td>
       <td class="col-nowrap text-center col-waktu">'.e($r['waktu']).'</td>
-      <td class="col-nowrap">'.e($r['teknisi']).'</td>
+      <td class="col-nowrap">'.e($r['teknisi']).(!empty($r['is_bio']) ? ' <span style="color:#16a34a;font-weight:bold;font-size:7.5pt;" title="Terverifikasi Biometrik AI">✓ AI</span>' : '').'</td>
       <td class="col-nowrap text-center">'.$badge.$noteHtml.'</td>
     </tr>';
 }

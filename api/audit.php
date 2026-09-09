@@ -77,6 +77,10 @@ foreach ($rows as $r) {
         ? '<a class="btn btn-sm btn-primary fw-semibold" href="'.e(module_url('maintenance_detail.php', ['id' => $r['log_id']])).'"><i class="bi bi-file-earmark-medical me-1"></i> Detail</a>'
         : '<span class="text-muted small">-</span>';
 
+    $bioBadge = !empty($r['biometric_verified'])
+        ? '<div class="mt-1"><span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-50 py-1" style="font-size: 0.68rem;" title="Terverifikasi Biometrik Wajah"><i class="bi bi-shield-fill-check me-1"></i>AI ('.e((int)($r['biometric_confidence'] ?? 98)).'%)</span></div>'
+        : '';
+
     $tableRows .= '
     <tr class="'.(!$isDone ? 'table-danger bg-opacity-10' : '').'">
       <td class="text-center text-muted small">'.$no.'</td>
@@ -86,7 +90,10 @@ foreach ($rows as $r) {
       <td><span class="d-inline-flex align-items-center gap-1"><i class="bi bi-person-circle text-secondary"></i> '.e($r['karyawan_nama']).'</span></td>
       <td class="small">'.e($r['divisi_nama']).'</td>
       <td class="small"><span class="badge-chip chip-secondary">'.e($r['cabang_nama']).'</span></td>
-      <td class="small fw-bold text-dark">'.e($r['technician_name']).'</td>
+      <td class="small">
+        <span class="fw-bold text-dark">'.e($r['technician_name']).'</span>
+        '.$bioBadge.'
+      </td>
       <td>'.$badge.'</td>
       <td class="text-end text-nowrap">'.$actionBtn.'</td>
     </tr>';
