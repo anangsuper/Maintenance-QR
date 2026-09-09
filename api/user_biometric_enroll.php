@@ -2,10 +2,13 @@
 require __DIR__ . '/bootstrap.php';
 require_login();
 
-$userId = max(0, (int)($_GET['id'] ?? current_user_id()));
+$currId = current_user_id();
+$userId = max(0, (int)($_GET['id'] ?? $currId));
+$isAdmin = function_exists('is_admin') ? is_admin() : in_array(current_user_role(), ['admin', 'administrator'], true);
+
 // Hanya admin yang bisa mendaftarkan orang lain, atau teknisi mendaftarkan dirinya sendiri
-if (!is_admin() && $userId !== current_user_id()) {
-    $userId = current_user_id();
+if (!$isAdmin && $userId !== $currId) {
+    $userId = $currId;
 }
 
 $user = get_user_by_id($userId);

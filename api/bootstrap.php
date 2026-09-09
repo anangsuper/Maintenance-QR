@@ -198,6 +198,11 @@ function require_admin(): void {
     }
 }
 
+function is_admin(): bool {
+    $role = current_user_role();
+    return in_array($role, ['admin', 'administrator'], true);
+}
+
 function format_phone_number(?string $phone): string {
     if ($phone === null) return '-';
     $phone = trim($phone, " '\t\n\r\0\x0B");
