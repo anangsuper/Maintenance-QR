@@ -76,7 +76,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $enrollStatus = is_admin() ? 'verified' : 'pending';
     $res = save_user_biometrics($targetUserId, $descriptor, $photo, $enrollStatus);
     header('Content-Type: application/json');
-    echo json_encode(array_merge($res, ['face_status' => $enrollStatus]));
+    echo json_encode(array_merge($res, [
+        'face_status' => $enrollStatus,
+        'is_admin' => is_admin()
+    ]));
     exit;
 }
 
@@ -93,7 +96,7 @@ $userFaceStatus = strtolower(trim((string)($user['face_status'] ?? '')));
 if ($userFaceStatus === 'verified' || $userFaceStatus === 'terverifikasi') {
     $badgeStatus = '<span class="badge bg-success bg-opacity-15 text-success px-3 py-2 border border-success border-opacity-25"><i class="bi bi-shield-check me-1"></i> Wajah Terverifikasi Admin</span>';
 } elseif ($userFaceStatus === 'pending' || $userFaceStatus === 'menunggu') {
-    $badgeStatus = '<span class="badge bg-warning text-dark px-3 py-2 border border-warning"><i class="bi bi-hourglass-split me-1"></i> Menunggu Verifikasi Admin</span>';
+    $badgeStatus = '<span class="badge bg-warning text-dark px-3 py-2 border border-warning shadow-sm"><i class="bi bi-hourglass-split me-1"></i> Menunggu Persetujuan Admin</span>';
 } elseif ($userFaceStatus === 'rejected') {
     $badgeStatus = '<span class="badge bg-danger bg-opacity-15 text-danger px-3 py-2 border border-danger"><i class="bi bi-x-circle me-1"></i> Ditolak Admin (Daftar Ulang)</span>';
 } else {
@@ -250,13 +253,20 @@ $body = '
         <div class="fw-bold text-primary mb-1 d-flex align-items-center gap-1">
           <i class="bi bi-lightning-charge-fill text-warning"></i> Cara Scan Wajah via HP:
         </div>
-        <ol class="mb-0 ps-3 text-secondary">
+        <ol class="mb-2 ps-3 text-secondary">
           <li>Klik tombol <strong>"Aktifkan Kamera Depan HP"</strong> di bawah.</li>
           <li>Pegang HP tegak lurus mengarah ke wajah Anda.</li>
           <li>Arahkan wajah ke lingkaran oval hingga garis berubah <strong class="text-success">HIJAU</strong>.</li>
           <li><strong>Kedipkan mata Anda 1 kali</strong> (uji keaslian / liveness check).</li>
           <li>Tekan <strong>"SIMPAN BIOMETRIK WAJAH"</strong>.</li>
         </ol>
+        <div class="alert alert-warning border border-warning rounded-2 p-2 mb-0 mt-2 small text-dark d-flex align-items-start gap-2">
+          <i class="bi bi-shield-lock-fill text-warning fs-5 flex-shrink-0"></i>
+          <div>
+            <strong>Penting: Verifikasi Admin Diperlukan</strong><br>
+            Setelah wajah didaftarkan, Administrator IT akan memeriksa foto dan menyetujuinya (Approve) di panel Admin Pengguna. Wajah baru dapat digunakan untuk verifikasi checklist setelah disetujui.
+          </div>
+        </div>
       </div>
 
       <!-- Scanner Container (Mobile Optimized) -->
@@ -561,17 +571,27 @@ async function saveBiometrics() {
     const result = await res.json();
     if (result && result.success) {
       statusMsg.className = "alert alert-success py-2 px-3 text-center mb-3 fw-bold small";
-      statusMsg.innerHTML = \'<i class="bi bi-check-circle-fill me-1"></i> Wajah berhasil didaftarkan ke sistem!\';
+      statusMsg.innerHTML = '<i class="bi bi-check-circle-fill me-1"></i> Wajah berhasil diunggah ke sistem!';
       
       if (videoStream) {
         videoStream.getTracks().forEach(track => track.stop());
       }
       btnSave.classList.add("d-none");
+      
+      const successDesc = document.getElementById("successDesc");
+      if (successDesc) {
+        if (result.is_admin) {
+          successDesc.innerHTML = 'Wajah teknisi telah disimpan dan langsung <strong>Terverifikasi</strong> oleh Administrator.';
+        } else {
+          successDesc.innerHTML = 'Wajah Anda berhasil dikirim dengan status: <span class="badge bg-warning text-dark"><i class="bi bi-hourglass-split me-1"></i> Menunggu Persetujuan Admin</span>.<br><br><strong>Langkah selanjutnya:</strong> Hubungi atau tunggu Administrator IT untuk menyetujui foto wajah Anda melalui menu <em>Kelola Data &rarr; Akun Pengguna / Teknisi</em> sebelum Anda dapat menggunakannya untuk checklist maintenance.';
+        }
+      }
+      
       successBox.classList.remove("d-none");
     } else {
       alert("Gagal menyimpan biometrik: " + (result.error || "Kesalahan server"));
       btnSave.disabled = false;
-      btnSave.innerHTML = \'<i class="bi bi-check-circle-fill me-1"></i> SIMPAN BIOMETRIK WAJAH SAYA\';
+      btnSave.innerHTML = '<i class="bi bi-check-circle-fill me-1"></i> SIMPAN BIOMETRIK WAJAH SAYA';
     }
   } catch (err) {
     console.error("Gagal kirim biometrik:", err);

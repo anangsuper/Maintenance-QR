@@ -598,7 +598,7 @@ if ($action === 'start' || $action === 'form' || $action === 'ulang') {
               <div class="alert alert-light border py-2 px-3 small mb-0 d-flex align-items-center justify-content-between flex-wrap gap-2 text-muted">
                 <div class="d-flex align-items-center gap-2">
                   <i class="bi bi-info-circle text-primary fs-5"></i>
-                  <div>Belum ada data biometrik teknisi terdaftar.</div>
+                  <div>Belum ada biometrik teknisi yang disetujui Admin.</div>
                 </div>
                 <a href="'.e(module_url('user_biometric_enroll.php', ['ret' => module_url('scan.php', ['t' => $token, 'action' => 'form'])])).'" class="btn btn-sm btn-primary fw-bold">
                   <i class="bi bi-phone-fill me-1"></i> Daftarkan Wajah di HP

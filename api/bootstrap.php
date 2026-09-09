@@ -450,8 +450,8 @@ function get_enrolled_technicians(): array {
     foreach ($users as $u) {
         $descStr = trim((string)($u['face_descriptor'] ?? ''));
         $fStatus = strtolower(trim((string)($u['face_status'] ?? '')));
-        // Hanya teknisi yang wajahnya SUDAH DIVERIFIKASI ADMIN yang diikutsertakan!
-        $isVerified = ($fStatus === 'verified' || $fStatus === 'terverifikasi' || ($fStatus === '' && !empty($descStr)));
+        // WAJIB: Hanya teknisi yang biometrik wajahnya SUDAH DISETUJUI / DIVERIFIKASI ADMIN yang dapat melakukan scan wajah!
+        $isVerified = ($fStatus === 'verified' || $fStatus === 'terverifikasi');
         if ($descStr !== '' && $isVerified && (strcasecmp($u['status'] ?? '', 'Nonaktif') !== 0)) {
             $descArr = json_decode($descStr, true);
             if (is_array($descArr) && count($descArr) >= 64) {
