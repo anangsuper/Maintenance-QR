@@ -116,10 +116,13 @@ function current_user_name(): string {
 }
 
 function current_user_role(): string {
+    if (!is_logged_in()) {
+        return 'guest';
+    }
     foreach (['role', 'user_role', 'level'] as $k) {
         if (!empty($_SESSION[$k])) return strtolower((string)$_SESSION[$k]);
     }
-    return 'admin';
+    return 'teknisi';
 }
 
 function request_uri_full(): string {
@@ -209,6 +212,9 @@ function require_admin(): void {
 }
 
 function is_admin(): bool {
+    if (!is_logged_in()) {
+        return false;
+    }
     $role = current_user_role();
     return in_array($role, ['admin', 'administrator'], true);
 }
@@ -262,7 +268,7 @@ function get_user_list(): array {
             $fDesc = (string)($u['face_descriptor'] ?? '');
             $fStatus = (string)($u['face_status'] ?? '');
             if ($fStatus === '' && $fDesc !== '') {
-                $fStatus = 'verified'; // Default verified untuk legacy data
+                $fStatus = 'pending'; // Wajib: butuh persetujuan admin jika belum diverifikasi
             } elseif ($fStatus === '') {
                 $fStatus = 'none';
             }

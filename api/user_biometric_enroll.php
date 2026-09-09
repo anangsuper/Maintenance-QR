@@ -73,11 +73,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit;
     }
 
-    $enrollStatus = is_admin() ? 'verified' : 'pending';
+    // WAJIB: Seluruh pendaftaran biometrik berstatus 'pending' dan memerlukan approval dari Admin sebelum aktif
+    $enrollStatus = 'pending';
     $res = save_user_biometrics($targetUserId, $descriptor, $photo, $enrollStatus);
     header('Content-Type: application/json');
     echo json_encode(array_merge($res, [
-        'face_status' => $enrollStatus,
+        'face_status' => 'pending',
         'is_admin' => is_admin()
     ]));
     exit;
@@ -307,7 +308,8 @@ $body = '
       <div class="mt-3 p-3 bg-success bg-opacity-10 border border-success rounded-3 text-center d-none" id="successBox">
         <h5 class="fw-bold text-success mb-1"><i class="bi bi-check-circle-fill me-1"></i> Wajah Berhasil Diunggah!</h5>
         <div class="small text-dark mb-3" id="successDesc">
-          '.(is_admin() ? 'Wajah teknisi telah disimpan dan langsung <strong>Terverifikasi</strong> oleh Administrator.' : 'Wajah Anda berhasil disimpan dengan status: <span class="badge bg-warning text-dark"><i class="bi bi-hourglass-split me-1"></i> Menunggu Verifikasi Admin</span>.<br>Admin akan memeriksa & menyetujui wajah Anda di panel Admin Pengguna.').'
+          Wajah teknisi berhasil direkam dengan status: <span class="badge bg-warning text-dark"><i class="bi bi-hourglass-split me-1"></i> Menunggu Persetujuan Admin</span>.<br><br>
+          <strong>Wajib Disetujui Admin:</strong> Administrator IT harus memeriksa & menyetujui (Approve) biometrik wajah ini di menu <em>Kelola Data &rarr; Akun Pengguna / Teknisi</em> sebelum dapat digunakan untuk checklist maintenance.
         </div>
         <div class="d-grid gap-2">
           '.($retUrl !== '' ? '<a href="'.e($retUrl).'" class="btn btn-success fw-bold"><i class="bi bi-arrow-return-left me-1"></i> Kembali Lanjutkan Maintenance</a>' : '<a href="'.e(module_url('dashboard.php')).'" class="btn btn-primary fw-bold"><i class="bi bi-qr-code-scan me-1"></i> Buka Dashboard QR</a>').'
@@ -583,11 +585,7 @@ async function saveBiometrics() {
       
       const successDesc = document.getElementById("successDesc");
       if (successDesc) {
-        if (result.is_admin) {
-          successDesc.innerHTML = \'Wajah teknisi telah disimpan dan langsung <strong>Terverifikasi</strong> oleh Administrator.\';
-        } else {
-          successDesc.innerHTML = \'Wajah Anda berhasil dikirim dengan status: <span class="badge bg-warning text-dark"><i class="bi bi-hourglass-split me-1"></i> Menunggu Persetujuan Admin</span>.<br><br><strong>Langkah selanjutnya:</strong> Hubungi atau tunggu Administrator IT untuk menyetujui foto wajah Anda melalui menu <em>Kelola Data &rarr; Akun Pengguna / Teknisi</em> sebelum Anda dapat menggunakannya untuk checklist maintenance.\';
-        }
+        successDesc.innerHTML = 'Wajah teknisi berhasil direkam dengan status: <span class="badge bg-warning text-dark px-2 py-1"><i class="bi bi-hourglass-split me-1"></i> Menunggu Persetujuan Admin</span>.<br><br><strong>Wajib Disetujui Admin:</strong> Administrator IT harus menyetujui (Approve) foto wajah Anda melalui menu <em>Kelola Data &rarr; Akun Pengguna / Teknisi</em> sebelum wajah ini dapat digunakan untuk scan maintenance.';
       }
       
       successBox.classList.remove("d-none");
