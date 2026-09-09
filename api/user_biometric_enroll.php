@@ -585,7 +585,7 @@ async function saveBiometrics() {
       
       const successDesc = document.getElementById("successDesc");
       if (successDesc) {
-        successDesc.innerHTML = 'Wajah teknisi berhasil direkam dengan status: <span class="badge bg-warning text-dark px-2 py-1"><i class="bi bi-hourglass-split me-1"></i> Menunggu Persetujuan Admin</span>.<br><br><strong>Wajib Disetujui Admin:</strong> Administrator IT harus menyetujui (Approve) foto wajah Anda melalui menu <em>Kelola Data &rarr; Akun Pengguna / Teknisi</em> sebelum wajah ini dapat digunakan untuk scan maintenance.';
+        successDesc.innerHTML = \'Wajah teknisi berhasil direkam dengan status: <span class="badge bg-warning text-dark px-2 py-1"><i class="bi bi-hourglass-split me-1"></i> Menunggu Persetujuan Admin</span>.<br><br><strong>Wajib Disetujui Admin:</strong> Administrator IT harus menyetujui (Approve) foto wajah Anda melalui menu <em>Kelola Data &rarr; Akun Pengguna / Teknisi</em> sebelum wajah ini dapat digunakan untuk scan maintenance.\';
       }
       
       successBox.classList.remove("d-none");
