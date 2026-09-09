@@ -189,23 +189,31 @@ if ($successData) {
           </div>
 
           <div class="d-grid gap-2">
-            <a class="btn btn-primary fw-bold py-3 shadow-sm" href="'.e(module_url('scan.php', ['t' => $token])).'">
+            <a class="btn btn-primary fw-bold py-3 shadow-sm" href="scan.php?t='.urlencode($token).'">
               <i class="bi bi-card-checklist me-1"></i> Lihat Kartu Kontrol Perangkat
             </a>
-            <a class="btn btn-outline-secondary py-2" href="'.e(module_url('maintenance_detail.php', ['id' => $successData['log_id']])).'">
+            <a class="btn btn-outline-secondary py-2" href="maintenance_detail.php?id='.((int)$successData['log_id']).'">
               <i class="bi bi-file-earmark-text me-1"></i> Rincian Audit Lengkap
             </a>
           </div>
+          <div class="text-center mt-3 text-muted small">
+            <span class="spinner-border spinner-border-sm me-1 text-primary"></span> Otomatis membuka Kartu Kontrol dalam 3 detik...
+          </div>
         </div>
       </div>
-    </div>';
+    </div>
+    <script>
+    setTimeout(function() {
+      window.location.href = "scan.php?t=" + encodeURIComponent("'.e($token).'");
+    }, 2800);
+    </script>';
 
     render_page('Maintenance Berhasil Disimpan', $body, '', '', false);
     exit;
 }
 
 $currentMonthLog = get_asset_maintenance_status_month($assetId, $month, $year);
-$action = trim((string)($_GET['action'] ?? ''));
+$action = trim((string)($_GET['action'] ?? $_GET['amp;action'] ?? $_POST['action_type'] ?? ''));
 $autoOpenLogin = trim((string)($_GET['open_login'] ?? ''));
 
 // =========================================================================
@@ -470,9 +478,10 @@ if ($action === 'start' || $action === 'form' || $action === 'ulang') {
 
           '.($error ? '<div class="alert alert-danger py-2 mb-3">'.e($error).'</div>' : '').'
 
-          <form method="post" action="scan.php?t='.urlencode($token).'&amp;action='.urlencode($action).'" id="formMaintenance">
+          <form method="post" action="scan.php?t='.urlencode($token).'&action='.urlencode($action).'" id="formMaintenance">
             <input type="hidden" name="_csrf" value="'.e(csrf_token()).'">
             <input type="hidden" name="action" value="save_maintenance">
+            <input type="hidden" name="action_type" value="'.e($action).'">
             <input type="hidden" name="t" value="'.e($token).'">
             <input type="hidden" name="maintenance_type" value="'.e($mTypeVal).'">
 

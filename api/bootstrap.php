@@ -2653,8 +2653,17 @@ function get_asset_maintenance_status_month(int $assetId, int $month, int $year)
         $scans = $client->getSheetData('Maintenance_Scan', true);
         $latest = null;
         foreach ($scans as $s) {
-            if ((int)($s['asset_id'] ?? 0) === $assetId && (int)($s['maintenance_month'] ?? 0) === $month && (int)($s['maintenance_year'] ?? 0) === $year) {
+            $sAid = (int)($s['asset_id'] ?? $s['id_asset'] ?? $s['col_1'] ?? 0);
+            $sM = (int)($s['maintenance_month'] ?? $s['month'] ?? $s['col_6'] ?? (int)date('n', strtotime((string)($s['maintenance_date'] ?? $s['col_4'] ?? ''))));
+            $sY = (int)($s['maintenance_year'] ?? $s['year'] ?? $s['col_7'] ?? (int)date('Y', strtotime((string)($s['maintenance_date'] ?? $s['col_4'] ?? ''))));
+            if ($sAid === $assetId && $sM === $month && $sY === $year) {
                 $latest = $s;
+            }
+        }
+        if (!$latest && session_status() === PHP_SESSION_ACTIVE && !empty($_SESSION['_recent_scan_' . $assetId])) {
+            $rec = $_SESSION['_recent_scan_' . $assetId];
+            if ((int)($rec['maintenance_month'] ?? 0) === $month && (int)($rec['maintenance_year'] ?? 0) === $year) {
+                $latest = $rec;
             }
         }
         return $latest;
@@ -2683,19 +2692,20 @@ function get_asset_maintenance_history(int $assetId): array {
         $scans = $client->getSheetData('Maintenance_Scan', true);
         $history = [];
         foreach ($scans as $s) {
-            if ((int)($s['asset_id'] ?? 0) === $assetId) {
+            $sAid = (int)($s['asset_id'] ?? $s['id_asset'] ?? $s['col_1'] ?? 0);
+            if ($sAid === $assetId) {
                 $history[] = [
-                    'id' => (int)($s['id'] ?? 0),
-                    'asset_id' => (int)($s['asset_id'] ?? 0),
-                    'maintenance_date' => substr((string)($s['maintenance_date'] ?? ''), 0, 10),
-                    'maintenance_time' => substr((string)($s['maintenance_time'] ?? ''), 0, 8),
-                    'maintenance_month' => (int)($s['maintenance_month'] ?? 0),
-                    'maintenance_year' => (int)($s['maintenance_year'] ?? 0),
-                    'technician_name' => $s['technician_name'] ?? 'Teknisi',
-                    'maintenance_type' => $s['source'] ?? $s['maintenance_type'] ?? 'Maintenance',
-                    'findings' => $s['findings'] ?? '',
-                    'recommendation' => $s['recommendation'] ?? '',
-                    'status' => $s['status'] ?? 'Selesai'
+                    'id' => (int)($s['id'] ?? $s['col_0'] ?? 0),
+                    'asset_id' => $sAid,
+                    'maintenance_date' => substr((string)($s['maintenance_date'] ?? $s['col_4'] ?? ''), 0, 10),
+                    'maintenance_time' => substr((string)($s['maintenance_time'] ?? $s['col_5'] ?? ''), 0, 8),
+                    'maintenance_month' => (int)($s['maintenance_month'] ?? $s['col_6'] ?? 0),
+                    'maintenance_year' => (int)($s['maintenance_year'] ?? $s['col_7'] ?? 0),
+                    'technician_name' => $s['technician_name'] ?? $s['col_3'] ?? 'Teknisi',
+                    'maintenance_type' => $s['source'] ?? $s['maintenance_type'] ?? $s['col_9'] ?? 'Maintenance',
+                    'findings' => $s['findings'] ?? $s['col_11'] ?? '',
+                    'recommendation' => $s['recommendation'] ?? $s['col_12'] ?? '',
+                    'status' => $s['status'] ?? $s['col_8'] ?? 'Selesai'
                 ];
             }
         }
@@ -2792,42 +2802,65 @@ function get_asset_yearly_card_matrix(int $assetId, int $year): array {
             // Filter & urutkan scan agar scan terbaru pada bulan tersebut yang digunakan
             $assetScans = [];
             foreach ($scans as $s) {
-                if ((int)($s['asset_id'] ?? 0) === $assetId) {
-                    $sYear = (int)($s['maintenance_year'] ?? (int)date('Y', strtotime($s['maintenance_date'] ?? '')));
+                $sAid = (int)($s['asset_id'] ?? $s['id_asset'] ?? $s['col_1'] ?? 0);
+                if ($sAid === $assetId) {
+                    $sYear = (int)($s['maintenance_year'] ?? $s['year'] ?? $s['col_7'] ?? (int)date('Y', strtotime((string)($s['maintenance_date'] ?? $s['col_4'] ?? ''))));
                     if ($sYear === $year) {
                         $assetScans[] = $s;
                     }
                 }
             }
 
+            // Fallback session jika record baru belum ter-refresh dari API cache Google Sheets
+            if (session_status() === PHP_SESSION_ACTIVE && !empty($_SESSION['_recent_scan_' . $assetId])) {
+                $rec = $_SESSION['_recent_scan_' . $assetId];
+                if ((int)($rec['maintenance_year'] ?? 0) === $year) {
+                    $alreadyIn = false;
+                    foreach ($assetScans as $as) {
+                        if ((int)($as['id'] ?? $as['col_0'] ?? 0) === (int)$rec['id']) {
+                            $alreadyIn = true;
+                            break;
+                        }
+                    }
+                    if (!$alreadyIn) {
+                        $assetScans[] = $rec;
+                    }
+                }
+            }
+
             usort($assetScans, function($a, $b) {
-                $da = ($a['maintenance_date'] ?? '') . ' ' . ($a['maintenance_time'] ?? '');
-                $db = ($b['maintenance_date'] ?? '') . ' ' . ($b['maintenance_time'] ?? '');
+                $da = (string)($a['maintenance_date'] ?? $a['col_4'] ?? '') . ' ' . (string)($a['maintenance_time'] ?? $a['col_5'] ?? '');
+                $db = (string)($b['maintenance_date'] ?? $b['col_4'] ?? '') . ' ' . (string)($b['maintenance_time'] ?? $b['col_5'] ?? '');
                 if ($da === $db) {
-                    return ((int)($a['id'] ?? 0)) <=> ((int)($b['id'] ?? 0));
+                    return ((int)($a['id'] ?? $a['col_0'] ?? 0)) <=> ((int)($b['id'] ?? $b['col_0'] ?? 0));
                 }
                 return strcmp($da, $db);
             });
 
             foreach ($assetScans as $s) {
-                $sMonth = (int)($s['maintenance_month'] ?? (int)date('n', strtotime($s['maintenance_date'] ?? '')));
+                $sMonth = (int)($s['maintenance_month'] ?? $s['month'] ?? $s['col_6'] ?? (int)date('n', strtotime((string)($s['maintenance_date'] ?? $s['col_4'] ?? ''))));
                 if (isset($matrix[$sMonth])) {
-                    $logId = (int)($s['id'] ?? 0);
-                    $d = substr((string)($s['maintenance_date'] ?? ''), 0, 10);
+                    $logId = (int)($s['id'] ?? $s['col_0'] ?? 0);
+                    $d = substr((string)($s['maintenance_date'] ?? $s['col_4'] ?? ''), 0, 10);
                     $dDay = $d ? date('d', strtotime($d)) : '';
                     $dateFormatted = $dDay ? "{$dDay}/" . sprintf('%02d/%s', $sMonth, $yrSuffix) : sprintf('/%02d/%s', $sMonth, $yrSuffix);
 
                     $matrix[$sMonth]['is_done'] = true;
                     $matrix[$sMonth]['log_id'] = $logId;
                     $matrix[$sMonth]['date_str'] = $dateFormatted;
-                    $matrix[$sMonth]['paraf'] = $s['technician_name'] ?? 'Teknisi';
-                    $matrix[$sMonth]['status'] = $s['status'] ?? 'Selesai';
+                    $matrix[$sMonth]['paraf'] = $s['technician_name'] ?? $s['col_3'] ?? 'Teknisi';
+                    $matrix[$sMonth]['status'] = $s['status'] ?? $s['col_8'] ?? 'Selesai';
 
-                    if (isset($chkMap[$logId])) {
+                    if (!empty($s['checklists']) && is_array($s['checklists'])) {
+                        $matrix[$sMonth]['checklists'] = [];
+                        foreach ($s['checklists'] as $chkN => $chkI) {
+                            $matrix[$sMonth]['checklists'][$chkN] = is_array($chkI) ? ($chkI['checked'] ?? 1) : $chkI;
+                        }
+                    } elseif (isset($chkMap[$logId])) {
                         $matrix[$sMonth]['checklists'] = $chkMap[$logId];
                     } else {
                         // Fallback jika memang tidak ada data checklist terpisah (misal log lama)
-                        $scanStatus = trim((string)($s['status'] ?? 'Selesai'));
+                        $scanStatus = trim((string)($s['status'] ?? $s['col_8'] ?? 'Selesai'));
                         $isCompleted = ($scanStatus === 'Selesai' || $scanStatus === 'Normal' || $scanStatus === 'OK' || $scanStatus === '');
                         $defVal = $isCompleted ? 1 : 0;
                         $matrix[$sMonth]['checklists'] = [
@@ -2982,15 +3015,20 @@ function save_maintenance_record(array $data): array {
             $longitude
         ];
 
-        // Append baris ke Maintenance_Scan
+        // Append baris ke Maintenance_Scan (18 kolom lengkap)
         $scanOk = $client->appendValues('Maintenance_Scan', [$newScanRow]);
         if (!$scanOk) {
-            $client->createSheetIfNotExists('Maintenance_Scan');
+            $client->ensureMinColumns('Maintenance_Scan', 26);
             $scanOk = $client->appendValues('Maintenance_Scan', [$newScanRow]);
-            if (!$scanOk) {
-                error_log("save_maintenance_record: appendValues Maintenance_Scan failed!");
-                return ['success' => false, 'error' => 'Gagal menyimpan rekaman maintenance ke Google Sheet.'];
-            }
+        }
+        if (!$scanOk) {
+            // Fallback: simpan 11 kolom utama (pasti muat di sheet lama tanpa error kolom)
+            $core11Row = array_slice($newScanRow, 0, 11);
+            $scanOk = $client->appendValues('Maintenance_Scan', [$core11Row]);
+        }
+        if (!$scanOk) {
+            error_log("save_maintenance_record: appendValues Maintenance_Scan failed!");
+            return ['success' => false, 'error' => 'Gagal menyimpan rekaman maintenance ke Google Sheet.'];
         }
 
         // 2. Dapatkan ID Checklist berikutnya secara cepat (hanya kolom A)
@@ -3032,7 +3070,7 @@ function save_maintenance_record(array $data): array {
 
         $chkOk = $client->appendValues('Maintenance_Checklists', $chkRows);
         if (!$chkOk) {
-            $client->createSheetIfNotExists('Maintenance_Checklists');
+            $client->ensureMinColumns('Maintenance_Checklists', 10);
             $chkOk = $client->appendValues('Maintenance_Checklists', $chkRows);
             if (!$chkOk) {
                 $rawChk = $client->getValues('Maintenance_Checklists!A:A');
@@ -3064,6 +3102,22 @@ function save_maintenance_record(array $data): array {
         }
 
         $client->clearCache();
+
+        // Simpan ke sesi agar tampilan kartu langsung terupdate 100% instan
+        if (session_status() === PHP_SESSION_ACTIVE) {
+            $_SESSION['_recent_scan_' . $assetId] = [
+                'id' => $newScanId,
+                'asset_id' => $assetId,
+                'technician_name' => $techName,
+                'maintenance_date' => $date,
+                'maintenance_time' => $time,
+                'maintenance_month' => $month,
+                'maintenance_year' => $year,
+                'status' => $status,
+                'checklists' => $checklists
+            ];
+        }
+
         return ['success' => true, 'log_id' => $newScanId];
     }
 

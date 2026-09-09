@@ -154,8 +154,27 @@ class GoogleSheetsV4Client {
             return true;
         }
 
+        // Auto-fix 1: Jika gagal karena batas kolom sheet (misal sheet hanya punya kolom A..K),
+        // otomatis perluas kolom sheet menjadi minimal 26 kolom lalu coba append lagi
+        $errMsg = (string)($data['error']['message'] ?? $response);
+        if (stripos($errMsg, 'grid limits') !== false || stripos($errMsg, 'exceeds') !== false || stripos($errMsg, 'column') !== false) {
+            $this->ensureMinColumns($sheetName, 26);
+            $retryResp = $this->curlExec($url, [
+                CURLOPT_POST => true,
+                CURLOPT_POSTFIELDS => json_encode(['values' => $rows]),
+                CURLOPT_HTTPHEADER => [
+                    'Authorization: Bearer ' . $token,
+                    'Content-Type: application/json',
+                ],
+            ]);
+            $retryData = json_decode($retryResp, true);
+            if (isset($retryData['updates'])) {
+                return true;
+            }
+        }
+
         // Fallback: Jika range spesifik kolom ditolak karena grid limit (misal Maintenance_Scan!A:R pada sheet kolom A..K),
-        // coba append langsung ke nama sheet tanpa batas kolom (Google Sheets otomatis membuat kolom baru)
+        // coba append langsung ke nama sheet tanpa batas kolom
         if (str_contains($range, '!')) {
             $fallbackUrl = sprintf(
                 'https://sheets.googleapis.com/v4/spreadsheets/%s/values/%s:append?valueInputOption=USER_ENTERED',
@@ -362,6 +381,64 @@ class GoogleSheetsV4Client {
         }
 
         return $result;
+    }
+
+    /**
+     * Pastikan tab sheet memiliki minimal N kolom (default 26: A..Z)
+     */
+    public function ensureMinColumns(string $sheetName, int $minColumns = 26): bool {
+        static $checkedColumns = [];
+        if (!empty($checkedColumns[$sheetName])) return true;
+
+        $token = $this->getAccessToken();
+        if (!$token) return false;
+
+        $metaUrl = sprintf(
+            'https://sheets.googleapis.com/v4/spreadsheets/%s?fields=sheets(properties(sheetId,title,gridProperties))',
+            urlencode($this->spreadsheetId)
+        );
+        $resp = $this->curlExec($metaUrl, [
+            CURLOPT_HTTPHEADER => ['Authorization: Bearer ' . $token],
+        ]);
+        $data = json_decode($resp, true);
+        if (empty($data['sheets'])) return false;
+
+        foreach ($data['sheets'] as $sheet) {
+            $props = $sheet['properties'] ?? [];
+            if (strcasecmp((string)($props['title'] ?? ''), $sheetName) === 0) {
+                $curCols = (int)($props['gridProperties']['columnCount'] ?? 0);
+                $sheetId = (int)($props['sheetId'] ?? 0);
+                if ($curCols < $minColumns) {
+                    $updateUrl = sprintf(
+                        'https://sheets.googleapis.com/v4/spreadsheets/%s:batchUpdate',
+                        urlencode($this->spreadsheetId)
+                    );
+                    $this->curlExec($updateUrl, [
+                        CURLOPT_POST => true,
+                        CURLOPT_POSTFIELDS => json_encode([
+                            'requests' => [[
+                                'updateSheetProperties' => [
+                                    'properties' => [
+                                        'sheetId' => $sheetId,
+                                        'gridProperties' => [
+                                            'columnCount' => $minColumns
+                                        ]
+                                    ],
+                                    'fields' => 'gridProperties.columnCount'
+                                ]
+                            ]]
+                        ]),
+                        CURLOPT_HTTPHEADER => [
+                            'Authorization: Bearer ' . $token,
+                            'Content-Type: application/json',
+                        ],
+                    ]);
+                }
+                $checkedColumns[$sheetName] = true;
+                return true;
+            }
+        }
+        return false;
     }
 
     /**
