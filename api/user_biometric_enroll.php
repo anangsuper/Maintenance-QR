@@ -352,13 +352,19 @@ function handleUserChange(val) {
 
 async function loadModels() {
   try {
-    statusMsg.innerHTML = \'<span class="spinner-border spinner-border-sm me-2 text-primary"></span> Memuat model AI TinyFace & Landmark 68...\';
-    progressBar.style.width = "40%";
+    statusMsg.innerHTML = \'<span class="spinner-border spinner-border-sm me-2 text-primary"></span> Memuat model AI TinyFace & Landmark...\';
+    progressBar.style.width = "30%";
     
     await faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL);
-    progressBar.style.width = "65%";
-    await faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL);
+    progressBar.style.width = "60%";
+    
+    try {
+      await faceapi.nets.faceLandmark68TinyNet.loadFromUri(MODEL_URL);
+    } catch(e) {
+      await faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL);
+    }
     progressBar.style.width = "85%";
+    
     await faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL);
     progressBar.style.width = "100%";
     
@@ -414,57 +420,96 @@ function calculateEAR(eye) {
   return (distA + distB) / (2.0 * distC);
 }
 
-let trackingInterval = null;
+let trackingTimer = null;
+let isTrackingFrame = false;
+let enrollCompleted = false;
+
 function startFaceTracking() {
-  if (trackingInterval) clearInterval(trackingInterval);
+  if (trackingTimer) clearTimeout(trackingTimer);
+  enrollCompleted = false;
+  isTrackingFrame = false;
 
-  trackingInterval = setInterval(async () => {
-    if (!video.videoWidth || !video.videoHeight || video.paused || video.ended) return;
+  const useTinyLandmarks = faceapi.nets.faceLandmark68TinyNet && faceapi.nets.faceLandmark68TinyNet.isLoaded;
+  // inputSize 160 berjalan 3-4x lebih cepat dibanding 224 pada HP
+  const fastDetectorOptions = new faceapi.TinyFaceDetectorOptions({ inputSize: 160, scoreThreshold: 0.40 });
 
-    const detection = await faceapi.detectSingleFace(video, new faceapi.TinyFaceDetectorOptions({ inputSize: 224, scoreThreshold: 0.48 }))
-      .withFaceLandmarks()
-      .withFaceDescriptor();
-
-    if (detection) {
-      faceOval.classList.add("active");
-      const landmarks = detection.landmarks;
-      const leftEye = landmarks.getLeftEye();
-      const rightEye = landmarks.getRightEye();
-
-      const leftEAR = calculateEAR(leftEye);
-      const rightEAR = calculateEAR(rightEye);
-      const avgEAR = (leftEAR + rightEAR) / 2.0;
-
-      // Liveness Detection: Deteksi Kedipan Mata
-      if (avgEAR < 0.23) {
-        lastEyeState = "closed";
-      } else if (avgEAR > 0.28 && lastEyeState === "closed") {
-        blinkDetected = true;
-        isLivenessVerified = true;
+  async function trackingLoop() {
+    if (enrollCompleted || !video.videoWidth || !video.videoHeight || video.paused || video.ended) {
+      if (!enrollCompleted) {
+        trackingTimer = setTimeout(trackingLoop, 50);
       }
+      return;
+    }
 
-      if (!isLivenessVerified) {
-        statusMsg.className = "alert alert-warning py-2 px-3 text-center mb-3 fw-bold small";
-        statusMsg.innerHTML = \'<i class="bi bi-eye-fill me-1"></i> Wajah Terdeteksi! Silakan <u>KEDIPKAN MATA</u> Anda (Uji Liveness)...\';
-      } else {
-        // Liveness Terkonfirmasi!
-        statusMsg.className = "alert alert-success py-2 px-3 text-center mb-3 fw-bold small";
-        statusMsg.innerHTML = \'<i class="bi bi-check-circle-fill me-1"></i> Liveness Lolos! Tekan "SIMPAN BIOMETRIK WAJAH SAYA" di bawah.\';
-        
-        detectedDescriptor = Array.from(detection.descriptor);
-        captureSnapshot();
-        
-        btnSave.classList.remove("d-none");
-        clearInterval(trackingInterval);
-      }
-    } else {
-      faceOval.classList.remove("active");
-      if (!isLivenessVerified) {
-        statusMsg.className = "alert alert-secondary py-2 px-3 text-center mb-3 small";
-        statusMsg.innerHTML = \'<i class="bi bi-person-exclamation me-1"></i> Sesuaikan posisi wajah Anda tepat di dalam lingkaran oval.\';
+    if (!isTrackingFrame) {
+      isTrackingFrame = true;
+      try {
+        if (!isLivenessVerified) {
+          // Fase 1 Cepat: Deteksi wajah & landmarks saja (tanpa hitung descriptor)
+          const detection = await faceapi.detectSingleFace(video, fastDetectorOptions).withFaceLandmarks(useTinyLandmarks);
+
+          if (detection) {
+            faceOval.classList.add("active");
+            const landmarks = detection.landmarks;
+            const leftEye = landmarks.getLeftEye();
+            const rightEye = landmarks.getRightEye();
+
+            const leftEAR = calculateEAR(leftEye);
+            const rightEAR = calculateEAR(rightEye);
+            const avgEAR = (leftEAR + rightEAR) / 2.0;
+
+            // Liveness Detection: Deteksi Kedipan Mata
+            if (avgEAR < 0.23) {
+              lastEyeState = "closed";
+            } else if (avgEAR > 0.27 && lastEyeState === "closed") {
+              blinkDetected = true;
+              isLivenessVerified = true;
+            }
+
+            if (!isLivenessVerified) {
+              statusMsg.className = "alert alert-warning py-2 px-3 text-center mb-3 fw-bold small";
+              statusMsg.innerHTML = \'<i class="bi bi-eye-fill me-1"></i> Wajah Terdeteksi! Silakan <u>KEDIPKAN MATA</u> Anda (Uji Liveness)...\';
+            }
+          } else {
+            faceOval.classList.remove("active");
+            if (!isLivenessVerified) {
+              statusMsg.className = "alert alert-secondary py-2 px-3 text-center mb-3 small";
+              statusMsg.innerHTML = \'<i class="bi bi-person-exclamation me-1"></i> Sesuaikan posisi wajah Anda tepat di dalam lingkaran oval.\';
+            }
+          }
+        } else {
+          // Fase 2: Liveness lolos! Hitung descriptor sekali
+          statusMsg.className = "alert alert-info py-2 px-3 text-center mb-3 fw-bold small";
+          statusMsg.innerHTML = \'<span class="spinner-border spinner-border-sm me-2 text-primary"></span> Kedip terdeteksi! Mengambil vektor biometrik...\';
+
+          const fullDetection = await faceapi.detectSingleFace(video, fastDetectorOptions)
+            .withFaceLandmarks(useTinyLandmarks)
+            .withFaceDescriptor();
+
+          if (fullDetection && fullDetection.descriptor) {
+            enrollCompleted = true;
+            detectedDescriptor = Array.from(fullDetection.descriptor);
+            captureSnapshot();
+
+            statusMsg.className = "alert alert-success py-2 px-3 text-center mb-3 fw-bold small";
+            statusMsg.innerHTML = \'<i class="bi bi-check-circle-fill me-1"></i> Liveness Lolos! Tekan "SIMPAN BIOMETRIK WAJAH SAYA" di bawah.\';
+            btnSave.classList.remove("d-none");
+            return;
+          }
+        }
+      } catch (err) {
+        console.warn("Tracking error:", err);
+      } finally {
+        isTrackingFrame = false;
       }
     }
-  }, 250);
+
+    if (!enrollCompleted) {
+      trackingTimer = setTimeout(trackingLoop, 40);
+    }
+  }
+
+  trackingLoop();
 }
 
 function captureSnapshot() {
