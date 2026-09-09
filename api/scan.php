@@ -1302,6 +1302,7 @@ $body = '
 
     <!-- Status Strip Login / Tamu -->
     '.$userStatusStrip.'
+    '.($error ? '<div class="alert alert-danger py-2 px-3 mb-3 shadow-sm"><i class="bi bi-exclamation-triangle-fill me-1"></i><strong>Gagal Menyimpan:</strong> '.e($error).'</div>' : '').'
 
     <!-- Card Detail Perangkat Utama -->
     <div class="card p-3 p-md-4 border-0 shadow-sm mb-4">

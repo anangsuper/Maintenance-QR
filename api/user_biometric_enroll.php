@@ -309,7 +309,10 @@ $body = '
         <h5 class="fw-bold text-success mb-1"><i class="bi bi-check-circle-fill me-1"></i> Wajah Berhasil Diunggah!</h5>
         <div class="small text-dark mb-3" id="successDesc">
           Wajah teknisi berhasil direkam dengan status: <span class="badge bg-warning text-dark"><i class="bi bi-hourglass-split me-1"></i> Menunggu Persetujuan Admin</span>.<br><br>
-          <strong>Wajib Disetujui Admin:</strong> Administrator IT harus memeriksa & menyetujui (Approve) biometrik wajah ini di menu <em>Kelola Data &rarr; Akun Pengguna / Teknisi</em> sebelum dapat digunakan untuk checklist maintenance.
+          <strong>Wajib Disetujui Admin:</strong> Administrator IT harus memeriksa & menyetujui (Approve) biometrik wajah ini di menu <em>Kelola Data &rarr; Akun Pengguna / Teknisi</em> sebelum dapat digunakan untuk checklist maintenance.<br><br>
+          <div class="alert alert-info py-2 px-3 small text-start mb-0 border-0 bg-info bg-opacity-10">
+            <strong><i class="bi bi-info-circle-fill me-1 text-primary"></i>Catatan Penting:</strong> Pendaftaran wajah ini adalah untuk identitas akun teknisi Anda. Checklist pemeliharaan komputer belum disimpan. Silakan klik tombol <strong>"Kembali Lanjutkan Maintenance"</strong> di bawah untuk menyimpan checklist maintenance komputer ini.
+          </div>
         </div>
         <div class="d-grid gap-2">
           '.($retUrl !== '' ? '<a href="'.e($retUrl).'" class="btn btn-success fw-bold"><i class="bi bi-arrow-return-left me-1"></i> Kembali Lanjutkan Maintenance</a>' : '<a href="'.e(module_url('dashboard.php')).'" class="btn btn-primary fw-bold"><i class="bi bi-qr-code-scan me-1"></i> Buka Dashboard QR</a>').'
@@ -585,7 +588,7 @@ async function saveBiometrics() {
       
       const successDesc = document.getElementById("successDesc");
       if (successDesc) {
-        successDesc.innerHTML = \'Wajah teknisi berhasil direkam dengan status: <span class="badge bg-warning text-dark px-2 py-1"><i class="bi bi-hourglass-split me-1"></i> Menunggu Persetujuan Admin</span>.<br><br><strong>Wajib Disetujui Admin:</strong> Administrator IT harus menyetujui (Approve) foto wajah Anda melalui menu <em>Kelola Data &rarr; Akun Pengguna / Teknisi</em> sebelum wajah ini dapat digunakan untuk scan maintenance.\';
+        successDesc.innerHTML = \'Wajah teknisi berhasil direkam dengan status: <span class="badge bg-warning text-dark px-2 py-1"><i class="bi bi-hourglass-split me-1"></i> Menunggu Persetujuan Admin</span>.<br><br><strong>Wajib Disetujui Admin:</strong> Administrator IT harus menyetujui (Approve) foto wajah Anda melalui menu <em>Kelola Data &rarr; Akun Pengguna / Teknisi</em> sebelum wajah ini dapat digunakan untuk scan maintenance.<br><br><div class="alert alert-info py-2 px-3 small text-start mb-0 border-0 bg-info bg-opacity-10"><strong><i class="bi bi-info-circle-fill me-1 text-primary"></i>Catatan Penting:</strong> Pendaftaran wajah ini adalah untuk identitas akun teknisi Anda. Checklist pemeliharaan komputer belum disimpan. Silakan klik tombol <strong>"Kembali Lanjutkan Maintenance"</strong> di bawah untuk menyimpan checklist maintenance komputer ini.</div>\';
       }
       
       successBox.classList.remove("d-none");

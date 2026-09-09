@@ -29,7 +29,8 @@ $audit = get_audit_maintenance_data([
     'divisi' => $divisiId,
     'kategori' => $kategoriId,
     'teknisi' => $techFilter,
-    'status' => $statusFilter
+    'status' => $statusFilter,
+    'force_refresh' => true
 ]);
 
 $stats = $audit['stats'];
@@ -111,6 +112,7 @@ $body = '
     <div class="text-secondary">Pemeriksaan kepatuhan pemeliharaan perangkat IT periode <strong>'.$monthName.' '.$year.'</strong>.</div>
   </div>
   <div class="d-flex gap-2 flex-wrap">
+    <a class="btn btn-outline-secondary fw-semibold" href="'.e(module_url('audit.php', ['bulan'=>$month,'tahun'=>$year,'cabang'=>$cabangId,'divisi'=>$divisiId,'kategori'=>$kategoriId,'teknisi'=>$techFilter,'status'=>$statusFilter,'refresh'=>'1'])).'"><i class="bi bi-arrow-clockwise me-1"></i> Segarkan Data</a>
     <a class="btn btn-primary fw-semibold" target="_blank" href="'.e(module_url('print_report.php', ['bulan'=>$month,'tahun'=>$year,'cabang'=>$cabangId])).'"><i class="bi bi-printer-fill me-1"></i> Cetak Laporan PDF</a>
     <a class="btn btn-outline-success fw-semibold" href="'.e(module_url('export_csv.php', ['bulan'=>$month,'tahun'=>$year,'cabang'=>$cabangId])).'"><i class="bi bi-file-earmark-spreadsheet me-1"></i> Export Excel (CSV)</a>
   </div>

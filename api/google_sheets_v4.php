@@ -445,17 +445,13 @@ class GoogleSheetsV4Client {
 
             $obj = ['_row_num' => $i + 1];
 
-            // Deteksi offset kolom jika baris bergeser ke kanan (misal baris Maintenance_Checklists di kolom H..O)
+            // Deteksi offset kolom jika baris bergeser ke kanan pada sheet manapun
             $colOffset = 0;
-            if ($sheetName === 'Maintenance_Checklists') {
-                if (empty($row[0]) && !empty($row[7])) {
-                    $colOffset = 7;
-                } elseif (empty($row[0])) {
-                    foreach ($row as $ci => $cv) {
-                        if ($cv !== '' && $cv !== null) {
-                            $colOffset = $ci;
-                            break;
-                        }
+            if (empty($row[0])) {
+                foreach ($row as $ci => $cv) {
+                    if ($cv !== '' && $cv !== null) {
+                        $colOffset = $ci;
+                        break;
                     }
                 }
             }
