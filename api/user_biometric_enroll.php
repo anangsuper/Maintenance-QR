@@ -571,7 +571,7 @@ async function saveBiometrics() {
     const result = await res.json();
     if (result && result.success) {
       statusMsg.className = "alert alert-success py-2 px-3 text-center mb-3 fw-bold small";
-      statusMsg.innerHTML = '<i class="bi bi-check-circle-fill me-1"></i> Wajah berhasil diunggah ke sistem!';
+      statusMsg.innerHTML = \'<i class="bi bi-check-circle-fill me-1"></i> Wajah berhasil diunggah ke sistem!\';
       
       if (videoStream) {
         videoStream.getTracks().forEach(track => track.stop());
@@ -581,9 +581,9 @@ async function saveBiometrics() {
       const successDesc = document.getElementById("successDesc");
       if (successDesc) {
         if (result.is_admin) {
-          successDesc.innerHTML = 'Wajah teknisi telah disimpan dan langsung <strong>Terverifikasi</strong> oleh Administrator.';
+          successDesc.innerHTML = \'Wajah teknisi telah disimpan dan langsung <strong>Terverifikasi</strong> oleh Administrator.\';
         } else {
-          successDesc.innerHTML = 'Wajah Anda berhasil dikirim dengan status: <span class="badge bg-warning text-dark"><i class="bi bi-hourglass-split me-1"></i> Menunggu Persetujuan Admin</span>.<br><br><strong>Langkah selanjutnya:</strong> Hubungi atau tunggu Administrator IT untuk menyetujui foto wajah Anda melalui menu <em>Kelola Data &rarr; Akun Pengguna / Teknisi</em> sebelum Anda dapat menggunakannya untuk checklist maintenance.';
+          successDesc.innerHTML = \'Wajah Anda berhasil dikirim dengan status: <span class="badge bg-warning text-dark"><i class="bi bi-hourglass-split me-1"></i> Menunggu Persetujuan Admin</span>.<br><br><strong>Langkah selanjutnya:</strong> Hubungi atau tunggu Administrator IT untuk menyetujui foto wajah Anda melalui menu <em>Kelola Data &rarr; Akun Pengguna / Teknisi</em> sebelum Anda dapat menggunakannya untuk checklist maintenance.\';
         }
       }
       
@@ -591,7 +591,7 @@ async function saveBiometrics() {
     } else {
       alert("Gagal menyimpan biometrik: " + (result.error || "Kesalahan server"));
       btnSave.disabled = false;
-      btnSave.innerHTML = '<i class="bi bi-check-circle-fill me-1"></i> SIMPAN BIOMETRIK WAJAH SAYA';
+      btnSave.innerHTML = \'<i class="bi bi-check-circle-fill me-1"></i> SIMPAN BIOMETRIK WAJAH SAYA\';
     }
   } catch (err) {
     console.error("Gagal kirim biometrik:", err);
