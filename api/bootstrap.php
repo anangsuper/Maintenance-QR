@@ -5498,6 +5498,19 @@ h1, h2, h3, h4, h5, h6, .h1, .h2, .h3, .h4, .h5, .h6 {
   font-weight: 700;
 }
 
+/* Contrast Guarantee: Headings inside dark headers, hero banners, and modal headers */
+.text-white h1, .text-white h2, .text-white h3, .text-white h4, .text-white h5, .text-white h6,
+.text-white .h1, .text-white .h2, .text-white .h3, .text-white .h4, .text-white .h5, .text-white .h6,
+.dashboard-hero h1, .dashboard-hero h2, .dashboard-hero h3, .dashboard-hero h4, .dashboard-hero h5, .dashboard-hero h6,
+.main-navbar h1, .main-navbar h2, .main-navbar h3, .main-navbar h4, .main-navbar h5, .main-navbar h6,
+.main-navbar .brand-text,
+.bg-primary h1, .bg-primary h2, .bg-primary h3, .bg-primary h4, .bg-primary h5, .bg-primary h6,
+.bg-dark h1, .bg-dark h2, .bg-dark h3, .bg-dark h4, .bg-dark h5, .bg-dark h6,
+.modal-header.bg-primary .modal-title,
+.modal-header.text-white .modal-title {
+  color: #ffffff !important;
+}
+
 /* Navbar Bank Mitra */
 .main-navbar {
   background: linear-gradient(135deg, #1b4f74 0%, #2E77AD 45%, #30B0E0 100%);
@@ -5775,6 +5788,10 @@ h1, h2, h3, h4, h5, h6, .h1, .h2, .h3, .h4, .h5, .h6 {
 .bg-primary {
   background-color: #2E77AD !important;
 }
+.text-bg-primary {
+  background-color: #2E77AD !important;
+  color: #ffffff !important;
+}
 .bg-primary-subtle {
   background-color: rgba(46, 119, 173, 0.12) !important;
   color: #2E77AD !important;
@@ -5782,15 +5799,26 @@ h1, h2, h3, h4, h5, h6, .h1, .h2, .h3, .h4, .h5, .h6 {
 .text-info {
   color: #30B0E0 !important;
 }
+.text-bg-info {
+  background-color: #30B0E0 !important;
+  color: #ffffff !important;
+}
 .text-success {
   color: #7aa840 !important;
 }
 .bg-success {
   background-color: #90C050 !important;
 }
+.text-bg-success {
+  background-color: #90C050 !important;
+  color: #ffffff !important;
+}
 .bg-success-subtle {
   background-color: rgba(144, 192, 80, 0.15) !important;
   color: #4c6827 !important;
+}
+.badge.bg-primary, .badge.bg-info, .badge.bg-success {
+  color: #ffffff !important;
 }
 
 /* Loading Progress Bar (Bank Mitra Blue-Teal Gradient) */

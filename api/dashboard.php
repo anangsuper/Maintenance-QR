@@ -259,7 +259,9 @@ if (!$findingsRowsHtml) {
     $findingsRowsHtml = '<tr><td colspan="7" class="text-center text-success py-4"><i class="bi bi-shield-check fs-4 d-block mb-1"></i>Tidak ada temuan kerusakan yang pending. Semua unit dalam kondisi prima.</td></tr>';
 }
 
-$modeBadge = is_google_cloud_mode() ? '<span class="badge-chip chip-primary"><i class="bi bi-google"></i> Google Cloud Sheets API v4</span>' : '<span class="badge-chip chip-secondary"><i class="bi bi-database"></i> MySQL Database</span>';
+$modeBadge = is_google_cloud_mode() 
+    ? '<span class="hero-badge-pill"><i class="bi bi-google text-warning"></i> Google Cloud Sheets API v4</span>' 
+    : '<span class="hero-badge-pill"><i class="bi bi-database text-info"></i> MySQL Database</span>';
 $branchTitle = ($cabangId > 0) ? 'Cabang: ' . e($selectedCabangName) : 'Semua Cabang';
 
 // 10. Head & Script Injection
@@ -274,10 +276,19 @@ $head = '
   border-radius: 20px;
   padding: 26px 30px;
   margin-bottom: 24px;
-  color: #ffffff;
+  color: #ffffff !important;
   box-shadow: 0 10px 30px -5px rgba(46, 119, 173, 0.25);
   position: relative;
   overflow: hidden;
+}
+
+.dashboard-hero h1,
+.dashboard-hero h2,
+.dashboard-hero h3,
+.dashboard-hero h4,
+.dashboard-hero h5,
+.dashboard-hero h6 {
+  color: #ffffff !important;
 }
 
 .dashboard-hero::before {
@@ -293,7 +304,7 @@ $head = '
 }
 
 .hero-subtitle {
-  color: rgba(255, 255, 255, 0.88);
+  color: rgba(255, 255, 255, 0.95) !important;
   font-size: 0.95rem;
 }
 
@@ -301,14 +312,23 @@ $head = '
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 4px 12px;
+  padding: 5px 14px;
   border-radius: 20px;
-  font-size: 0.8rem;
+  font-size: 0.82rem;
   font-weight: 600;
-  background: rgba(255, 255, 255, 0.18);
-  color: #ffffff;
-  border: 1px solid rgba(255, 255, 255, 0.25);
+  background: rgba(255, 255, 255, 0.22) !important;
+  color: #ffffff !important;
+  border: 1px solid rgba(255, 255, 255, 0.35) !important;
   backdrop-filter: blur(8px);
+}
+.hero-badge-pill i {
+  color: #ffffff !important;
+}
+.hero-badge-pill i.bi-google {
+  color: #facc15 !important;
+}
+.hero-badge-pill i.bi-database {
+  color: #38bdf8 !important;
 }
 
 .stat-card-clickable {
@@ -461,7 +481,7 @@ $body = '
     <div class="d-flex gap-2 flex-wrap">
       <a class="btn btn-action-add fw-bold shadow-sm" href="'.e(module_url('asset_add.php')).'"><i class="bi bi-plus-circle-fill me-1"></i> + Tambah Komputer</a>
       <a class="btn btn-outline-light fw-semibold px-3" target="_blank" href="'.e(module_url('print_card.php', ['cabang'=>$cabangId, 'layout'=>'grid6', 'tahun'=>$year])).'"><i class="bi bi-card-checklist me-1"></i> Cetak Kartu (6/A4)</a>
-      <a class="btn btn-primary fw-semibold px-3 shadow-sm" target="_blank" href="'.e(module_url('print_report.php', ['bulan'=>$month,'tahun'=>$year,'cabang'=>$cabangId])).'"><i class="bi bi-printer-fill me-1"></i> Cetak Laporan</a>
+      <a class="btn btn-outline-light fw-semibold px-3" target="_blank" href="'.e(module_url('print_report.php', ['bulan'=>$month,'tahun'=>$year,'cabang'=>$cabangId])).'"><i class="bi bi-printer-fill me-1"></i> Cetak Laporan</a>
       <a class="btn btn-outline-light bg-white bg-opacity-10 text-white fw-semibold border-white border-opacity-25" href="'.e(module_url('export_csv.php', ['bulan'=>$month,'tahun'=>$year,'cabang'=>$cabangId])).'"><i class="bi bi-file-earmark-spreadsheet me-1"></i> Export CSV</a>
     </div>
   </div>
