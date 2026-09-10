@@ -41,7 +41,20 @@ class GoogleSheetsV4Client {
             return self::$cachedAccessToken;
         }
 
-        // Cek cache session agar tidak request token berulang-ulang
+        // 1. Cek disk cache di /tmp (bertahan antar request serverless di container yang sama)
+        $tokenFile = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'gs_oauth_' . md5($this->clientEmail) . '.json';
+        if (file_exists($tokenFile)) {
+            $raw = @file_get_contents($tokenFile);
+            if ($raw) {
+                $tokData = @json_decode($raw, true);
+                if (!empty($tokData['access_token']) && !empty($tokData['exp']) && $tokData['exp'] > time() + 120) {
+                    self::$cachedAccessToken = (string)$tokData['access_token'];
+                    return self::$cachedAccessToken;
+                }
+            }
+        }
+
+        // 2. Cek cache session agar tidak request token berulang-ulang
         if (!empty($_SESSION['_gs_access_token']) && !empty($_SESSION['_gs_token_exp']) && $_SESSION['_gs_token_exp'] > time() + 120) {
             self::$cachedAccessToken = (string)$_SESSION['_gs_access_token'];
             return self::$cachedAccessToken;
@@ -79,10 +92,12 @@ class GoogleSheetsV4Client {
         $data = json_decode($response, true);
         if (!empty($data['access_token'])) {
             self::$cachedAccessToken = (string)$data['access_token'];
+            $exp = $now + 3500;
             if (session_status() === PHP_SESSION_ACTIVE) {
                 $_SESSION['_gs_access_token'] = self::$cachedAccessToken;
-                $_SESSION['_gs_token_exp'] = $now + 3500;
+                $_SESSION['_gs_token_exp'] = $exp;
             }
+            @file_put_contents($tokenFile, json_encode(['access_token' => self::$cachedAccessToken, 'exp' => $exp]));
             return self::$cachedAccessToken;
         }
 
@@ -334,20 +349,23 @@ class GoogleSheetsV4Client {
             return self::$runtimeCache[$sheetName];
         }
 
-        // 2. Cek warm session cache (TTL: 30 detik) untuk pergantian halaman secepat kilat (0.01 detik)
+        // Tiered cache TTL: 60 detik untuk scan & checklist, 300 detik (5 menit) untuk master data
+        $ttl = in_array($sheetName, ['Maintenance_Scan', 'Maintenance_Checklists'], true) ? 60 : 300;
+
+        // 2. Cek warm session cache untuk pergantian halaman secepat kilat (0.01 detik)
         if (!$forceRefresh && session_status() === PHP_SESSION_ACTIVE) {
             $cacheKey = '_gs_cache_' . $sheetName;
             $timeKey = '_gs_time_' . $sheetName;
-            if (!empty($_SESSION[$cacheKey]) && !empty($_SESSION[$timeKey]) && (time() - (int)$_SESSION[$timeKey] < 30)) {
+            if (!empty($_SESSION[$cacheKey]) && !empty($_SESSION[$timeKey]) && (time() - (int)$_SESSION[$timeKey] < $ttl)) {
                 self::$runtimeCache[$sheetName] = $_SESSION[$cacheKey];
                 return self::$runtimeCache[$sheetName];
             }
         }
 
-        // 3. Cek warm disk cache di /tmp (TTL: 30 detik, bertahan antar request)
+        // 3. Cek warm disk cache di /tmp (bertahan antar request di container)
         if (!$forceRefresh) {
             $filePath = $this->getCacheFilePath($sheetName);
-            if (file_exists($filePath) && (time() - filemtime($filePath) < 30)) {
+            if (file_exists($filePath) && (time() - filemtime($filePath) < $ttl)) {
                 $cachedContent = @file_get_contents($filePath);
                 if ($cachedContent) {
                     $cachedJson = json_decode($cachedContent, true);
@@ -591,5 +609,11 @@ class GoogleSheetsV4Client {
 if (!function_exists('base64url_encode')) {
     function base64url_encode(string $data): string {
         return rtrim(strtr(base64_encode($data), '+/', '-_'), '=');
+    }
+}
+
+if (!function_exists('base64url_decode')) {
+    function base64url_decode(string $data): string {
+        return (string)base64_decode(strtr($data, '-_', '+/') . str_repeat('=', (4 - strlen($data) % 4) % 4));
     }
 }

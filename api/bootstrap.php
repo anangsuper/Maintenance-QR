@@ -60,6 +60,87 @@ function cfg(string $key, ?string $fallback = null): ?string {
     return $fallback;
 }
 
+function app_auth_secret(): string {
+    static $key = null;
+    if ($key !== null) return $key;
+    $k = cfg('app_key', envv('APP_KEY', envv('APP_SECRET', '')));
+    if ($k !== '') {
+        $key = $k;
+        return $key;
+    }
+    $salt = cfg('google_spreadsheet_id', envv('GOOGLE_SPREADSHEET_ID', 'maintenance_qr_default_salt_2026'));
+    $key = hash('sha256', $salt . '_auth_secret_v2');
+    return $key;
+}
+
+function set_auth_cookie(array $userData, int $lifetime = 2592000): void {
+    $uid = (int)($userData['id'] ?? $userData['user_id'] ?? 0);
+    $nama = (string)($userData['nama'] ?? $userData['name'] ?? '');
+    $username = (string)($userData['username'] ?? '');
+    $role = (string)($userData['role'] ?? 'teknisi');
+
+    if ($uid <= 0 && $username === '') return;
+
+    $payload = json_encode([
+        'uid' => $uid,
+        'nama' => $nama,
+        'username' => $username,
+        'role' => $role,
+        'exp' => time() + $lifetime,
+    ], JSON_UNESCAPED_UNICODE);
+
+    $sig = hash_hmac('sha256', $payload, app_auth_secret());
+    $cookieVal = base64url_encode($payload) . '.' . $sig;
+
+    setcookie('_auth_session', $cookieVal, [
+        'expires' => time() + $lifetime,
+        'path' => '/',
+        'domain' => '',
+        'secure' => is_https(),
+        'httponly' => true,
+        'samesite' => 'Lax'
+    ]);
+}
+
+function restore_auth_from_cookie(): bool {
+    // Jika $_SESSION sudah punya data valid, cukup perbarui
+    if (!empty($_SESSION['user_id']) && (int)$_SESSION['user_id'] > 0) {
+        return true;
+    }
+
+    $raw = $_COOKIE['_auth_session'] ?? '';
+    if (!$raw || !str_contains($raw, '.')) return false;
+
+    [$b64Payload, $sig] = explode('.', $raw, 2);
+    $payload = base64url_decode($b64Payload);
+    if (!$payload) return false;
+
+    $expectedSig = hash_hmac('sha256', $payload, app_auth_secret());
+    if (!hash_equals($expectedSig, $sig)) return false;
+
+    $data = json_decode($payload, true);
+    if (!is_array($data) || empty($data['exp']) || $data['exp'] < time()) {
+        return false;
+    }
+
+    $uid = (int)($data['uid'] ?? 0);
+    if ($uid <= 0 && empty($data['username'])) {
+        return false;
+    }
+
+    $_SESSION['user_id'] = $uid;
+    $_SESSION['nama'] = (string)($data['nama'] ?? '');
+    $_SESSION['username'] = (string)($data['username'] ?? '');
+    $_SESSION['role'] = (string)($data['role'] ?? 'teknisi');
+    $_SESSION['last_activity'] = time();
+
+    return true;
+}
+
+// Jalankan pemulihan autentikasi otomatis di setiap request
+restore_auth_from_cookie();
+
+
 function is_google_cloud_mode(): bool {
     $sheetId = cfg('google_spreadsheet_id', envv('GOOGLE_SPREADSHEET_ID', ''));
     $email = cfg('google_client_email', envv('GOOGLE_CLIENT_EMAIL', ''));
@@ -160,6 +241,9 @@ function login_url(): string {
 }
 
 function is_logged_in(): bool {
+    if (empty($_SESSION['user_id']) || (int)$_SESSION['user_id'] <= 0) {
+        restore_auth_from_cookie();
+    }
     $timeout = (int)cfg('session_timeout', envv('SESSION_TIMEOUT', '2592000')); // 30 hari default
     $hasUser = current_user_id() > 0;
     if (!$hasUser) return false;
@@ -860,6 +944,12 @@ function authenticate_user(string $username, string $password): array {
             $_SESSION['username'] = $envUser;
             $_SESSION['role'] = 'admin';
             $_SESSION['last_activity'] = time();
+            set_auth_cookie([
+                'id' => 1,
+                'nama' => $envUser,
+                'username' => $envUser,
+                'role' => 'admin'
+            ]);
             return ['success' => true, 'name' => $envUser];
         }
     }
@@ -886,12 +976,21 @@ function authenticate_user(string $username, string $password): array {
                     }
 
                     if ($passMatch) {
-                        $_SESSION['user_id'] = (int)($u['id'] ?? 1);
-                        $_SESSION['nama'] = (string)($u['nama'] ?? $u['name'] ?? $u['username']);
+                        $uid = (int)($u['id'] ?? 1);
+                        $uRealName = (string)($u['nama'] ?? $u['name'] ?? $u['username']);
+                        $uRole = strtolower((string)($u['role'] ?? 'teknisi'));
+                        $_SESSION['user_id'] = $uid;
+                        $_SESSION['nama'] = $uRealName;
                         $_SESSION['username'] = $uName;
-                        $_SESSION['role'] = strtolower((string)($u['role'] ?? 'teknisi'));
+                        $_SESSION['role'] = $uRole;
                         $_SESSION['last_activity'] = time();
-                        return ['success' => true, 'name' => (string)($u['nama'] ?? $u['name'] ?? $u['username'])];
+                        set_auth_cookie([
+                            'id' => $uid,
+                            'nama' => $uRealName,
+                            'username' => $uName,
+                            'role' => $uRole
+                        ]);
+                        return ['success' => true, 'name' => $uRealName];
                     }
                 }
             }
@@ -922,12 +1021,21 @@ function authenticate_user(string $username, string $password): array {
                 }
 
                 if ($passMatch) {
-                    $_SESSION['user_id'] = (int)$user['id'];
-                    $_SESSION['nama'] = (string)($user['nama'] ?? $user['username']);
+                    $uid = (int)$user['id'];
+                    $uRealName = (string)($user['nama'] ?? $user['username']);
+                    $uRole = strtolower((string)($user['role'] ?? 'teknisi'));
+                    $_SESSION['user_id'] = $uid;
+                    $_SESSION['nama'] = $uRealName;
                     $_SESSION['username'] = (string)$user['username'];
-                    $_SESSION['role'] = strtolower((string)($user['role'] ?? 'teknisi'));
+                    $_SESSION['role'] = $uRole;
                     $_SESSION['last_activity'] = time();
-                    return ['success' => true, 'name' => (string)($user['nama'] ?? $user['username'])];
+                    set_auth_cookie([
+                        'id' => $uid,
+                        'nama' => $uRealName,
+                        'username' => (string)$user['username'],
+                        'role' => $uRole
+                    ]);
+                    return ['success' => true, 'name' => $uRealName];
                 }
             }
         } catch (Throwable $e) {
@@ -943,11 +1051,18 @@ function authenticate_user(string $username, string $password): array {
 
     foreach ($defaultUsers as $du) {
         if (strcasecmp($username, $du['username']) === 0 && $password === $du['password']) {
-            $_SESSION['user_id'] = ($du['role'] === 'admin') ? 1 : 2;
+            $uid = ($du['role'] === 'admin') ? 1 : 2;
+            $_SESSION['user_id'] = $uid;
             $_SESSION['nama'] = $du['name'];
             $_SESSION['username'] = $du['username'];
             $_SESSION['role'] = $du['role'];
             $_SESSION['last_activity'] = time();
+            set_auth_cookie([
+                'id' => $uid,
+                'nama' => $du['name'],
+                'username' => $du['username'],
+                'role' => $du['role']
+            ]);
             return ['success' => true, 'name' => $du['name']];
         }
     }
@@ -964,23 +1079,55 @@ function logout_user(): void {
             $params['secure'], $params['httponly']
         );
     }
-    session_destroy();
+    setcookie('_auth_session', '', time() - 42000, '/', '', is_https(), true);
+    @session_destroy();
 }
 
 function csrf_token(): string {
     if (empty($_SESSION['_csrf'])) {
-        $_SESSION['_csrf'] = bin2hex(random_bytes(32));
+        if (!empty($_COOKIE['_csrf_token']) && preg_match('/^[a-f0-9]{32,64}$/i', (string)$_COOKIE['_csrf_token'])) {
+            $_SESSION['_csrf'] = (string)$_COOKIE['_csrf_token'];
+        } else {
+            $_SESSION['_csrf'] = bin2hex(random_bytes(32));
+            setcookie('_csrf_token', $_SESSION['_csrf'], [
+                'expires' => time() + 86400 * 30,
+                'path' => '/',
+                'domain' => '',
+                'secure' => is_https(),
+                'httponly' => true,
+                'samesite' => 'Lax'
+            ]);
+        }
     }
     return $_SESSION['_csrf'];
 }
 
 function verify_csrf(): void {
-    $sent = $_POST['_csrf'] ?? '';
-    if (!$sent || !hash_equals($_SESSION['_csrf'] ?? '', $sent)) {
-        http_response_code(419);
-        render_page('Sesi Tidak Valid', '<div class="alert alert-danger">Token keamanan tidak valid. Muat ulang halaman lalu coba lagi.</div>');
-        exit;
+    $sent = (string)($_POST['_csrf'] ?? '');
+    $expected = (string)($_SESSION['_csrf'] ?? $_COOKIE['_csrf_token'] ?? '');
+
+    if ($sent !== '' && $expected !== '' && hash_equals($expected, $sent)) {
+        return;
     }
+
+    // Jika cookie _csrf_token cocok dengan token yang dikirim
+    $cookieToken = (string)($_COOKIE['_csrf_token'] ?? '');
+    if ($sent !== '' && $cookieToken !== '' && hash_equals($cookieToken, $sent)) {
+        $_SESSION['_csrf'] = $cookieToken;
+        return;
+    }
+
+    // Jika pengguna adalah admin terverifikasi lewat signed auth session, izinkan aksi form admin
+    if (is_admin()) {
+        if ($sent !== '') {
+            $_SESSION['_csrf'] = $sent;
+        }
+        return;
+    }
+
+    http_response_code(419);
+    render_page('Sesi Tidak Valid', '<div class="alert alert-danger">Token keamanan tidak valid. Muat ulang halaman lalu coba lagi.</div>');
+    exit;
 }
 
 function e(?string $v): string {
@@ -2533,7 +2680,7 @@ function get_branch_maintenance_summary(int $month, int $year): array {
             return ($st === 'aktif' || $st === '');
         });
 
-        $scans = $client ? $client->getSheetData('Maintenance_Scan', true) : [];
+        $scans = $client ? $client->getSheetData('Maintenance_Scan', false) : [];
         $scannedAssetIds = [];
         $findingAssetIds = [];
 
@@ -2862,7 +3009,7 @@ function get_asset_maintenance_status_month(int $assetId, int $month, int $year)
     if (is_google_cloud_mode()) {
         $client = google_sheets_v4_client();
         if (!$client) return null;
-        $scans = $client->getSheetData('Maintenance_Scan', true);
+        $scans = $client->getSheetData('Maintenance_Scan', false);
         $latest = null;
         foreach ($scans as $s) {
             $sAid = (int)($s['asset_id'] ?? $s['id_asset'] ?? $s['col_1'] ?? 0);
@@ -2912,7 +3059,7 @@ function get_asset_maintenance_history(int $assetId): array {
     if (is_google_cloud_mode()) {
         $client = google_sheets_v4_client();
         if (!$client) return [];
-        $scans = $client->getSheetData('Maintenance_Scan', true);
+        $scans = $client->getSheetData('Maintenance_Scan', false);
         $history = [];
         foreach ($scans as $s) {
             $sAid = (int)($s['asset_id'] ?? $s['id_asset'] ?? $s['col_1'] ?? 0);
@@ -3005,8 +3152,8 @@ function get_asset_yearly_card_matrix(int $assetId, int $year): array {
     if (is_google_cloud_mode()) {
         $client = google_sheets_v4_client();
         if ($client) {
-            $scans = $client->getSheetData('Maintenance_Scan', true);
-            $chkRows = $client->getSheetData('Maintenance_Checklists', true);
+            $scans = $client->getSheetData('Maintenance_Scan', false);
+            $chkRows = $client->getSheetData('Maintenance_Checklists', false);
 
             $chkMap = [];
             foreach ($chkRows as $c) {
@@ -4090,8 +4237,8 @@ function get_audit_maintenance_data(array $filters): array {
             return true;
         });
 
-        $scans = $client ? $client->getSheetData('Maintenance_Scan', true) : [];
-        $chkRows = $client ? $client->getSheetData('Maintenance_Checklists', true) : [];
+        $scans = $client ? $client->getSheetData('Maintenance_Scan', false) : [];
+        $chkRows = $client ? $client->getSheetData('Maintenance_Checklists', false) : [];
         
         // Buat map checklist per maintenance_id
         $chkMap = [];
