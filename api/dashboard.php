@@ -220,9 +220,11 @@ foreach ($unresolvedFindings as $f) {
         $sevBadge = '<span class="badge bg-info text-dark px-2 py-1"><i class="bi bi-info-circle me-1"></i>Ringan</span>';
     }
 
-    $fActionBtn = !empty($f['log_id'])
-        ? '<a class="btn btn-sm btn-outline-danger py-1 px-2" href="'.e(module_url('maintenance_detail.php', ['id'=>(int)$f['log_id']])).'"><i class="bi bi-tools me-1"></i> Tindak Lanjuti</a>'
-        : (!empty($f['asset_id']) ? '<a class="btn btn-sm btn-outline-secondary py-1 px-2" href="'.e(module_url('asset_edit.php', ['id'=>(int)$f['asset_id']])).'"><i class="bi bi-eye"></i> Detail</a>' : '-');
+    $fActionBtn = !empty($f['token'])
+        ? '<a class="btn btn-sm btn-danger py-1 px-2 fw-semibold" href="'.e(module_url('scan.php', ['t'=>$f['token'], 'action'=>'tindak_lanjut'])).'"><i class="bi bi-tools me-1"></i> Tindak Lanjuti</a>'
+        : (!empty($f['log_id'])
+            ? '<a class="btn btn-sm btn-outline-danger py-1 px-2" href="'.e(module_url('maintenance_detail.php', ['id'=>(int)$f['log_id']])).'"><i class="bi bi-tools me-1"></i> Tindak Lanjuti</a>'
+            : (!empty($f['asset_id']) ? '<a class="btn btn-sm btn-outline-secondary py-1 px-2" href="'.e(module_url('asset_edit.php', ['id'=>(int)$f['asset_id']])).'"><i class="bi bi-eye"></i> Detail</a>' : '-'));
 
     $findingsRowsHtml .= '
     <tr>

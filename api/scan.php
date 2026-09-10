@@ -30,6 +30,7 @@ $monthName = $monthNames[$month] ?? date('F');
 // 1. PROSES SIMPAN FORM MAINTENANCE (POST)
 // =========================================================================
 $successData = null;
+$successTindakLanjut = null;
 $error = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && (($_POST['action'] ?? '') === 'save_maintenance')) {
@@ -150,6 +151,53 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (($_POST['action'] ?? '') === 'save
     }
 }
 
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && (($_POST['action'] ?? '') === 'save_tindak_lanjut')) {
+    $sentCsrf = (string)($_POST['_csrf'] ?? '');
+    $sessionCsrf = (string)($_SESSION['_csrf'] ?? '');
+    $postToken = trim((string)($_POST['t'] ?? ''));
+    $csrfValid = ($sessionCsrf !== '' && $sentCsrf !== '' && hash_equals($sessionCsrf, $sentCsrf));
+    $tokenValid = ($postToken !== '' && hash_equals($token, $postToken));
+    if (!$csrfValid && !$tokenValid) {
+        verify_csrf();
+    }
+
+    $logId = (int)($_POST['log_id'] ?? 0);
+    $findingId = (int)($_POST['finding_id'] ?? 0);
+    $techName = trim((string)($_POST['technician_name'] ?? ''));
+    if ($techName === '') {
+        $techName = is_logged_in() ? current_user_name() : 'Teknisi';
+    }
+    $actionTaken = trim((string)($_POST['action_taken'] ?? ''));
+    $newStatus = trim((string)($_POST['status'] ?? 'Selesai'));
+    $updateChecklists = !empty($_POST['update_checklists']);
+    $tglTindakLanjut = trim((string)($_POST['tindak_lanjut_date'] ?? date('Y-m-d')));
+    $jamTindakLanjut = trim((string)($_POST['tindak_lanjut_time'] ?? date('H:i:s')));
+
+    $res = resolve_asset_finding($assetId, [
+        'log_id' => $logId,
+        'finding_id' => $findingId,
+        'technician_name' => $techName,
+        'action_taken' => $actionTaken,
+        'status' => $newStatus,
+        'update_checklists' => $updateChecklists,
+        'date' => $tglTindakLanjut,
+        'time' => $jamTindakLanjut
+    ]);
+
+    if (!empty($res['success'])) {
+        $successTindakLanjut = [
+            'technician' => $techName,
+            'action_taken' => $actionTaken,
+            'status' => $newStatus,
+            'date' => $tglTindakLanjut,
+            'time' => $jamTindakLanjut,
+            'log_id' => $res['log_id'] ?? $logId
+        ];
+    } else {
+        $error = $res['error'] ?? 'Gagal menyimpan data tindak lanjut.';
+    }
+}
+
 // =========================================================================
 // 2. TAMPILAN SETELAH BERHASIL SIMPAN
 // =========================================================================
@@ -235,7 +283,247 @@ if ($successData) {
     exit;
 }
 
+if ($successTindakLanjut) {
+    $statusBadge = ($successTindakLanjut['status'] === 'Selesai')
+        ? '<span class="badge bg-success fs-6 px-3 py-2"><i class="bi bi-check-circle-fill me-1"></i> Selesai (Normal Kembali)</span>'
+        : '<span class="badge bg-warning text-dark fs-6 px-3 py-2"><i class="bi bi-hourglass-split me-1"></i> Sedang Proses</span>';
+
+    $body = '
+    <div class="row justify-content-center">
+      <div class="col-md-8 col-lg-6">
+        <div class="card p-4 p-md-5 border-0 shadow-sm text-center">
+          <div class="mb-3">
+            <span class="d-inline-flex p-3 rounded-circle bg-success bg-opacity-10 text-success fs-1">
+              <i class="bi bi-tools"></i>
+            </span>
+          </div>
+          <h3 class="fw-bold text-success mb-1">Tindak Lanjut Berhasil Disimpan!</h3>
+          <p class="text-secondary small mb-3">Tindakan perbaikan telah dicatat. Status temuan di Dashboard telah diperbarui.</p>
+
+          <div class="bg-light p-3 rounded-3 text-start mb-4 border">
+            <div class="row g-2 small">
+              <div class="col-5 text-muted">Perangkat:</div>
+              <div class="col-7 fw-bold text-dark">'.e(asset_title($asset)).'</div>
+              <div class="col-5 text-muted">Kode Inventaris:</div>
+              <div class="col-7 text-primary fw-bold font-monospace">'.e($asset['kode_inventaris'] ?? '-').'</div>
+              <div class="col-5 text-muted">Petugas Teknisi:</div>
+              <div class="col-7 fw-bold text-dark">'.e($successTindakLanjut['technician']).'</div>
+              <div class="col-5 text-muted">Waktu:</div>
+              <div class="col-7 fw-semibold">'.e(format_id_date($successTindakLanjut['date'])).' '.$successTindakLanjut['time'].'</div>
+              <div class="col-5 text-muted">Tindakan Perbaikan:</div>
+              <div class="col-7 text-dark fw-semibold">'.nl2br(e($successTindakLanjut['action_taken'])).'</div>
+              <div class="col-5 text-muted">Status Baru:</div>
+              <div class="col-7">'.$statusBadge.'</div>
+            </div>
+          </div>
+
+          <div class="d-grid gap-2">
+            <a class="btn btn-primary fw-bold py-3 shadow-sm" href="scan.php?t='.urlencode($token).'">
+              <i class="bi bi-card-checklist me-1"></i> Buka Kartu Kontrol Perangkat
+            </a>
+            '.(!empty($successTindakLanjut['log_id']) ? '
+            <a class="btn btn-outline-secondary py-2" href="maintenance_detail.php?id='.((int)$successTindakLanjut['log_id']).'">
+              <i class="bi bi-file-earmark-text me-1"></i> Lihat Rincian Log Audit
+            </a>' : '').'
+          </div>
+          <div class="text-center mt-3 text-muted small">
+            <span class="spinner-border spinner-border-sm me-1 text-primary"></span> Membuka Kartu Kontrol dalam 3 detik...
+          </div>
+        </div>
+      </div>
+    </div>
+    <script>
+    setTimeout(function() {
+      window.location.href = "scan.php?t=" + encodeURIComponent("'.e($token).'");
+    }, 2800);
+    </script>';
+
+    render_page('Tindak Lanjut Berhasil Disimpan', $body, '', '', false);
+    exit;
+}
+
 $currentMonthLog = get_asset_maintenance_status_month($assetId, $month, $year);
+$pendingFinding = get_asset_active_finding($assetId);
+$action = trim((string)($_GET['action'] ?? $_GET['amp;action'] ?? $_POST['action_type'] ?? ''));
+$autoOpenLogin = trim((string)($_GET['open_login'] ?? ''));
+
+// =========================================================================
+// 2.5 TAMPILAN FORM TINDAK LANJUT TEMUAN (action = tindak_lanjut)
+// =========================================================================
+if ($action === 'tindak_lanjut') {
+    $allUsers = get_user_list(true);
+    $userOptionsHtml = '';
+    $currentTech = is_logged_in() ? current_user_name() : '';
+
+    $techNames = [];
+    foreach ($allUsers as $u) {
+        $un = trim((string)($u['nama'] ?? ''));
+        if ($un !== '' && !in_array($un, $techNames, true)) {
+            $techNames[] = $un;
+        }
+    }
+    if ($currentTech !== '' && !in_array($currentTech, $techNames, true)) {
+        $techNames[] = $currentTech;
+    }
+    foreach ($techNames as $tn) {
+        $sel = ($tn === $currentTech) ? 'selected' : '';
+        $userOptionsHtml .= '<option value="'.e($tn).'" '.$sel.'>'.e($tn).'</option>';
+    }
+
+    $findingDesc = $pendingFinding['finding'] ?? ($currentMonthLog['findings'] ?? 'Pemeriksaan lanjutan perangkat');
+    $findingReporter = $pendingFinding['reporter'] ?? ($currentMonthLog['technician_name'] ?? 'Teknisi');
+    $findingDate = !empty($pendingFinding['date']) ? format_id_date($pendingFinding['date']) : (!empty($currentMonthLog['maintenance_date']) ? format_id_date($currentMonthLog['maintenance_date']) : date('d/m/Y'));
+    $findingLogId = (int)($pendingFinding['log_id'] ?? ($currentMonthLog['id'] ?? 0));
+    $findingId = (int)($pendingFinding['finding_id'] ?? 0);
+    $initialRecom = $pendingFinding['recommendation'] ?? ($currentMonthLog['recommendation'] ?? '');
+
+    $body = '
+    <div class="row justify-content-center">
+      <div class="col-md-9 col-lg-7">
+        <div class="card p-3 p-md-4 border-0 shadow-sm mb-4">
+          <div class="d-flex align-items-center justify-content-between border-bottom pb-3 mb-3">
+            <div>
+              <span class="badge bg-danger bg-opacity-10 text-danger fw-bold px-2 py-1 mb-1"><i class="bi bi-tools me-1"></i> Form Tindak Lanjut</span>
+              <h4 class="fw-bold text-dark mb-0">Tindak Lanjuti Perbaikan</h4>
+            </div>
+            <a class="btn btn-outline-secondary btn-sm" href="'.e(module_url('scan.php', ['t' => $token])).'"><i class="bi bi-x-lg"></i> Batal</a>
+          </div>
+
+          <!-- Ringkasan Perangkat -->
+          <div class="p-3 bg-light rounded-3 mb-3 border">
+            <div class="row g-2 small">
+              <div class="col-4 text-muted">Perangkat:</div>
+              <div class="col-8 fw-bold text-dark">'.e(asset_title($asset)).'</div>
+              <div class="col-4 text-muted">Kode Inventaris:</div>
+              <div class="col-8 text-primary fw-bold font-monospace">'.e($asset['kode_inventaris'] ?? '-').'</div>
+              <div class="col-4 text-muted">User / Lokasi:</div>
+              <div class="col-8">'.e($asset['karyawan_nama'] ?? '-').' · '.e($asset['cabang_nama'] ?? '-').'</div>
+            </div>
+          </div>
+
+          <!-- Alert Temuan yang Perlu Diperbaiki -->
+          <div class="alert alert-danger border-2 border-danger bg-white p-3 rounded-3 shadow-sm mb-3">
+            <div class="d-flex align-items-center justify-content-between mb-1">
+              <span class="fw-bold text-danger"><i class="bi bi-exclamation-triangle-fill me-1"></i> Masalah / Temuan Kerusakan:</span>
+              <span class="badge bg-danger">Perlu Tindak Lanjut</span>
+            </div>
+            <div class="fs-6 fw-bold text-dark my-1">"'.e($findingDesc).'"</div>
+            <div class="small text-muted mt-2">
+              <i class="bi bi-person-badge me-1"></i> Dilaporkan oleh: <strong>'.e($findingReporter).'</strong> ('.e($findingDate).')
+              '.($initialRecom !== '' && $initialRecom !== '-' ? '<div class="mt-1"><i class="bi bi-lightbulb me-1"></i> Catatan awal: '.e($initialRecom).'</div>' : '').'
+            </div>
+          </div>
+
+          '.($error ? '<div class="alert alert-danger py-2 mb-3">'.e($error).'</div>' : '').'
+
+          <form method="post" action="'.e(module_url('scan.php', ['t' => $token, 'action' => 'tindak_lanjut'])).'">
+            <input type="hidden" name="_csrf" value="'.e(csrf_token()).'">
+            <input type="hidden" name="action" value="save_tindak_lanjut">
+            <input type="hidden" name="t" value="'.e($token).'">
+            <input type="hidden" name="log_id" value="'.$findingLogId.'">
+            <input type="hidden" name="finding_id" value="'.$findingId.'">
+
+            <!-- 1. Teknisi yang Menindaklanjuti -->
+            <div class="mb-3">
+              <label class="form-label small fw-bold text-secondary">Teknisi yang Menindaklanjuti <span class="text-danger">*</span></label>
+              <div class="input-group">
+                <span class="input-group-text bg-light"><i class="bi bi-person-check text-primary"></i></span>
+                <input type="text" class="form-control" name="technician_name" list="listTeknisiTindak" value="'.e($currentTech).'" placeholder="Pilih atau ketik nama Anda..." required>
+                <datalist id="listTeknisiTindak">'.$userOptionsHtml.'</datalist>
+              </div>
+              <div class="form-text text-muted" style="font-size: 0.75rem;">Nama teknisi yang melakukan penanganan / perbaikan di lokasi.</div>
+            </div>
+
+            <!-- 2. Tanggal & Jam Perbaikan -->
+            <div class="row g-2 mb-3">
+              <div class="col-6">
+                <label class="form-label small fw-bold text-secondary">Tanggal Tindak Lanjut</label>
+                <input type="date" class="form-control" name="tindak_lanjut_date" value="'.date('Y-m-d').'" required>
+              </div>
+              <div class="col-6">
+                <label class="form-label small fw-bold text-secondary">Jam / Waktu</label>
+                <input type="time" class="form-control" name="tindak_lanjut_time" value="'.date('H:i').'">
+              </div>
+            </div>
+
+            <!-- 3. Tindakan Perbaikan / Solusi -->
+            <div class="mb-3">
+              <label class="form-label small fw-bold text-secondary">Tindakan Perbaikan / Solusi yang Dilakukan <span class="text-danger">*</span></label>
+              <textarea class="form-control" name="action_taken" id="action_taken_box" rows="3" placeholder="Contoh: Sudah dibersihkan file temp, optimasi startup, scan antivirus, dan periksa hardware..." required></textarea>
+              
+              <!-- Quick Chips -->
+              <div class="mt-2">
+                <div class="small text-muted mb-1"><i class="bi bi-tag me-1"></i> Klik untuk isi cepat tindakan:</div>
+                <div class="d-flex flex-wrap gap-1">
+                  <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2" style="font-size: 0.75rem;" onclick="appendAction(\'Pembersihan cache & disk cleanup\')">🧹 Disk Cleanup</button>
+                  <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2" style="font-size: 0.75rem;" onclick="appendAction(\'Optimasi startup & services\')">⚡ Optimasi Startup</button>
+                  <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2" style="font-size: 0.75rem;" onclick="appendAction(\'Scan & hapus malware/virus\')">🛡️ Scan Antivirus</button>
+                  <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2" style="font-size: 0.75rem;" onclick="appendAction(\'Update sistem & driver\')">🔄 Update OS/Driver</button>
+                  <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2" style="font-size: 0.75rem;" onclick="appendAction(\'Pembersihan hardware & thermal paste\')">💨 Bersih Hardware</button>
+                  <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2" style="font-size: 0.75rem;" onclick="appendAction(\'Perbaikan printer / koneksi\')">🖨️ Perbaikan Printer</button>
+                  <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2" style="font-size: 0.75rem;" onclick="appendAction(\'Reinstall OS Windows\')">💻 Reinstall OS</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- 4. Status Baru Hasil Tindak Lanjut -->
+            <div class="mb-3 p-3 bg-light rounded-3 border">
+              <label class="form-label small fw-bold text-dark mb-2"><i class="bi bi-check2-circle text-success me-1"></i> Status Hasil Tindak Lanjut:</label>
+              <div class="form-check mb-2">
+                <input class="form-check-input" type="radio" name="status" id="statusSelesai" value="Selesai" checked>
+                <label class="form-check-label fw-bold text-success" for="statusSelesai">
+                  <i class="bi bi-check-circle-fill me-1"></i> Selesai (Masalah Telah Teratasi - Komputer Normal Kembali)
+                </label>
+                <div class="small text-muted ps-4">Temuan otomatis ditutup dan hilang dari daftar temuan tertunda di Dashboard.</div>
+              </div>
+              <div class="form-check">
+                <input class="form-check-input" type="radio" name="status" id="statusProses" value="Proses">
+                <label class="form-check-label fw-bold text-warning text-dark" for="statusProses">
+                  <i class="bi bi-hourglass-split me-1"></i> Sedang Proses (Menunggu Sparepart / Tindakan Tambahan)
+                </label>
+              </div>
+            </div>
+
+            <!-- 5. Opsi Checklist Pemeliharaan -->
+            <div class="mb-4 form-check form-switch ps-4">
+              <input class="form-check-input" type="checkbox" name="update_checklists" id="chkUpdateChecklist" value="1" checked>
+              <label class="form-check-label small fw-semibold text-dark" for="chkUpdateChecklist">
+                Tandai 9 item checklist pemeliharaan pada Kartu Kontrol sebagai <strong>Normal / Selesai</strong>
+              </label>
+            </div>
+
+            <!-- Tombol Simpan -->
+            <div class="d-grid gap-2">
+              <button type="submit" class="btn btn-danger btn-lg fw-bold py-3 shadow" onclick="return confirm(\'Simpan hasil perbaikan dan selesaikan tindak lanjut temuan ini?\')">
+                <i class="bi bi-save-fill me-2"></i> SIMPAN HASIL TINDAK LANJUT
+              </button>
+              <a class="btn btn-outline-secondary py-2" href="'.e(module_url('scan.php', ['t' => $token])).'">Batal</a>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <script>
+    function appendAction(text) {
+      var box = document.getElementById("action_taken_box");
+      if (!box) return;
+      var cur = box.value.trim();
+      if (cur === "") {
+        box.value = text;
+      } else if (cur.indexOf(text) === -1) {
+        box.value = cur + ", " + text;
+      }
+      box.focus();
+    }
+    </script>';
+
+    render_page('Tindak Lanjut Temuan - ' . ($asset['kode_inventaris'] ?? 'Aset'), $body, '', '', false);
+    exit;
+}
+
+$currentMonthLog = get_asset_maintenance_status_month($assetId, $month, $year);
+$pendingFinding = get_asset_active_finding($assetId);
 $action = trim((string)($_GET['action'] ?? $_GET['amp;action'] ?? $_POST['action_type'] ?? ''));
 $autoOpenLogin = trim((string)($_GET['open_login'] ?? ''));
 
@@ -1270,6 +1558,14 @@ if ($currentMonthLog) {
     $cFindings = $currentMonthLog['findings'] ?? '';
     $cRecom = $currentMonthLog['recommendation'] ?? '';
 
+    $hasActiveIssue = ($pendingFinding || in_array(strtolower($cStatus), ['temuan', 'perlu perbaikan', 'perlu tindak lanjut', 'proses'], true));
+    $cardBg = $hasActiveIssue ? 'bg-danger bg-opacity-10 border-danger' : 'bg-success bg-opacity-10 border-success';
+    $cardTitleColor = $hasActiveIssue ? 'text-danger' : 'text-success';
+
+    $btnTindakLanjut = $hasActiveIssue
+        ? '<a class="btn btn-danger fw-bold px-3 py-2 shadow-sm" href="'.e(module_url('scan.php', ['t' => $token, 'action' => 'tindak_lanjut'])).'"><i class="bi bi-tools me-1"></i> TINDAK LANJUTI SEKARANG</a>'
+        : '';
+
     $badgeColor = ($cStatus === 'Temuan' || $cStatus === 'Perlu Perbaikan') ? 'danger' : ($cStatus === 'Proses' ? 'warning text-dark' : 'success');
     $badgeIcon = ($cStatus === 'Temuan' || $cStatus === 'Perlu Perbaikan') ? 'bi-exclamation-triangle-fill' : ($cStatus === 'Proses' ? 'bi-hourglass-split' : 'bi-check-circle-fill');
 
@@ -1280,9 +1576,9 @@ if ($currentMonthLog) {
     $btnUlang = '<a class="btn btn-outline-primary fw-semibold" href="'.e(module_url('scan.php', ['t' => $token, 'action' => 'ulang'])).'"><i class="bi bi-arrow-repeat me-1"></i> MAINTENANCE ULANG</a>';
 
     $statusCardHtml = '
-    <div class="card border-0 shadow-sm mb-4 bg-success bg-opacity-10 border-start border-success border-4 p-3 p-md-4">
+    <div class="card border-0 shadow-sm mb-4 '.$cardBg.' border-start border-4 p-3 p-md-4">
       <div class="d-flex align-items-center justify-content-between mb-2">
-        <span class="text-success fw-bold fs-6"><i class="bi bi-calendar-check-fill me-1"></i> STATUS BULAN BERJALAN:</span>
+        <span class="'.$cardTitleColor.' fw-bold fs-6"><i class="bi bi-calendar-check-fill me-1"></i> STATUS BULAN BERJALAN:</span>
         <span class="badge bg-'.$badgeColor.' px-3 py-2 fs-6"><i class="bi '.$badgeIcon.' me-1"></i> '.e($cStatus).'</span>
       </div>
       <h5 class="fw-bold text-dark mb-1">Periode: '.$monthName.' '.$year.'</h5>
@@ -1292,6 +1588,7 @@ if ($currentMonthLog) {
       '.($cRecom !== '' ? '<div class="alert alert-info py-2 px-3 small my-2"><strong><i class="bi bi-lightbulb-fill me-1"></i>Rekomendasi:</strong> '.e($cRecom).'</div>' : '').'
 
       <div class="d-flex flex-wrap gap-2 mt-3 pt-2">
+        '.$btnTindakLanjut.'
         '.$btnUlang.'
         '.$btnDetail.'
       </div>
@@ -1312,6 +1609,26 @@ if ($currentMonthLog) {
       <p class="text-secondary small mb-3">Perangkat ini belum dilakukan pemeliharaan hardware & OS untuk bulan ini.</p>
       
       '.$btnStartAction.'
+    </div>';
+}
+
+$pendingAlertHtml = '';
+if ($pendingFinding) {
+    $pendingAlertHtml = '
+    <div class="card border-0 shadow-sm mb-4 border-start border-danger border-4 p-3 p-md-4" style="background-color: #fff5f5;">
+      <div class="d-flex align-items-center justify-content-between mb-2">
+        <span class="text-danger fw-bold fs-6"><i class="bi bi-exclamation-triangle-fill me-1"></i> PERANGKAT INI MEMBUTUHKAN TINDAK LANJUT TEKNISI!</span>
+        <span class="badge bg-danger px-3 py-2 fs-6"><i class="bi bi-tools me-1"></i> '.e($pendingFinding['status']).'</span>
+      </div>
+      <h5 class="fw-bold text-dark mb-1">Temuan Kerusakan: <span class="text-danger">"'.e($pendingFinding['finding']).'"</span></h5>
+      <p class="text-secondary small mb-2">Dilaporkan pada <strong>'.e(format_id_date($pendingFinding['date'])).'</strong> oleh <strong>'.e($pendingFinding['reporter']).'</strong>.</p>
+      '.(!empty($pendingFinding['recommendation']) && $pendingFinding['recommendation'] !== '-' ? '<div class="alert alert-white bg-white border py-2 px-3 small my-2 text-dark"><strong><i class="bi bi-lightbulb me-1"></i>Catatan Rekomendasi:</strong> '.e($pendingFinding['recommendation']).'</div>' : '').'
+      <div class="d-flex flex-wrap gap-2 mt-3 pt-1">
+        <a class="btn btn-danger btn-lg fw-bold py-2 px-4 shadow-sm" href="'.e(module_url('scan.php', ['t' => $token, 'action' => 'tindak_lanjut'])).'">
+          <i class="bi bi-tools me-2"></i> TINDAK LANJUTI / SELESAIKAN SEKARANG
+        </a>
+        '.(!empty($pendingFinding['log_id']) ? '<a class="btn btn-outline-secondary py-2" href="'.e(module_url('maintenance_detail.php', ['id' => (int)$pendingFinding['log_id']])).'"><i class="bi bi-file-earmark-text me-1"></i> Rincian Audit</a>' : '').'
+      </div>
     </div>';
 }
 
@@ -1485,6 +1802,9 @@ $body = '
         </div>
       </div>
     </div>
+
+    <!-- Alert Temuan Kerusakan / Tindak Lanjut -->
+    '.$pendingAlertHtml.'
 
     <!-- Card Status Maintenance Bulan Berjalan -->
     '.$statusCardHtml.'

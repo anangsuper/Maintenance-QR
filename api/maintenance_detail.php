@@ -177,6 +177,10 @@ $backBtnTop = $isLoggedIn
         ? '<a class="btn btn-outline-secondary" href="'.e(module_url('scan.php', ['t' => $asset['token']])).'"><i class="bi bi-card-checklist me-1"></i> Kartu Perangkat</a>'
         : '<a class="btn btn-outline-secondary" href="javascript:history.back()"><i class="bi bi-arrow-left me-1"></i> Kembali</a>');
 
+$tindakBtnTop = (!empty($asset['token']) && ($status === 'Temuan' || $status === 'Perlu Perbaikan' || $status === 'Proses'))
+    ? '<a class="btn btn-danger fw-bold" href="'.e(module_url('scan.php', ['t' => $asset['token'], 'action' => 'tindak_lanjut'])).'"><i class="bi bi-tools me-1"></i> Form Tindak Lanjut</a>'
+    : '';
+
 $body = '
 '.$flashHtml.'
 '.$errorHtml.'
@@ -191,6 +195,7 @@ $body = '
       </div>
       <div class="d-flex gap-2">
         '.$backBtnTop.'
+        '.$tindakBtnTop.'
         '.$editBtnTop.'
         <button class="btn btn-primary fw-semibold" onclick="window.print()"><i class="bi bi-printer me-1"></i> Cetak Detail</button>
       </div>
