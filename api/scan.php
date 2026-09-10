@@ -1786,7 +1786,7 @@ if ($pendingFinding) {
 
 // Build Matrix Table Rows 12 Bulan (Persis Desain Gambar Kartu Kontrol IT)
 $rawUser = !empty($asset['karyawan_nama']) && $asset['karyawan_nama'] !== '-' ? $asset['karyawan_nama'] : 'Umum / Pool';
-$userDisplay = ($rawUser !== 'Umum / Pool') ? get_nickname($rawUser) : $rawUser;
+$userDisplay = $rawUser;
 $divisi = !empty($asset['divisi_nama']) && $asset['divisi_nama'] !== '-' ? $asset['divisi_nama'] : '';
 $userWithDiv = $divisi ? "{$userDisplay} ({$divisi})" : $userDisplay;
 $ipDisplay = !empty($asset['ip_address']) ? $asset['ip_address'] : (!empty($asset['ip']) ? $asset['ip'] : '-');

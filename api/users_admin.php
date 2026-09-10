@@ -15,6 +15,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $username = trim((string)($_POST['username'] ?? ''));
         $password = trim((string)($_POST['password'] ?? ''));
         $nama = trim((string)($_POST['nama'] ?? ''));
+        $nama_panggilan = trim((string)($_POST['nama_panggilan'] ?? ''));
         $role = trim((string)($_POST['role'] ?? 'teknisi'));
         $telepon = trim((string)($_POST['telepon'] ?? ''));
         $status = trim((string)($_POST['status'] ?? 'Aktif'));
@@ -23,6 +24,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'username' => $username,
             'password' => $password,
             'nama' => $nama,
+            'nama_panggilan' => $nama_panggilan,
             'role' => $role,
             'telepon' => $telepon,
             'status' => $status
@@ -38,6 +40,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } elseif ($action === 'edit') {
         $id = (int)($_POST['user_id'] ?? 0);
         $nama = trim((string)($_POST['nama'] ?? ''));
+        $nama_panggilan = trim((string)($_POST['nama_panggilan'] ?? ''));
         $role = trim((string)($_POST['role'] ?? 'teknisi'));
         $telepon = trim((string)($_POST['telepon'] ?? ''));
         $status = trim((string)($_POST['status'] ?? 'Aktif'));
@@ -45,6 +48,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         $res = update_user($id, [
             'nama' => $nama,
+            'nama_panggilan' => $nama_panggilan,
             'role' => $role,
             'telepon' => $telepon,
             'status' => $status,
@@ -173,6 +177,7 @@ foreach ($users as $u) {
     $no++;
     $uId = (int)($u['id'] ?? 0);
     $uNama = (string)($u['nama'] ?? '');
+    $uNick = trim((string)($u['nama_panggilan'] ?? ''));
     $uUsername = (string)($u['username'] ?? '');
     $uRole = strtolower((string)($u['role'] ?? 'teknisi'));
     $uTel = format_phone_number((string)($u['telepon'] ?? '-'));
@@ -180,6 +185,8 @@ foreach ($users as $u) {
     $fDesc = trim((string)($u['face_descriptor'] ?? ''));
     $fStat = strtolower(trim((string)($u['face_status'] ?? '')));
     $isBeingEdited = ($editId === $uId);
+
+    $nickBadge = ($uNick !== '') ? '<span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 ms-1" title="Nama Panggilan untuk Kolom Paraf Kartu Kontrol IT"><i class="bi bi-pen me-1"></i>Paraf: '.e($uNick).'</span>' : '';
 
     $roleBadge = ($uRole === 'admin')
         ? '<span class="badge text-bg-primary px-2 py-1"><i class="bi bi-shield-lock-fill me-1"></i> Administrator</span>'
@@ -246,7 +253,7 @@ foreach ($users as $u) {
     <tr class="'.($isBeingEdited ? 'table-warning' : '').'">
       <td class="text-center fw-semibold text-secondary">'.$no.'</td>
       <td>
-        <div class="fw-bold text-dark fs-6"><i class="bi bi-person-circle text-primary me-2"></i>'.e($uNama).'</div>
+        <div class="fw-bold text-dark fs-6 d-flex align-items-center flex-wrap"><i class="bi bi-person-circle text-primary me-2"></i>'.e($uNama).' '.$nickBadge.'</div>
         <div class="small text-muted font-monospace">@'.e($uUsername).'</div>
         '.$telHtml.'
       </td>
@@ -273,6 +280,7 @@ $modeBadge = is_google_cloud_mode() ? '<span class="badge text-bg-info mb-2"><i 
 // Form State: Add vs Edit
 if ($editUser) {
     $editNama = $editUser['nama'] ?? '';
+    $editNick = $editUser['nama_panggilan'] ?? '';
     $editUsername = $editUser['username'] ?? '';
     $editRole = strtolower($editUser['role'] ?? 'teknisi');
     $editTelepon = format_phone_number((string)($editUser['telepon'] ?? ''));
@@ -295,6 +303,12 @@ if ($editUser) {
       <div class="mb-3">
         <label class="form-label fw-semibold">Nama Lengkap Petugas / Teknisi <span class="text-danger">*</span></label>
         <input type="text" class="form-control fw-bold" name="nama" required value="'.e($editNama).'" placeholder="Contoh: Budi Santoso, S.Kom">
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label fw-semibold">Nama Panggilan Teknisi <span class="badge bg-primary-subtle text-primary border border-primary-subtle ms-1">Paraf Kartu Kontrol</span></label>
+        <input type="text" class="form-control" name="nama_panggilan" value="'.e($editNick).'" placeholder="Contoh: Budi">
+        <div class="form-text small">Nama pendek ini yang akan dicetak di kolom <strong>PARAF</strong> kartu checklist kontrol IT.</div>
       </div>
 
       <div class="mb-3">
@@ -352,6 +366,12 @@ if ($editUser) {
         <label class="form-label fw-semibold">Nama Lengkap Petugas / Teknisi <span class="text-danger">*</span></label>
         <input type="text" class="form-control" name="nama" required placeholder="Contoh: Budi Santoso, S.Kom">
         <div class="form-text small">Nama ini yang akan tercatat di log setiap scan maintenance.</div>
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label fw-semibold">Nama Panggilan Teknisi <span class="badge bg-primary-subtle text-primary border border-primary-subtle ms-1">Paraf Kartu Kontrol</span></label>
+        <input type="text" class="form-control" name="nama_panggilan" placeholder="Contoh: Budi">
+        <div class="form-text small">Nama pendek ini yang akan dicetak di kolom <strong>PARAF</strong> kartu checklist kontrol IT.</div>
       </div>
 
       <div class="mb-3">

@@ -360,6 +360,7 @@ function get_user_list(bool $forceRefresh = false): array {
             $users[] = [
                 'id' => $id,
                 'nama' => $nama,
+                'nama_panggilan' => trim((string)($u['nama_panggilan'] ?? $u['nickname'] ?? '')) ?: get_nickname($nama),
                 'username' => $username,
                 'role' => $role !== '' ? $role : 'teknisi',
                 'telepon' => format_phone_number((string)($u['telepon'] ?? $u['kontak'] ?? '-')),
@@ -374,8 +375,8 @@ function get_user_list(bool $forceRefresh = false): array {
 
         if (empty($users)) {
             return [
-                ['id' => 1, 'nama' => 'Administrator', 'username' => 'admin', 'role' => 'admin', 'telepon' => '081234567890', 'status' => 'Aktif'],
-                ['id' => 2, 'nama' => 'Teknisi IT', 'username' => 'teknisi', 'role' => 'teknisi', 'telepon' => '081234567891', 'status' => 'Aktif'],
+                ['id' => 1, 'nama' => 'Administrator', 'nama_panggilan' => 'Admin', 'username' => 'admin', 'role' => 'admin', 'telepon' => '081234567890', 'status' => 'Aktif'],
+                ['id' => 2, 'nama' => 'Teknisi IT', 'nama_panggilan' => 'Teknisi', 'username' => 'teknisi', 'role' => 'teknisi', 'telepon' => '081234567891', 'status' => 'Aktif'],
             ];
         }
 
@@ -388,6 +389,7 @@ function get_user_list(bool $forceRefresh = false): array {
             CREATE TABLE IF NOT EXISTS users (
                 id INT AUTO_INCREMENT PRIMARY KEY,
                 nama VARCHAR(150) NOT NULL,
+                nama_panggilan VARCHAR(50) NULL,
                 username VARCHAR(100) NOT NULL UNIQUE,
                 password VARCHAR(255) NOT NULL,
                 role VARCHAR(50) NOT NULL DEFAULT 'teknisi',
@@ -402,6 +404,10 @@ function get_user_list(bool $forceRefresh = false): array {
         ");
 
         $cols = table_columns('users');
+        if (!in_array('nama_panggilan', $cols, true)) {
+            try { db()->exec("ALTER TABLE users ADD COLUMN nama_panggilan VARCHAR(50) NULL"); } catch (Throwable $e) {}
+            $cols = table_columns('users');
+        }
         if (!in_array('face_descriptor', $cols, true)) {
             try { db()->exec("ALTER TABLE users ADD COLUMN face_descriptor TEXT NULL, ADD COLUMN face_photo MEDIUMTEXT NULL, ADD COLUMN face_status VARCHAR(50) DEFAULT 'none'"); } catch (Throwable $e) {}
             $cols = table_columns('users');
@@ -410,22 +416,23 @@ function get_user_list(bool $forceRefresh = false): array {
             $cols = table_columns('users');
         }
         $nameCol = in_array('nama', $cols, true) ? 'nama' : (in_array('name', $cols, true) ? 'name' : 'username');
+        $nickCol = in_array('nama_panggilan', $cols, true) ? 'nama_panggilan' : "'' AS nama_panggilan";
         $telCol = in_array('telepon', $cols, true) ? 'telepon' : "'-' AS telepon";
         $stCol = in_array('status', $cols, true) ? 'status' : "'Aktif' AS status";
         $faceDescCol = in_array('face_descriptor', $cols, true) ? 'face_descriptor' : "'' AS face_descriptor";
         $facePhotoCol = in_array('face_photo', $cols, true) ? 'face_photo' : "'' AS face_photo";
         $faceStatCol = in_array('face_status', $cols, true) ? 'face_status' : "'none' AS face_status";
 
-        $users = db()->query("SELECT id, `{$nameCol}` AS nama, username, role, {$telCol}, {$stCol}, {$faceDescCol}, {$facePhotoCol}, {$faceStatCol}, created_at FROM users ORDER BY id ASC")->fetchAll();
+        $users = db()->query("SELECT id, `{$nameCol}` AS nama, {$nickCol}, username, role, {$telCol}, {$stCol}, {$faceDescCol}, {$facePhotoCol}, {$faceStatCol}, created_at FROM users ORDER BY id ASC")->fetchAll();
         if (empty($users)) {
             $adminHash = password_hash('admin123', PASSWORD_BCRYPT);
             $teknisiHash = password_hash('teknisi123', PASSWORD_BCRYPT);
             db()->exec("
-                INSERT IGNORE INTO users (`{$nameCol}`, username, password, role, telepon, status, created_at)
-                VALUES ('Administrator', 'admin', '{$adminHash}', 'admin', '081234567890', 'Aktif', NOW()),
-                       ('Teknisi IT', 'teknisi', '{$teknisiHash}', 'teknisi', '081234567891', 'Aktif', NOW())
+                INSERT IGNORE INTO users (`{$nameCol}`, nama_panggilan, username, password, role, telepon, status, created_at)
+                VALUES ('Administrator', 'Admin', 'admin', '{$adminHash}', 'admin', '081234567890', 'Aktif', NOW()),
+                       ('Teknisi IT', 'Teknisi', 'teknisi', '{$teknisiHash}', 'teknisi', '081234567891', 'Aktif', NOW())
             ");
-            $users = db()->query("SELECT id, `{$nameCol}` AS nama, username, role, {$telCol}, {$stCol}, {$faceDescCol}, {$facePhotoCol}, {$faceStatCol}, created_at FROM users ORDER BY id ASC")->fetchAll();
+            $users = db()->query("SELECT id, `{$nameCol}` AS nama, {$nickCol}, username, role, {$telCol}, {$stCol}, {$faceDescCol}, {$facePhotoCol}, {$faceStatCol}, created_at FROM users ORDER BY id ASC")->fetchAll();
         }
         return array_map(function($u) {
             $fDesc = (string)($u['face_descriptor'] ?? '');
@@ -436,12 +443,13 @@ function get_user_list(bool $forceRefresh = false): array {
                 $fStatus = 'none';
             }
             $u['face_status'] = $fStatus;
+            $u['nama_panggilan'] = trim((string)($u['nama_panggilan'] ?? '')) ?: get_nickname((string)($u['nama'] ?? ''));
             return $u;
         }, $users);
     } catch (Throwable $e) {
         return [
-            ['id' => 1, 'nama' => 'Administrator', 'username' => 'admin', 'role' => 'admin', 'telepon' => '-', 'status' => 'Aktif', 'face_descriptor' => '', 'face_photo' => '', 'face_status' => 'none'],
-            ['id' => 2, 'nama' => 'Teknisi IT', 'username' => 'teknisi', 'role' => 'teknisi', 'telepon' => '-', 'status' => 'Aktif', 'face_descriptor' => '', 'face_photo' => '', 'face_status' => 'none'],
+            ['id' => 1, 'nama' => 'Administrator', 'nama_panggilan' => 'Admin', 'username' => 'admin', 'role' => 'admin', 'telepon' => '-', 'status' => 'Aktif', 'face_descriptor' => '', 'face_photo' => '', 'face_status' => 'none'],
+            ['id' => 2, 'nama' => 'Teknisi IT', 'nama_panggilan' => 'Teknisi', 'username' => 'teknisi', 'role' => 'teknisi', 'telepon' => '-', 'status' => 'Aktif', 'face_descriptor' => '', 'face_photo' => '', 'face_status' => 'none'],
         ];
     }
 }
@@ -698,6 +706,11 @@ function create_new_user(array $data): array {
     $nama = trim((string)($data['nama'] ?? ''));
     if ($nama === '') return ['success' => false, 'error' => 'Nama lengkap wajib diisi'];
 
+    $namaPanggilan = trim((string)($data['nama_panggilan'] ?? ''));
+    if ($namaPanggilan === '') {
+        $namaPanggilan = get_nickname($nama);
+    }
+
     $username = strtolower(trim((string)($data['username'] ?? '')));
     if ($username === '') {
         $clean = strtolower(preg_replace('/[^a-z0-9]/', '', $nama));
@@ -728,10 +741,12 @@ function create_new_user(array $data): array {
 
         $rows = $client->getSheetData('Users', true);
         if (empty($rows)) {
-            $client->appendValues('Users!A:L', [
-                ['id', 'username', 'password', 'nama', 'role', 'telepon', 'status', 'created_at', 'face_descriptor', 'face_photo', 'face_status', 'passkey_credential']
+            $client->appendValues('Users!A:M', [
+                ['id', 'username', 'password', 'nama', 'role', 'telepon', 'status', 'created_at', 'face_descriptor', 'face_photo', 'face_status', 'passkey_credential', 'nama_panggilan']
             ]);
             $rows = [];
+        } else {
+            $client->updateValues("Users!M1", [['nama_panggilan']]);
         }
 
         $maxId = 0;
@@ -770,10 +785,11 @@ function create_new_user(array $data): array {
             '', // face_descriptor
             '', // face_photo
             'verified', // face_status
-            ''  // passkey_credential
+            '',  // passkey_credential
+            $namaPanggilan // nama_panggilan
         ];
 
-        $appended = $client->appendValues('Users!A:L', [$newRow]);
+        $appended = $client->appendValues('Users!A:M', [$newRow]);
         if (!$appended) {
             $appended = $client->appendValues('Users', [$newRow]);
         }
@@ -786,7 +802,7 @@ function create_new_user(array $data): array {
         }
 
         $client->clearCache('Users');
-        return ['success' => true, 'id' => $newId, 'username' => $username, 'nama' => $nama];
+        return ['success' => true, 'id' => $newId, 'username' => $username, 'nama' => $nama, 'nama_panggilan' => $namaPanggilan];
     }
 
     // MySQL Mode
@@ -795,6 +811,7 @@ function create_new_user(array $data): array {
             CREATE TABLE IF NOT EXISTS users (
                 id INT AUTO_INCREMENT PRIMARY KEY,
                 nama VARCHAR(150) NOT NULL,
+                nama_panggilan VARCHAR(50) NULL,
                 username VARCHAR(100) NOT NULL UNIQUE,
                 password VARCHAR(255) NOT NULL,
                 role VARCHAR(50) NOT NULL DEFAULT 'teknisi',
@@ -812,19 +829,31 @@ function create_new_user(array $data): array {
         }
 
         $cols = table_columns('users');
+        if (!in_array('nama_panggilan', $cols, true)) {
+            try { db()->exec("ALTER TABLE users ADD COLUMN nama_panggilan VARCHAR(50) NULL"); } catch (Throwable $e) {}
+            $cols = table_columns('users');
+        }
         $nameCol = in_array('nama', $cols, true) ? 'nama' : (in_array('name', $cols, true) ? 'name' : 'username');
 
         $teleponFormatted = format_phone_number($telepon);
         $teleponStored = ($teleponFormatted !== '-' && $teleponFormatted !== '') ? $teleponFormatted : $telepon;
 
-        $ins = db()->prepare("
-            INSERT INTO users (`{$nameCol}`, username, password, role, telepon, status, created_at)
-            VALUES (?, ?, ?, ?, ?, ?, NOW())
-        ");
-        $ins->execute([$nama, $username, $hashedPass, $role, $teleponStored, $status]);
+        if (in_array('nama_panggilan', $cols, true)) {
+            $ins = db()->prepare("
+                INSERT INTO users (`{$nameCol}`, nama_panggilan, username, password, role, telepon, status, created_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, NOW())
+            ");
+            $ins->execute([$nama, $namaPanggilan, $username, $hashedPass, $role, $teleponStored, $status]);
+        } else {
+            $ins = db()->prepare("
+                INSERT INTO users (`{$nameCol}`, username, password, role, telepon, status, created_at)
+                VALUES (?, ?, ?, ?, ?, ?, NOW())
+            ");
+            $ins->execute([$nama, $username, $hashedPass, $role, $teleponStored, $status]);
+        }
         $newId = (int)db()->lastInsertId();
 
-        return ['success' => true, 'id' => $newId, 'username' => $username, 'nama' => $nama];
+        return ['success' => true, 'id' => $newId, 'username' => $username, 'nama' => $nama, 'nama_panggilan' => $namaPanggilan];
     } catch (Throwable $e) {
         return ['success' => false, 'error' => $e->getMessage()];
     }
@@ -834,6 +863,10 @@ function update_user(int $id, array $data): array {
     if ($id <= 0) return ['success' => false, 'error' => 'ID pengguna tidak valid'];
 
     $nama = trim((string)($data['nama'] ?? ''));
+    $namaPanggilan = trim((string)($data['nama_panggilan'] ?? ''));
+    if ($namaPanggilan === '' && $nama !== '') {
+        $namaPanggilan = get_nickname($nama);
+    }
     $role = strtolower(trim((string)($data['role'] ?? 'teknisi')));
     $telepon = trim((string)($data['telepon'] ?? ''));
     $status = trim((string)($data['status'] ?? 'Aktif')) ?: 'Aktif';
@@ -866,7 +899,7 @@ function update_user(int $id, array $data): array {
             if ($id === 1 || $id === 2) {
                 $username = ($id === 1) ? 'admin' : 'teknisi';
                 $hashedPass = $password !== '' ? password_hash($password, PASSWORD_BCRYPT) : password_hash(($id === 1 ? 'admin123' : 'teknisi123'), PASSWORD_BCRYPT);
-                $client->appendValues('Users!A:H', [[
+                $client->appendValues('Users!A:M', [[
                     $id,
                     $username,
                     $hashedPass,
@@ -874,10 +907,11 @@ function update_user(int $id, array $data): array {
                     $role,
                     $teleponSheet,
                     $status,
-                    date('Y-m-d H:i:s')
+                    date('Y-m-d H:i:s'),
+                    '', '', 'verified', '', $namaPanggilan
                 ]]);
                 $client->clearCache('Users');
-                return ['success' => true, 'id' => $id, 'nama' => $nama];
+                return ['success' => true, 'id' => $id, 'nama' => $nama, 'nama_panggilan' => $namaPanggilan];
             }
             return ['success' => false, 'error' => 'Pengguna tidak ditemukan'];
         }
@@ -901,25 +935,45 @@ function update_user(int $id, array $data): array {
 
         if (!$updated) return ['success' => false, 'error' => 'Gagal memperbarui data pengguna di Google Sheets'];
 
+        $client->updateValues("Users!M1", [['nama_panggilan']]);
+        if ($namaPanggilan !== '') {
+            $client->updateValues("Users!M{$rowNum}", [[$namaPanggilan]]);
+        }
+
         $client->clearCache('Users');
-        return ['success' => true, 'id' => $id, 'nama' => $nama];
+        return ['success' => true, 'id' => $id, 'nama' => $nama, 'nama_panggilan' => $namaPanggilan];
     }
 
     // MySQL Mode
     try {
         $cols = table_columns('users');
+        if (!in_array('nama_panggilan', $cols, true)) {
+            try { db()->exec("ALTER TABLE users ADD COLUMN nama_panggilan VARCHAR(50) NULL"); } catch (Throwable $e) {}
+            $cols = table_columns('users');
+        }
         $nameCol = in_array('nama', $cols, true) ? 'nama' : (in_array('name', $cols, true) ? 'name' : 'username');
+        $hasNick = in_array('nama_panggilan', $cols, true);
 
         if ($password !== '') {
             $hashedPass = password_hash($password, PASSWORD_BCRYPT);
-            $up = db()->prepare("UPDATE users SET `{$nameCol}` = ?, role = ?, telepon = ?, status = ?, password = ? WHERE id = ?");
-            $up->execute([$nama, $role, $teleponStored, $status, $hashedPass, $id]);
+            if ($hasNick) {
+                $up = db()->prepare("UPDATE users SET `{$nameCol}` = ?, nama_panggilan = ?, role = ?, telepon = ?, status = ?, password = ? WHERE id = ?");
+                $up->execute([$nama, $namaPanggilan, $role, $teleponStored, $status, $hashedPass, $id]);
+            } else {
+                $up = db()->prepare("UPDATE users SET `{$nameCol}` = ?, role = ?, telepon = ?, status = ?, password = ? WHERE id = ?");
+                $up->execute([$nama, $role, $teleponStored, $status, $hashedPass, $id]);
+            }
         } else {
-            $up = db()->prepare("UPDATE users SET `{$nameCol}` = ?, role = ?, telepon = ?, status = ? WHERE id = ?");
-            $up->execute([$nama, $role, $teleponStored, $status, $id]);
+            if ($hasNick) {
+                $up = db()->prepare("UPDATE users SET `{$nameCol}` = ?, nama_panggilan = ?, role = ?, telepon = ?, status = ? WHERE id = ?");
+                $up->execute([$nama, $namaPanggilan, $role, $teleponStored, $status, $id]);
+            } else {
+                $up = db()->prepare("UPDATE users SET `{$nameCol}` = ?, role = ?, telepon = ?, status = ? WHERE id = ?");
+                $up->execute([$nama, $role, $teleponStored, $status, $id]);
+            }
         }
 
-        return ['success' => true, 'id' => $id, 'nama' => $nama];
+        return ['success' => true, 'id' => $id, 'nama' => $nama, 'nama_panggilan' => $namaPanggilan];
     } catch (Throwable $e) {
         return ['success' => false, 'error' => $e->getMessage()];
     }
@@ -1288,6 +1342,51 @@ function get_nickname(string $fullName): string {
     // Ambil kata pertama sebagai nama panggilan
     $words = preg_split('/\s+/', $clean);
     return !empty($words[0]) ? $words[0] : $fullName;
+}
+
+/**
+ * Mencari nama panggilan teknisi berdasarkan nama lengkap, username, atau ID teknisi.
+ * Jika teknisi memiliki nama_panggilan yang diatur di data akun, gunakan nama tersebut.
+ * Jika tidak, fallback ke get_nickname($techNameOrId).
+ */
+function get_technician_nickname(string $techNameOrId): string {
+    $techNameOrId = trim($techNameOrId);
+    if ($techNameOrId === '' || $techNameOrId === '-') return '-';
+
+    static $nickMap = null;
+    if ($nickMap === null) {
+        $nickMap = [];
+        try {
+            $users = get_user_list();
+            foreach ($users as $u) {
+                $panggilan = trim((string)($u['nama_panggilan'] ?? ''));
+                $fullName = trim((string)($u['nama'] ?? ''));
+                $uname = trim((string)($u['username'] ?? ''));
+                $uid = (int)($u['id'] ?? 0);
+                $effectiveNick = $panggilan !== '' ? $panggilan : get_nickname($fullName);
+                if ($fullName !== '') $nickMap[mb_strtolower($fullName)] = $effectiveNick;
+                if ($uname !== '') $nickMap[mb_strtolower($uname)] = $effectiveNick;
+                if ($uid > 0) $nickMap[(string)$uid] = $effectiveNick;
+            }
+        } catch (Throwable $e) {}
+    }
+
+    $key = mb_strtolower($techNameOrId);
+    if (isset($nickMap[$key]) && $nickMap[$key] !== '') {
+        return $nickMap[$key];
+    }
+    // Cek juga kecocokan substring jika nama memiliki gelar atau formatting berbeda
+    $cleanedKey = mb_strtolower(get_nickname($techNameOrId));
+    if ($cleanedKey !== '' && $cleanedKey !== '-') {
+        foreach ($nickMap as $mk => $mv) {
+            if ($mk === '' || $mv === '') continue;
+            if (strpos($mk, $cleanedKey) !== false || strpos($cleanedKey, $mk) !== false) {
+                return $mv;
+            }
+        }
+    }
+
+    return get_nickname($techNameOrId);
 }
 
 
@@ -3788,7 +3887,7 @@ function get_asset_yearly_card_matrix(int $assetId, int $year): array {
                     $matrix[$sMonth]['log_id'] = $logId;
                     $matrix[$sMonth]['date_str'] = $dateFormatted;
                     $techRaw = (string)($s['technician_name'] ?? $s['col_3'] ?? 'Teknisi');
-                    $matrix[$sMonth]['paraf'] = get_nickname($techRaw);
+                    $matrix[$sMonth]['paraf'] = get_technician_nickname($techRaw);
                     $matrix[$sMonth]['status'] = $s['status'] ?? $s['col_8'] ?? 'Selesai';
 
                     if (!empty($s['checklists']) && is_array($s['checklists'])) {
@@ -3837,7 +3936,7 @@ function get_asset_yearly_card_matrix(int $assetId, int $year): array {
             $matrix[$sMonth]['log_id'] = $logId;
             $matrix[$sMonth]['date_str'] = $dateFormatted;
             $techRaw = (string)($s['technician_name'] ?: 'Teknisi');
-            $matrix[$sMonth]['paraf'] = get_nickname($techRaw);
+            $matrix[$sMonth]['paraf'] = get_technician_nickname($techRaw);
             $matrix[$sMonth]['status'] = $s['status'] ?: 'Selesai';
 
             $chkSt = db()->prepare("SELECT checklist_number, checked FROM maintenance_checklists WHERE maintenance_id = ?");
