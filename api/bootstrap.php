@@ -5790,7 +5790,7 @@ h1, h2, h3, h4, h5, h6, .h1, .h2, .h3, .h4, .h5, .h6 {
   color: #2E77AD !important;
 }
 .bg-primary {
-  background-color: #2E77AD !important;
+  background-color: rgba(46, 119, 173, var(--bs-bg-opacity, 1)) !important;
 }
 .text-bg-primary {
   background-color: #2E77AD !important;
@@ -5803,6 +5803,9 @@ h1, h2, h3, h4, h5, h6, .h1, .h2, .h3, .h4, .h5, .h6 {
 .text-info {
   color: #30B0E0 !important;
 }
+.bg-info {
+  background-color: rgba(48, 176, 224, var(--bs-bg-opacity, 1)) !important;
+}
 .text-bg-info {
   background-color: #30B0E0 !important;
   color: #ffffff !important;
@@ -5811,7 +5814,7 @@ h1, h2, h3, h4, h5, h6, .h1, .h2, .h3, .h4, .h5, .h6 {
   color: #10B981 !important;
 }
 .bg-success {
-  background-color: #10B981 !important;
+  background-color: rgba(16, 185, 129, var(--bs-bg-opacity, 1)) !important;
 }
 .text-bg-success {
   background-color: #10B981 !important;

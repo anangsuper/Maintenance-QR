@@ -1711,7 +1711,9 @@ if ($currentMonthLog) {
     $cRecom = $currentMonthLog['recommendation'] ?? '';
 
     $hasActiveIssue = ($pendingFinding || in_array(strtolower($cStatus), ['temuan', 'perlu perbaikan', 'perlu tindak lanjut', 'proses'], true));
-    $cardBg = $hasActiveIssue ? 'bg-danger bg-opacity-10 border-danger' : 'bg-success bg-opacity-10 border-success';
+    $cardBgStyle = $hasActiveIssue 
+        ? 'background-color: #FEF2F2 !important; border: 1.5px solid #FECACA !important; border-left: 5px solid #EF4444 !important;' 
+        : 'background-color: #F0FDF4 !important; border: 1.5px solid #BBF7D0 !important; border-left: 5px solid #10B981 !important;';
     $cardTitleColor = $hasActiveIssue ? 'text-danger' : 'text-success';
 
     $btnTindakLanjut = $hasActiveIssue
@@ -1725,16 +1727,16 @@ if ($currentMonthLog) {
         ? '<a class="btn btn-primary fw-semibold" href="'.e(module_url('maintenance_detail.php', ['id' => $cLogId])).'"><i class="bi bi-file-earmark-text me-1"></i> DETAIL LENGKAP AUDIT</a>'
         : '';
 
-    $btnUlang = '<a class="btn btn-outline-primary fw-semibold" href="'.e(module_url('scan.php', ['t' => $token, 'action' => 'ulang'])).'"><i class="bi bi-arrow-repeat me-1"></i> MAINTENANCE ULANG</a>';
+    $btnUlang = '<a class="btn btn-outline-secondary fw-semibold" href="'.e(module_url('scan.php', ['t' => $token, 'action' => 'ulang'])).'"><i class="bi bi-arrow-repeat me-1"></i> MAINTENANCE ULANG</a>';
 
     $statusCardHtml = '
-    <div class="card border-0 shadow-sm mb-4 '.$cardBg.' border-start border-4 p-3 p-md-4">
+    <div class="card shadow-sm mb-4 p-3 p-md-4 rounded-3" style="'.$cardBgStyle.'">
       <div class="d-flex align-items-center justify-content-between mb-2">
         <span class="'.$cardTitleColor.' fw-bold fs-6"><i class="bi bi-calendar-check-fill me-1"></i> STATUS BULAN BERJALAN:</span>
         <span class="badge bg-'.$badgeColor.' px-3 py-2 fs-6"><i class="bi '.$badgeIcon.' me-1"></i> '.e($cStatus).'</span>
       </div>
       <h5 class="fw-bold text-dark mb-1">Periode: '.$monthName.' '.$year.'</h5>
-      <p class="text-secondary small mb-2">Perangkat ini <strong>sudah dilakukan maintenance</strong> pada <strong>'.e(format_id_date($cDate)).'</strong> oleh <strong>'.e($cTech).'</strong>.</p>
+      <p class="small mb-2" style="color: #334155 !important;">Perangkat ini <strong>sudah dilakukan maintenance</strong> pada <strong>'.e(format_id_date($cDate)).'</strong> oleh <strong>'.e($cTech).'</strong>.</p>
       
       '.($cFindings !== '' ? '<div class="alert alert-danger py-2 px-3 small my-2"><strong><i class="bi bi-exclamation-triangle-fill me-1"></i>Temuan:</strong> '.e($cFindings).'</div>' : '').'
       '.($cRecom !== '' ? '<div class="alert alert-info py-2 px-3 small my-2"><strong><i class="bi bi-lightbulb-fill me-1"></i>Rekomendasi:</strong> '.e($cRecom).'</div>' : '').'
@@ -1752,13 +1754,13 @@ if ($currentMonthLog) {
     <div class="text-center mt-2"><small class="text-muted"><i class="bi bi-check2-circle text-success me-1"></i>Cukup pilih/masukkan nama petugas saat mengisi checklist (tidak wajib login).</small></div>';
 
     $statusCardHtml = '
-    <div class="card border-0 shadow-sm mb-4 bg-danger bg-opacity-10 border-start border-danger border-4 p-3 p-md-4">
+    <div class="card shadow-sm mb-4 p-3 p-md-4 rounded-3" style="background-color: #FEF2F2 !important; border: 1.5px solid #FECACA !important; border-left: 5px solid #EF4444 !important;">
       <div class="d-flex align-items-center justify-content-between mb-2">
         <span class="text-danger fw-bold fs-6"><i class="bi bi-exclamation-circle-fill me-1"></i> STATUS BULAN BERJALAN:</span>
         <span class="badge bg-danger px-3 py-2 fs-6"><i class="bi bi-x-circle-fill me-1"></i> Belum Maintenance</span>
       </div>
       <h5 class="fw-bold text-dark mb-1">Periode: '.$monthName.' '.$year.'</h5>
-      <p class="text-secondary small mb-3">Perangkat ini belum dilakukan pemeliharaan hardware & OS untuk bulan ini.</p>
+      <p class="small mb-3" style="color: #334155 !important;">Perangkat ini belum dilakukan pemeliharaan hardware & OS untuk bulan ini.</p>
       
       '.$btnStartAction.'
     </div>';
