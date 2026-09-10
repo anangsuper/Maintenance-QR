@@ -719,7 +719,9 @@ if ($action === 'start' || $action === 'form' || $action === 'ulang') {
       </div>
     </div>';
 
-    $formScript = '
+    $techsJson = json_encode($enrolledTechs, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT);
+
+    $formScript = <<<'HTML'
     <script src="https://cdn.jsdelivr.net/npm/@vladmandic/face-api/dist/face-api.min.js"></script>
     <script>
     const defaultItemNotes = {
@@ -805,11 +807,11 @@ if ($action === 'start' || $action === 'form' || $action === 'ulang') {
         }
       }
     }
+HTML;
 
-    // =========================================================================
-    // BIOMETRIC FAST-TRACK FACE RECOGNITION & LIVENESS ENGINE (OPTIMIZED FOR MOBILE)
-    // =========================================================================
-    window.__ENROLLED_TECHS = '.json_encode($enrolledTechs, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT).';
+    $formScript .= "\n    window.__ENROLLED_TECHS = " . $techsJson . ";\n";
+
+    $formScript .= <<<'HTML'
 
     // Pre-parse vektor teknisi satu kali saat halaman dimuat (menghilangkan overhead JSON.parse di loop per-frame)
     const parsedEnrolledTechs = (Array.isArray(window.__ENROLLED_TECHS) ? window.__ENROLLED_TECHS : []).map(t => {
@@ -1335,7 +1337,8 @@ if ($action === 'start' || $action === 'form' || $action === 'ulang') {
     } else {
       setTimeout(loadBioModels, 300);
     }
-    </script>';
+    </script>
+HTML;
 
     render_page($formTitle, $body, $formHeadStyle, $formScript, false);
     exit;

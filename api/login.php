@@ -42,8 +42,8 @@ $successHtml = $flashLogin ? '<div class="alert alert-success border-0 shadow-sm
 $expiredHtml = (!empty($_GET['expired']) && !$error && !$flashLogin)
     ? '<div class="alert alert-warning border-0 shadow-sm py-2 px-3 d-flex align-items-center gap-2 mb-3"><i class="bi bi-clock-history fs-5 text-warning-emphasis"></i><span class="small">Sesi Anda telah berakhir. Silakan masuk kembali untuk melanjutkan.</span></div>'
     : '';
-
-echo '<!doctype html>
+?>
+<!doctype html>
 <html lang="id">
 <head>
 <meta charset="utf-8">
@@ -210,9 +210,9 @@ body {
     <h1 class="login-title">QR Maintenance</h1>
     <p class="login-subtitle">Masuk untuk mengelola data pemeliharaan komputer.</p>
 
-    '.$successHtml.'
-    '.$expiredHtml.'
-    '.$errorHtml.'
+    <?= $successHtml ?>
+    <?= $expiredHtml ?>
+    <?= $errorHtml ?>
 
     <form method="post" autocomplete="off">
       <div class="field-wrapper">
@@ -368,4 +368,4 @@ async function loginWithFaceId() {
 }
 </script>
 </body>
-</html>';
+</html>

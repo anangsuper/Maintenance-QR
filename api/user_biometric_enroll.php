@@ -353,7 +353,7 @@ $body = '
   </div>
 </div>';
 
-$script = '
+$script = <<<'HTML'
 <!-- Load face-api.js dari CDN yang stabil -->
 <script src="https://cdn.jsdelivr.net/npm/@vladmandic/face-api/dist/face-api.min.js"></script>
 <script>
@@ -809,6 +809,7 @@ async function enrollNativeFaceId() {
 document.addEventListener("DOMContentLoaded", () => {
   loadModels();
 });
-</script>';
+</script>
+HTML;
 
 render_page('Daftar Wajah Teknisi (HP)', $body, $head, $script, false);
