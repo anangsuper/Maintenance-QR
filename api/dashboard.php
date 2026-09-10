@@ -127,7 +127,7 @@ for ($m = 1; $m <= 12; $m++) {
 // 6. Data Chart.js: Distribusi Cabang (Doughnut)
 $donutLabels = [];
 $donutCounts = [];
-$palette = ['#2563eb', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899', '#06b6d4', '#f97316', '#64748b'];
+$palette = ['#2E77AD', '#30B0E0', '#50C0C0', '#40C0D0', '#90C050', '#D0D040', '#1F2A37', '#64748b'];
 $donutColors = [];
 $idx = 0;
 foreach ($branchDistribution as $bd) {
@@ -269,13 +269,13 @@ $head = '
 <style>
 /* Dashboard Modern Premium Styles */
 .dashboard-hero {
-  background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #1e3a8a 100%);
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: linear-gradient(135deg, #1A4064 0%, #2E77AD 50%, #30B0E0 100%);
+  border: 1px solid rgba(255, 255, 255, 0.15);
   border-radius: 20px;
   padding: 26px 30px;
   margin-bottom: 24px;
   color: #ffffff;
-  box-shadow: 0 10px 30px -5px rgba(15, 23, 42, 0.2);
+  box-shadow: 0 10px 30px -5px rgba(46, 119, 173, 0.25);
   position: relative;
   overflow: hidden;
 }
@@ -287,13 +287,13 @@ $head = '
   right: -20%;
   width: 340px;
   height: 340px;
-  background: radial-gradient(circle, rgba(59, 130, 246, 0.25) 0%, rgba(59, 130, 246, 0) 70%);
+  background: radial-gradient(circle, rgba(48, 176, 224, 0.3) 0%, rgba(48, 176, 224, 0) 70%);
   border-radius: 50%;
   pointer-events: none;
 }
 
 .hero-subtitle {
-  color: rgba(255, 255, 255, 0.82);
+  color: rgba(255, 255, 255, 0.88);
   font-size: 0.95rem;
 }
 
@@ -305,9 +305,9 @@ $head = '
   border-radius: 20px;
   font-size: 0.8rem;
   font-weight: 600;
-  background: rgba(255, 255, 255, 0.15);
+  background: rgba(255, 255, 255, 0.18);
   color: #ffffff;
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.25);
   backdrop-filter: blur(8px);
 }
 
@@ -319,7 +319,7 @@ $head = '
 
 .stat-card-clickable .card {
   border-radius: 16px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid #E6EDF5;
   background: #ffffff;
   transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   position: relative;
@@ -328,16 +328,16 @@ $head = '
 
 .stat-card-clickable:hover .card {
   transform: translateY(-4px);
-  box-shadow: 0 12px 24px -4px rgba(15, 23, 42, 0.1);
-  border-color: #cbd5e1;
+  box-shadow: 0 12px 24px -4px rgba(46, 119, 173, 0.12);
+  border-color: #30B0E0;
 }
 
-.stat-card-primary { border-left: 4px solid #2563eb !important; }
-.stat-card-success { border-left: 4px solid #10b981 !important; }
+.stat-card-primary { border-left: 4px solid #2E77AD !important; }
+.stat-card-success { border-left: 4px solid #90C050 !important; }
 .stat-card-danger { border-left: 4px solid #ef4444 !important; }
-.stat-card-warning { border-left: 4px solid #f59e0b !important; }
-.stat-card-info { border-left: 4px solid #06b6d4 !important; }
-.stat-card-dark { border-left: 4px solid #64748b !important; }
+.stat-card-warning { border-left: 4px solid #D0D040 !important; }
+.stat-card-info { border-left: 4px solid #30B0E0 !important; }
+.stat-card-dark { border-left: 4px solid #1F2A37 !important; }
 
 .stat-icon-box {
   width: 44px;
@@ -370,7 +370,7 @@ $head = '
 
 .branch-nav-wrapper {
   background: #ffffff;
-  border: 1px solid #e2e8f0;
+  border: 1px solid #E6EDF5;
   border-radius: 16px;
   padding: 10px 14px;
 }
@@ -396,26 +396,26 @@ $head = '
   border-radius: 30px;
   font-size: 0.85rem;
   font-weight: 600;
-  color: #475569;
-  background: #f8fafc;
-  border: 1.5px solid #e2e8f0;
+  color: #1F2A37;
+  background: #F5F8FB;
+  border: 1.5px solid #E6EDF5;
   text-decoration: none;
   transition: all 0.2s ease;
   flex-shrink: 0;
 }
 
 .nav-branch-pill:hover {
-  background: #edf2f7;
-  color: #0f172a;
-  border-color: #cbd5e1;
+  background: #E6EDF5;
+  color: #2E77AD;
+  border-color: #30B0E0;
   transform: translateY(-1px);
 }
 
 .nav-branch-pill.active {
-  background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%);
+  background: linear-gradient(135deg, #2E77AD 0%, #30B0E0 100%);
   color: #ffffff;
-  border-color: #2563eb;
-  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+  border-color: #2E77AD;
+  box-shadow: 0 4px 12px rgba(46, 119, 173, 0.3);
 }
 
 .chart-card {
@@ -813,7 +813,7 @@ document.addEventListener("DOMContentLoaded", function() {
           {
             label: "Selesai",
             data: '.json_encode($chartDoneData).',
-            backgroundColor: "#10b981",
+            backgroundColor: "#90C050",
             borderRadius: 6,
             barPercentage: 0.6
           },
@@ -827,7 +827,7 @@ document.addEventListener("DOMContentLoaded", function() {
           {
             label: "Belum Selesai",
             data: '.json_encode($chartPendingData).',
-            backgroundColor: "#f59e0b",
+            backgroundColor: "#D0D040",
             borderRadius: 6,
             barPercentage: 0.6
           }

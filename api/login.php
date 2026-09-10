@@ -120,7 +120,7 @@ body::before {
 .login-logo {
   width: 62px;
   height: 62px;
-  background: linear-gradient(135deg, #0284c7, #0ea5e9);
+  background: linear-gradient(135deg, #2E77AD, #30B0E0);
   border-radius: 18px;
   display: flex;
   align-items: center;
@@ -128,7 +128,7 @@ body::before {
   color: #fff;
   font-size: 1.8rem;
   margin: 0 auto 16px;
-  box-shadow: 0 8px 20px rgba(2, 132, 199, 0.35);
+  box-shadow: 0 8px 20px rgba(46, 119, 173, 0.35);
 }
 
 .login-title {
@@ -158,8 +158,8 @@ body::before {
 }
 
 .form-floating > .form-control:focus {
-  border-color: #3b82f6;
-  box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.12);
+  border-color: #30B0E0;
+  box-shadow: 0 0 0 4px rgba(48, 176, 224, 0.15);
   background: #fff;
 }
 
@@ -188,7 +188,7 @@ body::before {
 .btn-login {
   width: 100%;
   padding: 14px;
-  background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
+  background: linear-gradient(135deg, #2E77AD 0%, #30B0E0 100%);
   border: none;
   border-radius: 14px;
   color: #fff;
@@ -196,13 +196,13 @@ body::before {
   font-weight: 700;
   letter-spacing: 0.3px;
   transition: all 0.25s ease;
-  box-shadow: 0 6px 20px rgba(2, 132, 199, 0.35);
+  box-shadow: 0 6px 20px rgba(46, 119, 173, 0.35);
 }
 
 .btn-login:hover {
   transform: translateY(-2px);
-  box-shadow: 0 10px 28px rgba(2, 132, 199, 0.45);
-  background: linear-gradient(135deg, #0369a1 0%, #0c4a6e 100%);
+  box-shadow: 0 10px 28px rgba(46, 119, 173, 0.45);
+  background: linear-gradient(135deg, #1A4064 0%, #2E77AD 100%);
   color: #fff;
 }
 

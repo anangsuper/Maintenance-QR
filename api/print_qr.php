@@ -81,9 +81,9 @@ $head = '<style id="stickerStyle">
 }
 
 body {
-  background: #f1f5f9;
+  background: #F5F8FB;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  color: #0f172a;
+  color: #1F2A37;
   -webkit-print-color-adjust: exact !important;
   print-color-adjust: exact !important;
 }
@@ -104,13 +104,13 @@ body {
 
 .qr-sticker {
   background: #ffffff;
-  border: 1.5px solid #2563eb;
+  border: 1.5px solid #2E77AD;
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
   overflow: hidden;
-  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.12);
+  box-shadow: 0 4px 12px rgba(46, 119, 173, 0.12);
   position: relative;
   -webkit-print-color-adjust: exact !important;
   print-color-adjust: exact !important;
@@ -121,7 +121,7 @@ body {
   justify-content: space-between;
   align-items: center;
   gap: 1.5mm;
-  background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%) !important;
+  background: linear-gradient(135deg, #2E77AD 0%, #30B0E0 100%) !important;
   -webkit-print-color-adjust: exact !important;
   print-color-adjust: exact !important;
 }
@@ -135,7 +135,7 @@ body {
   width: 4px;
   height: 4px;
   border-radius: 50%;
-  background: #38bdf8 !important;
+  background: #50C0C0 !important;
   display: inline-block;
   flex-shrink: 0;
   -webkit-print-color-adjust: exact !important;
@@ -154,8 +154,8 @@ body {
 
 .qr-cabang {
   font-weight: 800;
-  color: #854d0e !important;
-  background: #fef08a !important;
+  color: #1F2A37 !important;
+  background: #D0D040 !important;
   border-radius: 0.6mm;
   text-transform: uppercase;
   white-space: nowrap;
@@ -177,10 +177,10 @@ body {
   align-items: center;
   justify-content: center;
   background: #ffffff;
-  border: 1.5px solid #3b82f6;
+  border: 1.5px solid #30B0E0;
   flex-shrink: 0;
   box-sizing: border-box;
-  box-shadow: 0 1px 4px rgba(37, 99, 235, 0.15);
+  box-shadow: 0 1px 4px rgba(46, 119, 173, 0.15);
 }
 
 .qr-box-wrap img, .qr-box-wrap canvas {
@@ -199,9 +199,9 @@ body {
 
 .qr-kode-badge {
   font-weight: 800;
-  color: #1e40af !important;
-  background: #eff6ff !important;
-  border: 1px solid #bfdbfe !important;
+  color: #2E77AD !important;
+  background: #E6EDF5 !important;
+  border: 1px solid #30B0E0 !important;
   line-height: 1.1;
   word-break: break-all;
   display: inline-block;
@@ -213,7 +213,7 @@ body {
 
 .qr-device-name {
   font-weight: 700;
-  color: #1e293b !important;
+  color: #1F2A37 !important;
   line-height: 1.25;
   white-space: normal;
   word-break: break-word;
@@ -224,9 +224,9 @@ body {
 }
 
 .qr-user-name {
-  color: #065f46 !important;
-  background: #ecfdf5 !important;
-  border: 0.8px solid #a7f3d0 !important;
+  color: #1F2A37 !important;
+  background: #E6EDF5 !important;
+  border: 0.8px solid #30B0E0 !important;
   line-height: 1.2;
   white-space: normal;
   word-break: break-word;
@@ -241,7 +241,7 @@ body {
 
 .qr-bot-bar {
   text-align: center;
-  background: linear-gradient(90deg, #1e3a8a 0%, #2563eb 100%) !important;
+  background: linear-gradient(90deg, #2E77AD 0%, #30B0E0 100%) !important;
   font-weight: 800;
   color: #ffffff !important;
   letter-spacing: 0.4px;

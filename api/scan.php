@@ -1831,10 +1831,10 @@ $headStyle = '<style>
 /* Modern Kartu Kontrol IT (Exact match to print_card.php grid6 / user screenshot) */
 .mobile-card-wrapper {
   background: #ffffff;
-  border: 2px solid #2563eb;
+  border: 2px solid #2E77AD;
   border-radius: 14px;
   padding: 14px 16px;
-  box-shadow: 0 8px 24px rgba(37, 99, 235, 0.08);
+  box-shadow: 0 8px 24px rgba(46, 119, 173, 0.12);
   margin: 0 auto;
   max-width: 100%;
 }
@@ -1845,7 +1845,7 @@ $headStyle = '<style>
   }
 }
 .grid6-top-banner {
-  background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%);
+  background: linear-gradient(135deg, #2E77AD 0%, #30B0E0 100%);
   color: #ffffff;
   padding: 7px 12px;
   border-radius: 6px;
@@ -1856,8 +1856,8 @@ $headStyle = '<style>
   align-items: center;
 }
 .grid6-branch-pill {
-  background: #fef08a;
-  color: #854d0e;
+  background: #D0D040;
+  color: #1F2A37;
   font-size: 0.72rem;
   font-weight: 800;
   padding: 2px 8px;
@@ -1885,9 +1885,9 @@ $headStyle = '<style>
   text-align: center;
   white-space: nowrap;
 }
-.badge-blue { background: #dbeafe; color: #1e40af; border: 1px solid #bfdbfe; }
-.badge-green { background: #dcfce7; color: #15803d; border: 1px solid #bbf7d0; }
-.badge-purple { background: #f3e8ff; color: #6b21a8; border: 1px solid #e9d5ff; }
+.badge-blue { background: #E6EDF5; color: #2E77AD; border: 1px solid #30B0E0; }
+.badge-green { background: #dcfce7; color: #15803d; border: 1px solid #90C050; }
+.badge-purple { background: #E6EDF5; color: #50C0C0; border: 1px solid #50C0C0; }
 .badge-kode { background: #f1f5f9; color: #0f172a; padding: 2px 6px; border-radius: 4px; font-weight: bold; border: 1px solid #cbd5e1; }
 
 .grid6-matrix-wrapper {
@@ -1900,13 +1900,13 @@ $headStyle = '<style>
   width: 100%;
   min-width: 340px;
   border-collapse: collapse;
-  border: 1.5px solid #1e40af;
+  border: 1.5px solid #2E77AD;
   font-size: 0.82rem;
 }
 .grid6-matrix-table th {
-  background: #1e40af !important;
+  background: #2E77AD !important;
   color: #ffffff !important;
-  border: 1px solid #1e3a8a;
+  border: 1px solid #1A4064;
   font-weight: bold;
   text-align: center;
   padding: 6px 2px;
@@ -1919,10 +1919,10 @@ $headStyle = '<style>
 }
 .grid6-matrix-table tr.even-row { background-color: #f8fafc; }
 .grid6-matrix-table tr.done-row { background-color: #f0fdf4; }
-.grid6-matrix-table tr.done-row td { border-color: #86efac; }
-.grid6-matrix-table .tgl-col { font-weight: bold; font-family: "Courier New", monospace; font-size: 0.84rem; color: #1e3a8a; width: 85px; }
+.grid6-matrix-table tr.done-row td { border-color: #90C050; }
+.grid6-matrix-table .tgl-col { font-weight: bold; font-family: "Courier New", monospace; font-size: 0.84rem; color: #2E77AD; width: 85px; }
 .grid6-matrix-table .chk-col { font-weight: bold; font-size: 0.88rem; width: 28px; }
-.grid6-matrix-table .chk-yes { color: #16a34a; font-weight: 900; }
+.grid6-matrix-table .chk-yes { color: #90C050; font-weight: 900; }
 .grid6-matrix-table .chk-no { color: #94a3b8; }
 .grid6-matrix-table .paraf-col { font-size: 0.78rem; font-family: "Courier New", monospace; color: #334155; min-width: 85px; }
 
@@ -1935,7 +1935,7 @@ $headStyle = '<style>
 .grid6-ket-title {
   font-size: 0.74rem;
   font-weight: 800;
-  color: #1e40af;
+  color: #2E77AD;
   margin-bottom: 6px;
   text-transform: uppercase;
   letter-spacing: 0.3px;

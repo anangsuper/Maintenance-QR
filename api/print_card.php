@@ -445,7 +445,7 @@ body {
   width: 89mm;
   height: 85mm;
   background: #ffffff;
-  border: 1.4px solid #2563eb;
+  border: 1.4px solid #2E77AD;
   border-radius: 2.2mm;
   padding: 2mm 2.2mm;
   box-sizing: border-box;
@@ -458,7 +458,7 @@ body {
 }
 
 .grid6-top-banner {
-  background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%);
+  background: linear-gradient(135deg, #2E77AD 0%, #30B0E0 100%);
   color: #ffffff;
   padding: 1px 4px;
   border-radius: 0.8mm;
@@ -469,8 +469,8 @@ body {
   align-items: center;
 }
 .grid6-branch-pill {
-  background: #fef08a;
-  color: #854d0e;
+  background: #D0D040;
+  color: #1F2A37;
   font-size: 5.6pt;
   font-weight: 800;
   padding: 0.2px 1.5px;
@@ -492,13 +492,13 @@ body {
 .grid6-matrix-table {
   width: 100%;
   border-collapse: collapse;
-  border: 1px solid #1e40af;
+  border: 1px solid #2E77AD;
   font-size: 6.6pt;
 }
 .grid6-matrix-table th {
-  background: #1e40af !important;
+  background: #2E77AD !important;
   color: #ffffff !important;
-  border: 0.6px solid #1e3a8a;
+  border: 0.6px solid #1A4064;
   font-weight: bold;
   text-align: center;
   padding: 0.8px 0;
@@ -512,12 +512,12 @@ body {
 }
 .grid6-matrix-table tr.even-row { background-color: #f8fafc; }
 .grid6-matrix-table tr.done-row { background-color: #f0fdf4; }
-.grid6-matrix-table tr.done-row td { border-color: #86efac; }
+.grid6-matrix-table tr.done-row td { border-color: #90C050; }
 .grid6-matrix-table .tgl-h { width: 20mm; }
-.grid6-matrix-table .tgl-col { font-weight: bold; font-family: "Courier New", monospace; font-size: 6.8pt; color: #1e3a8a; }
+.grid6-matrix-table .tgl-col { font-weight: bold; font-family: "Courier New", monospace; font-size: 6.8pt; color: #2E77AD; }
 .grid6-matrix-table .chk-h { width: 4.5mm; }
 .grid6-matrix-table .chk-col { font-weight: bold; font-size: 7.2pt; }
-.grid6-matrix-table .chk-yes { color: #16a34a; font-weight: 900; }
+.grid6-matrix-table .chk-yes { color: #90C050; font-weight: 900; }
 .grid6-matrix-table .chk-no { color: #94a3b8; }
 .grid6-matrix-table .paraf-h { min-width: 15mm; }
 .grid6-matrix-table .paraf-col { font-size: 6pt; font-family: "Courier New", monospace; color: #334155; }
@@ -531,7 +531,7 @@ body {
 .grid6-ket-title {
   font-size: 5.4pt;
   font-weight: 800;
-  color: #1e40af;
+  color: #2E77AD;
   margin-bottom: 0.3mm;
   text-transform: uppercase;
   letter-spacing: 0.2px;
@@ -552,9 +552,9 @@ body {
   text-align: center;
   white-space: nowrap;
 }
-.badge-blue { background: #dbeafe; color: #1e40af; border: 0.5px solid #bfdbfe; }
-.badge-green { background: #dcfce7; color: #15803d; border: 0.5px solid #bbf7d0; }
-.badge-purple { background: #f3e8ff; color: #6b21a8; border: 0.5px solid #e9d5ff; }
+.badge-blue { background: #E6EDF5; color: #2E77AD; border: 0.5px solid #30B0E0; }
+.badge-green { background: #dcfce7; color: #15803d; border: 0.5px solid #90C050; }
+.badge-purple { background: #E6EDF5; color: #50C0C0; border: 0.5px solid #50C0C0; }
 .badge-kode { background: #f1f5f9; color: #0f172a; padding: 0.2px 2.2px; border-radius: 0.5mm; font-weight: bold; border: 0.5px solid #cbd5e1; }
 
 .leg-tag {
@@ -594,7 +594,7 @@ body {
   width: 89mm;
   height: 64mm;
   background: #ffffff;
-  border: 1.3px solid #2563eb;
+  border: 1.3px solid #2E77AD;
   border-radius: 1.8mm;
   padding: 1mm 1.5mm;
   box-sizing: border-box;
@@ -606,7 +606,7 @@ body {
   overflow: hidden;
 }
 .grid8-top-banner {
-  background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%);
+  background: linear-gradient(135deg, #2E77AD 0%, #30B0E0 100%);
   color: #ffffff;
   padding: 0.5px 3px;
   border-radius: 0.6mm;
@@ -617,8 +617,8 @@ body {
   align-items: center;
 }
 .grid8-branch-pill {
-  background: #fef08a;
-  color: #854d0e;
+  background: #D0D040;
+  color: #1F2A37;
   font-size: 4.6pt;
   font-weight: 800;
   padding: 0.2mm 0.8mm;
@@ -635,13 +635,13 @@ body {
 .grid8-matrix-table {
   width: 100%;
   border-collapse: collapse;
-  border: 0.8px solid #1e40af;
+  border: 0.8px solid #2E77AD;
   font-size: 5.5pt;
 }
 .grid8-matrix-table th {
-  background: #1e40af !important;
+  background: #2E77AD !important;
   color: #ffffff !important;
-  border: 0.5px solid #1e3a8a;
+  border: 0.5px solid #1A4064;
   font-weight: bold;
   text-align: center;
   padding: 0.3px 0;
@@ -650,12 +650,12 @@ body {
 .grid8-matrix-table td { border: 0.5px solid #cbd5e1; text-align: center; padding: 0; height: 9.2px; }
 .grid8-matrix-table tr.even-row { background-color: #f8fafc; }
 .grid8-matrix-table tr.done-row { background-color: #f0fdf4; }
-.grid8-matrix-table tr.done-row td { border-color: #86efac; }
+.grid8-matrix-table tr.done-row td { border-color: #90C050; }
 .grid8-matrix-table .tgl-h { width: 18mm; }
-.grid8-matrix-table .tgl-col { font-weight: bold; font-family: "Courier New", monospace; font-size: 5.6pt; color: #1e3a8a; }
+.grid8-matrix-table .tgl-col { font-weight: bold; font-family: "Courier New", monospace; font-size: 5.6pt; color: #2E77AD; }
 .grid8-matrix-table .chk-h { width: 4.2mm; }
 .grid8-matrix-table .chk-col { font-weight: bold; font-size: 6pt; }
-.grid8-matrix-table .chk-yes { color: #16a34a; font-weight: 900; }
+.grid8-matrix-table .chk-yes { color: #90C050; font-weight: 900; }
 .grid8-matrix-table .chk-no { color: #94a3b8; }
 .grid8-matrix-table .paraf-h { min-width: 15mm; }
 .grid8-matrix-table .paraf-col { font-size: 5pt; font-family: "Courier New", monospace; color: #334155; }
@@ -668,7 +668,7 @@ body {
 .grid8-ket-title {
   font-size: 4.4pt;
   font-weight: 800;
-  color: #1e40af;
+  color: #2E77AD;
   margin-bottom: 0.2mm;
   text-transform: uppercase;
 }
@@ -683,13 +683,13 @@ body {
    ========================================================= */
 .print-card-wrapper-single {
   background: #ffffff;
-  border: 2px solid #2563eb;
+  border: 2px solid #2E77AD;
   border-radius: 4px;
   padding: 20px 24px;
   max-width: 720px;
   margin: 0 auto;
   page-break-inside: avoid;
-  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.1);
+  box-shadow: 0 4px 12px rgba(46, 119, 173, 0.1);
 }
 .info-table-single {
   width: 100%;
@@ -698,10 +698,10 @@ body {
   font-size: 10.5pt;
 }
 .info-table-single td { padding: 4px 2px; }
-.info-line-single { border-bottom: 1.5px solid #2563eb; padding-left: 6px; }
-.card-table-single { width: 100%; border-collapse: collapse; border: 1.5px solid #2563eb; }
-.card-table-single th { background: #1e40af !important; color: #ffffff !important; border: 1.5px solid #1e3a8a !important; font-weight: bold; padding: 5px 2px; text-align: center; font-size: 9.5pt; }
-.card-table-single td { border: 1px solid #93c5fd; font-size: 9pt; padding: 3px 2px; }
+.info-line-single { border-bottom: 1.5px solid #2E77AD; padding-left: 6px; }
+.card-table-single { width: 100%; border-collapse: collapse; border: 1.5px solid #2E77AD; }
+.card-table-single th { background: #2E77AD !important; color: #ffffff !important; border: 1.5px solid #1A4064 !important; font-weight: bold; padding: 5px 2px; text-align: center; font-size: 9.5pt; }
+.card-table-single td { border: 1px solid #E6EDF5; font-size: 9pt; padding: 3px 2px; }
 .card-table-single tr.even-row { background-color: #f8fafc; }
 .card-table-single tr.done-row { background-color: #f0fdf4; }
 .ket-box-single { font-size: 8.5pt; margin-top: 10px; line-height: 1.4; }
