@@ -1858,14 +1858,15 @@ $headStyle = '<style>
   align-items: center;
 }
 .grid6-branch-pill {
-  background: #30B0E0;
-  color: #ffffff;
+  background: #ffffff;
+  color: #1A4064;
   font-size: 0.72rem;
   font-weight: 800;
-  padding: 2px 10px;
+  padding: 3px 10px;
   border-radius: 4px;
   text-transform: uppercase;
   letter-spacing: 0.5px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
 }
 .grid6-info-table {
   width: 100%;

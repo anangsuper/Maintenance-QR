@@ -5787,7 +5787,16 @@ h1, h2, h3, h4, h5, h6, .h1, .h2, .h3, .h4, .h5, .h6 {
   color: #ffffff !important;
 }
 .text-primary {
-  color: #2E77AD !important;
+  color: #1D4ED8 !important;
+}
+.text-secondary {
+  color: #475569 !important;
+}
+.text-muted {
+  color: #64748B !important;
+}
+.text-dark {
+  color: #0F172A !important;
 }
 .bg-primary {
   background-color: rgba(46, 119, 173, var(--bs-bg-opacity, 1)) !important;
@@ -5798,20 +5807,20 @@ h1, h2, h3, h4, h5, h6, .h1, .h2, .h3, .h4, .h5, .h6 {
 }
 .bg-primary-subtle {
   background-color: rgba(46, 119, 173, 0.12) !important;
-  color: #2E77AD !important;
+  color: #1D4ED8 !important;
 }
 .text-info {
-  color: #30B0E0 !important;
+  color: #0369A1 !important;
 }
 .bg-info {
   background-color: rgba(48, 176, 224, var(--bs-bg-opacity, 1)) !important;
 }
 .text-bg-info {
-  background-color: #30B0E0 !important;
+  background-color: #0284C7 !important;
   color: #ffffff !important;
 }
 .text-success {
-  color: #10B981 !important;
+  color: #047857 !important;
 }
 .bg-success {
   background-color: rgba(16, 185, 129, var(--bs-bg-opacity, 1)) !important;
@@ -5824,8 +5833,36 @@ h1, h2, h3, h4, h5, h6, .h1, .h2, .h3, .h4, .h5, .h6 {
   background-color: #ECFDF5 !important;
   color: #065F46 !important;
 }
-.badge.bg-primary, .badge.bg-info, .badge.bg-success {
+.text-warning {
+  color: #B45309 !important;
+}
+.text-danger {
+  color: #DC2626 !important;
+}
+.badge.bg-primary, .badge.bg-info, .badge.bg-success, .badge.bg-danger {
   color: #ffffff !important;
+}
+
+/* High Contrast Alert Boxes */
+.alert-info {
+  background-color: #F0F9FF !important;
+  border-color: #BAE6FD !important;
+  color: #0369A1 !important;
+}
+.alert-success {
+  background-color: #F0FDF4 !important;
+  border-color: #BBF7D0 !important;
+  color: #065F46 !important;
+}
+.alert-warning {
+  background-color: #FFFBEB !important;
+  border-color: #FDE68A !important;
+  color: #92400E !important;
+}
+.alert-danger {
+  background-color: #FEF2F2 !important;
+  border-color: #FECACA !important;
+  color: #991B1B !important;
 }
 
 /* Loading Progress Bar (Bank Mitra Blue-Teal-Emerald Gradient) */

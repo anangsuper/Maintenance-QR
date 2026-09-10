@@ -469,12 +469,12 @@ body {
   align-items: center;
 }
 .grid6-branch-pill {
-  background: #30B0E0;
-  color: #ffffff;
+  background: #ffffff;
+  color: #1A4064;
   font-size: 5.6pt;
   font-weight: 800;
-  padding: 0.2px 2.5px;
-  border-radius: 0.5mm;
+  padding: 0.3px 3px;
+  border-radius: 0.6mm;
   text-transform: uppercase;
 }
 
@@ -617,12 +617,12 @@ body {
   align-items: center;
 }
 .grid8-branch-pill {
-  background: #30B0E0;
-  color: #ffffff;
-  font-size: 4.6pt;
+  background: #ffffff;
+  color: #1A4064;
+  font-size: 4.8pt;
   font-weight: 800;
-  padding: 0.2mm 1.2mm;
-  border-radius: 0.4mm;
+  padding: 0.2mm 2mm;
+  border-radius: 0.5mm;
   text-transform: uppercase;
 }
 .grid8-info-table {

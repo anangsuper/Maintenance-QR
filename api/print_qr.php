@@ -154,15 +154,15 @@ body {
 
 .qr-cabang {
   font-weight: 800;
-  color: #ffffff !important;
-  background: #30B0E0 !important;
+  color: #1A4064 !important;
+  background: #ffffff !important;
   border-radius: 0.6mm;
-  padding: 0.2mm 1.5mm;
+  padding: 0.3mm 2mm;
   text-transform: uppercase;
   white-space: nowrap;
   flex-shrink: 0;
   text-align: right;
-  box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.18);
   -webkit-print-color-adjust: exact !important;
   print-color-adjust: exact !important;
 }
