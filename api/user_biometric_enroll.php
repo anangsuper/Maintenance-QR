@@ -19,6 +19,9 @@ if ($reqId > 0) {
 
 // Handle AJAX POST simpan biometrik atau tambah teknisi baru langsung dari HP
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    if (ob_get_length()) {
+        ob_clean();
+    }
     $raw = file_get_contents('php://input');
     $data = json_decode($raw, true);
     if (!is_array($data)) {
@@ -33,7 +36,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     // Aksi 1: Simpan Nama Teknisi Baru Langsung (Tanpa perlu wajah / biometrik)
     if ($action === 'add_tech_only' || ($newTechName !== '' && empty($descriptor))) {
-        header('Content-Type: application/json');
+        header('Content-Type: application/json; charset=utf-8');
         if ($newTechName === '') {
             echo json_encode(['success' => false, 'error' => 'Nama teknisi baru tidak boleh kosong.']);
             exit;
@@ -261,26 +264,37 @@ $body = '
           <span><i class="bi bi-person-circle text-primary me-1"></i> Pilih Nama Teknisi Anda:</span>
           '.$badgeStatus.'
         </label>
-        <select class="form-select form-select-lg fw-bold shadow-sm" id="userSelect" onchange="handleUserChange(this.value)">
-          '.$userOptionsHtml.'
-        </select>
+        <div class="input-group shadow-sm">
+          <select class="form-select form-select-lg fw-bold" id="userSelect" onchange="handleUserChange(this.value)">
+            '.$userOptionsHtml.'
+          </select>
+          <button type="button" class="btn btn-outline-success fw-bold px-3 d-flex align-items-center gap-1" onclick="showNewTechInput()" title="Tambah Nama Teknisi Baru">
+            <i class="bi bi-person-plus-fill"></i> <span class="d-none d-sm-inline">+ Nama Baru</span>
+          </button>
+        </div>
       </div>
 
       <!-- Field Tambah Nama Teknisi Baru (Tampil jika pilih + Tambah) -->
       <div class="card border border-success border-opacity-50 p-3 bg-success bg-opacity-10 rounded-4 mb-3 d-none" id="newTechBox">
-        <label class="form-label small fw-bold text-success mb-1">
-          <i class="bi bi-person-plus-fill me-1"></i> Masukkan Nama Lengkap Teknisi Baru:
-        </label>
+        <div class="d-flex justify-content-between align-items-center mb-2">
+          <label class="form-label small fw-bold text-success mb-0">
+            <i class="bi bi-person-plus-fill me-1"></i> Masukkan Nama Lengkap Teknisi Baru:
+          </label>
+          <button type="button" class="btn-close btn-close-sm" onclick="cancelNewTech()" aria-label="Tutup"></button>
+        </div>
         <div class="input-group mb-2">
-          <input type="text" class="form-control form-control-lg fw-semibold" id="newTechName" placeholder="Contoh: Budi Santoso" autocomplete="off">
+          <input type="text" class="form-control form-control-lg fw-semibold" id="newTechName" placeholder="Contoh: Budi Santoso" autocomplete="off" onkeydown="if(event.key === \'Enter\'){ event.preventDefault(); saveNewTechOnly(); }">
           <button type="button" class="btn btn-success fw-bold px-3 shadow-sm" id="btnQuickSaveTech" onclick="saveNewTechOnly()">
             <i class="bi bi-check-lg me-1"></i> Simpan Nama
           </button>
         </div>
-        <div class="form-text text-muted mb-1" style="font-size: 0.75rem;">
-          Klik <strong>"Simpan Nama"</strong> untuk langsung mendaftarkan akun teknisi tanpa harus scan wajah.
+        <div class="d-flex justify-content-between align-items-center">
+          <div class="form-text text-muted mb-0" style="font-size: 0.75rem;">
+            Klik <strong>"Simpan Nama"</strong> untuk mendaftarkan akun teknisi.
+          </div>
+          <button type="button" class="btn btn-link btn-sm text-secondary text-decoration-none py-0 px-1" onclick="cancelNewTech()">Batal</button>
         </div>
-        <div id="newTechStatus" class="small"></div>
+        <div id="newTechStatus" class="small mt-2"></div>
       </div>
 
       '.$avatarHtml.'
@@ -396,15 +410,37 @@ const newTechBox = document.getElementById("newTechBox");
 const newTechName = document.getElementById("newTechName");
 const successBox = document.getElementById("successBox");
 
+function showNewTechInput() {
+  const userSelect = document.getElementById("userSelect");
+  if (userSelect) userSelect.value = "-1";
+  handleUserChange("-1");
+}
+
+function cancelNewTech() {
+  const newTechBox = document.getElementById("newTechBox");
+  const userSelect = document.getElementById("userSelect");
+  if (newTechBox) newTechBox.classList.add("d-none");
+  if (userSelect && userSelect.value === "-1") {
+    if (userSelect.options.length > 1) {
+      userSelect.selectedIndex = 0;
+      handleUserChange(userSelect.value);
+    }
+  }
+}
+
 function handleUserChange(val) {
+  const newTechBox = document.getElementById("newTechBox");
+  const newTechName = document.getElementById("newTechName");
   if (val === "-1") {
-    newTechBox.classList.remove("d-none");
-    newTechName.focus();
+    if (newTechBox) newTechBox.classList.remove("d-none");
+    if (newTechName) newTechName.focus();
   } else {
-    newTechBox.classList.add("d-none");
+    if (newTechBox) newTechBox.classList.add("d-none");
     const currentParam = new URLSearchParams(window.location.search);
-    currentParam.set("id", val);
-    window.location.search = currentParam.toString();
+    if (currentParam.get("id") !== String(val)) {
+      currentParam.set("id", val);
+      window.location.search = currentParam.toString();
+    }
   }
 }
 
@@ -414,11 +450,22 @@ async function loadModels() {
   modelsLoading = true;
   try {
     if (statusMsg && !videoStream) {
-      statusMsg.innerHTML = '<span class="spinner-border spinner-border-sm me-2 text-primary"></span> Menyiapkan modul AI GPU...';
+      statusMsg.innerHTML = '<span class="spinner-border spinner-border-sm me-2 text-primary"></span> Menyiapkan modul AI pengenalan wajah...';
       progressBar.style.width = "40%";
     }
+
+    // Tunggu bila library face-api sedang diunduh
+    let retries = 0;
+    while (typeof faceapi === "undefined" && retries < 20) {
+      await new Promise(r => setTimeout(r, 200));
+      retries++;
+    }
+
+    if (typeof faceapi === "undefined") {
+      throw new Error("Pustaka face-api belum terunduh.");
+    }
     
-    if (typeof faceapi !== "undefined" && faceapi.tf) {
+    if (faceapi.tf) {
       try {
         await faceapi.tf.setBackend("webgl");
         await faceapi.tf.ready();
@@ -436,15 +483,15 @@ async function loadModels() {
     modelsLoading = false;
     if (statusMsg && !videoStream) {
       statusMsg.className = "alert alert-success py-2 px-3 text-center mb-3 small fw-semibold";
-      statusMsg.innerHTML = '<i class="bi bi-check-circle me-1"></i> Modul AI GPU siap. Silakan klik "AKTIFKAN KAMERA DEPAN HP".';
+      statusMsg.innerHTML = '<i class="bi bi-check-circle me-1"></i> Modul AI siap. Silakan klik "AKTIFKAN KAMERA DEPAN HP".';
     }
     return true;
   } catch (err) {
-    console.error("Gagal memuat model:", err);
+    console.warn("Info load model:", err);
     modelsLoading = false;
-    if (statusMsg) {
-      statusMsg.className = "alert alert-danger py-2 px-3 text-center mb-3 small";
-      statusMsg.innerHTML = '<i class="bi bi-x-circle me-1"></i> Gagal memuat modul AI. Pastikan smartphone terhubung internet.';
+    if (statusMsg && !videoStream) {
+      statusMsg.className = "alert alert-secondary py-2 px-3 text-center mb-3 small fw-semibold";
+      statusMsg.innerHTML = '<i class="bi bi-camera-video me-1"></i> Silakan klik <strong>"AKTIFKAN KAMERA DEPAN HP"</strong> untuk memulai.';
     }
     return false;
   }
@@ -710,13 +757,6 @@ async function saveBiometrics() {
   }
 }
 
-function b64urlToBuffer(base64url) {
-  let base64 = base64url.replace(/-/g, '+').replace(/_/g, '/');
-  while (base64.length % 4) base64 += '=';
-  const bin = atob(base64);
-  const bytes = new Uint8Array(bin.length);
-  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
-  return bytes.buffer;
 async function saveNewTechOnly() {
   const nameInput = document.getElementById("newTechName");
   const nameVal = nameInput ? nameInput.value.trim() : "";
