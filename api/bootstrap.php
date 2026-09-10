@@ -2416,30 +2416,103 @@ function get_comprehensive_dashboard_data(int $month, int $year, int $cabangId =
             $filteredAssets[] = $a;
         }
 
+        $scanMap = [];
+        $assetLatestScanMap = [];
+        foreach ($scans as $s) {
+            $sId = (int)($s['id'] ?? $s['col_0'] ?? 0);
+            if ($sId > 0) {
+                $scanMap[$sId] = $s;
+            }
+            $sAid = (int)($s['asset_id'] ?? $s['id_asset'] ?? $s['col_1'] ?? 0);
+            if ($sAid > 0 && !isset($assetLatestScanMap[$sAid])) {
+                $assetLatestScanMap[$sAid] = $s;
+            }
+        }
+
         $unresolvedFindingsList = [];
         foreach ($rawFindings as $f) {
-            $fStatus = trim((string)($f['repair_status'] ?? $f['status'] ?? 'Open'));
-            $isUnresolved = !in_array(strtolower($fStatus), ['resolved', 'closed', 'selesai', 'done'], true);
+            $fStatus = trim((string)($f['status'] ?? $f['repair_status'] ?? $f['status_perbaikan'] ?? $f['col_6'] ?? 'Open'));
+            $isUnresolved = !in_array(strtolower($fStatus), ['resolved', 'closed', 'selesai', 'done', 'ok'], true);
             if (!$isUnresolved) continue;
 
-            $aid = (int)($f['asset_id'] ?? 0);
+            $aid = (int)($f['asset_id'] ?? $f['id_asset'] ?? $f['col_2'] ?? 0);
             $a = $assetMap[$aid] ?? [];
             if ($cabangId > 0 && (int)($a['id_cabang'] ?? 0) !== $cabangId) continue;
 
+            $fLogId = (int)($f['maintenance_scan_id'] ?? $f['maintenance_id'] ?? $f['log_id'] ?? $f['col_1'] ?? 0);
+            $matchingScan = $scanMap[$fLogId] ?? ($assetLatestScanMap[$aid] ?? []);
+
+            // Jika scan terkait ternyata sudah selesai, lewati temuan ini
+            $isScanResolved = !empty($matchingScan['status']) && in_array(strtolower(trim((string)$matchingScan['status'])), ['selesai', 'resolved', 'closed', 'ok'], true);
+            if ($isScanResolved) continue;
+
+            // Temuan / Masalah: cek berbagai nama kolom, fallback ke scan log
+            $findingText = '';
+            foreach (['deskripsi_temuan', 'finding', 'description', 'masalah', 'catatan', 'col_4'] as $k) {
+                if (isset($f[$k]) && trim((string)$f[$k]) !== '' && trim((string)$f[$k]) !== '-') {
+                    $findingText = trim((string)$f[$k]);
+                    break;
+                }
+            }
+            if ($findingText === '') {
+                $findingText = !empty($matchingScan['findings']) && $matchingScan['findings'] !== '-'
+                    ? (string)$matchingScan['findings']
+                    : 'Pemeriksaan lanjutan perangkat';
+            }
+
+            // Tanggal ditemukan: cek reported_at, created_at, tanggal, date, fallback ke scan date
+            $dateStr = '';
+            foreach (['reported_at', 'created_at', 'tanggal', 'date', 'col_8'] as $k) {
+                if (isset($f[$k]) && trim((string)$f[$k]) !== '' && trim((string)$f[$k]) !== '-') {
+                    $dateStr = trim((string)$f[$k]);
+                    break;
+                }
+            }
+            if ($dateStr === '') {
+                $dateStr = !empty($matchingScan['maintenance_date']) ? (string)$matchingScan['maintenance_date'] : (!empty($matchingScan['created_at']) ? (string)$matchingScan['created_at'] : date('Y-m-d'));
+            }
+
+            // Pelapor / Teknisi: cek reported_by, created_by, reporter, teknisi, fallback ke scan tech
+            $reporterName = '';
+            foreach (['reported_by', 'created_by', 'reporter', 'teknisi', 'technician', 'col_7'] as $k) {
+                if (isset($f[$k]) && trim((string)$f[$k]) !== '' && trim((string)$f[$k]) !== '-' && strcasecmp(trim((string)$f[$k]), 'teknisi') !== 0) {
+                    $reporterName = trim((string)$f[$k]);
+                    break;
+                }
+            }
+            if ($reporterName === '') {
+                $reporterName = !empty($matchingScan['technician_name']) ? (string)$matchingScan['technician_name'] : (string)($f['reported_by'] ?? $f['created_by'] ?? 'Teknisi');
+            }
+
+            // Tindakan perbaikan / rekomendasi
+            $actionText = '';
+            foreach (['tindakan_diperlukan', 'action_taken', 'rekomendasi', 'recommendation', 'col_5'] as $k) {
+                if (isset($f[$k]) && trim((string)$f[$k]) !== '' && trim((string)$f[$k]) !== '-') {
+                    $actionText = trim((string)$f[$k]);
+                    break;
+                }
+            }
+            if ($actionText === '') {
+                $actionText = (string)($matchingScan['recommendation'] ?? '-');
+            }
+
+            // Tingkat keparahan
+            $sev = (string)($f['kategori_temuan'] ?? $f['severity'] ?? $f['tingkat_kerusakan'] ?? $f['col_3'] ?? 'Sedang');
+
             $unresolvedFindingsList[] = [
-                'id' => (int)($f['id'] ?? 0),
-                'log_id' => (int)($f['maintenance_scan_id'] ?? 0),
+                'id' => (int)($f['id'] ?? $f['col_0'] ?? 0),
+                'log_id' => $fLogId ?: (int)($matchingScan['id'] ?? 0),
                 'asset_id' => $aid,
                 'kode_inventaris' => $a['kode_inventaris'] ?? ('ASET #' . $aid),
                 'nama_perangkat' => trim(($a['merk'] ?? '').' '.($a['model'] ?? '')),
                 'cabang_nama' => $a['cabang_nama'] ?? ($cabangMap[(int)($a['id_cabang'] ?? 0)] ?? '-'),
-                'finding' => (string)($f['finding'] ?? $f['description'] ?? '-'),
-                'action_taken' => (string)($f['action_taken'] ?? '-'),
-                'severity' => (string)($f['severity'] ?? 'Sedang'),
-                'status' => $fStatus ?: 'Open',
-                'reporter' => (string)($f['created_by'] ?? $f['reporter'] ?? 'Teknisi'),
+                'finding' => $findingText,
+                'action_taken' => $actionText,
+                'severity' => $sev,
+                'status' => $fStatus ?: 'Perlu Tindak Lanjut',
+                'reporter' => $reporterName,
                 'token' => (string)($a['token'] ?? ''),
-                'created_at' => substr((string)($f['created_at'] ?? ''), 0, 16)
+                'created_at' => substr($dateStr, 0, 10)
             ];
         }
 
@@ -3170,33 +3243,6 @@ function get_asset_active_finding(int $assetId): ?array {
         $client = google_sheets_v4_client();
         if (!$client) return null;
 
-        // 1. Cek sheet Maintenance_Findings jika ada
-        try {
-            $findings = $client->getSheetData('Maintenance_Findings', false);
-            foreach ($findings as $f) {
-                $fAid = (int)($f['asset_id'] ?? $f['id_asset'] ?? 0);
-                if ($fAid === $assetId) {
-                    $fStatus = trim((string)($f['status'] ?? $f['repair_status'] ?? 'Open'));
-                    if (!in_array(strtolower($fStatus), ['resolved', 'closed', 'selesai', 'done', 'ok'], true)) {
-                        return [
-                            'type' => 'finding_table',
-                            'id' => (int)($f['id'] ?? 0),
-                            'finding_id' => (int)($f['id'] ?? 0),
-                            'log_id' => (int)($f['maintenance_scan_id'] ?? 0),
-                            'asset_id' => $assetId,
-                            'finding' => (string)($f['deskripsi_temuan'] ?? $f['finding'] ?? 'Perlu tindak lanjut'),
-                            'recommendation' => (string)($f['tindakan_diperlukan'] ?? $f['action_taken'] ?? ''),
-                            'status' => $fStatus,
-                            'reporter' => (string)($f['reported_by'] ?? $f['created_by'] ?? 'Teknisi'),
-                            'date' => (string)($f['reported_at'] ?? $f['created_at'] ?? date('Y-m-d')),
-                            'severity' => (string)($f['kategori_temuan'] ?? $f['severity'] ?? 'Sedang'),
-                        ];
-                    }
-                }
-            }
-        } catch (Throwable $e) {}
-
-        // 2. Cek sheet Maintenance_Scan
         $scans = $client->getSheetData('Maintenance_Scan', false);
         $assetScans = [];
         foreach ($scans as $s) {
@@ -3205,27 +3251,91 @@ function get_asset_active_finding(int $assetId): ?array {
                 $assetScans[] = $s;
             }
         }
+        $latestScan = null;
         if (!empty($assetScans)) {
             usort($assetScans, function($a, $b) {
                 return (int)($b['id'] ?? $b['col_0'] ?? 0) - (int)($a['id'] ?? $a['col_0'] ?? 0);
             });
-            $latest = $assetScans[0];
-            $st = trim((string)($latest['status'] ?? $latest['col_8'] ?? 'Selesai'));
+            $latestScan = $assetScans[0];
+        }
+
+        // 1. Cek sheet Maintenance_Findings jika ada
+        try {
+            $findings = $client->getSheetData('Maintenance_Findings', false);
+            foreach ($findings as $f) {
+                $fAid = (int)($f['asset_id'] ?? $f['id_asset'] ?? $f['col_2'] ?? 0);
+                if ($fAid === $assetId) {
+                    $fStatus = trim((string)($f['status'] ?? $f['repair_status'] ?? $f['col_6'] ?? 'Open'));
+                    if (!in_array(strtolower($fStatus), ['resolved', 'closed', 'selesai', 'done', 'ok'], true)) {
+                        $fText = '';
+                        foreach (['deskripsi_temuan', 'finding', 'description', 'masalah', 'catatan', 'col_4'] as $k) {
+                            if (isset($f[$k]) && trim((string)$f[$k]) !== '' && trim((string)$f[$k]) !== '-') {
+                                $fText = trim((string)$f[$k]);
+                                break;
+                            }
+                        }
+                        if ($fText === '' && !empty($latestScan['findings']) && $latestScan['findings'] !== '-') {
+                            $fText = (string)$latestScan['findings'];
+                        }
+
+                        $fDate = '';
+                        foreach (['reported_at', 'created_at', 'tanggal', 'date', 'col_8'] as $k) {
+                            if (isset($f[$k]) && trim((string)$f[$k]) !== '' && trim((string)$f[$k]) !== '-') {
+                                $fDate = trim((string)$f[$k]);
+                                break;
+                            }
+                        }
+                        if ($fDate === '' && !empty($latestScan['maintenance_date'])) {
+                            $fDate = (string)$latestScan['maintenance_date'];
+                        }
+
+                        $fRep = '';
+                        foreach (['reported_by', 'created_by', 'reporter', 'teknisi', 'technician', 'col_7'] as $k) {
+                            if (isset($f[$k]) && trim((string)$f[$k]) !== '' && trim((string)$f[$k]) !== '-' && strcasecmp(trim((string)$f[$k]), 'teknisi') !== 0) {
+                                $fRep = trim((string)$f[$k]);
+                                break;
+                            }
+                        }
+                        if ($fRep === '' && !empty($latestScan['technician_name'])) {
+                            $fRep = (string)$latestScan['technician_name'];
+                        }
+
+                        return [
+                            'type' => 'finding_table',
+                            'id' => (int)($f['id'] ?? $f['col_0'] ?? 0),
+                            'finding_id' => (int)($f['id'] ?? $f['col_0'] ?? 0),
+                            'log_id' => (int)($f['maintenance_scan_id'] ?? ($latestScan['id'] ?? 0)),
+                            'asset_id' => $assetId,
+                            'finding' => $fText ?: 'Pemeriksaan lanjutan perangkat',
+                            'recommendation' => (string)($f['tindakan_diperlukan'] ?? $f['action_taken'] ?? ($latestScan['recommendation'] ?? '')),
+                            'status' => $fStatus,
+                            'reporter' => $fRep ?: 'Teknisi',
+                            'date' => $fDate ?: date('Y-m-d'),
+                            'severity' => (string)($f['kategori_temuan'] ?? $f['severity'] ?? 'Sedang'),
+                        ];
+                    }
+                }
+            }
+        } catch (Throwable $e) {}
+
+        // 2. Cek sheet Maintenance_Scan jika ada temuan di log scan
+        if ($latestScan) {
+            $st = trim((string)($latestScan['status'] ?? $latestScan['col_8'] ?? 'Selesai'));
             $isResolved = in_array(strtolower($st), ['selesai', 'closed', 'resolved', 'ok'], true);
-            $hasFinding = !empty($latest['findings']) && $latest['findings'] !== '-';
+            $hasFinding = !empty($latestScan['findings']) && $latestScan['findings'] !== '-';
 
             if (!$isResolved || in_array(strtolower($st), ['temuan', 'perlu perbaikan', 'perlu tindak lanjut', 'proses'], true)) {
                 return [
                     'type' => 'scan_log',
-                    'id' => (int)($latest['id'] ?? $latest['col_0'] ?? 0),
+                    'id' => (int)($latestScan['id'] ?? $latestScan['col_0'] ?? 0),
                     'finding_id' => 0,
-                    'log_id' => (int)($latest['id'] ?? $latest['col_0'] ?? 0),
+                    'log_id' => (int)($latestScan['id'] ?? $latestScan['col_0'] ?? 0),
                     'asset_id' => $assetId,
-                    'finding' => $hasFinding ? (string)$latest['findings'] : 'Pemeriksaan lanjutan perangkat',
-                    'recommendation' => (string)($latest['recommendation'] ?? $latest['col_12'] ?? ''),
+                    'finding' => $hasFinding ? (string)$latestScan['findings'] : 'Pemeriksaan lanjutan perangkat',
+                    'recommendation' => (string)($latestScan['recommendation'] ?? $latestScan['col_12'] ?? ''),
                     'status' => $st ?: 'Perlu Tindak Lanjut',
-                    'reporter' => (string)($latest['technician_name'] ?? $latest['col_3'] ?? 'Teknisi'),
-                    'date' => (string)($latest['maintenance_date'] ?? $latest['col_4'] ?? date('Y-m-d')),
+                    'reporter' => (string)($latestScan['technician_name'] ?? $latestScan['col_3'] ?? 'Teknisi'),
+                    'date' => (string)($latestScan['maintenance_date'] ?? $latestScan['col_4'] ?? date('Y-m-d')),
                     'severity' => 'Sedang'
                 ];
             }

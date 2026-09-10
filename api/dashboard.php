@@ -233,7 +233,7 @@ foreach ($unresolvedFindings as $f) {
         <div class="small text-muted">'.e($f['nama_perangkat']).' ('.e($f['cabang_nama']).')</div>
       </td>
       <td class="text-dark fw-semibold" style="max-width: 260px;">'.nl2br(e($f['finding'])).'</td>
-      <td class="text-nowrap small text-secondary"><i class="bi bi-clock me-1"></i>'.e($f['created_at']).'</td>
+      <td class="text-nowrap small text-secondary"><i class="bi bi-clock me-1"></i>'.e(!empty($f['created_at']) && $f['created_at'] !== '-' ? format_id_date($f['created_at']) : '-').'</td>
       <td><i class="bi bi-person-badge text-secondary me-1"></i>'.e($f['reporter']).'</td>
       <td>'.$sevBadge.'</td>
       <td><span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 px-2 py-1">'.e($f['status']).'</span></td>
