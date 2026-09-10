@@ -581,37 +581,41 @@ if ($action === 'start' || $action === 'form' || $action === 'ulang') {
 
             <!-- Submit Button Area -->
             <div class="d-grid gap-2 pt-2">
-              '.($hasEnrolledTechs ? '
-              <button type="button" class="btn btn-dark btn-lg fw-bold py-3 shadow mb-1" id="btnSelesaiNativeFaceId" style="display:none;" onclick="verifyWithNativeFaceId()">
-                <i class="bi bi-apple text-primary me-2 fs-5"></i> SELESAI MAINTENANCE (FACE ID IPHONE)
+              <!-- Tombol Utama: Simpan Langsung 1-Klik (Bebas Akses Tanpa Login & Tanpa Wajah) -->
+              <button type="submit" class="btn btn-success btn-lg fw-bold py-3 shadow-sm" onclick="return confirm(\'Simpan hasil checklist pemeliharaan sekarang?\')">
+                <i class="bi bi-check-circle-fill me-2 fs-5"></i> SIMPAN MAINTENANCE (LANGSUNG TANPA LOGIN)
               </button>
-              <button type="button" class="btn btn-primary btn-lg fw-bold py-3 shadow" id="btnSelesaiBio" onclick="openBiometricModal()">
-                <i class="bi bi-person-bounding-box me-2"></i> SELESAI MAINTENANCE (SCAN KAMERA HP)
-              </button>
-              <div class="d-flex justify-content-between align-items-center px-1">
-                <button type="submit" class="btn btn-link btn-sm text-decoration-none text-muted p-0" onclick="return confirm(\'Simpan hasil checklist tanpa verifikasi biometrik wajah?\')">
-                  <i class="bi bi-shield-slash me-1"></i> Simpan Manual (Bypass Biometrik)
-                </button>
-                <a class="btn btn-link btn-sm text-decoration-none text-secondary p-0" href="'.e(module_url('scan.php', ['t' => $token])).'">Batal</a>
+
+              <div class="d-flex align-items-center my-1 text-muted small">
+                <hr class="flex-grow-1 my-0 border-secondary-subtle">
+                <span class="px-2 text-secondary fw-semibold" style="font-size: 0.72rem;">OPSIONAL: VERIFIKASI BIOMETRIK</span>
+                <hr class="flex-grow-1 my-0 border-secondary-subtle">
               </div>
+
+              <button type="button" class="btn btn-dark btn-lg fw-bold py-2 shadow-sm" id="btnSelesaiNativeFaceId" style="display:none;" onclick="verifyWithNativeFaceId()">
+                <i class="bi bi-apple text-primary me-2 fs-5"></i> Selesai via Face ID iPhone
+              </button>
+
+              '.($hasEnrolledTechs ? '
+              <button type="button" class="btn btn-outline-primary fw-bold py-2 shadow-sm" id="btnSelesaiBio" onclick="openBiometricModal()">
+                <i class="bi bi-person-bounding-box me-2"></i> Verifikasi Kamera Wajah HP
+              </button>
               ' : '
-              <button type="button" class="btn btn-dark btn-lg fw-bold py-3 shadow mb-1" id="btnSelesaiNativeFaceId" style="display:none;" onclick="verifyWithNativeFaceId()">
-                <i class="bi bi-apple text-primary me-2 fs-5"></i> SELESAI MAINTENANCE (FACE ID IPHONE)
-              </button>
-              <button type="submit" class="btn btn-success btn-lg fw-bold py-3 shadow" onclick="return confirm(\'Simpan hasil checklist maintenance sekarang?\')">
-                <i class="bi bi-save-fill me-2"></i> SIMPAN MAINTENANCE
-              </button>
               <div class="alert alert-light border py-2 px-3 small mb-0 d-flex align-items-center justify-content-between flex-wrap gap-2 text-muted">
                 <div class="d-flex align-items-center gap-2">
                   <i class="bi bi-info-circle text-primary fs-5"></i>
-                  <div>Belum ada biometrik teknisi yang disetujui Admin.</div>
+                  <div>Punya akun teknisi & ingin pakai Face ID?</div>
                 </div>
-                <a href="'.e(module_url('user_biometric_enroll.php', ['ret' => module_url('scan.php', ['t' => $token, 'action' => 'form'])])).'" class="btn btn-sm btn-primary fw-bold">
-                  <i class="bi bi-phone-fill me-1"></i> Daftarkan Wajah di HP
+                <a href="'.e(module_url('user_biometric_enroll.php', ['ret' => module_url('scan.php', ['t' => $token, 'action' => 'form'])])).'" class="btn btn-sm btn-outline-primary fw-bold">
+                  <i class="bi bi-phone-fill me-1"></i> Daftar Face ID di HP
                 </a>
               </div>
-              <a class="btn btn-outline-secondary py-2" href="'.e(module_url('scan.php', ['t' => $token])).'">Batal</a>
               ').'
+
+              <div class="d-flex justify-content-between align-items-center mt-2 px-1">
+                <span class="small text-muted"><i class="bi bi-shield-check text-success me-1"></i>Teknisi bebas simpan langsung tanpa login.</span>
+                <a class="btn btn-link btn-sm text-decoration-none text-secondary p-0" href="'.e(module_url('scan.php', ['t' => $token])).'">Batal</a>
+              </div>
             </div>
           </form>
         </div>

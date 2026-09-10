@@ -210,6 +210,16 @@ body {
     <h1 class="login-title">QR Maintenance</h1>
     <p class="login-subtitle">Masuk untuk mengelola data pemeliharaan komputer.</p>
 
+    <!-- Banner Pintas Teknisi Tanpa Perlu Login -->
+    <div class="alert alert-info border-0 shadow-sm py-2 px-3 mb-3 d-flex align-items-center justify-content-between text-start">
+      <div class="small">
+        <i class="bi bi-qr-code-scan me-1 text-primary"></i> <strong>Teknisi Lapangan:</strong><br>Tidak wajib masuk untuk scan QR & maintenance.
+      </div>
+      <a href="scanner.php" class="btn btn-sm btn-primary fw-bold text-nowrap ms-2">
+        <i class="bi bi-camera-fill me-1"></i> Scan QR
+      </a>
+    </div>
+
     <?= $successHtml ?>
     <?= $expiredHtml ?>
     <?= $errorHtml ?>
@@ -249,6 +259,13 @@ body {
       </button>
       <div id="passkeyStatus" class="mt-2 text-center small text-muted"></div>
     </form>
+
+    <div class="mt-4 pt-3 border-top text-center">
+      <div class="text-muted small mb-2"><i class="bi bi-tools text-primary me-1"></i>Ingin melakukan pemeliharaan komputer?</div>
+      <a href="scanner.php" class="btn btn-outline-primary w-100 py-2 rounded-3 fw-bold">
+        <i class="bi bi-qr-code-scan me-1"></i> Buka Kamera Scan QR (Tanpa Login)
+      </a>
+    </div>
   </div>
 
   <div class="login-footer">
