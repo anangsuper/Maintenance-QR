@@ -311,6 +311,70 @@ class GoogleSheetsV4Client {
         return true;
     }
 
+    public function deleteRow(string $sheetName, int $rowNumber): bool {
+        if ($rowNumber <= 1) return false;
+        $token = $this->getAccessToken();
+        if (!$token) return false;
+
+        $metaUrl = sprintf(
+            'https://sheets.googleapis.com/v4/spreadsheets/%s?fields=sheets(properties(sheetId,title))',
+            urlencode($this->spreadsheetId)
+        );
+        $resp = $this->curlExec($metaUrl, [
+            CURLOPT_HTTPHEADER => ['Authorization: Bearer ' . $token],
+        ]);
+        $data = json_decode($resp, true);
+        if (empty($data['sheets'])) return false;
+
+        $sheetId = null;
+        foreach ($data['sheets'] as $s) {
+            $props = $s['properties'] ?? [];
+            if (strcasecmp((string)($props['title'] ?? ''), $sheetName) === 0) {
+                $sheetId = (int)($props['sheetId'] ?? 0);
+                break;
+            }
+        }
+
+        if ($sheetId === null) return false;
+
+        $updateUrl = sprintf(
+            'https://sheets.googleapis.com/v4/spreadsheets/%s:batchUpdate',
+            urlencode($this->spreadsheetId)
+        );
+
+        $body = [
+            'requests' => [
+                [
+                    'deleteDimension' => [
+                        'range' => [
+                            'sheetId' => $sheetId,
+                            'dimension' => 'ROWS',
+                            'startIndex' => $rowNumber - 1,
+                            'endIndex' => $rowNumber
+                        ]
+                    ]
+                ]
+            ]
+        ];
+
+        $resp = $this->curlExec($updateUrl, [
+            CURLOPT_POST => true,
+            CURLOPT_POSTFIELDS => json_encode($body),
+            CURLOPT_HTTPHEADER => [
+                'Authorization: Bearer ' . $token,
+                'Content-Type: application/json',
+            ],
+        ]);
+
+        $resData = json_decode($resp, true);
+        if (isset($resData['replies'])) {
+            $this->clearCache($sheetName);
+            return true;
+        }
+
+        return false;
+    }
+
     private function getCacheFilePath(string $sheetName): string {
         $hash = md5($this->spreadsheetId) . '_' . md5($sheetName);
         return sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'gs_' . $hash . '.json';

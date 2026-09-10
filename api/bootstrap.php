@@ -925,6 +925,58 @@ function update_user(int $id, array $data): array {
     }
 }
 
+function delete_user(int $id): array {
+    if ($id <= 0) {
+        return ['success' => false, 'error' => 'ID pengguna tidak valid'];
+    }
+
+    // Cegah admin menghapus akunnya sendiri yang sedang aktif login
+    if ($id === current_user_id()) {
+        return ['success' => false, 'error' => 'Anda tidak dapat menghapus akun Anda sendiri yang sedang aktif digunakan.'];
+    }
+
+    if (is_google_cloud_mode()) {
+        $client = google_sheets_v4_client();
+        if (!$client) {
+            return ['success' => false, 'error' => 'Google Sheets client tidak tersedia'];
+        }
+
+        $users = $client->getSheetData('Users', true);
+        $targetRow = null;
+        foreach ($users as $u) {
+            if ((int)($u['id'] ?? 0) === $id) {
+                $targetRow = $u;
+                break;
+            }
+        }
+
+        if (!$targetRow) {
+            return ['success' => false, 'error' => 'Data pengguna tidak ditemukan'];
+        }
+
+        $rowNum = (int)($targetRow['_row_num'] ?? 0);
+        if ($rowNum > 1) {
+            $deleted = $client->deleteRow('Users', $rowNum);
+            if (!$deleted) {
+                $client->clearValues("Users!A{$rowNum}:L{$rowNum}");
+            }
+        }
+
+        $client->clearCache('Users');
+        get_user_list(true);
+        return ['success' => true];
+    }
+
+    // MySQL Mode
+    try {
+        $st = db()->prepare("DELETE FROM users WHERE id = ?");
+        $st->execute([$id]);
+        return ['success' => true];
+    } catch (Throwable $e) {
+        return ['success' => false, 'error' => 'Gagal menghapus pengguna: ' . $e->getMessage()];
+    }
+}
+
 function authenticate_user(string $username, string $password): array {
     $username = trim($username);
     $password = trim($password);

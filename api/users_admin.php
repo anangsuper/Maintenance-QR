@@ -78,6 +78,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } else {
             $error = $res['error'] ?? 'Gagal menolak biometrik wajah.';
         }
+    } elseif ($action === 'delete') {
+        $id = (int)($_POST['user_id'] ?? 0);
+        $res = delete_user($id);
+        if (!empty($res['success'])) {
+            $_SESSION['flash'] = "Akun pengguna #{$id} berhasil dihapus dari sistem.";
+            header('Location: ' . module_url('users_admin.php'));
+            exit;
+        } else {
+            $error = $res['error'] ?? 'Gagal menghapus akun pengguna.';
+        }
     }
 }
 
@@ -218,6 +228,20 @@ foreach ($users as $u) {
 
     $telHtml = ($uTel !== '-' && $uTel !== '') ? '<div class="small text-secondary mt-1"><i class="bi bi-telephone me-1"></i>'.e($uTel).'</div>' : '';
 
+    $delBtnHtml = '';
+    if ($uId !== current_user_id()) {
+        $confirmMsg = json_encode("Apakah Anda yakin ingin menghapus akun {$uNama} (@{$uUsername})? Tindakan ini permanen dan tidak dapat dibatalkan.");
+        $delBtnHtml = '
+        <form method="post" class="d-inline ms-1" onsubmit="return confirm(' . htmlspecialchars($confirmMsg, ENT_QUOTES, 'UTF-8') . ')">
+          <input type="hidden" name="_csrf" value="'.e(csrf_token()).'">
+          <input type="hidden" name="action" value="delete">
+          <input type="hidden" name="user_id" value="'.$uId.'">
+          <button type="submit" class="btn btn-sm btn-outline-danger" title="Hapus Pengguna"><i class="bi bi-trash"></i></button>
+        </form>';
+    } else {
+        $delBtnHtml = ' <span class="badge bg-light text-muted border ms-1 py-1" title="Akun Anda yang sedang aktif">Akun Anda</span>';
+    }
+
     $userRowsHtml .= '
     <tr class="'.($isBeingEdited ? 'table-warning' : '').'">
       <td class="text-center fw-semibold text-secondary">'.$no.'</td>
@@ -231,7 +255,8 @@ foreach ($users as $u) {
       <td class="text-center">'.$statusBadge.'</td>
       <td class="text-nowrap text-end">
         <a class="btn btn-sm btn-outline-primary me-1" href="'.e(module_url('user_biometric_enroll.php', ['id'=>$uId])).'" title="Daftarkan / Perbarui Wajah Biometrik"><i class="bi bi-person-bounding-box me-1"></i> Wajah</a>
-        <a class="btn btn-sm btn-outline-secondary" href="'.e(module_url('users_admin.php', ['edit'=>$uId])).'"><i class="bi bi-pencil-square me-1"></i> Edit</a>
+        <a class="btn btn-sm btn-outline-secondary" href="'.e(module_url('users_admin.php', ['edit'=>$uId])).'" title="Edit Pengguna"><i class="bi bi-pencil-square me-1"></i> Edit</a>
+        '.$delBtnHtml.'
       </td>
     </tr>';
 }
