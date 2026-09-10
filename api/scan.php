@@ -86,9 +86,32 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (($_POST['action'] ?? '') === 'save
         ];
     }
 
+    $techUserId = is_logged_in() ? current_user_id() : 0;
+    if ($techUserId <= 0 && $techName !== '' && strcasecmp($techName, 'Teknisi') !== 0) {
+        $allUsers = get_user_list(true);
+        $foundUser = false;
+        foreach ($allUsers as $u) {
+            if (strcasecmp((string)($u['nama'] ?? ''), $techName) === 0) {
+                $techUserId = (int)($u['id'] ?? 0);
+                $foundUser = true;
+                break;
+            }
+        }
+        if (!$foundUser) {
+            $created = create_new_user([
+                'nama' => $techName,
+                'role' => 'teknisi',
+                'status' => 'Aktif'
+            ]);
+            if (!empty($created['id'])) {
+                $techUserId = (int)$created['id'];
+            }
+        }
+    }
+
     $payload = [
         'asset_id' => $assetId,
-        'technician_user_id' => is_logged_in() ? current_user_id() : 0,
+        'technician_user_id' => $techUserId,
         'technician_name' => $techName,
         'maintenance_date' => $mDate,
         'maintenance_time' => date('H:i:s'),
@@ -550,9 +573,9 @@ if ($action === 'start' || $action === 'form' || $action === 'ulang') {
                 <input type="text" class="form-control py-2" name="technician_name" id="technicianNameInput" list="listTeknisi" value="'.e($techDefault).'" placeholder="Ketik atau pilih nama petugas..." required>
                 <datalist id="listTeknisi">'.$techOptions.'</datalist>
                 <div class="d-flex justify-content-between align-items-center flex-wrap gap-1 mt-1">
-                  <div class="form-text text-muted mb-0" style="font-size: 0.75rem;">'.($hasEnrolledTechs ? 'Nama teknisi akan terisi otomatis via verifikasi wajah AI.' : 'Pilih nama dari daftar atau ketikkan nama Anda.').'</div>
+                  <div class="form-text text-muted mb-0" style="font-size: 0.75rem;">Pilih nama atau ketik nama baru (otomatis terdaftar ke sistem).</div>
                   <a href="'.e(module_url('user_biometric_enroll.php', ['ret' => module_url('scan.php', ['t' => $token, 'action' => 'form'])])).'" class="badge bg-primary bg-opacity-10 text-primary text-decoration-none border border-primary border-opacity-25 py-1 px-2">
-                    <i class="bi bi-phone-fill me-1"></i> Daftar Wajah di HP
+                    <i class="bi bi-person-plus-fill me-1"></i> + Daftar Teknisi / Face ID
                   </a>
                 </div>
               </div>

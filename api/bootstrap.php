@@ -611,16 +611,23 @@ function find_user_by_passkey_cred_id(string $credId): ?array {
 }
 
 function create_new_user(array $data): array {
-    $username = strtolower(trim((string)($data['username'] ?? '')));
-    $password = trim((string)($data['password'] ?? ''));
     $nama = trim((string)($data['nama'] ?? ''));
+    if ($nama === '') return ['success' => false, 'error' => 'Nama lengkap wajib diisi'];
+
+    $username = strtolower(trim((string)($data['username'] ?? '')));
+    if ($username === '') {
+        $clean = strtolower(preg_replace('/[^a-z0-9]/', '', $nama));
+        $username = (strlen($clean) >= 3) ? $clean : 'teknisi_' . substr(uniqid(), -5);
+    }
+
+    $password = trim((string)($data['password'] ?? ''));
+    if ($password === '') {
+        $password = 'teknisi123';
+    }
+
     $role = strtolower(trim((string)($data['role'] ?? 'teknisi')));
     $telepon = trim((string)($data['telepon'] ?? ''));
     $status = trim((string)($data['status'] ?? 'Aktif')) ?: 'Aktif';
-
-    if ($username === '') return ['success' => false, 'error' => 'Username wajib diisi'];
-    if ($password === '') return ['success' => false, 'error' => 'Password wajib diisi'];
-    if ($nama === '') return ['success' => false, 'error' => 'Nama lengkap wajib diisi'];
 
     if (!in_array($role, ['admin', 'teknisi', 'auditor'], true)) {
         $role = 'teknisi';
@@ -632,21 +639,34 @@ function create_new_user(array $data): array {
         $client = google_sheets_v4_client();
         if (!$client) return ['success' => false, 'error' => 'Google Sheets client tidak tersedia'];
 
+        // Pastikan kapasitas kolom sheet Users mencukupi (minimal 26 kolom A..Z)
+        $client->ensureMinColumns('Users', 26);
+
         $rows = $client->getSheetData('Users', true);
         if (empty($rows)) {
-            $client->appendValues('Users!A:H', [
-                ['id', 'username', 'password', 'nama', 'role', 'telepon', 'status', 'created_at']
+            $client->appendValues('Users!A:L', [
+                ['id', 'username', 'password', 'nama', 'role', 'telepon', 'status', 'created_at', 'face_descriptor', 'face_photo', 'face_status', 'passkey_credential']
             ]);
             $rows = [];
         }
+
         $maxId = 0;
+        $existingUsers = [];
         foreach ($rows as $r) {
             $uid = (int)($r['id'] ?? 0);
             if ($uid > $maxId) $maxId = $uid;
             $existUser = strtolower(trim((string)($r['username'] ?? '')));
-            if ($existUser === $username) {
-                return ['success' => false, 'error' => 'Username sudah digunakan, silakan pilih username lain'];
+            if ($existUser !== '') {
+                $existingUsers[] = $existUser;
             }
+        }
+
+        // Hindari duplikasi username secara otomatis dengan menambah suffix jika ada collision
+        $baseUser = $username;
+        $counter = 1;
+        while (in_array($username, $existingUsers, true)) {
+            $counter++;
+            $username = $baseUser . $counter;
         }
 
         $newId = max(count($rows) + 1, $maxId + 1);
@@ -654,7 +674,7 @@ function create_new_user(array $data): array {
         $teleponStored = ($teleponFormatted !== '-' && $teleponFormatted !== '') ? $teleponFormatted : $telepon;
         $teleponSheet = ($teleponStored !== '' && $teleponStored !== '-') ? "'" . $teleponStored : '-';
 
-        $appended = $client->appendValues('Users!A:H', [[
+        $newRow = [
             $newId,
             $username,
             $hashedPass,
@@ -662,8 +682,20 @@ function create_new_user(array $data): array {
             $role,
             $teleponSheet,
             $status,
-            date('Y-m-d H:i:s')
-        ]]);
+            date('Y-m-d H:i:s'),
+            '', // face_descriptor
+            '', // face_photo
+            'verified', // face_status
+            ''  // passkey_credential
+        ];
+
+        $appended = $client->appendValues('Users!A:L', [$newRow]);
+        if (!$appended) {
+            $appended = $client->appendValues('Users', [$newRow]);
+        }
+        if (!$appended) {
+            $appended = $client->appendValues('Users!A:H', [array_slice($newRow, 0, 8)]);
+        }
 
         if (!$appended) {
             return ['success' => false, 'error' => 'Gagal menyimpan data pengguna ke Google Sheets'];
