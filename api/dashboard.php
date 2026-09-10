@@ -16,6 +16,14 @@ $monthNames = [
 ];
 $monthName = $monthNames[$month] ?? date('F');
 
+// Dukungan tombol Refresh data langsung dari Google Sheets
+if (!empty($_GET['refresh']) && is_google_cloud_mode()) {
+    $client = google_sheets_v4_client();
+    if ($client) {
+        $client->clearCache();
+    }
+}
+
 // 2. Ambil Data Dashboard Komprehensif
 $dashData = get_comprehensive_dashboard_data($month, $year, $cabangId, $statusAset, $statusMaint);
 $branchSummaries = get_branch_maintenance_summary($month, $year);
@@ -226,15 +234,22 @@ foreach ($unresolvedFindings as $f) {
             ? '<a class="btn btn-sm btn-outline-danger py-1 px-2" href="'.e(module_url('maintenance_detail.php', ['id'=>(int)$f['log_id']])).'"><i class="bi bi-tools me-1"></i> Tindak Lanjuti</a>'
             : (!empty($f['asset_id']) ? '<a class="btn btn-sm btn-outline-secondary py-1 px-2" href="'.e(module_url('asset_edit.php', ['id'=>(int)$f['asset_id']])).'"><i class="bi bi-eye"></i> Detail</a>' : '-'));
 
+    $fDateStr = format_id_date((string)($f['created_at'] ?? ''));
+    $fDateHtml = ($fDateStr !== '-') ? '<i class="bi bi-clock me-1"></i>' . e($fDateStr) : '<span class="text-muted">-</span>';
+    $fFindingText = trim((string)($f['finding'] ?? ''));
+    if ($fFindingText === '' || $fFindingText === '-') $fFindingText = 'Pemeriksaan lanjutan perangkat';
+    $fReporter = trim((string)($f['reporter'] ?? ''));
+    if ($fReporter === '' || $fReporter === '-') $fReporter = 'Teknisi';
+
     $findingsRowsHtml .= '
     <tr>
       <td>
         <div class="fw-bold font-monospace text-primary">'.e($f['kode_inventaris']).'</div>
         <div class="small text-muted">'.e($f['nama_perangkat']).' ('.e($f['cabang_nama']).')</div>
       </td>
-      <td class="text-dark fw-semibold" style="max-width: 260px;">'.nl2br(e($f['finding'])).'</td>
-      <td class="text-nowrap small text-secondary"><i class="bi bi-clock me-1"></i>'.e(!empty($f['created_at']) && $f['created_at'] !== '-' ? format_id_date($f['created_at']) : '-').'</td>
-      <td><i class="bi bi-person-badge text-secondary me-1"></i>'.e($f['reporter']).'</td>
+      <td class="text-dark fw-semibold" style="max-width: 260px;">'.nl2br(e($fFindingText)).'</td>
+      <td class="text-nowrap small text-secondary">'.$fDateHtml.'</td>
+      <td><i class="bi bi-person-badge text-secondary me-1"></i>'.e($fReporter).'</td>
       <td>'.$sevBadge.'</td>
       <td><span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 px-2 py-1">'.e($f['status']).'</span></td>
       <td class="text-end">'.$fActionBtn.'</td>
@@ -507,7 +522,8 @@ $body .= '
       </select>
     </div>
 
-    <div class="col-12 d-flex gap-2 justify-content-end mt-3 pt-2 border-top">
+    <div class="col-12 d-flex flex-wrap gap-2 justify-content-end mt-3 pt-2 border-top">
+      <a class="btn btn-sm btn-outline-success px-3" href="'.e(module_url('dashboard.php', ['bulan'=>$month,'tahun'=>$year,'cabang'=>$cabangId,'status_aset'=>$statusAset,'status_maint'=>$statusMaint,'refresh'=>1])).'"><i class="bi bi-arrow-clockwise me-1"></i> Segarkan Data</a>
       <a class="btn btn-sm btn-outline-secondary px-3" href="'.e(module_url('dashboard.php')).'"><i class="bi bi-arrow-counterclockwise me-1"></i> Reset Filter</a>
       <button type="submit" class="btn btn-sm btn-primary px-4 fw-bold"><i class="bi bi-funnel-fill me-1"></i> Terapkan Filter</button>
     </div>
