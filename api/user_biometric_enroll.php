@@ -111,8 +111,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 $user = get_user_by_id($selectedUserId, true);
 if (!$user && !empty($allUsers)) {
     $user = $allUsers[0];
-    $selectedUserId = (int)$user['id'];
+    $selectedUserId = (int)($user['id'] ?? 0);
 }
+$user = is_array($user) ? $user : [];
 
 $hasBiometrics = !empty($user['face_descriptor']);
 $existingPhoto = $user['face_photo'] ?? '';
@@ -283,26 +284,6 @@ $body = '
       </div>
 
       '.$avatarHtml.'
-
-      <!-- Native Apple Face ID Passkey Section -->
-      <div class="card p-3 border-0 bg-primary bg-opacity-10 rounded-4 mb-3" id="nativeFaceIdBox" style="display:none;">
-        <div class="d-flex align-items-center gap-2 mb-2">
-          <div class="p-2 bg-primary text-white rounded-circle fs-5 d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
-            <i class="bi bi-apple"></i>
-          </div>
-          <div>
-            <div class="fw-bold text-primary">Face ID Bawaan iPhone (Rekomendasi)</div>
-            <div class="small text-muted" style="font-size: 0.72rem;">Verifikasi instan via sensor TrueDepth Apple (< 0.5 detik)</div>
-          </div>
-        </div>
-        <p class="small text-secondary mb-2">
-          Daftarkan Face ID iPhone Anda sekarang agar dapat login dan verifikasi maintenance secara otomatis tanpa perlu membuka kamera web.
-        </p>
-        <button type="button" class="btn btn-primary fw-bold py-2 rounded-3 shadow-sm w-100" id="btnEnrollFaceId" onclick="enrollNativeFaceId()">
-          <i class="bi bi-person-bounding-box me-1"></i> Daftarkan Face ID iPhone Ini
-        </button>
-        <div id="nativeFaceIdStatus" class="small mt-2"></div>
-      </div>
 
       <!-- Panduan Singkat Smartphone -->
       <div class="alert alert-light border border-primary border-opacity-25 rounded-3 p-3 mb-3 small">
@@ -736,38 +717,6 @@ function b64urlToBuffer(base64url) {
   const bytes = new Uint8Array(bin.length);
   for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
   return bytes.buffer;
-}
-
-function bufferToB64url(buffer) {
-  const bytes = new Uint8Array(buffer);
-  let str = '';
-  for (const b of bytes) str += String.fromCharCode(b);
-  return btoa(str).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
-}
-
-// Cek apakah perangkat iPhone / smartphone mendukung sensor Face ID / Sidik Jari fisik
-if (window.PublicKeyCredential && PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable) {
-  PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable().then(avail => {
-    if (avail) {
-      const box = document.getElementById("nativeFaceIdBox");
-      if (box) {
-        box.style.display = "block";
-        const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-        const isAndroid = /Android/.test(navigator.userAgent);
-        const btn = document.getElementById("btnEnrollFaceId");
-        if (isAndroid) {
-          box.querySelector(".fw-bold.text-primary").textContent = "Sidik Jari / Biometrik Android (Rekomendasi)";
-          box.querySelector(".text-muted").textContent = "Verifikasi instan via sensor sidik jari / face unlock Android (< 0.5 detik)";
-          box.querySelector(".text-secondary").textContent = "Daftarkan sidik jari HP Android Anda sekarang agar dapat login dan verifikasi maintenance tanpa perlu membuka kamera web.";
-          const iconEl = box.querySelector("i.bi-apple");
-          if (iconEl) iconEl.className = "bi bi-fingerprint";
-          if (btn) btn.innerHTML = '<i class="bi bi-fingerprint me-1"></i> Daftarkan Sidik Jari Android Ini';
-        }
-      }
-    }
-  }).catch(() => {});
-}
-
 async function saveNewTechOnly() {
   const nameInput = document.getElementById("newTechName");
   const nameVal = nameInput ? nameInput.value.trim() : "";
@@ -823,107 +772,6 @@ async function saveNewTechOnly() {
     }
     alert(err.message || "Gagal mendaftarkan nama teknisi baru.");
     if (btn) btn.disabled = false;
-  }
-}
-
-async function enrollNativeFaceId() {
-  const btn = document.getElementById("btnEnrollFaceId");
-  const status = document.getElementById("nativeFaceIdStatus");
-  const userSel = document.getElementById("userSelect");
-  let targetId = userSel ? parseInt(userSel.value, 10) : 0;
-
-  if (targetId <= 0 && targetId !== -1) {
-    alert("Silakan pilih nama teknisi Anda terlebih dahulu.");
-    return;
-  }
-
-  btn.disabled = true;
-  status.className = "small mt-2 text-primary fw-semibold";
-
-  // Jika memilih tambah teknisi baru, daftarkan akunnya terlebih dahulu secara otomatis
-  if (targetId === -1) {
-    const nameInput = document.getElementById("newTechName");
-    const customName = nameInput ? nameInput.value.trim() : "";
-    if (!customName) {
-      alert("Silakan ketik nama lengkap teknisi baru terlebih dahulu.");
-      if (nameInput) nameInput.focus();
-      btn.disabled = false;
-      return;
-    }
-    status.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Mendaftarkan nama teknisi ke Google Sheets...';
-    try {
-      const createRes = await fetch("user_biometric_enroll.php", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "add_tech_only", new_name: customName })
-      });
-      const createData = await createRes.json();
-      if (!createData.success || !createData.user || !createData.user.id) {
-        throw new Error(createData.error || "Gagal membuat akun teknisi baru.");
-      }
-      targetId = createData.user.id;
-    } catch (createErr) {
-      status.className = "small mt-2 text-danger";
-      status.innerHTML = '<i class="bi bi-x-circle me-1"></i> ' + createErr.message;
-      btn.disabled = false;
-      return;
-    }
-  }
-
-  status.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Menyiapkan sesi pendaftaran Face ID...';
-
-  try {
-    const res = await fetch("webauthn_handler.php?action=register_options&user_id=" + targetId);
-    const data = await res.json();
-    if (!data.success || !data.options) {
-      throw new Error(data.error || "Gagal menyiapkan Face ID.");
-    }
-
-    const opts = data.options;
-    opts.challenge = b64urlToBuffer(opts.challenge);
-    opts.user.id = b64urlToBuffer(opts.user.id);
-    if (Array.isArray(opts.excludeCredentials)) {
-      opts.excludeCredentials = opts.excludeCredentials.map(c => ({
-        type: c.type,
-        id: b64urlToBuffer(c.id)
-      }));
-    }
-
-    status.innerHTML = '<i class="bi bi-phone-fill me-1 text-primary"></i> Silakan verifikasi wajah di dialog Face ID iPhone...';
-    const cred = await navigator.credentials.create({ publicKey: opts });
-    if (!cred) throw new Error("Pendaftaran dibatalkan.");
-
-    status.innerHTML = '<span class="spinner-border spinner-border-sm me-1 text-success"></span> Menyimpan Face ID ke Google Sheets...';
-
-    const verifyRes = await fetch("webauthn_handler.php?action=register_verify", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        id: cred.id,
-        rawId: bufferToB64url(cred.rawId),
-        device_name: "Apple iPhone (Face ID)",
-        response: {
-          clientDataJSON: bufferToB64url(cred.response.clientDataJSON),
-          attestationObject: bufferToB64url(cred.response.attestationObject)
-        }
-      })
-    });
-
-    const verifyData = await verifyRes.json();
-    if (verifyData.success) {
-      status.className = "small mt-2 text-success fw-bold";
-      status.innerHTML = '<i class="bi bi-check-circle-fill me-1"></i> ' + verifyData.message;
-      btn.className = "btn btn-success fw-bold py-2 rounded-3 shadow-sm w-100";
-      btn.innerHTML = '<i class="bi bi-check-lg me-1"></i> Face ID iPhone Berhasil Didaftarkan!';
-      btn.disabled = true;
-    } else {
-      throw new Error(verifyData.error || "Gagal menyimpan Face ID.");
-    }
-  } catch (err) {
-    console.error(err);
-    status.className = "small mt-2 text-danger";
-    status.innerHTML = '<i class="bi bi-exclamation-circle-fill me-1"></i> ' + (err.message || "Gagal mendaftarkan Face ID.");
-    btn.disabled = false;
   }
 }
 

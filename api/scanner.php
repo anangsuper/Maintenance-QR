@@ -25,8 +25,8 @@ $body = '
     <div class="card border-0 shadow-sm rounded-4 p-3 p-sm-4 bg-white mb-3">
       <div class="d-flex align-items-center justify-content-between mb-3">
         <div>
-          <span class="badge bg-success bg-opacity-10 text-success fw-bold px-2 py-1 mb-1">
-            <i class="bi bi-shield-check me-1"></i> Akses Bebas (Tanpa Perlu Login)
+          <span class="badge bg-primary bg-opacity-10 text-primary fw-bold px-2 py-1 mb-1">
+            <i class="bi bi-camera-fill me-1"></i> Scanner Kamera
           </span>
           <h4 class="fw-bold mb-0 text-dark">Pindai QR Komputer</h4>
         </div>
@@ -35,9 +35,9 @@ $body = '
         </a>
       </div>
 
-      <div class="alert alert-info border-0 shadow-sm py-2 px-3 small text-dark mb-3">
+      <div class="alert alert-light border py-2 px-3 small text-secondary mb-3">
         <i class="bi bi-info-circle-fill text-primary me-1"></i>
-        Teknisi <strong>tidak perlu login / masuk</strong> untuk melakukan maintenance. Cukup scan kode QR komputer di bawah ini.
+        Arahkan kamera ke stiker kode QR komputer untuk membuka formulir maintenance.
       </div>
 
       <div class="scanner-box mb-3">
@@ -59,17 +59,8 @@ $body = '
             <i class="bi bi-arrow-right"></i> Buka
           </button>
         </div>
-        <div class="form-text text-muted" style="font-size: 0.75rem;">Contoh: token acak atau URL yang tertera di stiker QR.</div>
+        <div class="form-text text-muted" style="font-size: 0.75rem;">Contoh: token yang tertera di stiker QR.</div>
       </form>
-
-      <div class="mt-4 pt-3 border-top">
-        <div class="alert alert-light border rounded-3 p-3 small text-secondary mb-0">
-          <div class="fw-bold text-dark mb-1 d-flex align-items-center gap-1">
-            <i class="bi bi-apple text-primary"></i> Cara Paling Cepat di iPhone:
-          </div>
-          Buka aplikasi <strong>Kamera Bawaan iPhone</strong>, arahkan langsung ke stiker QR pada PC/printer. Ketuk tautan kuning yang muncul di layar untuk langsung mengisi formulir maintenance tanpa buka halaman login!
-        </div>
-      </div>
     </div>
   </div>
 </div>';

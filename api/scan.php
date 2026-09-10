@@ -604,41 +604,31 @@ if ($action === 'start' || $action === 'form' || $action === 'ulang') {
 
             <!-- Submit Button Area -->
             <div class="d-grid gap-2 pt-2">
-              <!-- Tombol Utama: Simpan Langsung 1-Klik (Bebas Akses Tanpa Login & Tanpa Wajah) -->
-              <button type="submit" class="btn btn-success btn-lg fw-bold py-3 shadow-sm" onclick="return confirm(\'Simpan hasil checklist pemeliharaan sekarang?\')">
-                <i class="bi bi-check-circle-fill me-2 fs-5"></i> SIMPAN MAINTENANCE (LANGSUNG TANPA LOGIN)
-              </button>
-
-              <div class="d-flex align-items-center my-1 text-muted small">
-                <hr class="flex-grow-1 my-0 border-secondary-subtle">
-                <span class="px-2 text-secondary fw-semibold" style="font-size: 0.72rem;">OPSIONAL: VERIFIKASI BIOMETRIK</span>
-                <hr class="flex-grow-1 my-0 border-secondary-subtle">
-              </div>
-
-              <button type="button" class="btn btn-dark btn-lg fw-bold py-2 shadow-sm" id="btnSelesaiNativeFaceId" style="display:none;" onclick="verifyWithNativeFaceId()">
-                <i class="bi bi-apple text-primary me-2 fs-5"></i> Selesai via Face ID iPhone
-              </button>
-
               '.($hasEnrolledTechs ? '
-              <button type="button" class="btn btn-outline-primary fw-bold py-2 shadow-sm" id="btnSelesaiBio" onclick="openBiometricModal()">
-                <i class="bi bi-person-bounding-box me-2"></i> Verifikasi Kamera Wajah HP
+              <button type="button" class="btn btn-primary btn-lg fw-bold py-3 shadow" id="btnSelesaiBio" onclick="openBiometricModal()">
+                <i class="bi bi-person-bounding-box me-2"></i> SELESAI MAINTENANCE (SCAN WAJAH KAMERA)
               </button>
+              <div class="d-flex justify-content-between align-items-center px-1">
+                <button type="submit" class="btn btn-link btn-sm text-decoration-none text-muted p-0" onclick="return confirm(\'Simpan hasil checklist tanpa verifikasi biometrik wajah?\')">
+                  <i class="bi bi-shield-slash me-1"></i> Simpan Manual (Bypass Biometrik)
+                </button>
+                <a class="btn btn-link btn-sm text-decoration-none text-secondary p-0" href="'.e(module_url('scan.php', ['t' => $token])).'">Batal</a>
+              </div>
               ' : '
+              <button type="submit" class="btn btn-success btn-lg fw-bold py-3 shadow" onclick="return confirm(\'Simpan hasil checklist maintenance sekarang?\')">
+                <i class="bi bi-save-fill me-2"></i> SIMPAN MAINTENANCE
+              </button>
               <div class="alert alert-light border py-2 px-3 small mb-0 d-flex align-items-center justify-content-between flex-wrap gap-2 text-muted">
                 <div class="d-flex align-items-center gap-2">
                   <i class="bi bi-info-circle text-primary fs-5"></i>
-                  <div>Punya akun teknisi & ingin pakai Face ID?</div>
+                  <div>Belum ada biometrik teknisi yang disetujui Admin.</div>
                 </div>
-                <a href="'.e(module_url('user_biometric_enroll.php', ['ret' => module_url('scan.php', ['t' => $token, 'action' => 'form'])])).'" class="btn btn-sm btn-outline-primary fw-bold">
-                  <i class="bi bi-phone-fill me-1"></i> Daftar Face ID di HP
+                <a href="'.e(module_url('user_biometric_enroll.php', ['ret' => module_url('scan.php', ['t' => $token, 'action' => 'form'])])).'" class="btn btn-sm btn-primary fw-bold">
+                  <i class="bi bi-camera-fill me-1"></i> Daftarkan Wajah di HP
                 </a>
               </div>
+              <a class="btn btn-outline-secondary py-2" href="'.e(module_url('scan.php', ['t' => $token])).'">Batal</a>
               ').'
-
-              <div class="d-flex justify-content-between align-items-center mt-2 px-1">
-                <span class="small text-muted"><i class="bi bi-shield-check text-success me-1"></i>Teknisi bebas simpan langsung tanpa login.</span>
-                <a class="btn btn-link btn-sm text-decoration-none text-secondary p-0" href="'.e(module_url('scan.php', ['t' => $token])).'">Batal</a>
-              </div>
             </div>
           </form>
         </div>
@@ -1244,115 +1234,6 @@ HTML;
         document.getElementById("bioVerified").value = "0";
         const formEl = document.getElementById("formMaintenance");
         if (formEl) formEl.submit();
-      }
-    }
-
-    function b64urlToBuffer(base64url) {
-      let base64 = base64url.replace(/-/g, '+').replace(/_/g, '/');
-      while (base64.length % 4) base64 += '=';
-      const bin = atob(base64);
-      const bytes = new Uint8Array(bin.length);
-      for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
-      return bytes.buffer;
-    }
-
-    function bufferToB64url(buffer) {
-      const bytes = new Uint8Array(buffer);
-      let str = '';
-      for (const b of bytes) str += String.fromCharCode(b);
-      return btoa(str).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
-    }
-
-    // Cek apakah browser / smartphone mendukung sensor Face ID / Sidik Jari fisik
-    if (window.PublicKeyCredential && PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable) {
-      PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable().then(avail => {
-        if (avail) {
-          const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-          const isAndroid = /Android/.test(navigator.userAgent);
-
-          const btnNative = document.getElementById("btnSelesaiNativeFaceId");
-          if (btnNative) {
-            btnNative.style.display = "block";
-            if (isIOS) {
-              btnNative.innerHTML = '<i class="bi bi-apple text-primary me-2 fs-5"></i> SELESAI MAINTENANCE (FACE ID IPHONE)';
-            } else if (isAndroid) {
-              btnNative.innerHTML = '<i class="bi bi-fingerprint text-success me-2 fs-5"></i> SELESAI MAINTENANCE (SIDIK JARI ANDROID)';
-            } else {
-              btnNative.innerHTML = '<i class="bi bi-shield-lock text-primary me-2 fs-5"></i> SELESAI MAINTENANCE (BIOMETRIK PERANGKAT)';
-            }
-          }
-
-          const alertModal = document.getElementById("modalNativeFaceIdAlert");
-          if (alertModal) {
-            alertModal.classList.remove("d-none");
-            if (isIOS) {
-              alertModal.innerHTML = '<div class="d-flex align-items-center gap-2 text-start"><i class="bi bi-apple text-primary fs-5"></i><div><div class="fw-bold text-white small">Face ID Bawaan iPhone</div><div class="text-white-50" style="font-size: 0.7rem;">Instan (< 0.5 detik) tanpa kamera</div></div></div><button type="button" class="btn btn-primary btn-sm fw-bold rounded-pill px-3" onclick="verifyWithNativeFaceId()">Pindai Face ID</button>';
-            } else if (isAndroid) {
-              alertModal.innerHTML = '<div class="d-flex align-items-center gap-2 text-start"><i class="bi bi-fingerprint text-success fs-5"></i><div><div class="fw-bold text-white small">Sidik Jari / Biometrik Android</div><div class="text-white-50" style="font-size: 0.7rem;">Instan (< 0.5 detik) tanpa kamera</div></div></div><button type="button" class="btn btn-success btn-sm fw-bold rounded-pill px-3" onclick="verifyWithNativeFaceId()">Pindai Sidik Jari</button>';
-            }
-          }
-        }
-      }).catch(() => {});
-    }
-
-    async function verifyWithNativeFaceId() {
-      const btn = document.getElementById("btnSelesaiNativeFaceId");
-      if (btn) btn.disabled = true;
-
-      try {
-        const res = await fetch("webauthn_handler.php?action=auth_options");
-        const data = await res.json();
-        if (!data.success || !data.options) {
-          throw new Error(data.error || "Gagal membuat sesi Face ID.");
-        }
-
-        const opts = data.options;
-        opts.challenge = b64urlToBuffer(opts.challenge);
-        if (Array.isArray(opts.allowCredentials)) {
-          opts.allowCredentials = opts.allowCredentials.map(c => ({
-            type: c.type,
-            id: b64urlToBuffer(c.id)
-          }));
-        }
-
-        const assertion = await navigator.credentials.get({ publicKey: opts });
-        if (!assertion) throw new Error("Verifikasi Face ID dibatalkan.");
-
-        const verifyRes = await fetch("webauthn_handler.php?action=auth_verify", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            id: assertion.id,
-            rawId: bufferToB64url(assertion.rawId),
-            purpose: "maintenance",
-            response: {
-              clientDataJSON: bufferToB64url(assertion.response.clientDataJSON),
-              authenticatorData: bufferToB64url(assertion.response.authenticatorData),
-              signature: bufferToB64url(assertion.response.signature),
-              userHandle: assertion.response.userHandle ? bufferToB64url(assertion.response.userHandle) : null
-            }
-          })
-        });
-
-        const verifyData = await verifyRes.json();
-        if (verifyData.success) {
-          document.getElementById("bioVerified").value = "1";
-          document.getElementById("bioConfidence").value = 100;
-          const techInput = document.getElementById("technicianNameInput");
-          if (techInput && verifyData.user && verifyData.user.nama) {
-            techInput.value = verifyData.user.nama;
-          }
-          closeBiometricModal();
-          alert("✓ Verifikasi Face ID iPhone Berhasil: " + (verifyData.user.nama || "") + "\nMenyimpan checklist pemeliharaan...");
-          const formEl = document.getElementById("formMaintenance");
-          if (formEl) formEl.submit();
-        } else {
-          throw new Error(verifyData.error || "Face ID tidak terdaftar pada akun mana pun.");
-        }
-      } catch (err) {
-        console.error(err);
-        alert(err.message || "Gagal verifikasi Face ID.");
-        if (btn) btn.disabled = false;
       }
     }
 
