@@ -183,14 +183,32 @@ Setiap kali melakukan pemindaian bulanan, teknisi melakukan pengecekan berdasark
 ```text
 Maintenance-QR/
 ├── api/                            # Modul Aplikasi & Endpoint Utama
-│   ├── bootstrap.php               # Core framework: database, google sheets, auth, helper
+│   ├── bootstrap.php               # Master loader modular aplikasi
+│   ├── includes/                   # [MODULAR] Modul domain logika & database
+│   │   ├── core.php                # Config, session, database PDO / Sheets, CSRF, escaping
+│   │   ├── auth.php                # Autentikasi sesi, role, cookie, WebAuthn passkeys
+│   │   ├── users.php               # CRUD user, biometrik wajah, nama panggilan paraf
+│   │   ├── master_data.php         # Referensi cabang, divisi, kategori, karyawan
+│   │   ├── assets.php              # CRUD komputer, token QR, mapping sheets
+│   │   ├── maintenance.php         # 9 Checklist, log pemeliharaan, temuan masalah
+│   │   ├── dashboard.php           # Rekap statistik dashboard & data audit
+│   │   └── view.php                # Render layout HTML & navbar global
+│   │
+│   ├── views/                      # [MODULAR] Sub-view & komponen antarmuka
+│   │   └── scan/
+│   │       ├── biometric_modal.php # Modal Face Recognition, CSS, & script Face-API
+│   │       ├── success_view.php    # Layar konfirmasi berhasil simpan
+│   │       ├── form_tindak_lanjut.php # Form penanganan & perbaikan temuan
+│   │       ├── form_checklist.php  # Form 9 checklist pemeliharaan bulanan
+│   │       └── asset_card.php      # Tampilan utama kartu kontrol 12 bulan & spek PC
+│   │
 │   ├── google_sheets_v4.php        # Client REST Google Sheets API v4 (Service Account)
 │   ├── setup_sheets.php            # Inisialisasi otomatis tab sheet & header kolom
 │   │
 │   ├── login.php / logout.php      # Autentikasi sesi pengguna
 │   ├── dashboard.php               # Dashboard monitoring progres & statistik
 │   │
-│   ├── scan.php                    # Halaman utama scan QR, form checklist, & kartu kontrol
+│   ├── scan.php                    # Controller scan QR, form checklist, & kartu kontrol
 │   ├── maintenance_detail.php      # Rincian log pemeriksaan & edit checklist
 │   ├── finding.php                 # Modul pencatatan & tindak lanjut temuan masalah
 │   ├── history.php                 # Riwayat pemeliharaan per unit komputer
