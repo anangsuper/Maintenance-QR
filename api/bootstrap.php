@@ -283,7 +283,8 @@ function get_user_list(bool $forceRefresh = false): array {
                 'created_at' => (string)($u['created_at'] ?? ''),
                 'face_descriptor' => $fDesc,
                 'face_photo' => (string)($u['face_photo'] ?? ''),
-                'face_status' => $fStatus
+                'face_status' => $fStatus,
+                'passkey_credential' => (string)($u['passkey_credential'] ?? '')
             ];
         }
 
@@ -504,6 +505,109 @@ function get_enrolled_technicians(bool $forceRefresh = false): array {
         }
     }
     return $result;
+}
+
+function login_user_session(array $user): void {
+    $_SESSION['user_id'] = (int)($user['id'] ?? 1);
+    $_SESSION['nama'] = (string)($user['nama'] ?? $user['name'] ?? $user['username'] ?? 'Pengguna');
+    $_SESSION['username'] = (string)($user['username'] ?? 'user');
+    $_SESSION['role'] = strtolower((string)($user['role'] ?? 'teknisi'));
+    $_SESSION['last_activity'] = time();
+}
+
+function get_user_passkeys(int $userId): array {
+    if ($userId <= 0) return [];
+    $user = get_user_by_id($userId);
+    if (!$user) return [];
+    $raw = trim((string)($user['passkey_credential'] ?? ''));
+    if ($raw === '') return [];
+    $data = json_decode($raw, true);
+    return is_array($data) ? $data : [];
+}
+
+function save_user_passkey(int $userId, array $newCred): array {
+    if ($userId <= 0) return ['success' => false, 'error' => 'ID pengguna tidak valid'];
+    $credId = trim((string)($newCred['id'] ?? ''));
+    if ($credId === '') return ['success' => false, 'error' => 'Credential ID tidak boleh kosong'];
+
+    $existing = get_user_passkeys($userId);
+    $filtered = [];
+    foreach ($existing as $item) {
+        if (($item['id'] ?? '') !== $credId) {
+            $filtered[] = $item;
+        }
+    }
+    $filtered[] = [
+        'id' => $credId,
+        'raw_id' => (string)($newCred['raw_id'] ?? $credId),
+        'public_key' => (string)($newCred['public_key'] ?? ''),
+        'device_name' => (string)($newCred['device_name'] ?? 'iPhone Face ID'),
+        'created_at' => date('Y-m-d H:i:s')
+    ];
+    $json = json_encode($filtered, JSON_UNESCAPED_UNICODE);
+
+    if (is_google_cloud_mode()) {
+        $client = google_sheets_v4_client();
+        if (!$client) return ['success' => false, 'error' => 'Google Sheets client tidak tersedia'];
+
+        $client->ensureMinColumns('Users', 26);
+        $rows = $client->getSheetData('Users', true);
+        $targetRow = null;
+        foreach ($rows as $u) {
+            if ((int)($u['id'] ?? 0) === $userId) {
+                $targetRow = $u;
+                break;
+            }
+        }
+        if (!$targetRow) return ['success' => false, 'error' => 'Pengguna tidak ditemukan di Google Sheets'];
+
+        $rowNum = (int)($targetRow['_row_num'] ?? 0);
+        if ($rowNum <= 1) return ['success' => false, 'error' => 'Gagal menentukan baris data pengguna'];
+
+        // Pastikan kolom L1 bernama passkey_credential
+        $client->updateValues("Users!L1", [['passkey_credential']]);
+
+        // Simpan JSON kredensial passkey ke kolom L
+        $ok = $client->updateValues("Users!L{$rowNum}", [[$json]]);
+        $client->clearCache('Users');
+
+        if (!$ok) {
+            return ['success' => false, 'error' => 'Gagal menyimpan data Face ID ke Google Sheets'];
+        }
+        return ['success' => true];
+    }
+
+    // MySQL Mode
+    try {
+        $cols = table_columns('users');
+        if (!in_array('passkey_credential', $cols, true)) {
+            try { db()->exec("ALTER TABLE users ADD COLUMN passkey_credential TEXT NULL"); } catch (Throwable $e) {}
+        }
+        $st = db()->prepare("UPDATE users SET passkey_credential = ? WHERE id = ?");
+        $st->execute([$json, $userId]);
+        return ['success' => true];
+    } catch (Throwable $e) {
+        return ['success' => false, 'error' => $e->getMessage()];
+    }
+}
+
+function find_user_by_passkey_cred_id(string $credId): ?array {
+    $credId = trim($credId);
+    if ($credId === '') return null;
+    $users = get_user_list(true);
+    foreach ($users as $u) {
+        $raw = trim((string)($u['passkey_credential'] ?? ''));
+        if ($raw === '') continue;
+        $passkeys = json_decode($raw, true);
+        if (is_array($passkeys)) {
+            foreach ($passkeys as $pk) {
+                if (($pk['id'] ?? '') === $credId || ($pk['raw_id'] ?? '') === $credId) {
+                    return $u;
+                }
+            }
+        }
+    }
+    return null;
 }
 
 function create_new_user(array $data): array {

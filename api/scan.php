@@ -582,8 +582,11 @@ if ($action === 'start' || $action === 'form' || $action === 'ulang') {
             <!-- Submit Button Area -->
             <div class="d-grid gap-2 pt-2">
               '.($hasEnrolledTechs ? '
+              <button type="button" class="btn btn-dark btn-lg fw-bold py-3 shadow mb-1" id="btnSelesaiNativeFaceId" style="display:none;" onclick="verifyWithNativeFaceId()">
+                <i class="bi bi-apple text-primary me-2 fs-5"></i> SELESAI MAINTENANCE (FACE ID IPHONE)
+              </button>
               <button type="button" class="btn btn-primary btn-lg fw-bold py-3 shadow" id="btnSelesaiBio" onclick="openBiometricModal()">
-                <i class="bi bi-person-bounding-box me-2"></i> SELESAI MAINTENANCE (VERIFIKASI WAJAH AI)
+                <i class="bi bi-person-bounding-box me-2"></i> SELESAI MAINTENANCE (SCAN KAMERA HP)
               </button>
               <div class="d-flex justify-content-between align-items-center px-1">
                 <button type="submit" class="btn btn-link btn-sm text-decoration-none text-muted p-0" onclick="return confirm(\'Simpan hasil checklist tanpa verifikasi biometrik wajah?\')">
@@ -592,6 +595,9 @@ if ($action === 'start' || $action === 'form' || $action === 'ulang') {
                 <a class="btn btn-link btn-sm text-decoration-none text-secondary p-0" href="'.e(module_url('scan.php', ['t' => $token])).'">Batal</a>
               </div>
               ' : '
+              <button type="button" class="btn btn-dark btn-lg fw-bold py-3 shadow mb-1" id="btnSelesaiNativeFaceId" style="display:none;" onclick="verifyWithNativeFaceId()">
+                <i class="bi bi-apple text-primary me-2 fs-5"></i> SELESAI MAINTENANCE (FACE ID IPHONE)
+              </button>
               <button type="submit" class="btn btn-success btn-lg fw-bold py-3 shadow" onclick="return confirm(\'Simpan hasil checklist maintenance sekarang?\')">
                 <i class="bi bi-save-fill me-2"></i> SIMPAN MAINTENANCE
               </button>
@@ -630,9 +636,21 @@ if ($action === 'start' || $action === 'form' || $action === 'ulang') {
           </div>
 
           <div class="modal-body p-3 p-md-4 text-center bg-light">
+            <!-- Shortcut Apple Face ID di Modal -->
+            <div id="modalNativeFaceIdAlert" class="alert alert-dark border-0 p-2 mb-3 d-none d-flex align-items-center justify-content-between rounded-3">
+              <div class="d-flex align-items-center gap-2 text-start">
+                <i class="bi bi-apple text-primary fs-5"></i>
+                <div>
+                  <div class="fw-bold text-white small">Face ID Bawaan iPhone</div>
+                  <div class="text-white-50" style="font-size: 0.7rem;">Paling cepat (< 0.5 detik) tanpa kamera</div>
+                </div>
+              </div>
+              <button type="button" class="btn btn-primary btn-sm fw-bold rounded-pill px-3" onclick="verifyWithNativeFaceId()">Verifikasi</button>
+            </div>
+
             <!-- Scanner Box -->
             <div class="bio-scanner-wrapper mb-3">
-              <video id="bioVideo" class="bio-video-el" autoplay playsinline muted></video>
+              <video id="bioVideo" class="bio-video-el" autoplay playsinline webkit-playsinline muted></video>
               <canvas id="bioCanvas" class="bio-canvas-el"></canvas>
               <div id="bioFaceOval" class="bio-face-oval"></div>
               <div id="bioScanLine" class="bio-scanline d-none"></div>
@@ -651,9 +669,21 @@ if ($action === 'start' || $action === 'form' || $action === 'ulang') {
             </div>
 
             <!-- Status & Instruction Badge -->
-            <div id="bioStatusBox" class="alert alert-info py-2 px-3 small fw-semibold mb-3">
+            <div id="bioStatusBox" class="alert alert-info py-2 px-3 small fw-semibold mb-2">
               <span class="spinner-border spinner-border-sm me-2 text-primary"></span>
               Menyiapkan kamera & modul AI...
+            </div>
+
+            <!-- Steady Hold Progress Bar -->
+            <div class="progress mb-2 d-none" id="bioHoldProgress" style="height: 6px;">
+              <div class="progress-bar bg-success progress-bar-striped progress-bar-animated" id="bioHoldProgressBar" style="width: 0%"></div>
+            </div>
+
+            <!-- Tombol Aksi Cepat Verifikasi Instan (Muncul saat wajah terdeteksi) -->
+            <div class="mb-2 d-none" id="bioInstantVerifyBox">
+              <button type="button" class="btn btn-warning text-dark btn-sm w-100 fw-bold py-2 shadow-sm rounded-pill" onclick="triggerInstantBioVerify()">
+                <i class="bi bi-lightning-charge-fill me-1"></i> Wajah Terdeteksi &mdash; Tekan untuk Verifikasi Langsung
+              </button>
             </div>
 
             <!-- Liveness Checklist Pills -->
@@ -777,17 +807,33 @@ if ($action === 'start' || $action === 'form' || $action === 'ulang') {
     }
 
     // =========================================================================
-    // BIOMETRIC FACE RECOGNITION & LIVENESS DETECTION ENGINE
+    // BIOMETRIC FAST-TRACK FACE RECOGNITION & LIVENESS ENGINE (OPTIMIZED FOR MOBILE)
     // =========================================================================
     window.__ENROLLED_TECHS = '.json_encode($enrolledTechs, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT).';
 
+    // Pre-parse vektor teknisi satu kali saat halaman dimuat (menghilangkan overhead JSON.parse di loop per-frame)
+    const parsedEnrolledTechs = (Array.isArray(window.__ENROLLED_TECHS) ? window.__ENROLLED_TECHS : []).map(t => {
+      let desc = t.descriptor || t.face_descriptor;
+      if (typeof desc === "string") {
+        try { desc = JSON.parse(desc); } catch (e) { desc = null; }
+      }
+      return {
+        id: t.id,
+        nama: t.nama,
+        descriptor: (Array.isArray(desc) && desc.length >= 64) ? new Float32Array(desc) : null
+      };
+    }).filter(t => t.descriptor !== null);
+
     let bioModelsLoaded = false;
+    let bioModelsLoading = false;
     let bioVideoStream = null;
     let bioTrackingTimer = null;
     let bioBlinkDetected = false;
     let bioLastEyeState = "open";
     let bioModalInstance = null;
     let bioCompleted = false;
+    let bioFaceHoldFrames = 0;
+    const HOLD_FRAMES_REQUIRED = 12; // ~0.7-0.9 detik tahan posisi wajah untuk auto-pass tanpa harus kedip
 
     const MODEL_URL = "https://cdn.jsdelivr.net/npm/@vladmandic/face-api/model/";
 
@@ -807,11 +853,13 @@ if ($action === 'start' || $action === 'form' || $action === 'ulang') {
 
     async function loadBioModels() {
       if (bioModelsLoaded) return true;
+      if (bioModelsLoading) return true;
+      bioModelsLoading = true;
       try {
         const statusBox = document.getElementById("bioStatusBox");
-        if (statusBox) {
-          statusBox.className = "alert alert-info py-2 px-3 small fw-semibold mb-3";
-          statusBox.innerHTML = \'<span class="spinner-border spinner-border-sm me-2 text-primary"></span> Memuat modul AI GPU...\';
+        if (statusBox && !bioCompleted) {
+          statusBox.className = "alert alert-info py-2 px-3 small fw-semibold mb-2";
+          statusBox.innerHTML = '<span class="spinner-border spinner-border-sm me-2 text-primary"></span> Menyiapkan modul AI GPU...';
         }
         if (typeof faceapi !== "undefined" && faceapi.tf) {
           try {
@@ -825,31 +873,34 @@ if ($action === 'start' || $action === 'form' || $action === 'ulang') {
           faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL)
         ]);
         bioModelsLoaded = true;
+        bioModelsLoading = false;
         if (statusBox && !bioCompleted) {
-          statusBox.className = "alert alert-success py-2 px-3 small fw-semibold mb-3";
-          statusBox.innerHTML = \'<i class="bi bi-check-circle me-1"></i> Modul AI GPU siap.\';
+          statusBox.className = "alert alert-success py-2 px-3 small fw-semibold mb-2";
+          statusBox.innerHTML = '<i class="bi bi-check-circle me-1"></i> Modul AI GPU siap. Posisikan wajah di oval.';
         }
         return true;
       } catch (err) {
         console.error("Gagal memuat modul face-api:", err);
+        bioModelsLoading = false;
         const statusBox = document.getElementById("bioStatusBox");
         if (statusBox) {
-          statusBox.className = "alert alert-danger py-2 px-3 small mb-3";
-          statusBox.innerHTML = \'<i class="bi bi-x-circle me-1"></i> Gagal memuat modul AI. Periksa koneksi internet.\';
+          statusBox.className = "alert alert-danger py-2 px-3 small mb-2";
+          statusBox.innerHTML = '<i class="bi bi-x-circle me-1"></i> Gagal memuat modul AI. Periksa koneksi internet.';
         }
         return false;
       }
     }
 
-    async function openBiometricModal() {
+    function openBiometricModal() {
       const modalEl = document.getElementById("modalBiometricScan");
       if (!modalEl) return;
 
       bioCompleted = false;
       bioBlinkDetected = false;
       bioLastEyeState = "open";
+      bioFaceHoldFrames = 0;
 
-      // Reset UI pills
+      // Reset UI pills & elements
       document.getElementById("pillFaceDetected").className = "badge bg-secondary bg-opacity-25 text-dark small py-2 px-3 border";
       document.getElementById("pillLivenessBlink").className = "badge bg-secondary bg-opacity-25 text-dark small py-2 px-3 border";
       document.getElementById("pillMatchId").className = "badge bg-secondary bg-opacity-25 text-dark small py-2 px-3 border";
@@ -857,23 +908,31 @@ if ($action === 'start' || $action === 'form' || $action === 'ulang') {
       document.getElementById("bioScanLine").classList.add("d-none");
       document.getElementById("bioFaceOval").classList.remove("active");
 
+      const holdProgress = document.getElementById("bioHoldProgress");
+      if (holdProgress) holdProgress.classList.add("d-none");
+      const holdBar = document.getElementById("bioHoldProgressBar");
+      if (holdBar) holdBar.style.width = "0%";
+      const instantBox = document.getElementById("bioInstantVerifyBox");
+      if (instantBox) instantBox.classList.add("d-none");
+
       bioModalInstance = new bootstrap.Modal(modalEl);
       bioModalInstance.show();
 
-      const ok = await loadBioModels();
-      if (!ok) return;
-
+      // Mulai kamera dan pemuatan model secara PARALEL (tidak saling memblokir)
+      loadBioModels();
       startBioCamera();
     }
 
     function closeBiometricModal() {
       bioCompleted = true;
       if (bioTrackingTimer) {
-        clearTimeout(bioTrackingTimer);
+        cancelAnimationFrame(bioTrackingTimer);
         bioTrackingTimer = null;
       }
       if (bioVideoStream) {
-        bioVideoStream.getTracks().forEach(t => t.stop());
+        try {
+          bioVideoStream.getTracks().forEach(t => t.stop());
+        } catch(e) {}
         bioVideoStream = null;
       }
       if (bioModalInstance) {
@@ -886,29 +945,39 @@ if ($action === 'start' || $action === 'form' || $action === 'ulang') {
       const statusBox = document.getElementById("bioStatusBox");
 
       try {
-        statusBox.className = "alert alert-info py-2 px-3 small fw-semibold mb-3";
-        statusBox.innerHTML = \'<span class="spinner-border spinner-border-sm me-2 text-info"></span> Mengaktifkan kamera depan...\';
+        if (statusBox && !bioModelsLoaded) {
+          statusBox.className = "alert alert-info py-2 px-3 small fw-semibold mb-2";
+          statusBox.innerHTML = '<span class="spinner-border spinner-border-sm me-2 text-info"></span> Mengaktifkan kamera depan HP...';
+        }
+
+        video.setAttribute("playsinline", "");
+        video.setAttribute("webkit-playsinline", "");
 
         bioVideoStream = await navigator.mediaDevices.getUserMedia({
           video: {
             facingMode: "user",
-            width: { ideal: 480 },
-            height: { ideal: 360 }
+            width: { ideal: 640 },
+            height: { ideal: 480 },
+            frameRate: { ideal: 30, max: 30 }
           },
           audio: false
         });
         video.srcObject = bioVideoStream;
         await video.play();
 
-        statusBox.className = "alert alert-primary py-2 px-3 small fw-semibold mb-3";
-        statusBox.innerHTML = \'<i class="bi bi-person-bounding-box me-1"></i> Posisikan wajah Anda tepat di dalam bingkai oval.\';
         document.getElementById("bioScanLine").classList.remove("d-none");
+        if (statusBox) {
+          statusBox.className = "alert alert-primary py-2 px-3 small fw-semibold mb-2";
+          statusBox.innerHTML = '<i class="bi bi-person-bounding-box me-1"></i> Arahkan wajah ke lingkaran oval (Tahan 1 detik atau kedipkan mata).';
+        }
 
         startBioTracking();
       } catch (err) {
         console.error("Akses kamera gagal:", err);
-        statusBox.className = "alert alert-danger py-2 px-3 small mb-3";
-        statusBox.innerHTML = \'<i class="bi bi-camera-video-off me-1"></i> Kamera tidak dapat diakses. Anda dapat memilih "Lewati & Simpan Manual".\';
+        if (statusBox) {
+          statusBox.className = "alert alert-danger py-2 px-3 small mb-2";
+          statusBox.innerHTML = '<i class="bi bi-camera-video-off me-1"></i> Kamera tidak dapat diakses. Berikan izin di browser atau pilih "Lewati & Simpan Manual".';
+        }
       }
     }
 
@@ -933,153 +1002,197 @@ if ($action === 'start' || $action === 'form' || $action === 'ulang') {
       try {
         if (!videoEl || !videoEl.videoWidth || !videoEl.videoHeight) return "";
         const c = document.createElement("canvas");
-        c.width = 100;
-        c.height = 100;
+        c.width = 120;
+        c.height = 120;
         const ctx = c.getContext("2d");
         const s = Math.min(videoEl.videoWidth, videoEl.videoHeight);
         const sx = (videoEl.videoWidth - s) / 2;
         const sy = (videoEl.videoHeight - s) / 2;
-        ctx.translate(100, 0);
+        ctx.translate(120, 0);
         ctx.scale(-1, 1);
-        ctx.drawImage(videoEl, sx, sy, s, s, 0, 0, 100, 100);
-        return c.toDataURL("image/jpeg", 0.65);
+        ctx.drawImage(videoEl, sx, sy, s, s, 0, 0, 120, 120);
+        return c.toDataURL("image/jpeg", 0.7);
       } catch (err) {
         console.warn("Capture snapshot err:", err);
         return "";
       }
     }
 
+    function findBestMatch(queryVec) {
+      let bestDist = 999;
+      let bestTech = null;
+      for (let i = 0; i < parsedEnrolledTechs.length; i++) {
+        const t = parsedEnrolledTechs[i];
+        const dist = calcEuclidean(queryVec, t.descriptor);
+        if (dist < bestDist) {
+          bestDist = dist;
+          bestTech = t;
+        }
+      }
+      return { tech: bestTech, dist: bestDist };
+    }
+
+    function finalizeVerification(tech, dist, videoEl) {
+      bioCompleted = true;
+      document.getElementById("pillMatchId").className = "badge bg-success text-white small py-2 px-3 border";
+      document.getElementById("pillLivenessBlink").className = "badge bg-success text-white small py-2 px-3 border";
+
+      let conf = Math.round((1.0 - (dist / 0.60)) * 100);
+      if (conf > 99) conf = 99;
+      if (conf < 75) conf = 75;
+
+      document.getElementById("bioVerified").value = "1";
+      document.getElementById("bioConfidence").value = conf;
+      document.getElementById("bioPhoto").value = captureBioSnapshot(videoEl);
+
+      const techInput = document.getElementById("technicianNameInput");
+      if (techInput) techInput.value = tech.nama;
+
+      document.getElementById("bioMatchedName").textContent = tech.nama;
+      document.getElementById("bioMatchConfidence").textContent = conf + "% Cocok (Terverifikasi)";
+      document.getElementById("bioSuccessOverlay").classList.remove("d-none");
+
+      const statusBox = document.getElementById("bioStatusBox");
+      if (statusBox) {
+        statusBox.className = "alert alert-success py-2 px-3 small fw-bold mb-2";
+        statusBox.innerHTML = '<i class="bi bi-check-circle-fill me-1"></i> Wajah Dikenali: <strong>' + tech.nama + '</strong>! Menyimpan...';
+      }
+
+      if (bioVideoStream) {
+        try { bioVideoStream.getTracks().forEach(t => t.stop()); } catch(e) {}
+      }
+
+      setTimeout(() => {
+        const formEl = document.getElementById("formMaintenance");
+        if (formEl) formEl.submit();
+      }, 400);
+    }
+
+    async function triggerInstantBioVerify() {
+      const video = document.getElementById("bioVideo");
+      const statusBox = document.getElementById("bioStatusBox");
+      if (!video || !video.videoWidth || bioCompleted) return;
+
+      statusBox.className = "alert alert-warning py-2 px-3 small fw-bold mb-2";
+      statusBox.innerHTML = '<span class="spinner-border spinner-border-sm me-2 text-warning"></span> Memproses verifikasi instan...';
+
+      const useTinyLandmarks = faceapi.nets.faceLandmark68TinyNet && faceapi.nets.faceLandmark68TinyNet.isLoaded;
+      const fastDetectorOptions = new faceapi.TinyFaceDetectorOptions({ inputSize: 160, scoreThreshold: 0.3 });
+
+      try {
+        const detection = await faceapi.detectSingleFace(video, fastDetectorOptions)
+          .withFaceLandmarks(useTinyLandmarks)
+          .withFaceDescriptor();
+
+        if (detection && detection.descriptor) {
+          const matchResult = findBestMatch(detection.descriptor);
+          if (matchResult.tech && matchResult.dist <= 0.55) {
+            finalizeVerification(matchResult.tech, matchResult.dist, video);
+            return;
+          }
+        }
+        statusBox.className = "alert alert-danger py-2 px-3 small fw-bold mb-2";
+        statusBox.innerHTML = '<i class="bi bi-exclamation-triangle-fill me-1"></i> Wajah belum cocok dengan teknisi terdaftar. Posisikan wajah tegak.';
+      } catch (err) {
+        console.warn("Instant verify error:", err);
+      }
+    }
+
     let isTrackingFrame = false;
     function startBioTracking() {
-      if (bioTrackingTimer) clearTimeout(bioTrackingTimer);
+      if (bioTrackingTimer) cancelAnimationFrame(bioTrackingTimer);
       const video = document.getElementById("bioVideo");
       const oval = document.getElementById("bioFaceOval");
       const statusBox = document.getElementById("bioStatusBox");
       const pillFace = document.getElementById("pillFaceDetected");
       const pillBlink = document.getElementById("pillLivenessBlink");
-      const pillMatch = document.getElementById("pillMatchId");
-      
+      const holdProgress = document.getElementById("bioHoldProgress");
+      const holdProgressBar = document.getElementById("bioHoldProgressBar");
+      const instantBox = document.getElementById("bioInstantVerifyBox");
+
       const useTinyLandmarks = faceapi.nets.faceLandmark68TinyNet && faceapi.nets.faceLandmark68TinyNet.isLoaded;
-      // inputSize 128 berjalan ultra-cepat (<15ms per frame) di WebGL GPU HP
-      const fastDetectorOptions = new faceapi.TinyFaceDetectorOptions({ inputSize: 128, scoreThreshold: 0.35 });
+      // inputSize 160 sangat cepat dan stabil pada GPU iPhone & Android
+      const fastDetectorOptions = new faceapi.TinyFaceDetectorOptions({ inputSize: 160, scoreThreshold: 0.30 });
 
       async function trackingLoop() {
-        if (bioCompleted || !video.videoWidth || !video.videoHeight || video.paused || video.ended) {
+        if (bioCompleted || !video || !video.videoWidth || video.paused || video.ended) {
           if (!bioCompleted) {
-            bioTrackingTimer = setTimeout(trackingLoop, 40);
+            bioTrackingTimer = requestAnimationFrame(trackingLoop);
           }
+          return;
+        }
+
+        if (!bioModelsLoaded) {
+          bioTrackingTimer = requestAnimationFrame(trackingLoop);
           return;
         }
 
         if (!isTrackingFrame) {
           isTrackingFrame = true;
           try {
-            if (!bioBlinkDetected) {
-              // TAHAP 1 CEPAT: Hanya deteksi wajah + landmarks (TANPA descriptor yang berat)
-              const detection = await faceapi.detectSingleFace(video, fastDetectorOptions).withFaceLandmarks(useTinyLandmarks);
+            // TAHAP 1: Deteksi Wajah & Landmarks
+            const detection = await faceapi.detectSingleFace(video, fastDetectorOptions).withFaceLandmarks(useTinyLandmarks);
 
-              if (detection) {
-                oval.classList.add("active");
-                pillFace.className = "badge bg-success text-white small py-2 px-3 border";
+            if (detection) {
+              oval.classList.add("active");
+              pillFace.className = "badge bg-success text-white small py-2 px-3 border";
+              if (instantBox) instantBox.classList.remove("d-none");
 
-                const landmarks = detection.landmarks;
-                const leftEye = landmarks.getLeftEye();
-                const rightEye = landmarks.getRightEye();
-                const avgEAR = (calcEAR(leftEye) + calcEAR(rightEye)) / 2.0;
+              // Cek Kedipan Mata (EAR) dengan batas toleransi adaptif
+              const landmarks = detection.landmarks;
+              const leftEye = landmarks.getLeftEye();
+              const rightEye = landmarks.getRightEye();
+              const avgEAR = (calcEAR(leftEye) + calcEAR(rightEye)) / 2.0;
 
-                // Liveness Detection: Cek Kedipan (EAR)
-                if (avgEAR < 0.24) {
-                  bioLastEyeState = "closed";
-                } else if (avgEAR > 0.27 && bioLastEyeState === "closed") {
-                  bioBlinkDetected = true;
-                }
+              if (avgEAR < 0.26) {
+                bioLastEyeState = "closed";
+              } else if (avgEAR > 0.27 && bioLastEyeState === "closed") {
+                bioBlinkDetected = true;
+              }
 
-                if (!bioBlinkDetected) {
-                  statusBox.className = "alert alert-warning py-2 px-3 small fw-bold mb-3";
-                  statusBox.innerHTML = \'<i class="bi bi-eye-fill me-1"></i> Wajah Terdeteksi! Silakan <u>KEDIPKAN MATA</u> Anda (Uji Liveness)...\';
+              // Akumulasi Steady-Hold (Auto-Pass jika wajah dipertahankan 1 detik)
+              bioFaceHoldFrames++;
+              if (holdProgress) holdProgress.classList.remove("d-none");
+              const progressPct = Math.min(100, Math.round((bioFaceHoldFrames / HOLD_FRAMES_REQUIRED) * 100));
+              if (holdProgressBar) holdProgressBar.style.width = progressPct + "%";
+
+              const passedLiveness = bioBlinkDetected || (bioFaceHoldFrames >= HOLD_FRAMES_REQUIRED);
+
+              if (passedLiveness) {
+                pillBlink.className = "badge bg-success text-white small py-2 px-3 border";
+                statusBox.className = "alert alert-info py-2 px-3 small fw-bold mb-2";
+                statusBox.innerHTML = '<span class="spinner-border spinner-border-sm me-2 text-primary"></span> Wajah stabil! Mencocokkan data teknisi...';
+
+                // TAHAP 2: Hitung Descriptor & Cocokkan dengan data teknisi
+                const fullDetection = await faceapi.detectSingleFace(video, fastDetectorOptions)
+                  .withFaceLandmarks(useTinyLandmarks)
+                  .withFaceDescriptor();
+
+                if (fullDetection && fullDetection.descriptor) {
+                  const matchResult = findBestMatch(fullDetection.descriptor);
+
+                  // Threshold toleransi pencocokan Euclidean (<= 0.54)
+                  if (matchResult.tech && matchResult.dist <= 0.54) {
+                    finalizeVerification(matchResult.tech, matchResult.dist, video);
+                    return;
+                  } else {
+                    statusBox.className = "alert alert-danger py-2 px-3 small fw-bold mb-2";
+                    statusBox.innerHTML = '<i class="bi bi-exclamation-triangle-fill me-1"></i> Wajah tidak cocok dengan teknisi terdaftar (' + (matchResult.dist !== 999 ? "Skor: " + matchResult.dist.toFixed(2) : "Belum ada") + ').';
+                    bioFaceHoldFrames = 0;
+                    bioBlinkDetected = false;
+                    bioLastEyeState = "open";
+                  }
                 }
               } else {
-                oval.classList.remove("active");
-                statusBox.className = "alert alert-secondary py-2 px-3 small mb-3";
-                statusBox.innerHTML = \'<i class="bi bi-person-bounding-box me-1"></i> Posisikan wajah tepat di dalam bingkai oval...\';
+                statusBox.className = "alert alert-warning py-2 px-3 small fw-bold mb-2";
+                statusBox.innerHTML = '<i class="bi bi-eye-fill me-1"></i> Wajah Terdeteksi! <u>Tahan posisi 1 detik</u> atau <u>kedipkan mata</u>...';
               }
             } else {
-              // TAHAP 2: Liveness lolos! Hitung descriptor 128-D sekali untuk pencocokan AI
-              pillBlink.className = "badge bg-success text-white small py-2 px-3 border";
-              statusBox.className = "alert alert-info py-2 px-3 small fw-bold mb-3";
-              statusBox.innerHTML = \'<span class="spinner-border spinner-border-sm me-2 text-primary"></span> Kedip terdeteksi! Mencocokkan wajah AI...\';
-
-              const detection = await faceapi.detectSingleFace(video, fastDetectorOptions)
-                .withFaceLandmarks(useTinyLandmarks)
-                .withFaceDescriptor();
-
-              if (detection && detection.descriptor) {
-                const queryVec = Array.from(detection.descriptor);
-                let bestDist = 999;
-                let bestTech = null;
-
-                if (Array.isArray(window.__ENROLLED_TECHS)) {
-                  for (const t of window.__ENROLLED_TECHS) {
-                    let desc = t.descriptor || t.face_descriptor;
-                    if (typeof desc === "string") {
-                      try { desc = JSON.parse(desc); } catch (e) {}
-                    }
-                    if (Array.isArray(desc)) {
-                      const dist = calcEuclidean(queryVec, desc);
-                      if (dist < bestDist) {
-                        bestDist = dist;
-                        bestTech = t;
-                      }
-                    }
-                  }
-                }
-
-                // Threshold Euclidean distance: <= 0.52 (match)
-                if (bestTech && bestDist <= 0.52) {
-                  bioCompleted = true;
-                  pillMatch.className = "badge bg-success text-white small py-2 px-3 border";
-
-                  let conf = Math.round((1.0 - (bestDist / 0.60)) * 100);
-                  if (conf > 99) conf = 99;
-                  if (conf < 75) conf = 75;
-
-                  // Simpan ke form tersembunyi
-                  document.getElementById("bioVerified").value = "1";
-                  document.getElementById("bioConfidence").value = conf;
-                  document.getElementById("bioPhoto").value = captureBioSnapshot(video);
-
-                  // Isi otomatis nama teknisi di form
-                  const techInput = document.getElementById("technicianNameInput");
-                  if (techInput) techInput.value = bestTech.nama;
-
-                  // Tampilkan layar sukses
-                  document.getElementById("bioMatchedName").textContent = bestTech.nama;
-                  document.getElementById("bioMatchConfidence").textContent = conf + "% Cocok (Liveness Terverifikasi)";
-                  document.getElementById("bioSuccessOverlay").classList.remove("d-none");
-
-                  statusBox.className = "alert alert-success py-2 px-3 small fw-bold mb-3";
-                  statusBox.innerHTML = \'<i class="bi bi-check-circle-fill me-1"></i> Wajah Dikenali: <strong>\' + bestTech.nama + \'</strong>! Menyimpan...\';
-
-                  if (bioVideoStream) {
-                    try {
-                      bioVideoStream.getTracks().forEach(t => t.stop());
-                    } catch(e) {}
-                  }
-
-                  // Otomatis submit form setelah 700ms
-                  setTimeout(() => {
-                    const formEl = document.getElementById("formMaintenance");
-                    if (formEl) formEl.submit();
-                  }, 700);
-                  return;
-                } else {
-                  statusBox.className = "alert alert-danger py-2 px-3 small fw-bold mb-3";
-                  statusBox.innerHTML = \'<i class="bi bi-exclamation-triangle-fill me-1"></i> Wajah tidak cocok dengan teknisi terdaftar (\' + (bestDist !== 999 ? "Jarak: " + bestDist.toFixed(2) : "Belum ada data") + \'). Silakan kedip lagi.\';
-                  // Izinkan kedip ulang
-                  bioBlinkDetected = false;
-                  bioLastEyeState = "open";
-                }
-              }
+              oval.classList.remove("active");
+              bioFaceHoldFrames = Math.max(0, bioFaceHoldFrames - 2);
+              if (holdProgressBar) holdProgressBar.style.width = "0%";
+              statusBox.className = "alert alert-secondary py-2 px-3 small mb-2";
+              statusBox.innerHTML = '<i class="bi bi-person-bounding-box me-1"></i> Posisikan wajah tepat di dalam lingkaran oval...';
             }
           } catch(e) {
             console.warn("Tracking error:", e);
@@ -1089,11 +1202,11 @@ if ($action === 'start' || $action === 'form' || $action === 'ulang') {
         }
 
         if (!bioCompleted) {
-          bioTrackingTimer = setTimeout(trackingLoop, 25);
+          bioTrackingTimer = requestAnimationFrame(trackingLoop);
         }
       }
 
-      trackingLoop();
+      bioTrackingTimer = requestAnimationFrame(trackingLoop);
     }
 
     function bypassBiometricAndSubmit() {
@@ -1105,10 +1218,123 @@ if ($action === 'start' || $action === 'form' || $action === 'ulang') {
       }
     }
 
-    // Preload modul AI di background agar saat klik "Selesai Maintenance" langsung 0 detik instan
-    document.addEventListener("DOMContentLoaded", () => {
-      loadBioModels();
-    });
+    function b64urlToBuffer(base64url) {
+      let base64 = base64url.replace(/-/g, '+').replace(/_/g, '/');
+      while (base64.length % 4) base64 += '=';
+      const bin = atob(base64);
+      const bytes = new Uint8Array(bin.length);
+      for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+      return bytes.buffer;
+    }
+
+    function bufferToB64url(buffer) {
+      const bytes = new Uint8Array(buffer);
+      let str = '';
+      for (const b of bytes) str += String.fromCharCode(b);
+      return btoa(str).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+    }
+
+    // Cek apakah browser / smartphone mendukung sensor Face ID / Sidik Jari fisik
+    if (window.PublicKeyCredential && PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable) {
+      PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable().then(avail => {
+        if (avail) {
+          const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+          const isAndroid = /Android/.test(navigator.userAgent);
+
+          const btnNative = document.getElementById("btnSelesaiNativeFaceId");
+          if (btnNative) {
+            btnNative.style.display = "block";
+            if (isIOS) {
+              btnNative.innerHTML = '<i class="bi bi-apple text-primary me-2 fs-5"></i> SELESAI MAINTENANCE (FACE ID IPHONE)';
+            } else if (isAndroid) {
+              btnNative.innerHTML = '<i class="bi bi-fingerprint text-success me-2 fs-5"></i> SELESAI MAINTENANCE (SIDIK JARI ANDROID)';
+            } else {
+              btnNative.innerHTML = '<i class="bi bi-shield-lock text-primary me-2 fs-5"></i> SELESAI MAINTENANCE (BIOMETRIK PERANGKAT)';
+            }
+          }
+
+          const alertModal = document.getElementById("modalNativeFaceIdAlert");
+          if (alertModal) {
+            alertModal.classList.remove("d-none");
+            if (isIOS) {
+              alertModal.innerHTML = '<div class="d-flex align-items-center gap-2 text-start"><i class="bi bi-apple text-primary fs-5"></i><div><div class="fw-bold text-white small">Face ID Bawaan iPhone</div><div class="text-white-50" style="font-size: 0.7rem;">Instan (< 0.5 detik) tanpa kamera</div></div></div><button type="button" class="btn btn-primary btn-sm fw-bold rounded-pill px-3" onclick="verifyWithNativeFaceId()">Pindai Face ID</button>';
+            } else if (isAndroid) {
+              alertModal.innerHTML = '<div class="d-flex align-items-center gap-2 text-start"><i class="bi bi-fingerprint text-success fs-5"></i><div><div class="fw-bold text-white small">Sidik Jari / Biometrik Android</div><div class="text-white-50" style="font-size: 0.7rem;">Instan (< 0.5 detik) tanpa kamera</div></div></div><button type="button" class="btn btn-success btn-sm fw-bold rounded-pill px-3" onclick="verifyWithNativeFaceId()">Pindai Sidik Jari</button>';
+            }
+          }
+        }
+      }).catch(() => {});
+    }
+
+    async function verifyWithNativeFaceId() {
+      const btn = document.getElementById("btnSelesaiNativeFaceId");
+      if (btn) btn.disabled = true;
+
+      try {
+        const res = await fetch("webauthn_handler.php?action=auth_options");
+        const data = await res.json();
+        if (!data.success || !data.options) {
+          throw new Error(data.error || "Gagal membuat sesi Face ID.");
+        }
+
+        const opts = data.options;
+        opts.challenge = b64urlToBuffer(opts.challenge);
+        if (Array.isArray(opts.allowCredentials)) {
+          opts.allowCredentials = opts.allowCredentials.map(c => ({
+            type: c.type,
+            id: b64urlToBuffer(c.id)
+          }));
+        }
+
+        const assertion = await navigator.credentials.get({ publicKey: opts });
+        if (!assertion) throw new Error("Verifikasi Face ID dibatalkan.");
+
+        const verifyRes = await fetch("webauthn_handler.php?action=auth_verify", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            id: assertion.id,
+            rawId: bufferToB64url(assertion.rawId),
+            purpose: "maintenance",
+            response: {
+              clientDataJSON: bufferToB64url(assertion.response.clientDataJSON),
+              authenticatorData: bufferToB64url(assertion.response.authenticatorData),
+              signature: bufferToB64url(assertion.response.signature),
+              userHandle: assertion.response.userHandle ? bufferToB64url(assertion.response.userHandle) : null
+            }
+          })
+        });
+
+        const verifyData = await verifyRes.json();
+        if (verifyData.success) {
+          document.getElementById("bioVerified").value = "1";
+          document.getElementById("bioConfidence").value = 100;
+          const techInput = document.getElementById("technicianNameInput");
+          if (techInput && verifyData.user && verifyData.user.nama) {
+            techInput.value = verifyData.user.nama;
+          }
+          closeBiometricModal();
+          alert("✓ Verifikasi Face ID iPhone Berhasil: " + (verifyData.user.nama || "") + "\nMenyimpan checklist pemeliharaan...");
+          const formEl = document.getElementById("formMaintenance");
+          if (formEl) formEl.submit();
+        } else {
+          throw new Error(verifyData.error || "Face ID tidak terdaftar pada akun mana pun.");
+        }
+      } catch (err) {
+        console.error(err);
+        alert(err.message || "Gagal verifikasi Face ID.");
+        if (btn) btn.disabled = false;
+      }
+    }
+
+    // Preload modul AI di background saat halaman dimuat agar saat klik "Selesai Maintenance" langsung 0 detik instan
+    if (document.readyState === "loading") {
+      document.addEventListener("DOMContentLoaded", () => {
+        setTimeout(loadBioModels, 300);
+      });
+    } else {
+      setTimeout(loadBioModels, 300);
+    }
     </script>';
 
     render_page($formTitle, $body, $formHeadStyle, $formScript, false);

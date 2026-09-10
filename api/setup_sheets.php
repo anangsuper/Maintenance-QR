@@ -189,6 +189,9 @@ if (empty($existing)) {
 } else {
     $results[] = "⏭️ Tab Users — sudah ada";
 }
+// Pastikan kolom biometrik & passkey (I1:L1) terpasang di Google Sheets
+$client->updateValues('Users!I1:L1', [['face_descriptor', 'face_photo', 'face_status', 'passkey_credential']]);
+$results[] = "✅ Tab Users — kolom Face ID & Passkey (Kolom I..L) siap";
 
 // ====== Tampilkan Hasil ======
 $html = '<div class="card p-4"><h3>🔧 Setup Google Sheet — Selesai!</h3><hr>';

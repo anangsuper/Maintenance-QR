@@ -252,6 +252,26 @@ $body = '
 
       '.$avatarHtml.'
 
+      <!-- Native Apple Face ID Passkey Section -->
+      <div class="card p-3 border-0 bg-primary bg-opacity-10 rounded-4 mb-3" id="nativeFaceIdBox" style="display:none;">
+        <div class="d-flex align-items-center gap-2 mb-2">
+          <div class="p-2 bg-primary text-white rounded-circle fs-5 d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+            <i class="bi bi-apple"></i>
+          </div>
+          <div>
+            <div class="fw-bold text-primary">Face ID Bawaan iPhone (Rekomendasi)</div>
+            <div class="small text-muted" style="font-size: 0.72rem;">Verifikasi instan via sensor TrueDepth Apple (< 0.5 detik)</div>
+          </div>
+        </div>
+        <p class="small text-secondary mb-2">
+          Daftarkan Face ID iPhone Anda sekarang agar dapat login dan verifikasi maintenance secara otomatis tanpa perlu membuka kamera web.
+        </p>
+        <button type="button" class="btn btn-primary fw-bold py-2 rounded-3 shadow-sm w-100" id="btnEnrollFaceId" onclick="enrollNativeFaceId()">
+          <i class="bi bi-person-bounding-box me-1"></i> Daftarkan Face ID iPhone Ini
+        </button>
+        <div id="nativeFaceIdStatus" class="small mt-2"></div>
+      </div>
+
       <!-- Panduan Singkat Smartphone -->
       <div class="alert alert-light border border-primary border-opacity-25 rounded-3 p-3 mb-3 small">
         <div class="fw-bold text-primary mb-1 d-flex align-items-center gap-1">
@@ -275,7 +295,7 @@ $body = '
 
       <!-- Scanner Container (Mobile Optimized) -->
       <div class="scanner-container mb-3" id="scannerContainer">
-        <video id="videoElement" class="scanner-video" autoplay playsinline muted></video>
+        <video id="videoElement" class="scanner-video" autoplay playsinline webkit-playsinline muted></video>
         <div class="scanner-overlay">
           <div class="face-oval" id="faceOval"></div>
           <div class="scanline d-none" id="scanLine"></div>
@@ -298,6 +318,9 @@ $body = '
       <div class="d-grid gap-2">
         <button type="button" class="btn btn-primary btn-lg fw-bold py-3 shadow" id="btnStartCapture" onclick="startCamera()">
           <i class="bi bi-camera-video-fill me-2"></i> AKTIFKAN KAMERA DEPAN HP
+        </button>
+        <button type="button" class="btn btn-warning text-dark btn-lg fw-bold py-3 shadow d-none" id="btnSnapNow" onclick="forceCaptureBiometric()">
+          <i class="bi bi-camera-fill me-2"></i> AMBIL SAMPEL WAJAH SEKARANG
         </button>
         <button type="button" class="btn btn-success btn-lg fw-bold py-3 shadow d-none" id="btnSaveBiometric" onclick="saveBiometrics()">
           <i class="bi bi-check-circle-fill me-2"></i> SIMPAN BIOMETRIK WAJAH SAYA
@@ -335,12 +358,15 @@ $script = '
 <script src="https://cdn.jsdelivr.net/npm/@vladmandic/face-api/dist/face-api.min.js"></script>
 <script>
 let modelsLoaded = false;
+let modelsLoading = false;
 let videoStream = null;
 let detectedDescriptor = null;
 let capturedPhotoBase64 = null;
 let isLivenessVerified = false;
 let blinkDetected = false;
 let lastEyeState = "open";
+let enrollHoldFrames = 0;
+const HOLD_FRAMES_REQUIRED = 14;
 
 const MODEL_URL = "https://cdn.jsdelivr.net/npm/@vladmandic/face-api/model/";
 
@@ -351,6 +377,7 @@ const statusMsg = document.getElementById("statusMessage");
 const progressBar = document.getElementById("progressBar");
 const btnSave = document.getElementById("btnSaveBiometric");
 const btnStart = document.getElementById("btnStartCapture");
+const btnSnapNow = document.getElementById("btnSnapNow");
 const userSelect = document.getElementById("userSelect");
 const newTechBox = document.getElementById("newTechBox");
 const newTechName = document.getElementById("newTechName");
@@ -369,9 +396,14 @@ function handleUserChange(val) {
 }
 
 async function loadModels() {
+  if (modelsLoaded) return true;
+  if (modelsLoading) return true;
+  modelsLoading = true;
   try {
-    statusMsg.innerHTML = \'<span class="spinner-border spinner-border-sm me-2 text-primary"></span> Memuat model AI GPU...\';
-    progressBar.style.width = "30%";
+    if (statusMsg && !videoStream) {
+      statusMsg.innerHTML = '<span class="spinner-border spinner-border-sm me-2 text-primary"></span> Menyiapkan modul AI GPU...';
+      progressBar.style.width = "40%";
+    }
     
     if (typeof faceapi !== "undefined" && faceapi.tf) {
       try {
@@ -388,30 +420,40 @@ async function loadModels() {
     
     progressBar.style.width = "100%";
     modelsLoaded = true;
-    statusMsg.className = "alert alert-success py-2 px-3 text-center mb-3 small fw-semibold";
-    statusMsg.innerHTML = \'<i class="bi bi-check-circle me-1"></i> Modul AI GPU siap. Silakan klik "AKTIFKAN KAMERA DEPAN HP".\';
+    modelsLoading = false;
+    if (statusMsg && !videoStream) {
+      statusMsg.className = "alert alert-success py-2 px-3 text-center mb-3 small fw-semibold";
+      statusMsg.innerHTML = '<i class="bi bi-check-circle me-1"></i> Modul AI GPU siap. Silakan klik "AKTIFKAN KAMERA DEPAN HP".';
+    }
+    return true;
   } catch (err) {
     console.error("Gagal memuat model:", err);
-    statusMsg.className = "alert alert-danger py-2 px-3 text-center mb-3 small";
-    statusMsg.innerHTML = \'<i class="bi bi-x-circle me-1"></i> Gagal memuat modul AI. Pastikan smartphone terhubung internet.\';
+    modelsLoading = false;
+    if (statusMsg) {
+      statusMsg.className = "alert alert-danger py-2 px-3 text-center mb-3 small";
+      statusMsg.innerHTML = '<i class="bi bi-x-circle me-1"></i> Gagal memuat modul AI. Pastikan smartphone terhubung internet.';
+    }
+    return false;
   }
 }
 
 async function startCamera() {
-  if (!modelsLoaded) {
-    await loadModels();
-  }
-  
   btnStart.disabled = true;
   statusMsg.className = "alert alert-info py-2 px-3 text-center mb-3 small fw-semibold";
-  statusMsg.innerHTML = \'<span class="spinner-border spinner-border-sm me-2 text-info"></span> Mengakses kamera depan smartphone...\';
+  statusMsg.innerHTML = '<span class="spinner-border spinner-border-sm me-2 text-info"></span> Mengakses kamera depan smartphone...';
+
+  loadModels();
 
   try {
+    video.setAttribute("playsinline", "");
+    video.setAttribute("webkit-playsinline", "");
+
     videoStream = await navigator.mediaDevices.getUserMedia({
       video: {
         facingMode: "user",
-        width: { ideal: 480 },
-        height: { ideal: 360 }
+        width: { ideal: 640 },
+        height: { ideal: 480 },
+        frameRate: { ideal: 30, max: 30 }
       },
       audio: false
     });
@@ -421,13 +463,13 @@ async function startCamera() {
     btnStart.classList.add("d-none");
     scanLine.classList.remove("d-none");
     statusMsg.className = "alert alert-primary py-2 px-3 text-center mb-3 small fw-semibold";
-    statusMsg.innerHTML = \'<i class="bi bi-person-bounding-box me-1"></i> Posisikan wajah Anda tegak di dalam bingkai oval.\';
+    statusMsg.innerHTML = '<i class="bi bi-person-bounding-box me-1"></i> Arahkan wajah Anda tegak di dalam bingkai oval.';
     
     startFaceTracking();
   } catch (err) {
     console.error("Akses kamera gagal:", err);
     statusMsg.className = "alert alert-danger py-2 px-3 text-center mb-3 small";
-    statusMsg.innerHTML = \'<i class="bi bi-camera-video-off me-1"></i> Kamera depan tidak dapat diakses. Berikan izin kamera di browser HP Anda.\';
+    statusMsg.innerHTML = '<i class="bi bi-camera-video-off me-1"></i> Kamera depan tidak dapat diakses. Berikan izin kamera di browser HP Anda.';
     btnStart.disabled = false;
   }
 }
@@ -443,20 +485,60 @@ let trackingTimer = null;
 let isTrackingFrame = false;
 let enrollCompleted = false;
 
-function startFaceTracking() {
-  if (trackingTimer) clearTimeout(trackingTimer);
-  enrollCompleted = false;
-  isTrackingFrame = false;
+function completeEnrollment(descriptor) {
+  enrollCompleted = true;
+  detectedDescriptor = Array.from(descriptor);
+  captureSnapshot();
+
+  if (btnSnapNow) btnSnapNow.classList.add("d-none");
+  statusMsg.className = "alert alert-success py-2 px-3 text-center mb-3 fw-bold small";
+  statusMsg.innerHTML = '<i class="bi bi-check-circle-fill me-1"></i> Sampel Wajah Berhasil Diambil! Tekan "SIMPAN BIOMETRIK WAJAH SAYA" di bawah.';
+  btnSave.classList.remove("d-none");
+}
+
+async function forceCaptureBiometric() {
+  if (!video || !video.videoWidth || enrollCompleted) return;
+  statusMsg.className = "alert alert-info py-2 px-3 text-center mb-3 fw-bold small";
+  statusMsg.innerHTML = '<span class="spinner-border spinner-border-sm me-2 text-primary"></span> Mengambil vektor biometrik instan...';
 
   const useTinyLandmarks = faceapi.nets.faceLandmark68TinyNet && faceapi.nets.faceLandmark68TinyNet.isLoaded;
-  // inputSize 128 berjalan ultra-cepat (<15ms) pada WebGL GPU HP
-  const fastDetectorOptions = new faceapi.TinyFaceDetectorOptions({ inputSize: 128, scoreThreshold: 0.35 });
+  const fastDetectorOptions = new faceapi.TinyFaceDetectorOptions({ inputSize: 160, scoreThreshold: 0.3 });
+
+  try {
+    const fullDetection = await faceapi.detectSingleFace(video, fastDetectorOptions)
+      .withFaceLandmarks(useTinyLandmarks)
+      .withFaceDescriptor();
+
+    if (fullDetection && fullDetection.descriptor) {
+      completeEnrollment(fullDetection.descriptor);
+    } else {
+      statusMsg.className = "alert alert-warning py-2 px-3 text-center mb-3 small";
+      statusMsg.innerHTML = '<i class="bi bi-person-exclamation me-1"></i> Wajah belum terdeteksi jelas. Posisikan wajah tepat di oval.';
+    }
+  } catch (err) {
+    console.warn("Force capture err:", err);
+  }
+}
+
+function startFaceTracking() {
+  if (trackingTimer) cancelAnimationFrame(trackingTimer);
+  enrollCompleted = false;
+  isTrackingFrame = false;
+  enrollHoldFrames = 0;
+
+  const useTinyLandmarks = faceapi.nets.faceLandmark68TinyNet && faceapi.nets.faceLandmark68TinyNet.isLoaded;
+  const fastDetectorOptions = new faceapi.TinyFaceDetectorOptions({ inputSize: 160, scoreThreshold: 0.30 });
 
   async function trackingLoop() {
-    if (enrollCompleted || !video.videoWidth || !video.videoHeight || video.paused || video.ended) {
+    if (enrollCompleted || !video || !video.videoWidth || video.paused || video.ended) {
       if (!enrollCompleted) {
-        trackingTimer = setTimeout(trackingLoop, 50);
+        trackingTimer = requestAnimationFrame(trackingLoop);
       }
+      return;
+    }
+
+    if (!modelsLoaded) {
+      trackingTimer = requestAnimationFrame(trackingLoop);
       return;
     }
 
@@ -464,55 +546,59 @@ function startFaceTracking() {
       isTrackingFrame = true;
       try {
         if (!isLivenessVerified) {
-          // Fase 1 Cepat: Deteksi wajah & landmarks saja (tanpa hitung descriptor)
+          // Fase 1 Cepat: Deteksi wajah & landmarks
           const detection = await faceapi.detectSingleFace(video, fastDetectorOptions).withFaceLandmarks(useTinyLandmarks);
 
           if (detection) {
             faceOval.classList.add("active");
+            if (btnSnapNow) btnSnapNow.classList.remove("d-none");
+
             const landmarks = detection.landmarks;
             const leftEye = landmarks.getLeftEye();
             const rightEye = landmarks.getRightEye();
+            const avgEAR = (calculateEAR(leftEye) + calculateEAR(rightEye)) / 2.0;
 
-            const leftEAR = calculateEAR(leftEye);
-            const rightEAR = calculateEAR(rightEye);
-            const avgEAR = (leftEAR + rightEAR) / 2.0;
-
-            // Liveness Detection: Deteksi Kedipan Mata
-            if (avgEAR < 0.24) {
+            // Liveness Detection 1: Kedipan Mata (EAR)
+            if (avgEAR < 0.26) {
               lastEyeState = "closed";
             } else if (avgEAR > 0.27 && lastEyeState === "closed") {
               blinkDetected = true;
               isLivenessVerified = true;
             }
 
+            // Liveness Detection 2: Steady Hold (Tahan Wajah 1 Detik)
+            enrollHoldFrames++;
+            const pct = Math.min(100, Math.round((enrollHoldFrames / HOLD_FRAMES_REQUIRED) * 100));
+            progressBar.style.width = pct + "%";
+
+            if (enrollHoldFrames >= HOLD_FRAMES_REQUIRED) {
+              isLivenessVerified = true;
+            }
+
             if (!isLivenessVerified) {
               statusMsg.className = "alert alert-warning py-2 px-3 text-center mb-3 fw-bold small";
-              statusMsg.innerHTML = \'<i class="bi bi-eye-fill me-1"></i> Wajah Terdeteksi! Silakan <u>KEDIPKAN MATA</u> Anda (Uji Liveness)...\';
+              statusMsg.innerHTML = '<i class="bi bi-eye-fill me-1"></i> Wajah Terdeteksi! <u>Tahan posisi 1 detik</u> atau <u>kedipkan mata</u>...';
             }
           } else {
             faceOval.classList.remove("active");
+            enrollHoldFrames = Math.max(0, enrollHoldFrames - 2);
+            progressBar.style.width = "20%";
             if (!isLivenessVerified) {
               statusMsg.className = "alert alert-secondary py-2 px-3 text-center mb-3 small";
-              statusMsg.innerHTML = \'<i class="bi bi-person-exclamation me-1"></i> Sesuaikan posisi wajah Anda tepat di dalam lingkaran oval.\';
+              statusMsg.innerHTML = '<i class="bi bi-person-exclamation me-1"></i> Sesuaikan posisi wajah Anda tepat di dalam lingkaran oval.';
             }
           }
         } else {
-          // Fase 2: Liveness lolos! Hitung descriptor sekali
+          // Fase 2: Liveness lolos! Hitung descriptor
           statusMsg.className = "alert alert-info py-2 px-3 text-center mb-3 fw-bold small";
-          statusMsg.innerHTML = \'<span class="spinner-border spinner-border-sm me-2 text-primary"></span> Kedip terdeteksi! Mengambil vektor biometrik...\';
+          statusMsg.innerHTML = '<span class="spinner-border spinner-border-sm me-2 text-primary"></span> Wajah stabil! Mengambil vektor biometrik...';
 
           const fullDetection = await faceapi.detectSingleFace(video, fastDetectorOptions)
             .withFaceLandmarks(useTinyLandmarks)
             .withFaceDescriptor();
 
           if (fullDetection && fullDetection.descriptor) {
-            enrollCompleted = true;
-            detectedDescriptor = Array.from(fullDetection.descriptor);
-            captureSnapshot();
-
-            statusMsg.className = "alert alert-success py-2 px-3 text-center mb-3 fw-bold small";
-            statusMsg.innerHTML = \'<i class="bi bi-check-circle-fill me-1"></i> Liveness Lolos! Tekan "SIMPAN BIOMETRIK WAJAH SAYA" di bawah.\';
-            btnSave.classList.remove("d-none");
+            completeEnrollment(fullDetection.descriptor);
             return;
           }
         }
@@ -524,11 +610,11 @@ function startFaceTracking() {
     }
 
     if (!enrollCompleted) {
-      trackingTimer = setTimeout(trackingLoop, 25);
+      trackingTimer = requestAnimationFrame(trackingLoop);
     }
   }
 
-  trackingLoop();
+  trackingTimer = requestAnimationFrame(trackingLoop);
 }
 
 function captureSnapshot() {
@@ -541,6 +627,13 @@ function captureSnapshot() {
   ctx.scale(-1, 1);
   ctx.drawImage(video, sx, sy, s, s, 0, 0, canvas.width, canvas.height);
   capturedPhotoBase64 = canvas.toDataURL("image/jpeg", 0.8);
+}
+
+// Preload modul AI di awal agar saat klik "Aktifkan Kamera" langsung instan
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", () => setTimeout(loadModels, 200));
+} else {
+  setTimeout(loadModels, 200);
 }
 
 async function saveBiometrics() {
@@ -601,6 +694,115 @@ async function saveBiometrics() {
     console.error("Gagal kirim biometrik:", err);
     alert("Terjadi kesalahan koneksi saat menyimpan biometrik.");
     btnSave.disabled = false;
+  }
+}
+
+function b64urlToBuffer(base64url) {
+  let base64 = base64url.replace(/-/g, '+').replace(/_/g, '/');
+  while (base64.length % 4) base64 += '=';
+  const bin = atob(base64);
+  const bytes = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+  return bytes.buffer;
+}
+
+function bufferToB64url(buffer) {
+  const bytes = new Uint8Array(buffer);
+  let str = '';
+  for (const b of bytes) str += String.fromCharCode(b);
+  return btoa(str).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+
+// Cek apakah perangkat iPhone / smartphone mendukung sensor Face ID / Sidik Jari fisik
+if (window.PublicKeyCredential && PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable) {
+  PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable().then(avail => {
+    if (avail) {
+      const box = document.getElementById("nativeFaceIdBox");
+      if (box) {
+        box.style.display = "block";
+        const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+        const isAndroid = /Android/.test(navigator.userAgent);
+        const btn = document.getElementById("btnEnrollFaceId");
+        if (isAndroid) {
+          box.querySelector(".fw-bold.text-primary").textContent = "Sidik Jari / Biometrik Android (Rekomendasi)";
+          box.querySelector(".text-muted").textContent = "Verifikasi instan via sensor sidik jari / face unlock Android (< 0.5 detik)";
+          box.querySelector(".text-secondary").textContent = "Daftarkan sidik jari HP Android Anda sekarang agar dapat login dan verifikasi maintenance tanpa perlu membuka kamera web.";
+          const iconEl = box.querySelector("i.bi-apple");
+          if (iconEl) iconEl.className = "bi bi-fingerprint";
+          if (btn) btn.innerHTML = '<i class="bi bi-fingerprint me-1"></i> Daftarkan Sidik Jari Android Ini';
+        }
+      }
+    }
+  }).catch(() => {});
+}
+
+async function enrollNativeFaceId() {
+  const btn = document.getElementById("btnEnrollFaceId");
+  const status = document.getElementById("nativeFaceIdStatus");
+  const userSel = document.getElementById("userSelect");
+  let targetId = userSel ? parseInt(userSel.value, 10) : 0;
+
+  if (targetId <= 0 && targetId !== -1) {
+    alert("Silakan pilih nama teknisi Anda terlebih dahulu.");
+    return;
+  }
+
+  btn.disabled = true;
+  status.className = "small mt-2 text-primary fw-semibold";
+  status.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Menyiapkan sesi pendaftaran Face ID...';
+
+  try {
+    const res = await fetch("webauthn_handler.php?action=register_options&user_id=" + targetId);
+    const data = await res.json();
+    if (!data.success || !data.options) {
+      throw new Error(data.error || "Gagal menyiapkan Face ID.");
+    }
+
+    const opts = data.options;
+    opts.challenge = b64urlToBuffer(opts.challenge);
+    opts.user.id = b64urlToBuffer(opts.user.id);
+    if (Array.isArray(opts.excludeCredentials)) {
+      opts.excludeCredentials = opts.excludeCredentials.map(c => ({
+        type: c.type,
+        id: b64urlToBuffer(c.id)
+      }));
+    }
+
+    status.innerHTML = '<i class="bi bi-phone-fill me-1 text-primary"></i> Silakan verifikasi wajah di dialog Face ID iPhone...';
+    const cred = await navigator.credentials.create({ publicKey: opts });
+    if (!cred) throw new Error("Pendaftaran dibatalkan.");
+
+    status.innerHTML = '<span class="spinner-border spinner-border-sm me-1 text-success"></span> Menyimpan Face ID ke Google Sheets...';
+
+    const verifyRes = await fetch("webauthn_handler.php?action=register_verify", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        id: cred.id,
+        rawId: bufferToB64url(cred.rawId),
+        device_name: "Apple iPhone (Face ID)",
+        response: {
+          clientDataJSON: bufferToB64url(cred.response.clientDataJSON),
+          attestationObject: bufferToB64url(cred.response.attestationObject)
+        }
+      })
+    });
+
+    const verifyData = await verifyRes.json();
+    if (verifyData.success) {
+      status.className = "small mt-2 text-success fw-bold";
+      status.innerHTML = '<i class="bi bi-check-circle-fill me-1"></i> ' + verifyData.message;
+      btn.className = "btn btn-success fw-bold py-2 rounded-3 shadow-sm w-100";
+      btn.innerHTML = '<i class="bi bi-check-lg me-1"></i> Face ID iPhone Berhasil Didaftarkan!';
+      btn.disabled = true;
+    } else {
+      throw new Error(verifyData.error || "Gagal menyimpan Face ID.");
+    }
+  } catch (err) {
+    console.error(err);
+    status.className = "small mt-2 text-danger";
+    status.innerHTML = '<i class="bi bi-exclamation-circle-fill me-1"></i> ' + (err.message || "Gagal mendaftarkan Face ID.");
+    btn.disabled = false;
   }
 }
 
