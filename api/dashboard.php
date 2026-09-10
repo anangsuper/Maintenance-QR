@@ -199,6 +199,9 @@ foreach ($upcomingList as $u) {
         $dueBadge = '<span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 px-2 py-1"><i class="bi bi-exclamation-triangle-fill me-1"></i>Terlambat '.abs($sisa).' Hari</span>';
     }
 
+    $uTok = !empty($u['qr_token']) ? $u['qr_token'] : get_static_qr_token((int)($u['asset_id'] ?? 0));
+    $uScanUrl = $uTok ? module_url('scan.php', ['t' => $uTok, 'action' => 'start']) : '';
+
     $upcomingRowsHtml .= '
     <tr>
       <td class="fw-bold font-monospace text-primary">'.e($u['kode_inventaris']).'</td>
@@ -207,8 +210,9 @@ foreach ($upcomingList as $u) {
       <td class="text-nowrap small text-secondary">'.e(format_id_date($u['due_date'])).'</td>
       <td>'.$dueBadge.'</td>
       <td><i class="bi bi-person text-secondary me-1"></i>'.e($u['karyawan_nama']).'</td>
-      <td class="text-end">
-        <a class="btn btn-sm btn-outline-success py-1 px-2" href="'.e(module_url('asset_edit.php', ['id'=>(int)$u['asset_id']])).'"><i class="bi bi-pencil-square me-1"></i> Cek</a>
+      <td class="text-end text-nowrap">
+        '.($uScanUrl ? '<a class="btn btn-sm btn-success fw-bold py-1 px-2 me-1" href="'.e($uScanUrl).'" title="Mulai Checklist Pemeliharaan"><i class="bi bi-clipboard2-check-fill me-1"></i> Periksa</a>' : '').'
+        <a class="btn btn-sm btn-outline-secondary py-1 px-2" href="'.e(module_url('asset_edit.php', ['id'=>(int)$u['asset_id']])).'" title="Detail Komputer"><i class="bi bi-pencil-square"></i></a>
       </td>
     </tr>';
 }
@@ -578,9 +582,15 @@ $body .= '
   <div class="progress rounded-pill my-2" style="height: 12px; background-color: #f1f5f9;">
     <div class="progress-bar rounded-pill" role="progressbar" style="width: '.$percentDone.'%; background: '.($percentDone >= 100 ? 'var(--success-gradient)' : ($percentDone >= 50 ? 'var(--primary-gradient)' : 'var(--warning-gradient)')).'; transition: width 0.8s ease;" aria-valuenow="'.$percentDone.'" aria-valuemin="0" aria-valuemax="100"></div>
   </div>
-  <div class="d-flex flex-wrap justify-content-between text-muted small mt-2">
+  <div class="d-flex flex-wrap justify-content-between align-items-center text-muted small mt-2 gap-2">
     <span><i class="bi bi-geo-alt-fill text-primary me-1"></i> Wilayah: <strong>'.e($selectedCabangName).'</strong></span>
-    <span>Sisa belum maintenance: <strong class="text-warning-emphasis">'.max(0, $totalActive - $totalDone).' Unit</strong></span>
+    <div class="d-flex align-items-center gap-2">
+      <span>Sisa belum maintenance: <strong class="text-warning-emphasis">'.max(0, $totalActive - $totalDone).' Unit</strong></span>
+      '.($totalActive - $totalDone > 0 ? '
+      <a class="btn btn-sm btn-danger text-white fw-bold px-3 py-1 rounded-pill shadow-sm" href="'.e(module_url('assets.php', ['maint'=>'pending', 'cabang'=>$cabangId])).'">
+        <i class="bi bi-list-task me-1"></i> Buka To-Do List ('.max(0, $totalActive - $totalDone).' Unit) &raquo;
+      </a>' : '').'
+    </div>
   </div>
 </div>
 
@@ -605,7 +615,7 @@ $body .= '
 
   <!-- 2. Aset Aktif -->
   <div class="col-6 col-md-4 col-xl-2">
-    <a href="'.e(module_url('dashboard.php', ['status_aset'=>'aktif','bulan'=>$month,'tahun'=>$year,'cabang'=>$cabangId])).'" class="stat-card-clickable" title="Filter Aset Aktif">
+    <a href="'.e(module_url('assets.php', ['status'=>'Aktif','cabang'=>$cabangId])).'" class="stat-card-clickable" title="Filter Aset Aktif">
       <div class="card stat-card-success p-3 h-100 shadow-sm">
         <div class="d-flex align-items-center gap-2 gap-md-3">
           <div class="stat-icon-box bg-success bg-opacity-10 text-success">
@@ -622,7 +632,7 @@ $body .= '
 
   <!-- 3. Aset Rusak / Bermasalah -->
   <div class="col-6 col-md-4 col-xl-2">
-    <a href="'.e(module_url('dashboard.php', ['status_aset'=>'rusak','bulan'=>$month,'tahun'=>$year,'cabang'=>$cabangId])).'" class="stat-card-clickable" title="Filter Aset Rusak">
+    <a href="'.e(module_url('assets.php', ['status'=>'Perbaikan','cabang'=>$cabangId])).'" class="stat-card-clickable" title="Filter Aset Rusak">
       <div class="card stat-card-danger p-3 h-100 shadow-sm">
         <div class="d-flex align-items-center gap-2 gap-md-3">
           <div class="stat-icon-box bg-danger bg-opacity-10 text-danger">
@@ -637,9 +647,9 @@ $body .= '
     </a>
   </div>
 
-  <!-- 4. Jatuh Tempo / Belum Selesai -->
+  <!-- 4. Jatuh Tempo / Belum Selesai (To-Do List Teknisi) -->
   <div class="col-6 col-md-4 col-xl-2">
-    <a href="'.e(module_url('dashboard.php', ['status_maint'=>'pending','bulan'=>$month,'tahun'=>$year,'cabang'=>$cabangId])).'" class="stat-card-clickable" title="Filter Maintenance Jatuh Tempo">
+    <a href="'.e(module_url('assets.php', ['maint'=>'pending','cabang'=>$cabangId])).'" class="stat-card-clickable" title="Buka To-Do List Komputer Belum Diperiksa">
       <div class="card stat-card-warning p-3 h-100 shadow-sm">
         <div class="d-flex align-items-center gap-2 gap-md-3">
           <div class="stat-icon-box bg-warning bg-opacity-15 text-warning-emphasis">
@@ -656,7 +666,7 @@ $body .= '
 
   <!-- 5. Selesai Bulan Ini -->
   <div class="col-6 col-md-4 col-xl-2">
-    <a href="'.e(module_url('dashboard.php', ['status_maint'=>'done','bulan'=>$month,'tahun'=>$year,'cabang'=>$cabangId])).'" class="stat-card-clickable" title="Filter Maintenance Selesai">
+    <a href="'.e(module_url('assets.php', ['maint'=>'done','cabang'=>$cabangId])).'" class="stat-card-clickable" title="Lihat Komputer Selesai Maintenance">
       <div class="card stat-card-info p-3 h-100 shadow-sm">
         <div class="d-flex align-items-center gap-2 gap-md-3">
           <div class="stat-icon-box bg-info bg-opacity-10 text-primary">
@@ -673,7 +683,7 @@ $body .= '
 
   <!-- 6. Temuan Belum Ditindaklanjuti -->
   <div class="col-6 col-md-4 col-xl-2">
-    <a href="'.e(module_url('audit.php', ['status'=>'repair'])).'" class="stat-card-clickable" title="Buka Audit Temuan Kerusakan">
+    <a href="'.e(module_url('assets.php', ['maint'=>'repair','cabang'=>$cabangId])).'" class="stat-card-clickable" title="Buka Daftar Komputer dengan Temuan Masalah">
       <div class="card stat-card-danger p-3 h-100 shadow-sm">
         <div class="d-flex align-items-center gap-2 gap-md-3">
           <div class="stat-icon-box bg-danger bg-opacity-10 text-danger">

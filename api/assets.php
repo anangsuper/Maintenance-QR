@@ -114,14 +114,18 @@ if (session_status() === PHP_SESSION_ACTIVE) {
     }
 }
 
-// 4. Hitung Statistik Keseluruhan
-$statTotal = count($rawAssets);
+// 4. Hitung Statistik Sesuai Filter Lokasi (Cabang & Divisi)
+$statTotal = 0;
 $statAktif = 0;
 $statDoneMaint = 0;
 $statPendingMaint = 0;
 $statRepair = 0;
 
 foreach ($rawAssets as $a) {
+    if ($cabangId > 0 && (int)($a['id_cabang'] ?? 0) !== $cabangId) continue;
+    if ($divisiId > 0 && (int)($a['id_divisi'] ?? 0) !== $divisiId) continue;
+
+    $statTotal++;
     $aid = (int)($a['id'] ?? 0);
     $stAset = strtolower(trim((string)($a['status'] ?? 'Aktif')));
     if ($stAset === 'aktif' || $stAset === '') {
@@ -246,6 +250,102 @@ foreach ($divisis as $d) {
     $optDiv .= '<option value="'.$did.'"'.($did === $divisiId ? ' selected' : '').'>'.e($dnama).'</option>';
 }
 
+// Status Banner Khusus Filter Cepat To-Do List
+$statusBannerHtml = '';
+if ($maintStatus === 'pending') {
+    $statusBannerHtml = '
+    <div class="alert alert-danger bg-danger bg-opacity-10 border-danger border-opacity-25 py-3 px-4 rounded-4 d-flex align-items-center justify-content-between flex-wrap gap-2 mb-4 shadow-sm">
+      <div class="d-flex align-items-center gap-3">
+        <div class="fs-2 text-danger"><i class="bi bi-clipboard2-x-fill"></i></div>
+        <div>
+          <h6 class="fw-bold text-danger mb-0">🎯 TO-DO LIST: Komputer Jatuh Tempo (Belum Diperiksa Bulan Ini)</h6>
+          <div class="small text-muted">Ditemukan <strong>'.$totalFiltered.' unit</strong> komputer yang belum dilakukan pemeliharaan pada periode '.$currentMonthName.' '.$year.'. Klik tombol hijau <strong>"Periksa"</strong> di kolom aksi untuk langsung mengisi checklist.</div>
+        </div>
+      </div>
+      <div class="d-flex align-items-center gap-2">
+        <span class="badge bg-danger fs-6 px-3 py-2 rounded-pill">Target: '.$totalFiltered.' Unit</span>
+      </div>
+    </div>';
+} elseif ($maintStatus === 'repair') {
+    $statusBannerHtml = '
+    <div class="alert alert-warning bg-warning bg-opacity-10 border-warning border-opacity-50 py-3 px-4 rounded-4 d-flex align-items-center justify-content-between flex-wrap gap-2 mb-4 shadow-sm">
+      <div class="d-flex align-items-center gap-3">
+        <div class="fs-2 text-warning"><i class="bi bi-exclamation-triangle-fill"></i></div>
+        <div>
+          <h6 class="fw-bold text-warning-emphasis mb-0">⚠️ DAFTAR TEMUAN MASALAH / PERBAIKAN (Pending Issues)</h6>
+          <div class="small text-muted">Ditemukan <strong>'.$totalFiltered.' unit</strong> komputer yang mengalami kendala hardware/software. Klik tombol merah <strong>"Perbaiki"</strong> untuk mencatat tindakan perbaikan.</div>
+        </div>
+      </div>
+      <div class="d-flex align-items-center gap-2">
+        <span class="badge bg-warning text-dark fs-6 px-3 py-2 rounded-pill">Perlu Perbaikan: '.$totalFiltered.' Unit</span>
+      </div>
+    </div>';
+} elseif ($maintStatus === 'done') {
+    $statusBannerHtml = '
+    <div class="alert alert-success bg-success bg-opacity-10 border-success border-opacity-25 py-3 px-4 rounded-4 d-flex align-items-center justify-content-between flex-wrap gap-2 mb-4 shadow-sm">
+      <div class="d-flex align-items-center gap-3">
+        <div class="fs-2 text-success"><i class="bi bi-patch-check-fill"></i></div>
+        <div>
+          <h6 class="fw-bold text-success mb-0">✅ DAFTAR KOMPUTER SELESAI MAINTENANCE</h6>
+          <div class="small text-muted">Sebanyak <strong>'.$totalFiltered.' unit</strong> komputer telah selesai diperiksa dan tercatat normal di periode '.$currentMonthName.' '.$year.'.</div>
+        </div>
+      </div>
+      <div class="d-flex align-items-center gap-2">
+        <span class="badge bg-success fs-6 px-3 py-2 rounded-pill">Selesai: '.$totalFiltered.' Unit</span>
+      </div>
+    </div>';
+}
+
+// Tab Filter Cepat (To-Do List Teknisi) HTML
+$todoTabsHtml = '
+<div class="card p-3 border-0 shadow-sm mb-4 bg-white" style="border-radius: 16px; border-left: 5px solid '.($maintStatus === 'pending' ? '#ef4444' : ($maintStatus === 'repair' ? '#f59e0b' : ($maintStatus === 'done' ? '#10b981' : '#2563eb'))).' !important;">
+  <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2">
+    <div>
+      <div class="d-flex align-items-center gap-2">
+        <span class="badge '.($maintStatus === 'pending' ? 'bg-danger text-white' : ($maintStatus === 'repair' ? 'bg-warning text-dark' : ($maintStatus === 'done' ? 'bg-success text-white' : 'bg-primary bg-opacity-10 text-primary'))).' fw-bold px-2 py-1">
+          <i class="bi bi-list-task me-1"></i> TO-DO LIST TEKNISI
+        </span>
+        <span class="text-secondary small">Filter Cepat Status Periode: <strong>'.$currentMonthName.' '.$year.'</strong></span>
+      </div>
+      <div class="small text-muted mt-1">Pilih tab di bawah untuk memfokuskan daftar unit komputer:</div>
+    </div>
+    <div class="d-flex align-items-center gap-2 flex-wrap">
+      <a class="btn btn-outline-secondary btn-sm fw-semibold" target="_blank" href="'.e(module_url('print_qr.php', ['cabang' => $cabangId])).'">
+        <i class="bi bi-qr-code me-1"></i> Cetak QR Cabang Ini
+      </a>
+      <a class="btn btn-outline-primary btn-sm fw-semibold" target="_blank" href="'.e(module_url('print_report.php', ['bulan' => $month, 'tahun' => $year, 'cabang' => $cabangId])).'">
+        <i class="bi bi-printer me-1"></i> Cetak Laporan
+      </a>
+    </div>
+  </div>
+
+  <div class="d-flex flex-wrap gap-2 mt-3 pt-3 border-top">
+    <!-- 1. Semua Unit -->
+    <a href="'.e(filter_query(['maint' => null, 'page' => 1])).'" 
+       class="btn btn-sm rounded-pill px-3 fw-bold '.($maintStatus === '' || $maintStatus === 'all' ? 'btn-primary shadow-sm' : 'btn-outline-secondary').'">
+      <i class="bi bi-grid-fill me-1"></i> Semua Unit ('.$statTotal.')
+    </a>
+
+    <!-- 2. Belum Diperiksa (To-Do Utama) -->
+    <a href="'.e(filter_query(['maint' => 'pending', 'page' => 1])).'" 
+       class="btn btn-sm rounded-pill px-3 fw-bold '.($maintStatus === 'pending' ? 'btn-danger text-white shadow' : 'btn-outline-danger').'" style="'.($maintStatus !== 'pending' ? 'background-color: #FEF2F2; border-color: #FCA5A5;' : '').'">
+      <i class="bi bi-exclamation-circle-fill me-1"></i> 🔴 Belum Diperiksa Bulan Ini ('.$statPendingMaint.')
+    </a>
+
+    <!-- 3. Ada Temuan Masalah -->
+    <a href="'.e(filter_query(['maint' => 'repair', 'page' => 1])).'" 
+       class="btn btn-sm rounded-pill px-3 fw-bold '.($maintStatus === 'repair' ? 'btn-warning text-dark shadow' : 'btn-outline-warning text-dark').'" style="'.($maintStatus !== 'repair' ? 'background-color: #FFFBEB; border-color: #FCD34D;' : '').'">
+      <i class="bi bi-tools me-1"></i> 🟡 Ada Temuan Masalah ('.$statRepair.')
+    </a>
+
+    <!-- 4. Sudah Selesai -->
+    <a href="'.e(filter_query(['maint' => 'done', 'page' => 1])).'" 
+       class="btn btn-sm rounded-pill px-3 fw-bold '.($maintStatus === 'done' ? 'btn-success text-white shadow' : 'btn-outline-success').'" style="'.($maintStatus !== 'done' ? 'background-color: #F0FDF4; border-color: #86EFAC;' : '').'">
+      <i class="bi bi-check-circle-fill me-1"></i> 🟢 Selesai ('.$statDoneMaint.')
+    </a>
+  </div>
+</div>';
+
 // Render Baris Tabel
 $tableRows = '';
 $startNum = $offset;
@@ -261,7 +361,7 @@ foreach ($pageAssets as $a) {
     $ip = !empty($a['ip_address']) ? $a['ip_address'] : (!empty($a['ip']) ? $a['ip'] : '-');
     $printer = !empty($a['printer']) ? $a['printer'] : '-';
     $stAset = trim((string)($a['status'] ?? 'Aktif')) ?: 'Aktif';
-    $token = $a['qr_token'] ?? get_asset_qr_token($aid) ?? '';
+    $token = !empty($a['qr_token']) ? $a['qr_token'] : get_static_qr_token($aid);
 
     // Status Badge Komputer
     $statusBadge = match (strtolower($stAset)) {
@@ -275,15 +375,20 @@ foreach ($pageAssets as $a) {
     // Status Maintenance Bulan Berjalan
     $mInfo = $maintStatusMap[$aid] ?? null;
     $maintBadge = '';
+    $isRepairIssue = false;
+    $isDoneMaint = false;
+
     if ($mInfo && $mInfo['is_done']) {
         $st = $mInfo['status'];
         if (in_array($st, ['Temuan', 'Perlu Perbaikan', 'Proses'], true)) {
+            $isRepairIssue = true;
             $maintBadge = '<span class="badge text-bg-danger text-wrap" title="Temuan pada '.$mInfo['date'].' oleh '.$mInfo['tech'].'"><i class="bi bi-exclamation-triangle-fill me-1"></i>Temuan: '.e($st).'</span>';
         } else {
+            $isDoneMaint = true;
             $maintBadge = '<span class="badge text-bg-success text-wrap" title="Selesai pada '.$mInfo['date'].' oleh '.$mInfo['tech'].'"><i class="bi bi-check-lg me-1"></i>Selesai ('.$mInfo['date'].')</span>';
         }
     } else {
-        $maintBadge = '<span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle text-wrap"><i class="bi bi-clock me-1"></i>Belum Maintenance</span>';
+        $maintBadge = '<span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 text-wrap fw-bold"><i class="bi bi-clock-history me-1"></i>Belum Diperiksa</span>';
     }
 
     // Link Action
@@ -291,6 +396,14 @@ foreach ($pageAssets as $a) {
     $cardUrl = module_url('print_card.php', ['id' => $aid, 'layout' => 'single']);
     $editUrl = module_url('asset_edit.php', ['id' => $aid]);
     $deleteUrl = module_url('asset_delete.php', ['id' => $aid, 'redirect' => $_SERVER['REQUEST_URI'] ?? module_url('assets.php')]);
+
+    // Quick Action Button for Technicians (To-Do List)
+    $quickActionBtn = '';
+    if ($isRepairIssue && $scanUrl) {
+        $quickActionBtn = '<a class="btn btn-sm btn-danger fw-bold text-nowrap shadow-sm" href="'.e($scanUrl . '&action=tindak_lanjut').'" title="Tindak Lanjuti Kendala / Perbaikan"><i class="bi bi-tools me-1"></i> Perbaiki</a>';
+    } elseif (!$isDoneMaint && $scanUrl) {
+        $quickActionBtn = '<a class="btn btn-sm btn-success fw-bold text-nowrap shadow-sm" href="'.e($scanUrl . '&action=start').'" title="Mulai Checklist Pemeliharaan Komputer Ini"><i class="bi bi-clipboard2-check-fill me-1"></i> Periksa</a>';
+    }
 
     $tableRows .= '
     <tr>
@@ -320,11 +433,14 @@ foreach ($pageAssets as $a) {
       <td class="text-center">'.$statusBadge.'</td>
       <td class="text-center">'.$maintBadge.'</td>
       <td class="text-end text-nowrap">
-        <div class="btn-group btn-group-sm" role="group">
-          '.($scanUrl ? '<a class="btn btn-outline-primary" href="'.e($scanUrl).'" title="Buka Kartu / Scan Form"><i class="bi bi-qr-code-scan"></i></a>' : '').'
-          <a class="btn btn-outline-secondary" target="_blank" href="'.e($cardUrl).'" title="Cetak Kartu Kontrol 1 Lembar"><i class="bi bi-printer"></i></a>
-          <a class="btn btn-outline-warning text-dark" href="'.e($editUrl).'" title="Edit Data Komputer"><i class="bi bi-pencil-square"></i></a>
-          <a class="btn btn-outline-danger" href="'.e($deleteUrl).'" title="Hapus Aset Komputer"><i class="bi bi-trash3-fill"></i></a>
+        <div class="d-inline-flex align-items-center gap-1">
+          '.$quickActionBtn.'
+          <div class="btn-group btn-group-sm" role="group">
+            '.($scanUrl ? '<a class="btn btn-outline-primary" href="'.e($scanUrl).'" title="Buka Kartu / Scan Form"><i class="bi bi-qr-code-scan"></i></a>' : '').'
+            <a class="btn btn-outline-secondary" target="_blank" href="'.e($cardUrl).'" title="Cetak Kartu Kontrol 1 Lembar"><i class="bi bi-printer"></i></a>
+            <a class="btn btn-outline-warning text-dark" href="'.e($editUrl).'" title="Edit Data Komputer"><i class="bi bi-pencil-square"></i></a>
+            <a class="btn btn-outline-danger" href="'.e($deleteUrl).'" title="Hapus Aset Komputer"><i class="bi bi-trash3-fill"></i></a>
+          </div>
         </div>
       </td>
     </tr>';
@@ -464,6 +580,8 @@ $body = '
   </div>
 </div>
 
+'.$todoTabsHtml.'
+
 <!-- Filter Bar -->
 <div class="card p-4 border-0 shadow-sm mb-4">
   <form method="get" class="row g-3 align-items-end">
@@ -516,6 +634,8 @@ $body = '
     </div>
   </form>
 </div>
+
+'.$statusBannerHtml.'
 
 <!-- Table Card -->
 <div class="card p-0 border-0 shadow-sm overflow-hidden mb-4">
