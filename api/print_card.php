@@ -36,7 +36,8 @@ function render_card_grid6(array $asset, int $year): string {
     $assetId = (int)$asset['id'];
     $matrix = get_asset_yearly_card_matrix($assetId, $year);
 
-    $userDisplay = !empty($asset['karyawan_nama']) && $asset['karyawan_nama'] !== '-' ? $asset['karyawan_nama'] : 'Umum / Pool';
+    $rawUser = !empty($asset['karyawan_nama']) && $asset['karyawan_nama'] !== '-' ? $asset['karyawan_nama'] : 'Umum / Pool';
+    $userDisplay = ($rawUser !== 'Umum / Pool') ? get_nickname($rawUser) : $rawUser;
     $divisi = !empty($asset['divisi_nama']) && $asset['divisi_nama'] !== '-' ? $asset['divisi_nama'] : '';
     $userWithDiv = $divisi ? "{$userDisplay} ({$divisi})" : $userDisplay;
     $ipDisplay = !empty($asset['ip_address']) ? $asset['ip_address'] : (!empty($asset['ip']) ? $asset['ip'] : '-');
@@ -144,7 +145,8 @@ function render_card_grid8(array $asset, int $year): string {
     $assetId = (int)$asset['id'];
     $matrix = get_asset_yearly_card_matrix($assetId, $year);
 
-    $userDisplay = !empty($asset['karyawan_nama']) && $asset['karyawan_nama'] !== '-' ? $asset['karyawan_nama'] : 'Umum / Pool';
+    $rawUser = !empty($asset['karyawan_nama']) && $asset['karyawan_nama'] !== '-' ? $asset['karyawan_nama'] : 'Umum / Pool';
+    $userDisplay = ($rawUser !== 'Umum / Pool') ? get_nickname($rawUser) : $rawUser;
     $divisi = !empty($asset['divisi_nama']) && $asset['divisi_nama'] !== '-' ? $asset['divisi_nama'] : '';
     $userWithDiv = $divisi ? "{$userDisplay} ({$divisi})" : $userDisplay;
     $ipDisplay = !empty($asset['ip_address']) ? $asset['ip_address'] : (!empty($asset['ip']) ? $asset['ip'] : '-');
@@ -252,7 +254,8 @@ function render_card_single(array $asset, int $year): string {
     $assetId = (int)$asset['id'];
     $matrix = get_asset_yearly_card_matrix($assetId, $year);
 
-    $userDisplay = !empty($asset['karyawan_nama']) && $asset['karyawan_nama'] !== '-' ? $asset['karyawan_nama'] : '';
+    $rawUser = !empty($asset['karyawan_nama']) && $asset['karyawan_nama'] !== '-' ? $asset['karyawan_nama'] : '';
+    $userDisplay = ($rawUser !== '') ? get_nickname($rawUser) : '';
     $ipDisplay = !empty($asset['ip_address']) ? $asset['ip_address'] : (!empty($asset['ip']) ? $asset['ip'] : '');
     $printerDisplay = !empty($asset['printer']) ? $asset['printer'] : '';
     $kodeInv = $asset['kode_inventaris'] ?? ('ASET-' . $assetId);

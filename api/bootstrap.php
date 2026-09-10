@@ -1268,6 +1268,29 @@ function technician_name(int $userId): string {
     }
 }
 
+/**
+ * Menghasilkan nama panggilan pendek dari nama lengkap (misal: "Bpk. Roni Wijaya, S.Kom" -> "Roni")
+ */
+function get_nickname(string $fullName): string {
+    $fullName = trim($fullName);
+    if ($fullName === '' || $fullName === '-') return '-';
+
+    // Hapus gelar kehormatan di depan
+    $clean = preg_replace('/^(bpk|bapak|ibu|sdr|sdri|mr|mrs|dr|drs|ir|prof)\.?\s+/i', '', $fullName);
+    // Hapus gelar akademis / sertifikasi di belakang koma (cth: ", S.Kom", ", M.M", dsb)
+    $clean = preg_replace('/,.*$/', '', $clean);
+    // Hapus kurung divisi jika ada (cth: "Roni (IT / MIS)" -> "Roni")
+    $clean = preg_replace('/\(.*?\)/', '', $clean);
+    $clean = trim($clean);
+
+    if ($clean === '') return $fullName;
+
+    // Ambil kata pertama sebagai nama panggilan
+    $words = preg_split('/\s+/', $clean);
+    return !empty($words[0]) ? $words[0] : $fullName;
+}
+
+
 // DATA ABSTRACTION LAYER FOR GOOGLE CLOUD SHEETS API V4 VS MYSQL
 
 function get_static_qr_token(int $assetId): string {
@@ -3764,7 +3787,8 @@ function get_asset_yearly_card_matrix(int $assetId, int $year): array {
                     $matrix[$sMonth]['is_done'] = true;
                     $matrix[$sMonth]['log_id'] = $logId;
                     $matrix[$sMonth]['date_str'] = $dateFormatted;
-                    $matrix[$sMonth]['paraf'] = $s['technician_name'] ?? $s['col_3'] ?? 'Teknisi';
+                    $techRaw = (string)($s['technician_name'] ?? $s['col_3'] ?? 'Teknisi');
+                    $matrix[$sMonth]['paraf'] = get_nickname($techRaw);
                     $matrix[$sMonth]['status'] = $s['status'] ?? $s['col_8'] ?? 'Selesai';
 
                     if (!empty($s['checklists']) && is_array($s['checklists'])) {
@@ -3812,7 +3836,8 @@ function get_asset_yearly_card_matrix(int $assetId, int $year): array {
             $matrix[$sMonth]['is_done'] = true;
             $matrix[$sMonth]['log_id'] = $logId;
             $matrix[$sMonth]['date_str'] = $dateFormatted;
-            $matrix[$sMonth]['paraf'] = $s['technician_name'] ?: 'Teknisi';
+            $techRaw = (string)($s['technician_name'] ?: 'Teknisi');
+            $matrix[$sMonth]['paraf'] = get_nickname($techRaw);
             $matrix[$sMonth]['status'] = $s['status'] ?: 'Selesai';
 
             $chkSt = db()->prepare("SELECT checklist_number, checked FROM maintenance_checklists WHERE maintenance_id = ?");
