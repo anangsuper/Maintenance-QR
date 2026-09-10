@@ -23,6 +23,11 @@ foreach ($rows as $r) {
     $divisiLabel = !empty($r['divisi_nama']) && $r['divisi_nama'] !== '-' ? $r['divisi_nama'] : '';
     $userFull = $divisiLabel ? "{$userLabel} ({$divisiLabel})" : $userLabel;
     $deviceTitle = asset_title($r);
+    // Bersihkan pengulangan merk yang duplikat (misal: "HP HP All-in-One")
+    $merkVal = trim((string)($r['merk'] ?? ''));
+    if ($merkVal !== '' && stripos($deviceTitle, $merkVal . ' ' . $merkVal) !== false) {
+        $deviceTitle = preg_replace('/\\b' . preg_quote($merkVal, '/') . '\\s+' . preg_quote($merkVal, '/') . '\\b/i', $merkVal, $deviceTitle);
+    }
     $kode = $r['kode_inventaris'] ?? ('ASET-' . $r['id']);
 
     $cards .= '
@@ -30,11 +35,11 @@ foreach ($rows as $r) {
       <div class="qr-sticker">
         <!-- Header Berwarna & Modern -->
         <div class="qr-top-bar">
-          <div class="d-flex align-items-center gap-1">
+          <div class="d-flex align-items-center gap-1 qr-brand-col">
             <span class="qr-dot"></span>
             <span class="qr-org">PT BPR MITRATAMA ARTHABUANA</span>
           </div>
-          <span class="qr-cabang">'.e($cabangLabel).'</span>
+          <span class="qr-cabang" title="'.e($cabangLabel).'">'.e($cabangLabel).'</span>
         </div>
 
         <!-- Body: QR Code & Detail Berwarna -->
@@ -44,8 +49,8 @@ foreach ($rows as $r) {
           </div>
           <div class="qr-text-wrap">
             <div class="qr-kode-badge">'.e($kode).'</div>
-            <div class="qr-device-name" title="'.e($deviceTitle).'"><i class="bi bi-laptop text-primary"></i> '.e($deviceTitle).'</div>
-            <div class="qr-user-name"><i class="bi bi-person-circle text-success"></i> '.e($userFull).'</div>
+            <div class="qr-device-name" title="'.e($deviceTitle).'">'.e($deviceTitle).'</div>
+            <div class="qr-user-name" title="'.e($userFull).'"><i class="bi bi-person-fill text-success me-1"></i>'.e($userFull).'</div>
           </div>
         </div>
 
@@ -115,9 +120,15 @@ body {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 1.5mm;
   background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%) !important;
   -webkit-print-color-adjust: exact !important;
   print-color-adjust: exact !important;
+}
+
+.qr-brand-col {
+  min-width: 0;
+  flex-shrink: 1;
 }
 
 .qr-dot {
@@ -126,6 +137,7 @@ body {
   border-radius: 50%;
   background: #38bdf8 !important;
   display: inline-block;
+  flex-shrink: 0;
   -webkit-print-color-adjust: exact !important;
   print-color-adjust: exact !important;
 }
@@ -133,8 +145,11 @@ body {
 .qr-org {
   font-weight: 800;
   color: #ffffff !important;
-  letter-spacing: 0.3px;
+  letter-spacing: 0.2px;
   text-transform: uppercase;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .qr-cabang {
@@ -144,8 +159,8 @@ body {
   border-radius: 0.6mm;
   text-transform: uppercase;
   white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  flex-shrink: 0;
+  text-align: right;
   box-shadow: 0 1px 2px rgba(0,0,0,0.1);
   -webkit-print-color-adjust: exact !important;
   print-color-adjust: exact !important;
@@ -188,9 +203,10 @@ body {
   background: #eff6ff !important;
   border: 1px solid #bfdbfe !important;
   line-height: 1.1;
-  word-break: break-word;
+  word-break: break-all;
   display: inline-block;
   letter-spacing: -0.2px;
+  align-self: flex-start;
   -webkit-print-color-adjust: exact !important;
   print-color-adjust: exact !important;
 }
@@ -198,21 +214,27 @@ body {
 .qr-device-name {
   font-weight: 700;
   color: #1e293b !important;
-  line-height: 1.15;
-  white-space: nowrap;
+  line-height: 1.25;
+  white-space: normal;
+  word-break: break-word;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
   overflow: hidden;
-  text-overflow: ellipsis;
 }
 
 .qr-user-name {
-  color: #047857 !important;
+  color: #065f46 !important;
   background: #ecfdf5 !important;
-  border: 0.5px solid #a7f3d0 !important;
-  line-height: 1.1;
-  white-space: nowrap;
+  border: 0.8px solid #a7f3d0 !important;
+  line-height: 1.2;
+  white-space: normal;
+  word-break: break-word;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
   overflow: hidden;
-  text-overflow: ellipsis;
-  font-weight: 600;
+  font-weight: 700;
   -webkit-print-color-adjust: exact !important;
   print-color-adjust: exact !important;
 }
@@ -249,19 +271,19 @@ body {
 .qr-container.size-medium .qr-org,
 .qr-container:not(.size-mini):not(.size-atm) .qr-org { font-size: 5pt; }
 .qr-container.size-medium .qr-cabang,
-.qr-container:not(.size-mini):not(.size-atm) .qr-cabang { font-size: 4.8pt; padding: 0.2mm 1.4mm; max-width: 25mm; }
+.qr-container:not(.size-mini):not(.size-atm) .qr-cabang { font-size: 4.6pt; padding: 0.2mm 1.5mm; max-width: 36mm; }
 .qr-container.size-medium .qr-main-body,
-.qr-container:not(.size-mini):not(.size-atm) .qr-main-body { gap: 2.2mm; padding: 1mm 0; }
+.qr-container:not(.size-mini):not(.size-atm) .qr-main-body { gap: 2.2mm; padding: 0.8mm 0; }
 .qr-container.size-medium .qr-box-wrap,
-.qr-container:not(.size-mini):not(.size-atm) .qr-box-wrap { width: 26mm; height: 26mm; padding: 0.5mm; border-radius: 1.5mm; }
+.qr-container:not(.size-mini):not(.size-atm) .qr-box-wrap { width: 25.5mm; height: 25.5mm; padding: 0.5mm; border-radius: 1.5mm; }
 .qr-container.size-medium .qr-text-wrap,
-.qr-container:not(.size-mini):not(.size-atm) .qr-text-wrap { gap: 0.7mm; }
+.qr-container:not(.size-mini):not(.size-atm) .qr-text-wrap { gap: 0.8mm; }
 .qr-container.size-medium .qr-kode-badge,
-.qr-container:not(.size-mini):not(.size-atm) .qr-kode-badge { font-size: 7.6pt; padding: 0.4mm 1.4mm; border-radius: 1mm; }
+.qr-container:not(.size-mini):not(.size-atm) .qr-kode-badge { font-size: 7.2pt; padding: 0.3mm 1.4mm; border-radius: 0.8mm; }
 .qr-container.size-medium .qr-device-name,
 .qr-container:not(.size-mini):not(.size-atm) .qr-device-name { font-size: 6.2pt; }
 .qr-container.size-medium .qr-user-name,
-.qr-container:not(.size-mini):not(.size-atm) .qr-user-name { font-size: 5.6pt; padding: 0.3mm 1.2mm; border-radius: 0.8mm; }
+.qr-container:not(.size-mini):not(.size-atm) .qr-user-name { font-size: 6.8pt; padding: 0.4mm 1.4mm; border-radius: 0.8mm; }
 .qr-container.size-medium .qr-bot-bar,
 .qr-container:not(.size-mini):not(.size-atm) .qr-bot-bar { margin: 0 -2.2mm -1.8mm -2.2mm; padding: 0.8mm 0; font-size: 4.8pt; }
 
@@ -281,14 +303,14 @@ body {
   padding: 0.9mm 1.8mm;
 }
 .qr-container.size-mini .qr-dot { width: 3.5px; height: 3.5px; }
-.qr-container.size-mini .qr-org { font-size: 4.5pt; }
-.qr-container.size-mini .qr-cabang { font-size: 4.2pt; padding: 0.2mm 1mm; max-width: 20mm; }
-.qr-container.size-mini .qr-main-body { gap: 1.8mm; padding: 0.6mm 0; }
+.qr-container.size-mini .qr-org { font-size: 4.4pt; }
+.qr-container.size-mini .qr-cabang { font-size: 4.2pt; padding: 0.2mm 1.2mm; max-width: 30mm; }
+.qr-container.size-mini .qr-main-body { gap: 1.8mm; padding: 0.5mm 0; }
 .qr-container.size-mini .qr-box-wrap { width: 22mm; height: 22mm; padding: 0.4mm; border-radius: 1mm; }
-.qr-container.size-mini .qr-text-wrap { gap: 0.5mm; }
-.qr-container.size-mini .qr-kode-badge { font-size: 6.8pt; padding: 0.3mm 1mm; border-radius: 0.8mm; }
+.qr-container.size-mini .qr-text-wrap { gap: 0.6mm; }
+.qr-container.size-mini .qr-kode-badge { font-size: 6.6pt; padding: 0.3mm 1mm; border-radius: 0.8mm; }
 .qr-container.size-mini .qr-device-name { font-size: 5.4pt; }
-.qr-container.size-mini .qr-user-name { font-size: 4.8pt; padding: 0.2mm 1mm; border-radius: 0.6mm; }
+.qr-container.size-mini .qr-user-name { font-size: 5.8pt; padding: 0.3mm 1.2mm; border-radius: 0.6mm; }
 .qr-container.size-mini .qr-bot-bar { margin: 0 -1.8mm -1.4mm -1.8mm; padding: 0.6mm 0; font-size: 4.2pt; }
 
 /* --- UKURAN 3: ATM (8.5 x 5.4 cm) --- */
@@ -307,14 +329,14 @@ body {
   padding: 1.5mm 2.8mm;
 }
 .qr-container.size-atm .qr-dot { width: 5px; height: 5px; }
-.qr-container.size-atm .qr-org { font-size: 6.2pt; }
-.qr-container.size-atm .qr-cabang { font-size: 5.6pt; padding: 0.3mm 1.6mm; max-width: 32mm; }
-.qr-container.size-atm .qr-main-body { gap: 2.8mm; padding: 1.4mm 0; }
+.qr-container.size-atm .qr-org { font-size: 6pt; }
+.qr-container.size-atm .qr-cabang { font-size: 5.5pt; padding: 0.3mm 1.8mm; max-width: 44mm; }
+.qr-container.size-atm .qr-main-body { gap: 2.8mm; padding: 1.2mm 0; }
 .qr-container.size-atm .qr-box-wrap { width: 33mm; height: 33mm; padding: 0.6mm; border-radius: 2mm; }
 .qr-container.size-atm .qr-text-wrap { gap: 1mm; }
-.qr-container.size-atm .qr-kode-badge { font-size: 9.5pt; padding: 0.5mm 1.8mm; border-radius: 1.2mm; }
+.qr-container.size-atm .qr-kode-badge { font-size: 9.2pt; padding: 0.5mm 1.8mm; border-radius: 1.2mm; }
 .qr-container.size-atm .qr-device-name { font-size: 7.5pt; }
-.qr-container.size-atm .qr-user-name { font-size: 6.5pt; padding: 0.4mm 1.5mm; border-radius: 1mm; }
+.qr-container.size-atm .qr-user-name { font-size: 8pt; padding: 0.5mm 1.6mm; border-radius: 1mm; }
 .qr-container.size-atm .qr-bot-bar { margin: 0 -2.8mm -2.2mm -2.8mm; padding: 1mm 0; font-size: 5.5pt; }
 
 /* =========================================================================
