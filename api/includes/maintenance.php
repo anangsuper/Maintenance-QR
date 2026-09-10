@@ -1,6 +1,4 @@
-﻿<?php
-declare(strict_types=1);
-
+<?php
 function get_fixed_checklists(): array {
     return [
         1 => 'Scan Virus',

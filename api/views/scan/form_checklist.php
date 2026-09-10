@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 if ($action === 'start' || $action === 'form' || $action === 'ulang') {
     $fixedItems = get_fixed_checklists();
     $isUlang = ($action === 'ulang' || ($currentMonthLog && $action === 'start'));

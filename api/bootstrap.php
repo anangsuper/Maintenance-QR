@@ -5,8 +5,6 @@
  * Memuat modul-modul terpisah dari folder includes/
  * Menjaga 100% kompatibilitas mundur dengan seluruh halaman aplikasi.
  */
-declare(strict_types=1);
-
 require_once __DIR__ . '/includes/core.php';
 require_once __DIR__ . '/includes/auth.php';
 require_once __DIR__ . '/includes/users.php';

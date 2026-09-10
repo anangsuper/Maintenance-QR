@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 // =========================================================================
 function render_biometric_modal_html(string $token, string $returnAction = 'form'): string {
     return '

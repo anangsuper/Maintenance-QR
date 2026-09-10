@@ -1,6 +1,4 @@
-﻿<?php
-declare(strict_types=1);
-
+<?php
 function asset_query_base(): string {
     $cCab = name_column('cabang') ?: 'id';
     $cDiv = name_column('divisi') ?: 'id';

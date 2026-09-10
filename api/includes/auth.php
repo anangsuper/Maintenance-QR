@@ -1,6 +1,4 @@
-﻿<?php
-declare(strict_types=1);
-
+<?php
 function set_auth_cookie(array $userData, int $lifetime = 2592000): void {
     $uid = (int)($userData['id'] ?? $userData['user_id'] ?? 0);
     $nama = (string)($userData['nama'] ?? $userData['name'] ?? '');

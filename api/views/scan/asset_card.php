@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 // Histori & Yearly Card Matrix
 $historyList = get_asset_maintenance_history($assetId);
 $cardMatrix = get_asset_yearly_card_matrix($assetId, $year);

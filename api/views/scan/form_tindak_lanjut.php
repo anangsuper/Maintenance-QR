@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 if ($action === 'tindak_lanjut') {
     $allUsers = get_user_list(true);
     $enrolledTechs = get_enrolled_technicians(true);

@@ -1,6 +1,4 @@
-﻿<?php
-declare(strict_types=1);
-
+<?php
 function render_page(string $title, string $content, string $extraHead = '', string $extraScript = '', bool $showNav = true): void {
     $nav = '';
     $currentPage = basename($_SERVER['SCRIPT_NAME'] ?? '');

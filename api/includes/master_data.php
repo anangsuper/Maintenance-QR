@@ -1,6 +1,4 @@
-﻿<?php
-declare(strict_types=1);
-
+<?php
 function get_cabang_list(): array {
     if (is_google_cloud_mode()) {
         $client = google_sheets_v4_client();
