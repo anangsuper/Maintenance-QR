@@ -186,24 +186,24 @@ foreach ($users as $u) {
     $fStat = strtolower(trim((string)($u['face_status'] ?? '')));
     $isBeingEdited = ($editId === $uId);
 
-    $nickBadge = ($uNick !== '') ? '<span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 ms-1" title="Nama Panggilan untuk Kolom Paraf Kartu Kontrol IT"><i class="bi bi-pen me-1"></i>Paraf: '.e($uNick).'</span>' : '';
+    $nickBadge = ($uNick !== '') ? '<span class="badge bg-primary-subtle text-primary border border-primary-subtle ms-1 fw-bold" title="Nama Panggilan untuk Kolom Paraf Kartu Kontrol IT"><i class="bi bi-pen me-1"></i>Paraf: '.e($uNick).'</span>' : '';
 
     $roleBadge = ($uRole === 'admin')
-        ? '<span class="badge text-bg-primary px-2 py-1"><i class="bi bi-shield-lock-fill me-1"></i> Administrator</span>'
+        ? '<span class="badge bg-primary text-white px-2 py-1 fw-bold"><i class="bi bi-shield-lock-fill me-1"></i> Administrator</span>'
         : (($uRole === 'auditor')
-            ? '<span class="badge text-bg-secondary px-2 py-1"><i class="bi bi-eye-fill me-1"></i> Auditor / SKAI</span>'
-            : '<span class="badge bg-info bg-opacity-15 text-info-emphasis px-2 py-1 border border-info border-opacity-25"><i class="bi bi-tools me-1"></i> Teknisi IT</span>');
+            ? '<span class="badge bg-secondary text-white px-2 py-1 fw-bold"><i class="bi bi-eye-fill me-1"></i> Auditor / SKAI</span>'
+            : '<span class="badge bg-info-subtle text-info border border-info-subtle px-2 py-1 fw-bold"><i class="bi bi-tools me-1"></i> Teknisi IT</span>');
 
     $statusBadge = (strcasecmp($uStatus, 'Nonaktif') === 0)
-        ? '<span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 px-2 py-1">Nonaktif</span>'
-        : '<span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 px-2 py-1">Aktif</span>';
+        ? '<span class="badge bg-danger-subtle text-danger border border-danger-subtle px-2 py-1 fw-bold"><i class="bi bi-x-circle me-1"></i> Nonaktif</span>'
+        : '<span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1 fw-bold"><i class="bi bi-check-circle me-1"></i> Aktif</span>';
 
     // Status Biometrik & Tombol Aksi Verifikasi Admin
     if ($fDesc === '') {
-        $bioBadge = '<a href="'.e(module_url('user_biometric_enroll.php', ['id'=>$uId])).'" class="badge text-decoration-none bg-secondary bg-opacity-10 text-secondary border px-2 py-1"><i class="bi bi-camera-fill me-1"></i> Daftarkan</a>';
+        $bioBadge = '<a href="'.e(module_url('user_biometric_enroll.php', ['id'=>$uId])).'" class="badge text-decoration-none bg-secondary-subtle text-secondary border border-secondary-subtle px-2 py-1 fw-semibold"><i class="bi bi-camera-fill me-1"></i> Daftarkan</a>';
     } elseif ($fStat === 'verified' || $fStat === 'terverifikasi') {
         $bioBadge = '<div class="d-inline-flex align-items-center gap-1">
-          <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-50 px-2 py-1"><i class="bi bi-check-circle-fill me-1"></i> Terverifikasi</span>
+          <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1 fw-bold"><i class="bi bi-check-circle-fill me-1"></i> Terverifikasi</span>
           <form method="post" class="d-inline" onsubmit="return confirm(\'Hapus/reset data biometrik wajah '.addslashes($uNama).'?\')">
             <input type="hidden" name="_csrf" value="'.e(csrf_token()).'">
             <input type="hidden" name="action" value="reject_face">
@@ -213,7 +213,7 @@ foreach ($users as $u) {
         </div>';
     } elseif ($fStat === 'pending' || $fStat === 'menunggu') {
         $bioBadge = '<div class="d-flex flex-column align-items-center gap-1">
-          <span class="badge bg-warning text-dark border border-warning px-2 py-1"><i class="bi bi-hourglass-split me-1"></i> Menunggu Verifikasi</span>
+          <span class="badge bg-warning-subtle text-warning border border-warning-subtle px-2 py-1 fw-bold"><i class="bi bi-hourglass-split me-1"></i> Menunggu Verifikasi</span>
           <div class="d-flex gap-1 mt-1">
             <form method="post" class="d-inline" onsubmit="return confirm(\'Setujui dan verifikasi biometrik wajah '.addslashes($uNama).'?\')">
               <input type="hidden" name="_csrf" value="'.e(csrf_token()).'">
@@ -230,7 +230,7 @@ foreach ($users as $u) {
           </div>
         </div>';
     } else {
-        $bioBadge = '<span class="badge bg-danger bg-opacity-10 text-danger border border-danger px-2 py-1"><i class="bi bi-x-circle me-1"></i> Ditolak</span>';
+        $bioBadge = '<span class="badge bg-danger-subtle text-danger border border-danger-subtle px-2 py-1 fw-bold"><i class="bi bi-x-circle me-1"></i> Ditolak</span>';
     }
 
     $telHtml = ($uTel !== '-' && $uTel !== '') ? '<div class="small text-secondary mt-1"><i class="bi bi-telephone me-1"></i>'.e($uTel).'</div>' : '';
@@ -246,7 +246,7 @@ foreach ($users as $u) {
           <button type="submit" class="btn btn-sm btn-outline-danger" title="Hapus Pengguna"><i class="bi bi-trash"></i></button>
         </form>';
     } else {
-        $delBtnHtml = ' <span class="badge bg-light text-muted border ms-1 py-1" title="Akun Anda yang sedang aktif">Akun Anda</span>';
+        $delBtnHtml = ' <span class="badge bg-light text-dark border ms-1 py-1 fw-semibold" title="Akun Anda yang sedang aktif"><i class="bi bi-person-check-fill text-primary me-1"></i>Akun Anda</span>';
     }
 
     $userRowsHtml .= '

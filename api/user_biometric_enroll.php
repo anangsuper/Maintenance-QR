@@ -129,13 +129,13 @@ $existingPhoto = $user['face_photo'] ?? '';
 $userFaceStatus = strtolower(trim((string)($user['face_status'] ?? '')));
 
 if ($userFaceStatus === 'verified' || $userFaceStatus === 'terverifikasi') {
-    $badgeStatus = '<span class="badge bg-success bg-opacity-15 text-success px-3 py-2 border border-success border-opacity-25"><i class="bi bi-shield-check me-1"></i> Wajah Terverifikasi Admin</span>';
+    $badgeStatus = '<span class="badge bg-success-subtle text-success px-3 py-2 border border-success-subtle fw-bold"><i class="bi bi-shield-check me-1"></i> Wajah Terverifikasi Admin</span>';
 } elseif ($userFaceStatus === 'pending' || $userFaceStatus === 'menunggu') {
-    $badgeStatus = '<span class="badge bg-warning text-dark px-3 py-2 border border-warning shadow-sm"><i class="bi bi-hourglass-split me-1"></i> Menunggu Persetujuan Admin</span>';
+    $badgeStatus = '<span class="badge bg-warning-subtle text-warning px-3 py-2 border border-warning-subtle fw-bold shadow-sm"><i class="bi bi-hourglass-split me-1"></i> Menunggu Persetujuan Admin</span>';
 } elseif ($userFaceStatus === 'rejected') {
-    $badgeStatus = '<span class="badge bg-danger bg-opacity-15 text-danger px-3 py-2 border border-danger"><i class="bi bi-x-circle me-1"></i> Ditolak Admin (Daftar Ulang)</span>';
+    $badgeStatus = '<span class="badge bg-danger-subtle text-danger px-3 py-2 border border-danger-subtle fw-bold"><i class="bi bi-x-circle me-1"></i> Ditolak Admin (Daftar Ulang)</span>';
 } else {
-    $badgeStatus = '<span class="badge bg-secondary bg-opacity-15 text-secondary px-3 py-2 border border-secondary border-opacity-25"><i class="bi bi-exclamation-circle me-1"></i> Belum Didaftarkan</span>';
+    $badgeStatus = '<span class="badge bg-secondary-subtle text-secondary px-3 py-2 border border-secondary-subtle fw-bold"><i class="bi bi-exclamation-circle me-1"></i> Belum Didaftarkan</span>';
 }
 
 $avatarHtml = '';
@@ -251,7 +251,7 @@ $body = '
     <!-- Top Bar Navigation -->
     <div class="d-flex justify-content-between align-items-center mb-3">
       <div>
-        <span class="badge bg-primary bg-opacity-10 text-primary fw-bold px-2 py-1 mb-1">
+        <span class="badge bg-primary-subtle text-primary border border-primary-subtle fw-bold px-2 py-1 mb-1">
           <i class="bi bi-phone-fill me-1"></i> Pendaftaran Mandiri via HP
         </span>
         <h4 class="fw-bold mb-0 text-dark">Daftar Wajah Teknisi</h4>

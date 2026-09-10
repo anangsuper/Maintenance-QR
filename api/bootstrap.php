@@ -5805,9 +5805,11 @@ h1, h2, h3, h4, h5, h6, .h1, .h2, .h3, .h4, .h5, .h6 {
   background-color: #2E77AD !important;
   color: #ffffff !important;
 }
+/* Subtle Backgrounds with High-Contrast Text */
 .bg-primary-subtle {
-  background-color: rgba(46, 119, 173, 0.12) !important;
+  background-color: #EFF6FF !important;
   color: #1D4ED8 !important;
+  border-color: #BFDBFE !important;
 }
 .text-info {
   color: #0369A1 !important;
@@ -5818,6 +5820,11 @@ h1, h2, h3, h4, h5, h6, .h1, .h2, .h3, .h4, .h5, .h6 {
 .text-bg-info {
   background-color: #0284C7 !important;
   color: #ffffff !important;
+}
+.bg-info-subtle {
+  background-color: #F0F9FF !important;
+  color: #0369A1 !important;
+  border-color: #BAE6FD !important;
 }
 .text-success {
   color: #047857 !important;
@@ -5831,53 +5838,109 @@ h1, h2, h3, h4, h5, h6, .h1, .h2, .h3, .h4, .h5, .h6 {
 }
 .bg-success-subtle {
   background-color: #ECFDF5 !important;
-  color: #065F46 !important;
+  color: #047857 !important;
+  border-color: #A7F3D0 !important;
 }
 .text-warning {
   color: #B45309 !important;
 }
+.bg-warning-subtle {
+  background-color: #FFFBEB !important;
+  color: #B45309 !important;
+  border-color: #FDE68A !important;
+}
 .text-danger {
   color: #DC2626 !important;
 }
-/* Badges: Solid badges get white text; Subtle/translucent badges keep high-contrast text */
-.badge.bg-primary:not([class*="text-"]):not([class*="bg-opacity"]),
-.badge.bg-info:not([class*="text-"]):not([class*="bg-opacity"]),
-.badge.bg-success:not([class*="text-"]):not([class*="bg-opacity"]),
-.badge.bg-danger:not([class*="text-"]):not([class*="bg-opacity"]) {
+.bg-danger-subtle {
+  background-color: #FEF2F2 !important;
+  color: #DC2626 !important;
+  border-color: #FECACA !important;
+}
+.bg-secondary-subtle {
+  background-color: #F1F5F9 !important;
+  color: #334155 !important;
+  border-color: #CBD5E1 !important;
+}
+
+/* Emphasis Text Classes */
+.text-primary-emphasis { color: #1D4ED8 !important; }
+.text-info-emphasis { color: #0369A1 !important; }
+.text-success-emphasis { color: #047857 !important; }
+.text-warning-emphasis { color: #9A3412 !important; }
+.text-danger-emphasis { color: #991B1B !important; }
+.text-secondary-emphasis { color: #334155 !important; }
+
+/* Badges: Solid badges get white text ONLY if they do NOT have opacity, subtle, or text-* */
+.badge.bg-primary:not([class*="bg-opacity"]):not([class*="-subtle"]):not([class*="text-"]),
+.badge.bg-info:not([class*="bg-opacity"]):not([class*="-subtle"]):not([class*="text-"]),
+.badge.bg-success:not([class*="bg-opacity"]):not([class*="-subtle"]):not([class*="text-"]),
+.badge.bg-danger:not([class*="bg-opacity"]):not([class*="-subtle"]):not([class*="text-"]),
+.badge.bg-secondary:not([class*="bg-opacity"]):not([class*="-subtle"]):not([class*="text-"]),
+.badge.bg-dark:not([class*="bg-opacity"]):not([class*="-subtle"]):not([class*="text-"]) {
   color: #ffffff !important;
 }
 
+/* Badges with Opacity or Subtle: Guaranteed high-contrast text and clean background */
+.badge.bg-primary[class*="bg-opacity"],
+.badge.bg-primary-subtle,
 .badge.text-primary,
-.badge.bg-primary[class*="bg-opacity-"] {
+.badge.text-primary-emphasis {
+  background-color: #EFF6FF !important;
   color: #1D4ED8 !important;
+  border-color: #BFDBFE !important;
 }
+
+.badge.bg-info[class*="bg-opacity"],
+.badge.bg-info-subtle,
 .badge.text-info,
-.badge.bg-info[class*="bg-opacity-"] {
+.badge.text-info-emphasis {
+  background-color: #F0F9FF !important;
   color: #0369A1 !important;
+  border-color: #BAE6FD !important;
 }
+
+.badge.bg-success[class*="bg-opacity"],
+.badge.bg-success-subtle,
 .badge.text-success,
-.badge.bg-success[class*="bg-opacity-"] {
+.badge.text-success-emphasis {
+  background-color: #ECFDF5 !important;
   color: #047857 !important;
+  border-color: #A7F3D0 !important;
 }
+
+.badge.bg-warning[class*="bg-opacity"],
+.badge.bg-warning-subtle,
 .badge.text-warning,
-.badge.bg-warning[class*="bg-opacity-"] {
-  color: #B45309 !important;
-}
 .badge.text-warning-emphasis {
-  color: #9A3412 !important;
+  background-color: #FFFBEB !important;
+  color: #B45309 !important;
+  border-color: #FDE68A !important;
 }
+
+.badge.bg-danger[class*="bg-opacity"],
+.badge.bg-danger-subtle,
 .badge.text-danger,
-.badge.bg-danger[class*="bg-opacity-"] {
+.badge.text-danger-emphasis {
+  background-color: #FEF2F2 !important;
   color: #DC2626 !important;
+  border-color: #FECACA !important;
 }
-.badge.text-secondary {
-  color: #475569 !important;
+
+.badge.bg-secondary[class*="bg-opacity"],
+.badge.bg-secondary-subtle,
+.badge.text-secondary,
+.badge.text-secondary-emphasis {
+  background-color: #F1F5F9 !important;
+  color: #334155 !important;
+  border-color: #CBD5E1 !important;
 }
-.badge.text-muted {
-  color: #64748B !important;
-}
+
+.badge.bg-light,
 .badge.text-dark {
+  background-color: #F8FAFC !important;
   color: #0F172A !important;
+  border-color: #E2E8F0 !important;
 }
 
 /* High Contrast Alert Boxes */
