@@ -1,152 +1,175 @@
 # 🖥️ SISTEM QR MAINTENANCE IT
-## Solusi Pemeliharaan Perangkat IT Berbasis QR Code & Biometrik Wajah
+## Digitalisasi Pemeliharaan Komputer Berbasis QR Code & Kartu Kontrol 12 Bulan
 > **Panduan & Materi Presentasi Eksekutif / Manajemen / Stakeholder**
 
 ---
 
 ## 🎯 Ringkasan Eksekutif (*Executive Summary*)
 
-**QR Maintenance IT** adalah platform manajemen inventaris dan pemeliharaan berkala (*preventive maintenance*) perangkat komputer yang dirancang untuk menggantikan proses manual berbasis kertas menjadi sistem digital yang **cepat, akuntabel, dan transparan**.
+**QR Maintenance IT** adalah aplikasi web modern untuk manajemen inventaris komputer dan pencatatan pemeliharaan berkala (*preventive maintenance*) perangkat kantor secara **cepat, terpusat, dan otomatis**.
 
-Sistem ini menggabungkan pemindaian **QR Code pada bodi perangkat** dengan **Verifikasi Biometrik Wajah (Face Recognition)** pada smartphone teknisi, sehingga setiap pemeliharaan terbukti dilakukan di tempat secara valid dan tidak dapat dimanipulasi (*anti-fraud*).
+Sistem ini menggantikan kartu gantung manual berbasis kertas menjadi **Kartu Kontrol Digital 12 Bulan** yang terhubung langsung dengan **Stiker QR Code unik** pada setiap unit komputer/laptop. 
+
+Teknisi cukup memindai stiker QR menggunakan kamera smartphone (Android maupun perangkat apa pun melalui browser), memeriksa 9 checklist standar, dan data pemeliharaan beserta **Paraf Nama Panggilan Teknisi** akan langsung tercatat secara rapi dan otomatis.
 
 ---
 
 ## 🛑 Masalah Sebelum Ada Sistem (*The Pain Points*)
 
-Sebelum sistem ini diterapkan, pemeliharaan perangkat IT di kantor menghadapi berbagai kendala:
+Sebelum sistem ini diterapkan, pemeliharaan perangkat IT di kantor menghadapi berbagai kendala operasional:
 
-1. **Kartu Kontrol Kertas Rentan Rusak & Hilang**:
-   - Kartu gantung yang ditempel pada bodi komputer sering sobek, kotor, terkena cairan, atau hilang.
-2. **Rawan Formalitas & "Titip Paraf"**:
-   - Sulit memastikan apakah teknisi benar-benar datang memeriksa unit di meja pengguna atau hanya menandatangani kartu sekaligus di akhir bulan.
-3. **Data Rekap Lambat & Tersebar**:
-   - Pimpinan dan Auditor (SKAI) harus menunggu berhari-hari mengumpulkan rekapan kartu manual dari berbagai divisi dan cabang.
-4. **Temuan Kerusakan Lambat Ditindaklanjuti**:
-   - Kerusakan kecil (seperti kipas berisik, suhu CPU panas, penyimpanan penuh) sering tidak terdokumentasi sampai akhirnya perangkat mati total (*downtime* operasional).
+1. **Kartu Kontrol Gantung Kertas Rentan Rusak**:
+   - Kartu kertas yang digantung pada bodi CPU sering robek, kotor, terkena tumpahan air, atau hilang saat pemindahan meja kerja.
+2. **Rekap Data Bulanan Lambat & Tercecer**:
+   - Pimpinan dan Auditor (SKAI) harus menunggu berhari-hari mengumpulkan rekapan formulir manual dari berbagai divisi dan kantor cabang.
+3. **Temuan Kerusakan Terlambat Ditangani**:
+   - Gejala kerusakan (seperti kipas pendingin berisik, suhu CPU panas, penyimpanan penuh) sering tidak terpantau sampai akhirnya komputer mati total (*downtime* kerja).
+4. **Nama & Data Komputer Tidak Standar**:
+   - Sering terjadi kebingungan kepemilikan aset karena identitas pengguna dan spesifikasi perangkat tidak tercatat jelas di unit fisik.
 
 ---
 
 ## 💡 Solusi yang Dihadirkan (*Our Solution*)
 
-| Fitur Solusi | Manfaat Nyata bagi Manajemen |
+| Fitur Solusi | Manfaat Nyata bagi Organisasi |
 |---|---|
-| **🏷️ Stiker QR Unik per Unit** | Identifikasi instan: scan 1 detik langsung menampilkan spesifikasi, pengguna, IP address, dan riwayat pemeliharaan. |
-| **📸 Verifikasi Biometrik Wajah** | Memastikan teknisi yang bertugas benar-benar hadir secara fisik di lokasi perangkat saat menyelesaikan perawatan atau perbaikan. |
-| **📋 9 Standar Checklist IT** | Standarisasi kualitas perawatan perangkat kantor (fisik, hardware, update OS, antivirus, dan backup data). |
-| **🛠️ Pelacakan Temuan Kerusakan** | Kerusakan tercatat dengan status *Pending*, dan otomatis kembali *Normal* setelah teknisi melakukan perbaikan dan verifikasi wajah. |
-| **📊 Dashboard Audit Real-Time** | Manajemen dan Auditor dapat memantau persentase kepatuhan pemeliharaan seluruh cabang secara *live* detik itu juga. |
-| **🖨️ Cetak Kartu & Laporan Resmi** | Format cetak kartu kontrol 12 bulan (dengan nama panggilan paraf) dan laporan rekap resmi bertanda tangan. |
+| **🏷️ Stiker QR Unik per Unit** | Scan 1 detik langsung membuka identitas komputer, spesifikasi, pengguna, IP address, dan status pemeliharaan. |
+| **📱 Cukup Kamera HP (Web-Based)** | Tanpa perlu install aplikasi khusus di Play Store / App Store; kompatibel di semua smartphone melalui browser bawaan. |
+| **📋 9 Standar Checklist IT** | Menyeragamkan standar pengecekan fisik, hardware, update keamanan, antivirus, hingga backup data pengguna. |
+| **📝 Kartu Kontrol Digital 12 Bulan** | Rekap visual otomatis dari Januari hingga Desember; kolom **PARAF** otomatis terisi nama panggilan teknisi pemeriksa. |
+| **🛠️ Tracking Temuan & Tindak Lanjut** | Masalah hardware tercatat sebagai *Pending*, dan otomatis kembali *Normal* setelah teknisi menyelesaikan perbaikan. |
+| **📊 Dashboard Monitoring Real-Time** | Pimpinan dan Auditor dapat memantau persentase kepatuhan pemeliharaan seluruh cabang secara *live*. |
+| **🖨️ Format Cetak Siap Pakai** | Cetak stiker QR presisi, cetak kartu kontrol fisik (Grid 6 / Grid 8 / Single), dan cetak laporan rekap bulanan resmi. |
 
 ---
 
 ## 🔄 Alur Kerja Sistem dalam 4 Langkah Mudah (*How It Works*)
 
 ```
-[ 1. Registrasi & Tempel QR ]
-       ⬇
-[ 2. Teknisi Scan QR di Komputer Pengguna ]
-       ⬇
-[ 3. Checklist 9 Butir + Verifikasi Wajah ]
-       ⬇
-[ 4. Data Otomatis Masuk Kartu Kontrol 12 Bulan & Dashboard ]
+┌────────────────────────────────────────────────────────┐
+│ 1. Tempel Stiker QR di Komputer / Laptop Pengguna      │
+└──────────────────────────┬─────────────────────────────┘
+                           │
+                           ▼
+┌────────────────────────────────────────────────────────┐
+│ 2. Teknisi Datang & Scan QR pakai Kamera Smartphone    │
+└──────────────────────────┬─────────────────────────────┘
+                           │
+                           ▼
+┌────────────────────────────────────────────────────────┐
+│ 3. Isi 9 Standar Checklist & Catat Kendala (Jika Ada)  │
+└──────────────────────────┬─────────────────────────────┘
+                           │
+                           ▼
+┌────────────────────────────────────────────────────────┐
+│ 4. Kartu Kontrol 12 Bulan Terisi Otomatis (Paraf Teknisi)│
+└────────────────────────────────────────────────────────┘
 ```
 
-### 1. Registrasi & Cetak Stiker
-- Setiap komputer didaftarkan lengkap dengan data: **Nama Pengguna**, **Divisi**, **IP Address**, dan **Kantor Cabang**.
-- Sistem menghasilkan stiker QR profesional yang ditempelkan di casing CPU / bodi laptop.
+### 1. Registrasi & Tempel Stiker QR
+- Komputer didaftarkan ke sistem dengan data: **Nama Lengkap Karyawan**, **Divisi**, **IP Address**, **Kode Inventaris**, dan **Cabang**.
+- Sistem mencetak stiker QR rapi yang ditempelkan di casing CPU atau bodi laptop.
 
 ### 2. Kunjungan Teknisi di Lapangan
-- Teknisi mendatangi meja kerja pengguna komputer sesuai jadwal rutin.
+- Teknisi mendatangi meja kerja karyawan sesuai jadwal pemeliharaan rutin.
 - Teknisi membuka kamera smartphone dan memindai stiker QR komputer.
-- Layar smartphone langsung menampilkan status unit dan kartu kontrol 12 bulan.
+- Halaman browser langsung menampilkan profil unit dan status bulan berjalan.
 
-### 3. Pemeriksaan 9 Standar & Validasi Wajah
-- Teknisi melakukan pembersihan fisik dan pengujian sistem sesuai 9 checklist standar.
-- Kamera smartphone memindai wajah teknisi untuk memastikan keabsahan petugas.
-- Jika ada kerusakan suku cadang, teknisi mencatat temuan kerusakan untuk ditindaklanjuti.
+### 3. Pemeriksaan 9 Standar & Submit
+- Teknisi melakukan pembersihan fisik dan pengecekan sistem sesuai 9 checklist standar.
+- Teknisi memilih status:
+  - **Normal / Selesai**: Unit berfungsi baik dan siap pakai.
+  - **Ada Masalah**: Teknisi mencatat detail temuan kerusakan untuk ditindaklanjuti.
+- Klik **Simpan Pemeliharaan**.
 
-### 4. Pelaporan Otomatis & Terpusat
-- Seketika log pemeliharaan masuk ke sistem:
-  - Kolom **PARAF** kartu kontrol 12 bulan otomatis terisi **Nama Panggilan Teknisi**.
-  - Dashboard manajemen otomatis bertambah persentasenya.
-  - Jika ada temuan kerusakan, unit ditandai hingga teknisi menuntaskan perbaikannya.
+### 4. Update Kartu Kontrol & Dashboard Terpusat
+- Baris bulan berjalan pada **Kartu Kontrol 12 Bulan** otomatis terisi tanggal dan **Paraf Nama Panggilan Teknisi** (misal: *Budi, Ahmad, Roni*).
+- Header kartu kontrol menampilkan **Nama Lengkap Pengguna Komputer** beserta divisinya.
+- Dashboard cabang dan divisi otomatis bertambah persentase penyelesaiannya.
+
+---
+
+## 🔧 Alur Penanganan Kerusakan (*Issue Follow-Up*)
+
+Jika pada saat pemeliharaan ditemukan kendala komponen:
+
+```
+[ Temuan Kerusakan Dicatat ] ➔ Status Komputer: "Ada Masalah" (Badge Kuning/Merah)
+                                          ⬇
+                               [ Perbaikan Dilakukan ]
+                                          ⬇
+[ Klik "Tindak Lanjuti / Selesaikan" ] ➔ Status Otomatis Kembali: "Normal / Selesai"
+```
+
+1. **Pencatatan Masalah**: Teknisi menuliskan temuan kerusakan (misal: *Kipas PSU mati, butuh penggantian pasta, Windows lemot*).
+2. **Penandaan di Sistem**: Unit ditandai memiliki kendala yang perlu diselesaikan.
+3. **Penyelesaian**: Setelah suku cadang diganti atau perbaikan selesai, teknisi mengklik tombol **"Tindak Lanjuti / Selesaikan"** dan menuliskan tindakan yang telah dilakukan.
+4. **Kembali Normal**: Status unit komputer secara otomatis kembali menjadi **Normal / Selesai**.
 
 ---
 
 ## 📋 9 Standar Checklist Pemeliharaan IT
 
-Standar operasional prosedur (SOP) pengecekan yang diwajibkan sistem:
+Sistem menstandarisasi 9 butir pemeriksaan berkala:
 
-1. 🧹 **Pembersihan Fisik**: Pembersihan debu pada casing, motherboard, ventilasi, dan monitor.
-2. 💨 **Pemeriksaan Sirkulasi Udara (Airflow)**: Pengecekan kipas prosesor & power supply agar berputar lancar.
-3. 🌡️ **Suhu CPU & Thermal Paste**: Pengukuran suhu prosesor dan penggantian pasta pendingin jika kering.
-4. 💾 **Kesehatan Media Penyimpanan**: Pemeriksaan status S.M.A.R.T SSD / Harddisk untuk mencegah kehilangan data mendadak.
+1. 🧹 **Pembersihan Fisik**: Pembersihan debu pada casing, motherboard, keyboard, dan monitor.
+2. 💨 **Pemeriksaan Sirkulasi Udara (Airflow)**: Pengecekan kipas prosesor, casing, dan PSU agar tidak macet.
+3. 🌡️ **Suhu CPU & Thermal Paste**: Pemantauan suhu prosesor dan penggantian pasta pendingin jika kering.
+4. 💾 **Kesehatan Media Penyimpanan**: Pengecekan status kesehatan S.M.A.R.T SSD / Harddisk untuk mencegah data hilang mendadak.
 5. 🛡️ **Update Sistem Operasi**: Verifikasi patch keamanan Windows/OS terbaru terpasang.
-6. 🦠 **Antivirus & Pemindaian Malware**: Update database antivirus dan pengecekan ancaman keamanan.
-7. 🗑️ **Pembersihan File Sampah**: Penghapusan file cache, temporary files, dan sisa instalasi aplikasi.
-8. ⚡ **Optimasi Startup & Memori (RAM)**: Penonaktifan program yang memperlambat kinerja booting.
+6. 🦠 **Antivirus & Pemindaian Malware**: Update database antivirus dan pemindaian cepat terhadap potensi virus.
+7. 🗑️ **Pembersihan File Sampah**: Penghapusan temporary files, cache browser, dan recycle bin.
+8. ⚡ **Optimasi Startup & Memori (RAM)**: Mematikan aplikasi startup yang memberatkan kinerja booting.
 9. 📦 **Verifikasi Cadangan Data (Backup)**: Memastikan data penting pengguna sudah tersimpan di server/cloud.
 
 ---
 
-## 👥 Struktur Hak Akses (Multi-Role)
+## 👥 Hak Akses Pengguna (Multi-Role)
 
-Sistem membagi akses secara tegas sesuai tanggung jawab organisasi:
+Sistem membagi peran secara jelas:
 
-- **👑 Administrator (IT Management)**:
-  - Memiliki kontrol penuh atas data aset, kantor cabang, divisi, dan akun pengguna.
-  - Memverifikasi sampel biometrik wajah teknisi baru.
-  - Menetapkan nama panggilan teknisi untuk paraf kartu kontrol.
-
-- **🛠️ Teknisi IT (Lapangan)**:
-  - Memindai QR code perangkat di meja pengguna.
-  - Mengisi formulir checklist 9 butir pemeliharaan.
-  - Mencatat kerusakan dan menyelesaikan tindak lanjut perbaikan dengan verifikasi wajah.
-
-- **👁️ Auditor / SKAI (Satuan Pengawasan Internal)**:
-  - Akses pemantauan independen (*read-only*).
-  - Memantau grafik persentase kepatuhan pemeliharaan seluruh kantor cabang.
-  - Meninjau histori perbaikan dan mengunduh laporan resmi untuk bukti audit regulasi.
+1. **👑 Administrator**:
+   - Mengelola master data komputer, kantor cabang, divisi, dan akun pengguna.
+   - Menentukan nama panggilan teknisi untuk paraf kartu kontrol.
+   - Mengatur cetak stiker QR dan cetak laporan.
+2. **🛠️ Teknisi IT**:
+   - Memindai QR code di komputer karyawan.
+   - Mengisi formulir checklist pemeliharaan bulanan.
+   - Mencatat temuan masalah dan menindaklanjuti perbaikan.
+3. **👁️ Auditor / SKAI**:
+   - Memantau grafik kepatuhan pemeliharaan rutin seluruh kantor cabang secara *real-time*.
+   - Memeriksa histori penanganan aset yang bermasalah.
+   - Mengunduh dan mencetak laporan rekapitulasi resmi untuk bukti audit operasional.
 
 ---
 
 ## 💎 Nilai Tambah & Manfaat Bisnis (*Business Value & ROI*)
 
-1. **Zero Paper & Biaya Cetak Rendah (*Paperless*)**:
-   - Menghilangkan tumpukan formulir kertas yang membebani arsip gudang.
-2. **Mengurangi *Downtime* Komputer Kantor**:
-   - Masalah komponen (seperti kipas macet atau harddisk melemah) terdeteksi sebelum komputer mati total, mencegah terhentinya operasional kerja karyawan.
-3. **Akuntabilitas Mutlak (*Audit Trail & Anti-Fraud*)**:
-   - Setiap entri pemeliharaan mencatat jam pasti, tanggal, lokasi cabang, checklist spesifik, serta wajah teknisi pemeriksa.
-4. **Efisiensi Anggaran Pengadaan Perangkat**:
-   - Perangkat IT yang dirawat rutin terbukti memiliki masa pakai (*lifespan*) 30%–50% lebih panjang.
-5. **Fleksibilitas Infrastruktur (Cloud Serverless / On-Premise)**:
-   - Dapat dioperasikan tanpa biaya server database mahal menggunakan Google Cloud Sheets API v4 atau menggunakan server database MySQL internal perusahaan.
+1. **Tanpa Kertas & Bebas Biaya Cetak Kartu Manual (*Paperless*)**:
+   - Tidak perlu lagi mencetak ribuan lembar kartu gantung tahunan yang mudah tercecer.
+2. **Mencegah Komputer Rusak Mendadak (*Zero Unexpected Downtime*)**:
+   - Pengecekan rutin 9 checklist mendeteksi kerusakan kecil sebelum menjadi kerusakan fatal yang menghentikan pekerjaan staf kantor.
+3. **Transparansi Kerja Teknisi (*Clear Accountability*)**:
+   - Setiap komputer memiliki jejak rekam yang jelas: kapan dirawat, siapa teknisinya, dan apa saja butir yang diperiksa.
+4. **Memperpanjang Usia Pakai Aset Komputer**:
+   - Komputer yang terawat secara berkala terbukti bertahan 30%–50% lebih lama, menghemat anggaran pengadaan perangkat baru.
+5. **Fleksibilitas Penyimpanan Data (*Dual-Storage*)**:
+   - Dapat berjalan secara *cloud serverless* menggunakan Google Sheets API v4 (tanpa biaya sewa server database) maupun menggunakan database internal MySQL.
 
 ---
 
-## 🎬 Skenario Demonstrasi Saat Presentasi
+## 🎬 Skenario Demonstrasi Singkat Saat Presentasi
 
-Bila Anda mendemonstrasikan sistem ini di hadapan audiens:
+Bila Anda mendemonstrasikan sistem di hadapan audiens:
 
-### Skenario 1: Pemeliharaan Rutin Normal
-1. Tunjukkan stiker QR pada laptop/komputer.
-2. Pindai stiker dengan kamera HP -> Halaman scan langsung terbuka.
-3. Tunjukkan pratinjau **Kartu Kontrol 12 Bulan** yang sudah ada paraf bulan-bulan sebelumnya.
-4. Centang 9 checklist -> Tekan **Selesaikan**.
-5. Tunjukkan bahwa baris bulan berjalan langsung terisi tanggal dan **Paraf Nama Panggilan Teknisi**.
-
-### Skenario 2: Ditemukan Masalah & Tindak Lanjut
-1. Buka scan pada unit yang mengalami kerusakan (misal: *Fan CPU Macet*).
-2. Tulis catatan temuan masalah -> Simpan.
-3. Tunjukkan bahwa sistem menandai komputer dengan status **"Ada Masalah / Perlu Tindak Lanjut"**.
-4. Klik tombol **"TINDAK LANJUTI / SELESAIKAN"**.
-5. Lakukan verifikasi wajah teknisi via kamera -> Masukkan catatan perbaikan -> Submit.
-6. Tunjukkan bahwa status pemeliharaan langsung **kembali Normal** dan siap digunakan pengguna.
+1. **Tunjukkan Stiker QR**: Tunjukkan stiker pada laptop/komputer yang memuat nama perangkat, kode inventaris, nama pengguna lengkap, dan QR code.
+2. **Buka Scanner HP**: Pindai QR menggunakan kamera HP biasa -> Halaman web responsif langsung terbuka.
+3. **Perlihatkan Kartu Kontrol 12 Bulan**: Tunjukkan matriks 12 bulan (Januari–Desember) yang rapi dengan paraf nama panggilan teknisi pada bulan-bulan sebelumnya.
+4. **Isi Checklist & Simpan**: Centang checklist bulan berjalan -> Klik Simpan.
+5. **Tunjukkan Hasil Instan**: Baris bulan berjalan langsung terisi tanda centang, tanggal, dan paraf teknisi yang baru saja melakukan scan.
 
 ---
 
 ## 📌 Kesimpulan
 
-Aplikasi **QR Maintenance IT** bukan sekadar alat pencatat, melainkan instrumen tata kelola aset IT (*IT Governance*) modern yang menjamin transparansi kerja teknisi, memperpanjang usia pakai aset perusahaan, dan memudahkan pengawasan audit secara *real-time*.
+Aplikasi **QR Maintenance IT** menyederhanakan tugas pemeliharaan harian teknisi, menjamin kepatuhan standar perawatan perangkat, dan memberikan laporan transparan kepada manajemen secara *real-time* tanpa kerumitan administrasi manual.

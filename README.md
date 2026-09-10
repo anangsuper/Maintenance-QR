@@ -1,6 +1,6 @@
-# 🖥️ QR Maintenance — Sistem Pemeliharaan IT Berbasis QR Code & Biometrik Wajah
+# 🖥️ QR Maintenance — Sistem Pemeliharaan IT Berbasis QR Code & Kartu Kontrol 12 Bulan
 
-Aplikasi web modern berbasis PHP untuk manajemen inventaris komputer/aset IT dan pencatatan pemeliharaan berkala (*preventive maintenance*) secara cepat, akurat, dan transparan menggunakan pemindaian **QR Code** serta **Verifikasi Biometrik Wajah (Face ID)**.
+Aplikasi web modern berbasis PHP untuk manajemen inventaris komputer/aset IT dan pencatatan pemeliharaan berkala (*preventive maintenance*) secara cepat, akurat, dan transparan menggunakan pemindaian **QR Code** dan **Kartu Kontrol Digital 12 Bulan**.
 
 Aplikasi ini mendukung **Dual-Storage Engine**: dapat berjalan secara *serverless* menggunakan **Google Cloud Sheets API v4** (sangat cocok untuk hosting di **Vercel**) maupun menggunakan **Database MySQL**.
 
@@ -9,7 +9,7 @@ Aplikasi ini mendukung **Dual-Storage Engine**: dapat berjalan secara *serverles
 ## 📑 Daftar Isi
 1. [Alur Kerja Utama (System Workflow)](#-alur-kerja-utama-system-workflow)
 2. [Alur Detail Step-by-Step](#-alur-detail-step-by-step)
-   - [A. Alur Pendaftaran Akun & Biometrik Wajah](#a-alur-pendaftaran-akun--biometrik-wajah)
+   - [A. Alur Pendaftaran Akun Teknisi & Nama Panggilan](#a-alur-pendaftaran-akun-teknisi--nama-panggilan)
    - [B. Alur Registrasi Komputer & Cetak Stiker QR](#b-alur-registrasi-komputer--cetak-stiker-qr)
    - [C. Alur Scan Maintenance Rutin di Lapangan](#c-alur-scan-maintenance-rutin-di-lapangan)
    - [D. Alur Temuan Kendala & Tindak Lanjut Masalah](#d-alur-temuan-kendala--tindak-lanjut-masalah)
@@ -27,44 +27,33 @@ Aplikasi ini mendukung **Dual-Storage Engine**: dapat berjalan secara *serverles
 
 ```mermaid
 flowchart TD
-    A["👑 Admin / IT Head"] -->|"Buat Akun & Nama Panggilan"| B["👥 Data Teknisi"]
-    B -->|"Daftarkan Sampel Wajah via HP"| C["📸 Biometrik Wajah Teknisi"]
-    A -->|"Verifikasi & Setujui Wajah"| C
+    A["👑 Admin / IT Head"] -->|"Buat Akun & Nama Panggilan"| B["👥 Data Akun Teknisi"]
+    A -->|"Input Data Aset Komputer"| C["💻 Master Komputer"]
+    C -->|"Generate & Cetak Stiker QR"| D["🏷️ Stiker QR Tertempel di PC"]
     
-    A -->|"Input Data Aset Komputer"| D["💻 Master Komputer"]
-    D -->|"Generate & Cetak Stiker QR"| E["🏷️ Stiker QR Tertempel di PC"]
+    E["🛠️ Teknisi Lapangan"] -->|"1. Datang & Periksa Fisik PC"| D
+    E -->|"2. Scan QR pakai Kamera Smartphone"| F["📱 Halaman Scan & Status"]
     
-    F["🛠️ Teknisi Lapangan"] -->|"1. Datang & Periksa Fisik PC"| E
-    F -->|"2. Scan QR pakai Kamera HP"| G["📱 Halaman Scan & Status"]
+    F -->|"3. Isi 9 Checklist Maintenance"| G{"Ada Kerusakan / Kendala?"}
+    G -->|"Tidak (Normal)"| H["Simpan Pemeliharaan Selesai"]
+    G -->|"Ya (Ada Masalah)"| I["Catat Temuan Kerusakan & Pending"]
     
-    G -->|"3. Isi 9 Checklist Maintenance"| H{"Ada Kerusakan / Kendala?"}
-    H -->|"Tidak (Normal)"| I["Verifikasi Wajah / Selesaikan"]
-    H -->|"Ya (Ada Masalah)"| J["Catat Temuan Kerusakan & Pending"]
+    I -->|"Perbaikan Dilakukan"| J["Tindak Lanjut & Selesaikan"]
+    J -->|"Selesai Diperbaiki"| H
     
-    J -->|"Perbaikan Dilakukan"| K["Tindak Lanjut & Verifikasi Wajah"]
-    K -->|"Selesai Diperbaiki"| I
-    
-    I -->|"Otomatis Masuk Log"| L["📊 Matriks Kartu Kontrol 12 Bulan"]
-    L -->|"Cetak Kartu Fisik / Laporan"| M["🖨️ Kartu Kontrol IT (Paraf Nama Panggilan)"]
+    H -->|"Otomatis Masuk Log"| K["📊 Matriks Kartu Kontrol 12 Bulan"]
+    K -->|"Cetak Kartu Fisik / Laporan"| L["🖨️ Kartu Kontrol IT (Paraf Nama Panggilan)"]
 ```
 
 ---
 
 ## 🔍 Alur Detail Step-by-Step
 
-### A. Alur Pendaftaran Akun & Biometrik Wajah
+### A. Alur Pendaftaran Akun Teknisi & Nama Panggilan
 1. **Pembuatan Akun Petugas**:
    - Admin membuka menu **Kelola Data -> Kelola Pengguna**.
    - Admin mengisi: Username, Password, **Nama Lengkap**, **Nama Panggilan Teknisi**, Role (Teknisi/Admin/Auditor), dan No. HP.
-   - *Nama Panggilan* ini yang nantinya dicetak pada kolom **PARAF** kartu kontrol.
-2. **Pendaftaran Wajah (Face Biometric Enrollment)**:
-   - Teknisi membuka menu pendaftaran wajah (`user_biometric_enroll.php`) via browser HP.
-   - Kamera memindai wajah teknisi untuk mengekstrak vektor deskriptor wajah (Face Recognition).
-   - Sampel wajah tersimpan dengan status *Menunggu Persetujuan (Pending)*.
-3. **Verifikasi oleh Admin**:
-   - Admin membuka dashboard **Kelola Pengguna**.
-   - Admin memeriksa foto sampel wajah dan menekan tombol **SETUJUI**.
-   - Setelah diverifikasi, teknisi resmi dapat melakukan verifikasi wajah saat menyelesaikan maintenance.
+   - *Nama Panggilan* ini yang nantinya otomatis tercetak pada kolom **PARAF** kartu kontrol 12 bulan (misal: *Budi, Ahmad, Roni*).
 
 ---
 
@@ -92,7 +81,7 @@ flowchart TD
    - Teknisi mendatangi unit komputer pengguna sesuai jadwal bulanan.
    - Teknisi melakukan pembersihan fisik (debu casing, fan) dan pemeriksaan sistem.
 2. **Pemindaian QR Code**:
-   - Teknisi membuka kamera HP atau scanner browser dan mengarahkan ke stiker QR.
+   - Teknisi membuka kamera smartphone (browser Android atau browser apa pun) dan mengarahkan ke stiker QR.
    - Sistem membuka URL aman `scan.php?token=...`.
 3. **Tampilan Halaman Scan**:
    - Menampilkan identitas lengkap komputer (Nama Pengguna, Divisi, IP, Kode).
@@ -103,7 +92,7 @@ flowchart TD
 4. **Pengisian Checklist**:
    - Teknisi mencentang 9 butir checklist pemeriksaan standar.
    - Jika semua normal, pilih status **"Normal / Selesai"**.
-   - Klik tombol selesaikan / verifikasi wajah teknisi.
+   - Klik tombol **Simpan Pemeliharaan**.
 
 ---
 
@@ -111,11 +100,10 @@ flowchart TD
 1. **Pencatatan Masalah (Finding)**:
    - Jika saat pemeriksaan ditemukan kerusakan (misal: *Fan mati, HDD bad sector, Windows corrupt*), teknisi mengisi kolom **Temuan Masalah & Rekomendasi**.
    - Sistem mencatat status log sebagai **"Ada Masalah / Perlu Tindak Lanjut"**.
-   - Banner peringatan merah/oranye muncul di kartu komputer tersebut.
+   - Banner peringatan oranye/merah muncul di halaman kartu komputer tersebut.
 2. **Proses Tindak Lanjut (Follow-Up)**:
    - Setelah suku cadang tersedia atau perbaikan selesai dikerjakan, teknisi membuka kembali halaman scan atau menu audit.
-   - Klik tombol **"TINDAK LANJUTI / SELESAIKAN MASALAH"**.
-   - Kamera memverifikasi wajah teknisi yang melakukan perbaikan untuk validasi otentikasi.
+   - Klik tombol **"TINDAK LANJUTI / SELESAIKAN SEKARANG"**.
    - Masukkan catatan tindakan perbaikan yang telah dilakukan.
 3. **Kembali Normal**:
    - Status temuan ditandai **Selesai (Resolved)**.
@@ -147,8 +135,7 @@ flowchart TD
 
 | Fitur | Penjelasan |
 |---|---|
-| **📸 Face Recognition Biometrik** | Pencegahan titip scan dengan pencocokan wajah teknisi saat submit perbaikan. |
-| **📱 Mobile-First Scan** | Halaman scan responsif, ringan, dan cepat dibuka di segala jenis browser HP. |
+| **📱 Mobile-First Scan** | Halaman scan responsif, ringan, dan cepat dibuka di browser smartphone apa pun tanpa perlu aplikasi khusus. |
 | **🛡️ Anti-Duplikasi Log** | Mencegah dobel input log jika komputer yang sama discan berulang dalam 1 bulan. |
 | **📝 Kartu Kontrol 12 Bulan** | Rekap visual otomatis 12 bulan mirip kartu gantung manual pemeliharaan IT. |
 | **🏷️ Cetak Stiker QR Presisi** | Desain stiker rapi dengan multiline nama komputer dan nama cabang lengkap. |
@@ -163,13 +150,11 @@ flowchart TD
 1. **👑 Administrator**:
    - Memiliki akses tak terbatas ke seluruh sistem.
    - Menambah, mengedit, dan menghapus data Cabang, Divisi, Komputer, dan Pengguna.
-   - Menyetujui / memverifikasi biometrik wajah teknisi baru.
    - Mengatur nama panggilan paraf teknisi.
 2. **🛠️ Teknisi IT**:
    - Melakukan scan QR maintenance pada komputer kantor.
    - Mengisi 9 butir checklist pemeliharaan bulanan.
-   - Mencatat temuan kerusakan dan menindaklanjuti perbaikan.
-   - Mendaftarkan wajah biometrik mandiri via smartphone.
+   - Mencatat temuan kerusakan dan menindaklanjuti perbaikan hingga tuntas.
 3. **👁️ Auditor / SKAI**:
    - Akses pengawasan (*read-only audit*).
    - Memantau persentase kepatuhan pemeliharaan rutin seluruh cabang.
@@ -220,8 +205,7 @@ Maintenance-QR/
 │   │
 │   ├── cabang_admin.php            # Kelola master kantor cabang
 │   ├── divisi_admin.php            # Kelola master divisi / unit kerja
-│   ├── users_admin.php             # Kelola akun admin/teknisi & persetujuan biometrik
-│   ├── user_biometric_enroll.php   # Halaman pendaftaran sampel wajah teknisi via HP
+│   ├── users_admin.php             # Kelola akun admin/teknisi & nama panggilan paraf
 │   ├── qr_admin.php                # Kelola & regenerasi token QR aset
 │   │
 │   ├── print_qr.php                # Cetak stiker QR code siap tempel (3 kolom)
@@ -232,6 +216,7 @@ Maintenance-QR/
 ├── sql/
 │   └── 01_qr_maintenance.sql      # Skema database MySQL lengkap
 ├── vercel.json                     # Konfigurasi deployment Vercel serverless
+├── README_PRESENTASI.md            # Materi presentasi eksekutif & stakeholder
 └── README.md                       # Dokumentasi lengkap sistem
 ```
 
