@@ -19,6 +19,8 @@ if (!$asset) {
 $kode = $asset['kode_inventaris'] ?? ('#' . $id);
 $namaPerangkat = trim(($asset['merk'] ?? '') . ' ' . ($asset['model'] ?? ''));
 
+$redirectUrl = !empty($_REQUEST['redirect']) ? (string)$_REQUEST['redirect'] : module_url('assets.php');
+
 // Handle POST deletion
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     verify_csrf();
@@ -26,8 +28,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $res = delete_asset($id);
     if (!empty($res['success'])) {
         $_SESSION['flash'] = "Aset \"{$kode} - {$namaPerangkat}\" berhasil dihapus dari sistem.";
-        $redirect = !empty($_POST['redirect']) ? $_POST['redirect'] : module_url('qr_admin.php');
-        header('Location: ' . $redirect);
+        header('Location: ' . $redirectUrl);
         exit;
     } else {
         $error = $res['error'] ?? 'Gagal menghapus aset.';
@@ -65,11 +66,11 @@ $body = '
       '.(!empty($error) ? '<div class="alert alert-danger py-2 mb-3">'.e($error).'</div>' : '').'
 
       <div class="d-flex gap-2 justify-content-center">
-        <a class="btn btn-outline-secondary px-4 py-2" href="'.e(module_url('qr_admin.php')).'"><i class="bi bi-x-lg me-1"></i> Batal</a>
+        <a class="btn btn-outline-secondary px-4 py-2" href="'.e($redirectUrl).'"><i class="bi bi-x-lg me-1"></i> Batal</a>
         <form method="post" class="d-inline">
           <input type="hidden" name="_csrf" value="'.e(csrf_token()).'">
           <input type="hidden" name="id" value="'.$id.'">
-          <input type="hidden" name="redirect" value="'.e(module_url('qr_admin.php')).'">
+          <input type="hidden" name="redirect" value="'.e($redirectUrl).'">
           <button type="submit" class="btn btn-danger px-4 py-2 fw-bold">
             <i class="bi bi-trash3-fill me-1"></i> Ya, Hapus Sekarang
           </button>

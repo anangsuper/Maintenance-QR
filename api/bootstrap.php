@@ -5287,6 +5287,7 @@ function render_page(string $title, string $content, string $extraHead = '', str
             <div class="collapse navbar-collapse justify-content-end" id="mainNavbarNav">
               <div class="d-flex flex-column flex-lg-row gap-2 align-items-lg-center pt-2 pt-lg-0">
                 <a class="nav-pill-btn '.($currentPage==='dashboard.php'?'active':'').'" href="'.e(module_url('dashboard.php')).'"><i class="bi bi-speedometer2"></i> Dashboard</a>
+                <a class="nav-pill-btn '.(in_array($currentPage, ['assets.php', 'asset_edit.php', 'asset_delete.php'], true)?'active':'').'" href="'.e(module_url('assets.php')).'"><i class="bi bi-pc-display"></i> Data Komputer</a>
                 <a class="nav-pill-btn '.(in_array($currentPage, ['audit.php', 'monthly_history.php', 'history.php', 'maintenance_detail.php'], true)?'active':'').'" href="'.e(module_url('audit.php')).'"><i class="bi bi-clock-history"></i> Riwayat</a>
                 <a class="nav-pill-btn '.($currentPage==='qr_admin.php'?'active':'').'" href="'.e(module_url('qr_admin.php')).'"><i class="bi bi-qr-code"></i> QR Aset</a>
 
@@ -5296,7 +5297,9 @@ function render_page(string $title, string $content, string $extraHead = '', str
                     <i class="bi bi-gear-fill"></i> Kelola Data
                   </button>
                   <ul class="dropdown-menu dropdown-menu-dark shadow border-0 mt-2">
-                    <li><a class="dropdown-item py-2 '.($currentPage==='cabang_admin.php'?'active':'').'" href="'.e(module_url('cabang_admin.php')).'"><i class="bi bi-buildings me-2 text-primary"></i> Data Cabang</a></li>
+                    <li><a class="dropdown-item py-2 '.($currentPage==='assets.php'?'active':'').'" href="'.e(module_url('assets.php')).'"><i class="bi bi-pc-display me-2 text-primary"></i> Data Komputer (Aset)</a></li>
+                    <li><hr class="dropdown-divider border-secondary opacity-50"></li>
+                    <li><a class="dropdown-item py-2 '.($currentPage==='cabang_admin.php'?'active':'').'" href="'.e(module_url('cabang_admin.php')).'"><i class="bi bi-buildings me-2 text-info"></i> Data Cabang</a></li>
                     <li><a class="dropdown-item py-2 '.($currentPage==='divisi_admin.php'?'active':'').'" href="'.e(module_url('divisi_admin.php')).'"><i class="bi bi-diagram-3 me-2 text-info"></i> Data Divisi</a></li>
                     <li><a class="dropdown-item py-2 '.($currentPage==='users_admin.php'?'active':'').'" href="'.e(module_url('users_admin.php')).'"><i class="bi bi-people me-2 text-warning"></i> Akun Pengguna / Teknisi</a></li>
                     <li><a class="dropdown-item py-2 '.($currentPage==='user_biometric_enroll.php'?'active':'').'" href="'.e(module_url('user_biometric_enroll.php')).'"><i class="bi bi-person-bounding-box me-2 text-success"></i> Daftar Wajah Teknisi (HP)</a></li>
