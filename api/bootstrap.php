@@ -1379,9 +1379,11 @@ function get_technician_nickname(string $techNameOrId): string {
     $cleanedKey = mb_strtolower(get_nickname($techNameOrId));
     if ($cleanedKey !== '' && $cleanedKey !== '-') {
         foreach ($nickMap as $mk => $mv) {
-            if ($mk === '' || $mv === '') continue;
-            if (strpos($mk, $cleanedKey) !== false || strpos($cleanedKey, $mk) !== false) {
-                return $mv;
+            $mkStr = (string)$mk;
+            $mvStr = (string)$mv;
+            if ($mkStr === '' || $mvStr === '' || is_numeric($mkStr)) continue;
+            if (strpos($mkStr, $cleanedKey) !== false || strpos($cleanedKey, $mkStr) !== false) {
+                return $mvStr;
             }
         }
     }
