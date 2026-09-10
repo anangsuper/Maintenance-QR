@@ -5403,11 +5403,11 @@ function render_page(string $title, string $content, string $extraHead = '', str
         $nav = '
         <nav class="navbar navbar-expand-lg navbar-dark main-navbar mb-4 sticky-top">
           <div class="container">
-            <a class="navbar-brand d-flex align-items-center gap-2 fw-bold" href="'.e(module_url('dashboard.php')).'">
-              <span class="brand-icon"><i class="bi bi-qr-code-scan"></i></span>
+            <a class="navbar-brand d-flex align-items-center gap-3 fw-bold" href="'.e(module_url('dashboard.php')).'">
+              <span class="brand-icon shadow-sm"><i class="bi bi-qr-code-scan"></i></span>
               <div>
-                <span class="brand-text d-block lh-1">QR Maintenance</span>
-                <span class="d-block text-white-50 font-monospace" style="font-size: 0.64rem; letter-spacing: 0.6px; font-weight: 600;">BANK MITRA</span>
+                <span class="brand-text d-block lh-1 text-white">QR Maintenance System</span>
+                <span class="d-inline-block font-monospace fw-bold mt-1" style="font-size: 0.7rem; letter-spacing: 0.8px; color: #30B0E0;">BANK MITRA</span>
               </div>
             </a>
             <button class="navbar-toggler border-0 shadow-none" type="button" data-bs-toggle="collapse" data-bs-target="#mainNavbarNav" aria-controls="mainNavbarNav" aria-expanded="false" aria-label="Toggle navigation">
@@ -5450,7 +5450,7 @@ function render_page(string $title, string $content, string $extraHead = '', str
     } else {
         $nav = '
         <header class="text-center py-3 mb-4 bg-white border-bottom shadow-sm">
-          <span class="fw-bold fs-5" style="color: #2E77AD;"><i class="bi bi-qr-code-scan me-2"></i>QR Maintenance System · <span class="small opacity-75">Bank Mitra</span></span>
+          <span class="fw-bold fs-5" style="color: #2E77AD;"><i class="bi bi-qr-code-scan me-2" style="color: #30B0E0;"></i>QR Maintenance System · <span class="badge bg-primary text-white ms-1 px-2 py-1">BANK MITRA</span></span>
         </header>';
     }
 
@@ -5472,16 +5472,16 @@ function render_page(string $title, string $content, string $extraHead = '', str
   --bm-sky-blue: #30B0E0;
   --bm-teal-aqua: #50C0C0;
   --bm-cyan-teal: #40C0D0;
-  --bm-lime-accent: #D0D040;
-  --bm-fresh-green: #90C050;
+  --bm-lime-accent: #30B0E0;
+  --bm-fresh-green: #10B981;
   --bm-bg-light: #F5F8FB;
   --bm-surface-gray: #E6EDF5;
   --bm-dark-text: #1F2A37;
 
   --primary-gradient: linear-gradient(135deg, #2E77AD 0%, #30B0E0 100%);
   --teal-gradient: linear-gradient(135deg, #30B0E0 0%, #50C0C0 100%);
-  --lime-gradient: linear-gradient(135deg, #D0D040 0%, #90C050 100%);
-  --success-gradient: linear-gradient(135deg, #90C050 0%, #22c55e 100%);
+  --lime-gradient: linear-gradient(135deg, #30B0E0 0%, #10B981 100%);
+  --success-gradient: linear-gradient(135deg, #10B981 0%, #059669 100%);
   --warning-gradient: linear-gradient(135deg, #d97706 0%, #f59e0b 100%);
   --danger-gradient: linear-gradient(135deg, #dc2626 0%, #ef4444 100%);
 }
@@ -5511,30 +5511,33 @@ h1, h2, h3, h4, h5, h6, .h1, .h2, .h3, .h4, .h5, .h6 {
   color: #ffffff !important;
 }
 
-/* Navbar Bank Mitra */
+/* Navbar Bank Mitra - Deep Corporate Navy with Vivid Cyan Accent */
 .main-navbar {
-  background: linear-gradient(135deg, #1b4f74 0%, #2E77AD 45%, #30B0E0 100%);
+  background: linear-gradient(135deg, #0B192C 0%, #112D4E 50%, #183B63 100%);
   backdrop-filter: blur(12px);
-  box-shadow: 0 4px 20px -2px rgba(46, 119, 173, 0.28);
-  border-bottom: 2px solid rgba(255, 255, 255, 0.18);
-  padding: 0.75rem 0;
+  box-shadow: 0 4px 20px rgba(11, 25, 44, 0.4);
+  border-bottom: 3px solid #30B0E0;
+  padding: 0.85rem 0;
 }
 
 .brand-icon {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 36px;
-  height: 36px;
-  background: linear-gradient(135deg, #30B0E0 0%, #50C0C0 100%);
-  border-radius: 10px;
-  box-shadow: 0 3px 8px rgba(0,0,0,0.15);
+  width: 40px;
+  height: 40px;
+  background: linear-gradient(135deg, #2E77AD 0%, #30B0E0 100%);
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(48, 176, 224, 0.4);
   color: #ffffff;
+  font-size: 1.25rem;
 }
 
 .brand-text {
-  font-size: 1.15rem;
+  font-size: 1.18rem;
+  font-weight: 800;
   letter-spacing: -0.3px;
+  color: #ffffff !important;
 }
 
 .nav-pill-btn {
@@ -5609,22 +5612,23 @@ h1, h2, h3, h4, h5, h6, .h1, .h2, .h3, .h4, .h5, .h6 {
   font-weight: 700;
 }
 
-/* Tombol Aksi Tambah Komputer (Lime Accent + Fresh Green) */
+/* Tombol Aksi Tambah Komputer (Vibrant Modern Emerald Green) */
 .btn-action-add {
-  background: linear-gradient(135deg, #D0D040 0%, #90C050 100%);
-  color: #1F2A37 !important;
+  background: linear-gradient(135deg, #10B981 0%, #059669 100%);
+  color: #ffffff !important;
   border: none;
   border-radius: 20px;
-  padding: 6px 16px;
-  box-shadow: 0 3px 12px rgba(144, 192, 80, 0.35);
+  padding: 7px 18px;
+  font-weight: 700;
+  box-shadow: 0 4px 14px rgba(16, 185, 129, 0.35);
   transition: all 0.2s ease;
 }
 
 .btn-action-add:hover {
-  background: linear-gradient(135deg, #90C050 0%, #7aa840 100%);
+  background: linear-gradient(135deg, #059669 0%, #047857 100%);
   color: #ffffff !important;
   transform: translateY(-1px);
-  box-shadow: 0 5px 16px rgba(144, 192, 80, 0.45);
+  box-shadow: 0 6px 18px rgba(16, 185, 129, 0.45);
 }
 
 /* Card & Elevated Components (Soft Surface Gray #E6EDF5) */
@@ -5699,7 +5703,7 @@ h1, h2, h3, h4, h5, h6, .h1, .h2, .h3, .h4, .h5, .h6 {
   font-weight: 700;
 }
 
-.chip-success { background: rgba(144, 192, 80, 0.18); color: #4c6827; border: 1px solid rgba(144, 192, 80, 0.35); }
+.chip-success { background: #ECFDF5; color: #065F46; border: 1px solid #A7F3D0; }
 .chip-warning { background: #fef3c7; color: #b45309; }
 .chip-danger { background: #fee2e2; color: #b91c1c; }
 .chip-primary { background: rgba(46, 119, 173, 0.12); color: #2E77AD; border: 1px solid rgba(46, 119, 173, 0.25); }
@@ -5766,20 +5770,20 @@ h1, h2, h3, h4, h5, h6, .h1, .h2, .h3, .h4, .h5, .h6 {
   color: #ffffff !important;
 }
 .btn-success {
-  background-color: #90C050 !important;
-  border-color: #90C050 !important;
+  background-color: #10B981 !important;
+  border-color: #10B981 !important;
   color: #ffffff !important;
 }
 .btn-success:hover {
-  background-color: #7aa840 !important;
-  border-color: #7aa840 !important;
+  background-color: #059669 !important;
+  border-color: #059669 !important;
 }
 .btn-outline-success {
-  color: #7aa840 !important;
-  border-color: #90C050 !important;
+  color: #10B981 !important;
+  border-color: #10B981 !important;
 }
 .btn-outline-success:hover {
-  background-color: #90C050 !important;
+  background-color: #10B981 !important;
   color: #ffffff !important;
 }
 .text-primary {
@@ -5804,30 +5808,30 @@ h1, h2, h3, h4, h5, h6, .h1, .h2, .h3, .h4, .h5, .h6 {
   color: #ffffff !important;
 }
 .text-success {
-  color: #7aa840 !important;
+  color: #10B981 !important;
 }
 .bg-success {
-  background-color: #90C050 !important;
+  background-color: #10B981 !important;
 }
 .text-bg-success {
-  background-color: #90C050 !important;
+  background-color: #10B981 !important;
   color: #ffffff !important;
 }
 .bg-success-subtle {
-  background-color: rgba(144, 192, 80, 0.15) !important;
-  color: #4c6827 !important;
+  background-color: #ECFDF5 !important;
+  color: #065F46 !important;
 }
 .badge.bg-primary, .badge.bg-info, .badge.bg-success {
   color: #ffffff !important;
 }
 
-/* Loading Progress Bar (Bank Mitra Blue-Teal Gradient) */
+/* Loading Progress Bar (Bank Mitra Blue-Teal-Emerald Gradient) */
 #top-progress-bar {
   position: fixed;
   top: 0;
   left: 0;
   height: 3px;
-  background: linear-gradient(90deg, #30B0E0, #40C0D0, #90C050);
+  background: linear-gradient(90deg, #30B0E0, #40C0D0, #10B981);
   z-index: 9999;
   transition: width .2s ease;
   width: 0;

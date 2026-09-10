@@ -127,7 +127,7 @@ for ($m = 1; $m <= 12; $m++) {
 // 6. Data Chart.js: Distribusi Cabang (Doughnut)
 $donutLabels = [];
 $donutCounts = [];
-$palette = ['#2E77AD', '#30B0E0', '#50C0C0', '#40C0D0', '#90C050', '#D0D040', '#1F2A37', '#64748b'];
+$palette = ['#2E77AD', '#30B0E0', '#10B981', '#50C0C0', '#F59E0B', '#40C0D0', '#1F2A37', '#64748B'];
 $donutColors = [];
 $idx = 0;
 foreach ($branchDistribution as $bd) {
@@ -353,9 +353,9 @@ $head = '
 }
 
 .stat-card-primary { border-left: 4px solid #2E77AD !important; }
-.stat-card-success { border-left: 4px solid #90C050 !important; }
-.stat-card-danger { border-left: 4px solid #ef4444 !important; }
-.stat-card-warning { border-left: 4px solid #D0D040 !important; }
+.stat-card-success { border-left: 4px solid #10B981 !important; }
+.stat-card-danger { border-left: 4px solid #EF4444 !important; }
+.stat-card-warning { border-left: 4px solid #F59E0B !important; }
 .stat-card-info { border-left: 4px solid #30B0E0 !important; }
 .stat-card-dark { border-left: 4px solid #1F2A37 !important; }
 
@@ -833,21 +833,21 @@ document.addEventListener("DOMContentLoaded", function() {
           {
             label: "Selesai",
             data: '.json_encode($chartDoneData).',
-            backgroundColor: "#90C050",
+            backgroundColor: "#10B981",
             borderRadius: 6,
             barPercentage: 0.6
           },
           {
             label: "Ada Temuan / Proses",
             data: '.json_encode($chartRepairData).',
-            backgroundColor: "#ef4444",
+            backgroundColor: "#EF4444",
             borderRadius: 6,
             barPercentage: 0.6
           },
           {
             label: "Belum Selesai",
             data: '.json_encode($chartPendingData).',
-            backgroundColor: "#D0D040",
+            backgroundColor: "#F59E0B",
             borderRadius: 6,
             barPercentage: 0.6
           }

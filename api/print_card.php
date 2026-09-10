@@ -469,11 +469,11 @@ body {
   align-items: center;
 }
 .grid6-branch-pill {
-  background: #D0D040;
-  color: #1F2A37;
+  background: #30B0E0;
+  color: #ffffff;
   font-size: 5.6pt;
   font-weight: 800;
-  padding: 0.2px 1.5px;
+  padding: 0.2px 2.5px;
   border-radius: 0.5mm;
   text-transform: uppercase;
 }
@@ -512,12 +512,12 @@ body {
 }
 .grid6-matrix-table tr.even-row { background-color: #f8fafc; }
 .grid6-matrix-table tr.done-row { background-color: #f0fdf4; }
-.grid6-matrix-table tr.done-row td { border-color: #90C050; }
+.grid6-matrix-table tr.done-row td { border-color: #A7F3D0; }
 .grid6-matrix-table .tgl-h { width: 20mm; }
 .grid6-matrix-table .tgl-col { font-weight: bold; font-family: "Courier New", monospace; font-size: 6.8pt; color: #2E77AD; }
 .grid6-matrix-table .chk-h { width: 4.5mm; }
 .grid6-matrix-table .chk-col { font-weight: bold; font-size: 7.2pt; }
-.grid6-matrix-table .chk-yes { color: #90C050; font-weight: 900; }
+.grid6-matrix-table .chk-yes { color: #10B981; font-weight: 900; }
 .grid6-matrix-table .chk-no { color: #94a3b8; }
 .grid6-matrix-table .paraf-h { min-width: 15mm; }
 .grid6-matrix-table .paraf-col { font-size: 6pt; font-family: "Courier New", monospace; color: #334155; }
@@ -553,7 +553,7 @@ body {
   white-space: nowrap;
 }
 .badge-blue { background: #E6EDF5; color: #2E77AD; border: 0.5px solid #30B0E0; }
-.badge-green { background: #dcfce7; color: #15803d; border: 0.5px solid #90C050; }
+.badge-green { background: #ECFDF5; color: #065F46; border: 0.5px solid #A7F3D0; }
 .badge-purple { background: #E6EDF5; color: #50C0C0; border: 0.5px solid #50C0C0; }
 .badge-kode { background: #f1f5f9; color: #0f172a; padding: 0.2px 2.2px; border-radius: 0.5mm; font-weight: bold; border: 0.5px solid #cbd5e1; }
 
@@ -617,11 +617,11 @@ body {
   align-items: center;
 }
 .grid8-branch-pill {
-  background: #D0D040;
-  color: #1F2A37;
+  background: #30B0E0;
+  color: #ffffff;
   font-size: 4.6pt;
   font-weight: 800;
-  padding: 0.2mm 0.8mm;
+  padding: 0.2mm 1.2mm;
   border-radius: 0.4mm;
   text-transform: uppercase;
 }
@@ -650,12 +650,12 @@ body {
 .grid8-matrix-table td { border: 0.5px solid #cbd5e1; text-align: center; padding: 0; height: 9.2px; }
 .grid8-matrix-table tr.even-row { background-color: #f8fafc; }
 .grid8-matrix-table tr.done-row { background-color: #f0fdf4; }
-.grid8-matrix-table tr.done-row td { border-color: #90C050; }
+.grid8-matrix-table tr.done-row td { border-color: #A7F3D0; }
 .grid8-matrix-table .tgl-h { width: 18mm; }
 .grid8-matrix-table .tgl-col { font-weight: bold; font-family: "Courier New", monospace; font-size: 5.6pt; color: #2E77AD; }
 .grid8-matrix-table .chk-h { width: 4.2mm; }
 .grid8-matrix-table .chk-col { font-weight: bold; font-size: 6pt; }
-.grid8-matrix-table .chk-yes { color: #90C050; font-weight: 900; }
+.grid8-matrix-table .chk-yes { color: #10B981; font-weight: 900; }
 .grid8-matrix-table .chk-no { color: #94a3b8; }
 .grid8-matrix-table .paraf-h { min-width: 15mm; }
 .grid8-matrix-table .paraf-col { font-size: 5pt; font-family: "Courier New", monospace; color: #334155; }

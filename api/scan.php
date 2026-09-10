@@ -1856,11 +1856,11 @@ $headStyle = '<style>
   align-items: center;
 }
 .grid6-branch-pill {
-  background: #D0D040;
-  color: #1F2A37;
+  background: #30B0E0;
+  color: #ffffff;
   font-size: 0.72rem;
   font-weight: 800;
-  padding: 2px 8px;
+  padding: 2px 10px;
   border-radius: 4px;
   text-transform: uppercase;
   letter-spacing: 0.5px;
@@ -1886,7 +1886,7 @@ $headStyle = '<style>
   white-space: nowrap;
 }
 .badge-blue { background: #E6EDF5; color: #2E77AD; border: 1px solid #30B0E0; }
-.badge-green { background: #dcfce7; color: #15803d; border: 1px solid #90C050; }
+.badge-green { background: #ECFDF5; color: #065F46; border: 1px solid #A7F3D0; }
 .badge-purple { background: #E6EDF5; color: #50C0C0; border: 1px solid #50C0C0; }
 .badge-kode { background: #f1f5f9; color: #0f172a; padding: 2px 6px; border-radius: 4px; font-weight: bold; border: 1px solid #cbd5e1; }
 
@@ -1919,10 +1919,10 @@ $headStyle = '<style>
 }
 .grid6-matrix-table tr.even-row { background-color: #f8fafc; }
 .grid6-matrix-table tr.done-row { background-color: #f0fdf4; }
-.grid6-matrix-table tr.done-row td { border-color: #90C050; }
+.grid6-matrix-table tr.done-row td { border-color: #A7F3D0; }
 .grid6-matrix-table .tgl-col { font-weight: bold; font-family: "Courier New", monospace; font-size: 0.84rem; color: #2E77AD; width: 85px; }
 .grid6-matrix-table .chk-col { font-weight: bold; font-size: 0.88rem; width: 28px; }
-.grid6-matrix-table .chk-yes { color: #90C050; font-weight: 900; }
+.grid6-matrix-table .chk-yes { color: #10B981; font-weight: 900; }
 .grid6-matrix-table .chk-no { color: #94a3b8; }
 .grid6-matrix-table .paraf-col { font-size: 0.78rem; font-family: "Courier New", monospace; color: #334155; min-width: 85px; }
 

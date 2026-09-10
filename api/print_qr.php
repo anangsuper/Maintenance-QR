@@ -154,9 +154,10 @@ body {
 
 .qr-cabang {
   font-weight: 800;
-  color: #1F2A37 !important;
-  background: #D0D040 !important;
+  color: #ffffff !important;
+  background: #30B0E0 !important;
   border-radius: 0.6mm;
+  padding: 0.2mm 1.5mm;
   text-transform: uppercase;
   white-space: nowrap;
   flex-shrink: 0;
