@@ -1078,7 +1078,7 @@ if ($action === 'tindak_lanjut') {
               </div>
               <div class="d-flex justify-content-between align-items-center flex-wrap gap-1 mt-1">
                 <div class="form-text text-muted mb-0" style="font-size: 0.75rem;">Nama teknisi yang melakukan penanganan / perbaikan di lokasi.</div>
-                <a href="'.e(module_url('user_biometric_enroll.php', ['ret' => module_url('scan.php', ['t' => $token, 'action' => 'tindak_lanjut'])])).'" class="badge bg-primary bg-opacity-10 text-primary text-decoration-none border border-primary border-opacity-25 py-1 px-2">
+                <a href="'.e(module_url('user_biometric_enroll.php', ['ret' => module_url('scan.php', ['t' => $token, 'action' => 'tindak_lanjut'])])).'" class="badge py-1 px-2 rounded-2" style="background-color: #EFF6FF !important; color: #1D4ED8 !important; border: 1.5px solid #BFDBFE !important; font-weight: 700; text-decoration: none;">
                   <i class="bi bi-person-plus-fill me-1"></i> + Daftarkan Wajah / Face ID
                 </a>
               </div>
@@ -1536,7 +1536,7 @@ if ($action === 'start' || $action === 'form' || $action === 'ulang') {
                 <datalist id="listTeknisi">'.$techOptions.'</datalist>
                 <div class="d-flex justify-content-between align-items-center flex-wrap gap-1 mt-1">
                   <div class="form-text text-muted mb-0" style="font-size: 0.75rem;">Pilih nama atau ketik nama baru (otomatis terdaftar ke sistem).</div>
-                  <a href="'.e(module_url('user_biometric_enroll.php', ['ret' => module_url('scan.php', ['t' => $token, 'action' => 'form'])])).'" class="badge bg-primary bg-opacity-10 text-primary text-decoration-none border border-primary border-opacity-25 py-1 px-2">
+                  <a href="'.e(module_url('user_biometric_enroll.php', ['ret' => module_url('scan.php', ['t' => $token, 'action' => 'form'])])).'" class="badge py-1 px-2 rounded-2" style="background-color: #EFF6FF !important; color: #1D4ED8 !important; border: 1.5px solid #BFDBFE !important; font-weight: 700; text-decoration: none;">
                     <i class="bi bi-person-plus-fill me-1"></i> + Daftar Teknisi / Face ID
                   </a>
                 </div>

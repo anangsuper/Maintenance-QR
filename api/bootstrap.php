@@ -5839,8 +5839,45 @@ h1, h2, h3, h4, h5, h6, .h1, .h2, .h3, .h4, .h5, .h6 {
 .text-danger {
   color: #DC2626 !important;
 }
-.badge.bg-primary, .badge.bg-info, .badge.bg-success, .badge.bg-danger {
+/* Badges: Solid badges get white text; Subtle/translucent badges keep high-contrast text */
+.badge.bg-primary:not([class*="text-"]):not([class*="bg-opacity"]),
+.badge.bg-info:not([class*="text-"]):not([class*="bg-opacity"]),
+.badge.bg-success:not([class*="text-"]):not([class*="bg-opacity"]),
+.badge.bg-danger:not([class*="text-"]):not([class*="bg-opacity"]) {
   color: #ffffff !important;
+}
+
+.badge.text-primary,
+.badge.bg-primary[class*="bg-opacity-"] {
+  color: #1D4ED8 !important;
+}
+.badge.text-info,
+.badge.bg-info[class*="bg-opacity-"] {
+  color: #0369A1 !important;
+}
+.badge.text-success,
+.badge.bg-success[class*="bg-opacity-"] {
+  color: #047857 !important;
+}
+.badge.text-warning,
+.badge.bg-warning[class*="bg-opacity-"] {
+  color: #B45309 !important;
+}
+.badge.text-warning-emphasis {
+  color: #9A3412 !important;
+}
+.badge.text-danger,
+.badge.bg-danger[class*="bg-opacity-"] {
+  color: #DC2626 !important;
+}
+.badge.text-secondary {
+  color: #475569 !important;
+}
+.badge.text-muted {
+  color: #64748B !important;
+}
+.badge.text-dark {
+  color: #0F172A !important;
 }
 
 /* High Contrast Alert Boxes */
