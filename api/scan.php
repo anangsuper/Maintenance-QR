@@ -172,6 +172,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (($_POST['action'] ?? '') === 'save
     $updateChecklists = !empty($_POST['update_checklists']);
     $tglTindakLanjut = trim((string)($_POST['tindak_lanjut_date'] ?? date('Y-m-d')));
     $jamTindakLanjut = trim((string)($_POST['tindak_lanjut_time'] ?? date('H:i:s')));
+    $bioVerified = !empty($_POST['biometric_verified']) ? 1 : 0;
+    $bioConfidence = (float)($_POST['biometric_confidence'] ?? 0);
+    $bioPhoto = trim((string)($_POST['biometric_photo'] ?? ''));
 
     $res = resolve_asset_finding($assetId, [
         'log_id' => $logId,
@@ -181,7 +184,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (($_POST['action'] ?? '') === 'save
         'status' => $newStatus,
         'update_checklists' => $updateChecklists,
         'date' => $tglTindakLanjut,
-        'time' => $jamTindakLanjut
+        'time' => $jamTindakLanjut,
+        'biometric_verified' => $bioVerified,
+        'biometric_confidence' => $bioConfidence,
+        'biometric_photo' => $bioPhoto
     ]);
 
     if (!empty($res['success'])) {
@@ -191,7 +197,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (($_POST['action'] ?? '') === 'save
             'status' => $newStatus,
             'date' => $tglTindakLanjut,
             'time' => $jamTindakLanjut,
-            'log_id' => $res['log_id'] ?? $logId
+            'log_id' => $res['log_id'] ?? $logId,
+            'biometric_verified' => $bioVerified,
+            'biometric_confidence' => $bioConfidence,
+            'biometric_photo' => $bioPhoto
         ];
     } else {
         $error = $res['error'] ?? 'Gagal menyimpan data tindak lanjut.';
@@ -288,6 +297,21 @@ if ($successTindakLanjut) {
         ? '<span class="badge bg-success fs-6 px-3 py-2"><i class="bi bi-check-circle-fill me-1"></i> Selesai (Normal Kembali)</span>'
         : '<span class="badge bg-warning text-dark fs-6 px-3 py-2"><i class="bi bi-hourglass-split me-1"></i> Sedang Proses</span>';
 
+    $bioSuccessHtml = '';
+    if (!empty($successTindakLanjut['biometric_verified'])) {
+        $photoThumb = !empty($successTindakLanjut['biometric_photo'])
+            ? '<img src="'.e($successTindakLanjut['biometric_photo']).'" class="rounded-circle border border-2 border-success me-2" style="width: 52px; height: 52px; object-fit: cover;">'
+            : '';
+        $bioSuccessHtml = '
+        <div class="alert alert-success py-3 px-3 d-flex align-items-center mb-3 text-start border-0 bg-success bg-opacity-10 shadow-sm">
+          '.$photoThumb.'
+          <div>
+            <div class="fw-bold text-success"><i class="bi bi-shield-check-fill me-1"></i> Identitas Terverifikasi Biometrik Wajah!</div>
+            <div class="small text-muted">Tingkat Kecocokan: <strong>'.round($successTindakLanjut['biometric_confidence']).'%</strong> · Liveness Detection Lolos · Bukti audit tersimpan.</div>
+          </div>
+        </div>';
+    }
+
     $body = '
     <div class="row justify-content-center">
       <div class="col-md-8 col-lg-6">
@@ -299,6 +323,8 @@ if ($successTindakLanjut) {
           </div>
           <h3 class="fw-bold text-success mb-1">Tindak Lanjut Berhasil Disimpan!</h3>
           <p class="text-secondary small mb-3">Tindakan perbaikan telah dicatat. Status temuan di Dashboard telah diperbarui.</p>
+
+          '.$bioSuccessHtml.'
 
           <div class="bg-light p-3 rounded-3 text-start mb-4 border">
             <div class="row g-2 small">
@@ -348,10 +374,624 @@ $action = trim((string)($_GET['action'] ?? $_GET['amp;action'] ?? $_POST['action
 $autoOpenLogin = trim((string)($_GET['open_login'] ?? ''));
 
 // =========================================================================
+// HELPER KOMPONEN BIOMETRIK WAJAH (SCAN WAJAH & LIVENESS DETECTION)
+// =========================================================================
+function render_biometric_modal_html(string $token, string $returnAction = 'form'): string {
+    return '
+    <!-- Modal Biometric Face Recognition & Liveness Check -->
+    <div class="modal fade" id="modalBiometricScan" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
+          <div class="modal-header bg-dark text-white border-0 py-3">
+            <div class="d-flex align-items-center gap-2">
+              <div class="p-2 bg-primary bg-opacity-25 rounded-circle text-primary fs-5">
+                <i class="bi bi-shield-check"></i>
+              </div>
+              <div>
+                <h6 class="modal-title fw-bold mb-0">Biometric Face Recognition & Liveness</h6>
+                <div class="text-white-50 small" style="font-size: 0.72rem;">Verifikasi kehadiran teknisi resmi PT BPR Mitratama Arthabuana</div>
+              </div>
+            </div>
+            <button type="button" class="btn-close btn-close-white" onclick="closeBiometricModal()"></button>
+          </div>
+
+          <div class="modal-body p-3 p-md-4 text-center bg-light">
+            <!-- Scanner Box -->
+            <div class="bio-scanner-wrapper mb-3">
+              <video id="bioVideo" class="bio-video-el" autoplay playsinline webkit-playsinline muted></video>
+              <canvas id="bioCanvas" class="bio-canvas-el"></canvas>
+              <div id="bioFaceOval" class="bio-face-oval"></div>
+              <div id="bioScanLine" class="bio-scanline d-none"></div>
+
+              <!-- Success Overlay -->
+              <div id="bioSuccessOverlay" class="bio-success-overlay d-none">
+                <div class="text-center p-3">
+                  <div class="display-3 text-success mb-2">
+                    <i class="bi bi-check-circle-fill"></i>
+                  </div>
+                  <h5 class="fw-bold text-white mb-1" id="bioMatchedName">Nama Teknisi</h5>
+                  <div class="badge bg-success bg-opacity-75 fs-6 mb-2" id="bioMatchConfidence">98% Cocok</div>
+                  <div class="text-white-50 small">Verifikasi Liveness & Identitas Berhasil!<br>Menyimpan data...</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Status & Instruction Badge -->
+            <div id="bioStatusBox" class="alert alert-info py-2 px-3 small fw-semibold mb-2">
+              <span class="spinner-border spinner-border-sm me-2 text-primary"></span>
+              Menyiapkan kamera & modul AI...
+            </div>
+
+            <!-- Steady Hold Progress Bar -->
+            <div class="progress mb-2 d-none" id="bioHoldProgress" style="height: 6px;">
+              <div class="progress-bar bg-success progress-bar-striped progress-bar-animated" id="bioHoldProgressBar" style="width: 0%"></div>
+            </div>
+
+            <!-- Tombol Aksi Cepat Verifikasi Instan (Muncul saat wajah terdeteksi) -->
+            <div class="mb-2 d-none" id="bioInstantVerifyBox">
+              <button type="button" class="btn btn-warning text-dark btn-sm w-100 fw-bold py-2 shadow-sm rounded-pill" onclick="triggerInstantBioVerify()">
+                <i class="bi bi-lightning-charge-fill me-1"></i> Wajah Terdeteksi &mdash; Tekan untuk Verifikasi Langsung
+              </button>
+            </div>
+
+            <!-- Liveness Checklist Pills -->
+            <div class="d-flex justify-content-center gap-2 mb-3">
+              <span id="pillFaceDetected" class="badge bg-secondary bg-opacity-25 text-dark small py-2 px-3 border">
+                <i class="bi bi-person me-1"></i> Wajah
+              </span>
+              <span id="pillLivenessBlink" class="badge bg-secondary bg-opacity-25 text-dark small py-2 px-3 border">
+                <i class="bi bi-eye me-1"></i> Kedip (Liveness)
+              </span>
+              <span id="pillMatchId" class="badge bg-secondary bg-opacity-25 text-dark small py-2 px-3 border">
+                <i class="bi bi-check-all me-1"></i> Identitas Cocok
+              </span>
+            </div>
+
+            <!-- Link Pendaftaran Wajah di HP jika belum terdaftar -->
+            <div class="mb-3">
+              <a href="'.e(module_url('user_biometric_enroll.php', ['ret' => module_url('scan.php', ['t' => $token, 'action' => $returnAction])])).'" class="btn btn-outline-primary btn-sm w-100 rounded-pill">
+                <i class="bi bi-phone-fill me-1"></i> Wajah Belum Terdaftar? Daftarkan di HP Sekarang
+              </a>
+            </div>
+
+            <div class="d-flex justify-content-between align-items-center">
+              <button type="button" class="btn btn-outline-secondary btn-sm" onclick="closeBiometricModal()">
+                Batal
+              </button>
+              <button type="button" class="btn btn-link btn-sm text-danger text-decoration-none p-0" onclick="bypassBiometricAndSubmit()">
+                <i class="bi bi-exclamation-octagon me-1"></i> Lewati & Simpan Manual
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>';
+}
+
+function render_biometric_css(): string {
+    return '
+    <style>
+    .bio-scanner-wrapper {
+      position: relative;
+      width: 320px;
+      height: 380px;
+      max-width: 100%;
+      border-radius: 20px;
+      overflow: hidden;
+      background: #0f172a;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.25);
+      margin: 0 auto;
+    }
+    .bio-video-el {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transform: scaleX(-1);
+    }
+    .bio-canvas-el {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      transform: scaleX(-1);
+    }
+    .bio-face-oval {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 190px;
+      height: 240px;
+      border: 3px dashed #38bdf8;
+      border-radius: 50%;
+      box-shadow: 0 0 0 9999px rgba(15, 23, 42, 0.65);
+      pointer-events: none;
+      transition: all 0.3s ease;
+    }
+    .bio-face-oval.active {
+      border-color: #22c55e;
+      border-style: solid;
+      box-shadow: 0 0 0 9999px rgba(15, 23, 42, 0.4), 0 0 25px rgba(34, 197, 94, 0.6);
+    }
+    .bio-scanline {
+      position: absolute;
+      top: 25%;
+      left: calc(50% - 95px);
+      width: 190px;
+      height: 3px;
+      background: linear-gradient(90deg, transparent, #38bdf8, transparent);
+      animation: bioScanMove 2s infinite ease-in-out;
+      pointer-events: none;
+    }
+    @keyframes bioScanMove {
+      0% { top: 20%; opacity: 0; }
+      50% { opacity: 1; }
+      100% { top: 80%; opacity: 0; }
+    }
+    .bio-success-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(15, 23, 42, 0.92);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 10;
+    }
+    </style>';
+}
+
+function render_biometric_js(array $enrolledTechs, string $extraJs = ''): string {
+    $techsJson = json_encode($enrolledTechs, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT);
+    $out = '<script src="https://cdn.jsdelivr.net/npm/@vladmandic/face-api/dist/face-api.min.js"></script>' . "\n";
+    $out .= "<script>\n";
+    if ($extraJs !== '') {
+        $out .= $extraJs . "\n";
+    }
+    $out .= "window.__ENROLLED_TECHS = " . $techsJson . ";\n";
+    $out .= <<<'JS'
+    // Pre-parse vektor teknisi satu kali saat halaman dimuat
+    const parsedEnrolledTechs = (Array.isArray(window.__ENROLLED_TECHS) ? window.__ENROLLED_TECHS : []).map(t => {
+      let desc = t.descriptor || t.face_descriptor;
+      if (typeof desc === "string") {
+        try { desc = JSON.parse(desc); } catch (e) { desc = null; }
+      }
+      return {
+        id: t.id,
+        nama: t.nama,
+        descriptor: (Array.isArray(desc) && desc.length >= 64) ? new Float32Array(desc) : null
+      };
+    }).filter(t => t.descriptor !== null);
+
+    let bioModelsLoaded = false;
+    let bioModelsLoading = false;
+    let bioVideoStream = null;
+    let bioTrackingTimer = null;
+    let bioBlinkDetected = false;
+    let bioLastEyeState = "open";
+    let bioModalInstance = null;
+    let bioCompleted = false;
+    let bioFaceHoldFrames = 0;
+    const HOLD_FRAMES_REQUIRED = 12; // ~0.7-0.9 detik tahan posisi wajah
+
+    const MODEL_URL = "https://cdn.jsdelivr.net/npm/@vladmandic/face-api/model/";
+
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          const latEl = document.getElementById("bioLat");
+          const lngEl = document.getElementById("bioLng");
+          if (latEl) latEl.value = pos.coords.latitude;
+          if (lngEl) lngEl.value = pos.coords.longitude;
+        },
+        (err) => console.log("GPS Notice:", err.message),
+        { enableHighAccuracy: true, timeout: 6000, maximumAge: 60000 }
+      );
+    }
+
+    async function loadBioModels() {
+      if (bioModelsLoaded) return true;
+      if (bioModelsLoading) return true;
+      bioModelsLoading = true;
+      try {
+        const statusBox = document.getElementById("bioStatusBox");
+        if (statusBox && !bioCompleted) {
+          statusBox.className = "alert alert-info py-2 px-3 small fw-semibold mb-2";
+          statusBox.innerHTML = '<span class="spinner-border spinner-border-sm me-2 text-primary"></span> Menyiapkan modul AI GPU...';
+        }
+        if (typeof faceapi !== "undefined" && faceapi.tf) {
+          try {
+            await faceapi.tf.setBackend("webgl");
+            await faceapi.tf.ready();
+          } catch(e) {}
+        }
+        await Promise.all([
+          faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL),
+          faceapi.nets.faceLandmark68TinyNet.loadFromUri(MODEL_URL).catch(() => faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL)),
+          faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL)
+        ]);
+        bioModelsLoaded = true;
+        bioModelsLoading = false;
+        if (statusBox && !bioCompleted) {
+          statusBox.className = "alert alert-success py-2 px-3 small fw-semibold mb-2";
+          statusBox.innerHTML = '<i class="bi bi-check-circle me-1"></i> Modul AI GPU siap. Posisikan wajah di oval.';
+        }
+        return true;
+      } catch (err) {
+        console.error("Gagal memuat modul face-api:", err);
+        bioModelsLoading = false;
+        const statusBox = document.getElementById("bioStatusBox");
+        if (statusBox) {
+          statusBox.className = "alert alert-danger py-2 px-3 small mb-2";
+          statusBox.innerHTML = '<i class="bi bi-x-circle me-1"></i> Gagal memuat modul AI. Periksa koneksi internet.';
+        }
+        return false;
+      }
+    }
+
+    function openBiometricModal() {
+      const modalEl = document.getElementById("modalBiometricScan");
+      if (!modalEl) return;
+
+      bioCompleted = false;
+      bioBlinkDetected = false;
+      bioLastEyeState = "open";
+      bioFaceHoldFrames = 0;
+
+      document.getElementById("pillFaceDetected").className = "badge bg-secondary bg-opacity-25 text-dark small py-2 px-3 border";
+      document.getElementById("pillLivenessBlink").className = "badge bg-secondary bg-opacity-25 text-dark small py-2 px-3 border";
+      document.getElementById("pillMatchId").className = "badge bg-secondary bg-opacity-25 text-dark small py-2 px-3 border";
+      document.getElementById("bioSuccessOverlay").classList.add("d-none");
+      document.getElementById("bioScanLine").classList.add("d-none");
+      document.getElementById("bioFaceOval").classList.remove("active");
+
+      const holdProgress = document.getElementById("bioHoldProgress");
+      if (holdProgress) holdProgress.classList.add("d-none");
+      const holdBar = document.getElementById("bioHoldProgressBar");
+      if (holdBar) holdBar.style.width = "0%";
+      const instantBox = document.getElementById("bioInstantVerifyBox");
+      if (instantBox) instantBox.classList.add("d-none");
+
+      bioModalInstance = new bootstrap.Modal(modalEl);
+      bioModalInstance.show();
+
+      loadBioModels();
+      startBioCamera();
+    }
+
+    function closeBiometricModal() {
+      bioCompleted = true;
+      if (bioTrackingTimer) {
+        cancelAnimationFrame(bioTrackingTimer);
+        bioTrackingTimer = null;
+      }
+      if (bioVideoStream) {
+        try {
+          bioVideoStream.getTracks().forEach(t => t.stop());
+        } catch(e) {}
+        bioVideoStream = null;
+      }
+      if (bioModalInstance) {
+        bioModalInstance.hide();
+      }
+    }
+
+    async function startBioCamera() {
+      const video = document.getElementById("bioVideo");
+      const statusBox = document.getElementById("bioStatusBox");
+
+      try {
+        if (statusBox && !bioModelsLoaded) {
+          statusBox.className = "alert alert-info py-2 px-3 small fw-semibold mb-2";
+          statusBox.innerHTML = '<span class="spinner-border spinner-border-sm me-2 text-info"></span> Mengaktifkan kamera depan HP...';
+        }
+
+        video.setAttribute("playsinline", "");
+        video.setAttribute("webkit-playsinline", "");
+
+        bioVideoStream = await navigator.mediaDevices.getUserMedia({
+          video: {
+            facingMode: "user",
+            width: { ideal: 640 },
+            height: { ideal: 480 },
+            frameRate: { ideal: 30, max: 30 }
+          },
+          audio: false
+        });
+        video.srcObject = bioVideoStream;
+        await video.play();
+
+        document.getElementById("bioScanLine").classList.remove("d-none");
+        if (statusBox) {
+          statusBox.className = "alert alert-primary py-2 px-3 small fw-semibold mb-2";
+          statusBox.innerHTML = '<i class="bi bi-person-bounding-box me-1"></i> Arahkan wajah ke lingkaran oval (Tahan 1 detik atau kedipkan mata).';
+        }
+
+        startBioTracking();
+      } catch (err) {
+        console.error("Akses kamera gagal:", err);
+        if (statusBox) {
+          statusBox.className = "alert alert-danger py-2 px-3 small mb-2";
+          statusBox.innerHTML = '<i class="bi bi-camera-video-off me-1"></i> Kamera tidak dapat diakses. Berikan izin di browser atau pilih "Lewati & Simpan Manual".';
+        }
+      }
+    }
+
+    function calcEAR(eye) {
+      const distA = Math.hypot(eye[1].x - eye[5].x, eye[1].y - eye[5].y);
+      const distB = Math.hypot(eye[2].x - eye[4].x, eye[2].y - eye[4].y);
+      const distC = Math.hypot(eye[0].x - eye[3].x, eye[0].y - eye[3].y);
+      return (distA + distB) / (2.0 * distC);
+    }
+
+    function calcEuclidean(a, b) {
+      if (!a || !b || a.length !== b.length) return 999;
+      let s = 0;
+      for (let i = 0; i < a.length; i++) {
+        const d = a[i] - b[i];
+        s += d * d;
+      }
+      return Math.sqrt(s);
+    }
+
+    function captureBioSnapshot(videoEl) {
+      try {
+        if (!videoEl || !videoEl.videoWidth || !videoEl.videoHeight) return "";
+        const c = document.createElement("canvas");
+        c.width = 120;
+        c.height = 120;
+        const ctx = c.getContext("2d");
+        const s = Math.min(videoEl.videoWidth, videoEl.videoHeight);
+        const sx = (videoEl.videoWidth - s) / 2;
+        const sy = (videoEl.videoHeight - s) / 2;
+        ctx.translate(120, 0);
+        ctx.scale(-1, 1);
+        ctx.drawImage(videoEl, sx, sy, s, s, 0, 0, 120, 120);
+        return c.toDataURL("image/jpeg", 0.7);
+      } catch (err) {
+        console.warn("Capture snapshot err:", err);
+        return "";
+      }
+    }
+
+    function findBestMatch(queryVec) {
+      let bestDist = 999;
+      let bestTech = null;
+      for (let i = 0; i < parsedEnrolledTechs.length; i++) {
+        const t = parsedEnrolledTechs[i];
+        const dist = calcEuclidean(queryVec, t.descriptor);
+        if (dist < bestDist) {
+          bestDist = dist;
+          bestTech = t;
+        }
+      }
+      return { tech: bestTech, dist: bestDist };
+    }
+
+    function finalizeVerification(tech, dist, videoEl) {
+      bioCompleted = true;
+      document.getElementById("pillMatchId").className = "badge bg-success text-white small py-2 px-3 border";
+      document.getElementById("pillLivenessBlink").className = "badge bg-success text-white small py-2 px-3 border";
+
+      let conf = Math.round((1.0 - (dist / 0.60)) * 100);
+      if (conf > 99) conf = 99;
+      if (conf < 75) conf = 75;
+
+      const bioVer = document.getElementById("bioVerified");
+      const bioConf = document.getElementById("bioConfidence");
+      const bioPh = document.getElementById("bioPhoto");
+      if (bioVer) bioVer.value = "1";
+      if (bioConf) bioConf.value = conf;
+      const snap = captureBioSnapshot(videoEl);
+      if (bioPh) bioPh.value = snap || (tech.photo || "");
+
+      const techInput = document.getElementById("technicianNameInput");
+      if (techInput) techInput.value = tech.nama;
+
+      const matchedNameEl = document.getElementById("bioMatchedName");
+      if (matchedNameEl) matchedNameEl.textContent = tech.nama;
+      const matchConfEl = document.getElementById("bioMatchConfidence");
+      if (matchConfEl) matchConfEl.textContent = conf + "% Cocok (Terverifikasi)";
+      const successOverlay = document.getElementById("bioSuccessOverlay");
+      if (successOverlay) successOverlay.classList.remove("d-none");
+
+      const statusBox = document.getElementById("bioStatusBox");
+      if (statusBox) {
+        statusBox.className = "alert alert-success py-2 px-3 small fw-bold mb-2";
+        statusBox.innerHTML = '<i class="bi bi-check-circle-fill me-1"></i> Wajah Dikenali: <strong>' + tech.nama + '</strong>! Menyimpan...';
+      }
+
+      if (bioVideoStream) {
+        try { bioVideoStream.getTracks().forEach(t => t.stop()); } catch(e) {}
+      }
+
+      setTimeout(() => {
+        const formEl = document.getElementById("formTindakLanjut") || document.getElementById("formMaintenance");
+        if (formEl) formEl.submit();
+      }, 400);
+    }
+
+    async function triggerInstantBioVerify() {
+      const video = document.getElementById("bioVideo");
+      const statusBox = document.getElementById("bioStatusBox");
+      if (!video || !video.videoWidth || bioCompleted) return;
+
+      statusBox.className = "alert alert-warning py-2 px-3 small fw-bold mb-2";
+      statusBox.innerHTML = '<span class="spinner-border spinner-border-sm me-2 text-warning"></span> Memproses verifikasi instan...';
+
+      const useTinyLandmarks = faceapi.nets.faceLandmark68TinyNet && faceapi.nets.faceLandmark68TinyNet.isLoaded;
+      const fastDetectorOptions = new faceapi.TinyFaceDetectorOptions({ inputSize: 160, scoreThreshold: 0.3 });
+
+      try {
+        const detection = await faceapi.detectSingleFace(video, fastDetectorOptions)
+          .withFaceLandmarks(useTinyLandmarks)
+          .withFaceDescriptor();
+
+        if (detection && detection.descriptor) {
+          const matchResult = findBestMatch(detection.descriptor);
+          if (matchResult.tech && matchResult.dist <= 0.55) {
+            finalizeVerification(matchResult.tech, matchResult.dist, video);
+            return;
+          }
+        }
+        statusBox.className = "alert alert-danger py-2 px-3 small fw-bold mb-2";
+        statusBox.innerHTML = '<i class="bi bi-exclamation-triangle-fill me-1"></i> Wajah belum cocok dengan teknisi terdaftar. Posisikan wajah tegak.';
+      } catch (err) {
+        console.warn("Instant verify error:", err);
+      }
+    }
+
+    let isTrackingFrame = false;
+    function startBioTracking() {
+      if (bioTrackingTimer) cancelAnimationFrame(bioTrackingTimer);
+      const video = document.getElementById("bioVideo");
+      const oval = document.getElementById("bioFaceOval");
+      const statusBox = document.getElementById("bioStatusBox");
+      const pillFace = document.getElementById("pillFaceDetected");
+      const pillBlink = document.getElementById("pillLivenessBlink");
+      const holdProgress = document.getElementById("bioHoldProgress");
+      const holdProgressBar = document.getElementById("bioHoldProgressBar");
+      const instantBox = document.getElementById("bioInstantVerifyBox");
+
+      const useTinyLandmarks = faceapi.nets.faceLandmark68TinyNet && faceapi.nets.faceLandmark68TinyNet.isLoaded;
+      const fastDetectorOptions = new faceapi.TinyFaceDetectorOptions({ inputSize: 160, scoreThreshold: 0.30 });
+
+      async function trackingLoop() {
+        if (bioCompleted || !video || !video.videoWidth || video.paused || video.ended) {
+          if (!bioCompleted) {
+            bioTrackingTimer = requestAnimationFrame(trackingLoop);
+          }
+          return;
+        }
+
+        if (!bioModelsLoaded) {
+          bioTrackingTimer = requestAnimationFrame(trackingLoop);
+          return;
+        }
+
+        if (isTrackingFrame) {
+          bioTrackingTimer = requestAnimationFrame(trackingLoop);
+          return;
+        }
+        isTrackingFrame = true;
+
+        try {
+          const detection = await faceapi.detectSingleFace(video, fastDetectorOptions)
+            .withFaceLandmarks(useTinyLandmarks)
+            .withFaceDescriptor();
+
+          if (detection) {
+            if (pillFace) pillFace.className = "badge bg-success text-white small py-2 px-3 border";
+            if (oval) oval.classList.add("active");
+            if (instantBox) instantBox.classList.remove("d-none");
+
+            const landmarks = detection.landmarks;
+            const leftEye = landmarks.getLeftEye();
+            const rightEye = landmarks.getRightEye();
+
+            const earL = calcEAR(leftEye);
+            const earR = calcEAR(rightEye);
+            const avgEAR = (earL + earR) / 2.0;
+
+            const BLINK_THRESHOLD = 0.22;
+            if (avgEAR < BLINK_THRESHOLD) {
+              bioLastEyeState = "closed";
+            } else if (bioLastEyeState === "closed" && avgEAR >= 0.27) {
+              bioBlinkDetected = true;
+              bioLastEyeState = "open";
+            }
+
+            bioFaceHoldFrames++;
+            if (holdProgress) holdProgress.classList.remove("d-none");
+            const pct = Math.min(100, Math.round((bioFaceHoldFrames / HOLD_FRAMES_REQUIRED) * 100));
+            if (holdProgressBar) holdProgressBar.style.width = pct + "%";
+
+            const livenessPassed = bioBlinkDetected || (bioFaceHoldFrames >= HOLD_FRAMES_REQUIRED);
+
+            if (livenessPassed) {
+              if (pillBlink) pillBlink.className = "badge bg-success text-white small py-2 px-3 border";
+              if (statusBox) {
+                statusBox.className = "alert alert-warning py-2 px-3 small fw-bold mb-2";
+                statusBox.innerHTML = '<span class="spinner-border spinner-border-sm me-2 text-warning"></span> Liveness lolos! Memverifikasi identitas teknisi...';
+              }
+
+              if (detection.descriptor) {
+                const matchResult = findBestMatch(detection.descriptor);
+                if (matchResult.tech && matchResult.dist <= 0.50) {
+                  finalizeVerification(matchResult.tech, matchResult.dist, video);
+                  isTrackingFrame = false;
+                  return;
+                } else {
+                  if (statusBox) {
+                    statusBox.className = "alert alert-danger py-2 px-3 small fw-bold mb-2";
+                    statusBox.innerHTML = '<i class="bi bi-x-circle me-1"></i> Wajah tidak cocok dengan teknisi terdaftar. Posisikan wajah tegak & pencahayaan cukup.';
+                  }
+                  bioBlinkDetected = false;
+                  bioFaceHoldFrames = 0;
+                  if (holdProgressBar) holdProgressBar.style.width = "0%";
+                }
+              }
+            } else {
+              if (statusBox) {
+                statusBox.className = "alert alert-info py-2 px-3 small fw-bold mb-2";
+                statusBox.innerHTML = '<i class="bi bi-person-check-fill me-1"></i> Wajah terdeteksi! Tahan posisi sejenak (' + Math.round(pct) + '%)...';
+              }
+            }
+          } else {
+            if (pillFace) pillFace.className = "badge bg-secondary bg-opacity-25 text-dark small py-2 px-3 border";
+            if (oval) oval.classList.remove("active");
+            bioFaceHoldFrames = Math.max(0, bioFaceHoldFrames - 2);
+            if (holdProgressBar) holdProgressBar.style.width = "0%";
+          }
+        } catch (e) {
+          console.warn("Tracking err:", e);
+        } finally {
+          isTrackingFrame = false;
+        }
+
+        bioTrackingTimer = requestAnimationFrame(trackingLoop);
+      }
+
+      bioTrackingTimer = requestAnimationFrame(trackingLoop);
+    }
+
+    function bypassBiometricAndSubmit() {
+      if (confirm("Simpan hasil tanpa verifikasi biometrik wajah?")) {
+        closeBiometricModal();
+        const bioVer = document.getElementById("bioVerified");
+        const bioConf = document.getElementById("bioConfidence");
+        const bioPh = document.getElementById("bioPhoto");
+        if (bioVer) bioVer.value = "0";
+        if (bioConf) bioConf.value = "0";
+        if (bioPh) bioPh.value = "";
+        const formEl = document.getElementById("formTindakLanjut") || document.getElementById("formMaintenance");
+        if (formEl) formEl.submit();
+      }
+    }
+
+    if (document.readyState === "loading") {
+      document.addEventListener("DOMContentLoaded", () => {
+        setTimeout(loadBioModels, 300);
+      });
+    } else {
+      setTimeout(loadBioModels, 300);
+    }
+    JS;
+    $out .= "</script>\n";
+    return $out;
+}
+
+// =========================================================================
 // 2.5 TAMPILAN FORM TINDAK LANJUT TEMUAN (action = tindak_lanjut)
 // =========================================================================
 if ($action === 'tindak_lanjut') {
     $allUsers = get_user_list(true);
+    $enrolledTechs = get_enrolled_technicians(true);
+    $hasEnrolledTechs = !empty($enrolledTechs);
     $userOptionsHtml = '';
     $currentTech = is_logged_in() ? current_user_name() : '';
 
@@ -416,22 +1056,32 @@ if ($action === 'tindak_lanjut') {
 
           '.($error ? '<div class="alert alert-danger py-2 mb-3">'.e($error).'</div>' : '').'
 
-          <form method="post" action="'.e(module_url('scan.php', ['t' => $token, 'action' => 'tindak_lanjut'])).'">
+          <form method="post" action="'.e(module_url('scan.php', ['t' => $token, 'action' => 'tindak_lanjut'])).'" id="formTindakLanjut">
             <input type="hidden" name="_csrf" value="'.e(csrf_token()).'">
             <input type="hidden" name="action" value="save_tindak_lanjut">
             <input type="hidden" name="t" value="'.e($token).'">
             <input type="hidden" name="log_id" value="'.$findingLogId.'">
             <input type="hidden" name="finding_id" value="'.$findingId.'">
+            <input type="hidden" name="biometric_verified" id="bioVerified" value="0">
+            <input type="hidden" name="biometric_confidence" id="bioConfidence" value="0">
+            <input type="hidden" name="biometric_photo" id="bioPhoto" value="">
+            <input type="hidden" name="latitude" id="bioLat" value="">
+            <input type="hidden" name="longitude" id="bioLng" value="">
 
             <!-- 1. Teknisi yang Menindaklanjuti -->
             <div class="mb-3">
               <label class="form-label small fw-bold text-secondary">Teknisi yang Menindaklanjuti <span class="text-danger">*</span></label>
               <div class="input-group">
                 <span class="input-group-text bg-light"><i class="bi bi-person-check text-primary"></i></span>
-                <input type="text" class="form-control" name="technician_name" list="listTeknisiTindak" value="'.e($currentTech).'" placeholder="Pilih atau ketik nama Anda..." required>
+                <input type="text" class="form-control" name="technician_name" id="technicianNameInput" list="listTeknisiTindak" value="'.e($currentTech).'" placeholder="Pilih atau ketik nama Anda..." required>
                 <datalist id="listTeknisiTindak">'.$userOptionsHtml.'</datalist>
               </div>
-              <div class="form-text text-muted" style="font-size: 0.75rem;">Nama teknisi yang melakukan penanganan / perbaikan di lokasi.</div>
+              <div class="d-flex justify-content-between align-items-center flex-wrap gap-1 mt-1">
+                <div class="form-text text-muted mb-0" style="font-size: 0.75rem;">Nama teknisi yang melakukan penanganan / perbaikan di lokasi.</div>
+                <a href="'.e(module_url('user_biometric_enroll.php', ['ret' => module_url('scan.php', ['t' => $token, 'action' => 'tindak_lanjut'])])).'" class="badge bg-primary bg-opacity-10 text-primary text-decoration-none border border-primary border-opacity-25 py-1 px-2">
+                  <i class="bi bi-person-plus-fill me-1"></i> + Daftarkan Wajah / Face ID
+                </a>
+              </div>
             </div>
 
             <!-- 2. Tanggal & Jam Perbaikan -->
@@ -494,17 +1144,39 @@ if ($action === 'tindak_lanjut') {
 
             <!-- Tombol Simpan -->
             <div class="d-grid gap-2">
+              '.($hasEnrolledTechs ? '
+              <button type="button" class="btn btn-danger btn-lg fw-bold py-3 shadow" id="btnSelesaiBio" onclick="openBiometricModal()">
+                <i class="bi bi-person-bounding-box me-2"></i> SELESAIKAN TINDAK LANJUT (SCAN WAJAH KAMERA)
+              </button>
+              <div class="d-flex justify-content-between align-items-center px-1 mt-1">
+                <button type="submit" class="btn btn-link btn-sm text-decoration-none text-muted p-0" onclick="return confirm(\'Simpan hasil perbaikan tanpa verifikasi biometrik wajah?\')">
+                  <i class="bi bi-shield-slash me-1"></i> Simpan Manual (Bypass Biometrik)
+                </button>
+                <a class="btn btn-link btn-sm text-decoration-none text-secondary p-0" href="'.e(module_url('scan.php', ['t' => $token])).'">Batal</a>
+              </div>
+              ' : '
               <button type="submit" class="btn btn-danger btn-lg fw-bold py-3 shadow" onclick="return confirm(\'Simpan hasil perbaikan dan selesaikan tindak lanjut temuan ini?\')">
                 <i class="bi bi-save-fill me-2"></i> SIMPAN HASIL TINDAK LANJUT
               </button>
-              <a class="btn btn-outline-secondary py-2" href="'.e(module_url('scan.php', ['t' => $token])).'">Batal</a>
+              <div class="alert alert-light border py-2 px-3 small mb-0 d-flex align-items-center justify-content-between flex-wrap gap-2 text-muted mt-1">
+                <div class="d-flex align-items-center gap-2">
+                  <i class="bi bi-info-circle text-primary fs-5"></i>
+                  <div>Belum ada wajah teknisi terdaftar. Daftarkan di HP untuk verifikasi audit biometrik.</div>
+                </div>
+                <a href="'.e(module_url('user_biometric_enroll.php', ['ret' => module_url('scan.php', ['t' => $token, 'action' => 'tindak_lanjut'])])).'" class="btn btn-sm btn-primary fw-bold">
+                  <i class="bi bi-camera-fill me-1"></i> Daftarkan Wajah di HP
+                </a>
+              </div>
+              <a class="btn btn-outline-secondary py-2 mt-1" href="'.e(module_url('scan.php', ['t' => $token])).'">Batal</a>
+              ').'
             </div>
           </form>
         </div>
       </div>
     </div>
+    ' . render_biometric_modal_html($token, 'tindak_lanjut');
 
-    <script>
+    $extraActionJs = '
     function appendAction(text) {
       var box = document.getElementById("action_taken_box");
       if (!box) return;
@@ -515,10 +1187,12 @@ if ($action === 'tindak_lanjut') {
         box.value = cur + ", " + text;
       }
       box.focus();
-    }
-    </script>';
+    }';
 
-    render_page('Tindak Lanjut Temuan - ' . ($asset['kode_inventaris'] ?? 'Aset'), $body, '', '', false);
+    $bioHeadStyle = render_biometric_css();
+    $bioScript = render_biometric_js($enrolledTechs, $extraActionJs);
+
+    render_page('Tindak Lanjut Temuan - ' . ($asset['kode_inventaris'] ?? 'Aset'), $body, $bioHeadStyle, $bioScript, false);
     exit;
 }
 
@@ -921,114 +1595,11 @@ if ($action === 'start' || $action === 'form' || $action === 'ulang') {
           </form>
         </div>
       </div>
-    </div>
-
-    <!-- Modal Biometric Face Recognition & Liveness Check -->
-    <div class="modal fade" id="modalBiometricScan" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false" aria-hidden="true">
-      <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
-          <div class="modal-header bg-dark text-white border-0 py-3">
-            <div class="d-flex align-items-center gap-2">
-              <div class="p-2 bg-primary bg-opacity-25 rounded-circle text-primary fs-5">
-                <i class="bi bi-shield-check"></i>
-              </div>
-              <div>
-                <h6 class="modal-title fw-bold mb-0">Biometric Face Recognition & Liveness</h6>
-                <div class="text-white-50 small" style="font-size: 0.72rem;">Verifikasi kehadiran teknisi resmi PT BPR Mitratama Arthabuana</div>
-              </div>
-            </div>
-            <button type="button" class="btn-close btn-close-white" onclick="closeBiometricModal()"></button>
-          </div>
-
-          <div class="modal-body p-3 p-md-4 text-center bg-light">
-            <!-- Shortcut Apple Face ID di Modal -->
-            <div id="modalNativeFaceIdAlert" class="alert alert-dark border-0 p-2 mb-3 d-none d-flex align-items-center justify-content-between rounded-3">
-              <div class="d-flex align-items-center gap-2 text-start">
-                <i class="bi bi-apple text-primary fs-5"></i>
-                <div>
-                  <div class="fw-bold text-white small">Face ID Bawaan iPhone</div>
-                  <div class="text-white-50" style="font-size: 0.7rem;">Paling cepat (< 0.5 detik) tanpa kamera</div>
-                </div>
-              </div>
-              <button type="button" class="btn btn-primary btn-sm fw-bold rounded-pill px-3" onclick="verifyWithNativeFaceId()">Verifikasi</button>
-            </div>
-
-            <!-- Scanner Box -->
-            <div class="bio-scanner-wrapper mb-3">
-              <video id="bioVideo" class="bio-video-el" autoplay playsinline webkit-playsinline muted></video>
-              <canvas id="bioCanvas" class="bio-canvas-el"></canvas>
-              <div id="bioFaceOval" class="bio-face-oval"></div>
-              <div id="bioScanLine" class="bio-scanline d-none"></div>
-
-              <!-- Success Overlay -->
-              <div id="bioSuccessOverlay" class="bio-success-overlay d-none">
-                <div class="text-center p-3">
-                  <div class="display-3 text-success mb-2">
-                    <i class="bi bi-check-circle-fill"></i>
-                  </div>
-                  <h5 class="fw-bold text-white mb-1" id="bioMatchedName">Nama Teknisi</h5>
-                  <div class="badge bg-success bg-opacity-75 fs-6 mb-2" id="bioMatchConfidence">98% Cocok</div>
-                  <div class="text-white-50 small">Verifikasi Liveness & Identitas Berhasil!<br>Menyimpan data checklist...</div>
-                </div>
-              </div>
-            </div>
-
-            <!-- Status & Instruction Badge -->
-            <div id="bioStatusBox" class="alert alert-info py-2 px-3 small fw-semibold mb-2">
-              <span class="spinner-border spinner-border-sm me-2 text-primary"></span>
-              Menyiapkan kamera & modul AI...
-            </div>
-
-            <!-- Steady Hold Progress Bar -->
-            <div class="progress mb-2 d-none" id="bioHoldProgress" style="height: 6px;">
-              <div class="progress-bar bg-success progress-bar-striped progress-bar-animated" id="bioHoldProgressBar" style="width: 0%"></div>
-            </div>
-
-            <!-- Tombol Aksi Cepat Verifikasi Instan (Muncul saat wajah terdeteksi) -->
-            <div class="mb-2 d-none" id="bioInstantVerifyBox">
-              <button type="button" class="btn btn-warning text-dark btn-sm w-100 fw-bold py-2 shadow-sm rounded-pill" onclick="triggerInstantBioVerify()">
-                <i class="bi bi-lightning-charge-fill me-1"></i> Wajah Terdeteksi &mdash; Tekan untuk Verifikasi Langsung
-              </button>
-            </div>
-
-            <!-- Liveness Checklist Pills -->
-            <div class="d-flex justify-content-center gap-2 mb-3">
-              <span id="pillFaceDetected" class="badge bg-secondary bg-opacity-25 text-dark small py-2 px-3 border">
-                <i class="bi bi-person me-1"></i> Wajah
-              </span>
-              <span id="pillLivenessBlink" class="badge bg-secondary bg-opacity-25 text-dark small py-2 px-3 border">
-                <i class="bi bi-eye me-1"></i> Kedip (Liveness)
-              </span>
-              <span id="pillMatchId" class="badge bg-secondary bg-opacity-25 text-dark small py-2 px-3 border">
-                <i class="bi bi-check-all me-1"></i> Identitas Cocok
-              </span>
-            </div>
-
-            <!-- Link Pendaftaran Wajah di HP jika belum terdaftar -->
-            <div class="mb-3">
-              <a href="'.e(module_url('user_biometric_enroll.php', ['ret' => module_url('scan.php', ['t' => $token, 'action' => 'form'])])).'" class="btn btn-outline-primary btn-sm w-100 rounded-pill">
-                <i class="bi bi-phone-fill me-1"></i> Wajah Belum Terdaftar? Daftarkan di HP Sekarang
-              </a>
-            </div>
-
-            <div class="d-flex justify-content-between align-items-center">
-              <button type="button" class="btn btn-outline-secondary btn-sm" onclick="closeBiometricModal()">
-                Batal
-              </button>
-              <button type="button" class="btn btn-link btn-sm text-danger text-decoration-none p-0" onclick="bypassBiometricAndSubmit()">
-                <i class="bi bi-exclamation-octagon me-1"></i> Lewati & Simpan Manual
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
     </div>';
 
-    $techsJson = json_encode($enrolledTechs, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT);
+    $body .= render_biometric_modal_html($token, 'form');
 
-    $formScript = <<<'HTML'
-    <script src="https://cdn.jsdelivr.net/npm/@vladmandic/face-api/dist/face-api.min.js"></script>
-    <script>
+    $checklistJs = <<<'JS'
     const defaultItemNotes = {
       1: "Bersih",
       2: "Sudah update",
@@ -1112,429 +1683,10 @@ if ($action === 'start' || $action === 'form' || $action === 'ulang') {
         }
       }
     }
-HTML;
+    JS;
 
-    $formScript .= "\n    window.__ENROLLED_TECHS = " . $techsJson . ";\n";
-
-    $formScript .= <<<'HTML'
-
-    // Pre-parse vektor teknisi satu kali saat halaman dimuat (menghilangkan overhead JSON.parse di loop per-frame)
-    const parsedEnrolledTechs = (Array.isArray(window.__ENROLLED_TECHS) ? window.__ENROLLED_TECHS : []).map(t => {
-      let desc = t.descriptor || t.face_descriptor;
-      if (typeof desc === "string") {
-        try { desc = JSON.parse(desc); } catch (e) { desc = null; }
-      }
-      return {
-        id: t.id,
-        nama: t.nama,
-        descriptor: (Array.isArray(desc) && desc.length >= 64) ? new Float32Array(desc) : null
-      };
-    }).filter(t => t.descriptor !== null);
-
-    let bioModelsLoaded = false;
-    let bioModelsLoading = false;
-    let bioVideoStream = null;
-    let bioTrackingTimer = null;
-    let bioBlinkDetected = false;
-    let bioLastEyeState = "open";
-    let bioModalInstance = null;
-    let bioCompleted = false;
-    let bioFaceHoldFrames = 0;
-    const HOLD_FRAMES_REQUIRED = 12; // ~0.7-0.9 detik tahan posisi wajah untuk auto-pass tanpa harus kedip
-
-    const MODEL_URL = "https://cdn.jsdelivr.net/npm/@vladmandic/face-api/model/";
-
-    // Otomatis minta izin lokasi GPS di latar belakang
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (pos) => {
-          const latEl = document.getElementById("bioLat");
-          const lngEl = document.getElementById("bioLng");
-          if (latEl) latEl.value = pos.coords.latitude;
-          if (lngEl) lngEl.value = pos.coords.longitude;
-        },
-        (err) => console.log("GPS Notice:", err.message),
-        { enableHighAccuracy: true, timeout: 6000, maximumAge: 60000 }
-      );
-    }
-
-    async function loadBioModels() {
-      if (bioModelsLoaded) return true;
-      if (bioModelsLoading) return true;
-      bioModelsLoading = true;
-      try {
-        const statusBox = document.getElementById("bioStatusBox");
-        if (statusBox && !bioCompleted) {
-          statusBox.className = "alert alert-info py-2 px-3 small fw-semibold mb-2";
-          statusBox.innerHTML = '<span class="spinner-border spinner-border-sm me-2 text-primary"></span> Menyiapkan modul AI GPU...';
-        }
-        if (typeof faceapi !== "undefined" && faceapi.tf) {
-          try {
-            await faceapi.tf.setBackend("webgl");
-            await faceapi.tf.ready();
-          } catch(e) {}
-        }
-        await Promise.all([
-          faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL),
-          faceapi.nets.faceLandmark68TinyNet.loadFromUri(MODEL_URL).catch(() => faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL)),
-          faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL)
-        ]);
-        bioModelsLoaded = true;
-        bioModelsLoading = false;
-        if (statusBox && !bioCompleted) {
-          statusBox.className = "alert alert-success py-2 px-3 small fw-semibold mb-2";
-          statusBox.innerHTML = '<i class="bi bi-check-circle me-1"></i> Modul AI GPU siap. Posisikan wajah di oval.';
-        }
-        return true;
-      } catch (err) {
-        console.error("Gagal memuat modul face-api:", err);
-        bioModelsLoading = false;
-        const statusBox = document.getElementById("bioStatusBox");
-        if (statusBox) {
-          statusBox.className = "alert alert-danger py-2 px-3 small mb-2";
-          statusBox.innerHTML = '<i class="bi bi-x-circle me-1"></i> Gagal memuat modul AI. Periksa koneksi internet.';
-        }
-        return false;
-      }
-    }
-
-    function openBiometricModal() {
-      const modalEl = document.getElementById("modalBiometricScan");
-      if (!modalEl) return;
-
-      bioCompleted = false;
-      bioBlinkDetected = false;
-      bioLastEyeState = "open";
-      bioFaceHoldFrames = 0;
-
-      // Reset UI pills & elements
-      document.getElementById("pillFaceDetected").className = "badge bg-secondary bg-opacity-25 text-dark small py-2 px-3 border";
-      document.getElementById("pillLivenessBlink").className = "badge bg-secondary bg-opacity-25 text-dark small py-2 px-3 border";
-      document.getElementById("pillMatchId").className = "badge bg-secondary bg-opacity-25 text-dark small py-2 px-3 border";
-      document.getElementById("bioSuccessOverlay").classList.add("d-none");
-      document.getElementById("bioScanLine").classList.add("d-none");
-      document.getElementById("bioFaceOval").classList.remove("active");
-
-      const holdProgress = document.getElementById("bioHoldProgress");
-      if (holdProgress) holdProgress.classList.add("d-none");
-      const holdBar = document.getElementById("bioHoldProgressBar");
-      if (holdBar) holdBar.style.width = "0%";
-      const instantBox = document.getElementById("bioInstantVerifyBox");
-      if (instantBox) instantBox.classList.add("d-none");
-
-      bioModalInstance = new bootstrap.Modal(modalEl);
-      bioModalInstance.show();
-
-      // Mulai kamera dan pemuatan model secara PARALEL (tidak saling memblokir)
-      loadBioModels();
-      startBioCamera();
-    }
-
-    function closeBiometricModal() {
-      bioCompleted = true;
-      if (bioTrackingTimer) {
-        cancelAnimationFrame(bioTrackingTimer);
-        bioTrackingTimer = null;
-      }
-      if (bioVideoStream) {
-        try {
-          bioVideoStream.getTracks().forEach(t => t.stop());
-        } catch(e) {}
-        bioVideoStream = null;
-      }
-      if (bioModalInstance) {
-        bioModalInstance.hide();
-      }
-    }
-
-    async function startBioCamera() {
-      const video = document.getElementById("bioVideo");
-      const statusBox = document.getElementById("bioStatusBox");
-
-      try {
-        if (statusBox && !bioModelsLoaded) {
-          statusBox.className = "alert alert-info py-2 px-3 small fw-semibold mb-2";
-          statusBox.innerHTML = '<span class="spinner-border spinner-border-sm me-2 text-info"></span> Mengaktifkan kamera depan HP...';
-        }
-
-        video.setAttribute("playsinline", "");
-        video.setAttribute("webkit-playsinline", "");
-
-        bioVideoStream = await navigator.mediaDevices.getUserMedia({
-          video: {
-            facingMode: "user",
-            width: { ideal: 640 },
-            height: { ideal: 480 },
-            frameRate: { ideal: 30, max: 30 }
-          },
-          audio: false
-        });
-        video.srcObject = bioVideoStream;
-        await video.play();
-
-        document.getElementById("bioScanLine").classList.remove("d-none");
-        if (statusBox) {
-          statusBox.className = "alert alert-primary py-2 px-3 small fw-semibold mb-2";
-          statusBox.innerHTML = '<i class="bi bi-person-bounding-box me-1"></i> Arahkan wajah ke lingkaran oval (Tahan 1 detik atau kedipkan mata).';
-        }
-
-        startBioTracking();
-      } catch (err) {
-        console.error("Akses kamera gagal:", err);
-        if (statusBox) {
-          statusBox.className = "alert alert-danger py-2 px-3 small mb-2";
-          statusBox.innerHTML = '<i class="bi bi-camera-video-off me-1"></i> Kamera tidak dapat diakses. Berikan izin di browser atau pilih "Lewati & Simpan Manual".';
-        }
-      }
-    }
-
-    function calcEAR(eye) {
-      const distA = Math.hypot(eye[1].x - eye[5].x, eye[1].y - eye[5].y);
-      const distB = Math.hypot(eye[2].x - eye[4].x, eye[2].y - eye[4].y);
-      const distC = Math.hypot(eye[0].x - eye[3].x, eye[0].y - eye[3].y);
-      return (distA + distB) / (2.0 * distC);
-    }
-
-    function calcEuclidean(a, b) {
-      if (!a || !b || a.length !== b.length) return 999;
-      let s = 0;
-      for (let i = 0; i < a.length; i++) {
-        const d = a[i] - b[i];
-        s += d * d;
-      }
-      return Math.sqrt(s);
-    }
-
-    function captureBioSnapshot(videoEl) {
-      try {
-        if (!videoEl || !videoEl.videoWidth || !videoEl.videoHeight) return "";
-        const c = document.createElement("canvas");
-        c.width = 120;
-        c.height = 120;
-        const ctx = c.getContext("2d");
-        const s = Math.min(videoEl.videoWidth, videoEl.videoHeight);
-        const sx = (videoEl.videoWidth - s) / 2;
-        const sy = (videoEl.videoHeight - s) / 2;
-        ctx.translate(120, 0);
-        ctx.scale(-1, 1);
-        ctx.drawImage(videoEl, sx, sy, s, s, 0, 0, 120, 120);
-        return c.toDataURL("image/jpeg", 0.7);
-      } catch (err) {
-        console.warn("Capture snapshot err:", err);
-        return "";
-      }
-    }
-
-    function findBestMatch(queryVec) {
-      let bestDist = 999;
-      let bestTech = null;
-      for (let i = 0; i < parsedEnrolledTechs.length; i++) {
-        const t = parsedEnrolledTechs[i];
-        const dist = calcEuclidean(queryVec, t.descriptor);
-        if (dist < bestDist) {
-          bestDist = dist;
-          bestTech = t;
-        }
-      }
-      return { tech: bestTech, dist: bestDist };
-    }
-
-    function finalizeVerification(tech, dist, videoEl) {
-      bioCompleted = true;
-      document.getElementById("pillMatchId").className = "badge bg-success text-white small py-2 px-3 border";
-      document.getElementById("pillLivenessBlink").className = "badge bg-success text-white small py-2 px-3 border";
-
-      let conf = Math.round((1.0 - (dist / 0.60)) * 100);
-      if (conf > 99) conf = 99;
-      if (conf < 75) conf = 75;
-
-      document.getElementById("bioVerified").value = "1";
-      document.getElementById("bioConfidence").value = conf;
-      document.getElementById("bioPhoto").value = captureBioSnapshot(videoEl);
-
-      const techInput = document.getElementById("technicianNameInput");
-      if (techInput) techInput.value = tech.nama;
-
-      document.getElementById("bioMatchedName").textContent = tech.nama;
-      document.getElementById("bioMatchConfidence").textContent = conf + "% Cocok (Terverifikasi)";
-      document.getElementById("bioSuccessOverlay").classList.remove("d-none");
-
-      const statusBox = document.getElementById("bioStatusBox");
-      if (statusBox) {
-        statusBox.className = "alert alert-success py-2 px-3 small fw-bold mb-2";
-        statusBox.innerHTML = '<i class="bi bi-check-circle-fill me-1"></i> Wajah Dikenali: <strong>' + tech.nama + '</strong>! Menyimpan...';
-      }
-
-      if (bioVideoStream) {
-        try { bioVideoStream.getTracks().forEach(t => t.stop()); } catch(e) {}
-      }
-
-      setTimeout(() => {
-        const formEl = document.getElementById("formMaintenance");
-        if (formEl) formEl.submit();
-      }, 400);
-    }
-
-    async function triggerInstantBioVerify() {
-      const video = document.getElementById("bioVideo");
-      const statusBox = document.getElementById("bioStatusBox");
-      if (!video || !video.videoWidth || bioCompleted) return;
-
-      statusBox.className = "alert alert-warning py-2 px-3 small fw-bold mb-2";
-      statusBox.innerHTML = '<span class="spinner-border spinner-border-sm me-2 text-warning"></span> Memproses verifikasi instan...';
-
-      const useTinyLandmarks = faceapi.nets.faceLandmark68TinyNet && faceapi.nets.faceLandmark68TinyNet.isLoaded;
-      const fastDetectorOptions = new faceapi.TinyFaceDetectorOptions({ inputSize: 160, scoreThreshold: 0.3 });
-
-      try {
-        const detection = await faceapi.detectSingleFace(video, fastDetectorOptions)
-          .withFaceLandmarks(useTinyLandmarks)
-          .withFaceDescriptor();
-
-        if (detection && detection.descriptor) {
-          const matchResult = findBestMatch(detection.descriptor);
-          if (matchResult.tech && matchResult.dist <= 0.55) {
-            finalizeVerification(matchResult.tech, matchResult.dist, video);
-            return;
-          }
-        }
-        statusBox.className = "alert alert-danger py-2 px-3 small fw-bold mb-2";
-        statusBox.innerHTML = '<i class="bi bi-exclamation-triangle-fill me-1"></i> Wajah belum cocok dengan teknisi terdaftar. Posisikan wajah tegak.';
-      } catch (err) {
-        console.warn("Instant verify error:", err);
-      }
-    }
-
-    let isTrackingFrame = false;
-    function startBioTracking() {
-      if (bioTrackingTimer) cancelAnimationFrame(bioTrackingTimer);
-      const video = document.getElementById("bioVideo");
-      const oval = document.getElementById("bioFaceOval");
-      const statusBox = document.getElementById("bioStatusBox");
-      const pillFace = document.getElementById("pillFaceDetected");
-      const pillBlink = document.getElementById("pillLivenessBlink");
-      const holdProgress = document.getElementById("bioHoldProgress");
-      const holdProgressBar = document.getElementById("bioHoldProgressBar");
-      const instantBox = document.getElementById("bioInstantVerifyBox");
-
-      const useTinyLandmarks = faceapi.nets.faceLandmark68TinyNet && faceapi.nets.faceLandmark68TinyNet.isLoaded;
-      // inputSize 160 sangat cepat dan stabil pada GPU iPhone & Android
-      const fastDetectorOptions = new faceapi.TinyFaceDetectorOptions({ inputSize: 160, scoreThreshold: 0.30 });
-
-      async function trackingLoop() {
-        if (bioCompleted || !video || !video.videoWidth || video.paused || video.ended) {
-          if (!bioCompleted) {
-            bioTrackingTimer = requestAnimationFrame(trackingLoop);
-          }
-          return;
-        }
-
-        if (!bioModelsLoaded) {
-          bioTrackingTimer = requestAnimationFrame(trackingLoop);
-          return;
-        }
-
-        if (!isTrackingFrame) {
-          isTrackingFrame = true;
-          try {
-            // TAHAP 1: Deteksi Wajah & Landmarks
-            const detection = await faceapi.detectSingleFace(video, fastDetectorOptions).withFaceLandmarks(useTinyLandmarks);
-
-            if (detection) {
-              oval.classList.add("active");
-              pillFace.className = "badge bg-success text-white small py-2 px-3 border";
-              if (instantBox) instantBox.classList.remove("d-none");
-
-              // Cek Kedipan Mata (EAR) dengan batas toleransi adaptif
-              const landmarks = detection.landmarks;
-              const leftEye = landmarks.getLeftEye();
-              const rightEye = landmarks.getRightEye();
-              const avgEAR = (calcEAR(leftEye) + calcEAR(rightEye)) / 2.0;
-
-              if (avgEAR < 0.26) {
-                bioLastEyeState = "closed";
-              } else if (avgEAR > 0.27 && bioLastEyeState === "closed") {
-                bioBlinkDetected = true;
-              }
-
-              // Akumulasi Steady-Hold (Auto-Pass jika wajah dipertahankan 1 detik)
-              bioFaceHoldFrames++;
-              if (holdProgress) holdProgress.classList.remove("d-none");
-              const progressPct = Math.min(100, Math.round((bioFaceHoldFrames / HOLD_FRAMES_REQUIRED) * 100));
-              if (holdProgressBar) holdProgressBar.style.width = progressPct + "%";
-
-              const passedLiveness = bioBlinkDetected || (bioFaceHoldFrames >= HOLD_FRAMES_REQUIRED);
-
-              if (passedLiveness) {
-                pillBlink.className = "badge bg-success text-white small py-2 px-3 border";
-                statusBox.className = "alert alert-info py-2 px-3 small fw-bold mb-2";
-                statusBox.innerHTML = '<span class="spinner-border spinner-border-sm me-2 text-primary"></span> Wajah stabil! Mencocokkan data teknisi...';
-
-                // TAHAP 2: Hitung Descriptor & Cocokkan dengan data teknisi
-                const fullDetection = await faceapi.detectSingleFace(video, fastDetectorOptions)
-                  .withFaceLandmarks(useTinyLandmarks)
-                  .withFaceDescriptor();
-
-                if (fullDetection && fullDetection.descriptor) {
-                  const matchResult = findBestMatch(fullDetection.descriptor);
-
-                  // Threshold toleransi pencocokan Euclidean (<= 0.54)
-                  if (matchResult.tech && matchResult.dist <= 0.54) {
-                    finalizeVerification(matchResult.tech, matchResult.dist, video);
-                    return;
-                  } else {
-                    statusBox.className = "alert alert-danger py-2 px-3 small fw-bold mb-2";
-                    statusBox.innerHTML = '<i class="bi bi-exclamation-triangle-fill me-1"></i> Wajah tidak cocok dengan teknisi terdaftar (' + (matchResult.dist !== 999 ? "Skor: " + matchResult.dist.toFixed(2) : "Belum ada") + ').';
-                    bioFaceHoldFrames = 0;
-                    bioBlinkDetected = false;
-                    bioLastEyeState = "open";
-                  }
-                }
-              } else {
-                statusBox.className = "alert alert-warning py-2 px-3 small fw-bold mb-2";
-                statusBox.innerHTML = '<i class="bi bi-eye-fill me-1"></i> Wajah Terdeteksi! <u>Tahan posisi 1 detik</u> atau <u>kedipkan mata</u>...';
-              }
-            } else {
-              oval.classList.remove("active");
-              bioFaceHoldFrames = Math.max(0, bioFaceHoldFrames - 2);
-              if (holdProgressBar) holdProgressBar.style.width = "0%";
-              statusBox.className = "alert alert-secondary py-2 px-3 small mb-2";
-              statusBox.innerHTML = '<i class="bi bi-person-bounding-box me-1"></i> Posisikan wajah tepat di dalam lingkaran oval...';
-            }
-          } catch(e) {
-            console.warn("Tracking error:", e);
-          } finally {
-            isTrackingFrame = false;
-          }
-        }
-
-        if (!bioCompleted) {
-          bioTrackingTimer = requestAnimationFrame(trackingLoop);
-        }
-      }
-
-      bioTrackingTimer = requestAnimationFrame(trackingLoop);
-    }
-
-    function bypassBiometricAndSubmit() {
-      if (confirm("Simpan hasil checklist tanpa verifikasi biometrik wajah?")) {
-        closeBiometricModal();
-        document.getElementById("bioVerified").value = "0";
-        const formEl = document.getElementById("formMaintenance");
-        if (formEl) formEl.submit();
-      }
-    }
-
-    // Preload modul AI di background saat halaman dimuat agar saat klik "Selesai Maintenance" langsung 0 detik instan
-    if (document.readyState === "loading") {
-      document.addEventListener("DOMContentLoaded", () => {
-        setTimeout(loadBioModels, 300);
-      });
-    } else {
-      setTimeout(loadBioModels, 300);
-    }
-    </script>
-HTML;
+    $formHeadStyle .= render_biometric_css();
+    $formScript = render_biometric_js($enrolledTechs, $checklistJs);
 
     render_page($formTitle, $body, $formHeadStyle, $formScript, false);
     exit;
@@ -1632,35 +1784,42 @@ if ($pendingFinding) {
     </div>';
 }
 
-// Build Matrix Table Rows 12 Bulan (Persis Excel)
+// Build Matrix Table Rows 12 Bulan (Persis Desain Gambar Kartu Kontrol IT)
+$userDisplay = !empty($asset['karyawan_nama']) && $asset['karyawan_nama'] !== '-' ? $asset['karyawan_nama'] : 'Umum / Pool';
+$divisi = !empty($asset['divisi_nama']) && $asset['divisi_nama'] !== '-' ? $asset['divisi_nama'] : '';
+$userWithDiv = $divisi ? "{$userDisplay} ({$divisi})" : $userDisplay;
+$ipDisplay = !empty($asset['ip_address']) ? $asset['ip_address'] : (!empty($asset['ip']) ? $asset['ip'] : '-');
+$kodeInv = $asset['kode_inventaris'] ?? ('INV-IT-' . sprintf('%03d', $assetId));
+$deviceTitle = asset_title($asset);
+$printerDisplay = !empty($asset['printer']) && $asset['printer'] !== '-' ? $asset['printer'] : '-';
+$cabangLabel = !empty($asset['cabang_nama']) && $asset['cabang_nama'] !== '-' ? $asset['cabang_nama'] : 'KPO';
+
 $cardMatrixRows = '';
 for ($m = 1; $m <= 12; $m++) {
     $row = $cardMatrix[$m];
     $dateLabel = $row['date_str'];
     $isDone = $row['is_done'];
     $paraf = $isDone ? e($row['paraf']) : '&nbsp;';
+    $rowClass = ($m % 2 === 0) ? 'even-row' : 'odd-row';
+    if ($isDone) $rowClass .= ' done-row';
 
     $cols1to9 = '';
     for ($num = 1; $num <= 9; $num++) {
         $chkVal = $row['checklists'][$num] ?? 0;
         if ($isDone) {
-            $cols1to9 .= '<td style="border: 1px solid #000; width: 34px; padding: 3px 0;" class="fw-bold text-dark text-center">'.($chkVal ? '✓' : '-').'</td>';
+            $cols1to9 .= '<td class="chk-col '.($chkVal ? 'chk-yes' : 'chk-no').'">'.($chkVal ? '✓' : '-').'</td>';
         } else {
-            $cols1to9 .= '<td style="border: 1px solid #000; width: 34px; padding: 3px 0;">&nbsp;</td>';
+            $cols1to9 .= '<td class="chk-col">&nbsp;</td>';
         }
     }
 
     $cardMatrixRows .= '
-    <tr style="height: 27px;">
-      <td style="border: 1px solid #000; width: 95px; padding: 3px 4px;" class="fw-bold text-dark text-center font-monospace">'.e($dateLabel).'</td>
+    <tr class="'.$rowClass.'">
+      <td class="tgl-col">'.e($dateLabel).'</td>
       '.$cols1to9.'
-      <td style="border: 1px solid #000; min-width: 90px; padding: 3px 6px;" class="text-center font-monospace small text-dark">'.$paraf.'</td>
+      <td class="paraf-col">'.$paraf.'</td>
     </tr>';
 }
-
-$userDisplay = !empty($asset['karyawan_nama']) && $asset['karyawan_nama'] !== '-' ? $asset['karyawan_nama'] : '';
-$ipDisplay = !empty($asset['ip_address']) ? $asset['ip_address'] : (!empty($asset['ip']) ? $asset['ip'] : '');
-$printerDisplay = !empty($asset['printer']) ? $asset['printer'] : '';
 
 // Maintenance Terakhir
 $lastMaintStr = !empty($historyList[0])
@@ -1668,72 +1827,151 @@ $lastMaintStr = !empty($historyList[0])
     : 'Belum pernah';
 
 $headStyle = '<style>
-.excel-card-wrapper {
+/* Modern Kartu Kontrol IT (Exact match to print_card.php grid6 / user screenshot) */
+.mobile-card-wrapper {
   background: #ffffff;
-  border: 1.5px solid #000000;
-  border-radius: 4px;
-  padding: 16px 20px;
-  font-family: Arial, "Helvetica Neue", Helvetica, sans-serif;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
-  box-sizing: border-box;
+  border: 2px solid #2563eb;
+  border-radius: 14px;
+  padding: 14px 16px;
+  box-shadow: 0 8px 24px rgba(37, 99, 235, 0.08);
+  margin: 0 auto;
   max-width: 100%;
 }
 @media (max-width: 576px) {
-  .excel-card-wrapper {
-    padding: 12px 10px;
+  .mobile-card-wrapper {
+    padding: 10px 8px;
+    border-radius: 12px;
   }
 }
-.excel-header-table {
+.grid6-top-banner {
+  background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%);
+  color: #ffffff;
+  padding: 7px 12px;
+  border-radius: 6px;
+  font-weight: 800;
+  font-size: 0.92rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.grid6-branch-pill {
+  background: #fef08a;
+  color: #854d0e;
+  font-size: 0.72rem;
+  font-weight: 800;
+  padding: 2px 8px;
+  border-radius: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.grid6-info-table {
   width: 100%;
-  max-width: 100%;
   border-collapse: collapse;
-  margin-bottom: 12px;
-  font-weight: bold;
-  font-size: 11pt;
-  color: #000000;
-  table-layout: auto;
+  font-size: 0.85rem;
+  line-height: 1.4;
+  margin: 8px 0;
 }
-.excel-header-table td {
-  padding: 3px 2px;
+.grid6-info-table td {
+  padding: 3px 4px;
+  vertical-align: middle;
 }
-.excel-header-line {
-  border-bottom: 1.5px solid #000000;
-  width: 100%;
-  padding-left: 6px;
-  font-family: "Segoe UI", Arial, sans-serif;
-  font-weight: 600;
-  word-break: break-word;
-}
-.excel-grid-table {
-  width: 100%;
-  border-collapse: collapse;
-  border: 1.5px solid #000000;
-  margin-bottom: 10px;
-  color: #000000;
-}
-.excel-grid-table th {
-  background-color: #8ea9db !important;
-  color: #000000 !important;
-  border: 1.5px solid #000000 !important;
-  font-weight: bold;
-  font-size: 9.5pt;
+.badge-lbl {
+  font-size: 0.72rem;
+  font-weight: 800;
+  padding: 2px 6px;
+  border-radius: 4px;
+  display: inline-block;
   text-align: center;
-  padding: 5px 2px;
+  white-space: nowrap;
 }
-.excel-grid-table td {
-  border: 1px solid #000000;
-  font-size: 9pt;
+.badge-blue { background: #dbeafe; color: #1e40af; border: 1px solid #bfdbfe; }
+.badge-green { background: #dcfce7; color: #15803d; border: 1px solid #bbf7d0; }
+.badge-purple { background: #f3e8ff; color: #6b21a8; border: 1px solid #e9d5ff; }
+.badge-kode { background: #f1f5f9; color: #0f172a; padding: 2px 6px; border-radius: 4px; font-weight: bold; border: 1px solid #cbd5e1; }
+
+.grid6-matrix-wrapper {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  margin-bottom: 8px;
 }
-.excel-legend-box {
-  font-size: 8.5pt;
-  color: #000000;
-  line-height: 1.45;
+.grid6-matrix-table {
+  width: 100%;
+  min-width: 340px;
+  border-collapse: collapse;
+  border: 1.5px solid #1e40af;
+  font-size: 0.82rem;
 }
+.grid6-matrix-table th {
+  background: #1e40af !important;
+  color: #ffffff !important;
+  border: 1px solid #1e3a8a;
+  font-weight: bold;
+  text-align: center;
+  padding: 6px 2px;
+}
+.grid6-matrix-table td {
+  border: 1px solid #cbd5e1;
+  text-align: center;
+  padding: 4px 2px;
+  height: 25px;
+}
+.grid6-matrix-table tr.even-row { background-color: #f8fafc; }
+.grid6-matrix-table tr.done-row { background-color: #f0fdf4; }
+.grid6-matrix-table tr.done-row td { border-color: #86efac; }
+.grid6-matrix-table .tgl-col { font-weight: bold; font-family: "Courier New", monospace; font-size: 0.84rem; color: #1e3a8a; width: 85px; }
+.grid6-matrix-table .chk-col { font-weight: bold; font-size: 0.88rem; width: 28px; }
+.grid6-matrix-table .chk-yes { color: #16a34a; font-weight: 900; }
+.grid6-matrix-table .chk-no { color: #94a3b8; }
+.grid6-matrix-table .paraf-col { font-size: 0.78rem; font-family: "Courier New", monospace; color: #334155; min-width: 85px; }
+
+.grid6-ket-box {
+  background: #f8fafc;
+  border: 1px solid #94a3b8;
+  border-radius: 8px;
+  padding: 8px 12px;
+}
+.grid6-ket-title {
+  font-size: 0.74rem;
+  font-weight: 800;
+  color: #1e40af;
+  margin-bottom: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+.grid6-ket-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 4px 8px;
+}
+@media (max-width: 480px) {
+  .grid6-ket-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+.leg-tag {
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 2px 6px;
+  border-radius: 4px;
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+.leg-tag b {
+  font-weight: 800;
+  color: #0f172a;
+}
+.leg-blue { background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; }
+.leg-purple { background: #faf5ff; color: #7e22ce; border: 1px solid #e9d5ff; }
+.leg-teal { background: #f0fdfa; color: #0f766e; border: 1px solid #99f6e4; }
+
 @media print {
   body { background: #fff !important; margin: 0 !important; }
   .no-print, nav, header { display: none !important; }
   .container, main.container { max-width: 100% !important; width: 100% !important; padding: 0 !important; margin: 0 !important; }
-  .excel-card-wrapper { box-shadow: none !important; border: 1.5px solid #000 !important; margin: 0 auto !important; }
+  .mobile-card-wrapper { box-shadow: none !important; margin: 0 auto !important; }
 }
 </style>';
 
@@ -1809,7 +2047,7 @@ $body = '
     <!-- Card Status Maintenance Bulan Berjalan -->
     '.$statusCardHtml.'
 
-    <!-- KARTU KONTROL CHECKLIST 12 BULAN (PERSIS FORMAT GAMBAR) -->
+    <!-- KARTU KONTROL CHECKLIST 12 BULAN (PERSIS FORMAT GAMBAR / MOBILE & DESKTOP) -->
     <div class="card p-3 p-md-4 border-0 shadow-sm mb-4">
       <div class="d-flex justify-content-between align-items-center mb-3">
         <h5 class="fw-bold text-dark mb-0"><i class="bi bi-card-checklist text-primary me-2"></i>KARTU CHECKLIST MAINTENANCE IT '.$year.'</h5>
@@ -1818,43 +2056,50 @@ $body = '
         </div>
       </div>
 
-      <!-- Excel Style Card Box -->
-      <div class="excel-card-wrapper">
+      <!-- Modern Kartu Kontrol Container (Persis Desain Gambar) -->
+      <div class="mobile-card-wrapper">
         
-        <table class="excel-header-table">
+        <!-- Header Banner Berwarna -->
+        <div class="grid6-top-banner mb-2">
+          <span><i class="bi bi-card-checklist me-1"></i> KARTU KONTROL IT · '.$year.'</span>
+          <span class="grid6-branch-pill">'.e($cabangLabel).'</span>
+        </div>
+
+        <!-- Header Info -->
+        <table class="grid6-info-table mb-2">
           <tr>
-            <td style="width: 80px; white-space: nowrap;">NAMA</td>
-            <td style="width: 15px; text-align: center;">:</td>
-            <td class="excel-header-line">'.e($userDisplay).'</td>
+            <td style="width: 75px;"><span class="badge-lbl badge-blue">NAMA</span></td>
+            <td style="width: 8px; text-align: center;">:</td>
+            <td class="info-v"><strong>'.e($userWithDiv).'</strong></td>
           </tr>
           <tr>
-            <td style="white-space: nowrap;">IP</td>
+            <td><span class="badge-lbl badge-green">IP / KODE</span></td>
             <td style="text-align: center;">:</td>
-            <td class="excel-header-line">'.e($ipDisplay).'</td>
+            <td class="info-v"><span class="text-success fw-bold font-monospace">'.e($ipDisplay).'</span> · <span class="badge-kode font-monospace">'.e($kodeInv).'</span></td>
           </tr>
           <tr>
-            <td style="white-space: nowrap;">PRINTER</td>
+            <td><span class="badge-lbl badge-purple">UNIT/PRT</span></td>
             <td style="text-align: center;">:</td>
-            <td class="excel-header-line">'.e($printerDisplay).'</td>
+            <td class="info-v">'.e($deviceTitle).' · <span class="text-secondary">'.e($printerDisplay).'</span></td>
           </tr>
         </table>
 
-        <!-- Table Matrix 12 Bulan -->
-        <div class="table-responsive">
-          <table class="excel-grid-table">
+        <!-- 12 Months Matrix Table (Scrollable on small phones) -->
+        <div class="grid6-matrix-wrapper">
+          <table class="grid6-matrix-table">
             <thead>
               <tr>
-                <th style="width: 100px;">TANGGAL</th>
-                <th style="width: 32px;">1</th>
-                <th style="width: 32px;">2</th>
-                <th style="width: 32px;">3</th>
-                <th style="width: 32px;">4</th>
-                <th style="width: 32px;">5</th>
-                <th style="width: 32px;">6</th>
-                <th style="width: 32px;">7</th>
-                <th style="width: 32px;">8</th>
-                <th style="width: 32px;">9</th>
-                <th style="min-width: 90px;">PARAF</th>
+                <th class="tgl-h">TGL</th>
+                <th class="chk-h">1</th>
+                <th class="chk-h">2</th>
+                <th class="chk-h">3</th>
+                <th class="chk-h">4</th>
+                <th class="chk-h">5</th>
+                <th class="chk-h">6</th>
+                <th class="chk-h">7</th>
+                <th class="chk-h">8</th>
+                <th class="chk-h">9</th>
+                <th class="paraf-h">PARAF</th>
               </tr>
             </thead>
             <tbody>
@@ -1863,25 +2108,19 @@ $body = '
           </table>
         </div>
 
-        <!-- Legend Keterangan 9 Item -->
-        <div class="excel-legend-box">
-          <div class="fw-bold mb-1">Ket</div>
-          <div class="row g-1">
-            <div class="col-md-4 col-12">
-              <div>1. Scan Virus</div>
-              <div>2. Update Anti Virus</div>
-              <div>3. Deleting Temporary File</div>
-            </div>
-            <div class="col-md-4 col-12">
-              <div>4. Cek Keyboard</div>
-              <div>5. Cek Mouse</div>
-              <div>6. Cek CPU & Monitor</div>
-            </div>
-            <div class="col-md-4 col-12">
-              <div>7. Cek Tinta</div>
-              <div>8. Cek Cartidge</div>
-              <div>9. Cek Nozel</div>
-            </div>
+        <!-- 9 Item Legend Footer Lengkap (1-9) -->
+        <div class="grid6-ket-box mt-2">
+          <div class="grid6-ket-title"><i class="bi bi-info-circle-fill me-1"></i>KETERANGAN ITEM CHECKLIST (1 - 9):</div>
+          <div class="grid6-ket-grid">
+            <span class="leg-tag leg-blue"><b>1.</b> Scan Virus</span>
+            <span class="leg-tag leg-blue"><b>2.</b> Update AV</span>
+            <span class="leg-tag leg-blue"><b>3.</b> Temp File</span>
+            <span class="leg-tag leg-purple"><b>4.</b> Keyboard</span>
+            <span class="leg-tag leg-purple"><b>5.</b> Mouse</span>
+            <span class="leg-tag leg-purple"><b>6.</b> CPU & Mon</span>
+            <span class="leg-tag leg-teal"><b>7.</b> Cek Tinta</span>
+            <span class="leg-tag leg-teal"><b>8.</b> Cartridge</span>
+            <span class="leg-tag leg-teal"><b>9.</b> Cek Nozzle</span>
           </div>
         </div>
 

@@ -92,9 +92,9 @@ $body = '
   </div>
   <form method="get" class="d-flex gap-2 align-items-center">
     <select class="form-select form-select-sm" name="cabang" onchange="this.form.submit()">'.$cabangOpts.'</select>
-    <div class="input-group input-group-sm" style="width: 140px;">
-      <span class="input-group-text bg-light">Tahun</span>
-      <input type="number" class="form-control form-control-sm" name="tahun" value="'.$year.'" onchange="this.form.submit()">
+    <div class="input-group input-group-sm" style="width: 180px; min-width: 180px;">
+      <span class="input-group-text bg-light fw-bold">Tahun</span>
+      <input type="number" class="form-control form-control-sm font-monospace fw-bold" name="tahun" value="'.$year.'" min="2020" max="2100" onchange="this.form.submit()">
     </div>
   </form>
 </div>

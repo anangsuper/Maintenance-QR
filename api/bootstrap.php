@@ -3190,12 +3190,12 @@ function get_asset_maintenance_status_month(int $assetId, int $month, int $year)
                 $latest = $s;
             }
         }
-        if (!$latest && session_status() === PHP_SESSION_ACTIVE && !empty($_SESSION['_recent_scan_' . $assetId])) {
+        if (session_status() === PHP_SESSION_ACTIVE && !empty($_SESSION['_recent_scan_' . $assetId])) {
             $rec = $_SESSION['_recent_scan_' . $assetId];
             $rM = (int)($rec['maintenance_month'] ?? (int)date('n', strtotime((string)($rec['maintenance_date'] ?? ''))));
             $rY = (int)($rec['maintenance_year'] ?? (int)date('Y', strtotime((string)($rec['maintenance_date'] ?? ''))));
             if ($rM === $month && $rY === $year) {
-                $latest = $rec;
+                $latest = array_merge($latest ?: [], $rec);
             }
         }
         return $latest;
@@ -3265,6 +3265,20 @@ function get_asset_maintenance_history(int $assetId): array {
 
 function get_asset_active_finding(int $assetId): ?array {
     if ($assetId <= 0) return null;
+
+    // Cek override sesi: jika baru saja diselesaikan tindak lanjutnya / status Selesai, temuan aktif langsung dianggap tuntas
+    if (session_status() === PHP_SESSION_ACTIVE) {
+        if (!empty($_SESSION['_resolved_finding_' . $assetId]) && (time() - (int)$_SESSION['_resolved_finding_' . $assetId] < 3600)) {
+            return null;
+        }
+        if (!empty($_SESSION['_recent_scan_' . $assetId])) {
+            $rec = $_SESSION['_recent_scan_' . $assetId];
+            $st = strtolower(trim((string)($rec['status'] ?? '')));
+            if (in_array($st, ['selesai', 'ok', 'resolved', 'closed', 'normal'], true)) {
+                return null;
+            }
+        }
+    }
 
     if (is_google_cloud_mode()) {
         $client = google_sheets_v4_client();
@@ -3458,12 +3472,30 @@ function resolve_asset_finding(int $assetId, array $data): array {
     $updateChecklists = !empty($data['update_checklists']);
     $date = trim((string)($data['date'] ?? date('Y-m-d')));
     $time = trim((string)($data['time'] ?? date('H:i:s')));
+    $bioVerified = !empty($data['biometric_verified']) ? 1 : 0;
+    $bioConfidence = (float)($data['biometric_confidence'] ?? 0);
+    $bioPhoto = trim((string)($data['biometric_photo'] ?? ''));
+
+    // Jika verifikasi biometrik berhasil namun foto tangkapan kosong, ambil foto profil biometrik teknisi
+    if ($bioVerified && $bioPhoto === '' && $techName !== '') {
+        $enrolled = get_enrolled_technicians(false);
+        foreach ($enrolled as $en) {
+            if (strcasecmp((string)$en['nama'], $techName) === 0 && !empty($en['photo'])) {
+                $bioPhoto = (string)$en['photo'];
+                break;
+            }
+        }
+    } elseif (!$bioVerified) {
+        $bioPhoto = '';
+        $bioConfidence = 0;
+    }
 
     if ($actionTaken === '') {
         return ['success' => false, 'error' => 'Tindakan perbaikan wajib diisi'];
     }
 
-    $formattedAction = "[Tindak Lanjut " . date('d/m/Y', strtotime($date)) . " oleh {$techName}]: " . $actionTaken;
+    $bioTag = $bioVerified ? " [AI Face ID " . round($bioConfidence) . "% Verified]" : "";
+    $formattedAction = "[Tindak Lanjut " . date('d/m/Y', strtotime($date)) . " oleh {$techName}{$bioTag}]: " . $actionTaken;
 
     // 1. Jika logId belum ada, cari log maintenance terakhir untuk aset ini
     if ($logId <= 0) {
@@ -3477,7 +3509,7 @@ function resolve_asset_finding(int $assetId, array $data): array {
     if ($logId > 0) {
         $detail = get_maintenance_detail($logId);
         $oldScan = $detail['scan'] ?? [];
-        $oldFindings = (string)($oldScan['findings'] ?? '');
+        $oldFindings = ($status === 'Selesai') ? '' : (string)($oldScan['findings'] ?? '');
         $oldRecom = (string)($oldScan['recommendation'] ?? '');
         $newRecom = ($oldRecom !== '' && $oldRecom !== '-') ? $oldRecom . "\n" . $formattedAction : $formattedAction;
 
@@ -3501,15 +3533,48 @@ function resolve_asset_finding(int $assetId, array $data): array {
             'technician_name' => $techName,
             'maintenance_date' => $date,
             'maintenance_time' => $time,
-            'checklists' => $checklistsPayload
+            'checklists' => $checklistsPayload,
+            'biometric_verified' => $bioVerified,
+            'biometric_confidence' => $bioConfidence,
+            'biometric_photo' => $bioPhoto
         ]);
 
         if (empty($upRes['success'])) {
             return ['success' => false, 'error' => $upRes['error'] ?? 'Gagal memperbarui log maintenance'];
         }
+    } else {
+        // Buat scan log baru jika belum ada scan sama sekali
+        $checklistsPayload = [];
+        $fixed = get_fixed_checklists();
+        foreach ($fixed as $num => $nm) {
+            $checklistsPayload[$num] = [
+                'checked' => $updateChecklists ? 1 : 0,
+                'notes' => $updateChecklists ? 'Normal (Selesai Ditindaklanjuti)' : '-'
+            ];
+        }
+        $saved = save_maintenance_record([
+            'asset_id' => $assetId,
+            'technician_name' => $techName,
+            'maintenance_date' => $date,
+            'maintenance_time' => $time,
+            'maintenance_month' => (int)date('n', strtotime($date)),
+            'maintenance_year' => (int)date('Y', strtotime($date)),
+            'status' => $status,
+            'maintenance_type' => 'Tindak Lanjut',
+            'findings' => '',
+            'recommendation' => $formattedAction,
+            'biometric_verified' => $bioVerified,
+            'biometric_confidence' => $bioConfidence,
+            'biometric_photo' => $bioPhoto,
+            'checklists' => $checklistsPayload
+        ]);
+        if (!empty($saved['log_id'])) {
+            $logId = (int)$saved['log_id'];
+        }
     }
 
     // 3. Update sheet Maintenance_Findings jika ada
+    $techResolvedStr = $techName . ($bioVerified ? " (Face ID " . round($bioConfidence) . "%)" : "");
     if (is_google_cloud_mode()) {
         $client = google_sheets_v4_client();
         if ($client) {
@@ -3527,7 +3592,7 @@ function resolve_asset_finding(int $assetId, array $data): array {
                                 $fStatus,
                                 $fr['reported_by'] ?? 'Teknisi',
                                 $fr['reported_at'] ?? $date,
-                                $techName,
+                                $techResolvedStr,
                                 date('Y-m-d H:i:s'),
                                 $actionTaken
                             ]]);
@@ -3538,6 +3603,7 @@ function resolve_asset_finding(int $assetId, array $data): array {
             $client->clearCache('Maintenance_Scan');
             $client->clearCache('Maintenance_Findings');
             $client->clearCache('Maintenance_Checklists');
+            $client->clearCache();
         }
     } else {
         // MySQL
@@ -3548,8 +3614,31 @@ function resolve_asset_finding(int $assetId, array $data): array {
                 SET repair_status = ?, resolved_by = ?, resolved_at = NOW(), action_taken = ?
                 WHERE (id = ? AND ? > 0) OR (maintenance_scan_id = ? AND ? > 0) OR asset_id = ?
             ");
-            $st->execute([$fStatus, $techName, $actionTaken, $findingId, $findingId, $logId, $logId, $assetId]);
+            $st->execute([$fStatus, $techResolvedStr, $actionTaken, $findingId, $findingId, $logId, $logId, $assetId]);
         } catch (Throwable $e) {}
+    }
+
+    // Sinkronisasi Sesi: Kartu Kontrol & Status Perangkat langsung normal seketika
+    if (session_status() === PHP_SESSION_ACTIVE) {
+        $_SESSION['_recent_scan_' . $assetId] = [
+            'id' => $logId,
+            'asset_id' => $assetId,
+            'technician_name' => $techName,
+            'maintenance_date' => $date,
+            'maintenance_time' => $time,
+            'maintenance_month' => (int)date('n', strtotime($date)),
+            'maintenance_year' => (int)date('Y', strtotime($date)),
+            'status' => $status,
+            'findings' => ($status === 'Selesai' ? '' : ($oldFindings ?? '')),
+            'recommendation' => $formattedAction,
+            'biometric_verified' => $bioVerified,
+            'biometric_confidence' => $bioConfidence,
+            'biometric_photo' => $bioPhoto,
+            'checklists' => $checklistsPayload
+        ];
+        if ($status === 'Selesai') {
+            $_SESSION['_resolved_finding_' . $assetId] = time();
+        }
     }
 
     return ['success' => true, 'log_id' => $logId, 'status' => $status];
@@ -3641,14 +3730,15 @@ function get_asset_yearly_card_matrix(int $assetId, int $year): array {
             if (session_status() === PHP_SESSION_ACTIVE && !empty($_SESSION['_recent_scan_' . $assetId])) {
                 $rec = $_SESSION['_recent_scan_' . $assetId];
                 if ((int)($rec['maintenance_year'] ?? 0) === $year) {
-                    $alreadyIn = false;
-                    foreach ($assetScans as $as) {
+                    $replaced = false;
+                    foreach ($assetScans as $k => $as) {
                         if ((int)($as['id'] ?? $as['col_0'] ?? 0) === (int)$rec['id']) {
-                            $alreadyIn = true;
+                            $assetScans[$k] = array_merge($as, $rec);
+                            $replaced = true;
                             break;
                         }
                     }
-                    if (!$alreadyIn) {
+                    if (!$replaced) {
                         $assetScans[] = $rec;
                     }
                 }
@@ -4309,7 +4399,13 @@ function update_maintenance_detail(int $logId, array $data): array {
             $year = (int)date('Y', strtotime($newDate));
         }
 
-        $client->updateValues("Maintenance_Scan!A{$scanRowNum}:M{$scanRowNum}", [[
+        $bioVerified = isset($data['biometric_verified']) ? (int)$data['biometric_verified'] : (int)($targetScan['biometric_verified'] ?? 0);
+        $bioConfidence = isset($data['biometric_confidence']) ? (float)$data['biometric_confidence'] : (float)($targetScan['biometric_confidence'] ?? 0);
+        $bioPhoto = !empty($data['biometric_photo']) ? (string)$data['biometric_photo'] : (string)($targetScan['biometric_photo'] ?? '');
+        $latitude = !empty($data['latitude']) ? (string)$data['latitude'] : (string)($targetScan['latitude'] ?? '');
+        $longitude = !empty($data['longitude']) ? (string)$data['longitude'] : (string)($targetScan['longitude'] ?? '');
+
+        $client->updateValues("Maintenance_Scan!A{$scanRowNum}:R{$scanRowNum}", [[
             $logId,
             $assetId,
             $userId,
@@ -4322,7 +4418,12 @@ function update_maintenance_detail(int $logId, array $data): array {
             $mType,
             $targetScan['created_at'] ?? date('Y-m-d H:i:s'),
             $findings,
-            $recommendation
+            $recommendation,
+            $bioVerified,
+            $bioConfidence,
+            $bioPhoto,
+            $latitude,
+            $longitude
         ]]);
 
         // 2. Update atau Tambah Checklist di Maintenance_Checklists
@@ -4455,6 +4556,18 @@ function update_maintenance_detail(int $logId, array $data): array {
         if ($newTechName !== '') {
             $updates[] = "technician_name = ?";
             $params[] = $newTechName;
+        }
+        if (isset($data['biometric_verified'])) {
+            $updates[] = "biometric_verified = ?";
+            $params[] = (int)$data['biometric_verified'];
+        }
+        if (isset($data['biometric_confidence'])) {
+            $updates[] = "biometric_confidence = ?";
+            $params[] = (float)$data['biometric_confidence'];
+        }
+        if (!empty($data['biometric_photo'])) {
+            $updates[] = "biometric_photo = ?";
+            $params[] = (string)$data['biometric_photo'];
         }
 
         $params[] = $logId;

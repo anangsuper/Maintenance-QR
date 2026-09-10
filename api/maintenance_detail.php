@@ -120,6 +120,16 @@ $lat = trim((string)($scan['latitude'] ?? ''));
 $lng = trim((string)($scan['longitude'] ?? ''));
 
 if ($isBioVerified) {
+    if ($bioPhoto === '' && $techName !== '') {
+        $enrolled = get_enrolled_technicians(false);
+        foreach ($enrolled as $en) {
+            if (strcasecmp((string)$en['nama'], $techName) === 0 && !empty($en['photo'])) {
+                $bioPhoto = (string)$en['photo'];
+                break;
+            }
+        }
+    }
+
     $photoThumb = $bioPhoto !== ''
         ? '<img src="'.e($bioPhoto).'" class="rounded-circle border border-2 border-success shadow-sm" style="width: 56px; height: 56px; object-fit: cover;" alt="Foto Verifikasi">'
         : '<div class="bg-success bg-opacity-10 text-success rounded-circle d-flex align-items-center justify-content-center border border-success" style="width: 56px; height: 56px;"><i class="bi bi-person-check fs-3"></i></div>';

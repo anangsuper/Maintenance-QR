@@ -800,7 +800,7 @@ $body = '
           <option value="single"'.($layout === 'single' ? ' selected' : '').'>📄 1 Kartu Besar / Lembar</option>
         </select>
 
-        <input type="number" class="form-control form-control-sm" name="tahun" value="'.$year.'" style="width: 80px;" onchange="this.form.submit()">
+        <input type="number" class="form-control form-control-sm font-monospace fw-bold" name="tahun" value="'.$year.'" min="2020" max="2100" style="width: 95px;" onchange="this.form.submit()">
 
         <button type="button" class="btn btn-primary btn-sm fw-bold px-3 shadow-sm" onclick="window.print()">
           <i class="bi bi-printer-fill me-1"></i> CETAK (PRINT)
