@@ -28,7 +28,7 @@ if (session_status() !== PHP_SESSION_ACTIVE) {
 
 date_default_timezone_set('Asia/Makassar');
 
-require_once __DIR__ . '/google_sheets_v4.php';
+require_once dirname(__DIR__) . '/google_sheets_v4.php';
 
 function envv(string $key, ?string $fallback = null): ?string {
     $v = getenv($key);
@@ -42,7 +42,10 @@ function local_config(): array {
     static $cfg = null;
     if ($cfg !== null) return $cfg;
     $cfg = [];
-    $file = __DIR__ . '/config.local.php';
+    $file = dirname(__DIR__) . '/config.local.php';
+    if (!is_file($file)) {
+        $file = dirname(__DIR__, 2) . '/config.local.php';
+    }
     if (is_file($file)) {
         $loaded = require $file;
         if (is_array($loaded)) $cfg = $loaded;
