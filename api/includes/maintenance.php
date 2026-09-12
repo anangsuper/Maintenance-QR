@@ -79,17 +79,33 @@ function get_asset_maintenance_status_month(int $assetId, int $month, int $year)
 
 function get_asset_maintenance_history(int $assetId): array {
     if ($assetId <= 0) return [];
+    $asset = get_asset_by_id($assetId);
+    $assetKode = trim((string)($asset['kode_inventaris'] ?? ''));
+
     if (is_google_cloud_mode()) {
         $client = google_sheets_v4_client();
         if (!$client) return [];
-        $scans = $client->getSheetData('Maintenance_Scan', false);
+        $scans = $client->getSheetData('Maintenance_Scan', true);
         $history = [];
+        $seenIds = [];
+
         foreach ($scans as $s) {
             $sAid = (int)($s['asset_id'] ?? $s['id_asset'] ?? $s['col_1'] ?? 0);
-            if ($sAid === $assetId) {
+            $rawAid = trim((string)($s['asset_id'] ?? $s['id_asset'] ?? $s['col_1'] ?? ''));
+            $sKode = trim((string)($s['kode_inventaris'] ?? ''));
+
+            $isMatch = ($sAid === $assetId) 
+                || ($rawAid === (string)$assetId)
+                || ($assetKode !== '' && (strcasecmp($sKode, $assetKode) === 0 || strcasecmp($rawAid, $assetKode) === 0));
+
+            if ($isMatch) {
+                $hId = (int)($s['id'] ?? $s['col_0'] ?? 0);
+                if ($hId > 0) {
+                    $seenIds[$hId] = true;
+                }
                 $history[] = [
-                    'id' => (int)($s['id'] ?? $s['col_0'] ?? 0),
-                    'asset_id' => $sAid,
+                    'id' => $hId,
+                    'asset_id' => $sAid ?: $assetId,
                     'maintenance_date' => substr((string)($s['maintenance_date'] ?? $s['col_4'] ?? ''), 0, 10),
                     'maintenance_time' => substr((string)($s['maintenance_time'] ?? $s['col_5'] ?? ''), 0, 8),
                     'maintenance_month' => (int)($s['maintenance_month'] ?? $s['col_6'] ?? 0),
@@ -102,8 +118,34 @@ function get_asset_maintenance_history(int $assetId): array {
                 ];
             }
         }
+
+        // Cek session cache jika scan baru saja disimpan di sesi saat ini
+        if (session_status() === PHP_SESSION_ACTIVE && !empty($_SESSION['_recent_scan_' . $assetId])) {
+            $rec = $_SESSION['_recent_scan_' . $assetId];
+            $rId = (int)($rec['id'] ?? 0);
+            if ($rId > 0 && empty($seenIds[$rId])) {
+                $history[] = [
+                    'id' => $rId,
+                    'asset_id' => $assetId,
+                    'maintenance_date' => substr((string)($rec['maintenance_date'] ?? date('Y-m-d')), 0, 10),
+                    'maintenance_time' => substr((string)($rec['maintenance_time'] ?? date('H:i:s')), 0, 8),
+                    'maintenance_month' => (int)($rec['maintenance_month'] ?? date('n')),
+                    'maintenance_year' => (int)($rec['maintenance_year'] ?? date('Y')),
+                    'technician_name' => $rec['technician_name'] ?? 'Teknisi',
+                    'maintenance_type' => $rec['maintenance_type'] ?? 'Maintenance',
+                    'findings' => $rec['findings'] ?? '',
+                    'recommendation' => $rec['recommendation'] ?? '',
+                    'status' => $rec['status'] ?? 'Selesai'
+                ];
+            }
+        }
+
         usort($history, function($a, $b) {
-            return strcmp((string)($b['maintenance_date'] ?? ''), (string)($a['maintenance_date'] ?? ''));
+            $cmp = strcmp((string)($b['maintenance_date'] ?? ''), (string)($a['maintenance_date'] ?? ''));
+            if ($cmp === 0) {
+                return (int)($b['id'] ?? 0) - (int)($a['id'] ?? 0);
+            }
+            return $cmp;
         });
         return $history;
     }
