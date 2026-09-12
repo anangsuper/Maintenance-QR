@@ -61,9 +61,6 @@ if ($successData) {
             <a class="btn btn-primary fw-bold py-3 shadow-sm" href="scan.php?t='.urlencode($token).'">
               <i class="bi bi-card-checklist me-1"></i> Lihat Kartu Kontrol Perangkat
             </a>
-            <a class="btn btn-dark fw-bold py-2 shadow-sm" href="invoice.php?id='.((int)$successData['log_id']).'">
-              <i class="fa-solid fa-receipt me-1 text-warning"></i> Lihat Struk Mesin (Invoice)
-            </a>
             <a class="btn btn-outline-secondary py-2" href="maintenance_detail.php?id='.((int)$successData['log_id']).'">
               <i class="bi bi-file-earmark-text me-1"></i> Rincian Audit Lengkap
             </a>

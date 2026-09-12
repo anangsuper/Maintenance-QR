@@ -242,7 +242,6 @@ $body = '
         '.$backBtnTop.'
         '.$tindakBtnTop.'
         '.$editBtnTop.'
-        <a href="'.e(module_url('invoice.php', ['id' => $id, 'mode' => 'maintenance'])).'" class="btn btn-dark fw-semibold shadow-sm"><i class="fa-solid fa-receipt me-1 text-warning"></i> Struk Invoice Mesin</a>
         <button class="btn btn-primary fw-semibold" onclick="window.print()"><i class="bi bi-printer me-1"></i> Cetak Detail</button>
       </div>
     </div>

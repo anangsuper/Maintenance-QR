@@ -37,7 +37,6 @@ function render_page(string $title, string $content, string $extraHead = '', str
                     <li><a class="dropdown-item py-2 '.($currentPage==='divisi_admin.php'?'active':'').'" href="'.e(module_url('divisi_admin.php')).'"><i class="bi bi-diagram-3 me-2 text-info"></i> Data Divisi</a></li>
                     <li><a class="dropdown-item py-2 '.($currentPage==='users_admin.php'?'active':'').'" href="'.e(module_url('users_admin.php')).'"><i class="bi bi-people me-2 text-warning"></i> Akun Pengguna / Teknisi</a></li>
                     <li><a class="dropdown-item py-2 '.($currentPage==='user_biometric_enroll.php'?'active':'').'" href="'.e(module_url('user_biometric_enroll.php')).'"><i class="bi bi-person-bounding-box me-2 text-success"></i> Daftar Wajah Teknisi (HP)</a></li>
-                    <li><a class="dropdown-item py-2 '.($currentPage==='invoice.php'?'active':'').'" href="'.e(module_url('invoice.php')).'"><i class="fa-solid fa-receipt me-2 text-warning"></i> Struk Invoice Mesin (Slot)</a></li>
                     <li><hr class="dropdown-divider border-secondary opacity-50"></li>
                     <li><a class="dropdown-item py-2 '.($currentPage==='system_design.php'?'active':'').'" href="'.e(module_url('system_design.php')).'"><i class="bi bi-file-earmark-pdf-fill me-2 text-danger"></i> Dokumen Desain (PDF)</a></li>
                   </ul>
@@ -71,7 +70,6 @@ function render_page(string $title, string $content, string $extraHead = '', str
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
 <style>
 /* BANK MITRA - PT. BPR MITRATAMA ARTHABUANA OFFICIAL BRAND PALETTE */
 :root {
