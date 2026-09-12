@@ -1,27 +1,13 @@
 <?php
 require __DIR__ . '/bootstrap.php';
 
-// Ambil seluruh daftar pengguna / teknisi untuk dipilih di HP (selalu data terkini)
-$allUsers = get_user_list(true);
-$currId = current_user_id();
-$reqId = isset($_GET['id']) ? (int)$_GET['id'] : 0;
-$retUrl = trim((string)($_GET['ret'] ?? ''));
-
-// Tentukan user aktif
-$selectedUserId = 0;
-if ($reqId > 0) {
-    $selectedUserId = $reqId;
-} elseif ($currId > 0) {
-    $selectedUserId = $currId;
-} elseif (!empty($allUsers)) {
-    $selectedUserId = (int)($allUsers[0]['id'] ?? 0);
-}
-
 // Handle AJAX POST simpan biometrik atau tambah teknisi baru langsung dari HP
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    if (ob_get_length()) {
-        ob_clean();
+    while (ob_get_level()) {
+        ob_end_clean();
     }
+    header('Content-Type: application/json; charset=utf-8');
+
     $raw = file_get_contents('php://input');
     $data = json_decode($raw, true);
     if (!is_array($data)) {
@@ -30,13 +16,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     $action = trim((string)($data['action'] ?? $_GET['action'] ?? ''));
     $newTechName = trim((string)($data['new_name'] ?? ''));
-    $targetUserId = (int)($data['user_id'] ?? $selectedUserId);
+    $targetUserId = (int)($data['user_id'] ?? 0);
     $descriptor = trim((string)($data['descriptor'] ?? ''));
     $photo = trim((string)($data['photo'] ?? ''));
 
     // Aksi 1: Simpan Nama Teknisi Baru Langsung (Tanpa perlu wajah / biometrik)
     if ($action === 'add_tech_only' || ($newTechName !== '' && empty($descriptor))) {
-        header('Content-Type: application/json; charset=utf-8');
         if ($newTechName === '') {
             echo json_encode(['success' => false, 'error' => 'Nama teknisi baru tidak boleh kosong.']);
             exit;
@@ -47,13 +32,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'status' => 'Aktif',
             'face_status' => 'none'
         ]);
-        if (!empty($created['success'])) {
+
+        $uId = (int)($created['id'] ?? $created['user']['id'] ?? 0);
+        $uNama = (string)($created['nama'] ?? $created['user']['nama'] ?? $newTechName);
+        $uUsername = (string)($created['username'] ?? $created['user']['username'] ?? '');
+
+        if (!empty($created['success']) && $uId > 0) {
             echo json_encode([
                 'success' => true,
                 'user' => [
-                    'id' => (int)$created['id'],
-                    'nama' => $created['nama'] ?? $newTechName,
-                    'username' => $created['username'] ?? ''
+                    'id' => $uId,
+                    'nama' => $uNama,
+                    'username' => $uUsername
                 ],
                 'message' => "Teknisi '{$newTechName}' berhasil didaftarkan ke sistem!"
             ]);
@@ -65,7 +55,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     // Aksi 2: Simpan dengan Biometrik Wajah
     if (empty($descriptor)) {
-        header('Content-Type: application/json; charset=utf-8');
         echo json_encode(['success' => false, 'error' => 'Data vektor biometrik tidak boleh kosong.']);
         exit;
     }
@@ -80,26 +69,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'face_photo' => $photo,
             'face_status' => 'pending'
         ]);
-        if (!empty($created['id'])) {
-            header('Content-Type: application/json; charset=utf-8');
+        $uId = (int)($created['id'] ?? $created['user']['id'] ?? 0);
+        if (!empty($created['success']) && $uId > 0) {
             echo json_encode([
                 'success' => true,
                 'face_status' => 'pending',
                 'is_admin' => is_admin(),
-                'user_id' => (int)$created['id'],
-                'user' => $created,
+                'user_id' => $uId,
+                'user' => $created['user'] ?? $created,
                 'message' => "Teknisi '{$newTechName}' dan biometrik wajah berhasil didaftarkan ke sistem!"
             ]);
             exit;
         } else {
-            header('Content-Type: application/json; charset=utf-8');
             echo json_encode(['success' => false, 'error' => $created['error'] ?? 'Gagal mendaftarkan nama teknisi baru']);
             exit;
         }
     }
 
     if ($targetUserId <= 0) {
-        header('Content-Type: application/json; charset=utf-8');
         echo json_encode(['success' => false, 'error' => 'Pilih nama teknisi yang valid']);
         exit;
     }
@@ -107,13 +94,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // WAJIB: Seluruh pendaftaran biometrik berstatus 'pending' dan memerlukan approval dari Admin sebelum aktif
     $enrollStatus = 'pending';
     $res = save_user_biometrics($targetUserId, $descriptor, $photo, $enrollStatus);
-    header('Content-Type: application/json; charset=utf-8');
     echo json_encode(array_merge($res, [
         'face_status' => 'pending',
         'is_admin' => is_admin(),
         'user_id' => $targetUserId
     ]));
     exit;
+}
+
+// Ambil seluruh daftar pengguna / teknisi untuk dipilih di HP (selalu data terkini)
+$allUsers = get_user_list(true);
+$currId = current_user_id();
+$reqId = isset($_GET['id']) ? (int)$_GET['id'] : 0;
+$retUrl = trim((string)($_GET['ret'] ?? ''));
+
+// Tentukan user aktif
+$selectedUserId = 0;
+if ($reqId > 0) {
+    $selectedUserId = $reqId;
+} elseif ($currId > 0) {
+    $selectedUserId = $currId;
+} elseif (!empty($allUsers)) {
+    $selectedUserId = (int)($allUsers[0]['id'] ?? 0);
 }
 
 $user = null;
@@ -759,7 +761,15 @@ async function saveBiometrics() {
         new_name: customName
       })
     });
-    const result = await res.json();
+    const text = await res.text();
+    let result;
+    try {
+      result = JSON.parse(text);
+    } catch (e) {
+      console.error("Non-JSON response:", text);
+      throw new Error("Respon server tidak valid (" + text.substring(0, 100).replace(/<[^>]*>/g, '').trim() + ")");
+    }
+
     if (result && result.success) {
       statusMsg.className = "alert alert-success py-2 px-3 text-center mb-3 fw-bold small";
       statusMsg.innerHTML = '<i class="bi bi-check-circle-fill me-1"></i> Wajah berhasil diunggah & tersimpan di sistem!';
@@ -782,7 +792,7 @@ async function saveBiometrics() {
     }
   } catch (err) {
     console.error("Gagal kirim biometrik:", err);
-    alert("Terjadi kesalahan koneksi saat menyimpan biometrik.");
+    alert(err.message || "Terjadi kesalahan koneksi saat menyimpan biometrik.");
     btnSave.disabled = false;
   }
 }
@@ -811,8 +821,17 @@ async function saveNewTechOnly() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ action: "add_tech_only", new_name: nameVal })
     });
-    const result = await res.json();
-    if (result && result.success && result.user) {
+    const text = await res.text();
+    let result;
+    try {
+      result = JSON.parse(text);
+    } catch (e) {
+      console.error("Non-JSON response:", text);
+      throw new Error("Respon server tidak valid (" + text.substring(0, 100).replace(/<[^>]*>/g, '').trim() + ")");
+    }
+
+    if (result && result.success && (result.user || result.id)) {
+      const u = result.user || { id: result.id, nama: result.nama || nameVal };
       if (statusEl) {
         statusEl.className = "alert alert-success py-2 px-3 small fw-bold";
         statusEl.innerHTML = '<i class="bi bi-check-circle-fill me-1"></i> ' + (result.message || "Nama teknisi berhasil didaftarkan!");
@@ -820,15 +839,15 @@ async function saveNewTechOnly() {
       const userSel = document.getElementById("userSelect");
       if (userSel) {
         const opt = document.createElement("option");
-        opt.value = result.user.id;
-        opt.text = result.user.nama + " (teknisi) [⚠️ Belum Wajah]";
+        opt.value = u.id;
+        opt.text = u.nama + " (teknisi) [⚠️ Belum Wajah]";
         opt.selected = true;
         userSel.insertBefore(opt, userSel.lastElementChild);
       }
       setTimeout(() => {
-        alert("✓ Sukses! Nama teknisi '" + result.user.nama + "' berhasil didaftarkan ke Google Sheets. Silakan lanjutkan scan wajah.");
+        alert("✓ Sukses! Nama teknisi '" + u.nama + "' berhasil didaftarkan ke Google Sheets. Silakan lanjutkan scan wajah.");
         const currentParam = new URLSearchParams(window.location.search);
-        currentParam.set("id", result.user.id);
+        currentParam.set("id", u.id);
         window.location.search = currentParam.toString();
       }, 700);
     } else {
@@ -840,7 +859,6 @@ async function saveNewTechOnly() {
       statusEl.className = "alert alert-danger py-2 px-3 small";
       statusEl.innerHTML = '<i class="bi bi-x-circle me-1"></i> ' + err.message;
     }
-    alert(err.message || "Gagal mendaftarkan nama teknisi baru.");
     if (btn) btn.disabled = false;
   }
 }

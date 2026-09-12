@@ -455,6 +455,10 @@ function create_new_user(array $data): array {
 
         return [
             'success' => true,
+            'id' => $newId,
+            'nama' => $nama,
+            'nama_panggilan' => $namaPanggilan,
+            'username' => $username,
             'user' => [
                 'id' => $newId,
                 'nama' => $nama,
