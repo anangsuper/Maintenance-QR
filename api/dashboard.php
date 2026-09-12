@@ -112,6 +112,15 @@ if (!empty($recentLogs)) {
         $dotClass = (in_array($stLower, ['temuan', 'perlu perbaikan'], true)) ? 'critical' : 'operational';
         $statusText = (in_array($stLower, ['temuan', 'perlu perbaikan'], true)) ? 'Temuan Kerusakan' : 'Maintenance Selesai';
 
+        $devName = !empty($r['perangkat']) 
+            ? $r['perangkat'] 
+            : (!empty($r['nama_perangkat']) 
+                ? $r['nama_perangkat'] 
+                : trim(($r['merk'] ?? '') . ' ' . ($r['model'] ?? '')));
+        if ($devName === '') {
+            $devName = 'Perangkat IT';
+        }
+
         $activityStreamHtml .= '
         <div class="activity-item d-flex align-items-start gap-3 py-2 border-bottom">
           <div class="activity-time font-monospace text-muted small mt-1">'.e($timeStr).'</div>
@@ -122,7 +131,7 @@ if (!empty($recentLogs)) {
               <span class="text-muted" style="font-size: 0.72rem;">'.e($dateStr).'</span>
             </div>
             <div class="small text-truncate text-secondary">
-              <strong class="text-primary">'.e($r['kode_inventaris'] ?? 'Aset').'</strong> · '.e($r['perangkat'] ?? ($r['merk'].' '.$r['model'])).' ('.e($r['cabang_nama'] ?? '-').')
+              <strong class="text-primary">'.e($r['kode_inventaris'] ?? 'Aset').'</strong> · '.e($devName).' ('.e($r['cabang_nama'] ?? '-').')
             </div>
             <div class="text-muted" style="font-size: 0.72rem;">Teknisi: '.e($r['technician_name'] ?? 'Teknisi').'</div>
           </div>
@@ -141,7 +150,7 @@ if (!empty($unresolvedFindings)) {
         <div class="p-2 mb-2 rounded border border-danger-subtle bg-danger-subtle d-flex align-items-start gap-2">
           <i class="bi bi-exclamation-triangle-fill text-danger mt-1"></i>
           <div class="flex-grow-1 min-w-0">
-            <div class="fw-semibold text-danger small text-truncate">'.e($uf['kode_inventaris'] ?? 'Aset').' · '.e($uf['perangkat'] ?? 'Perangkat').'</div>
+            <div class="fw-semibold text-danger small text-truncate">'.e($uf['kode_inventaris'] ?? 'Aset').' · '.e(!empty($uf['perangkat']) ? $uf['perangkat'] : (!empty($uf['nama_perangkat']) ? $uf['nama_perangkat'] : 'Perangkat')).'</div>
             <div class="small text-dark text-truncate">'.e($uf['findings'] ?? 'Kendala perangkat').'</div>
             <div class="text-muted" style="font-size: 0.7rem;">'.e($uf['cabang_nama'] ?? '-').' · '.e(format_id_date($uf['date'] ?? '')).'</div>
           </div>
