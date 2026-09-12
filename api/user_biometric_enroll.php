@@ -1,8 +1,8 @@
 <?php
 require __DIR__ . '/bootstrap.php';
 
-// Ambil seluruh daftar pengguna / teknisi untuk dipilih di HP
-$allUsers = get_user_list(false);
+// Ambil seluruh daftar pengguna / teknisi untuk dipilih di HP (selalu data terkini)
+$allUsers = get_user_list(true);
 $currId = current_user_id();
 $reqId = isset($_GET['id']) ? (int)$_GET['id'] : 0;
 $retUrl = trim((string)($_GET['ret'] ?? ''));
@@ -44,7 +44,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $created = create_new_user([
             'nama' => $newTechName,
             'role' => 'teknisi',
-            'status' => 'Aktif'
+            'status' => 'Aktif',
+            'face_status' => 'none'
         ]);
         if (!empty($created['success'])) {
             echo json_encode([
@@ -64,37 +65,41 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     // Aksi 2: Simpan dengan Biometrik Wajah
     if (empty($descriptor)) {
-        header('Content-Type: application/json');
+        header('Content-Type: application/json; charset=utf-8');
         echo json_encode(['success' => false, 'error' => 'Data vektor biometrik tidak boleh kosong.']);
         exit;
     }
 
-    // Jika teknisi mendaftar dengan nama baru secara mandiri
+    // Jika teknisi mendaftar dengan nama baru secara mandiri bersama wajah
     if ($targetUserId === -1 && $newTechName !== '') {
         $created = create_new_user([
             'nama' => $newTechName,
             'role' => 'teknisi',
-            'status' => 'Aktif'
+            'status' => 'Aktif',
+            'face_descriptor' => $descriptor,
+            'face_photo' => $photo,
+            'face_status' => 'pending'
         ]);
         if (!empty($created['id'])) {
-            $targetUserId = (int)$created['id'];
-        } elseif (!empty($created['success'])) {
-            $list = get_user_list(true);
-            foreach ($list as $lu) {
-                if (strcasecmp($lu['nama'], $newTechName) === 0) {
-                    $targetUserId = (int)$lu['id'];
-                    break;
-                }
-            }
+            header('Content-Type: application/json; charset=utf-8');
+            echo json_encode([
+                'success' => true,
+                'face_status' => 'pending',
+                'is_admin' => is_admin(),
+                'user_id' => (int)$created['id'],
+                'user' => $created,
+                'message' => "Teknisi '{$newTechName}' dan biometrik wajah berhasil didaftarkan ke sistem!"
+            ]);
+            exit;
         } else {
-            header('Content-Type: application/json');
+            header('Content-Type: application/json; charset=utf-8');
             echo json_encode(['success' => false, 'error' => $created['error'] ?? 'Gagal mendaftarkan nama teknisi baru']);
             exit;
         }
     }
 
     if ($targetUserId <= 0) {
-        header('Content-Type: application/json');
+        header('Content-Type: application/json; charset=utf-8');
         echo json_encode(['success' => false, 'error' => 'Pilih nama teknisi yang valid']);
         exit;
     }
@@ -102,7 +107,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // WAJIB: Seluruh pendaftaran biometrik berstatus 'pending' dan memerlukan approval dari Admin sebelum aktif
     $enrollStatus = 'pending';
     $res = save_user_biometrics($targetUserId, $descriptor, $photo, $enrollStatus);
-    header('Content-Type: application/json');
+    header('Content-Type: application/json; charset=utf-8');
     echo json_encode(array_merge($res, [
         'face_status' => 'pending',
         'is_admin' => is_admin(),
@@ -333,7 +338,7 @@ $body = '
           <div class="face-oval" id="faceOval"></div>
           <div class="scanline d-none" id="scanLine"></div>
         </div>
-        <canvas id="snapshotCanvas" style="display:none;" width="320" height="320"></canvas>
+        <canvas id="snapshotCanvas" style="display:none;" width="160" height="160"></canvas>
       </div>
 
       <!-- Status Bar Feedback Realtime -->
@@ -362,16 +367,18 @@ $body = '
 
       <!-- Success Action Box (Tampil setelah berhasil) -->
       <div class="mt-3 p-3 bg-success bg-opacity-10 border border-success rounded-3 text-center d-none" id="successBox">
-        <h5 class="fw-bold text-success mb-1"><i class="bi bi-check-circle-fill me-1"></i> Wajah Berhasil Diunggah!</h5>
+        <h5 class="fw-bold text-success mb-1"><i class="bi bi-check-circle-fill me-1"></i> Wajah Berhasil Disimpan!</h5>
         <div class="small text-dark mb-3" id="successDesc">
           Wajah teknisi berhasil direkam dengan status: <span class="badge bg-warning text-dark"><i class="bi bi-hourglass-split me-1"></i> Menunggu Persetujuan Admin</span>.<br><br>
           <strong>Wajib Disetujui Admin:</strong> Administrator IT harus memeriksa & menyetujui (Approve) biometrik wajah ini di menu <em>Kelola Data &rarr; Akun Pengguna / Teknisi</em> sebelum dapat digunakan untuk checklist maintenance.<br><br>
           <div class="alert alert-info py-2 px-3 small text-start mb-0 border-0 bg-info bg-opacity-10">
-            <strong><i class="bi bi-info-circle-fill me-1 text-primary"></i>Catatan Penting:</strong> Pendaftaran wajah ini adalah untuk identitas akun teknisi Anda. Checklist pemeliharaan komputer belum disimpan. Silakan klik tombol <strong>"Kembali Lanjutkan Maintenance"</strong> di bawah untuk menyimpan checklist maintenance komputer ini.
+            <strong><i class="bi bi-info-circle-fill me-1 text-primary"></i>Catatan:</strong> Pendaftaran wajah ini adalah untuk identitas akun teknisi Anda. Silakan klik tombol di bawah untuk melanjutkan.
           </div>
         </div>
         <div class="d-grid gap-2">
-          '.($retUrl !== '' ? '<a href="'.e($retUrl).'" class="btn btn-success fw-bold"><i class="bi bi-arrow-return-left me-1"></i> Kembali Lanjutkan Maintenance</a>' : '<a href="'.e(module_url('dashboard.php')).'" class="btn btn-primary fw-bold"><i class="bi bi-qr-code-scan me-1"></i> Buka Dashboard QR</a>').'
+          '.($retUrl !== '' ? '<a href="'.e($retUrl).'" class="btn btn-success fw-bold py-2"><i class="bi bi-arrow-return-left me-1"></i> Kembali Lanjutkan Maintenance</a>' : '').'
+          <a href="'.e(module_url('users_admin.php')).'" class="btn btn-outline-primary fw-bold py-2"><i class="bi bi-people-fill me-1"></i> Buka Data Pengguna (Verifikasi Admin)</a>
+          <a href="'.e(module_url('dashboard.php')).'" class="btn btn-light border fw-semibold py-2"><i class="bi bi-qr-code-scan me-1"></i> Buka Dashboard QR</a>
           <button type="button" class="btn btn-outline-secondary btn-sm" onclick="location.reload()">Daftarkan Teknisi Lain</button>
         </div>
       </div>
@@ -704,10 +711,12 @@ function captureSnapshot() {
   const s = Math.min(video.videoWidth, video.videoHeight);
   const sx = (video.videoWidth - s) / 2;
   const sy = (video.videoHeight - s) / 2;
+  canvas.width = 160;
+  canvas.height = 160;
   ctx.translate(canvas.width, 0);
   ctx.scale(-1, 1);
   ctx.drawImage(video, sx, sy, s, s, 0, 0, canvas.width, canvas.height);
-  capturedPhotoBase64 = canvas.toDataURL("image/jpeg", 0.8);
+  capturedPhotoBase64 = canvas.toDataURL("image/jpeg", 0.65);
 }
 
 // Preload modul AI di awal agar saat klik "Aktifkan Kamera" langsung instan
@@ -753,7 +762,7 @@ async function saveBiometrics() {
     const result = await res.json();
     if (result && result.success) {
       statusMsg.className = "alert alert-success py-2 px-3 text-center mb-3 fw-bold small";
-      statusMsg.innerHTML = '<i class="bi bi-check-circle-fill me-1"></i> Wajah berhasil diunggah ke sistem!';
+      statusMsg.innerHTML = '<i class="bi bi-check-circle-fill me-1"></i> Wajah berhasil diunggah & tersimpan di sistem!';
       
       if (videoStream) {
         videoStream.getTracks().forEach(track => track.stop());
@@ -762,7 +771,7 @@ async function saveBiometrics() {
       
       const successDesc = document.getElementById("successDesc");
       if (successDesc) {
-        successDesc.innerHTML = 'Wajah teknisi berhasil direkam dengan status: <span class="badge bg-warning text-dark px-2 py-1"><i class="bi bi-hourglass-split me-1"></i> Menunggu Persetujuan Admin</span>.<br><br><strong>Wajib Disetujui Admin:</strong> Administrator IT harus menyetujui (Approve) foto wajah Anda melalui menu <em>Kelola Data &rarr; Akun Pengguna / Teknisi</em> sebelum wajah ini dapat digunakan untuk scan maintenance.<br><br><div class="alert alert-info py-2 px-3 small text-start mb-0 border-0 bg-info bg-opacity-10"><strong><i class="bi bi-info-circle-fill me-1 text-primary"></i>Catatan Penting:</strong> Pendaftaran wajah ini adalah untuk identitas akun teknisi Anda. Checklist pemeliharaan komputer belum disimpan. Silakan klik tombol <strong>"Kembali Lanjutkan Maintenance"</strong> di bawah untuk menyimpan checklist maintenance komputer ini.</div>';
+        successDesc.innerHTML = 'Data wajah berhasil direkam ke database dengan status: <span class="badge bg-warning text-dark px-2 py-1"><i class="bi bi-hourglass-split me-1"></i> Menunggu Persetujuan Admin</span>.<br><br><strong>Persetujuan Admin:</strong> Administrator IT dapat menyetujui (Approve) biometrik wajah Anda di menu <em>Kelola Data &rarr; Akun Pengguna / Teknisi</em> agar aktif untuk checklist maintenance.';
       }
       
       successBox.classList.remove("d-none");
@@ -812,12 +821,12 @@ async function saveNewTechOnly() {
       if (userSel) {
         const opt = document.createElement("option");
         opt.value = result.user.id;
-        opt.text = result.user.nama + " (teknisi) [✓ Terdaftar]";
+        opt.text = result.user.nama + " (teknisi) [⚠️ Belum Wajah]";
         opt.selected = true;
         userSel.insertBefore(opt, userSel.lastElementChild);
       }
       setTimeout(() => {
-        alert("✓ Sukses! Nama teknisi '" + result.user.nama + "' berhasil didaftarkan ke Google Sheets dan siap digunakan.");
+        alert("✓ Sukses! Nama teknisi '" + result.user.nama + "' berhasil didaftarkan ke Google Sheets. Silakan lanjutkan scan wajah.");
         const currentParam = new URLSearchParams(window.location.search);
         currentParam.set("id", result.user.id);
         window.location.search = currentParam.toString();

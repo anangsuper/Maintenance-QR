@@ -176,22 +176,23 @@ if ($fixedRowsCount > 0) {
 
 // ====== 10. Tab Users ======
 $client->createSheetIfNotExists('Users');
-$existing = $client->getValues('Users!A1:H1');
+$client->ensureMinColumns('Users', 26);
+$existing = $client->getValues('Users!A1:M1');
 if (empty($existing)) {
     $adminHash = password_hash('admin123', PASSWORD_BCRYPT);
     $teknisiHash = password_hash('teknisi123', PASSWORD_BCRYPT);
-    $client->appendValues('Users!A:H', [
-        ['id', 'username', 'password', 'nama', 'role', 'telepon', 'status', 'created_at'],
-        [1, 'admin', $adminHash, 'Administrator', 'admin', '081234567890', 'Aktif', date('Y-m-d H:i:s')],
-        [2, 'teknisi', $teknisiHash, 'Teknisi IT', 'teknisi', '081234567891', 'Aktif', date('Y-m-d H:i:s')],
-    ]);
+    $client->appendValues('Users!A:M', [
+        ['id', 'username', 'password', 'nama', 'role', 'telepon', 'status', 'created_at', 'face_descriptor', 'face_photo', 'face_status', 'passkey_credential', 'nama_panggilan'],
+        [1, 'admin', $adminHash, 'Administrator', 'admin', '081234567890', 'Aktif', date('Y-m-d H:i:s'), '', '', 'none', '', 'Admin'],
+        [2, 'teknisi', $teknisiHash, 'Teknisi IT', 'teknisi', '081234567891', 'Aktif', date('Y-m-d H:i:s'), '', '', 'none', '', 'Teknisi'],
+    ], 'RAW');
     $results[] = "✅ Tab Users — dibuat + 2 akun default (admin & teknisi)";
 } else {
     $results[] = "⏭️ Tab Users — sudah ada";
 }
-// Pastikan kolom biometrik & passkey (I1:L1) terpasang di Google Sheets
-$client->updateValues('Users!I1:L1', [['face_descriptor', 'face_photo', 'face_status', 'passkey_credential']]);
-$results[] = "✅ Tab Users — kolom Face ID & Passkey (Kolom I..L) siap";
+// Pastikan seluruh 13 kolom header terpasang lengkap di Google Sheets
+$client->updateValues('Users!A1:M1', [['id', 'username', 'password', 'nama', 'role', 'telepon', 'status', 'created_at', 'face_descriptor', 'face_photo', 'face_status', 'passkey_credential', 'nama_panggilan']], 'RAW');
+$results[] = "✅ Tab Users — 13 kolom lengkap (termasuk Face ID, Passkey, & Nama Panggilan) siap";
 
 // ====== Tampilkan Hasil ======
 $html = '<div class="card p-4"><h3>🔧 Setup Google Sheet — Selesai!</h3><hr>';

@@ -19,13 +19,29 @@ function get_user_list(bool $forceRefresh = false): array {
             $username = trim((string)($u['username'] ?? ''));
             $role = strtolower(trim((string)($u['role'] ?? 'teknisi')));
 
+            // Recovery jika baris user tergeser ke kanan (mulai dari kolom O / index col_14)
+            if ($id <= 0 && !empty($u['col_14']) && is_numeric($u['col_14'])) {
+                $id = (int)$u['col_14'];
+                $username = trim((string)($u['col_15'] ?? ''));
+                $nama = trim((string)($u['col_17'] ?? ''));
+                $role = strtolower(trim((string)($u['col_18'] ?? 'teknisi')));
+                $telepon = trim((string)($u['col_19'] ?? '-'));
+                $status = trim((string)($u['col_20'] ?? 'Aktif'));
+                $createdAt = trim((string)($u['col_21'] ?? ''));
+            } else {
+                $telepon = (string)($u['telepon'] ?? $u['kontak'] ?? '-');
+                $status = (string)($u['status'] ?? 'Aktif');
+                $createdAt = (string)($u['created_at'] ?? '');
+            }
+
             // Abaikan jika bukan user valid atau merupakan baris header yang bocor
             if ($id <= 0 || strcasecmp($nama, 'nama') === 0 || strcasecmp($username, 'username') === 0 || $nama === '') {
                 continue;
             }
 
-            $fDesc = (string)($u['face_descriptor'] ?? '');
-            $fStatus = (string)($u['face_status'] ?? '');
+            $fDesc = (string)($u['face_descriptor'] ?? $u['col_8'] ?? '');
+            $fStatus = (string)($u['face_status'] ?? $u['col_10'] ?? '');
+            $fPhoto = (string)($u['face_photo'] ?? $u['col_9'] ?? '');
             if ($fStatus === '' && $fDesc !== '') {
                 $fStatus = 'pending'; // Wajib: butuh persetujuan admin jika belum diverifikasi
             } elseif ($fStatus === '') {
@@ -38,11 +54,11 @@ function get_user_list(bool $forceRefresh = false): array {
                 'nama_panggilan' => trim((string)($u['nama_panggilan'] ?? $u['nickname'] ?? '')) ?: get_nickname($nama),
                 'username' => $username,
                 'role' => $role !== '' ? $role : 'teknisi',
-                'telepon' => format_phone_number((string)($u['telepon'] ?? $u['kontak'] ?? '-')),
-                'status' => (string)($u['status'] ?? 'Aktif'),
-                'created_at' => (string)($u['created_at'] ?? ''),
+                'telepon' => format_phone_number($telepon),
+                'status' => $status,
+                'created_at' => $createdAt,
                 'face_descriptor' => $fDesc,
-                'face_photo' => (string)($u['face_photo'] ?? ''),
+                'face_photo' => $fPhoto,
                 'face_status' => $fStatus,
                 'passkey_credential' => (string)($u['passkey_credential'] ?? '')
             ];
@@ -141,8 +157,27 @@ function get_user_by_id(int $id, bool $forceRefresh = false): ?array {
 function save_user_biometrics(int $userId, string $descriptorJson, string $photoBase64 = '', string $status = 'pending'): array {
     if ($userId <= 0) return ['success' => false, 'error' => 'ID pengguna tidak valid'];
     if (empty($descriptorJson)) return ['success' => false, 'error' => 'Data biometrik tidak boleh kosong'];
-    if (strlen($photoBase64) > 40000) {
-        $photoBase64 = substr($photoBase64, 0, 40000);
+
+    // Kompres atau rapikan foto agar tidak merusak base64 jika terlalu panjang
+    if (strlen($photoBase64) > 30000) {
+        if (function_exists('imagecreatefromstring')) {
+            $commaPos = strpos($photoBase64, ',');
+            $rawB64 = ($commaPos !== false) ? substr($photoBase64, $commaPos + 1) : $photoBase64;
+            $bin = base64_decode($rawB64);
+            if ($bin) {
+                $im = @imagecreatefromstring($bin);
+                if ($im) {
+                    ob_start();
+                    imagejpeg($im, null, 55);
+                    $comp = ob_get_clean();
+                    $photoBase64 = 'data:image/jpeg;base64,' . base64_encode($comp);
+                    imagedestroy($im);
+                }
+            }
+        }
+        if (strlen($photoBase64) > 40000) {
+            $photoBase64 = '';
+        }
     }
 
     if (is_google_cloud_mode()) {
@@ -161,20 +196,48 @@ function save_user_biometrics(int $userId, string $descriptorJson, string $photo
                 break;
             }
         }
+
+        // Auto-create jika user ID 1 atau 2 belum tercatat di Google Sheet
+        if (!$targetRow && ($userId === 1 || $userId === 2)) {
+            $username = ($userId === 1) ? 'admin' : 'teknisi';
+            $nama = ($userId === 1) ? 'Administrator' : 'Teknisi IT';
+            $hashedPass = password_hash(($userId === 1 ? 'admin123' : 'teknisi123'), PASSWORD_BCRYPT);
+            $appended = $client->appendValues('Users!A:M', [[
+                $userId,
+                $username,
+                $hashedPass,
+                $nama,
+                ($userId === 1 ? 'admin' : 'teknisi'),
+                '-',
+                'Aktif',
+                date('Y-m-d H:i:s'),
+                $descriptorJson,
+                $photoBase64,
+                $status,
+                '',
+                ($userId === 1 ? 'Admin' : 'Teknisi')
+            ]], 'RAW');
+            $client->clearCache('Users');
+            get_user_list(true);
+            return ['success' => true];
+        }
+
         if (!$targetRow) return ['success' => false, 'error' => 'Pengguna tidak ditemukan di Google Sheets'];
 
         $rowNum = (int)($targetRow['_row_num'] ?? 0);
         if ($rowNum <= 1) return ['success' => false, 'error' => 'Gagal menentukan baris data pengguna'];
 
         // Pastikan header baris 1 memiliki nama kolom face_descriptor, face_photo, face_status jika belum ada
-        $client->updateValues("Users!I1:K1", [['face_descriptor', 'face_photo', 'face_status']]);
+        $client->updateValues("Users!I1:K1", [['face_descriptor', 'face_photo', 'face_status']], 'RAW');
 
-        // Simpan vektor biometrik, foto, dan status verifikasi ke baris pengguna
-        $ok = $client->updateValues("Users!I{$rowNum}:K{$rowNum}", [[$descriptorJson, $photoBase64, $status]]);
+        // Simpan vektor biometrik, foto, dan status verifikasi ke baris pengguna menggunakan mode RAW
+        $ok = $client->updateValues("Users!I{$rowNum}:K{$rowNum}", [[$descriptorJson, $photoBase64, $status]], 'RAW');
         $client->clearCache('Users');
+        get_user_list(true);
 
         if (!$ok) {
-            return ['success' => false, 'error' => 'Gagal memperbarui data biometrik ke Google Sheets'];
+            $err = $client->getLastError();
+            return ['success' => false, 'error' => 'Gagal memperbarui data biometrik ke Google Sheets' . ($err ? ' (' . $err . ')' : '')];
         }
 
         return ['success' => true];
@@ -218,17 +281,19 @@ function update_user_face_status(int $userId, string $status): array {
         if ($rowNum <= 1) return ['success' => false, 'error' => 'Gagal baris pengguna'];
 
         // Pastikan header baris 1 terpasang
-        $client->updateValues("Users!I1:K1", [['face_descriptor', 'face_photo', 'face_status']]);
+        $client->updateValues("Users!I1:K1", [['face_descriptor', 'face_photo', 'face_status']], 'RAW');
 
         if ($status === 'rejected' || $status === 'deleted') {
-            $ok = $client->updateValues("Users!I{$rowNum}:K{$rowNum}", [['', '', 'none']]);
+            $ok = $client->updateValues("Users!I{$rowNum}:K{$rowNum}", [['', '', 'none']], 'RAW');
         } else {
-            $ok = $client->updateValues("Users!K{$rowNum}", [[$status]]);
+            $ok = $client->updateValues("Users!K{$rowNum}", [[$status]], 'RAW');
         }
         $client->clearCache('Users');
+        get_user_list(true);
 
         if (!$ok) {
-            return ['success' => false, 'error' => 'Gagal memperbarui status verifikasi di Google Sheets'];
+            $err = $client->getLastError();
+            return ['success' => false, 'error' => 'Gagal memperbarui status verifikasi di Google Sheets' . ($err ? ' (' . $err . ')' : '')];
         }
 
         return ['success' => true];
@@ -303,6 +368,13 @@ function create_new_user(array $data): array {
         $role = 'teknisi';
     }
 
+    $faceDescriptor = trim((string)($data['face_descriptor'] ?? ''));
+    $facePhoto = trim((string)($data['face_photo'] ?? ''));
+    $faceStatus = trim((string)($data['face_status'] ?? ''));
+    if ($faceStatus === '') {
+        $faceStatus = ($faceDescriptor !== '') ? 'pending' : 'none';
+    }
+
     $hashedPass = password_hash($password, PASSWORD_BCRYPT);
 
     if (is_google_cloud_mode()) {
@@ -316,10 +388,10 @@ function create_new_user(array $data): array {
         if (empty($rows)) {
             $client->appendValues('Users!A:M', [
                 ['id', 'username', 'password', 'nama', 'role', 'telepon', 'status', 'created_at', 'face_descriptor', 'face_photo', 'face_status', 'passkey_credential', 'nama_panggilan']
-            ]);
+            ], 'RAW');
             $rows = [];
         } else {
-            $client->updateValues("Users!M1", [['nama_panggilan']]);
+            $client->updateValues("Users!I1:M1", [['face_descriptor', 'face_photo', 'face_status', 'passkey_credential', 'nama_panggilan']], 'RAW');
         }
 
         $maxId = 0;
@@ -355,27 +427,45 @@ function create_new_user(array $data): array {
             $teleponSheet,
             $status,
             date('Y-m-d H:i:s'),
-            '', // face_descriptor
-            '', // face_photo
-            'verified', // face_status
-            '',  // passkey_credential
-            $namaPanggilan // nama_panggilan
+            $faceDescriptor, // face_descriptor (col I)
+            $facePhoto,      // face_photo (col J)
+            $faceStatus,     // face_status (col K)
+            '',              // passkey_credential (col L)
+            $namaPanggilan   // nama_panggilan (col M)
         ];
 
-        $appended = $client->appendValues('Users!A:M', [$newRow]);
+        // Tentukan nomor baris target secara pasti berdasarkan Kolom A agar TIDAK TERGESER KE KOLOM O
+        $colAValues = $client->getValues('Users!A:A');
+        $nextRowNum = count($colAValues) + 1;
+        if ($nextRowNum < 2) $nextRowNum = 2;
+
+        $appended = $client->updateValues("Users!A{$nextRowNum}:M{$nextRowNum}", [$newRow], 'RAW');
         if (!$appended) {
-            $appended = $client->appendValues('Users', [$newRow]);
-        }
-        if (!$appended) {
-            $appended = $client->appendValues('Users!A:H', [array_slice($newRow, 0, 8)]);
+            // Coba appendValues sebagai fallback darurat jika update gagal
+            $appended = $client->appendValues('Users!A:M', [$newRow], 'RAW');
         }
 
         if (!$appended) {
-            return ['success' => false, 'error' => 'Gagal menyimpan data pengguna ke Google Sheets'];
+            $err = $client->getLastError();
+            return ['success' => false, 'error' => 'Gagal menyimpan user baru ke Google Sheets' . ($err ? ' (' . $err . ')' : '')];
         }
 
         $client->clearCache('Users');
-        return ['success' => true, 'id' => $newId, 'username' => $username, 'nama' => $nama, 'nama_panggilan' => $namaPanggilan];
+        get_user_list(true);
+
+        return [
+            'success' => true,
+            'user' => [
+                'id' => $newId,
+                'nama' => $nama,
+                'nama_panggilan' => $namaPanggilan,
+                'username' => $username,
+                'role' => $role,
+                'telepon' => $teleponStored,
+                'status' => $status,
+                'face_status' => $faceStatus
+            ]
+        ];
     }
 
     // MySQL Mode
@@ -390,6 +480,9 @@ function create_new_user(array $data): array {
                 role VARCHAR(50) NOT NULL DEFAULT 'teknisi',
                 telepon VARCHAR(50) NULL,
                 status VARCHAR(50) NOT NULL DEFAULT 'Aktif',
+                face_descriptor TEXT NULL,
+                face_photo MEDIUMTEXT NULL,
+                face_status VARCHAR(50) DEFAULT 'none',
                 created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
                 updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
             );
@@ -406,12 +499,25 @@ function create_new_user(array $data): array {
             try { db()->exec("ALTER TABLE users ADD COLUMN nama_panggilan VARCHAR(50) NULL"); } catch (Throwable $e) {}
             $cols = table_columns('users');
         }
+        if (!in_array('face_descriptor', $cols, true)) {
+            try { db()->exec("ALTER TABLE users ADD COLUMN face_descriptor TEXT NULL, ADD COLUMN face_photo MEDIUMTEXT NULL, ADD COLUMN face_status VARCHAR(50) DEFAULT 'none'"); } catch (Throwable $e) {}
+            $cols = table_columns('users');
+        }
         $nameCol = in_array('nama', $cols, true) ? 'nama' : (in_array('name', $cols, true) ? 'name' : 'username');
 
         $teleponFormatted = format_phone_number($telepon);
         $teleponStored = ($teleponFormatted !== '-' && $teleponFormatted !== '') ? $teleponFormatted : $telepon;
 
-        if (in_array('nama_panggilan', $cols, true)) {
+        $hasNick = in_array('nama_panggilan', $cols, true);
+        $hasBio = in_array('face_descriptor', $cols, true);
+
+        if ($hasNick && $hasBio) {
+            $ins = db()->prepare("
+                INSERT INTO users (`{$nameCol}`, nama_panggilan, username, password, role, telepon, status, face_descriptor, face_photo, face_status, created_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())
+            ");
+            $ins->execute([$nama, $namaPanggilan, $username, $hashedPass, $role, $teleponStored, $status, $faceDescriptor ?: null, $facePhoto ?: null, $faceStatus]);
+        } elseif ($hasNick) {
             $ins = db()->prepare("
                 INSERT INTO users (`{$nameCol}`, nama_panggilan, username, password, role, telepon, status, created_at)
                 VALUES (?, ?, ?, ?, ?, ?, ?, NOW())

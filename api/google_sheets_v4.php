@@ -10,8 +10,21 @@ class GoogleSheetsV4Client {
     private string $spreadsheetId;
     private string $clientEmail;
     private string $privateKey;
+    private ?string $lastError = null;
     private static ?string $cachedAccessToken = null;
     private static array $runtimeCache = [];
+
+    public function getLastError(): ?string {
+        return $this->lastError;
+    }
+
+    public function getSpreadsheetId(): string {
+        return $this->spreadsheetId;
+    }
+
+    public function getClientEmail(): string {
+        return $this->clientEmail;
+    }
 
     public function __construct(string $spreadsheetId, string $clientEmail, string $privateKey) {
         $this->spreadsheetId = trim($spreadsheetId);
@@ -102,6 +115,26 @@ class GoogleSheetsV4Client {
         }
 
         error_log('Google Cloud API OAuth error: ' . $response);
+        $this->lastError = 'OAuth error: ' . (json_decode($response, true)['error_description'] ?? substr($response, 0, 200));
+        return null;
+    }
+
+    public function getSpreadsheetMeta(): ?array {
+        $token = $this->getAccessToken();
+        if (!$token) return null;
+
+        $metaUrl = sprintf(
+            'https://sheets.googleapis.com/v4/spreadsheets/%s',
+            urlencode($this->spreadsheetId)
+        );
+        $resp = $this->curlExec($metaUrl, [
+            CURLOPT_HTTPHEADER => ['Authorization: Bearer ' . $token],
+        ]);
+        $data = json_decode($resp, true);
+        if (isset($data['properties'])) {
+            return $data;
+        }
+        $this->lastError = (string)($data['error']['message'] ?? $resp);
         return null;
     }
 
@@ -139,6 +172,7 @@ class GoogleSheetsV4Client {
             } else {
                 // Auto-retry jika range spesifik kolom ditolak karena grid limits (misal Sheet!A1:Z saat sheet hanya ada kolom A..K)
                 $errMsg = (string)($data['error']['message'] ?? $response);
+                $this->lastError = $errMsg;
                 if (str_contains($range, '!') && (stripos($errMsg, 'grid limits') !== false || stripos($errMsg, 'exceeds') !== false || stripos($errMsg, 'Unable to parse range') !== false || stripos($errMsg, 'column') !== false)) {
                     $sheetOnly = explode('!', $range)[0];
                     $fallbackUrl = sprintf(
@@ -162,14 +196,15 @@ class GoogleSheetsV4Client {
         return [];
     }
 
-    public function appendValues(string $range, array $rows): bool {
+    public function appendValues(string $range, array $rows, string $valueInputOption = 'USER_ENTERED'): bool {
         $token = $this->getAccessToken();
         if (!$token) return false;
 
         $url = sprintf(
-            'https://sheets.googleapis.com/v4/spreadsheets/%s/values/%s:append?valueInputOption=USER_ENTERED',
+            'https://sheets.googleapis.com/v4/spreadsheets/%s/values/%s:append?valueInputOption=%s',
             urlencode($this->spreadsheetId),
-            urlencode($range)
+            urlencode($range),
+            urlencode($valueInputOption)
         );
 
         $response = $this->curlExec($url, [
@@ -231,18 +266,21 @@ class GoogleSheetsV4Client {
             error_log("Google Sheets appendValues fallback failed on '{$sheetName}': " . substr($fallbackResp, 0, 500));
         }
 
+        $errMsg = (string)($data['error']['message'] ?? $response);
+        $this->lastError = $errMsg;
         error_log("Google Sheets appendValues failed on '{$range}': " . substr($response, 0, 500));
         return false;
     }
 
-    public function updateValues(string $range, array $rows): bool {
+    public function updateValues(string $range, array $rows, string $valueInputOption = 'USER_ENTERED'): bool {
         $token = $this->getAccessToken();
         if (!$token) return false;
 
         $url = sprintf(
-            'https://sheets.googleapis.com/v4/spreadsheets/%s/values/%s?valueInputOption=USER_ENTERED',
+            'https://sheets.googleapis.com/v4/spreadsheets/%s/values/%s?valueInputOption=%s',
             urlencode($this->spreadsheetId),
-            urlencode($range)
+            urlencode($range),
+            urlencode($valueInputOption)
         );
 
         $response = $this->curlExec($url, [
@@ -265,6 +303,7 @@ class GoogleSheetsV4Client {
         // Auto-fix: Jika gagal karena batas kolom sheet (misal Users!I2:K2 melebihi batas kolom sheet yang baru ada A..H),
         // otomatis perluas sheet minimal 26 kolom lalu coba update lagi
         $errMsg = (string)($data['error']['message'] ?? $response);
+        $this->lastError = $errMsg;
         if (stripos($errMsg, 'grid limits') !== false || stripos($errMsg, 'exceeds') !== false || stripos($errMsg, 'column') !== false) {
             $this->ensureMinColumns($sheetName, 26);
             $retryResp = $this->curlExec($url, [
@@ -280,6 +319,7 @@ class GoogleSheetsV4Client {
                 $this->clearCache($sheetName);
                 return true;
             }
+            $this->lastError = (string)($retryData['error']['message'] ?? $retryResp);
             error_log("Google Sheets updateValues retry failed on '{$range}': " . substr($retryResp, 0, 500));
         }
 
@@ -470,7 +510,7 @@ class GoogleSheetsV4Client {
             'Maintenance_Scan' => ['id', 'asset_id', 'technician_user_id', 'technician_name', 'maintenance_date', 'maintenance_time', 'maintenance_month', 'maintenance_year', 'status', 'source', 'created_at', 'findings', 'recommendation', 'biometric_verified', 'biometric_confidence', 'biometric_photo', 'latitude', 'longitude'],
             'Maintenance_Findings' => ['id', 'maintenance_scan_id', 'asset_id', 'kategori_temuan', 'deskripsi_temuan', 'tindakan_diperlukan', 'status', 'reported_by', 'reported_at', 'resolved_by', 'resolved_at', 'catatan_penyelesaian'],
             'Maintenance_Checklists' => ['id', 'maintenance_id', 'asset_id', 'checklist_number', 'checklist_name', 'checked', 'notes', 'created_at'],
-            'Users' => ['id', 'username', 'password', 'nama', 'role', 'telepon', 'status', 'created_at', 'face_descriptor', 'face_photo', 'face_status', 'passkey_credential'],
+            'Users' => ['id', 'username', 'password', 'nama', 'role', 'telepon', 'status', 'created_at', 'face_descriptor', 'face_photo', 'face_status', 'passkey_credential', 'nama_panggilan'],
         ];
 
         $firstRow = $rows[0];
