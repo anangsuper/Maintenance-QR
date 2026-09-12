@@ -199,8 +199,8 @@ if ($retUrl !== '') {
     $backHref = module_url('dashboard.php');
     $backText = 'Halaman Utama';
 } else {
-    $backHref = module_url('login.php');
-    $backText = 'Masuk / Login';
+    $backHref = 'javascript:history.back()';
+    $backText = 'Kembali';
 }
 
 // Susun tombol aksi selesai sesuai status autentikasi pengguna
@@ -215,8 +215,7 @@ if ($isAdmin) {
 } elseif ($isLoggedIn) {
     $successButtonsHtml .= '<a href="'.e(module_url('dashboard.php')).'" class="btn btn-primary fw-semibold py-2"><i class="bi bi-house me-1"></i> Halaman Utama</a>';
 } else {
-    // Pengguna belum login (teknisi baru mendaftar mandiri)
-    $successButtonsHtml .= '<a href="'.e(module_url('login.php')).'" class="btn btn-primary fw-semibold py-2"><i class="bi bi-box-arrow-in-right me-1"></i> Halaman Login Petugas</a>';
+    // Pengguna belum login: tidak perlu tombol login, cukup kembali ke maintenance atau daftar teknisi lain
 }
 
 $successButtonsHtml .= '<button type="button" class="btn btn-outline-secondary btn-sm" onclick="location.reload()"><i class="bi bi-person-plus me-1"></i> Daftarkan Teknisi Lain</button>';
