@@ -15,27 +15,27 @@ if ($currentMonthLog) {
 
     $hasActiveIssue = ($pendingFinding || in_array(strtolower($cStatus), ['temuan', 'perlu perbaikan', 'perlu tindak lanjut', 'proses'], true));
     $cardBgStyle = $hasActiveIssue 
-        ? 'background-color: #FEF2F2 !important; border: 1.5px solid #FECACA !important; border-left: 5px solid #EF4444 !important;' 
-        : 'background-color: #F0FDF4 !important; border: 1.5px solid #BBF7D0 !important; border-left: 5px solid #10B981 !important;';
+        ? 'background-color: #FEF2F2; border: 1px solid #FECACA; border-left: 4px solid #DC2626;' 
+        : 'background-color: #F0FDF4; border: 1px solid #BBF7D0; border-left: 4px solid #059669;';
     $cardTitleColor = $hasActiveIssue ? 'text-danger' : 'text-success';
 
     $btnTindakLanjut = $hasActiveIssue
-        ? '<a class="btn btn-danger fw-bold px-3 py-2 shadow-sm" href="'.e(module_url('scan.php', ['t' => $token, 'action' => 'tindak_lanjut'])).'"><i class="bi bi-tools me-1"></i> TINDAK LANJUTI SEKARANG</a>'
+        ? '<a class="btn btn-danger fw-semibold px-3 py-2" href="'.e(module_url('scan.php', ['t' => $token, 'action' => 'tindak_lanjut'])).'"><i class="bi bi-tools me-1"></i> Tindak Lanjuti Sekarang</a>'
         : '';
 
     $badgeColor = ($cStatus === 'Temuan' || $cStatus === 'Perlu Perbaikan') ? 'danger' : ($cStatus === 'Proses' ? 'warning text-dark' : 'success');
     $badgeIcon = ($cStatus === 'Temuan' || $cStatus === 'Perlu Perbaikan') ? 'bi-exclamation-triangle-fill' : ($cStatus === 'Proses' ? 'bi-hourglass-split' : 'bi-check-circle-fill');
 
     $btnDetail = $cLogId > 0
-        ? '<a class="btn btn-primary fw-semibold" href="'.e(module_url('maintenance_detail.php', ['id' => $cLogId])).'"><i class="bi bi-file-earmark-text me-1"></i> DETAIL LENGKAP AUDIT</a>'
+        ? '<a class="btn btn-primary fw-semibold" href="'.e(module_url('maintenance_detail.php', ['id' => $cLogId])).'"><i class="bi bi-file-earmark-text me-1"></i> Rincian Pemeliharaan</a>'
         : '';
 
-    $btnUlang = '<a class="btn btn-outline-secondary fw-semibold" href="'.e(module_url('scan.php', ['t' => $token, 'action' => 'ulang'])).'"><i class="bi bi-arrow-repeat me-1"></i> MAINTENANCE ULANG</a>';
+    $btnUlang = '<a class="btn btn-outline-secondary fw-semibold" href="'.e(module_url('scan.php', ['t' => $token, 'action' => 'ulang'])).'"><i class="bi bi-arrow-repeat me-1"></i> Pemeliharaan Ulang</a>';
 
     $statusCardHtml = '
     <div class="card shadow-sm mb-4 p-3 p-md-4 rounded-3" style="'.$cardBgStyle.'">
       <div class="d-flex align-items-center justify-content-between mb-2">
-        <span class="'.$cardTitleColor.' fw-bold fs-6"><i class="bi bi-calendar-check-fill me-1"></i> STATUS BULAN BERJALAN:</span>
+        <span class="'.$cardTitleColor.' fw-semibold fs-6"><i class="bi bi-calendar-check me-1"></i> Status Pemeliharaan Bulan Ini:</span>
         <span class="badge bg-'.$badgeColor.' px-3 py-2 fs-6"><i class="bi '.$badgeIcon.' me-1"></i> '.e($cStatus).'</span>
       </div>
       <h5 class="fw-bold text-dark mb-1">Periode: '.$monthName.' '.$year.'</h5>
@@ -51,15 +51,15 @@ if ($currentMonthLog) {
       </div>
     </div>';
 } else {
-    $btnStartAction = '<a class="btn btn-success btn-lg fw-bold py-3 px-4 shadow-sm w-100" href="'.e(module_url('scan.php', ['t' => $token, 'action' => 'start'])).'">
-      <i class="bi bi-play-circle-fill me-2"></i> MULAI MAINTENANCE SEKARANG
+    $btnStartAction = '<a class="btn btn-success btn-lg fw-semibold py-3 px-4 shadow-sm w-100" href="'.e(module_url('scan.php', ['t' => $token, 'action' => 'start'])).'">
+      <i class="bi bi-play-circle-fill me-2"></i> Mulai Pemeriksaan Checklist
     </a>
     <div class="text-center mt-2"><small class="text-muted"><i class="bi bi-check2-circle text-success me-1"></i>Cukup pilih/masukkan nama petugas saat mengisi checklist (tidak wajib login).</small></div>';
 
     $statusCardHtml = '
-    <div class="card shadow-sm mb-4 p-3 p-md-4 rounded-3" style="background-color: #FEF2F2 !important; border: 1.5px solid #FECACA !important; border-left: 5px solid #EF4444 !important;">
+    <div class="card shadow-sm mb-4 p-3 p-md-4 rounded-3" style="background-color: #FEF2F2; border: 1px solid #FECACA; border-left: 4px solid #DC2626;">
       <div class="d-flex align-items-center justify-content-between mb-2">
-        <span class="text-danger fw-bold fs-6"><i class="bi bi-exclamation-circle-fill me-1"></i> STATUS BULAN BERJALAN:</span>
+        <span class="text-danger fw-semibold fs-6"><i class="bi bi-exclamation-circle me-1"></i> Status Pemeliharaan Bulan Ini:</span>
         <span class="badge bg-danger px-3 py-2 fs-6"><i class="bi bi-x-circle-fill me-1"></i> Belum Maintenance</span>
       </div>
       <h5 class="fw-bold text-dark mb-1">Periode: '.$monthName.' '.$year.'</h5>
@@ -74,15 +74,15 @@ if ($pendingFinding) {
     $pendingAlertHtml = '
     <div class="card border-0 shadow-sm mb-4 border-start border-danger border-4 p-3 p-md-4" style="background-color: #fff5f5;">
       <div class="d-flex align-items-center justify-content-between mb-2">
-        <span class="text-danger fw-bold fs-6"><i class="bi bi-exclamation-triangle-fill me-1"></i> PERANGKAT INI MEMBUTUHKAN TINDAK LANJUT TEKNISI!</span>
+        <span class="text-danger fw-semibold fs-6"><i class="bi bi-exclamation-triangle-fill me-1"></i> Perangkat Membutuhkan Tindak Lanjut Teknisi</span>
         <span class="badge bg-danger px-3 py-2 fs-6"><i class="bi bi-tools me-1"></i> '.e($pendingFinding['status']).'</span>
       </div>
       <h5 class="fw-bold text-dark mb-1">Temuan Kerusakan: <span class="text-danger">"'.e($pendingFinding['finding']).'"</span></h5>
       <p class="text-secondary small mb-2">Dilaporkan pada <strong>'.e(format_id_date($pendingFinding['date'])).'</strong> oleh <strong>'.e($pendingFinding['reporter']).'</strong>.</p>
       '.(!empty($pendingFinding['recommendation']) && $pendingFinding['recommendation'] !== '-' ? '<div class="alert alert-white bg-white border py-2 px-3 small my-2 text-dark"><strong><i class="bi bi-lightbulb me-1"></i>Catatan Rekomendasi:</strong> '.e($pendingFinding['recommendation']).'</div>' : '').'
       <div class="d-flex flex-wrap gap-2 mt-3 pt-1">
-        <a class="btn btn-danger btn-lg fw-bold py-2 px-4 shadow-sm" href="'.e(module_url('scan.php', ['t' => $token, 'action' => 'tindak_lanjut'])).'">
-          <i class="bi bi-tools me-2"></i> TINDAK LANJUTI / SELESAIKAN SEKARANG
+        <a class="btn btn-danger fw-semibold py-2 px-4 shadow-sm" href="'.e(module_url('scan.php', ['t' => $token, 'action' => 'tindak_lanjut'])).'">
+          <i class="bi bi-tools me-2"></i> Tindak Lanjuti / Selesaikan Temuan
         </a>
         '.(!empty($pendingFinding['log_id']) ? '<a class="btn btn-outline-secondary py-2" href="'.e(module_url('maintenance_detail.php', ['id' => (int)$pendingFinding['log_id']])).'"><i class="bi bi-file-earmark-text me-1"></i> Rincian Audit</a>' : '').'
       </div>
@@ -150,11 +150,11 @@ $headStyle = '<style>
   }
 }
 .grid6-top-banner {
-  background: linear-gradient(135deg, #2E77AD 0%, #30B0E0 100%);
+  background: #1D4ED8;
   color: #ffffff;
   padding: 7px 12px;
   border-radius: 6px;
-  font-weight: 800;
+  font-weight: 700;
   font-size: 0.92rem;
   display: flex;
   justify-content: space-between;

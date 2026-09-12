@@ -154,8 +154,9 @@ if ($action === 'start' || $action === 'form' || $action === 'ulang') {
       border-color: #10b981;
     }
     .quick-action-box {
-      background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
-      border: 1.5px solid #93c5fd;
+      background: #f8fafc;
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
     }
     .bio-scanner-wrapper {
       position: relative;

@@ -77,29 +77,29 @@ function render_page(string $title, string $content, string $extraHead = '', str
   --bm-sky-blue: #30B0E0;
   --bm-teal-aqua: #50C0C0;
   --bm-cyan-teal: #40C0D0;
-  --bm-lime-accent: #30B0E0;
-  --bm-fresh-green: #10B981;
-  --bm-bg-light: #F5F8FB;
-  --bm-surface-gray: #E6EDF5;
-  --bm-dark-text: #1F2A37;
+  --bm-lime-accent: #2563EB;
+  --bm-fresh-green: #059669;
+  --bm-bg-light: #F8FAFC;
+  --bm-surface-gray: #F1F5F9;
+  --bm-dark-text: #0F172A;
 
-  --primary-gradient: linear-gradient(135deg, #2E77AD 0%, #30B0E0 100%);
-  --teal-gradient: linear-gradient(135deg, #30B0E0 0%, #50C0C0 100%);
-  --lime-gradient: linear-gradient(135deg, #30B0E0 0%, #10B981 100%);
-  --success-gradient: linear-gradient(135deg, #10B981 0%, #059669 100%);
-  --warning-gradient: linear-gradient(135deg, #d97706 0%, #f59e0b 100%);
-  --danger-gradient: linear-gradient(135deg, #dc2626 0%, #ef4444 100%);
+  --primary-gradient: #1D4ED8;
+  --teal-gradient: #0284C7;
+  --lime-gradient: #059669;
+  --success-gradient: #059669;
+  --warning-gradient: #D97706;
+  --danger-gradient: #DC2626;
 }
 
 body {
-  background: #F5F8FB;
+  background: #F8FAFC;
   font-family: "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  color: #1F2A37;
+  color: #0F172A;
   -webkit-font-smoothing: antialiased;
 }
 
 h1, h2, h3, h4, h5, h6, .h1, .h2, .h3, .h4, .h5, .h6 {
-  color: #1F2A37;
+  color: #0F172A;
   font-weight: 700;
 }
 
@@ -116,32 +116,31 @@ h1, h2, h3, h4, h5, h6, .h1, .h2, .h3, .h4, .h5, .h6 {
   color: #ffffff !important;
 }
 
-/* Navbar Bank Mitra - Deep Corporate Navy with Vivid Cyan Accent */
+/* Navbar Bank Mitra - Clean Corporate Navy (No AI neon glow) */
 .main-navbar {
-  background: linear-gradient(135deg, #0B192C 0%, #112D4E 50%, #183B63 100%);
-  backdrop-filter: blur(12px);
-  box-shadow: 0 4px 20px rgba(11, 25, 44, 0.4);
-  border-bottom: 3px solid #30B0E0;
-  padding: 0.85rem 0;
+  background: #0F172A;
+  border-bottom: 1px solid #1E293B;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+  padding: 0.75rem 0;
 }
 
 .brand-icon {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 40px;
-  height: 40px;
-  background: linear-gradient(135deg, #2E77AD 0%, #30B0E0 100%);
-  border-radius: 12px;
-  box-shadow: 0 4px 12px rgba(48, 176, 224, 0.4);
+  width: 38px;
+  height: 38px;
+  background: #1D4ED8;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
   color: #ffffff;
-  font-size: 1.25rem;
+  font-size: 1.2rem;
 }
 
 .brand-text {
-  font-size: 1.18rem;
-  font-weight: 800;
-  letter-spacing: -0.3px;
+  font-size: 1.12rem;
+  font-weight: 700;
+  letter-spacing: -0.2px;
   color: #ffffff !important;
 }
 
@@ -149,21 +148,21 @@ h1, h2, h3, h4, h5, h6, .h1, .h2, .h3, .h4, .h5, .h6 {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 7px 15px;
+  padding: 6px 14px;
   font-size: 0.85rem;
-  font-weight: 600;
-  color: rgba(255, 255, 255, 0.95) !important;
+  font-weight: 500;
+  color: #CBD5E1 !important;
   text-decoration: none;
-  border-radius: 20px;
+  border-radius: 6px;
   background: transparent;
   border: none;
-  transition: all 0.2s ease;
+  transition: background-color 0.15s ease, color 0.15s ease;
 }
 
 .nav-pill-btn:hover {
   color: #ffffff !important;
-  background: rgba(255, 255, 255, 0.2) !important;
-  transform: translateY(-1px);
+  background: rgba(255, 255, 255, 0.08) !important;
+  transform: none;
 }
 
 .nav-pill-btn:focus,
@@ -180,75 +179,79 @@ h1, h2, h3, h4, h5, h6, .h1, .h2, .h3, .h4, .h5, .h6 {
 .nav-pill-btn.show:focus,
 .dropdown.show .nav-pill-btn,
 .show > .nav-pill-btn {
-  color: #1F2A37 !important;
+  color: #0F172A !important;
   background: #ffffff !important;
-  box-shadow: 0 3px 12px rgba(31, 42, 55, 0.18) !important;
+  font-weight: 600;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05) !important;
 }
 
 .nav-pill-btn.active i,
 .nav-pill-btn.active:hover i,
 .nav-pill-btn.show i,
 .show > .nav-pill-btn i {
-  color: #2E77AD !important;
+  color: #1D4ED8 !important;
 }
 
 .nav-pill-btn.active::after,
 .nav-pill-btn.show::after,
 .show > .nav-pill-btn::after {
-  border-top-color: #1F2A37 !important;
+  border-top-color: #0F172A !important;
 }
 
 .dropdown-menu {
-  border-radius: 12px;
-  padding: 8px;
+  border-radius: 8px;
+  padding: 6px;
+  border: 1px solid #334155;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
 }
 
 .dropdown-item {
-  border-radius: 8px;
+  border-radius: 6px;
   font-weight: 500;
-  font-size: 0.88rem;
+  font-size: 0.85rem;
+  padding: 6px 12px;
   transition: all 0.15s ease;
 }
 
 .dropdown-item.active,
 .dropdown-item:active {
-  background: #2E77AD !important;
+  background: #1D4ED8 !important;
   color: #ffffff !important;
-  font-weight: 700;
+  font-weight: 600;
 }
 
-/* Tombol Aksi Tambah Komputer (Vibrant Modern Emerald Green) */
+/* Tombol Aksi Tambah Komputer - Solid Emerald Corporate */
 .btn-action-add {
-  background: linear-gradient(135deg, #10B981 0%, #059669 100%);
+  background: #059669;
   color: #ffffff !important;
-  border: none;
-  border-radius: 20px;
-  padding: 7px 18px;
-  font-weight: 700;
-  box-shadow: 0 4px 14px rgba(16, 185, 129, 0.35);
-  transition: all 0.2s ease;
+  border: 1px solid #047857;
+  border-radius: 6px;
+  padding: 6px 14px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  transition: background-color 0.15s ease;
 }
 
 .btn-action-add:hover {
-  background: linear-gradient(135deg, #059669 0%, #047857 100%);
+  background: #047857;
   color: #ffffff !important;
-  transform: translateY(-1px);
-  box-shadow: 0 6px 18px rgba(16, 185, 129, 0.45);
+  transform: none;
 }
 
-/* Card & Elevated Components (Soft Surface Gray #E6EDF5) */
+/* Card & Standard Components (Clean Flat Borders) */
 .card {
-  border: 1px solid #E6EDF5;
-  border-radius: 16px;
+  border: 1px solid #E2E8F0;
+  border-radius: 10px;
   background: #ffffff;
-  box-shadow: 0 4px 20px -2px rgba(46, 119, 173, 0.05), 0 2px 6px -1px rgba(31, 42, 55, 0.02);
-  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
 .card-hover:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 14px 28px -4px rgba(46, 119, 173, 0.12), 0 4px 10px -2px rgba(31, 42, 55, 0.04);
-  border-color: #30B0E0;
+  border-color: #CBD5E1;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+  transform: none;
 }
 
 .stat-card {
@@ -257,82 +260,82 @@ h1, h2, h3, h4, h5, h6, .h1, .h2, .h3, .h4, .h5, .h6 {
 }
 
 .stat-icon-wrapper {
-  width: 44px;
-  height: 44px;
-  border-radius: 12px;
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.25rem;
+  font-size: 1.15rem;
 }
 
 .stat {
-  font-size: 1.85rem;
-  font-weight: 800;
+  font-size: 1.75rem;
+  font-weight: 700;
   letter-spacing: -0.5px;
   line-height: 1.1;
-  color: #1F2A37;
+  color: #0F172A;
 }
 
 .small-muted {
-  font-size: 0.78rem;
-  font-weight: 700;
-  color: #64748b;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #64748B;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.4px;
 }
 
-/* Modern Form Controls */
+/* Modern Clean Form Controls */
 .form-control, .form-select {
-  border: 1.5px solid #E6EDF5;
-  border-radius: 10px;
-  padding: 0.55rem 0.85rem;
-  font-size: 0.9rem;
-  color: #1F2A37;
-  transition: all 0.2s ease;
+  border: 1px solid #CBD5E1;
+  border-radius: 6px;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.88rem;
+  color: #0F172A;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
 .form-control:focus, .form-select:focus {
-  border-color: #30B0E0 !important;
-  box-shadow: 0 0 0 4px rgba(48, 176, 224, 0.18) !important;
+  border-color: #1D4ED8 !important;
+  box-shadow: 0 0 0 3px rgba(29, 78, 216, 0.12) !important;
 }
 
-/* Badges & Chips */
+/* Corporate Badges */
 .badge-chip {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  padding: 4px 10px;
-  border-radius: 20px;
-  font-size: 0.78rem;
-  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 600;
 }
 
 .chip-success { background: #ECFDF5; color: #065F46; border: 1px solid #A7F3D0; }
-.chip-warning { background: #fef3c7; color: #b45309; }
-.chip-danger { background: #fee2e2; color: #b91c1c; }
-.chip-primary { background: rgba(46, 119, 173, 0.12); color: #2E77AD; border: 1px solid rgba(46, 119, 173, 0.25); }
-.chip-secondary { background: #E6EDF5; color: #1F2A37; border: 1px solid #cbd5e1; }
+.chip-warning { background: #FEF3C7; color: #92400E; border: 1px solid #FDE68A; }
+.chip-danger { background: #FEF2F2; color: #991B1B; border: 1px solid #FECACA; }
+.chip-primary { background: #EFF6FF; color: #1E40AF; border: 1px solid #BFDBFE; }
+.chip-secondary { background: #F1F5F9; color: #334155; border: 1px solid #CBD5E1; }
 
-/* Table Enhancements (Header Soft Surface Gray #E6EDF5) */
+/* Table Enhancements (Clean Light Slate Header) */
 .table {
-  font-size: 0.9rem;
-  color: #1F2A37;
+  font-size: 0.88rem;
+  color: #0F172A;
 }
 
 .table thead th {
-  background: #E6EDF5 !important;
-  color: #1F2A37 !important;
-  font-weight: 700;
-  font-size: 0.8rem;
+  background: #F8FAFC !important;
+  color: #475569 !important;
+  font-weight: 600;
+  font-size: 0.75rem;
   text-transform: uppercase;
   letter-spacing: 0.4px;
-  border-bottom: 2px solid #cbd5e1;
-  padding: 12px 14px;
+  border-bottom: 1px solid #E2E8F0;
+  padding: 10px 12px;
 }
 
 .table tbody td {
-  padding: 12px 14px;
+  padding: 10px 12px;
   border-bottom: 1px solid #E6EDF5;
   vertical-align: middle;
 }
@@ -570,13 +573,13 @@ h1, h2, h3, h4, h5, h6, .h1, .h2, .h3, .h4, .h5, .h6 {
   color: #991B1B !important;
 }
 
-/* Loading Progress Bar (Bank Mitra Blue-Teal-Emerald Gradient) */
+/* Loading Progress Bar (Bank Mitra Blue) */
 #top-progress-bar {
   position: fixed;
   top: 0;
   left: 0;
   height: 3px;
-  background: linear-gradient(90deg, #30B0E0, #40C0D0, #10B981);
+  background: #1D4ED8;
   z-index: 9999;
   transition: width .2s ease;
   width: 0;

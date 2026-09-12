@@ -273,66 +273,48 @@ $head = '
 <!-- Chart.js CDN -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
 <style>
-/* Dashboard Modern Premium Styles */
+/* Dashboard Clean Enterprise Corporate Styles */
 .dashboard-hero {
-  background: linear-gradient(135deg, #1A4064 0%, #2E77AD 50%, #30B0E0 100%);
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  border-radius: 20px;
-  padding: 26px 30px;
-  margin-bottom: 24px;
-  color: #ffffff !important;
-  box-shadow: 0 10px 30px -5px rgba(46, 119, 173, 0.25);
-  position: relative;
-  overflow: hidden;
+  background: #ffffff;
+  border: 1px solid #E2E8F0;
+  border-radius: 10px;
+  padding: 22px 26px;
+  margin-bottom: 20px;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05);
 }
 
-.dashboard-hero h1,
-.dashboard-hero h2,
-.dashboard-hero h3,
-.dashboard-hero h4,
-.dashboard-hero h5,
-.dashboard-hero h6 {
-  color: #ffffff !important;
-}
-
-.dashboard-hero::before {
-  content: "";
-  position: absolute;
-  top: -40%;
-  right: -20%;
-  width: 340px;
-  height: 340px;
-  background: radial-gradient(circle, rgba(48, 176, 224, 0.3) 0%, rgba(48, 176, 224, 0) 70%);
-  border-radius: 50%;
-  pointer-events: none;
+.dashboard-hero h2 {
+  color: #0F172A !important;
+  font-size: 1.4rem;
+  font-weight: 700;
+  letter-spacing: -0.2px;
 }
 
 .hero-subtitle {
-  color: rgba(255, 255, 255, 0.95) !important;
-  font-size: 0.95rem;
+  color: #64748B !important;
+  font-size: 0.88rem;
 }
 
 .hero-badge-pill {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 5px 14px;
-  border-radius: 20px;
-  font-size: 0.82rem;
+  gap: 5px;
+  padding: 3px 9px;
+  border-radius: 6px;
+  font-size: 0.76rem;
   font-weight: 600;
-  background: rgba(255, 255, 255, 0.22) !important;
-  color: #ffffff !important;
-  border: 1px solid rgba(255, 255, 255, 0.35) !important;
-  backdrop-filter: blur(8px);
+  background: #F1F5F9 !important;
+  color: #334155 !important;
+  border: 1px solid #CBD5E1 !important;
 }
 .hero-badge-pill i {
-  color: #ffffff !important;
+  color: #64748B !important;
 }
 .hero-badge-pill i.bi-google {
-  color: #facc15 !important;
+  color: #D97706 !important;
 }
 .hero-badge-pill i.bi-database {
-  color: #38bdf8 !important;
+  color: #2563EB !important;
 }
 
 .stat-card-clickable {
@@ -342,51 +324,53 @@ $head = '
 }
 
 .stat-card-clickable .card {
-  border-radius: 16px;
-  border: 1px solid #E6EDF5;
+  border-radius: 10px;
+  border: 1px solid #E2E8F0;
   background: #ffffff;
-  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
   position: relative;
   overflow: hidden;
 }
 
 .stat-card-clickable:hover .card {
-  transform: translateY(-4px);
-  box-shadow: 0 12px 24px -4px rgba(46, 119, 173, 0.12);
-  border-color: #30B0E0;
+  border-color: #CBD5E1;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+  transform: none;
 }
 
-.stat-card-primary { border-left: 4px solid #2E77AD !important; }
-.stat-card-success { border-left: 4px solid #10B981 !important; }
-.stat-card-danger { border-left: 4px solid #EF4444 !important; }
-.stat-card-warning { border-left: 4px solid #F59E0B !important; }
-.stat-card-info { border-left: 4px solid #30B0E0 !important; }
-.stat-card-dark { border-left: 4px solid #1F2A37 !important; }
+.stat-card-primary { border-left: 3px solid #1D4ED8 !important; }
+.stat-card-success { border-left: 3px solid #059669 !important; }
+.stat-card-danger { border-left: 3px solid #DC2626 !important; }
+.stat-card-warning { border-left: 3px solid #D97706 !important; }
+.stat-card-info { border-left: 3px solid #0284C7 !important; }
+.stat-card-dark { border-left: 3px solid #334155 !important; }
 
 .stat-icon-box {
-  width: 44px;
-  height: 44px;
-  border-radius: 12px;
+  width: 38px;
+  height: 38px;
+  border-radius: 8px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.25rem;
+  font-size: 1.15rem;
   flex-shrink: 0;
 }
 
 .stat-number {
-  font-size: clamp(1.35rem, 2.2vw, 1.85rem);
-  font-weight: 800;
-  letter-spacing: -0.5px;
+  font-size: clamp(1.3rem, 2vw, 1.65rem);
+  font-weight: 700;
+  letter-spacing: -0.3px;
   line-height: 1.15;
+  color: #0F172A;
 }
 
 .stat-label {
   font-size: 0.72rem;
-  font-weight: 700;
-  color: #64748b;
+  font-weight: 600;
+  color: #64748B;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.4px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -394,17 +378,17 @@ $head = '
 
 .branch-nav-wrapper {
   background: #ffffff;
-  border: 1px solid #E6EDF5;
-  border-radius: 16px;
-  padding: 10px 14px;
+  border: 1px solid #E2E8F0;
+  border-radius: 10px;
+  padding: 8px 12px;
 }
 
 .branch-scroll-container {
   display: flex;
-  gap: 8px;
+  gap: 6px;
   overflow-x: auto;
   white-space: nowrap;
-  padding: 4px 2px;
+  padding: 2px;
   -webkit-overflow-scrolling: touch;
   scrollbar-width: none;
 }
@@ -416,62 +400,63 @@ $head = '
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 8px 18px;
-  border-radius: 30px;
-  font-size: 0.85rem;
-  font-weight: 600;
-  color: #1F2A37;
-  background: #F5F8FB;
-  border: 1.5px solid #E6EDF5;
+  padding: 6px 14px;
+  border-radius: 6px;
+  font-size: 0.82rem;
+  font-weight: 500;
+  color: #334155;
+  background: #F8FAFC;
+  border: 1px solid #CBD5E1;
   text-decoration: none;
-  transition: all 0.2s ease;
+  transition: all 0.15s ease;
   flex-shrink: 0;
 }
 
 .nav-branch-pill:hover {
-  background: #E6EDF5;
-  color: #2E77AD;
-  border-color: #30B0E0;
-  transform: translateY(-1px);
+  background: #E2E8F0;
+  color: #0F172A;
+  border-color: #94A3B8;
+  transform: none;
 }
 
 .nav-branch-pill.active {
-  background: linear-gradient(135deg, #2E77AD 0%, #30B0E0 100%);
+  background: #1D4ED8;
   color: #ffffff;
-  border-color: #2E77AD;
-  box-shadow: 0 4px 12px rgba(46, 119, 173, 0.3);
+  border-color: #1D4ED8;
+  font-weight: 600;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
 }
 
 .chart-card {
   min-height: 380px;
-  border-radius: 16px;
+  border-radius: 10px;
 }
 
 .filter-box {
   background: #ffffff;
   border: 1px solid #e2e8f0;
-  border-radius: 16px;
-  padding: 20px 24px;
+  border-radius: 10px;
+  padding: 18px 20px;
 }
 
 @media (max-width: 576px) {
   .dashboard-hero {
-    padding: 20px 16px;
+    padding: 16px;
   }
   .stat-icon-box {
-    width: 36px;
-    height: 36px;
-    font-size: 1.1rem;
+    width: 34px;
+    height: 34px;
+    font-size: 1rem;
   }
   .filter-box {
-    padding: 16px;
+    padding: 14px;
   }
 }
 </style>';
 
 $body = '
-<!-- Hero Banner Modern -->
-<div class="dashboard-hero shadow-sm">
+<!-- Header Monitoring Bersih & Formal -->
+<div class="dashboard-hero">
   <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
     <div>
       <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
@@ -479,14 +464,14 @@ $body = '
         <span class="hero-badge-pill"><i class="bi bi-calendar-check"></i> '.$monthName.' '.$year.'</span>
         <span class="hero-badge-pill"><i class="bi bi-geo-alt-fill"></i> '.e($selectedCabangName).'</span>
       </div>
-      <h2 class="fw-bold mb-1" style="letter-spacing: -0.5px;">Dashboard Monitoring Maintenance IT</h2>
-      <div class="hero-subtitle">Sistem visibilitas & pelacakan pemeliharaan komputer hardware, OS, dan software secara real-time.</div>
+      <h2 class="fw-bold mb-1">Monitoring Pemeliharaan Komputer IT</h2>
+      <div class="hero-subtitle">PT. BPR Mitratama Arthabuana &bull; Pemantauan status checklist dan jadwal pemeliharaan inventaris kantor.</div>
     </div>
     <div class="d-flex gap-2 flex-wrap">
-      <a class="btn btn-action-add fw-bold shadow-sm" href="'.e(module_url('asset_add.php')).'"><i class="bi bi-plus-circle-fill me-1"></i> + Tambah Komputer</a>
-      <a class="btn btn-outline-light fw-semibold px-3" target="_blank" href="'.e(module_url('print_card.php', ['cabang'=>$cabangId, 'layout'=>'grid6', 'tahun'=>$year])).'"><i class="bi bi-card-checklist me-1"></i> Cetak Kartu (6/A4)</a>
-      <a class="btn btn-outline-light fw-semibold px-3" target="_blank" href="'.e(module_url('print_report.php', ['bulan'=>$month,'tahun'=>$year,'cabang'=>$cabangId])).'"><i class="bi bi-printer-fill me-1"></i> Cetak Laporan</a>
-      <a class="btn btn-outline-light bg-white bg-opacity-10 text-white fw-semibold border-white border-opacity-25" href="'.e(module_url('export_csv.php', ['bulan'=>$month,'tahun'=>$year,'cabang'=>$cabangId])).'"><i class="bi bi-file-earmark-spreadsheet me-1"></i> Export CSV</a>
+      <a class="btn btn-action-add fw-semibold" href="'.e(module_url('asset_add.php')).'"><i class="bi bi-plus-circle-fill me-1"></i> + Tambah Komputer</a>
+      <a class="btn btn-sm btn-outline-secondary fw-semibold px-3" target="_blank" href="'.e(module_url('print_card.php', ['cabang'=>$cabangId, 'layout'=>'grid6', 'tahun'=>$year])).'"><i class="bi bi-card-checklist me-1"></i> Cetak Kartu</a>
+      <a class="btn btn-sm btn-outline-secondary fw-semibold px-3" target="_blank" href="'.e(module_url('print_report.php', ['bulan'=>$month,'tahun'=>$year,'cabang'=>$cabangId])).'"><i class="bi bi-printer me-1"></i> Cetak Laporan</a>
+      <a class="btn btn-sm btn-outline-secondary fw-semibold px-3" href="'.e(module_url('export_csv.php', ['bulan'=>$month,'tahun'=>$year,'cabang'=>$cabangId])).'"><i class="bi bi-file-earmark-spreadsheet me-1"></i> Export CSV</a>
     </div>
   </div>
 </div>

@@ -108,64 +108,61 @@ body::before {
 }
 
 .login-card {
-  background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.85);
-  border-radius: 28px;
-  padding: 38px 34px 30px;
-  box-shadow: 0 25px 50px -12px rgba(11, 21, 40, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.5);
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 36px 32px 28px;
+  box-shadow: 0 20px 25px -5px rgba(15, 23, 42, 0.2), 0 8px 10px -6px rgba(15, 23, 42, 0.2);
 }
 
 .login-logo {
-  width: 62px;
-  height: 62px;
-  background: linear-gradient(135deg, #2E77AD, #30B0E0);
-  border-radius: 18px;
+  width: 54px;
+  height: 54px;
+  background: #1D4ED8;
+  border-radius: 10px;
   display: flex;
   align-items: center;
   justify-content: center;
   color: #fff;
-  font-size: 1.8rem;
+  font-size: 1.6rem;
   margin: 0 auto 16px;
-  box-shadow: 0 8px 20px rgba(46, 119, 173, 0.35);
 }
 
 .login-title {
-  font-size: 1.5rem;
-  font-weight: 800;
+  font-size: 1.35rem;
+  font-weight: 700;
   color: #0f172a;
   text-align: center;
   margin-bottom: 4px;
-  letter-spacing: -0.5px;
+  letter-spacing: -0.3px;
 }
 
 .login-subtitle {
   font-size: 0.88rem;
   color: #64748b;
   text-align: center;
-  margin-bottom: 28px;
+  margin-bottom: 24px;
 }
 
 .form-floating > .form-control {
-  border: 1.5px solid #e2e8f0;
-  border-radius: 12px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
   padding: 16px 14px 8px 44px;
   font-size: 0.95rem;
-  height: 56px;
+  height: 52px;
   background: #f8fafc;
-  transition: all 0.2s ease;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
 .form-floating > .form-control:focus {
-  border-color: #30B0E0;
-  box-shadow: 0 0 0 4px rgba(48, 176, 224, 0.15);
+  border-color: #1D4ED8;
+  box-shadow: 0 0 0 3px rgba(29, 78, 216, 0.15);
   background: #fff;
 }
 
 .form-floating > label {
   padding-left: 44px;
-  color: #94a3b8;
+  color: #64748b;
   font-weight: 500;
 }
 
@@ -174,7 +171,7 @@ body::before {
   left: 14px;
   top: 50%;
   transform: translateY(-50%);
-  color: #94a3b8;
+  color: #64748b;
   font-size: 1.1rem;
   z-index: 5;
   pointer-events: none;
@@ -187,27 +184,26 @@ body::before {
 
 .btn-login {
   width: 100%;
-  padding: 14px;
-  background: linear-gradient(135deg, #2E77AD 0%, #30B0E0 100%);
-  border: none;
-  border-radius: 14px;
+  padding: 12px;
+  background: #1D4ED8;
+  border: 1px solid #1D4ED8;
+  border-radius: 8px;
   color: #fff;
-  font-size: 1rem;
-  font-weight: 700;
-  letter-spacing: 0.3px;
-  transition: all 0.25s ease;
-  box-shadow: 0 6px 20px rgba(46, 119, 173, 0.35);
+  font-size: 0.95rem;
+  font-weight: 600;
+  letter-spacing: 0.2px;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
 }
 
 .btn-login:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 10px 28px rgba(46, 119, 173, 0.45);
-  background: linear-gradient(135deg, #1A4064 0%, #2E77AD 100%);
+  background: #1E40AF;
+  border-color: #1E40AF;
   color: #fff;
 }
 
 .btn-login:active {
-  transform: translateY(0);
+  background: #1e3a8a;
+  border-color: #1e3a8a;
 }
 
 .login-footer {

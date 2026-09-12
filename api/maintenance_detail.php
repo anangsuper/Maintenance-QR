@@ -247,9 +247,9 @@ $body = '
     </div>
 
     <!-- Card 1: Detail Perangkat -->
-    <div class="card p-4 border-0 shadow-sm mb-4">
+    <div class="card p-4 border mb-4">
       <div class="d-flex justify-content-between align-items-center border-bottom pb-3 mb-3">
-        <h5 class="fw-bold text-primary mb-0"><i class="bi bi-laptop me-2"></i>1. DETAIL PERANGKAT</h5>
+        <h5 class="fw-bold text-dark mb-0"><i class="bi bi-laptop me-2 text-primary"></i>1. Detail Perangkat Komputer</h5>
         <span class="badge bg-light text-dark border">ID Aset #'.(int)($asset['id'] ?? 0).'</span>
       </div>
       <div class="row g-3 small">
@@ -289,9 +289,9 @@ $body = '
     </div>
 
     <!-- Card 2: Detail Pelaksanaan Maintenance -->
-    <div class="card p-4 border-0 shadow-sm mb-4">
+    <div class="card p-4 border mb-4">
       <div class="d-flex justify-content-between align-items-center border-bottom pb-3 mb-3">
-        <h5 class="fw-bold text-primary mb-0"><i class="bi bi-calendar2-check me-2"></i>2. DETAIL PELAKSANAAN MAINTENANCE</h5>
+        <h5 class="fw-bold text-dark mb-0"><i class="bi bi-calendar2-check me-2 text-primary"></i>2. Detail Pelaksanaan Pemeliharaan</h5>
         '.$statusBadge.'
       </div>
       <div class="row g-3 small mb-4">
@@ -308,56 +308,53 @@ $body = '
           <div class="fw-bold text-primary">'.e($techName).'</div>
         </div>
         <div class="col-md-3">
-          <div class="text-secondary">Jenis Maintenance:</div>
-          <div class="fw-semibold text-dark">'.e($mType).'</div>
+          <div class="text-secondary">Tingkat Checklist:</div>
+          <div class="fw-bold text-dark fs-6">'.$totalChecked.' / 9 Selesai</div>
         </div>
       </div>
 
-      <!-- Bukti Audit Biometrik Wajah & GPS -->
+      <!-- Audit Presensi Petugas (Formal Banking Layout) -->
       '.$bioAuditHtml.'
 
-      <!-- 3. Checklist 9 Item -->
-      <div class="d-flex justify-content-between align-items-center mb-2">
-        <h6 class="fw-bold text-dark mb-0"><i class="bi bi-check2-square text-primary me-1"></i>HASIL 9 CHECKLIST PEMELIHARAAN ('.$totalChecked.'/9 OK):</h6>
-        '.($isLoggedIn ? '<button type="button" class="btn btn-sm btn-outline-primary no-print" data-bs-toggle="modal" data-bs-target="#editChecklistModal"><i class="bi bi-pencil me-1"></i> Ubah Catatan Checklist</button>' : '').'
-      </div>
-      
-      <div class="table-responsive rounded-3 border mb-4">
-        <table class="table table-bordered align-middle mb-0 small">
+      <!-- Checklist Table -->
+      <h6 class="fw-bold text-dark mb-2"><i class="bi bi-card-checklist text-primary me-2"></i>Status 9 Item Pemeriksaan Standar:</h6>
+      <div class="table-responsive border rounded-3 mb-4">
+        <table class="table table-hover align-middle mb-0 small">
           <thead class="table-light">
-            <tr class="text-center fw-bold">
-              <th style="width: 45px;">No</th>
-              <th class="text-start">Item Pemeliharaan</th>
-              <th style="width: 150px;">Status Checklist</th>
-              <th class="text-start">Keterangan / Hasil Pemeriksaan</th>
+            <tr>
+              <th class="text-center" style="width: 45px;">No</th>
+              <th>Komponen / Item Yang Diperiksa</th>
+              <th class="text-center" style="width: 150px;">Status Kondisi</th>
+              <th>Catatan / Keterangan Temuan</th>
             </tr>
           </thead>
-          <tbody>'.$chkTableRows.'</tbody>
+          <tbody>
+            '.$chkTableRows.'
+          </tbody>
         </table>
       </div>
 
-      <!-- 4. Temuan & Rekomendasi -->
       <div class="row g-3">
         <div class="col-md-6">
           <div class="p-3 bg-light rounded-3 border h-100">
-            <h6 class="fw-bold text-danger mb-2"><i class="bi bi-exclamation-triangle-fill me-1"></i>Temuan / Masalah:</h6>
-            <div class="small text-dark">'.nl2br(e($findings)).'</div>
+            <div class="text-secondary small fw-bold mb-1"><i class="bi bi-exclamation-triangle text-warning me-1"></i>Ringkasan Temuan / Masalah:</div>
+            <div class="text-dark">'.($scan['findings'] ? nl2br(e($scan['findings'])) : '<span class="text-muted fst-italic">Tidak ada temuan kendala (Normal).</span>').'</div>
           </div>
         </div>
         <div class="col-md-6">
           <div class="p-3 bg-light rounded-3 border h-100">
-            <h6 class="fw-bold text-success mb-2"><i class="bi bi-lightbulb-fill me-1"></i>Rekomendasi / Tindakan:</h6>
-            <div class="small text-dark">'.nl2br(e($recommendation)).'</div>
+            <div class="text-secondary small fw-bold mb-1"><i class="bi bi-lightbulb text-info me-1"></i>Rekomendasi Tindak Lanjut:</div>
+            <div class="text-dark">'.($scan['recommendation'] ? nl2br(e($scan['recommendation'])) : '<span class="text-muted fst-italic">Tidak ada rekomendasi khusus.</span>').'</div>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- Card 3: Histori Lengkap Seluruh Maintenance Pada Komputer Ini -->
-    <div class="card p-4 border-0 shadow-sm mb-4">
-      <div class="d-flex justify-content-between align-items-center border-bottom pb-3 mb-3">
+    <!-- Card 3: Riwayat Seluruh Maintenance Komputer Ini -->
+    <div class="card p-4 border mb-4">
+      <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 border-bottom pb-3 mb-3">
         <div>
-          <h5 class="fw-bold text-primary mb-0"><i class="bi bi-clock-history me-2"></i>3. RIWAYAT SELURUH MAINTENANCE KOMPUTER INI ('.$totalMaintCount.' KALI)</h5>
+          <h5 class="fw-bold text-dark mb-0"><i class="bi bi-clock-history me-2 text-primary"></i>3. Riwayat Pemeliharaan Komputer Ini ('.$totalMaintCount.' Sesi)</h5>
           <div class="text-secondary small mt-1">Daftar rekam jejak pemeliharaan berkala untuk aset <strong>'.e(asset_title($asset)).'</strong> ('.e($asset['kode_inventaris'] ?? '-').').</div>
         </div>
         '.(!empty($asset['token']) ? '<a href="'.e(module_url('scan.php', ['t' => $asset['token']])).'" class="btn btn-outline-primary btn-sm fw-bold"><i class="bi bi-card-checklist me-1"></i> Buka Kartu Kontrol 12 Bulan</a>' : '').'
