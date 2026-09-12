@@ -85,16 +85,17 @@ foreach ($overview as $mNum => $m) {
 }
 
 $body = '
-<div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+<div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3 mb-4">
   <div>
-    <h2 class="fw-bold mb-1 text-dark"><i class="bi bi-calendar-check text-primary me-2"></i>Riwayat Maintenance Bulanan</h2>
-    <div class="text-secondary">Ringkasan progress pemeliharaan komputer tiap bulan sepanjang tahun <strong>'.$year.'</strong>.</div>
+    <div class="tech-label mb-1">MONITORING</div>
+    <h1 class="h3 mb-1">Riwayat Maintenance Bulanan</h1>
+    <div class="text-secondary small">Ringkasan progress pemeliharaan komputer 12 bulan sepanjang tahun <strong>'.$year.'</strong>.</div>
   </div>
   <form method="get" class="d-flex gap-2 align-items-center">
     <select class="form-select form-select-sm" name="cabang" onchange="this.form.submit()">'.$cabangOpts.'</select>
-    <div class="input-group input-group-sm" style="width: 180px; min-width: 180px;">
-      <span class="input-group-text bg-light fw-bold">Tahun</span>
-      <input type="number" class="form-control form-control-sm font-monospace fw-bold" name="tahun" value="'.$year.'" min="2020" max="2100" onchange="this.form.submit()">
+    <div class="input-group input-group-sm" style="width: 170px;">
+      <span class="input-group-text bg-white">Tahun</span>
+      <input type="number" class="form-control form-control-sm font-monospace fw-semibold" name="tahun" value="'.$year.'" min="2020" max="2100" onchange="this.form.submit()">
     </div>
   </form>
 </div>

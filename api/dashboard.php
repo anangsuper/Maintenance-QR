@@ -53,16 +53,16 @@ foreach ($cabangs as $c) {
 }
 
 // 3. Tab Bar Navigasi Cepat Cabang
-$branchTabs = '<a class="nav-branch-pill '.($cabangId === 0 ? 'active' : '').'" href="'.e(module_url('dashboard.php', ['bulan'=>$month,'tahun'=>$year,'cabang'=>0,'status_aset'=>$statusAset,'status_maint'=>$statusMaint])).'"><i class="bi bi-grid-fill"></i> Semua Cabang</a>';
+$branchTabs = '<a class="branch-nav-pill '.($cabangId === 0 ? 'active' : '').'" href="'.e(module_url('dashboard.php', ['bulan'=>$month,'tahun'=>$year,'cabang'=>0,'status_aset'=>$statusAset,'status_maint'=>$statusMaint])).'">Semua Cabang</a>';
 foreach ($cabangs as $c) {
     $cId = (int)($c['id'] ?? 0);
     $cNama = $c['nama'] ?? $c['nama_cabang'] ?? 'Cabang #' . $cId;
     $isActive = ($cId === $cabangId);
-    $branchTabs .= '<a class="nav-branch-pill '.($isActive ? 'active' : '').'" href="'.e(module_url('dashboard.php', ['bulan'=>$month,'tahun'=>$year,'cabang'=>$cId,'status_aset'=>$statusAset,'status_maint'=>$statusMaint])).'"><i class="bi bi-building"></i> '.e($cNama).'</a>';
+    $branchTabs .= '<a class="branch-nav-pill '.($isActive ? 'active' : '').'" href="'.e(module_url('dashboard.php', ['bulan'=>$month,'tahun'=>$year,'cabang'=>$cId,'status_aset'=>$statusAset,'status_maint'=>$statusMaint])).'">'.e($cNama).'</a>';
 }
 
-// 4. Kartu Progres Monitoring Tiap Cabang
-$branchCardsHtml = '';
+// 4. Compact Branch Compliance Rows
+$branchRowsHtml = '';
 foreach ($branchSummaries as $bs) {
     $bId = $bs['id'];
     $bName = $bs['nama'];
@@ -73,857 +73,352 @@ foreach ($branchSummaries as $bs) {
     $bPercent = $bs['percent'];
     $isCurrent = ($bId === $cabangId);
 
-    $barGradient = $bPercent === 100 ? 'var(--success-gradient)' : ($bPercent >= 50 ? 'var(--primary-gradient)' : 'var(--warning-gradient)');
+    $complianceBadge = $bPercent === 100 
+        ? '<span class="badge-chip chip-success">100%</span>' 
+        : ($bPercent >= 75 
+            ? '<span class="badge-chip chip-primary">'.$bPercent.'%</span>' 
+            : '<span class="badge-chip chip-warning">'.$bPercent.'%</span>');
 
-    $branchCardsHtml .= '
-    <div class="col-md-6 col-lg-4">
-      <div class="card p-4 h-100 shadow-sm branch-summary-card '.($isCurrent ? 'border-primary border-2 shadow' : 'border-0').'">
-        <div class="d-flex justify-content-between align-items-start mb-3">
-          <div class="d-flex align-items-center gap-3">
-            <div class="stat-icon-box bg-primary bg-opacity-10 text-primary">
-              <i class="bi bi-building"></i>
-            </div>
-            <div>
-              <h5 class="fw-bold mb-0 text-dark">'.e($bName).'</h5>
-              <small class="text-secondary fw-semibold">Target: '.$bTotal.' Unit Komputer</small>
-            </div>
-          </div>
-          <span class="badge-chip '.($bPercent === 100 ? 'chip-success' : 'chip-primary').' fs-6">'.$bPercent.'%</span>
-        </div>
-
-        <div class="progress rounded-pill my-2" style="height: 10px; background-color: #f1f5f9;">
-          <div class="progress-bar rounded-pill" style="width: '.$bPercent.'%; background: '.$barGradient.'; transition: width 0.6s ease;"></div>
-        </div>
-
-        <div class="row g-2 text-center small my-3 py-2 px-1 bg-light rounded-3">
-          <div class="col-4 border-end"><div class="stat-label">Selesai</div><strong class="text-success fs-6">'.$bDone.'</strong></div>
-          <div class="col-4 border-end"><div class="stat-label">Belum</div><strong class="text-warning-emphasis fs-6">'.$bPending.'</strong></div>
-          <div class="col-4"><div class="stat-label">Temuan</div><strong class="text-danger fs-6">'.$bFindings.'</strong></div>
-        </div>
-
-        <div class="d-flex gap-2 mt-auto pt-3 border-top">
-          <a class="btn btn-sm btn-primary flex-fill fw-semibold shadow-sm" href="'.e(module_url('dashboard.php', ['bulan'=>$month,'tahun'=>$year,'cabang'=>$bId])).'"><i class="bi bi-folder2-open me-1"></i> Buka Cabang</a>
-          <a class="btn btn-sm btn-outline-secondary" target="_blank" href="'.e(module_url('print_report.php', ['bulan'=>$month,'tahun'=>$year,'cabang'=>$bId])).'" title="Cetak Rekap Cabang Ini"><i class="bi bi-printer"></i></a>
-          <a class="btn btn-sm btn-outline-primary" target="_blank" href="'.e(module_url('print_card.php', ['cabang'=>$bId, 'layout'=>'grid6', 'tahun'=>$year])).'" title="Cetak Semua Kartu (6/A4)"><i class="bi bi-card-checklist"></i></a>
-          <a class="btn btn-sm btn-outline-secondary" target="_blank" href="'.e(module_url('print_qr.php', ['cabang'=>$bId])).'" title="Cetak Semua QR"><i class="bi bi-qr-code"></i></a>
-        </div>
-      </div>
-    </div>';
-}
-
-// 5. Data Chart.js: 12 Bulan Maintenance
-$chartMonths = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
-$chartDoneData = [];
-$chartPendingData = [];
-$chartRepairData = [];
-
-for ($m = 1; $m <= 12; $m++) {
-    $mInfo = $monthlyOverview[$m] ?? [];
-    $chartDoneData[] = (int)($mInfo['done'] ?? 0);
-    $chartPendingData[] = (int)($mInfo['pending'] ?? 0);
-    $chartRepairData[] = (int)($mInfo['repair'] ?? 0);
-}
-
-// 6. Data Chart.js: Distribusi Cabang (Doughnut)
-$donutLabels = [];
-$donutCounts = [];
-$palette = ['#2E77AD', '#30B0E0', '#10B981', '#50C0C0', '#F59E0B', '#40C0D0', '#1F2A37', '#64748B'];
-$donutColors = [];
-$idx = 0;
-foreach ($branchDistribution as $bd) {
-    $donutLabels[] = $bd['nama'];
-    $donutCounts[] = (int)$bd['count'];
-    $donutColors[] = $palette[$idx % count($palette)];
-    $idx++;
-}
-if (empty($donutLabels)) {
-    $donutLabels = ['Belum ada aset'];
-    $donutCounts = [0];
-    $donutColors = ['#cbd5e1'];
-}
-
-// 7. Render Baris Tabel: 10 Log Maintenance Terbaru
-$recentRowsHtml = '';
-foreach ($recentLogs as $r) {
-    $stVal = $r['status'] ?? 'Selesai';
-    $stLower = strtolower($stVal);
-
-    if ($stLower === 'selesai' || $stLower === 'normal') {
-        $badgeClass = 'bg-success bg-opacity-10 text-success border border-success border-opacity-25';
-        $icon = '<i class="bi bi-check-circle-fill me-1"></i>';
-    } elseif ($stLower === 'proses' || $stLower === 'in progress') {
-        $badgeClass = 'bg-info bg-opacity-10 text-info-emphasis border border-info border-opacity-25';
-        $icon = '<i class="bi bi-arrow-repeat me-1"></i>';
-    } elseif ($stLower === 'temuan' || $stLower === 'perlu perbaikan' || $stLower === 'rusak' || $stLower === 'terlambat') {
-        $badgeClass = 'bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25';
-        $icon = '<i class="bi bi-exclamation-triangle-fill me-1"></i>';
-    } else {
-        $badgeClass = 'bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-25';
-        $icon = '<i class="bi bi-dash-circle me-1"></i>';
-    }
-
-    $detailBtn = !empty($r['id'])
-        ? '<a class="btn btn-sm btn-outline-primary py-1 px-2" href="'.e(module_url('maintenance_detail.php', ['id'=>(int)$r['id']])).'"><i class="bi bi-eye me-1"></i> Detail</a>'
-        : '-';
-
-    $timeStr = !empty($r['maintenance_time']) ? '<span class="badge bg-light text-muted border ms-1 font-monospace">'.e(substr($r['maintenance_time'], 0, 5)).'</span>' : '';
-
-    $recentRowsHtml .= '
-    <tr>
-      <td class="text-nowrap small text-secondary">
-        <i class="bi bi-calendar-check me-1 text-primary"></i>'.e(format_id_date($r['maintenance_date'])).$timeStr.'
-      </td>
-      <td class="fw-bold font-monospace text-primary">'.e($r['kode_inventaris']).'</td>
-      <td class="fw-semibold text-dark">'.e($r['nama_perangkat']).'</td>
-      <td><span class="badge bg-light text-dark border">'.e($r['cabang_nama']).'</span></td>
-      <td><i class="bi bi-person-badge text-secondary me-1"></i>'.e($r['technician_name']).'</td>
-      <td><span class="badge px-2 py-1 rounded-pill '.$badgeClass.'">'.$icon.e($stVal).'</span></td>
-      <td class="text-end">'.$detailBtn.'</td>
-    </tr>';
-}
-if (!$recentRowsHtml) {
-    $recentRowsHtml = '<tr><td colspan="7" class="text-center text-muted py-4"><i class="bi bi-inbox fs-3 d-block mb-1"></i>Belum ada aktivitas scan maintenance terbaru.</td></tr>';
-}
-
-// 8. Render Baris Tabel: Maintenance Mendatang (Jatuh Tempo 30 Hari)
-$upcomingRowsHtml = '';
-foreach ($upcomingList as $u) {
-    $sisa = (int)$u['sisa_hari'];
-    if ($sisa > 7 && $sisa <= 30) {
-        $dueBadge = '<span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 px-2 py-1"><i class="bi bi-calendar-event me-1"></i>'.$sisa.' Hari Lagi</span>';
-    } elseif ($sisa >= 1 && $sisa <= 7) {
-        $dueBadge = '<span class="badge bg-warning bg-opacity-15 text-warning-emphasis border border-warning border-opacity-50 px-2 py-1"><i class="bi bi-clock-fill me-1"></i>'.$sisa.' Hari Lagi</span>';
-    } elseif ($sisa === 0) {
-        $dueBadge = '<span class="badge bg-warning text-white fw-bold px-2 py-1" style="background-color:#ea580c !important;"><i class="bi bi-exclamation-circle-fill me-1"></i>Hari Ini</span>';
-    } else {
-        $dueBadge = '<span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 px-2 py-1"><i class="bi bi-exclamation-triangle-fill me-1"></i>Terlambat '.abs($sisa).' Hari</span>';
-    }
-
-    $uTok = !empty($u['qr_token']) ? $u['qr_token'] : get_static_qr_token((int)($u['asset_id'] ?? 0));
-    $uScanUrl = $uTok ? module_url('scan.php', ['t' => $uTok, 'action' => 'start']) : '';
-
-    $upcomingRowsHtml .= '
-    <tr>
-      <td class="fw-bold font-monospace text-primary">'.e($u['kode_inventaris']).'</td>
-      <td class="fw-semibold text-dark">'.e($u['nama_perangkat']).'</td>
-      <td><span class="badge bg-light text-dark border">'.e($u['cabang_nama']).'</span> <small class="text-muted">· '.e($u['divisi_nama']).'</small></td>
-      <td class="text-nowrap small text-secondary">'.e(format_id_date($u['due_date'])).'</td>
-      <td>'.$dueBadge.'</td>
-      <td><i class="bi bi-person text-secondary me-1"></i>'.e($u['karyawan_nama']).'</td>
-      <td class="text-end text-nowrap">
-        '.($uScanUrl ? '<a class="btn btn-sm btn-success fw-bold py-1 px-2 me-1" href="'.e($uScanUrl).'" title="Mulai Checklist Pemeliharaan"><i class="bi bi-clipboard2-check-fill me-1"></i> Periksa</a>' : '').'
-        <a class="btn btn-sm btn-outline-secondary py-1 px-2" href="'.e(module_url('asset_edit.php', ['id'=>(int)$u['asset_id']])).'" title="Detail Komputer"><i class="bi bi-pencil-square"></i></a>
-      </td>
-    </tr>';
-}
-if (!$upcomingRowsHtml) {
-    $upcomingRowsHtml = '<tr><td colspan="7" class="text-center text-success py-4 fw-bold"><i class="bi bi-check-circle-fill me-2 fs-5"></i>Semua komputer telah selesai di-maintenance pada periode ini!</td></tr>';
-}
-
-// 9. Render Baris Tabel: 5 Temuan Belum Selesai Ditindaklanjuti
-$findingsRowsHtml = '';
-foreach ($unresolvedFindings as $f) {
-    $sev = strtolower((string)($f['severity'] ?? 'sedang'));
-    if ($sev === 'berat' || $sev === 'tinggi') {
-        $sevBadge = '<span class="badge bg-danger px-2 py-1"><i class="bi bi-fire me-1"></i>Tinggi / Berat</span>';
-    } elseif ($sev === 'sedang') {
-        $sevBadge = '<span class="badge bg-warning text-dark px-2 py-1"><i class="bi bi-exclamation-circle me-1"></i>Sedang</span>';
-    } else {
-        $sevBadge = '<span class="badge bg-info text-dark px-2 py-1"><i class="bi bi-info-circle me-1"></i>Ringan</span>';
-    }
-
-    $fActionBtn = !empty($f['token'])
-        ? '<a class="btn btn-sm btn-danger py-1 px-2 fw-semibold" href="'.e(module_url('scan.php', ['t'=>$f['token'], 'action'=>'tindak_lanjut'])).'"><i class="bi bi-tools me-1"></i> Tindak Lanjuti</a>'
-        : (!empty($f['log_id'])
-            ? '<a class="btn btn-sm btn-outline-danger py-1 px-2" href="'.e(module_url('maintenance_detail.php', ['id'=>(int)$f['log_id']])).'"><i class="bi bi-tools me-1"></i> Tindak Lanjuti</a>'
-            : (!empty($f['asset_id']) ? '<a class="btn btn-sm btn-outline-secondary py-1 px-2" href="'.e(module_url('asset_edit.php', ['id'=>(int)$f['asset_id']])).'"><i class="bi bi-eye"></i> Detail</a>' : '-'));
-
-    $fDateStr = format_id_date((string)($f['created_at'] ?? ''));
-    $fDateHtml = ($fDateStr !== '-') ? '<i class="bi bi-clock me-1"></i>' . e($fDateStr) : '<span class="text-muted">-</span>';
-    $fFindingText = trim((string)($f['finding'] ?? ''));
-    if ($fFindingText === '' || $fFindingText === '-') $fFindingText = 'Pemeriksaan lanjutan perangkat';
-    $fReporter = trim((string)($f['reporter'] ?? ''));
-    if ($fReporter === '' || $fReporter === '-') $fReporter = 'Teknisi';
-
-    $findingsRowsHtml .= '
-    <tr>
+    $branchRowsHtml .= '
+    <tr class="'.($isCurrent ? 'table-active' : '').'">
       <td>
-        <div class="fw-bold font-monospace text-primary">'.e($f['kode_inventaris']).'</div>
-        <div class="small text-muted">'.e($f['nama_perangkat']).' ('.e($f['cabang_nama']).')</div>
+        <div class="fw-semibold text-dark">'.e($bName).'</div>
+        <div class="small text-muted">ID: #'.$bId.'</div>
       </td>
-      <td class="text-dark fw-semibold" style="max-width: 260px;">'.nl2br(e($fFindingText)).'</td>
-      <td class="text-nowrap small text-secondary">'.$fDateHtml.'</td>
-      <td><i class="bi bi-person-badge text-secondary me-1"></i>'.e($fReporter).'</td>
-      <td>'.$sevBadge.'</td>
-      <td><span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 px-2 py-1">'.e($f['status']).'</span></td>
-      <td class="text-end">'.$fActionBtn.'</td>
+      <td class="text-center fw-semibold">'.$bTotal.'</td>
+      <td class="text-center text-success fw-semibold">'.$bDone.'</td>
+      <td class="text-center text-secondary">'.$bPending.'</td>
+      <td class="text-center">'.($bFindings > 0 ? '<span class="text-danger fw-bold">'.$bFindings.'</span>' : '<span class="text-muted">0</span>').'</td>
+      <td class="text-center">'.$complianceBadge.'</td>
+      <td class="text-end text-nowrap">
+        <div class="btn-group btn-group-sm">
+          <a class="btn btn-sm btn-light border" href="'.e(module_url('dashboard.php', ['bulan'=>$month,'tahun'=>$year,'cabang'=>$bId])).'" title="Filter Dashboard Cabang Ini"><i class="bi bi-funnel"></i></a>
+          <a class="btn btn-sm btn-light border" target="_blank" href="'.e(module_url('print_report.php', ['bulan'=>$month,'tahun'=>$year,'cabang'=>$bId])).'" title="Cetak Rekap"><i class="bi bi-printer"></i></a>
+          <a class="btn btn-sm btn-light border" target="_blank" href="'.e(module_url('print_card.php', ['cabang'=>$bId, 'layout'=>'grid6', 'tahun'=>$year])).'" title="Cetak Kartu Kontrol (6/A4)"><i class="bi bi-card-checklist"></i></a>
+        </div>
+      </td>
     </tr>';
 }
-if (!$findingsRowsHtml) {
-    $findingsRowsHtml = '<tr><td colspan="7" class="text-center text-success py-4"><i class="bi bi-shield-check fs-4 d-block mb-1"></i>Tidak ada temuan kerusakan yang pending. Semua unit dalam kondisi prima.</td></tr>';
+
+// 5. Activity Stream (Timeline Items)
+$activityStreamHtml = '';
+if (!empty($recentLogs)) {
+    foreach (array_slice($recentLogs, 0, 8) as $r) {
+        $stVal = $r['status'] ?? 'Selesai';
+        $stLower = strtolower($stVal);
+        $timeStr = !empty($r['maintenance_time']) ? substr($r['maintenance_time'], 0, 5) : 'Hari ini';
+        $dateStr = !empty($r['maintenance_date']) ? format_id_date($r['maintenance_date']) : '-';
+        
+        $dotClass = (in_array($stLower, ['temuan', 'perlu perbaikan'], true)) ? 'critical' : 'operational';
+        $statusText = (in_array($stLower, ['temuan', 'perlu perbaikan'], true)) ? 'Temuan Kerusakan' : 'Maintenance Selesai';
+
+        $activityStreamHtml .= '
+        <div class="activity-item d-flex align-items-start gap-3 py-2 border-bottom">
+          <div class="activity-time font-monospace text-muted small mt-1">'.e($timeStr).'</div>
+          <span class="status-dot '.$dotClass.' mt-2"></span>
+          <div class="flex-grow-1 min-w-0">
+            <div class="d-flex align-items-center justify-content-between">
+              <span class="fw-semibold text-dark small">'.e($statusText).'</span>
+              <span class="text-muted" style="font-size: 0.72rem;">'.e($dateStr).'</span>
+            </div>
+            <div class="small text-truncate text-secondary">
+              <strong class="text-primary">'.e($r['kode_inventaris'] ?? 'Aset').'</strong> · '.e($r['perangkat'] ?? ($r['merk'].' '.$r['model'])).' ('.e($r['cabang_nama'] ?? '-').')
+            </div>
+            <div class="text-muted" style="font-size: 0.72rem;">Teknisi: '.e($r['technician_name'] ?? 'Teknisi').'</div>
+          </div>
+          '.(!empty($r['log_id']) ? '<a href="'.e(module_url('maintenance_detail.php', ['id' => $r['log_id']])).'" class="btn btn-sm btn-light border py-1 px-2" title="Detail"><i class="bi bi-chevron-right"></i></a>' : '').'
+        </div>';
+    }
+} else {
+    $activityStreamHtml = '<div class="text-center py-4 text-muted small"><i class="bi bi-clock-history fs-4 d-block mb-2 text-secondary opacity-50"></i>Belum ada aktivitas maintenance pada periode ini.</div>';
 }
 
-$modeBadge = is_google_cloud_mode() 
-    ? '<span class="hero-badge-pill"><i class="bi bi-google text-warning"></i> Google Cloud Sheets API v4</span>' 
-    : '<span class="hero-badge-pill"><i class="bi bi-database text-info"></i> MySQL Database</span>';
-$branchTitle = ($cabangId > 0) ? 'Cabang: ' . e($selectedCabangName) : 'Semua Cabang';
+// 6. Active Findings List
+$findingsListHtml = '';
+if (!empty($unresolvedFindings)) {
+    foreach (array_slice($unresolvedFindings, 0, 5) as $uf) {
+        $findingsListHtml .= '
+        <div class="p-2 mb-2 rounded border border-danger-subtle bg-danger-subtle d-flex align-items-start gap-2">
+          <i class="bi bi-exclamation-triangle-fill text-danger mt-1"></i>
+          <div class="flex-grow-1 min-w-0">
+            <div class="fw-semibold text-danger small text-truncate">'.e($uf['kode_inventaris'] ?? 'Aset').' · '.e($uf['perangkat'] ?? 'Perangkat').'</div>
+            <div class="small text-dark text-truncate">'.e($uf['findings'] ?? 'Kendala perangkat').'</div>
+            <div class="text-muted" style="font-size: 0.7rem;">'.e($uf['cabang_nama'] ?? '-').' · '.e(format_id_date($uf['date'] ?? '')).'</div>
+          </div>
+          <a href="'.e(module_url('maintenance_detail.php', ['id' => $uf['log_id'] ?? 0])).'" class="btn btn-sm btn-danger py-0 px-2 fw-semibold" style="font-size: 0.75rem;">Periksa</a>
+        </div>';
+    }
+} else {
+    $findingsListHtml = '<div class="text-center py-3 text-muted small"><i class="bi bi-check-circle text-success fs-5 d-block mb-1"></i>Tidak ada temuan kendala aktif. Seluruh perangkat beroperasi normal.</div>';
+}
 
-// 10. Head & Script Injection
 $head = '
-<!-- Chart.js CDN -->
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
 <style>
-/* Dashboard Clean Enterprise Corporate Styles */
-.dashboard-hero {
-  background: #ffffff;
-  border: 1px solid #E2E8F0;
-  border-radius: 10px;
-  padding: 22px 26px;
-  margin-bottom: 20px;
-  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05);
-}
-
-.dashboard-hero h2 {
-  color: #0F172A !important;
-  font-size: 1.4rem;
-  font-weight: 700;
-  letter-spacing: -0.2px;
-}
-
-.hero-subtitle {
-  color: #64748B !important;
-  font-size: 0.88rem;
-}
-
-.hero-badge-pill {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  padding: 3px 9px;
-  border-radius: 6px;
-  font-size: 0.76rem;
-  font-weight: 600;
-  background: #F1F5F9 !important;
-  color: #334155 !important;
-  border: 1px solid #CBD5E1 !important;
-}
-.hero-badge-pill i {
-  color: #64748B !important;
-}
-.hero-badge-pill i.bi-google {
-  color: #D97706 !important;
-}
-.hero-badge-pill i.bi-database {
-  color: #2563EB !important;
-}
-
-.stat-card-clickable {
-  text-decoration: none;
-  color: inherit;
-  display: block;
-}
-
-.stat-card-clickable .card {
-  border-radius: 10px;
-  border: 1px solid #E2E8F0;
-  background: #ffffff;
-  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05);
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
-  position: relative;
-  overflow: hidden;
-}
-
-.stat-card-clickable:hover .card {
-  border-color: #CBD5E1;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
-  transform: none;
-}
-
-.stat-card-primary { border-left: 3px solid #1D4ED8 !important; }
-.stat-card-success { border-left: 3px solid #059669 !important; }
-.stat-card-danger { border-left: 3px solid #DC2626 !important; }
-.stat-card-warning { border-left: 3px solid #D97706 !important; }
-.stat-card-info { border-left: 3px solid #0284C7 !important; }
-.stat-card-dark { border-left: 3px solid #334155 !important; }
-
-.stat-icon-box {
-  width: 38px;
-  height: 38px;
-  border-radius: 8px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 1.15rem;
-  flex-shrink: 0;
-}
-
-.stat-number {
-  font-size: clamp(1.3rem, 2vw, 1.65rem);
-  font-weight: 700;
-  letter-spacing: -0.3px;
-  line-height: 1.15;
-  color: #0F172A;
-}
-
-.stat-label {
-  font-size: 0.72rem;
-  font-weight: 600;
-  color: #64748B;
-  text-transform: uppercase;
-  letter-spacing: 0.4px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.branch-nav-wrapper {
-  background: #ffffff;
-  border: 1px solid #E2E8F0;
-  border-radius: 10px;
-  padding: 8px 12px;
-}
-
-.branch-scroll-container {
+.branch-nav-bar {
   display: flex;
   gap: 6px;
   overflow-x: auto;
+  padding-bottom: 6px;
+  margin-bottom: 24px;
+}
+.branch-nav-pill {
   white-space: nowrap;
-  padding: 2px;
-  -webkit-overflow-scrolling: touch;
-  scrollbar-width: none;
+  padding: 6px 14px;
+  font-size: 0.82rem;
+  font-weight: 500;
+  border-radius: 6px;
+  background: #FFFFFF;
+  border: 1px solid var(--border-subtle);
+  color: var(--text-secondary);
+  text-decoration: none;
+  transition: all 0.15s ease;
 }
-.branch-scroll-container::-webkit-scrollbar {
-  display: none;
+.branch-nav-pill:hover {
+  background: #F8FAFC;
+  color: var(--text-primary);
+  border-color: var(--border-strong);
 }
-
-.nav-branch-pill {
+.branch-nav-pill.active {
+  background: var(--blue-corporate);
+  border-color: var(--blue-corporate);
+  color: #FFFFFF;
+  font-weight: 600;
+}
+.ops-header-badge {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 6px 14px;
-  border-radius: 6px;
-  font-size: 0.82rem;
-  font-weight: 500;
-  color: #334155;
-  background: #F8FAFC;
-  border: 1px solid #CBD5E1;
-  text-decoration: none;
-  transition: all 0.15s ease;
-  flex-shrink: 0;
-}
-
-.nav-branch-pill:hover {
-  background: #E2E8F0;
-  color: #0F172A;
-  border-color: #94A3B8;
-  transform: none;
-}
-
-.nav-branch-pill.active {
-  background: #1D4ED8;
-  color: #ffffff;
-  border-color: #1D4ED8;
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 0.75rem;
   font-weight: 600;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
 }
-
-.chart-card {
-  min-height: 380px;
-  border-radius: 10px;
-}
-
-.filter-box {
-  background: #ffffff;
-  border: 1px solid #e2e8f0;
-  border-radius: 10px;
-  padding: 18px 20px;
-}
-
-@media (max-width: 576px) {
-  .dashboard-hero {
-    padding: 16px;
-  }
-  .stat-icon-box {
-    width: 34px;
-    height: 34px;
-    font-size: 1rem;
-  }
-  .filter-box {
-    padding: 14px;
-  }
+.activity-time {
+  min-width: 45px;
+  font-size: 0.72rem;
 }
 </style>';
 
 $body = '
-<!-- Header Monitoring Bersih & Formal -->
-<div class="dashboard-hero">
-  <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
-    <div>
-      <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
-        '.$modeBadge.'
-        <span class="hero-badge-pill"><i class="bi bi-calendar-check"></i> '.$monthName.' '.$year.'</span>
-        <span class="hero-badge-pill"><i class="bi bi-geo-alt-fill"></i> '.e($selectedCabangName).'</span>
-      </div>
-      <h2 class="fw-bold mb-1">Monitoring Pemeliharaan Komputer IT</h2>
-      <div class="hero-subtitle">PT. BPR Mitratama Arthabuana &bull; Pemantauan status checklist dan jadwal pemeliharaan inventaris kantor.</div>
-    </div>
-    <div class="d-flex gap-2 flex-wrap">
-      <a class="btn btn-action-add fw-semibold" href="'.e(module_url('asset_add.php')).'"><i class="bi bi-plus-circle-fill me-1"></i> + Tambah Komputer</a>
-      <a class="btn btn-sm btn-outline-secondary fw-semibold px-3" target="_blank" href="'.e(module_url('print_card.php', ['cabang'=>$cabangId, 'layout'=>'grid6', 'tahun'=>$year])).'"><i class="bi bi-card-checklist me-1"></i> Cetak Kartu</a>
-      <a class="btn btn-sm btn-outline-secondary fw-semibold px-3" target="_blank" href="'.e(module_url('print_report.php', ['bulan'=>$month,'tahun'=>$year,'cabang'=>$cabangId])).'"><i class="bi bi-printer me-1"></i> Cetak Laporan</a>
-      <a class="btn btn-sm btn-outline-secondary fw-semibold px-3" href="'.e(module_url('export_csv.php', ['bulan'=>$month,'tahun'=>$year,'cabang'=>$cabangId])).'"><i class="bi bi-file-earmark-spreadsheet me-1"></i> Export CSV</a>
-    </div>
+<!-- Page Header -->
+<div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3 mb-4">
+  <div>
+    <div class="tech-label mb-1">BANKING IT OPERATIONS COMMAND</div>
+    <h1 class="h3 mb-1">Dashboard Monitoring IT</h1>
+    <p class="text-secondary small mb-0">Ringkasan aset, kepatuhan checklist pemeliharaan, dan tindak lanjut teknisi · Periode: <strong>'.$monthName.' '.$year.'</strong></p>
   </div>
-</div>
-
-<!-- Form Filter Interaktif Dashboard -->
-<div class="filter-box shadow-sm mb-4">
-  <div class="d-flex justify-content-between align-items-center mb-3">
-    <span class="fw-bold text-dark fs-6"><i class="bi bi-funnel text-primary me-2"></i>Filter Data Dashboard</span>
-    <span class="text-muted small">Sesuaikan parameter untuk memfilter statistik</span>
-  </div>
-  <form method="get" class="row g-2 align-items-end">
-    <div class="col-12 col-md-3">
-      <label class="form-label small fw-bold text-secondary mb-1"><i class="bi bi-building me-1"></i> Lokasi Cabang</label>
-      <select class="form-select form-select-sm" name="cabang">
-        <option value="0" '.($cabangId === 0 ? 'selected' : '').'>🌐 Semua Cabang</option>';
-foreach ($cabangs as $c) {
-    $cId = (int)($c['id'] ?? 0);
-    $cNama = $c['nama'] ?? $c['nama_cabang'] ?? 'Cabang #' . $cId;
-    $body .= '<option value="'.$cId.'" '.($cId === $cabangId ? 'selected' : '').'>'.e($cNama).'</option>';
-}
-$body .= '
-      </select>
+  <div class="d-flex align-items-center gap-2 flex-wrap">
+    <div class="ops-header-badge" style="background:#ECFDF3; border:1px solid #A6F4C5; color:#16803C;">
+      <span class="status-dot operational"></span>
+      <span>Operasional Normal</span>
     </div>
-
-    <div class="col-6 col-md-2">
-      <label class="form-label small fw-bold text-secondary mb-1"><i class="bi bi-calendar-month me-1"></i> Bulan</label>
-      <select class="form-select form-select-sm" name="bulan">';
+    <form method="get" class="d-flex align-items-center gap-2">
+      <select name="bulan" class="form-select form-select-sm" style="width: 120px;" onchange="this.form.submit()">';
 for ($m = 1; $m <= 12; $m++) {
-    $body .= '<option value="'.$m.'" '.($m === $month ? 'selected' : '').'>'.$monthNames[$m].'</option>';
+    $body .= '<option value="'.$m.'"'.($m === $month ? ' selected' : '').'>'.$monthNames[$m].'</option>';
 }
 $body .= '
       </select>
-    </div>
-
-    <div class="col-6 col-md-2">
-      <label class="form-label small fw-bold text-secondary mb-1"><i class="bi bi-calendar3 me-1"></i> Tahun</label>
-      <input type="number" class="form-control form-control-sm" name="tahun" value="'.$year.'" min="2020" max="2100">
-    </div>
-
-    <div class="col-6 col-md-2">
-      <label class="form-label small fw-bold text-secondary mb-1"><i class="bi bi-cpu me-1"></i> Status Aset</label>
-      <select class="form-select form-select-sm" name="status_aset">
-        <option value="" '.($statusAset === '' ? 'selected' : '').'>Semua Status Aset</option>
-        <option value="aktif" '.($statusAset === 'aktif' ? 'selected' : '').'>✅ Aktif</option>
-        <option value="rusak" '.($statusAset === 'rusak' ? 'selected' : '').'>⚠️ Rusak / Bermasalah</option>
-        <option value="nonaktif" '.($statusAset === 'nonaktif' ? 'selected' : '').'>⛔ Nonaktif</option>
+      <select name="tahun" class="form-select form-select-sm" style="width: 90px;" onchange="this.form.submit()">';
+for ($y = date('Y') - 1; $y <= date('Y') + 1; $y++) {
+    $body .= '<option value="'.$y.'"'.($y === $year ? ' selected' : '').'>'.$y.'</option>';
+}
+$body .= '
       </select>
-    </div>
-
-    <div class="col-6 col-md-3">
-      <label class="form-label small fw-bold text-secondary mb-1"><i class="bi bi-tools me-1"></i> Status Maintenance</label>
-      <select class="form-select form-select-sm" name="status_maint">
-        <option value="" '.($statusMaint === '' ? 'selected' : '').'>Semua Status Maintenance</option>
-        <option value="done" '.($statusMaint === 'done' ? 'selected' : '').'>🟢 Selesai</option>
-        <option value="pending" '.($statusMaint === 'pending' ? 'selected' : '').'>🟡 Jatuh Tempo / Belum</option>
-        <option value="repair" '.($statusMaint === 'repair' ? 'selected' : '').'>🔴 Ada Temuan</option>
-      </select>
-    </div>
-
-    <div class="col-12 d-flex flex-wrap gap-2 justify-content-end mt-3 pt-2 border-top">
-      <a class="btn btn-sm btn-outline-success px-3" href="'.e(module_url('dashboard.php', ['bulan'=>$month,'tahun'=>$year,'cabang'=>$cabangId,'status_aset'=>$statusAset,'status_maint'=>$statusMaint,'refresh'=>1])).'"><i class="bi bi-arrow-clockwise me-1"></i> Segarkan Data</a>
-      <a class="btn btn-sm btn-outline-secondary px-3" href="'.e(module_url('dashboard.php')).'"><i class="bi bi-arrow-counterclockwise me-1"></i> Reset Filter</a>
-      <button type="submit" class="btn btn-sm btn-primary px-4 fw-bold"><i class="bi bi-funnel-fill me-1"></i> Terapkan Filter</button>
-    </div>
-  </form>
-</div>
-
-<!-- Navigasi Cepat Tab Cabang (Smooth Horizontal Scrollable) -->
-<div class="branch-nav-wrapper shadow-sm mb-4">
-  <div class="d-flex align-items-center justify-content-between mb-2 px-1">
-    <span class="small fw-bold text-secondary text-uppercase" style="letter-spacing: 0.5px;"><i class="bi bi-buildings me-1"></i> Filter Cepat Cabang:</span>
-    <span class="badge bg-primary bg-opacity-10 text-primary small fw-semibold">'.count($cabangs).' Cabang</span>
-  </div>
-  <div class="branch-scroll-container">
-    '.$branchTabs.'
+      <input type="hidden" name="cabang" value="'.$cabangId.'">
+      <a href="'.e(module_url('dashboard.php', ['bulan'=>$month,'tahun'=>$year,'cabang'=>$cabangId,'refresh'=>1])).'" class="btn btn-sm btn-light border" title="Segarkan Data Google Sheets"><i class="bi bi-arrow-clockwise"></i></a>
+    </form>
   </div>
 </div>
 
-<!-- Progress Capaian Periode Berjalan -->
-<div class="card p-3 p-md-4 border-0 shadow-sm mb-4" style="border-radius: 18px; border-left: 5px solid #2563eb !important;">
-  <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2">
-    <div>
-      <span class="badge bg-primary bg-opacity-10 text-primary fw-bold px-2 py-1 mb-1"><i class="bi bi-speedometer2 me-1"></i> Capaian Bulan '.$monthName.' '.$year.'</span>
-      <h5 class="fw-bold text-dark mb-0">Progress Maintenance: <span class="text-primary">'.$totalDone.'</span> dari <span class="text-dark">'.$totalActive.'</span> Unit Komputer Aktif</h5>
-    </div>
-    <div class="d-flex align-items-center gap-2">
-      <span class="fs-3 fw-bold '.($percentDone >= 100 ? 'text-success' : ($percentDone >= 50 ? 'text-primary' : 'text-warning')).'">'.$percentDone.'%</span>
-      <span class="badge '.($percentDone >= 100 ? 'bg-success' : ($percentDone >= 50 ? 'bg-primary' : 'bg-warning text-dark')).' rounded-pill px-3 py-2 fw-semibold">
-        '.($percentDone >= 100 ? '<i class="bi bi-check-all me-1"></i> Selesai 100%' : ($percentDone > 0 ? '<i class="bi bi-arrow-repeat me-1"></i> Sedang Berjalan' : '<i class="bi bi-clock me-1"></i> Belum Dimulai')).'
-      </span>
-    </div>
-  </div>
-  <div class="progress rounded-pill my-2" style="height: 12px; background-color: #f1f5f9;">
-    <div class="progress-bar rounded-pill" role="progressbar" style="width: '.$percentDone.'%; background: '.($percentDone >= 100 ? 'var(--success-gradient)' : ($percentDone >= 50 ? 'var(--primary-gradient)' : 'var(--warning-gradient)')).'; transition: width 0.8s ease;" aria-valuenow="'.$percentDone.'" aria-valuemin="0" aria-valuemax="100"></div>
-  </div>
-  <div class="d-flex flex-wrap justify-content-between align-items-center text-muted small mt-2 gap-2">
-    <span><i class="bi bi-geo-alt-fill text-primary me-1"></i> Wilayah: <strong>'.e($selectedCabangName).'</strong></span>
-    <div class="d-flex align-items-center gap-2">
-      <span>Sisa belum maintenance: <strong class="text-warning-emphasis">'.max(0, $totalActive - $totalDone).' Unit</strong></span>
-      '.($totalActive - $totalDone > 0 ? '
-      <a class="btn btn-sm btn-danger text-white fw-bold px-3 py-1 rounded-pill shadow-sm" href="'.e(module_url('assets.php', ['maint'=>'pending', 'cabang'=>$cabangId])).'">
-        <i class="bi bi-list-task me-1"></i> Buka To-Do List ('.max(0, $totalActive - $totalDone).' Unit) &raquo;
-      </a>' : '').'
-    </div>
-  </div>
+<!-- Branch Switcher Bar -->
+<div class="branch-nav-bar custom-scrollbar">
+  '.$branchTabs.'
 </div>
 
-<!-- 1. KARTU RINGKASAN STATISTIK (6 KARTU RESPONSIF DENGAN INDIKATOR WARNA) -->
+<!-- Top KPI Metrics (Dominant Numbers) -->
 <div class="row g-3 mb-4">
-  <!-- 1. Total Seluruh Aset -->
-  <div class="col-6 col-md-4 col-xl-2">
-    <a href="'.e(module_url('history.php')).'" class="stat-card-clickable" title="Lihat Riwayat & Daftar Aset">
-      <div class="card stat-card-primary p-3 h-100 shadow-sm">
-        <div class="d-flex align-items-center gap-2 gap-md-3">
-          <div class="stat-icon-box bg-primary bg-opacity-10 text-primary">
-            <i class="bi bi-pc-display"></i>
-          </div>
-          <div style="min-width: 0;">
-            <div class="stat-label">TOTAL ASET</div>
-            <div class="stat-number text-dark">'.$totalAll.'</div>
-          </div>
-        </div>
-      </div>
-    </a>
+  <div class="col-6 col-md-4 col-xl-2dot4" style="flex: 0 0 20%; max-width: 20%;">
+    <div class="card card-metric h-100" style="border-left-color: var(--blue-corporate);">
+      <div class="metric-value">'.$totalAll.'</div>
+      <div class="metric-label">Total Aset Komputer</div>
+      <div class="small text-muted mt-2" style="font-size: 0.72rem;">Unit terdaftar</div>
+    </div>
   </div>
 
-  <!-- 2. Aset Aktif -->
-  <div class="col-6 col-md-4 col-xl-2">
-    <a href="'.e(module_url('assets.php', ['status'=>'Aktif','cabang'=>$cabangId])).'" class="stat-card-clickable" title="Filter Aset Aktif">
-      <div class="card stat-card-success p-3 h-100 shadow-sm">
-        <div class="d-flex align-items-center gap-2 gap-md-3">
-          <div class="stat-icon-box bg-success bg-opacity-10 text-success">
-            <i class="bi bi-check2-circle"></i>
-          </div>
-          <div style="min-width: 0;">
-            <div class="stat-label">ASET AKTIF</div>
-            <div class="stat-number text-success">'.$totalActive.'</div>
-          </div>
-        </div>
-      </div>
-    </a>
+  <div class="col-6 col-md-4 col-xl-2dot4" style="flex: 0 0 20%; max-width: 20%;">
+    <div class="card card-metric h-100" style="border-left-color: #16803C;">
+      <div class="metric-value text-success">'.$totalDone.'</div>
+      <div class="metric-label">Selesai Diperiksa</div>
+      <div class="small text-success mt-2" style="font-size: 0.72rem;"><i class="bi bi-check-circle me-1"></i>'.$percentDone.'% kepatuhan</div>
+    </div>
   </div>
 
-  <!-- 3. Aset Rusak / Bermasalah -->
-  <div class="col-6 col-md-4 col-xl-2">
-    <a href="'.e(module_url('assets.php', ['status'=>'Perbaikan','cabang'=>$cabangId])).'" class="stat-card-clickable" title="Filter Aset Rusak">
-      <div class="card stat-card-danger p-3 h-100 shadow-sm">
-        <div class="d-flex align-items-center gap-2 gap-md-3">
-          <div class="stat-icon-box bg-danger bg-opacity-10 text-danger">
-            <i class="bi bi-exclamation-triangle-fill"></i>
-          </div>
-          <div style="min-width: 0;">
-            <div class="stat-label">KONDISI RUSAK</div>
-            <div class="stat-number text-danger">'.$totalBroken.'</div>
-          </div>
-        </div>
-      </div>
-    </a>
+  <div class="col-6 col-md-4 col-xl-2dot4" style="flex: 0 0 20%; max-width: 20%;">
+    <div class="card card-metric h-100" style="border-left-color: #B54708;">
+      <div class="metric-value text-warning">'.$totalDue.'</div>
+      <div class="metric-label">Belum Maintenance</div>
+      <div class="small text-secondary mt-2" style="font-size: 0.72rem;">Menunggu giliran</div>
+    </div>
   </div>
 
-  <!-- 4. Jatuh Tempo / Belum Selesai (To-Do List Teknisi) -->
-  <div class="col-6 col-md-4 col-xl-2">
-    <a href="'.e(module_url('assets.php', ['maint'=>'pending','cabang'=>$cabangId])).'" class="stat-card-clickable" title="Buka To-Do List Komputer Belum Diperiksa">
-      <div class="card stat-card-warning p-3 h-100 shadow-sm">
-        <div class="d-flex align-items-center gap-2 gap-md-3">
-          <div class="stat-icon-box bg-warning bg-opacity-15 text-warning-emphasis">
-            <i class="bi bi-clock-history"></i>
-          </div>
-          <div style="min-width: 0;">
-            <div class="stat-label">BELUM SELESAI</div>
-            <div class="stat-number text-warning-emphasis">'.$totalDue.'</div>
-          </div>
-        </div>
-      </div>
-    </a>
+  <div class="col-6 col-md-4 col-xl-2dot4" style="flex: 0 0 20%; max-width: 20%;">
+    <div class="card card-metric h-100" style="border-left-color: #B42318;">
+      <div class="metric-value text-danger">'.$totalUnresolvedFindings.'</div>
+      <div class="metric-label">Temuan Kendala</div>
+      <div class="small text-danger mt-2" style="font-size: 0.72rem;">Perlu perbaikan</div>
+    </div>
   </div>
 
-  <!-- 5. Selesai Bulan Ini -->
-  <div class="col-6 col-md-4 col-xl-2">
-    <a href="'.e(module_url('assets.php', ['maint'=>'done','cabang'=>$cabangId])).'" class="stat-card-clickable" title="Lihat Komputer Selesai Maintenance">
-      <div class="card stat-card-info p-3 h-100 shadow-sm">
-        <div class="d-flex align-items-center gap-2 gap-md-3">
-          <div class="stat-icon-box bg-info bg-opacity-10 text-primary">
-            <i class="bi bi-patch-check-fill"></i>
-          </div>
-          <div style="min-width: 0;">
-            <div class="stat-label">SELESAI ('.$monthName.')</div>
-            <div class="stat-number text-primary">'.$totalDone.'</div>
-          </div>
-        </div>
-      </div>
-    </a>
-  </div>
-
-  <!-- 6. Temuan Belum Ditindaklanjuti -->
-  <div class="col-6 col-md-4 col-xl-2">
-    <a href="'.e(module_url('assets.php', ['maint'=>'repair','cabang'=>$cabangId])).'" class="stat-card-clickable" title="Buka Daftar Komputer dengan Temuan Masalah">
-      <div class="card stat-card-danger p-3 h-100 shadow-sm">
-        <div class="d-flex align-items-center gap-2 gap-md-3">
-          <div class="stat-icon-box bg-danger bg-opacity-10 text-danger">
-            <i class="bi bi-shield-exclamation"></i>
-          </div>
-          <div style="min-width: 0;">
-            <div class="stat-label">TEMUAN PENDING</div>
-            <div class="stat-number text-danger">'.$totalUnresolvedFindings.'</div>
-          </div>
-        </div>
-      </div>
-    </a>
+  <div class="col-12 col-md-4 col-xl-2dot4" style="flex: 0 0 20%; max-width: 20%;">
+    <div class="card card-metric h-100" style="border-left-color: #2E7CF6;">
+      <div class="metric-value text-primary">'.($totalAll - $totalBroken).'</div>
+      <div class="metric-label">Perangkat Aktif</div>
+      <div class="small text-secondary mt-2" style="font-size: 0.72rem;">Siap pakai</div>
+    </div>
   </div>
 </div>
 
-<!-- 2. GRAFIK ANALITIK (MAINTENANCE 12 BULAN & DISTRIBUSI ASET CABANG) -->
-<div class="row g-4 mb-4">
-  <!-- Grafik Maintenance 12 Bulan -->
+<style>
+@media (max-width: 1199px) {
+  .col-xl-2dot4 { flex: 0 0 50% !important; max-width: 50% !important; }
+}
+@media (max-width: 575px) {
+  .col-xl-2dot4 { flex: 0 0 100% !important; max-width: 100% !important; }
+}
+</style>
+
+<!-- Asymmetric Operations Center Layout -->
+<div class="row g-4">
+  <!-- Left Column (8 cols): Branch Matrix & Live Activity Stream -->
   <div class="col-lg-8">
-    <div class="card p-4 h-100 border-0 shadow-sm chart-card">
-      <div class="d-flex justify-content-between align-items-center mb-3">
+    <!-- Branch Compliance Matrix -->
+    <div class="card mb-4">
+      <div class="card-header bg-white border-bottom py-3 px-4 d-flex align-items-center justify-content-between">
         <div>
-          <h5 class="fw-bold text-dark mb-0"><i class="bi bi-graph-up-arrow text-primary me-2"></i>Tren Maintenance Bulanan (Tahun '.$year.')</h5>
-          <small class="text-secondary">Distribusi status selesai, proses/temuan, dan belum selesai selama 12 bulan</small>
+          <h2 class="h6 mb-0 fw-semibold text-dark"><i class="bi bi-buildings me-2 text-primary"></i>Kepatuhan Maintenance Per Cabang</h2>
+          <div class="text-secondary small">Monitoring progres bulanan di masing-masing kantor kas & cabang</div>
         </div>
-        <span class="badge bg-primary bg-opacity-10 text-primary px-2 py-1">Tahun '.$year.'</span>
+        <a href="'.e(module_url('print_report.php', ['bulan'=>$month,'tahun'=>$year])).'" target="_blank" class="btn btn-sm btn-light border"><i class="bi bi-printer me-1"></i> Cetak Rekap</a>
       </div>
-      <div style="position: relative; height: 300px; width: 100%;">
-        <canvas id="monthlyMaintenanceChart"></canvas>
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          <thead>
+            <tr>
+              <th>Kantor Cabang</th>
+              <th class="text-center">Target Unit</th>
+              <th class="text-center">Selesai</th>
+              <th class="text-center">Belum</th>
+              <th class="text-center">Temuan</th>
+              <th class="text-center">Kepatuhan</th>
+              <th class="text-end">Aksi</th>
+            </tr>
+          </thead>
+          <tbody>
+            '.$branchRowsHtml.'
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Live Activity Stream -->
+    <div class="card">
+      <div class="card-header bg-white border-bottom py-3 px-4 d-flex align-items-center justify-content-between">
+        <div>
+          <h2 class="h6 mb-0 fw-semibold text-dark"><i class="bi bi-activity me-2 text-primary"></i>Live Activity Stream</h2>
+          <div class="text-secondary small">Log rekam jejak pemeriksaan maintenance dan audit terbaru</div>
+        </div>
+        <a href="'.e(module_url('audit.php')).'" class="btn btn-sm btn-light border">Lihat Semua Log</a>
+      </div>
+      <div class="card-body p-3 p-md-4">
+        <div class="activity-stream">
+          '.$activityStreamHtml.'
+        </div>
       </div>
     </div>
   </div>
 
-  <!-- Grafik Distribusi Aset Cabang (Doughnut) -->
+  <!-- Right Column (4 cols): Compliance Panel, Asset Health & Active Issues -->
   <div class="col-lg-4">
-    <div class="card p-4 h-100 border-0 shadow-sm chart-card">
-      <div class="mb-3">
-        <h5 class="fw-bold text-dark mb-0"><i class="bi bi-pie-chart-fill text-primary me-2"></i>Distribusi Aset per Cabang</h5>
-        <small class="text-secondary">Persebaran total unit komputer aktif di setiap cabang</small>
+    <!-- Maintenance Compliance Panel -->
+    <div class="card mb-4">
+      <div class="card-header bg-white border-bottom py-3 px-4">
+        <div class="tech-label">INSPECTION COMPLIANCE</div>
+        <h2 class="h6 mb-0 fw-semibold text-dark">Kepatuhan Periode Ini</h2>
       </div>
-      <div style="position: relative; height: 260px; width: 100%;">
-        <canvas id="branchAssetDonutChart"></canvas>
+      <div class="card-body p-4">
+        <div class="d-flex align-items-baseline justify-content-between mb-2">
+          <span class="display-6 fw-bold text-dark">'.$percentDone.'%</span>
+          <span class="small text-secondary fw-semibold">'.$totalDone.' dari '.$totalActive.' unit</span>
+        </div>
+        <div class="progress mb-3" style="height: 8px;">
+          <div class="progress-bar '.($percentDone >= 80 ? 'bg-success' : ($percentDone >= 50 ? 'bg-primary' : 'bg-warning')).'" style="width: '.$percentDone.'%;"></div>
+        </div>
+        <div class="d-flex justify-content-between small text-secondary pt-1 border-top">
+          <span><span class="status-dot operational me-1"></span> Selesai: <strong>'.$totalDone.'</strong></span>
+          <span><span class="status-dot warning me-1"></span> Belum: <strong>'.$totalDue.'</strong></span>
+          <span><span class="status-dot critical me-1"></span> Temuan: <strong>'.$totalUnresolvedFindings.'</strong></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Asset Health Status Dots -->
+    <div class="card mb-4">
+      <div class="card-header bg-white border-bottom py-3 px-4">
+        <div class="tech-label">HARDWARE HEALTH</div>
+        <h2 class="h6 mb-0 fw-semibold text-dark">Status Kondisi Perangkat</h2>
+      </div>
+      <div class="card-body p-4">
+        <div class="d-flex flex-column gap-3">
+          <div class="d-flex align-items-center justify-content-between">
+            <div class="d-flex align-items-center gap-2">
+              <span class="status-dot operational"></span>
+              <span class="small fw-semibold text-dark">Operasional Normal</span>
+            </div>
+            <span class="badge-chip chip-success">'.max(0, $totalAll - $totalBroken - $totalUnresolvedFindings).' Unit</span>
+          </div>
+
+          <div class="d-flex align-items-center justify-content-between">
+            <div class="d-flex align-items-center gap-2">
+              <span class="status-dot warning"></span>
+              <span class="small fw-semibold text-dark">Perlu Perhatian / Maintenance</span>
+            </div>
+            <span class="badge-chip chip-warning">'.$totalDue.' Unit</span>
+          </div>
+
+          <div class="d-flex align-items-center justify-content-between">
+            <div class="d-flex align-items-center gap-2">
+              <span class="status-dot critical"></span>
+              <span class="small fw-semibold text-dark">Temuan Kerusakan Aktif</span>
+            </div>
+            <span class="badge-chip chip-danger">'.$totalUnresolvedFindings.' Unit</span>
+          </div>
+
+          <div class="d-flex align-items-center justify-content-between">
+            <div class="d-flex align-items-center gap-2">
+              <span class="status-dot offline"></span>
+              <span class="small fw-semibold text-dark">Nonaktif / Rusak Permanen</span>
+            </div>
+            <span class="badge-chip chip-secondary">'.$totalBroken.' Unit</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Active Findings Panel -->
+    <div class="card">
+      <div class="card-header bg-white border-bottom py-3 px-4 d-flex align-items-center justify-content-between">
+        <div>
+          <div class="tech-label">REPAIR & FINDINGS</div>
+          <h2 class="h6 mb-0 fw-semibold text-dark">Temuan Masalah Aktif</h2>
+        </div>
+        <span class="badge bg-danger rounded-pill">'.$totalUnresolvedFindings.'</span>
+      </div>
+      <div class="card-body p-3">
+        '.$findingsListHtml.'
       </div>
     </div>
   </div>
-</div>
+</div>';
 
-<!-- 3. GRID MONITORING PROGRESS CABANG -->
-<div class="mb-4">
-  <div class="d-flex justify-content-between align-items-center mb-3">
-    <h5 class="fw-bold text-dark mb-0"><i class="bi bi-diagram-3-fill text-primary me-2"></i>Progres Maintenance Tiap Cabang ('.$monthName.' '.$year.')</h5>
-    <a class="btn btn-sm btn-outline-primary" href="'.e(module_url('cabang_admin.php')).'"><i class="bi bi-gear-fill me-1"></i> Kelola Cabang</a>
-  </div>
-  <div class="row g-3">
-    '.$branchCardsHtml.'
-  </div>
-</div>
-
-<!-- 4. TABEL LOG MAINTENANCE TERBARU (MAX 10) -->
-<div class="card p-3 p-md-4 mb-4 border-0 shadow-sm" style="border-radius: 18px;">
-  <div class="d-flex justify-content-between align-items-center mb-3">
-    <div>
-      <h5 class="fw-bold text-dark mb-0"><i class="bi bi-clock-history text-primary me-2"></i>10 Aktivitas Maintenance Terbaru</h5>
-      <small class="text-secondary">Log pemindaian dan pemeriksaan komputer yang baru selesai dilakukan</small>
-    </div>
-    <a class="btn btn-sm btn-outline-primary" href="'.e(module_url('monthly_history.php')).'"><i class="bi bi-journal-text me-1"></i> Lihat Semua Riwayat</a>
-  </div>
-  <div class="table-responsive rounded-3 border">
-    <table class="table table-hover align-middle mb-0">
-      <thead>
-        <tr>
-          <th>Tanggal & Waktu</th>
-          <th>Kode Aset</th>
-          <th>Nama Komputer / Perangkat</th>
-          <th>Cabang</th>
-          <th>Teknisi</th>
-          <th>Status</th>
-          <th class="text-end">Aksi</th>
-        </tr>
-      </thead>
-      <tbody>
-        '.$recentRowsHtml.'
-      </tbody>
-    </table>
-  </div>
-</div>
-
-<!-- 5. TABEL MAINTENANCE MENDATANG / JATUH TEMPO (30 HARI KE DEPAN) -->
-<div class="card p-3 p-md-4 mb-4 border-0 shadow-sm" style="border-radius: 18px;">
-  <div class="d-flex justify-content-between align-items-center mb-3">
-    <div>
-      <h5 class="fw-bold text-dark mb-0"><i class="bi bi-hourglass-top text-warning me-2"></i>Maintenance Mendatang & Jatuh Tempo (Periode '.$monthName.' '.$year.')</h5>
-      <small class="text-secondary">Daftar komputer yang perlu segera dilakukan perawatan berkala</small>
-    </div>
-    <a class="btn btn-sm btn-outline-primary" target="_blank" href="'.e(module_url('print_qr.php', ['cabang'=>$cabangId])).'"><i class="bi bi-qr-code me-1"></i> Cetak QR Cabang Ini</a>
-  </div>
-  <div class="table-responsive rounded-3 border">
-    <table class="table table-hover align-middle mb-0">
-      <thead>
-        <tr>
-          <th>Kode Aset</th>
-          <th>Perangkat</th>
-          <th>Cabang & Divisi</th>
-          <th>Jatuh Tempo</th>
-          <th>Sisa Hari</th>
-          <th>Pengguna / PIC</th>
-          <th class="text-end">Aksi</th>
-        </tr>
-      </thead>
-      <tbody>
-        '.$upcomingRowsHtml.'
-      </tbody>
-    </table>
-  </div>
-</div>
-
-<!-- 6. TABEL TEMUAN KERUSAKAN BELUM SELESAI (MAX 5) -->
-<div class="card p-3 p-md-4 border-0 shadow-sm" style="border-radius: 18px;">
-  <div class="d-flex justify-content-between align-items-center mb-3">
-    <div>
-      <h5 class="fw-bold text-dark mb-0"><i class="bi bi-exclamation-octagon-fill text-danger me-2"></i>Temuan Kerusakan Belum Selesai (Pending Issues)</h5>
-      <small class="text-secondary">Laporan temuan kerusakan hardware/software yang membutuhkan tindak lanjut teknisi</small>
-    </div>
-    <a class="btn btn-sm btn-outline-danger" href="'.e(module_url('audit.php', ['status'=>'repair'])).'"><i class="bi bi-shield-exclamation me-1"></i> Buka Menu Audit Temuan</a>
-  </div>
-  <div class="table-responsive rounded-3 border">
-    <table class="table table-hover align-middle mb-0">
-      <thead>
-        <tr>
-          <th>Aset Terkait</th>
-          <th>Deskripsi Temuan / Kerusakan</th>
-          <th>Tanggal Ditemukan</th>
-          <th>Teknisi / Pelapor</th>
-          <th>Prioritas</th>
-          <th>Status</th>
-          <th class="text-end">Aksi</th>
-        </tr>
-      </thead>
-      <tbody>
-        '.$findingsRowsHtml.'
-      </tbody>
-    </table>
-  </div>
-</div>
-
-<!-- Inisialisasi Script Chart.js -->
-<script>
-document.addEventListener("DOMContentLoaded", function() {
-  // 1. Inisialisasi Grafik Batang 12 Bulan Maintenance
-  var ctxMonthly = document.getElementById("monthlyMaintenanceChart");
-  if (ctxMonthly) {
-    new Chart(ctxMonthly, {
-      type: "bar",
-      data: {
-        labels: '.json_encode($chartMonths).',
-        datasets: [
-          {
-            label: "Selesai",
-            data: '.json_encode($chartDoneData).',
-            backgroundColor: "#10B981",
-            borderRadius: 6,
-            barPercentage: 0.6
-          },
-          {
-            label: "Ada Temuan / Proses",
-            data: '.json_encode($chartRepairData).',
-            backgroundColor: "#EF4444",
-            borderRadius: 6,
-            barPercentage: 0.6
-          },
-          {
-            label: "Belum Selesai",
-            data: '.json_encode($chartPendingData).',
-            backgroundColor: "#F59E0B",
-            borderRadius: 6,
-            barPercentage: 0.6
-          }
-        ]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-          legend: {
-            position: "top",
-            labels: {
-              boxWidth: 14,
-              font: { weight: "600", size: 12 }
-            }
-          },
-          tooltip: {
-            padding: 10,
-            cornerRadius: 8,
-            callbacks: {
-              label: function(context) {
-                return " " + context.dataset.label + ": " + context.raw + " Unit";
-              }
-            }
-          }
-        },
-        scales: {
-          x: {
-            grid: { display: false }
-          },
-          y: {
-            beginAtZero: true,
-            ticks: { precision: 0 }
-          }
-        }
-      }
-    });
-  }
-
-  // 2. Inisialisasi Grafik Donut Distribusi Aset Cabang
-  var ctxDonut = document.getElementById("branchAssetDonutChart");
-  if (ctxDonut) {
-    new Chart(ctxDonut, {
-      type: "doughnut",
-      data: {
-        labels: '.json_encode($donutLabels).',
-        datasets: [{
-          data: '.json_encode($donutCounts).',
-          backgroundColor: '.json_encode($donutColors).',
-          borderWidth: 2,
-          borderColor: "#ffffff"
-        }]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-          legend: {
-            position: "bottom",
-            labels: {
-              boxWidth: 12,
-              font: { size: 11, weight: "500" }
-            }
-          },
-          tooltip: {
-            callbacks: {
-              label: function(context) {
-                var total = context.dataset.data.reduce(function(a, b) { return a + b; }, 0);
-                var val = context.raw || 0;
-                var pct = total > 0 ? Math.round((val / total) * 100) : 0;
-                return " " + context.label + ": " + val + " Unit (" + pct + "%)";
-              }
-            }
-          }
-        },
-        cutout: "68%"
-      }
-    });
-  }
-});
-</script>
-';
-
-render_page('Dashboard Informatif QR Maintenance', $body, $head);
+render_page('Dashboard IT Operations', $body, $head);

@@ -232,42 +232,44 @@ $modeBadge = is_google_cloud_mode()
 $body = '
 <div class="row justify-content-center">
   <div class="col-lg-9">
-    <div class="d-flex justify-content-between align-items-center mb-3">
+    <div class="d-flex flex-column flex-sm-row justify-content-between align-items-sm-center gap-2 mb-4">
       <div>
-        '.$modeBadge.'
-        <h2 class="fw-bold mb-0 text-dark"><i class="bi bi-pencil-square me-2 text-primary"></i>Edit Data Komputer / Aset</h2>
-        <div class="text-secondary small">Perbarui informasi perangkat, pemilik, lokasi penempatan, atau status komputer #'.(int)$asset['id'].'.</div>
+        <div class="tech-label mb-1">ASSET MANAGEMENT</div>
+        <h1 class="h4 mb-1">Edit Perangkat #'.(int)$asset['id'].' · '.e($asset['kode_inventaris'] ?? '').'</h1>
+        <div class="text-secondary small">Perbarui konfigurasi spesifikasi, penempatan kantor, atau status operasional perangkat.</div>
       </div>
-      <a class="btn btn-outline-secondary btn-sm" href="'.e(module_url('qr_admin.php')).'"><i class="bi bi-arrow-left"></i> Kembali</a>
+      <a class="btn btn-light border btn-sm d-inline-flex align-items-center gap-1" href="'.e(module_url('assets.php')).'"><i class="bi bi-arrow-left"></i> Kembali ke Aset</a>
     </div>
 
     '.$errorHtml.'
 
-    <div class="card p-4 border-0 shadow-sm">
+    <div class="card p-4 mb-4">
       <form method="post" id="formEditAsset">
         <input type="hidden" name="_csrf" value="'.e(csrf_token()).'">
         <input type="hidden" name="id" value="'.(int)$asset['id'].'">
 
         <!-- Section 1: Identitas Perangkat -->
-        <h5 class="fw-bold text-primary border-bottom pb-2 mb-3"><i class="bi bi-info-circle me-2"></i>1. Identitas Perangkat</h5>
+        <div class="d-flex align-items-center gap-2 border-bottom pb-2 mb-3">
+          <span class="tech-label text-primary">01 · IDENTITAS PERANGKAT</span>
+        </div>
         <div class="row g-3 mb-4">
           <div class="col-md-6">
-            <label class="form-label fw-semibold">Kategori Perangkat <span class="text-danger">*</span></label>
+            <label class="form-label text-secondary small fw-semibold">Kategori Perangkat <span class="text-danger">*</span></label>
             <select class="form-select" name="id_kategori" required>
               '.$optKat.'
             </select>
           </div>
 
           <div class="col-md-6">
-            <label class="form-label fw-semibold">Kode Inventaris</label>
+            <label class="form-label text-secondary small fw-semibold">Kode Inventaris</label>
             <div class="input-group">
-              <input type="text" class="form-control fw-bold" name="kode_inventaris" id="kodeInventaris" value="'.e($asset['kode_inventaris'] ?? '').'" placeholder="Contoh: INV-IT-006">
-              <button class="btn btn-outline-secondary" type="button" onclick="autoGenerateKode()" title="Generate Otomatis"><i class="bi bi-magic me-1"></i>Auto</button>
+              <input type="text" class="form-control font-monospace" name="kode_inventaris" id="kodeInventaris" value="'.e($asset['kode_inventaris'] ?? '').'" placeholder="Contoh: INV-IT-006">
+              <button class="btn btn-light border" type="button" onclick="autoGenerateKode()" title="Generate Otomatis"><i class="bi bi-magic me-1"></i>Auto</button>
             </div>
           </div>
 
           <div class="col-md-6">
-            <label class="form-label fw-semibold">Merk Perangkat <span class="text-danger">*</span></label>
+            <label class="form-label text-secondary small fw-semibold">Merk Perangkat <span class="text-danger">*</span></label>
             <input type="text" class="form-control" name="merk" list="listMerk" required value="'.e($asset['merk'] ?? '').'" placeholder="Contoh: Lenovo, Dell, HP, Asus, Acer, Rakitan...">
             <datalist id="listMerk">
               <option value="Lenovo">
@@ -284,17 +286,17 @@ $body = '
           </div>
 
           <div class="col-md-6">
-            <label class="form-label fw-semibold">Tipe / Model <span class="text-danger">*</span></label>
+            <label class="form-label text-secondary small fw-semibold">Tipe / Model <span class="text-danger">*</span></label>
             <input type="text" class="form-control" name="model" required value="'.e($asset['model'] ?? '').'" placeholder="Contoh: ThinkPad T14, OptiPlex 3080, Core i5 Rakitan...">
           </div>
 
           <div class="col-md-6">
-            <label class="form-label fw-semibold">Nomor Seri (Serial Number / S/N)</label>
-            <input type="text" class="form-control" name="serial_number" value="'.e($asset['serial_number'] ?? '').'" placeholder="Contoh: SN-892347293 (atau - jika tidak ada)">
+            <label class="form-label text-secondary small fw-semibold">Nomor Seri (Serial Number / S/N)</label>
+            <input type="text" class="form-control font-monospace" name="serial_number" value="'.e($asset['serial_number'] ?? '').'" placeholder="Contoh: SN-892347293 (atau - jika tidak ada)">
           </div>
 
           <div class="col-md-6">
-            <label class="form-label fw-semibold">Status Aset</label>
+            <label class="form-label text-secondary small fw-semibold">Status Aset</label>
             <select class="form-select" name="status">
               <option value="Aktif"'.($curStatus === 'Aktif' ? ' selected' : '').'>Aktif (Digunakan)</option>
               <option value="Backup"'.($curStatus === 'Backup' ? ' selected' : '').'>Backup / Cadangan</option>
@@ -305,36 +307,38 @@ $body = '
         </div>
 
         <!-- Section 2: Penempatan & Pemilik -->
-        <h5 class="fw-bold text-primary border-bottom pb-2 mb-3"><i class="bi bi-geo-alt me-2"></i>2. Lokasi & Penanggung Jawab</h5>
+        <div class="d-flex align-items-center gap-2 border-bottom pb-2 mb-3">
+          <span class="tech-label text-primary">02 · LOKASI & PENANGGUNG JAWAB</span>
+        </div>
         <div class="row g-3 mb-4">
           <div class="col-md-6">
-            <label class="form-label fw-semibold">Cabang / Lokasi <span class="text-danger">*</span> <a href="'.e(module_url('cabang_admin.php')).'" class="small text-primary text-decoration-none float-end" target="_blank">+ Tambah Cabang</a></label>
+            <label class="form-label text-secondary small fw-semibold">Cabang / Lokasi <span class="text-danger">*</span></label>
             <select class="form-select" name="id_cabang" required>
               '.$optCab.'
             </select>
           </div>
 
           <div class="col-md-6">
-            <label class="form-label fw-semibold">Divisi / Unit Kerja <span class="text-danger">*</span> <a href="'.e(module_url('divisi_admin.php')).'" class="small text-primary text-decoration-none float-end" target="_blank">+ Tambah Divisi</a></label>
+            <label class="form-label text-secondary small fw-semibold">Divisi / Unit Kerja <span class="text-danger">*</span></label>
             <select class="form-select" name="id_divisi" required>
               '.$optDiv.'
             </select>
           </div>
 
           <div class="col-md-6">
-            <label class="form-label fw-semibold">Pengguna / Pemilik Komputer</label>
+            <label class="form-label text-secondary small fw-semibold">Pengguna / Pemilik Komputer</label>
             <div class="input-group">
-              <span class="input-group-text"><i class="bi bi-person"></i></span>
-              <input type="text" class="form-control" name="nama_karyawan" id="inputNamaKaryawan" list="listKaryawan" value="'.e($curKarName).'" placeholder="Pilih nama atau ketik nama pemilik..." autocomplete="off">
+              <span class="input-group-text bg-white"><i class="bi bi-person text-muted"></i></span>
+              <input type="text" class="form-control" name="nama_karyawan" id="inputNamaKaryawan" list="listKaryawan" value="'.e($curKarName).'" placeholder="Pilih atau ketik nama pemilik..." autocomplete="off">
             </div>
             <datalist id="listKaryawan">
               '.$datalistKaryawan.'
             </datalist>
-            <div class="form-text">Bisa pilih dari daftar atau ketik nama pemilik baru secara langsung.</div>
+            <div class="form-text small text-muted">Pilih dari daftar atau ketik nama staf secara langsung.</div>
           </div>
 
           <div class="col-md-6">
-            <label class="form-label fw-semibold">Posisi Stiker QR</label>
+            <label class="form-label text-secondary small fw-semibold">Posisi Stiker QR</label>
             <input type="text" class="form-control" name="placement_label" list="listPlacement" value="'.e($asset['placement_label'] ?? 'Bodi Casing').'" placeholder="Posisi stiker ditempel">
             <datalist id="listPlacement">
               <option value="Bodi Casing">
@@ -348,22 +352,24 @@ $body = '
         </div>
 
         <!-- Section 3: Jaringan, Printer & Spesifikasi -->
-        <h5 class="fw-bold text-primary border-bottom pb-2 mb-3"><i class="bi bi-hdd-network me-2"></i>3. Jaringan, Printer & Spesifikasi</h5>
+        <div class="d-flex align-items-center gap-2 border-bottom pb-2 mb-3">
+          <span class="tech-label text-primary">03 · JARINGAN & SPESIFIKASI TEKNIS</span>
+        </div>
         <div class="row g-3 mb-4">
           <div class="col-md-6">
-            <label class="form-label fw-semibold"><i class="bi bi-hdd-network me-1 text-success"></i>Alamat IP (IP Address)</label>
+            <label class="form-label text-secondary small fw-semibold"><i class="bi bi-hdd-network me-1 text-success"></i>Alamat IP (IP Address)</label>
             <input type="text" class="form-control font-monospace" name="ip_address" value="'.e($asset['ip_address'] ?? $asset['ip'] ?? '').'" placeholder="Contoh: 192.168.1.50 (atau DHCP)">
-            <div class="form-text">Alamat IP ini otomatis tercetak pada <strong>Kartu Maintenance</strong> & halaman scan teknisi.</div>
+            <div class="form-text small text-muted">Alamat IP ini otomatis tercetak pada Kartu Kontrol & scan teknisi.</div>
           </div>
 
           <div class="col-md-6">
-            <label class="form-label fw-semibold"><i class="bi bi-printer me-1 text-info"></i>Printer Terhubung</label>
+            <label class="form-label text-secondary small fw-semibold"><i class="bi bi-printer me-1 text-info"></i>Printer Terhubung</label>
             <input type="text" class="form-control" name="printer" value="'.e($asset['printer'] ?? '').'" placeholder="Contoh: Epson L3110, HP LaserJet, atau -">
-            <div class="form-text">Printer di meja kerja ini (tercantum pada slot <strong>UNIT/PRT</strong> di kartu).</div>
+            <div class="form-text small text-muted">Printer yang terhubung pada unit komputer ini.</div>
           </div>
 
           <div class="col-12">
-            <label class="form-label fw-semibold">Spesifikasi / Catatan Hardware & OS</label>
+            <label class="form-label text-secondary small fw-semibold">Spesifikasi Hardware & Sistem Operasi</label>
             <textarea class="form-control" name="keterangan" rows="3" placeholder="Contoh: Core i5-12400 / RAM 16GB / SSD 512GB NVMe / Windows 11 Pro">'.e($asset['keterangan'] ?? '').'</textarea>
           </div>
         </div>
@@ -371,12 +377,12 @@ $body = '
         <!-- Submit & Delete Buttons -->
         <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 pt-3 border-top">
           <div class="d-flex gap-2">
-            <a class="btn btn-outline-secondary px-3" href="'.e(module_url('qr_admin.php')).'"><i class="bi bi-arrow-left me-1"></i> Batal</a>
-            <a class="btn btn-outline-danger px-3" href="'.e(module_url('asset_delete.php', ['id' => $id])).'" onclick="return confirm(\'Apakah Anda yakin ingin menghapus aset '.e(addslashes($asset['kode_inventaris'] ?? '')).' ini?\')">
-              <i class="bi bi-trash3-fill me-1"></i> Hapus Aset
+            <a class="btn btn-light border px-3" href="'.e(module_url('assets.php')).'">Batal</a>
+            <a class="btn btn-light border text-danger px-3" href="'.e(module_url('asset_delete.php', ['id' => $id])).'" onclick="return confirm(\'Apakah Anda yakin ingin menghapus aset '.e(addslashes($asset['kode_inventaris'] ?? '')).' ini?\')">
+              <i class="bi bi-trash me-1"></i> Hapus Aset
             </a>
           </div>
-          <button type="submit" class="btn btn-primary px-4 fw-bold"><i class="bi bi-save me-1"></i> Simpan Perubahan</button>
+          <button type="submit" class="btn btn-primary px-4 fw-semibold"><i class="bi bi-check2 me-1"></i> Simpan Perubahan</button>
         </div>
       </form>
     </div>

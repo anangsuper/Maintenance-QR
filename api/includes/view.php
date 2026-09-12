@@ -1,608 +1,798 @@
 <?php
 function render_page(string $title, string $content, string $extraHead = '', string $extraScript = '', bool $showNav = true): void {
-    $nav = '';
     $currentPage = basename($_SERVER['SCRIPT_NAME'] ?? '');
+    $role = current_user_role();
+    $userName = current_user_name();
+    $userInitial = strtoupper(substr($userName, 0, 1) ?: 'U');
+    $isAdmin = is_admin();
 
-    if ($showNav) {
-        $isMasterActive = in_array($currentPage, ['cabang_admin.php', 'divisi_admin.php', 'users_admin.php', 'system_design.php'], true);
-        $nav = '
-        <nav class="navbar navbar-expand-lg navbar-dark main-navbar mb-4 sticky-top">
-          <div class="container">
-            <a class="navbar-brand d-flex align-items-center gap-3 fw-bold" href="'.e(module_url('dashboard.php')).'">
-              <span class="brand-icon shadow-sm"><i class="bi bi-qr-code-scan"></i></span>
-              <div>
-                <span class="brand-text d-block lh-1 text-white">QR Maintenance System</span>
-                <span class="d-inline-block font-monospace fw-bold mt-1" style="font-size: 0.7rem; letter-spacing: 0.8px; color: #30B0E0;">BANK MITRA</span>
-              </div>
-            </a>
-            <button class="navbar-toggler border-0 shadow-none" type="button" data-bs-toggle="collapse" data-bs-target="#mainNavbarNav" aria-controls="mainNavbarNav" aria-expanded="false" aria-label="Toggle navigation">
-              <span class="navbar-toggler-icon"></span>
-            </button>
-            <div class="collapse navbar-collapse justify-content-end" id="mainNavbarNav">
-              <div class="d-flex flex-column flex-lg-row gap-2 align-items-lg-center pt-2 pt-lg-0">
-                <a class="nav-pill-btn '.($currentPage==='dashboard.php'?'active':'').'" href="'.e(module_url('dashboard.php')).'"><i class="bi bi-speedometer2"></i> Dashboard</a>
-                <a class="nav-pill-btn '.(in_array($currentPage, ['assets.php', 'asset_edit.php', 'asset_delete.php'], true)?'active':'').'" href="'.e(module_url('assets.php')).'"><i class="bi bi-pc-display"></i> Data Komputer</a>
-                <a class="nav-pill-btn '.(in_array($currentPage, ['audit.php', 'monthly_history.php', 'history.php', 'maintenance_detail.php'], true)?'active':'').'" href="'.e(module_url('audit.php')).'"><i class="bi bi-clock-history"></i> Riwayat</a>
-                <a class="nav-pill-btn '.($currentPage==='qr_admin.php'?'active':'').'" href="'.e(module_url('qr_admin.php')).'"><i class="bi bi-qr-code"></i> QR Aset</a>
+    // Context section
+    $sectionContext = 'OPERATIONS';
+    if (in_array($currentPage, ['audit.php', 'monthly_history.php', 'history.php', 'print_report.php'], true)) {
+        $sectionContext = 'MONITORING';
+    } elseif (in_array($currentPage, ['cabang_admin.php', 'divisi_admin.php', 'users_admin.php', 'user_biometric_enroll.php'], true)) {
+        $sectionContext = 'MANAGEMENT';
+    } elseif (in_array($currentPage, ['qr_admin.php', 'system_design.php'], true)) {
+        $sectionContext = 'SYSTEM';
+    }
 
-                <!-- Dropdown Kelola Data Master -->
-                <div class="dropdown">
-                  <button class="nav-pill-btn dropdown-toggle border-0 w-100 text-start '.($isMasterActive?'active':'').'" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-                    <i class="bi bi-gear-fill"></i> Kelola Data
-                  </button>
-                  <ul class="dropdown-menu dropdown-menu-dark shadow border-0 mt-2">
-                    <li><a class="dropdown-item py-2 '.($currentPage==='assets.php'?'active':'').'" href="'.e(module_url('assets.php')).'"><i class="bi bi-pc-display me-2 text-primary"></i> Data Komputer (Aset)</a></li>
-                    <li><hr class="dropdown-divider border-secondary opacity-50"></li>
-                    <li><a class="dropdown-item py-2 '.($currentPage==='cabang_admin.php'?'active':'').'" href="'.e(module_url('cabang_admin.php')).'"><i class="bi bi-buildings me-2 text-info"></i> Data Cabang</a></li>
-                    <li><a class="dropdown-item py-2 '.($currentPage==='divisi_admin.php'?'active':'').'" href="'.e(module_url('divisi_admin.php')).'"><i class="bi bi-diagram-3 me-2 text-info"></i> Data Divisi</a></li>
-                    <li><a class="dropdown-item py-2 '.($currentPage==='users_admin.php'?'active':'').'" href="'.e(module_url('users_admin.php')).'"><i class="bi bi-people me-2 text-warning"></i> Akun Pengguna / Teknisi</a></li>
-                    <li><a class="dropdown-item py-2 '.($currentPage==='user_biometric_enroll.php'?'active':'').'" href="'.e(module_url('user_biometric_enroll.php')).'"><i class="bi bi-person-bounding-box me-2 text-success"></i> Daftar Wajah Teknisi (HP)</a></li>
-                    <li><hr class="dropdown-divider border-secondary opacity-50"></li>
-                    <li><a class="dropdown-item py-2 '.($currentPage==='system_design.php'?'active':'').'" href="'.e(module_url('system_design.php')).'"><i class="bi bi-file-earmark-pdf-fill me-2 text-danger"></i> Dokumen Desain (PDF)</a></li>
-                  </ul>
-                </div>
+    // Sidebar navigation menu
+    $navLinks = [
+        'OPERATIONS' => [
+            ['title' => 'Dashboard', 'url' => module_url('dashboard.php'), 'icon' => 'bi-speedometer2', 'active' => ($currentPage === 'dashboard.php')],
+            ['title' => 'Asset Registry', 'url' => module_url('assets.php'), 'icon' => 'bi-pc-display', 'active' => in_array($currentPage, ['assets.php', 'asset_edit.php', 'asset_delete.php'], true)],
+            ['title' => 'Maintenance', 'url' => module_url('audit.php'), 'icon' => 'bi-clipboard-check', 'active' => in_array($currentPage, ['audit.php', 'monthly_history.php', 'history.php', 'maintenance_detail.php'], true)],
+            ['title' => 'QR Scanner', 'url' => module_url('scanner.php'), 'icon' => 'bi-qr-code-scan', 'active' => ($currentPage === 'scanner.php')],
+        ],
+        'MONITORING' => [
+            ['title' => 'Reports & Audit', 'url' => module_url('audit.php'), 'icon' => 'bi-file-earmark-bar-graph', 'active' => ($currentPage === 'audit.php')],
+            ['title' => 'Riwayat Bulanan', 'url' => module_url('monthly_history.php'), 'icon' => 'bi-calendar3', 'active' => ($currentPage === 'monthly_history.php')],
+        ],
+        'MANAGEMENT' => [
+            ['title' => 'Kantor Cabang', 'url' => module_url('cabang_admin.php'), 'icon' => 'bi-buildings', 'active' => ($currentPage === 'cabang_admin.php')],
+            ['title' => 'Divisi / Unit Kerja', 'url' => module_url('divisi_admin.php'), 'icon' => 'bi-diagram-3', 'active' => ($currentPage === 'divisi_admin.php')],
+            ['title' => 'Akun Pengguna', 'url' => module_url('users_admin.php'), 'icon' => 'bi-people', 'active' => ($currentPage === 'users_admin.php')],
+            ['title' => 'Wajah Teknisi (HP)', 'url' => module_url('user_biometric_enroll.php'), 'icon' => 'bi-person-bounding-box', 'active' => ($currentPage === 'user_biometric_enroll.php')],
+        ],
+        'SYSTEM' => [
+            ['title' => 'QR Aset Label', 'url' => module_url('qr_admin.php'), 'icon' => 'bi-qr-code', 'active' => ($currentPage === 'qr_admin.php')],
+            ['title' => 'Dokumen Desain', 'url' => module_url('system_design.php'), 'icon' => 'bi-file-earmark-pdf', 'active' => ($currentPage === 'system_design.php')],
+        ]
+    ];
 
-                <a class="btn btn-sm btn-action-add fw-bold px-3 ms-lg-1" href="'.e(module_url('asset_add.php')).'"><i class="bi bi-plus-circle-fill me-1"></i> + Tambah Komputer</a>
-                
-                <div class="d-flex align-items-center gap-2 ms-lg-2 pt-2 pt-lg-0 border-top border-lg-0 border-secondary border-opacity-25">
-                  <span class="d-inline-flex align-items-center gap-1 text-white-50 small"><i class="bi bi-person-circle"></i> '.e(current_user_name()).'</span>
-                  <a class="nav-pill-btn text-danger-emphasis" href="'.e(module_url('logout.php')).'" title="Keluar / Logout"><i class="bi bi-box-arrow-right"></i></a>
-                </div>
-              </div>
+    $sidebarMenuHtml = '';
+    foreach ($navLinks as $groupName => $items) {
+        $sidebarMenuHtml .= '<div class="sidebar-section-title">'.$groupName.'</div>';
+        $sidebarMenuHtml .= '<ul class="nav flex-column mb-3">';
+        foreach ($items as $item) {
+            $activeClass = $item['active'] ? 'active' : '';
+            $sidebarMenuHtml .= '
+            <li class="nav-item">
+              <a class="sidebar-link '.$activeClass.'" href="'.e($item['url']).'">
+                <i class="bi '.e($item['icon']).' sidebar-icon"></i>
+                <span class="sidebar-text">'.e($item['title']).'</span>
+              </a>
+            </li>';
+        }
+        $sidebarMenuHtml .= '</ul>';
+    }
+
+    $sidebarHtml = '
+    <aside class="app-sidebar d-none d-lg-flex flex-column" id="appDesktopSidebar">
+      <div class="sidebar-brand">
+        <a href="'.e(module_url('dashboard.php')).'" class="d-flex align-items-center gap-3 text-decoration-none">
+          <div class="sidebar-brand-badge">
+            <i class="bi bi-shield-check"></i>
+          </div>
+          <div>
+            <div class="sidebar-brand-title">BANK MITRA</div>
+            <div class="sidebar-brand-sub">IT OPERATIONS CENTER</div>
+          </div>
+        </a>
+      </div>
+
+      <div class="sidebar-content flex-grow-1 custom-scrollbar">
+        '.$sidebarMenuHtml.'
+      </div>
+
+      <div class="sidebar-footer">
+        <div class="sidebar-user-card d-flex align-items-center justify-content-between">
+          <div class="d-flex align-items-center gap-2 overflow-hidden">
+            <div class="sidebar-user-avatar">'.$userInitial.'</div>
+            <div class="overflow-hidden">
+              <div class="sidebar-user-name text-truncate">'.e($userName).'</div>
+              <div class="sidebar-user-role text-capitalize">'.e($role).'</div>
             </div>
           </div>
-        </nav>';
-    } else {
-        $nav = '
-        <header class="text-center py-3 mb-4 bg-white border-bottom shadow-sm">
-          <span class="fw-bold fs-5" style="color: #2E77AD;"><i class="bi bi-qr-code-scan me-2" style="color: #30B0E0;"></i>QR Maintenance System · <span class="badge bg-primary text-white ms-1 px-2 py-1">BANK MITRA</span></span>
-        </header>';
-    }
+          <a href="'.e(module_url('logout.php')).'" class="sidebar-logout-btn" title="Keluar / Logout">
+            <i class="bi bi-box-arrow-right"></i>
+          </a>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Offcanvas Mobile Drawer -->
+    <div class="offcanvas offcanvas-start bg-navy-dark text-white" tabindex="-1" id="appMobileSidebar" aria-labelledby="appMobileSidebarLabel">
+      <div class="offcanvas-header border-bottom border-navy-subtle">
+        <div class="d-flex align-items-center gap-2">
+          <div class="sidebar-brand-badge"><i class="bi bi-shield-check"></i></div>
+          <div>
+            <div class="sidebar-brand-title text-white">BANK MITRA</div>
+            <div class="sidebar-brand-sub">IT OPERATIONS</div>
+          </div>
+        </div>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+      </div>
+      <div class="offcanvas-body custom-scrollbar p-3">
+        '.$sidebarMenuHtml.'
+      </div>
+      <div class="p-3 border-top border-navy-subtle">
+        <div class="d-flex align-items-center justify-content-between">
+          <div class="d-flex align-items-center gap-2">
+            <div class="sidebar-user-avatar">'.$userInitial.'</div>
+            <div>
+              <div class="text-white small fw-bold">'.e($userName).'</div>
+              <div class="text-muted small text-capitalize">'.e($role).'</div>
+            </div>
+          </div>
+          <a href="'.e(module_url('logout.php')).'" class="btn btn-sm btn-outline-danger" title="Logout"><i class="bi bi-box-arrow-right"></i></a>
+        </div>
+      </div>
+    </div>';
+
+    // Topbar HTML
+    $topbarHtml = '
+    <header class="app-topbar d-flex align-items-center justify-content-between px-3 px-md-4">
+      <div class="d-flex align-items-center gap-3">
+        <button class="btn btn-sm btn-outline-secondary d-lg-none" type="button" data-bs-toggle="offcanvas" data-bs-target="#appMobileSidebar" aria-controls="appMobileSidebar">
+          <i class="bi bi-list fs-5"></i>
+        </button>
+        <div class="topbar-context d-none d-sm-flex align-items-center gap-2">
+          <span class="tech-label">'.$sectionContext.'</span>
+          <span class="text-muted opacity-50">/</span>
+          <span class="topbar-page-title text-truncate">'.e($title).'</span>
+        </div>
+      </div>
+
+      <div class="d-flex align-items-center gap-2 gap-md-3">
+        <button type="button" class="topbar-search-btn" data-bs-toggle="modal" data-bs-target="#globalSearchModal" title="Cari cepat aset, serial number, atau teknisi (Ctrl + K)">
+          <i class="bi bi-search text-muted"></i>
+          <span class="d-none d-md-inline text-muted me-2">Cari aset, serial number...</span>
+          <kbd class="d-none d-md-inline-block topbar-kbd">Ctrl K</kbd>
+        </button>
+
+        <div class="topbar-status-badge d-none d-md-flex align-items-center gap-2">
+          <span class="status-pulse-dot"></span>
+          <span class="status-text">Sistem Operasional</span>
+        </div>
+
+        <a href="'.e(module_url('asset_add.php')).'" class="btn btn-sm btn-primary d-none d-sm-inline-flex align-items-center gap-1 fw-semibold px-3">
+          <i class="bi bi-plus-lg"></i>
+          <span>Tambah Aset</span>
+        </a>
+
+        <div class="dropdown">
+          <button class="topbar-user-btn dropdown-toggle border-0" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+            <span class="topbar-user-avatar">'.$userInitial.'</span>
+          </button>
+          <ul class="dropdown-menu dropdown-menu-end shadow-sm border mt-2">
+            <li class="px-3 py-2 border-bottom">
+              <div class="fw-bold text-dark">'.e($userName).'</div>
+              <div class="small text-muted text-capitalize"><i class="bi bi-shield-lock me-1"></i>'.e($role).'</div>
+            </li>
+            <li><a class="dropdown-item py-2" href="'.e(module_url('assets.php')).'"><i class="bi bi-pc-display me-2 text-primary"></i> Data Komputer</a></li>
+            <li><a class="dropdown-item py-2" href="'.e(module_url('scanner.php')).'"><i class="bi bi-qr-code-scan me-2 text-info"></i> Scanner QR</a></li>
+            <li><hr class="dropdown-divider"></li>
+            <li><a class="dropdown-item py-2 text-danger" href="'.e(module_url('logout.php')).'"><i class="bi bi-box-arrow-right me-2"></i> Keluar</a></li>
+          </ul>
+        </div>
+      </div>
+    </header>';
+
+    // Public header if nav is disabled
+    $publicHeaderHtml = '
+    <header class="public-topbar py-3 px-4 bg-white border-bottom shadow-sm d-flex align-items-center justify-content-between">
+      <div class="d-flex align-items-center gap-3">
+        <div class="sidebar-brand-badge" style="width:34px; height:34px; font-size: 1rem;"><i class="bi bi-shield-check"></i></div>
+        <div>
+          <div class="fw-bold text-dark lh-1" style="font-size: 0.95rem; letter-spacing: 0.3px;">BANK MITRA</div>
+          <div class="tech-label" style="font-size: 0.68rem;">IT OPERATIONS · INSPECTION PORTAL</div>
+        </div>
+      </div>
+      <div>
+        '.(is_logged_in() 
+            ? '<a href="'.e(module_url('dashboard.php')).'" class="btn btn-sm btn-outline-primary"><i class="bi bi-speedometer2 me-1"></i> Dashboard</a>' 
+            : '<a href="'.e(module_url('login.php')).'" class="btn btn-sm btn-outline-secondary"><i class="bi bi-person-circle me-1"></i> Login Petugas</a>').'
+      </div>
+    </header>';
 
     echo '<!doctype html>
 <html lang="id">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>'.e($title).' · QR Maintenance</title>
+<title>'.e($title).' · IT Operations Bank Mitra</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
 <style>
-/* BANK MITRA - PT. BPR MITRATAMA ARTHABUANA OFFICIAL BRAND PALETTE */
+/* BANKING IT OPERATIONS CENTER DESIGN SYSTEM */
 :root {
-  --bm-primary-blue: #2E77AD;
-  --bm-sky-blue: #30B0E0;
-  --bm-teal-aqua: #50C0C0;
-  --bm-cyan-teal: #40C0D0;
-  --bm-lime-accent: #2563EB;
-  --bm-fresh-green: #059669;
-  --bm-bg-light: #F8FAFC;
-  --bm-surface-gray: #F1F5F9;
-  --bm-dark-text: #0F172A;
-
-  --primary-gradient: #1D4ED8;
-  --teal-gradient: #0284C7;
-  --lime-gradient: #059669;
-  --success-gradient: #059669;
-  --warning-gradient: #D97706;
-  --danger-gradient: #DC2626;
+  --navy-deep: #08182F;
+  --navy-primary: #0D2748;
+  --navy-subtle: #1E3A60;
+  --blue-corporate: #124E96;
+  --blue-accent: #2E7CF6;
+  --blue-soft: #EAF3FF;
+  --bg-app: #F4F7FB;
+  --surface-card: #FFFFFF;
+  --border-subtle: #E4E9F0;
+  --border-strong: #CBD5E1;
+  --text-primary: #182230;
+  --text-secondary: #667085;
+  --text-muted: #98A2B3;
+  --status-success: #16803C;
+  --status-success-bg: #ECFDF3;
+  --status-warning: #B54708;
+  --status-warning-bg: #FFFAEB;
+  --status-danger: #B42318;
+  --status-danger-bg: #FEF3F2;
+  --status-info: #026AA2;
+  --status-info-bg: #F0F9FF;
+  --radius-xs: 4px;
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 10px;
+  --radius-xl: 12px;
+  --shadow-subtle: 0 1px 2px rgba(16, 24, 40, 0.05);
+  --shadow-card: 0 1px 3px rgba(16, 24, 40, 0.08);
 }
+
+* { box-sizing: border-box; }
 
 body {
-  background: #F8FAFC;
+  margin: 0;
+  padding: 0;
+  background-color: var(--bg-app);
   font-family: "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  color: #0F172A;
+  color: var(--text-primary);
   -webkit-font-smoothing: antialiased;
+  min-height: 100vh;
 }
 
-h1, h2, h3, h4, h5, h6, .h1, .h2, .h3, .h4, .h5, .h6 {
-  color: #0F172A;
-  font-weight: 700;
+h1, h2, h3, h4, h5, h6 {
+  color: var(--text-primary);
+  font-weight: 600;
+  letter-spacing: -0.02em;
 }
 
-/* Contrast Guarantee: Headings inside dark headers, hero banners, and modal headers */
-.text-white h1, .text-white h2, .text-white h3, .text-white h4, .text-white h5, .text-white h6,
-.text-white .h1, .text-white .h2, .text-white .h3, .text-white .h4, .text-white .h5, .text-white .h6,
-.dashboard-hero h1, .dashboard-hero h2, .dashboard-hero h3, .dashboard-hero h4, .dashboard-hero h5, .dashboard-hero h6,
-.main-navbar h1, .main-navbar h2, .main-navbar h3, .main-navbar h4, .main-navbar h5, .main-navbar h6,
-.main-navbar .brand-text,
-.bg-primary h1, .bg-primary h2, .bg-primary h3, .bg-primary h4, .bg-primary h5, .bg-primary h6,
-.bg-dark h1, .bg-dark h2, .bg-dark h3, .bg-dark h4, .bg-dark h5, .bg-dark h6,
-.modal-header.bg-primary .modal-title,
-.modal-header.text-white .modal-title {
-  color: #ffffff !important;
+/* Base Layout Framework */
+.app-layout-wrapper {
+  display: flex;
+  min-height: 100vh;
+  width: 100%;
 }
 
-/* Navbar Bank Mitra - Clean Corporate Navy (No AI neon glow) */
-.main-navbar {
-  background: #0F172A;
-  border-bottom: 1px solid #1E293B;
-  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
-  padding: 0.75rem 0;
+.app-sidebar {
+  width: 250px;
+  min-width: 250px;
+  background-color: var(--navy-deep);
+  border-right: 1px solid var(--navy-subtle);
+  height: 100vh;
+  position: sticky;
+  top: 0;
+  z-index: 1020;
 }
 
-.brand-icon {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
+.bg-navy-dark {
+  background-color: var(--navy-deep) !important;
+}
+
+.border-navy-subtle {
+  border-color: var(--navy-subtle) !important;
+}
+
+.sidebar-brand {
+  padding: 20px 18px 16px;
+  border-bottom: 1px solid var(--navy-subtle);
+}
+
+.sidebar-brand-badge {
   width: 38px;
   height: 38px;
-  background: #1D4ED8;
-  border-radius: 8px;
+  background-color: var(--blue-corporate);
   border: 1px solid rgba(255, 255, 255, 0.15);
-  color: #ffffff;
-  font-size: 1.2rem;
-}
-
-.brand-text {
-  font-size: 1.12rem;
-  font-weight: 700;
-  letter-spacing: -0.2px;
-  color: #ffffff !important;
-}
-
-.nav-pill-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 6px 14px;
-  font-size: 0.85rem;
-  font-weight: 500;
-  color: #CBD5E1 !important;
-  text-decoration: none;
-  border-radius: 6px;
-  background: transparent;
-  border: none;
-  transition: background-color 0.15s ease, color 0.15s ease;
-}
-
-.nav-pill-btn:hover {
-  color: #ffffff !important;
-  background: rgba(255, 255, 255, 0.08) !important;
-  transform: none;
-}
-
-.nav-pill-btn:focus,
-.nav-pill-btn:focus-visible {
-  outline: none;
-  box-shadow: none;
-}
-
-.nav-pill-btn.active,
-.nav-pill-btn.active:hover,
-.nav-pill-btn.active:focus,
-.nav-pill-btn.show,
-.nav-pill-btn.show:hover,
-.nav-pill-btn.show:focus,
-.dropdown.show .nav-pill-btn,
-.show > .nav-pill-btn {
-  color: #0F172A !important;
-  background: #ffffff !important;
-  font-weight: 600;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05) !important;
-}
-
-.nav-pill-btn.active i,
-.nav-pill-btn.active:hover i,
-.nav-pill-btn.show i,
-.show > .nav-pill-btn i {
-  color: #1D4ED8 !important;
-}
-
-.nav-pill-btn.active::after,
-.nav-pill-btn.show::after,
-.show > .nav-pill-btn::after {
-  border-top-color: #0F172A !important;
-}
-
-.dropdown-menu {
-  border-radius: 8px;
-  padding: 6px;
-  border: 1px solid #334155;
-  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
-}
-
-.dropdown-item {
-  border-radius: 6px;
-  font-weight: 500;
-  font-size: 0.85rem;
-  padding: 6px 12px;
-  transition: all 0.15s ease;
-}
-
-.dropdown-item.active,
-.dropdown-item:active {
-  background: #1D4ED8 !important;
-  color: #ffffff !important;
-  font-weight: 600;
-}
-
-/* Tombol Aksi Tambah Komputer - Solid Emerald Corporate */
-.btn-action-add {
-  background: #059669;
-  color: #ffffff !important;
-  border: 1px solid #047857;
-  border-radius: 6px;
-  padding: 6px 14px;
-  font-size: 0.85rem;
-  font-weight: 600;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
-  transition: background-color 0.15s ease;
-}
-
-.btn-action-add:hover {
-  background: #047857;
-  color: #ffffff !important;
-  transform: none;
-}
-
-/* Card & Standard Components (Clean Flat Borders) */
-.card {
-  border: 1px solid #E2E8F0;
-  border-radius: 10px;
-  background: #ffffff;
-  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05);
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
-}
-
-.card-hover:hover {
-  border-color: #CBD5E1;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
-  transform: none;
-}
-
-.stat-card {
-  position: relative;
-  overflow: hidden;
-}
-
-.stat-icon-wrapper {
-  width: 40px;
-  height: 40px;
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   display: flex;
   align-items: center;
   justify-content: center;
+  color: #FFFFFF;
   font-size: 1.15rem;
 }
 
-.stat {
-  font-size: 1.75rem;
+.sidebar-brand-title {
+  font-size: 1rem;
   font-weight: 700;
-  letter-spacing: -0.5px;
-  line-height: 1.1;
-  color: #0F172A;
+  letter-spacing: 0.03em;
+  color: #FFFFFF;
+  line-height: 1.2;
 }
 
-.small-muted {
+.sidebar-brand-sub {
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: #98A2B3;
+  text-transform: uppercase;
+}
+
+.sidebar-content {
+  overflow-y: auto;
+  padding: 16px 10px;
+}
+
+.sidebar-section-title {
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #667085;
+  padding: 8px 12px 6px;
+}
+
+.sidebar-link {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  color: #98A2B3;
+  text-decoration: none;
+  font-size: 0.85rem;
+  font-weight: 500;
+  border-radius: var(--radius-sm);
+  transition: background-color 0.15s ease, color 0.15s ease;
+  margin-bottom: 2px;
+  border-left: 3px solid transparent;
+}
+
+.sidebar-link:hover {
+  color: #FFFFFF;
+  background-color: rgba(255, 255, 255, 0.06);
+}
+
+.sidebar-link.active {
+  color: #FFFFFF;
+  background-color: rgba(46, 124, 246, 0.12);
+  border-left-color: var(--blue-accent);
+  font-weight: 600;
+}
+
+.sidebar-link.active .sidebar-icon {
+  color: var(--blue-accent);
+}
+
+.sidebar-icon {
+  font-size: 1rem;
+  width: 18px;
+  text-align: center;
+}
+
+.sidebar-footer {
+  padding: 12px 14px;
+  border-top: 1px solid var(--navy-subtle);
+  background: rgba(0, 0, 0, 0.15);
+}
+
+.sidebar-user-card {
+  width: 100%;
+}
+
+.sidebar-user-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-sm);
+  background-color: var(--blue-corporate);
+  color: #FFFFFF;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 0.85rem;
+  flex-shrink: 0;
+}
+
+.sidebar-user-name {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #FFFFFF;
+  max-width: 125px;
+}
+
+.sidebar-user-role {
+  font-size: 0.68rem;
+  color: #98A2B3;
+}
+
+.sidebar-logout-btn {
+  color: #98A2B3;
+  padding: 6px;
+  border-radius: var(--radius-xs);
+  transition: color 0.15s ease;
+}
+
+.sidebar-logout-btn:hover {
+  color: #F87171;
+}
+
+/* Main Container Area */
+.app-main-viewport {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.app-topbar {
+  height: 64px;
+  background-color: var(--surface-card);
+  border-bottom: 1px solid var(--border-subtle);
+  position: sticky;
+  top: 0;
+  z-index: 1010;
+}
+
+.topbar-page-title {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  max-width: 340px;
+}
+
+.topbar-search-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background-color: var(--bg-app);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  padding: 6px 12px;
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: border-color 0.15s ease, background-color 0.15s ease;
+}
+
+.topbar-search-btn:hover {
+  border-color: var(--border-strong);
+  background-color: #FFFFFF;
+}
+
+.topbar-kbd {
+  background-color: #FFFFFF;
+  border: 1px solid var(--border-subtle);
+  border-radius: 4px;
+  box-shadow: 0 1px 1px rgba(0,0,0,0.05);
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  padding: 2px 6px;
+}
+
+.topbar-status-badge {
+  background-color: var(--status-success-bg);
+  border: 1px solid #A6F4C5;
+  border-radius: 20px;
+  padding: 4px 10px;
   font-size: 0.75rem;
   font-weight: 600;
-  color: #64748B;
-  text-transform: uppercase;
-  letter-spacing: 0.4px;
+  color: var(--status-success);
 }
 
-/* Modern Clean Form Controls */
+.status-pulse-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background-color: var(--status-success);
+  box-shadow: 0 0 0 2px rgba(22, 128, 60, 0.2);
+}
+
+.topbar-user-btn {
+  background: none;
+  padding: 0;
+  cursor: pointer;
+}
+
+.topbar-user-avatar {
+  width: 34px;
+  height: 34px;
+  border-radius: var(--radius-sm);
+  background-color: var(--blue-soft);
+  color: var(--blue-corporate);
+  border: 1px solid #BFDBFE;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 0.85rem;
+}
+
+.app-content-container {
+  padding: 24px 20px 48px;
+  max-width: 1440px;
+  width: 100%;
+  margin: 0 auto;
+}
+
+@media (min-width: 768px) {
+  .app-content-container {
+    padding: 28px 32px 60px;
+  }
+}
+
+/* Design Tokens & Overrides */
+.tech-label {
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-secondary);
+}
+
+.card {
+  background-color: var(--surface-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-subtle);
+}
+
+/* Flat & Subtle Card Accents */
+.card-metric {
+  padding: 20px 22px;
+  border-left: 3px solid var(--blue-corporate);
+}
+
+.metric-value {
+  font-size: 1.85rem;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: var(--text-primary);
+  line-height: 1.1;
+}
+
+.metric-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-secondary);
+  margin-top: 4px;
+}
+
+/* Button Standards */
+.btn {
+  font-size: 0.85rem;
+  font-weight: 500;
+  border-radius: var(--radius-sm);
+  padding: 7px 14px;
+  transition: all 0.15s ease;
+}
+
+.btn-primary {
+  background-color: var(--blue-corporate) !important;
+  border-color: var(--blue-corporate) !important;
+  color: #FFFFFF !important;
+}
+
+.btn-primary:hover, .btn-primary:focus {
+  background-color: #0E3E77 !important;
+  border-color: #0E3E77 !important;
+}
+
+.btn-secondary, .btn-light {
+  background-color: #FFFFFF !important;
+  border-color: var(--border-subtle) !important;
+  color: var(--text-primary) !important;
+}
+
+.btn-secondary:hover, .btn-light:hover {
+  background-color: var(--bg-app) !important;
+  border-color: var(--border-strong) !important;
+}
+
+.btn-outline-primary {
+  color: var(--blue-corporate) !important;
+  border-color: var(--blue-corporate) !important;
+}
+
+.btn-outline-primary:hover {
+  background-color: var(--blue-corporate) !important;
+  color: #FFFFFF !important;
+}
+
+/* Form Controls */
 .form-control, .form-select {
-  border: 1px solid #CBD5E1;
-  border-radius: 6px;
-  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  padding: 7px 12px;
   font-size: 0.88rem;
-  color: #0F172A;
+  color: var(--text-primary);
   transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  background-color: #FFFFFF;
 }
 
 .form-control:focus, .form-select:focus {
-  border-color: #1D4ED8 !important;
-  box-shadow: 0 0 0 3px rgba(29, 78, 216, 0.12) !important;
+  border-color: var(--blue-corporate) !important;
+  box-shadow: 0 0 0 3px rgba(18, 78, 150, 0.14) !important;
+  outline: none;
 }
 
-/* Corporate Badges */
-.badge-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  padding: 3px 8px;
-  border-radius: 6px;
-  font-size: 0.75rem;
-  font-weight: 600;
-}
-
-.chip-success { background: #ECFDF5; color: #065F46; border: 1px solid #A7F3D0; }
-.chip-warning { background: #FEF3C7; color: #92400E; border: 1px solid #FDE68A; }
-.chip-danger { background: #FEF2F2; color: #991B1B; border: 1px solid #FECACA; }
-.chip-primary { background: #EFF6FF; color: #1E40AF; border: 1px solid #BFDBFE; }
-.chip-secondary { background: #F1F5F9; color: #334155; border: 1px solid #CBD5E1; }
-
-/* Table Enhancements (Clean Light Slate Header) */
+/* Table Design */
 .table {
   font-size: 0.88rem;
-  color: #0F172A;
+  color: var(--text-primary);
+  margin-bottom: 0;
 }
 
 .table thead th {
-  background: #F8FAFC !important;
-  color: #475569 !important;
+  background-color: #F8FAFC !important;
+  color: var(--text-secondary) !important;
   font-weight: 600;
-  font-size: 0.75rem;
+  font-size: 0.72rem;
   text-transform: uppercase;
-  letter-spacing: 0.4px;
-  border-bottom: 1px solid #E2E8F0;
-  padding: 10px 12px;
+  letter-spacing: 0.06em;
+  border-bottom: 1px solid var(--border-subtle);
+  padding: 10px 14px;
 }
 
 .table tbody td {
-  padding: 10px 12px;
-  border-bottom: 1px solid #E6EDF5;
+  padding: 11px 14px;
+  border-bottom: 1px solid #EDF2F7;
   vertical-align: middle;
 }
 
 .table-hover tbody tr:hover {
-  background-color: #F5F8FB;
+  background-color: #F8FAFC;
 }
 
-/* Bootstrap Color Overrides with Bank Mitra Palette */
-.btn-primary {
-  background-color: #2E77AD !important;
-  border-color: #2E77AD !important;
-  color: #ffffff !important;
-}
-.btn-primary:hover, .btn-primary:focus {
-  background-color: #245f8b !important;
-  border-color: #245f8b !important;
-  color: #ffffff !important;
-}
-.btn-outline-primary {
-  color: #2E77AD !important;
-  border-color: #2E77AD !important;
-}
-.btn-outline-primary:hover, .btn-outline-primary:focus {
-  background-color: #2E77AD !important;
-  border-color: #2E77AD !important;
-  color: #ffffff !important;
-}
-.btn-info {
-  background-color: #30B0E0 !important;
-  border-color: #30B0E0 !important;
-  color: #ffffff !important;
-}
-.btn-outline-info {
-  color: #30B0E0 !important;
-  border-color: #30B0E0 !important;
-}
-.btn-outline-info:hover {
-  background-color: #30B0E0 !important;
-  color: #ffffff !important;
-}
-.btn-success {
-  background-color: #10B981 !important;
-  border-color: #10B981 !important;
-  color: #ffffff !important;
-}
-.btn-success:hover {
-  background-color: #059669 !important;
-  border-color: #059669 !important;
-}
-.btn-outline-success {
-  color: #10B981 !important;
-  border-color: #10B981 !important;
-}
-.btn-outline-success:hover {
-  background-color: #10B981 !important;
-  color: #ffffff !important;
-}
-.text-primary {
-  color: #1D4ED8 !important;
-}
-.text-secondary {
-  color: #475569 !important;
-}
-.text-muted {
-  color: #64748B !important;
-}
-.text-dark {
-  color: #0F172A !important;
-}
-.bg-primary {
-  background-color: rgba(46, 119, 173, var(--bs-bg-opacity, 1)) !important;
-}
-.text-bg-primary {
-  background-color: #2E77AD !important;
-  color: #ffffff !important;
-}
-/* Subtle Backgrounds with High-Contrast Text */
-.bg-primary-subtle {
-  background-color: #EFF6FF !important;
-  color: #1D4ED8 !important;
-  border-color: #BFDBFE !important;
-}
-.text-info {
-  color: #0369A1 !important;
-}
-.bg-info {
-  background-color: rgba(48, 176, 224, var(--bs-bg-opacity, 1)) !important;
-}
-.text-bg-info {
-  background-color: #0284C7 !important;
-  color: #ffffff !important;
-}
-.bg-info-subtle {
-  background-color: #F0F9FF !important;
-  color: #0369A1 !important;
-  border-color: #BAE6FD !important;
-}
-.text-success {
-  color: #047857 !important;
-}
-.bg-success {
-  background-color: rgba(16, 185, 129, var(--bs-bg-opacity, 1)) !important;
-}
-.text-bg-success {
-  background-color: #10B981 !important;
-  color: #ffffff !important;
-}
-.bg-success-subtle {
-  background-color: #ECFDF5 !important;
-  color: #047857 !important;
-  border-color: #A7F3D0 !important;
-}
-.text-warning {
-  color: #B45309 !important;
-}
-.bg-warning-subtle {
-  background-color: #FFFBEB !important;
-  color: #B45309 !important;
-  border-color: #FDE68A !important;
-}
-.text-danger {
-  color: #DC2626 !important;
-}
-.bg-danger-subtle {
-  background-color: #FEF2F2 !important;
-  color: #DC2626 !important;
-  border-color: #FECACA !important;
-}
-.bg-secondary-subtle {
-  background-color: #F1F5F9 !important;
-  color: #334155 !important;
-  border-color: #CBD5E1 !important;
+/* Badge Chips */
+.badge-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 8px;
+  border-radius: var(--radius-xs);
+  font-size: 0.74rem;
+  font-weight: 600;
 }
 
-/* Emphasis Text Classes */
-.text-primary-emphasis { color: #1D4ED8 !important; }
-.text-info-emphasis { color: #0369A1 !important; }
-.text-success-emphasis { color: #047857 !important; }
-.text-warning-emphasis { color: #9A3412 !important; }
-.text-danger-emphasis { color: #991B1B !important; }
-.text-secondary-emphasis { color: #334155 !important; }
+.chip-success { background: var(--status-success-bg); color: var(--status-success); border: 1px solid #A6F4C5; }
+.chip-warning { background: var(--status-warning-bg); color: var(--status-warning); border: 1px solid #FEDF89; }
+.chip-danger  { background: var(--status-danger-bg); color: var(--status-danger); border: 1px solid #FECDCA; }
+.chip-primary { background: var(--blue-soft); color: var(--blue-corporate); border: 1px solid #BFDBFE; }
+.chip-secondary { background: #F2F4F7; color: #344054; border: 1px solid #D0D5DD; }
 
-/* Badges: Solid badges get white text ONLY if they do NOT have opacity, subtle, or text-* */
-.badge.bg-primary:not([class*="bg-opacity"]):not([class*="-subtle"]):not([class*="text-"]),
-.badge.bg-info:not([class*="bg-opacity"]):not([class*="-subtle"]):not([class*="text-"]),
-.badge.bg-success:not([class*="bg-opacity"]):not([class*="-subtle"]):not([class*="text-"]),
-.badge.bg-danger:not([class*="bg-opacity"]):not([class*="-subtle"]):not([class*="text-"]),
-.badge.bg-secondary:not([class*="bg-opacity"]):not([class*="-subtle"]):not([class*="text-"]),
-.badge.bg-dark:not([class*="bg-opacity"]):not([class*="-subtle"]):not([class*="text-"]) {
-  color: #ffffff !important;
+/* Status Dot System */
+.status-dot {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
 }
+.status-dot.operational { background-color: var(--status-success); }
+.status-dot.warning     { background-color: var(--status-warning); }
+.status-dot.critical    { background-color: var(--status-danger); }
+.status-dot.repair      { background-color: var(--blue-accent); }
+.status-dot.offline     { background-color: var(--text-muted); }
 
-/* Badges with Opacity or Subtle: Guaranteed high-contrast text and clean background */
-.badge.bg-primary[class*="bg-opacity"],
-.badge.bg-primary-subtle,
-.badge.text-primary,
-.badge.text-primary-emphasis {
-  background-color: #EFF6FF !important;
-  color: #1D4ED8 !important;
-  border-color: #BFDBFE !important;
+/* Progress Bar Minimalist */
+.progress {
+  background-color: #E2E8F0;
+  border-radius: 4px;
+  overflow: hidden;
 }
 
-.badge.bg-info[class*="bg-opacity"],
-.badge.bg-info-subtle,
-.badge.text-info,
-.badge.text-info-emphasis {
-  background-color: #F0F9FF !important;
-  color: #0369A1 !important;
-  border-color: #BAE6FD !important;
+.progress-bar {
+  background-color: var(--blue-corporate);
 }
 
-.badge.bg-success[class*="bg-opacity"],
-.badge.bg-success-subtle,
-.badge.text-success,
-.badge.text-success-emphasis {
-  background-color: #ECFDF5 !important;
-  color: #047857 !important;
-  border-color: #A7F3D0 !important;
+/* Custom Scrollbars */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 4px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(255,255,255,0.15);
+  border-radius: 4px;
 }
 
-.badge.bg-warning[class*="bg-opacity"],
-.badge.bg-warning-subtle,
-.badge.text-warning,
-.badge.text-warning-emphasis {
-  background-color: #FFFBEB !important;
-  color: #B45309 !important;
-  border-color: #FDE68A !important;
-}
-
-.badge.bg-danger[class*="bg-opacity"],
-.badge.bg-danger-subtle,
-.badge.text-danger,
-.badge.text-danger-emphasis {
-  background-color: #FEF2F2 !important;
-  color: #DC2626 !important;
-  border-color: #FECACA !important;
-}
-
-.badge.bg-secondary[class*="bg-opacity"],
-.badge.bg-secondary-subtle,
-.badge.text-secondary,
-.badge.text-secondary-emphasis {
-  background-color: #F1F5F9 !important;
-  color: #334155 !important;
-  border-color: #CBD5E1 !important;
-}
-
-.badge.bg-light,
-.badge.text-dark {
-  background-color: #F8FAFC !important;
-  color: #0F172A !important;
-  border-color: #E2E8F0 !important;
-}
-
-/* High Contrast Alert Boxes */
-.alert-info {
-  background-color: #F0F9FF !important;
-  border-color: #BAE6FD !important;
-  color: #0369A1 !important;
-}
-.alert-success {
-  background-color: #F0FDF4 !important;
-  border-color: #BBF7D0 !important;
-  color: #065F46 !important;
-}
-.alert-warning {
-  background-color: #FFFBEB !important;
-  border-color: #FDE68A !important;
-  color: #92400E !important;
-}
-.alert-danger {
-  background-color: #FEF2F2 !important;
-  border-color: #FECACA !important;
-  color: #991B1B !important;
-}
-
-/* Loading Progress Bar (Bank Mitra Blue) */
 #top-progress-bar {
   position: fixed;
   top: 0;
   left: 0;
-  height: 3px;
-  background: #1D4ED8;
+  height: 2.5px;
+  background-color: var(--blue-accent);
   z-index: 9999;
   transition: width .2s ease;
   width: 0;
 }
 
 @media print {
-  .no-print, nav, header, #top-progress-bar { display: none !important; }
-  .qr-label { box-shadow: none; }
-  .container { max-width: none !important; width: 100% !important; padding: 0 !important; margin: 0 !important; }
+  .no-print, .app-sidebar, .app-topbar, .public-topbar, #top-progress-bar { display: none !important; }
+  .app-content-container { padding: 0 !important; max-width: 100% !important; }
+  body { background: #FFFFFF !important; }
 }
 </style>
 '.$extraHead.'
 </head>
 <body>
 <div id="top-progress-bar"></div>
-'.$nav.'
-<main class="container pb-5">
-'.$content.'
-</main>
+
+'.($showNav ? '
+<div class="app-layout-wrapper">
+  '.$sidebarHtml.'
+  <div class="app-main-viewport">
+    '.$topbarHtml.'
+    <main class="app-content-container">
+      '.$content.'
+    </main>
+  </div>
+</div>
+' : '
+<div>
+  '.$publicHeaderHtml.'
+  <main class="app-content-container" style="max-width: 960px;">
+    '.$content.'
+  </main>
+</div>
+').'
+
+<!-- Global Search Palette (Ctrl + K) -->
+<div class="modal fade" id="globalSearchModal" tabindex="-1" aria-labelledby="globalSearchModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border shadow">
+      <div class="modal-header py-2 px-3 border-bottom bg-light">
+        <div class="d-flex align-items-center gap-2 w-100">
+          <i class="bi bi-search text-muted"></i>
+          <input type="text" id="globalSearchInput" class="form-control border-0 shadow-none bg-transparent" placeholder="Ketik kode aset, nama komputer, atau kata kunci..." autocomplete="off">
+        </div>
+        <button type="button" class="btn-close ms-2" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body p-3" id="globalSearchResults" style="max-height: 380px; overflow-y: auto;">
+        <div class="small text-muted text-uppercase fw-bold mb-2" style="font-size: 0.68rem; letter-spacing: 0.06em;">Navigasi Cepat</div>
+        <div class="list-group list-group-flush border-0">
+          <a href="'.e(module_url('dashboard.php')).'" class="list-group-item list-group-item-action d-flex align-items-center gap-2 py-2 px-2 border-0 rounded">
+            <i class="bi bi-speedometer2 text-primary"></i> <span>Dashboard IT Operations</span>
+          </a>
+          <a href="'.e(module_url('assets.php')).'" class="list-group-item list-group-item-action d-flex align-items-center gap-2 py-2 px-2 border-0 rounded">
+            <i class="bi bi-pc-display text-primary"></i> <span>Asset Registry (Data Komputer)</span>
+          </a>
+          <a href="'.e(module_url('scanner.php')).'" class="list-group-item list-group-item-action d-flex align-items-center gap-2 py-2 px-2 border-0 rounded">
+            <i class="bi bi-qr-code-scan text-primary"></i> <span>Buka Scanner Kamera QR</span>
+          </a>
+          <a href="'.e(module_url('asset_add.php')).'" class="list-group-item list-group-item-action d-flex align-items-center gap-2 py-2 px-2 border-0 rounded">
+            <i class="bi bi-plus-circle-fill text-success"></i> <span>Tambah Perangkat Komputer Baru</span>
+          </a>
+          <a href="'.e(module_url('audit.php')).'" class="list-group-item list-group-item-action d-flex align-items-center gap-2 py-2 px-2 border-0 rounded">
+            <i class="bi bi-clipboard-check text-info"></i> <span>Rekap Audit & Laporan Maintenance</span>
+          </a>
+        </div>
+      </div>
+      <div class="modal-footer py-2 px-3 bg-light border-top d-flex justify-content-between">
+        <span class="small text-muted" style="font-size: 0.75rem;"><kbd>Esc</kbd> untuk menutup</span>
+        <span class="small text-muted" style="font-size: 0.75rem;">PT. BPR Mitratama Arthabuana</span>
+      </div>
+    </div>
+  </div>
+</div>
+
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script>
-// Ultra-fast instant prefetching on hover / touch
 (function(){
+  // Keyboard Shortcut: Ctrl + K or / to open Global Search
+  document.addEventListener("keydown", function(e) {
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k") {
+      e.preventDefault();
+      var modalEl = document.getElementById("globalSearchModal");
+      if (modalEl) {
+        var modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+        modal.show();
+      }
+    }
+  });
+
+  var modalEl = document.getElementById("globalSearchModal");
+  if (modalEl) {
+    modalEl.addEventListener("shown.bs.modal", function () {
+      var inp = document.getElementById("globalSearchInput");
+      if (inp) inp.focus();
+    });
+  }
+
+  // Instant prefetch on link hover
   var preloaded = {};
   function doPrefetch(url) {
     if (!url || preloaded[url]) return;
@@ -621,12 +811,29 @@ h1, h2, h3, h4, h5, h6, .h1, .h2, .h3, .h4, .h5, .h6 {
     var a = e.target.closest("a");
     if (a && a.href && !a.target && a.origin === location.origin) doPrefetch(a.href);
   }, {passive: true});
-  document.addEventListener("touchstart", function(e){
-    var a = e.target.closest("a");
-    if (a && a.href && !a.target && a.origin === location.origin) doPrefetch(a.href);
-  }, {passive: true});
-  
-  // Auto-Lock jika ditinggal lama tanpa aktivitas (15 menit = 900 detik)
+
+  // Client-side quick filter in Global Search
+  var searchInput = document.getElementById("globalSearchInput");
+  if (searchInput) {
+    searchInput.addEventListener("input", function() {
+      var q = this.value.toLowerCase().trim();
+      var items = document.querySelectorAll("#globalSearchResults .list-group-item");
+      items.forEach(function(el) {
+        var text = el.textContent.toLowerCase();
+        el.style.display = (q === "" || text.includes(q)) ? "flex" : "none";
+      });
+    });
+    searchInput.addEventListener("keydown", function(e) {
+      if (e.key === "Enter") {
+        var q = this.value.trim();
+        if (q !== "") {
+          window.location.href = "'.e(module_url('assets.php')).'?q=" + encodeURIComponent(q);
+        }
+      }
+    });
+  }
+
+  // Auto-Lock idle timer (15 min)
   var idleTimeoutMs = 900 * 1000;
   var idleTimer;
   function resetIdleTimer() {
@@ -645,4 +852,3 @@ h1, h2, h3, h4, h5, h6, .h1, .h2, .h3, .h4, .h5, .h6 {
 </body>
 </html>';
 }
-

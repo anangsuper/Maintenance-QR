@@ -2,64 +2,136 @@
 require __DIR__ . '/bootstrap.php';
 
 $head = '<style>
-.scanner-box {
+.scanner-container-dark {
   max-width: 480px;
   margin: 0 auto;
+  background-color: var(--navy-deep);
+  border: 1px solid var(--navy-subtle);
+  border-radius: 12px;
+  padding: 24px 20px;
+  color: #FFFFFF;
+  box-shadow: 0 10px 25px -5px rgba(8, 24, 47, 0.4);
 }
+
+.scanner-viewport-wrapper {
+  position: relative;
+  width: 100%;
+  max-width: 360px;
+  margin: 16px auto;
+  border-radius: 10px;
+  overflow: hidden;
+  background-color: #000000;
+}
+
 #reader {
   width: 100%;
-  border-radius: 16px;
-  overflow: hidden;
+  border: none !important;
   background: #000;
   min-height: 280px;
 }
+
 #reader video {
-  border-radius: 16px;
+  border-radius: 8px;
   object-fit: cover;
+}
+
+/* Corner Scan Frame Overlay */
+.scan-corner-frame {
+  position: absolute;
+  inset: 20px;
+  pointer-events: none;
+  z-index: 5;
+}
+
+.scan-corner {
+  position: absolute;
+  width: 22px;
+  height: 22px;
+  border-color: var(--blue-accent);
+  border-style: solid;
+}
+
+.corner-tl { top: 0; left: 0; border-width: 3px 0 0 3px; }
+.corner-tr { top: 0; right: 0; border-width: 3px 3px 0 0; }
+.corner-bl { bottom: 0; left: 0; border-width: 0 0 3px 3px; }
+.corner-br { bottom: 0; right: 0; border-width: 0 3px 3px 0; }
+
+.scan-laser-line {
+  position: absolute;
+  top: 25%;
+  left: 20px;
+  right: 20px;
+  height: 2px;
+  background-color: var(--blue-accent);
+  box-shadow: 0 0 8px rgba(46, 124, 246, 0.8);
+  pointer-events: none;
+  z-index: 6;
+  animation: scanLaserAnim 2.2s infinite ease-in-out;
+}
+
+@keyframes scanLaserAnim {
+  0% { top: 20%; opacity: 0; }
+  50% { opacity: 1; }
+  100% { top: 80%; opacity: 0; }
+}
+
+.scanner-status-text {
+  font-size: 0.78rem;
+  color: #98A2B3;
+  text-align: center;
+  margin-top: 10px;
 }
 </style>';
 
 $body = '
-<div class="row justify-content-center">
-  <div class="col-md-7 col-lg-5">
-    <div class="card border-0 shadow-sm rounded-4 p-3 p-sm-4 bg-white mb-3">
-      <div class="d-flex align-items-center justify-content-between mb-3">
+<div class="row justify-content-center py-2">
+  <div class="col-12 col-md-8 col-lg-6">
+    <div class="scanner-container-dark">
+      <div class="d-flex align-items-center justify-content-between border-bottom border-navy-subtle pb-3 mb-3">
         <div>
-          <span class="badge bg-primary bg-opacity-10 text-primary fw-bold px-2 py-1 mb-1">
-            <i class="bi bi-camera-fill me-1"></i> Scanner Kamera
-          </span>
-          <h4 class="fw-bold mb-0 text-dark">Pindai QR Komputer</h4>
+          <div class="tech-label" style="color: var(--blue-accent);">OPTICAL SCANNER</div>
+          <h1 class="h5 mb-0 text-white fw-bold">SCAN ASSET QR</h1>
         </div>
-        <a href="login.php" class="btn btn-outline-secondary btn-sm rounded-pill px-3">
-          <i class="bi bi-person-circle"></i> Login Admin
-        </a>
+        '.(is_logged_in() 
+            ? '<a href="'.e(module_url('dashboard.php')).'" class="btn btn-sm btn-outline-light py-1 px-2" style="font-size: 0.78rem;"><i class="bi bi-speedometer2 me-1"></i> Dashboard</a>' 
+            : '<a href="'.e(module_url('login.php')).'" class="btn btn-sm btn-outline-light py-1 px-2" style="font-size: 0.78rem;"><i class="bi bi-person me-1"></i> Login</a>').'
       </div>
 
-      <div class="alert alert-light border py-2 px-3 small text-secondary mb-3">
-        <i class="bi bi-info-circle-fill text-primary me-1"></i>
-        Arahkan kamera ke stiker kode QR komputer untuk membuka formulir maintenance.
+      <div class="text-center text-muted small mb-2" style="font-size: 0.8rem; color: #CBD5E1 !important;">
+        Arahkan kamera ke stiker QR Code yang tertera pada perangkat komputer.
       </div>
 
-      <div class="scanner-box mb-3">
+      <div class="scanner-viewport-wrapper">
+        <div class="scan-corner-frame">
+          <div class="scan-corner corner-tl"></div>
+          <div class="scan-corner corner-tr"></div>
+          <div class="scan-corner corner-bl"></div>
+          <div class="scan-corner corner-br"></div>
+          <div class="scan-laser-line"></div>
+        </div>
         <div id="reader"></div>
-        <div id="scannerStatus" class="small text-center text-muted mt-2">
-          <span class="spinner-border spinner-border-sm me-1 text-primary"></span> Menyiapkan kamera scanner...
+      </div>
+
+      <div id="scannerStatus" class="scanner-status-text">
+        <span class="spinner-border spinner-border-sm me-1 text-primary"></span> Menyiapkan kamera scanner...
+      </div>
+
+      <div class="text-center my-3">
+        <div class="d-flex align-items-center gap-2">
+          <hr class="flex-grow-1 border-secondary opacity-25">
+          <span class="tech-label" style="color: #667085;">ATAU MASUKKAN KODE MANUAL</span>
+          <hr class="flex-grow-1 border-secondary opacity-25">
         </div>
       </div>
 
-      <div class="text-center my-2 text-muted small">
-        <hr class="my-2">
-        <span class="px-2 bg-white text-muted fw-semibold" style="font-size: 0.75rem;">ATAU MASUKKAN MANUAL KODE QR</span>
-      </div>
-
-      <form onsubmit="return handleManualToken(event)" class="mt-2">
+      <form onsubmit="return handleManualToken(event)">
         <div class="input-group">
-          <input type="text" class="form-control" id="manualTokenInput" placeholder="Ketik token / kode QR..." required>
-          <button class="btn btn-primary fw-bold px-3" type="submit">
-            <i class="bi bi-arrow-right"></i> Buka
+          <input type="text" class="form-control form-control-sm font-monospace" id="manualTokenInput" placeholder="Ketik token / kode QR..." required style="background: #0D2748; border-color: #1E3A60; color: #FFFFFF;">
+          <button class="btn btn-primary btn-sm px-3 fw-semibold" type="submit">
+            <i class="bi bi-arrow-right me-1"></i> Buka
           </button>
         </div>
-        <div class="form-text text-muted" style="font-size: 0.75rem;">Contoh: token yang tertera di stiker QR.</div>
+        <div class="text-muted mt-1 text-center" style="font-size: 0.72rem;">Contoh: token yang tertera pada label QR komputer.</div>
       </form>
     </div>
   </div>
@@ -109,7 +181,7 @@ document.addEventListener("DOMContentLoaded", () => {
       "reader",
       {
         fps: 15,
-        qrbox: { width: 250, height: 250 },
+        qrbox: { width: 220, height: 220 },
         aspectRatio: 1.0,
         showTorchButtonIfSupported: true
       },
@@ -118,13 +190,13 @@ document.addEventListener("DOMContentLoaded", () => {
     html5QrcodeScanner.render(onScanSuccess, (err) => {});
     const statusEl = document.getElementById("scannerStatus");
     if (statusEl) {
-      statusEl.innerHTML = '<span class="text-success"><i class="bi bi-camera-fill me-1"></i> Kamera aktif. Arahkan ke stiker QR.</span>';
+      statusEl.innerHTML = '<span class="text-success"><i class="bi bi-camera-fill me-1"></i> Kamera siap. Bidik ke stiker QR.</span>';
     }
   } catch (err) {
     console.error(err);
     const statusEl = document.getElementById("scannerStatus");
     if (statusEl) {
-      statusEl.innerHTML = '<span class="text-muted">Jika kamera tidak muncul, silakan ketik token QR secara manual di bawah.</span>';
+      statusEl.innerHTML = '<span class="text-muted">Kamera tidak aktif. Masukkan token QR secara manual di atas.</span>';
     }
   }
 });

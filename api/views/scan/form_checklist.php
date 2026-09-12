@@ -69,7 +69,7 @@ if ($action === 'start' || $action === 'form' || $action === 'ulang') {
         <div class="card p-3 mb-2 rounded-3 checklist-card border-success border-opacity-50" id="card_item_'.$num.'">
           <div class="d-flex align-items-center justify-content-between mb-2">
             <div class="d-flex align-items-center gap-2">
-              <span class="badge bg-primary bg-opacity-10 text-primary fw-bold px-2 py-1 rounded-pill">#'.$num.'</span>
+              <span class="tech-label text-primary font-monospace fw-bold px-2 py-1 bg-light border rounded" style="font-size: 0.8rem;">'.sprintf('%02d', $num).'</span>
               <div>
                 <div class="d-flex align-items-center gap-2">
                   <i class="bi '.$icon.' text-primary fs-5"></i>

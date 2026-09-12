@@ -47,30 +47,33 @@ $body = '
 <div class="row justify-content-center">
   <div class="col-md-7">
     '.$errorHtml.'
-    <div class="card p-4 border-0 shadow-sm">
-      <h4 class="fw-bold text-danger"><i class="bi bi-exclamation-triangle-fill me-2"></i>Catat Temuan / Kerusakan</h4>
-      <div class="text-secondary mb-4">'.e($log['kode_inventaris'] ?? '-').' · '.e(trim(($log['merk'] ?? '').' '.($log['model'] ?? ''))).'</div>
+    <div class="card p-4">
+      <div class="d-flex align-items-center gap-2 border-bottom pb-2 mb-3">
+        <span class="tech-label text-danger">LAPOR TEMUAN KERUSAKAN</span>
+      </div>
+      <div class="text-secondary small mb-3">Unit: <strong>'.e($log['kode_inventaris'] ?? '-').'</strong> · '.e(trim(($log['merk'] ?? '').' '.($log['model'] ?? ''))).'</div>
       <form method="post">
         <input type="hidden" name="_csrf" value="'.e(csrf_token()).'">
         <input type="hidden" name="log_id" value="'.$logId.'">
         <div class="mb-3">
-          <label class="form-label fw-semibold">Deskripsi Temuan / Kerusakan <span class="text-danger">*</span></label>
+          <label class="form-label text-secondary small fw-semibold">Deskripsi Temuan / Kerusakan <span class="text-danger">*</span></label>
           <textarea class="form-control" name="finding" rows="4" required placeholder="Contoh: printer bergaris, RAM kendor, kabel LAN putus, bluescreen..."></textarea>
         </div>
         <div class="mb-3">
-          <label class="form-label fw-semibold">Tindakan Awal yang Dilakukan</label>
+          <label class="form-label text-secondary small fw-semibold">Tindakan Awal yang Dilakukan</label>
           <textarea class="form-control" name="action_taken" rows="3" placeholder="Opsional (misal: sudah direstart, kabel sudah diganti)"></textarea>
         </div>
         <div class="mb-3">
-          <label class="form-label fw-semibold">Tingkat Kerusakan</label>
+          <label class="form-label text-secondary small fw-semibold">Tingkat Kerusakan</label>
           <select class="form-select" name="severity">
             <option>Ringan</option>
             <option>Sedang</option>
             <option>Berat</option>
           </select>
         </div>
-        <div class="d-grid gap-2">
-          <button class="btn btn-danger btn-lg fw-semibold"><i class="bi bi-save me-1"></i> Simpan Temuan</button>
+        <div class="d-flex justify-content-end gap-2 pt-2 border-top">
+          <a class="btn btn-light border" href="javascript:history.back()">Batal</a>
+          <button class="btn btn-danger fw-semibold"><i class="bi bi-check2 me-1"></i> Simpan Temuan</button>
         </div>
       </form>
     </div>

@@ -364,13 +364,21 @@ foreach ($pageAssets as $a) {
     $token = !empty($a['qr_token']) ? $a['qr_token'] : get_static_qr_token($aid);
 
     // Status Badge Komputer
-    $statusBadge = match (strtolower($stAset)) {
-        'aktif' => '<span class="badge text-bg-success px-2 py-1"><i class="bi bi-check-circle me-1"></i>Aktif</span>',
-        'perbaikan' => '<span class="badge text-bg-warning text-dark px-2 py-1"><i class="bi bi-tools me-1"></i>Perbaikan</span>',
-        'backup' => '<span class="badge text-bg-info px-2 py-1"><i class="bi bi-shield-check me-1"></i>Backup</span>',
-        'nonaktif' => '<span class="badge text-bg-secondary px-2 py-1"><i class="bi bi-slash-circle me-1"></i>Nonaktif</span>',
-        default => '<span class="badge text-bg-light border px-2 py-1">'.e($stAset).'</span>',
+    $statusDotClass = match (strtolower($stAset)) {
+        'aktif' => 'operational',
+        'perbaikan' => 'warning',
+        'backup' => 'repair',
+        'nonaktif' => 'offline',
+        default => 'offline',
     };
+    $statusChipClass = match (strtolower($stAset)) {
+        'aktif' => 'chip-success',
+        'perbaikan' => 'chip-warning',
+        'backup' => 'chip-primary',
+        'nonaktif' => 'chip-secondary',
+        default => 'chip-secondary',
+    };
+    $statusBadge = '<span class="badge-chip '.$statusChipClass.'"><span class="status-dot '.$statusDotClass.'"></span> '.e(ucfirst($stAset)).'</span>';
 
     // Status Maintenance Bulan Berjalan
     $mInfo = $maintStatusMap[$aid] ?? null;
@@ -382,13 +390,13 @@ foreach ($pageAssets as $a) {
         $st = $mInfo['status'];
         if (in_array($st, ['Temuan', 'Perlu Perbaikan', 'Proses'], true)) {
             $isRepairIssue = true;
-            $maintBadge = '<span class="badge text-bg-danger text-wrap" title="Temuan pada '.$mInfo['date'].' oleh '.$mInfo['tech'].'"><i class="bi bi-exclamation-triangle-fill me-1"></i>Temuan: '.e($st).'</span>';
+            $maintBadge = '<span class="badge-chip chip-danger" title="Temuan pada '.$mInfo['date'].' oleh '.$mInfo['tech'].'"><i class="bi bi-exclamation-triangle-fill"></i> Temuan: '.e($st).'</span>';
         } else {
             $isDoneMaint = true;
-            $maintBadge = '<span class="badge text-bg-success text-wrap" title="Selesai pada '.$mInfo['date'].' oleh '.$mInfo['tech'].'"><i class="bi bi-check-lg me-1"></i>Selesai ('.$mInfo['date'].')</span>';
+            $maintBadge = '<span class="badge-chip chip-success" title="Selesai pada '.$mInfo['date'].' oleh '.$mInfo['tech'].'"><i class="bi bi-check2"></i> Selesai ('.$mInfo['date'].')</span>';
         }
     } else {
-        $maintBadge = '<span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 text-wrap fw-bold"><i class="bi bi-clock-history me-1"></i>Belum Diperiksa</span>';
+        $maintBadge = '<span class="badge-chip chip-warning"><i class="bi bi-clock"></i> Belum Diperiksa</span>';
     }
 
     // Link Action
@@ -397,49 +405,49 @@ foreach ($pageAssets as $a) {
     $editUrl = module_url('asset_edit.php', ['id' => $aid]);
     $deleteUrl = module_url('asset_delete.php', ['id' => $aid, 'redirect' => $_SERVER['REQUEST_URI'] ?? module_url('assets.php')]);
 
-    // Quick Action Button for Technicians (To-Do List)
+    // Quick Action Button for Technicians
     $quickActionBtn = '';
     if ($isRepairIssue && $scanUrl) {
-        $quickActionBtn = '<a class="btn btn-sm btn-danger fw-bold text-nowrap shadow-sm" href="'.e($scanUrl . '&action=tindak_lanjut').'" title="Tindak Lanjuti Kendala / Perbaikan"><i class="bi bi-tools me-1"></i> Perbaiki</a>';
+        $quickActionBtn = '<a class="btn btn-sm btn-danger py-1 px-2 fw-semibold text-nowrap" href="'.e($scanUrl . '&action=tindak_lanjut').'" title="Tindak Lanjuti Kendala"><i class="bi bi-tools me-1"></i> Perbaiki</a>';
     } elseif (!$isDoneMaint && $scanUrl) {
-        $quickActionBtn = '<a class="btn btn-sm btn-success fw-bold text-nowrap shadow-sm" href="'.e($scanUrl . '&action=start').'" title="Mulai Checklist Pemeliharaan Komputer Ini"><i class="bi bi-clipboard2-check-fill me-1"></i> Periksa</a>';
+        $quickActionBtn = '<a class="btn btn-sm btn-primary py-1 px-2 fw-semibold text-nowrap" href="'.e($scanUrl . '&action=start').'" title="Mulai Checklist Pemeliharaan"><i class="bi bi-clipboard-check me-1"></i> Periksa</a>';
     }
 
     $tableRows .= '
     <tr>
-      <td class="text-center text-muted fw-semibold small">'.$startNum.'</td>
+      <td class="text-center text-muted small">'.$startNum.'</td>
       <td>
         <div class="d-flex align-items-center gap-2">
-          <div class="fw-bold text-primary fs-6">'.e($kode).'</div>
-          '.($token ? '<a href="'.e($scanUrl).'" class="badge text-bg-light border text-decoration-none" title="Lihat Kartu Kontrol / QR Scan"><i class="bi bi-qr-code text-primary"></i></a>' : '').'
+          <div class="fw-bold text-dark fs-6 font-monospace">'.e($kode).'</div>
+          '.($token ? '<a href="'.e($scanUrl).'" class="badge bg-light text-secondary border text-decoration-none" title="Lihat Kartu Kontrol"><i class="bi bi-qr-code"></i></a>' : '').'
         </div>
-        <small class="text-muted">ID: #'.$aid.'</small>
+        <small class="text-muted" style="font-size: 0.72rem;">ID: #'.$aid.'</small>
       </td>
       <td>
-        <div class="fw-bold text-dark">'.e($device).'</div>
-        <div class="small text-secondary">
-          '.($sn ? '<span class="me-2"><i class="bi bi-upc me-1"></i>SN: <code>'.e($sn).'</code></span>' : '').'
-          '.(!empty($a['kategori_nama']) ? '<span class="badge bg-light text-secondary border">'.e($a['kategori_nama']).'</span>' : '').'
+        <div class="fw-semibold text-dark">'.e($device).'</div>
+        <div class="small text-secondary" style="font-size: 0.75rem;">
+          '.($sn ? '<span class="me-2"><span class="tech-label">SN:</span> <code class="text-dark">'.e($sn).'</code></span>' : '').'
+          '.(!empty($a['kategori_nama']) ? '<span class="badge bg-light text-secondary border" style="font-size: 0.7rem;">'.e($a['kategori_nama']).'</span>' : '').'
         </div>
       </td>
       <td>
-        <div class="fw-semibold text-dark"><i class="bi bi-person-circle text-primary me-1"></i>'.e($user).'</div>
-        '.($divisi ? '<div class="small text-secondary"><i class="bi bi-diagram-3 me-1"></i>'.e($divisi).'</div>' : '').'
+        <div class="fw-semibold text-dark small"><i class="bi bi-person text-secondary me-1"></i>'.e($user).'</div>
+        '.($divisi ? '<div class="small text-secondary" style="font-size: 0.72rem;"><i class="bi bi-diagram-3 me-1 text-muted"></i>'.e($divisi).'</div>' : '').'
       </td>
       <td>
-        <div class="fw-semibold text-dark"><i class="bi bi-buildings text-secondary me-1"></i>'.e($cabang).'</div>
-        '.($ip !== '-' ? '<div class="small text-muted font-monospace"><i class="bi bi-hdd-network me-1 text-success"></i>'.e($ip).'</div>' : '').'
+        <div class="fw-semibold text-dark small"><i class="bi bi-building text-secondary me-1"></i>'.e($cabang).'</div>
+        '.($ip !== '-' ? '<div class="small text-muted font-monospace" style="font-size: 0.72rem;"><i class="bi bi-hdd-network me-1 text-success"></i>'.e($ip).'</div>' : '').'
       </td>
       <td class="text-center">'.$statusBadge.'</td>
       <td class="text-center">'.$maintBadge.'</td>
       <td class="text-end text-nowrap">
         <div class="d-inline-flex align-items-center gap-1">
           '.$quickActionBtn.'
-          <div class="btn-group btn-group-sm" role="group">
-            '.($scanUrl ? '<a class="btn btn-outline-primary" href="'.e($scanUrl).'" title="Buka Kartu / Scan Form"><i class="bi bi-qr-code-scan"></i></a>' : '').'
-            <a class="btn btn-outline-secondary" target="_blank" href="'.e($cardUrl).'" title="Cetak Kartu Kontrol 1 Lembar"><i class="bi bi-printer"></i></a>
-            <a class="btn btn-outline-warning text-dark" href="'.e($editUrl).'" title="Edit Data Komputer"><i class="bi bi-pencil-square"></i></a>
-            <a class="btn btn-outline-danger" href="'.e($deleteUrl).'" title="Hapus Aset Komputer"><i class="bi bi-trash3-fill"></i></a>
+          <div class="btn-group btn-group-sm">
+            '.($scanUrl ? '<a class="btn btn-sm btn-light border" href="'.e($scanUrl).'" title="Buka Kartu / Scan"><i class="bi bi-qr-code-scan"></i></a>' : '').'
+            <a class="btn btn-sm btn-light border" target="_blank" href="'.e($cardUrl).'" title="Cetak Kartu Kontrol"><i class="bi bi-printer"></i></a>
+            <a class="btn btn-sm btn-light border" href="'.e($editUrl).'" title="Edit Perangkat"><i class="bi bi-pencil"></i></a>
+            <a class="btn btn-sm btn-light border text-danger" href="'.e($deleteUrl).'" title="Hapus Perangkat"><i class="bi bi-trash"></i></a>
           </div>
         </div>
       </td>
@@ -504,77 +512,54 @@ $body = '
 '.$flashHtml.'
 
 <!-- Header & Quick Actions -->
-<div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+<div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3 mb-4">
   <div>
-    <div class="d-inline-flex align-items-center gap-2 mb-1">
-      <span class="badge text-bg-primary fs-7"><i class="bi bi-pc-display-horizontal me-1"></i> Database Aset</span>
-      <span class="text-secondary small">Periode Maintenance: <strong>'.$currentMonthName.' '.$year.'</strong></span>
-    </div>
-    <h2 class="fw-bold mb-0 text-dark">Data Komputer & Aset IT</h2>
-    <div class="text-secondary small">Katalog lengkap PC Desktop, Laptop, Printer, dan perangkat IT beserta status maintenance rutin.</div>
+    <div class="tech-label mb-1">ASSET MANAGEMENT</div>
+    <h1 class="h3 mb-1">Asset Registry</h1>
+    <p class="text-secondary small mb-0">Katalog dan inventaris lengkap perangkat IT, komputer kantor cabang, dan status pemeliharaan.</p>
   </div>
   <div class="d-flex gap-2 flex-wrap">
-    <a class="btn btn-action-add fw-bold px-3 shadow-sm" href="'.e(module_url('asset_add.php')).'"><i class="bi bi-plus-circle-fill me-1"></i> Tambah Komputer Baru</a>
-    <a class="btn btn-outline-primary fw-semibold px-3 shadow-sm" target="_blank" href="'.e(module_url('print_card.php', ['cabang' => $cabangId, 'tahun' => $year])).'"><i class="bi bi-printer-fill me-1"></i> Cetak Kartu Kontrol</a>
-    <a class="btn btn-outline-secondary fw-semibold px-3 shadow-sm" href="'.e(module_url('qr_admin.php', ['cabang' => $cabangId])).'"><i class="bi bi-qr-code me-1"></i> Manajemen QR</a>
+    <a class="btn btn-primary d-inline-flex align-items-center gap-1 fw-semibold px-3" href="'.e(module_url('asset_add.php')).'"><i class="bi bi-plus-lg"></i> Tambah Aset</a>
+    <a class="btn btn-light border d-inline-flex align-items-center gap-1" target="_blank" href="'.e(module_url('print_card.php', ['cabang' => $cabangId, 'tahun' => $year])).'"><i class="bi bi-printer"></i> Cetak Kartu Kontrol</a>
+    <a class="btn btn-light border d-inline-flex align-items-center gap-1" href="'.e(module_url('export_csv.php')).'"><i class="bi bi-download"></i> Export CSV</a>
   </div>
 </div>
 
 <!-- Stat Cards -->
 <div class="row g-3 mb-4">
-  <div class="col-sm-6 col-lg-3">
+  <div class="col-6 col-lg-3">
     <a href="'.e(filter_query(['status' => null, 'maint' => null, 'page' => 1])).'" class="text-decoration-none">
-      <div class="card p-3 border-0 shadow-sm h-100 bg-white border-start border-4 border-primary">
-        <div class="d-flex justify-content-between align-items-center">
-          <div>
-            <div class="text-secondary small fw-semibold text-uppercase">Total Unit Komputer</div>
-            <div class="fs-3 fw-bold text-dark mt-1">'.$statTotal.'</div>
-            <div class="small text-muted">Seluruh unit terdaftar</div>
-          </div>
-          <div class="fs-1 text-primary opacity-50"><i class="bi bi-pc-display"></i></div>
-        </div>
+      <div class="card card-metric h-100" style="border-left-color: var(--blue-corporate);">
+        <div class="metric-value">'.$statTotal.'</div>
+        <div class="metric-label">Total Unit Aset</div>
+        <div class="small text-muted mt-2" style="font-size: 0.72rem;">Seluruh unit terdaftar</div>
       </div>
     </a>
   </div>
-  <div class="col-sm-6 col-lg-3">
+  <div class="col-6 col-lg-3">
     <a href="'.e(filter_query(['maint' => 'done', 'page' => 1])).'" class="text-decoration-none">
-      <div class="card p-3 border-0 shadow-sm h-100 bg-white border-start border-4 border-success">
-        <div class="d-flex justify-content-between align-items-center">
-          <div>
-            <div class="text-secondary small fw-semibold text-uppercase">Sudah Maintenance</div>
-            <div class="fs-3 fw-bold text-success mt-1">'.$statDoneMaint.'</div>
-            <div class="small text-muted">Bulan '.$currentMonthName.'</div>
-          </div>
-          <div class="fs-1 text-success opacity-50"><i class="bi bi-check-circle-fill"></i></div>
-        </div>
+      <div class="card card-metric h-100" style="border-left-color: #16803C;">
+        <div class="metric-value text-success">'.$statDoneMaint.'</div>
+        <div class="metric-label">Sudah Maintenance</div>
+        <div class="small text-success mt-2" style="font-size: 0.72rem;">Bulan '.$currentMonthName.'</div>
       </div>
     </a>
   </div>
-  <div class="col-sm-6 col-lg-3">
+  <div class="col-6 col-lg-3">
     <a href="'.e(filter_query(['maint' => 'pending', 'page' => 1])).'" class="text-decoration-none">
-      <div class="card p-3 border-0 shadow-sm h-100 bg-white border-start border-4 border-warning">
-        <div class="d-flex justify-content-between align-items-center">
-          <div>
-            <div class="text-secondary small fw-semibold text-uppercase">Belum Maintenance</div>
-            <div class="fs-3 fw-bold text-warning mt-1">'.$statPendingMaint.'</div>
-            <div class="small text-muted">Perlu dicek bulan ini</div>
-          </div>
-          <div class="fs-1 text-warning opacity-50"><i class="bi bi-clock-history"></i></div>
-        </div>
+      <div class="card card-metric h-100" style="border-left-color: #B54708;">
+        <div class="metric-value text-warning">'.$statPendingMaint.'</div>
+        <div class="metric-label">Belum Diperiksa</div>
+        <div class="small text-muted mt-2" style="font-size: 0.72rem;">Menunggu inspeksi</div>
       </div>
     </a>
   </div>
-  <div class="col-sm-6 col-lg-3">
+  <div class="col-6 col-lg-3">
     <a href="'.e(filter_query(['maint' => 'repair', 'page' => 1])).'" class="text-decoration-none">
-      <div class="card p-3 border-0 shadow-sm h-100 bg-white border-start border-4 border-danger">
-        <div class="d-flex justify-content-between align-items-center">
-          <div>
-            <div class="text-secondary small fw-semibold text-uppercase">Perlu Tindak Lanjut</div>
-            <div class="fs-3 fw-bold text-danger mt-1">'.$statRepair.'</div>
-            <div class="small text-muted">Ada temuan kendala</div>
-          </div>
-          <div class="fs-1 text-danger opacity-50"><i class="bi bi-exclamation-octagon-fill"></i></div>
-        </div>
+      <div class="card card-metric h-100" style="border-left-color: #B42318;">
+        <div class="metric-value text-danger">'.$statRepair.'</div>
+        <div class="metric-label">Temuan Masalah</div>
+        <div class="small text-danger mt-2" style="font-size: 0.72rem;">Perlu tindak lanjut</div>
       </div>
     </a>
   </div>
@@ -582,54 +567,54 @@ $body = '
 
 '.$todoTabsHtml.'
 
-<!-- Filter Bar -->
-<div class="card p-4 border-0 shadow-sm mb-4">
-  <form method="get" class="row g-3 align-items-end">
+<!-- Compact Filter Bar -->
+<div class="card p-3 mb-4">
+  <form method="get" class="row g-2 align-items-end">
     <div class="col-lg-4 col-md-6">
-      <label class="form-label small fw-bold text-secondary">Pencarian Komputer / Pengguna / IP</label>
-      <div class="input-group">
-        <span class="input-group-text bg-light"><i class="bi bi-search"></i></span>
-        <input type="text" class="form-control" name="q" value="'.e($search).'" placeholder="Cari kode inventaris, merk, tipe, nama staf, IP...">
+      <label class="form-label text-secondary small fw-semibold mb-1">Cari Perangkat / User / IP</label>
+      <div class="input-group input-group-sm">
+        <span class="input-group-text bg-white border-end-0"><i class="bi bi-search text-muted"></i></span>
+        <input type="text" class="form-control form-control-sm border-start-0" name="q" value="'.e($search).'" placeholder="Ketik kode, merk, tipe, nama pengguna, IP...">
       </div>
     </div>
     <div class="col-lg-2 col-md-3 col-sm-6">
-      <label class="form-label small fw-bold text-secondary">Cabang / Lokasi</label>
-      <select class="form-select" name="cabang">
+      <label class="form-label text-secondary small fw-semibold mb-1">Kantor Cabang</label>
+      <select class="form-select form-select-sm" name="cabang">
         '.$optCab.'
       </select>
     </div>
     <div class="col-lg-2 col-md-3 col-sm-6">
-      <label class="form-label small fw-bold text-secondary">Divisi / Bagian</label>
-      <select class="form-select" name="divisi">
+      <label class="form-label text-secondary small fw-semibold mb-1">Divisi</label>
+      <select class="form-select form-select-sm" name="divisi">
         '.$optDiv.'
       </select>
     </div>
     <div class="col-lg-2 col-md-3 col-sm-6">
-      <label class="form-label small fw-bold text-secondary">Status Komputer</label>
-      <select class="form-select" name="status">
+      <label class="form-label text-secondary small fw-semibold mb-1">Status Unit</label>
+      <select class="form-select form-select-sm" name="status">
         <option value="">Semua Status</option>
         <option value="Aktif"'.($statusAset === 'Aktif' ? ' selected' : '').'>Aktif</option>
         <option value="Backup"'.($statusAset === 'Backup' ? ' selected' : '').'>Backup</option>
-        <option value="Perbaikan"'.($statusAset === 'Perbaikan' ? ' selected' : '').'>Sedang Perbaikan</option>
+        <option value="Perbaikan"'.($statusAset === 'Perbaikan' ? ' selected' : '').'>Perbaikan</option>
         <option value="Nonaktif"'.($statusAset === 'Nonaktif' ? ' selected' : '').'>Nonaktif</option>
       </select>
     </div>
     <div class="col-lg-2 col-md-3 col-sm-6">
-      <label class="form-label small fw-bold text-secondary">Status Maintenance</label>
-      <select class="form-select" name="maint">
+      <label class="form-label text-secondary small fw-semibold mb-1">Status Maintenance</label>
+      <select class="form-select form-select-sm" name="maint">
         <option value="all">Semua Status</option>
-        <option value="done"'.($maintStatus === 'done' ? ' selected' : '').'>Sudah Selesai</option>
+        <option value="done"'.($maintStatus === 'done' ? ' selected' : '').'>Selesai</option>
         <option value="pending"'.($maintStatus === 'pending' ? ' selected' : '').'>Belum Selesai</option>
-        <option value="repair"'.($maintStatus === 'repair' ? ' selected' : '').'>Ada Temuan Masalah</option>
+        <option value="repair"'.($maintStatus === 'repair' ? ' selected' : '').'>Ada Temuan</option>
       </select>
     </div>
-    <div class="col-12 d-flex justify-content-between align-items-center pt-2 border-top">
+    <div class="col-12 d-flex justify-content-between align-items-center pt-2 border-top mt-2">
       <div class="text-secondary small">
-        Ditemukan <strong>'.$totalFiltered.'</strong> unit komputer dari total <strong>'.$statTotal.'</strong> unit.
+        Menampilkan <strong>'.$totalFiltered.'</strong> unit dari total <strong>'.$statTotal.'</strong> unit komputer.
       </div>
       <div class="d-flex gap-2">
-        <a class="btn btn-outline-secondary btn-sm px-3" href="'.e(module_url('assets.php')).'"><i class="bi bi-x-circle me-1"></i> Reset</a>
-        <button type="submit" class="btn btn-primary btn-sm px-4 fw-bold"><i class="bi bi-funnel-fill me-1"></i> Terapkan Filter</button>
+        <a class="btn btn-sm btn-light border px-3" href="'.e(module_url('assets.php')).'"><i class="bi bi-x-circle me-1"></i> Reset</a>
+        <button type="submit" class="btn btn-sm btn-primary px-3 fw-semibold"><i class="bi bi-filter me-1"></i> Terapkan</button>
       </div>
     </div>
   </form>
@@ -637,26 +622,27 @@ $body = '
 
 '.$statusBannerHtml.'
 
-<!-- Table Card -->
-<div class="card p-0 border-0 shadow-sm overflow-hidden mb-4">
+<!-- Table Surface Card -->
+<div class="card overflow-hidden mb-4">
   <div class="card-header bg-white py-3 px-4 d-flex justify-content-between align-items-center">
-    <h5 class="fw-bold text-dark mb-0"><i class="bi bi-table text-primary me-2"></i>Daftar Komputer & Perangkat IT</h5>
-    <div class="d-flex align-items-center gap-2">
-      <span class="badge text-bg-light border text-secondary">Halaman '.$page.' dari '.$totalPages.'</span>
+    <div>
+      <h2 class="h6 mb-0 fw-semibold text-dark"><i class="bi bi-pc-display me-2 text-primary"></i>Daftar Perangkat IT & Komputer</h2>
+      <div class="text-secondary small">Seluruh unit PC Desktop, Laptop, dan Printer terdata</div>
     </div>
+    <span class="small text-muted">Halaman '.$page.' dari '.$totalPages.'</span>
   </div>
   <div class="table-responsive">
     <table class="table table-hover align-middle mb-0">
-      <thead class="table-light">
+      <thead>
         <tr>
-          <th style="width: 45px;" class="text-center">No</th>
-          <th style="width: 160px;">Kode Inventaris</th>
-          <th>Perangkat / Tipe</th>
-          <th>Pengguna / PIC</th>
-          <th>Lokasi & IP Address</th>
-          <th style="width: 110px;" class="text-center">Status Unit</th>
-          <th style="width: 170px;" class="text-center">Maintenance ('.$currentMonthName.')</th>
-          <th style="width: 150px;" class="text-end">Aksi</th>
+          <th style="width: 40px;" class="text-center">No</th>
+          <th style="width: 150px;">Kode Inventaris</th>
+          <th>Perangkat / Spesifikasi</th>
+          <th>Pengguna / Divisi</th>
+          <th>Lokasi & IP</th>
+          <th style="width: 110px;" class="text-center">Kondisi</th>
+          <th style="width: 160px;" class="text-center">Maintenance ('.$currentMonthName.')</th>
+          <th style="width: 130px;" class="text-end">Aksi</th>
         </tr>
       </thead>
       <tbody>
@@ -670,4 +656,4 @@ $body = '
 </div>
 ';
 
-render_page('Data Komputer', $body);
+render_page('Asset Registry', $body);

@@ -23,7 +23,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $result = authenticate_user($username, $password);
 
     if (!empty($result['success'])) {
-        // Redirect ke halaman sebelumnya atau dashboard
         $redirect = $_SESSION['after_login'] ?? module_url('dashboard.php');
         unset($_SESSION['after_login']);
         header('Location: ' . $redirect);
@@ -33,14 +32,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-$errorHtml = $error ? '<div class="alert alert-danger border-0 shadow-sm py-2 px-3 d-flex align-items-center gap-2 mb-3"><i class="bi bi-shield-exclamation fs-5"></i><span>'.e($error).'</span></div>' : '';
+$errorHtml = $error ? '<div class="alert alert-danger border py-2 px-3 d-flex align-items-center gap-2 mb-3" style="background:#FEF3F2; border-color:#FECDCA; color:#B42318; border-radius:8px;"><i class="bi bi-shield-exclamation fs-5"></i><span class="small">'.e($error).'</span></div>' : '';
 
 $flashLogin = $_SESSION['flash_login'] ?? '';
 unset($_SESSION['flash_login']);
-$successHtml = $flashLogin ? '<div class="alert alert-success border-0 shadow-sm py-2 px-3 d-flex align-items-center gap-2 mb-3"><i class="bi bi-check-circle-fill fs-5"></i><span>'.e($flashLogin).'</span></div>' : '';
+$successHtml = $flashLogin ? '<div class="alert alert-success border py-2 px-3 d-flex align-items-center gap-2 mb-3" style="background:#ECFDF3; border-color:#A6F4C5; color:#16803C; border-radius:8px;"><i class="bi bi-check-circle-fill fs-5"></i><span class="small">'.e($flashLogin).'</span></div>' : '';
 
 $expiredHtml = (!empty($_GET['expired']) && !$error && !$flashLogin)
-    ? '<div class="alert alert-warning border-0 shadow-sm py-2 px-3 d-flex align-items-center gap-2 mb-3"><i class="bi bi-clock-history fs-5 text-warning-emphasis"></i><span class="small">Sesi Anda telah berakhir. Silakan masuk kembali untuk melanjutkan.</span></div>'
+    ? '<div class="alert alert-warning border py-2 px-3 d-flex align-items-center gap-2 mb-3" style="background:#FFFAEB; border-color:#FEDF89; color:#B54708; border-radius:8px;"><i class="bi bi-clock-history fs-5"></i><span class="small">Sesi Anda telah berakhir. Silakan masuk kembali untuk melanjutkan.</span></div>'
     : '';
 ?>
 <!doctype html>
@@ -48,203 +47,365 @@ $expiredHtml = (!empty($_GET['expired']) && !$error && !$flashLogin)
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Login · QR Maintenance System</title>
+<title>Masuk ke Sistem · IT Operations Bank Mitra</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
 <style>
+:root {
+  --navy-deep: #08182F;
+  --navy-primary: #0D2748;
+  --navy-subtle: #1E3A60;
+  --blue-corporate: #124E96;
+  --blue-accent: #2E7CF6;
+  --bg-app: #F4F7FB;
+  --border-subtle: #E4E9F0;
+  --border-strong: #CBD5E1;
+  --text-primary: #182230;
+  --text-secondary: #667085;
+  --text-muted: #98A2B3;
+}
+
 * { box-sizing: border-box; }
 
 body {
   margin: 0;
   min-height: 100vh;
   font-family: "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  background-color: #0b1528;
-  background-image: url('bg_login.php');
-  background-repeat: no-repeat;
-  background-position: center center;
-  background-attachment: fixed;
-  background-size: cover;
+  background-color: var(--bg-app);
+  color: var(--text-primary);
   display: flex;
-  align-items: center;
-  justify-content: center;
-  -webkit-font-smoothing: antialiased;
-  position: relative;
 }
 
-/* Overlay lembut agar teks tetap kontras tinggi */
-body::before {
-  content: "";
-  position: fixed;
-  inset: 0;
-  background: radial-gradient(circle at 75% 50%, rgba(11, 21, 40, 0.15) 0%, rgba(11, 21, 40, 0.4) 100%);
-  pointer-events: none;
-  z-index: 0;
-}
-
-.login-wrapper {
-  position: relative;
-  z-index: 1;
+.login-split-wrapper {
+  display: flex;
   width: 100%;
   min-height: 100vh;
+}
+
+/* Left Brand Panel */
+.brand-panel {
+  flex: 1;
+  background-color: var(--navy-deep);
+  color: #FFFFFF;
   display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 24px 20px;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 48px 56px;
+  position: relative;
+  overflow: hidden;
+  border-right: 1px solid var(--navy-subtle);
 }
 
-@media (min-width: 992px) {
-  .login-wrapper {
-    justify-content: flex-end;
-    padding-right: clamp(40px, 8vw, 130px);
-  }
+/* Subtle Technical Grid Motif (No AI neon glow) */
+.brand-panel::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: 
+    linear-gradient(to right, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+  background-size: 32px 32px;
+  pointer-events: none;
 }
 
-.login-container {
-  width: 100%;
-  max-width: 440px;
+.brand-panel-header {
+  position: relative;
+  z-index: 1;
 }
 
-.login-card {
-  background: #ffffff;
-  border: 1px solid #e2e8f0;
-  border-radius: 12px;
-  padding: 36px 32px 28px;
-  box-shadow: 0 20px 25px -5px rgba(15, 23, 42, 0.2), 0 8px 10px -6px rgba(15, 23, 42, 0.2);
-}
-
-.login-logo {
-  width: 54px;
-  height: 54px;
-  background: #1D4ED8;
+.brand-badge {
+  width: 44px;
+  height: 44px;
+  background-color: var(--blue-corporate);
+  border: 1px solid rgba(255, 255, 255, 0.2);
   border-radius: 10px;
-  display: flex;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  color: #fff;
-  font-size: 1.6rem;
-  margin: 0 auto 16px;
+  font-size: 1.4rem;
+  color: #FFFFFF;
+  margin-bottom: 16px;
 }
 
-.login-title {
+.brand-title {
   font-size: 1.35rem;
   font-weight: 700;
-  color: #0f172a;
-  text-align: center;
-  margin-bottom: 4px;
-  letter-spacing: -0.3px;
+  letter-spacing: 0.04em;
+  color: #FFFFFF;
 }
 
-.login-subtitle {
-  font-size: 0.88rem;
-  color: #64748b;
-  text-align: center;
-  margin-bottom: 24px;
+.brand-sub {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  color: var(--blue-accent);
+  text-transform: uppercase;
 }
 
-.form-floating > .form-control {
-  border: 1px solid #cbd5e1;
-  border-radius: 8px;
-  padding: 16px 14px 8px 44px;
+.brand-panel-content {
+  position: relative;
+  z-index: 1;
+  max-width: 520px;
+}
+
+.brand-tagline {
+  font-size: 2.1rem;
+  font-weight: 700;
+  line-height: 1.25;
+  letter-spacing: -0.02em;
+  color: #FFFFFF;
+  margin-bottom: 16px;
+}
+
+.brand-desc {
   font-size: 0.95rem;
-  height: 52px;
-  background: #f8fafc;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  color: #98A2B3;
+  line-height: 1.6;
 }
 
-.form-floating > .form-control:focus {
-  border-color: #1D4ED8;
-  box-shadow: 0 0 0 3px rgba(29, 78, 216, 0.15);
-  background: #fff;
+.brand-features {
+  margin-top: 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
 }
 
-.form-floating > label {
-  padding-left: 44px;
-  color: #64748b;
-  font-weight: 500;
+.feature-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 0.88rem;
+  color: #E4E9F0;
 }
 
-.input-icon {
-  position: absolute;
-  left: 14px;
-  top: 50%;
-  transform: translateY(-50%);
-  color: #64748b;
-  font-size: 1.1rem;
-  z-index: 5;
-  pointer-events: none;
+.feature-icon {
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  background-color: rgba(46, 124, 246, 0.15);
+  border: 1px solid rgba(46, 124, 246, 0.3);
+  color: var(--blue-accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.85rem;
+  flex-shrink: 0;
+}
+
+.brand-panel-footer {
+  position: relative;
+  z-index: 1;
+  font-size: 0.75rem;
+  color: #667085;
+}
+
+/* Right Form Panel */
+.form-panel {
+  width: 100%;
+  max-width: 540px;
+  background-color: #FFFFFF;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 48px 44px;
+}
+
+.form-panel-content {
+  width: 100%;
+  max-width: 400px;
+  margin: auto;
+}
+
+.form-header {
+  margin-bottom: 32px;
+}
+
+.form-title {
+  font-size: 1.55rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--text-primary);
+  margin-bottom: 6px;
+}
+
+.form-subtitle {
+  font-size: 0.88rem;
+  color: var(--text-secondary);
+}
+
+.field-label {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 6px;
+  display: block;
 }
 
 .field-wrapper {
   position: relative;
-  margin-bottom: 16px;
+  margin-bottom: 20px;
 }
 
-.btn-login {
-  width: 100%;
-  padding: 12px;
-  background: #1D4ED8;
-  border: 1px solid #1D4ED8;
-  border-radius: 8px;
-  color: #fff;
-  font-size: 0.95rem;
-  font-weight: 600;
-  letter-spacing: 0.2px;
-  transition: background-color 0.15s ease, border-color 0.15s ease;
-}
-
-.btn-login:hover {
-  background: #1E40AF;
-  border-color: #1E40AF;
-  color: #fff;
-}
-
-.btn-login:active {
-  background: #1e3a8a;
-  border-color: #1e3a8a;
-}
-
-.login-footer {
-  text-align: center;
-  color: rgba(255, 255, 255, 0.5);
-  font-size: 0.78rem;
-  margin-top: 24px;
-}
-
-.toggle-pass {
+.field-icon {
   position: absolute;
-  right: 14px;
+  left: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-muted);
+  font-size: 1rem;
+  z-index: 2;
+  pointer-events: none;
+}
+
+.form-control-custom {
+  width: 100%;
+  height: 44px;
+  padding: 8px 14px 8px 42px;
+  border: 1px solid var(--border-strong);
+  border-radius: 8px;
+  font-size: 0.92rem;
+  color: var(--text-primary);
+  background-color: #FFFFFF;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.form-control-custom:focus {
+  outline: none;
+  border-color: var(--blue-corporate);
+  box-shadow: 0 0 0 3px rgba(18, 78, 150, 0.14);
+}
+
+.toggle-pass-btn {
+  position: absolute;
+  right: 12px;
   top: 50%;
   transform: translateY(-50%);
   background: none;
   border: none;
-  color: #94a3b8;
+  color: var(--text-muted);
   cursor: pointer;
-  z-index: 5;
-  font-size: 1.1rem;
   padding: 4px;
+  font-size: 1rem;
+  z-index: 3;
 }
 
-.toggle-pass:hover {
-  color: #3b82f6;
+.toggle-pass-btn:hover {
+  color: var(--text-primary);
+}
+
+.btn-submit-login {
+  width: 100%;
+  height: 44px;
+  background-color: var(--blue-corporate);
+  border: 1px solid var(--blue-corporate);
+  border-radius: 8px;
+  color: #FFFFFF;
+  font-size: 0.92rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  cursor: pointer;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+
+.btn-submit-login:hover {
+  background-color: #0E3E77;
+  border-color: #0E3E77;
+}
+
+.security-notice {
+  background-color: #F8FAFC;
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+  padding: 12px 14px;
+  margin-top: 24px;
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  line-height: 1.5;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.form-panel-footer {
+  text-align: center;
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  padding-top: 24px;
+}
+
+@media (max-width: 991px) {
+  .brand-panel {
+    display: none;
+  }
+  .form-panel {
+    max-width: 100%;
+    padding: 32px 24px;
+  }
 }
 </style>
 </head>
 <body>
 
-<div class="login-wrapper">
-  <div class="login-container">
-    <div class="login-card">
-      <div class="login-logo">
-        <i class="bi bi-qr-code-scan"></i>
+<div class="login-split-wrapper">
+  <!-- Left Side: Corporate Identity & Technical Overview -->
+  <div class="brand-panel">
+    <div class="brand-panel-header">
+      <div class="brand-badge">
+        <i class="bi bi-shield-check"></i>
       </div>
-      <div class="text-center mb-2">
-        <span class="badge bg-primary bg-opacity-10 text-primary fw-bold px-3 py-1 border border-primary border-opacity-25" style="letter-spacing: 0.5px; font-size: 0.75rem;">BANK MITRA · IT ASSET</span>
+      <div class="brand-title">BANK MITRA</div>
+      <div class="brand-sub">PT. BPR MITRATAMA ARTHABUANA</div>
+    </div>
+
+    <div class="brand-panel-content">
+      <h1 class="brand-tagline">IT Asset & Maintenance Operations Center</h1>
+      <p class="brand-desc">
+        Sistem internal pemantauan kepatuhan aset teknologi informasi, inspeksi checklist berkala, kendali QR Code, dan pelaporan audit operasional perbankan.
+      </p>
+
+      <div class="brand-features">
+        <div class="feature-item">
+          <div class="feature-icon"><i class="bi bi-check2"></i></div>
+          <span>Pemeriksaan 9 poin checklist teknis komputer kantor cabang</span>
+        </div>
+        <div class="feature-item">
+          <div class="feature-icon"><i class="bi bi-shield-lock"></i></div>
+          <span>Verifikasi presensi inspeksi dan audit trail terenkripsi</span>
+        </div>
+        <div class="feature-item">
+          <div class="feature-icon"><i class="bi bi-qr-code"></i></div>
+          <span>Pindai QR fisik dan rekam jejak riwayat pemeliharaan perangkat</span>
+        </div>
       </div>
-      <h1 class="login-title">QR Maintenance</h1>
-      <p class="login-subtitle">Masuk untuk mengelola data pemeliharaan komputer kantor.</p>
+    </div>
+
+    <div class="brand-panel-footer">
+      <div>IT Operations & Infrastructure Division · Versi 2.4 Enterprise</div>
+      <div class="mt-1">Hak Cipta © <?= date('Y') ?> PT. BPR Mitratama Arthabuana. Seluruh hak cipta dilindungi.</div>
+    </div>
+  </div>
+
+  <!-- Right Side: Clean Enterprise Login Form -->
+  <div class="form-panel">
+    <div></div>
+    <div class="form-panel-content">
+      <div class="form-header">
+        <div class="d-lg-none mb-3">
+          <div class="brand-badge" style="width:38px; height:38px; font-size:1.15rem; margin-bottom:8px;">
+            <i class="bi bi-shield-check"></i>
+          </div>
+          <div class="brand-title text-dark" style="font-size:1.1rem;">BANK MITRA</div>
+          <div class="brand-sub">IT OPERATIONS</div>
+        </div>
+        <h2 class="form-title">Masuk ke Sistem</h2>
+        <div class="form-subtitle">Gunakan kredensial akun petugas untuk melanjutkan.</div>
+      </div>
 
       <?= $successHtml ?>
       <?= $expiredHtml ?>
@@ -252,33 +413,41 @@ body::before {
 
       <form method="post" autocomplete="off">
         <div class="field-wrapper">
-          <i class="bi bi-person-fill input-icon"></i>
-          <div class="form-floating">
-            <input type="text" class="form-control" id="inputUser" name="username" placeholder="Username" required autofocus>
-            <label for="inputUser">Username</label>
+          <label class="field-label" for="inputUser">Username</label>
+          <div style="position: relative;">
+            <i class="bi bi-person field-icon"></i>
+            <input type="text" class="form-control-custom" id="inputUser" name="username" placeholder="Masukkan username..." required autofocus>
           </div>
         </div>
 
         <div class="field-wrapper">
-          <i class="bi bi-lock-fill input-icon"></i>
-          <div class="form-floating">
-            <input type="password" class="form-control" id="inputPass" name="password" placeholder="Password" required>
-            <label for="inputPass">Password</label>
+          <label class="field-label" for="inputPass">Password</label>
+          <div style="position: relative;">
+            <i class="bi bi-lock field-icon"></i>
+            <input type="password" class="form-control-custom" id="inputPass" name="password" placeholder="Masukkan password..." required style="padding-right: 40px;">
+            <button type="button" class="toggle-pass-btn" onclick="togglePassword()" title="Tampilkan / Sembunyikan Password">
+              <i class="bi bi-eye" id="eyeIcon"></i>
+            </button>
           </div>
-          <button type="button" class="toggle-pass" onclick="togglePassword()" title="Tampilkan / Sembunyikan Password">
-            <i class="bi bi-eye" id="eyeIcon"></i>
-          </button>
         </div>
 
-        <button type="submit" class="btn btn-login mt-2">
-          <i class="bi bi-box-arrow-in-right me-2"></i> Masuk ke Sistem
+        <button type="submit" class="btn-submit-login mt-3">
+          <i class="bi bi-box-arrow-in-right"></i>
+          <span>Masuk ke Sistem</span>
         </button>
       </form>
+
+      <div class="security-notice">
+        <i class="bi bi-shield-exclamation text-secondary fs-5 mt-1"></i>
+        <div>
+          <strong>Akses Terbatas:</strong> Sistem internal ini diperuntukkan khusus teknisi IT dan petugas yang berwenang di lingkungan PT. BPR Mitratama Arthabuana.
+        </div>
+      </div>
     </div>
 
-    <div class="login-footer">
-      <div class="fw-semibold text-white" style="text-shadow: 0 1px 4px rgba(0,0,0,0.8); font-size: 0.86rem;">PT. BPR Mitratama Arthabuana</div>
-      <div class="small opacity-75 text-white mt-1" style="text-shadow: 0 1px 4px rgba(0,0,0,0.8);"><i class="bi bi-shield-lock-fill me-1"></i> Sistem Pemeliharaan Aset IT — Akses Terbatas</div>
+    <div class="form-panel-footer">
+      <div>Sistem Operasional Pemeliharaan Aset IT</div>
+      <div class="mt-1">Authorized personnel only</div>
     </div>
   </div>
 </div>

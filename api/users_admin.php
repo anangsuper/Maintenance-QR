@@ -120,34 +120,34 @@ if (!empty($pendingFaceUsers)) {
         $puId = (int)$pu['id'];
         $puPhoto = trim((string)($pu['face_photo'] ?? ''));
         $puImg = $puPhoto !== ''
-            ? '<img src="'.e($puPhoto).'" class="rounded-circle border border-2 border-warning shadow-sm" style="width: 60px; height: 60px; object-fit: cover;">'
-            : '<div class="bg-warning bg-opacity-25 rounded-circle d-flex align-items-center justify-content-center text-dark fw-bold" style="width: 60px; height: 60px;"><i class="bi bi-person fs-3"></i></div>';
+            ? '<img src="'.e($puPhoto).'" class="rounded border shadow-sm" style="width: 52px; height: 52px; object-fit: cover; border-color: var(--app-border) !important;">'
+            : '<div class="rounded d-flex align-items-center justify-content-center text-dark fw-bold" style="width: 52px; height: 52px; background-color: #FEF3C7; border: 1px solid #FCD34D;"><i class="bi bi-person fs-4 text-warning"></i></div>';
 
         $pendingItemsHtml .= '
         <div class="col-md-6 col-lg-4">
-          <div class="card border border-warning shadow-sm p-3 h-100 bg-white">
+          <div class="card border p-3 h-100 bg-white shadow-sm" style="border-radius: 8px; border-color: #FCD34D !important;">
             <div class="d-flex align-items-center gap-3 mb-2">
               '.$puImg.'
               <div>
-                <h6 class="fw-bold mb-0 text-dark">'.e($pu['nama']).'</h6>
-                <div class="small text-muted font-monospace">@'.e($pu['username']).' · '.ucfirst($pu['role']).'</div>
-                <span class="badge bg-warning text-dark small"><i class="bi bi-hourglass-split me-1"></i> Menunggu Persetujuan</span>
+                <h6 class="fw-bold mb-0 text-dark" style="font-size: 0.9rem;">'.e($pu['nama']).'</h6>
+                <div class="text-muted font-monospace small">@'.e($pu['username']).' · '.ucfirst($pu['role']).'</div>
+                <span class="badge-chip chip-warning mt-1" style="font-size: 0.7rem;"><i class="bi bi-hourglass-split"></i> Menunggu Verifikasi</span>
               </div>
             </div>
-            <div class="d-flex gap-2 mt-auto pt-2 border-top">
+            <div class="d-flex gap-2 mt-auto pt-2 border-top" style="border-color: var(--app-border) !important;">
               <form method="post" class="flex-fill" onsubmit="return confirm(\'Setujui dan verifikasi biometrik wajah '.addslashes($pu['nama']).'?\')">
                 <input type="hidden" name="_csrf" value="'.e(csrf_token()).'">
                 <input type="hidden" name="action" value="approve_face">
                 <input type="hidden" name="user_id" value="'.$puId.'">
-                <button type="submit" class="btn btn-success btn-sm fw-bold w-100">
-                  <i class="bi bi-check-circle-fill me-1"></i> SETUJUI
+                <button type="submit" class="btn btn-primary btn-sm fw-bold w-100 py-1" style="font-size: 0.78rem;">
+                  <i class="bi bi-check-circle-fill me-1"></i> Setujui
                 </button>
               </form>
               <form method="post" onsubmit="return confirm(\'Tolak sampel biometrik '.addslashes($pu['nama']).'?\')">
                 <input type="hidden" name="_csrf" value="'.e(csrf_token()).'">
                 <input type="hidden" name="action" value="reject_face">
                 <input type="hidden" name="user_id" value="'.$puId.'">
-                <button type="submit" class="btn btn-outline-danger btn-sm">
+                <button type="submit" class="btn btn-outline-danger btn-sm py-1" style="font-size: 0.78rem;">
                   <i class="bi bi-x-circle"></i> Tolak
                 </button>
               </form>
@@ -157,12 +157,15 @@ if (!empty($pendingFaceUsers)) {
     }
 
     $pendingBannerHtml = '
-    <div class="card border border-warning border-2 shadow-sm rounded-4 mb-4 bg-warning bg-opacity-10 p-3 p-md-4">
+    <div class="card border shadow-sm mb-4 p-4" style="border-radius: 8px; border-left: 4px solid #F59E0B !important; background-color: #FFFDF5; border-color: var(--app-border);">
       <div class="d-flex flex-wrap align-items-center justify-content-between mb-3 gap-2">
         <div>
-          <span class="badge bg-warning text-dark fw-bold px-2 py-1 mb-1"><i class="bi bi-exclamation-triangle-fill me-1"></i> Tindakan Diperlukan</span>
+          <div class="d-flex align-items-center gap-2 mb-1">
+            <span class="badge-chip chip-warning"><i class="bi bi-shield-exclamation"></i> ACTION REQUIRED</span>
+            <span class="text-muted small">ID: VERIFY-BIO-REQ</span>
+          </div>
           <h5 class="fw-bold text-dark mb-0"><i class="bi bi-person-bounding-box text-warning me-2"></i>Verifikasi Biometrik Wajah Teknisi ('.count($pendingFaceUsers).')</h5>
-          <div class="text-secondary small">Teknisi telah mendaftarkan wajahnya via HP. Admin wajib memverifikasi agar wajah tersebut dapat digunakan saat menyelesaikan maintenance.</div>
+          <div class="text-muted small">Teknisi telah mendaftarkan foto wajah via perangkat mobile. Wajib diverifikasi admin untuk autentikasi checklist.</div>
         </div>
       </div>
       <div class="row g-3">
@@ -186,96 +189,102 @@ foreach ($users as $u) {
     $fStat = strtolower(trim((string)($u['face_status'] ?? '')));
     $isBeingEdited = ($editId === $uId);
 
-    $nickBadge = ($uNick !== '') ? '<span class="badge bg-primary-subtle text-primary border border-primary-subtle ms-1 fw-bold" title="Nama Panggilan untuk Kolom Paraf Kartu Kontrol IT"><i class="bi bi-pen me-1"></i>Paraf: '.e($uNick).'</span>' : '';
+    $nickBadge = ($uNick !== '') ? '<span class="badge-chip chip-secondary ms-1 font-monospace" title="Nama Panggilan untuk Kolom Paraf Kartu Kontrol IT" style="font-size: 0.7rem;"><i class="bi bi-pen"></i> Paraf: '.e($uNick).'</span>' : '';
 
     $roleBadge = ($uRole === 'admin')
-        ? '<span class="badge bg-primary text-white px-2 py-1 fw-bold"><i class="bi bi-shield-lock-fill me-1"></i> Administrator</span>'
+        ? '<span class="badge-chip chip-primary"><i class="bi bi-shield-lock-fill"></i> Admin</span>'
         : (($uRole === 'auditor')
-            ? '<span class="badge bg-secondary text-white px-2 py-1 fw-bold"><i class="bi bi-eye-fill me-1"></i> Auditor / SKAI</span>'
-            : '<span class="badge bg-info-subtle text-info border border-info-subtle px-2 py-1 fw-bold"><i class="bi bi-tools me-1"></i> Teknisi IT</span>');
+            ? '<span class="badge-chip chip-secondary"><i class="bi bi-eye-fill"></i> Auditor</span>'
+            : '<span class="badge-chip chip-info"><i class="bi bi-tools"></i> Teknisi IT</span>');
 
     $statusBadge = (strcasecmp($uStatus, 'Nonaktif') === 0)
-        ? '<span class="badge bg-danger-subtle text-danger border border-danger-subtle px-2 py-1 fw-bold"><i class="bi bi-x-circle me-1"></i> Nonaktif</span>'
-        : '<span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1 fw-bold"><i class="bi bi-check-circle me-1"></i> Aktif</span>';
+        ? '<span class="badge-chip chip-danger"><i class="bi bi-x-circle-fill"></i> Nonaktif</span>'
+        : '<span class="badge-chip chip-success"><i class="bi bi-check-circle-fill"></i> Aktif</span>';
 
     // Status Biometrik & Tombol Aksi Verifikasi Admin
     if ($fDesc === '') {
-        $bioBadge = '<a href="'.e(module_url('user_biometric_enroll.php', ['id'=>$uId])).'" class="badge text-decoration-none bg-secondary-subtle text-secondary border border-secondary-subtle px-2 py-1 fw-semibold"><i class="bi bi-camera-fill me-1"></i> Daftarkan</a>';
+        $bioBadge = '<a href="'.e(module_url('user_biometric_enroll.php', ['id'=>$uId])).'" class="badge-chip chip-secondary text-decoration-none" style="font-size: 0.72rem;"><i class="bi bi-camera"></i> Daftarkan</a>';
     } elseif ($fStat === 'verified' || $fStat === 'terverifikasi') {
         $bioBadge = '<div class="d-inline-flex align-items-center gap-1">
-          <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1 fw-bold"><i class="bi bi-check-circle-fill me-1"></i> Terverifikasi</span>
+          <span class="badge-chip chip-success" style="font-size: 0.72rem;"><i class="bi bi-shield-check"></i> Terverifikasi</span>
           <form method="post" class="d-inline" onsubmit="return confirm(\'Hapus/reset data biometrik wajah '.addslashes($uNama).'?\')">
             <input type="hidden" name="_csrf" value="'.e(csrf_token()).'">
             <input type="hidden" name="action" value="reject_face">
             <input type="hidden" name="user_id" value="'.$uId.'">
-            <button type="submit" class="btn btn-sm btn-link text-danger p-0 text-decoration-none" title="Hapus Wajah"><i class="bi bi-x-circle"></i></button>
+            <button type="submit" class="btn btn-sm btn-link text-danger p-0 ms-1 text-decoration-none" title="Hapus Biometrik"><i class="bi bi-x-circle"></i></button>
           </form>
         </div>';
     } elseif ($fStat === 'pending' || $fStat === 'menunggu') {
         $bioBadge = '<div class="d-flex flex-column align-items-center gap-1">
-          <span class="badge bg-warning-subtle text-warning border border-warning-subtle px-2 py-1 fw-bold"><i class="bi bi-hourglass-split me-1"></i> Menunggu Verifikasi</span>
+          <span class="badge-chip chip-warning" style="font-size: 0.72rem;"><i class="bi bi-hourglass-split"></i> Menunggu</span>
           <div class="d-flex gap-1 mt-1">
-            <form method="post" class="d-inline" onsubmit="return confirm(\'Setujui dan verifikasi biometrik wajah '.addslashes($uNama).'?\')">
+            <form method="post" class="d-inline" onsubmit="return confirm(\'Setujui biometrik '.addslashes($uNama).'?\')">
               <input type="hidden" name="_csrf" value="'.e(csrf_token()).'">
               <input type="hidden" name="action" value="approve_face">
               <input type="hidden" name="user_id" value="'.$uId.'">
-              <button type="submit" class="btn btn-xs btn-success py-0 px-2 fw-bold" style="font-size: 0.72rem;"><i class="bi bi-check-lg me-1"></i>Setujui</button>
+              <button type="submit" class="btn btn-xs btn-primary py-0 px-2 fw-bold" style="font-size: 0.7rem;">Setujui</button>
             </form>
-            <form method="post" class="d-inline" onsubmit="return confirm(\'Tolak wajah '.addslashes($uNama).'?\')">
+            <form method="post" class="d-inline" onsubmit="return confirm(\'Tolak biometrik '.addslashes($uNama).'?\')">
               <input type="hidden" name="_csrf" value="'.e(csrf_token()).'">
               <input type="hidden" name="action" value="reject_face">
               <input type="hidden" name="user_id" value="'.$uId.'">
-              <button type="submit" class="btn btn-xs btn-outline-danger py-0 px-2" style="font-size: 0.72rem;">Tolak</button>
+              <button type="submit" class="btn btn-xs btn-outline-danger py-0 px-1" style="font-size: 0.7rem;">Tolak</button>
             </form>
           </div>
         </div>';
     } else {
-        $bioBadge = '<span class="badge bg-danger-subtle text-danger border border-danger-subtle px-2 py-1 fw-bold"><i class="bi bi-x-circle me-1"></i> Ditolak</span>';
+        $bioBadge = '<span class="badge-chip chip-danger" style="font-size: 0.72rem;"><i class="bi bi-x-circle"></i> Ditolak</span>';
     }
 
-    $telHtml = ($uTel !== '-' && $uTel !== '') ? '<div class="small text-secondary mt-1"><i class="bi bi-telephone me-1"></i>'.e($uTel).'</div>' : '';
+    $telHtml = ($uTel !== '-' && $uTel !== '') ? '<div class="small text-muted mt-1" style="font-size: 0.78rem;"><i class="bi bi-telephone me-1 text-secondary"></i>'.e($uTel).'</div>' : '';
 
     $delBtnHtml = '';
     if ($uId !== current_user_id()) {
         $confirmMsg = json_encode("Apakah Anda yakin ingin menghapus akun {$uNama} (@{$uUsername})? Tindakan ini permanen dan tidak dapat dibatalkan.");
         $delBtnHtml = '
-        <form method="post" class="d-inline ms-1" onsubmit="return confirm(' . htmlspecialchars($confirmMsg, ENT_QUOTES, 'UTF-8') . ')">
+        <form method="post" class="d-inline" onsubmit="return confirm(' . htmlspecialchars($confirmMsg, ENT_QUOTES, 'UTF-8') . ')">
           <input type="hidden" name="_csrf" value="'.e(csrf_token()).'">
           <input type="hidden" name="action" value="delete">
           <input type="hidden" name="user_id" value="'.$uId.'">
-          <button type="submit" class="btn btn-sm btn-outline-danger" title="Hapus Pengguna"><i class="bi bi-trash"></i></button>
+          <button type="submit" class="btn btn-outline-danger" title="Hapus Pengguna"><i class="bi bi-trash"></i></button>
         </form>';
     } else {
-        $delBtnHtml = ' <span class="badge bg-light text-dark border ms-1 py-1 fw-semibold" title="Akun Anda yang sedang aktif"><i class="bi bi-person-check-fill text-primary me-1"></i>Akun Anda</span>';
+        $delBtnHtml = ' <span class="badge-chip chip-secondary ms-1" style="font-size: 0.7rem;" title="Akun Anda yang sedang aktif"><i class="bi bi-person-check-fill"></i> Anda</span>';
     }
 
     $userRowsHtml .= '
-    <tr class="'.($isBeingEdited ? 'table-warning' : '').'">
-      <td class="text-center fw-semibold text-secondary">'.$no.'</td>
+    <tr class="'.($isBeingEdited ? 'table-active' : '').'" style="border-bottom: 1px solid var(--app-border);">
+      <td class="text-center font-monospace text-muted small">'.sprintf('%02d', $no).'</td>
       <td>
-        <div class="fw-bold text-dark fs-6 d-flex align-items-center flex-wrap"><i class="bi bi-person-circle text-primary me-2"></i>'.e($uNama).' '.$nickBadge.'</div>
-        <div class="small text-muted font-monospace">@'.e($uUsername).'</div>
+        <div class="fw-bold text-dark d-flex align-items-center flex-wrap gap-1">
+          <i class="bi bi-person-circle text-primary"></i>
+          <span>'.e($uNama).'</span>
+          '.$nickBadge.'
+        </div>
+        <div class="text-muted font-monospace small" style="font-size: 0.78rem;">@'.e($uUsername).'</div>
         '.$telHtml.'
       </td>
       <td>'.$roleBadge.'</td>
       <td class="text-center">'.$bioBadge.'</td>
       <td class="text-center">'.$statusBadge.'</td>
       <td class="text-nowrap text-end">
-        <a class="btn btn-sm btn-outline-primary me-1" href="'.e(module_url('user_biometric_enroll.php', ['id'=>$uId])).'" title="Daftarkan / Perbarui Wajah Biometrik"><i class="bi bi-person-bounding-box me-1"></i> Wajah</a>
-        <a class="btn btn-sm btn-outline-secondary" href="'.e(module_url('users_admin.php', ['edit'=>$uId])).'" title="Edit Pengguna"><i class="bi bi-pencil-square me-1"></i> Edit</a>
+        <div class="btn-group btn-group-sm">
+          <a class="btn btn-outline-secondary" href="'.e(module_url('user_biometric_enroll.php', ['id'=>$uId])).'" title="Daftarkan / Perbarui Wajah Biometrik"><i class="bi bi-camera"></i></a>
+          <a class="btn btn-outline-secondary" href="'.e(module_url('users_admin.php', ['edit'=>$uId])).'" title="Edit Pengguna"><i class="bi bi-pencil-square"></i></a>
+        </div>
         '.$delBtnHtml.'
       </td>
     </tr>';
 }
 
 if (!$userRowsHtml) {
-    $userRowsHtml = '<tr><td colspan="6" class="text-center py-4 text-secondary">Belum ada data pengguna. Silakan buat akun teknisi pertama Anda melalui form di samping.</td></tr>';
+    $userRowsHtml = '<tr><td colspan="6" class="text-center py-5 text-muted"><i class="bi bi-people fs-1 d-block mb-2 opacity-50"></i>Belum ada data pengguna. Silakan buat akun pengguna baru.</td></tr>';
 }
 
-$flashHtml = $flash ? '<div class="alert alert-success alert-dismissible fade show"><i class="bi bi-check-circle-fill me-2"></i>'.e($flash).'<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>' : '';
-$errorHtml = $error ? '<div class="alert alert-danger alert-dismissible fade show"><i class="bi bi-exclamation-triangle-fill me-2"></i>'.e($error).'<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>' : '';
+$flashHtml = $flash ? '<div class="alert alert-success alert-dismissible fade show border-0 shadow-sm" style="border-left: 4px solid #10B981 !important;"><i class="bi bi-check-circle-fill me-2 text-success"></i>'.e($flash).'<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>' : '';
+$errorHtml = $error ? '<div class="alert alert-danger alert-dismissible fade show border-0 shadow-sm" style="border-left: 4px solid #EF4444 !important;"><i class="bi bi-exclamation-triangle-fill me-2 text-danger"></i>'.e($error).'<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>' : '';
 
-$modeBadge = is_google_cloud_mode() ? '<span class="badge text-bg-info mb-2"><i class="bi bi-google me-1"></i> Google Cloud Sheets API v4</span>' : '<span class="badge text-bg-secondary mb-2"><i class="bi bi-database me-1"></i> MySQL Database</span>';
+$modeBadge = is_google_cloud_mode() ? '<span class="badge-chip chip-primary"><i class="bi bi-google"></i> Google Sheets API v4 Sync</span>' : '<span class="badge-chip chip-secondary"><i class="bi bi-database"></i> MySQL Enterprise</span>';
 
 // Form State: Add vs Edit
 if ($editUser) {
@@ -287,116 +296,126 @@ if ($editUser) {
     $editTeleponVal = ($editTelepon !== '-' && $editTelepon !== '') ? $editTelepon : '';
     $editStatus = $editUser['status'] ?? 'Aktif';
 
-    $formCardTitle = '<h5 class="fw-bold text-warning mb-3 border-bottom pb-2"><i class="bi bi-pencil-square me-2"></i>Edit Akun / Reset Password</h5>';
+    $formCardHeader = '
+    <div class="card-header bg-white py-3 px-4" style="border-bottom: 1px solid var(--app-border);">
+      <div class="text-uppercase small fw-bold text-warning" style="font-size: 0.72rem; letter-spacing: 0.06em;">MODIFIKASI PENGGUNA</div>
+      <h6 class="fw-bold mb-0 text-dark"><i class="bi bi-pencil-square text-warning me-2"></i>Edit Akun / Password</h6>
+    </div>';
+
     $formContent = '
-    <form method="post">
+    <form method="post" class="p-4">
       <input type="hidden" name="_csrf" value="'.e(csrf_token()).'">
       <input type="hidden" name="action" value="edit">
       <input type="hidden" name="user_id" value="'.(int)$editUser['id'].'">
 
       <div class="mb-3">
-        <label class="form-label fw-semibold">Username</label>
+        <label class="form-label text-uppercase fw-bold text-muted" style="font-size: 0.75rem; letter-spacing: 0.04em;">Username</label>
         <input type="text" class="form-control bg-light font-monospace" value="'.e($editUsername).'" readonly disabled>
-        <div class="form-text small">Username tidak dapat diubah setelah dibuat.</div>
+        <div class="form-text" style="font-size: 0.75rem;">Username permanen dan tidak dapat diubah.</div>
       </div>
 
       <div class="mb-3">
-        <label class="form-label fw-semibold">Nama Lengkap Petugas / Teknisi <span class="text-danger">*</span></label>
+        <label class="form-label text-uppercase fw-bold text-muted" style="font-size: 0.75rem; letter-spacing: 0.04em;">Nama Lengkap Petugas <span class="text-danger">*</span></label>
         <input type="text" class="form-control fw-bold" name="nama" required value="'.e($editNama).'" placeholder="Contoh: Budi Santoso, S.Kom">
       </div>
 
       <div class="mb-3">
-        <label class="form-label fw-semibold">Nama Panggilan Teknisi <span class="badge bg-primary-subtle text-primary border border-primary-subtle ms-1">Paraf Kartu Kontrol</span></label>
+        <label class="form-label text-uppercase fw-bold text-muted" style="font-size: 0.75rem; letter-spacing: 0.04em;">Nama Panggilan (Paraf Kartu)</label>
         <input type="text" class="form-control" name="nama_panggilan" value="'.e($editNick).'" placeholder="Contoh: Budi">
-        <div class="form-text small">Nama pendek ini yang akan dicetak di kolom <strong>PARAF</strong> kartu checklist kontrol IT.</div>
+        <div class="form-text" style="font-size: 0.75rem;">Dicetak pada kolom PARAF kartu inspeksi fisik.</div>
       </div>
 
       <div class="mb-3">
-        <label class="form-label fw-semibold">Peran / Hak Akses <span class="text-danger">*</span></label>
+        <label class="form-label text-uppercase fw-bold text-muted" style="font-size: 0.75rem; letter-spacing: 0.04em;">Hak Akses / Peran <span class="text-danger">*</span></label>
         <select class="form-select" name="role">
-          <option value="teknisi" '.($editRole==='teknisi'?'selected':'').'>🛠️ Teknisi IT (Melakukan scan & checklist maintenance)</option>
-          <option value="admin" '.($editRole==='admin'?'selected':'').'>👑 Administrator (Akses penuh seluruh master & akun)</option>
-          <option value="auditor" '.($editRole==='auditor'?'selected':'').'>👁️ Auditor / SKAI (Hanya lihat & verifikasi laporan)</option>
+          <option value="teknisi" '.($editRole==='teknisi'?'selected':'').'>Teknisi IT (Inspeksi & Checklist)</option>
+          <option value="admin" '.($editRole==='admin'?'selected':'').'>Administrator (Akses Penuh Sistem)</option>
+          <option value="auditor" '.($editRole==='auditor'?'selected':'').'>Auditor / SKAI (Read-Only Audit Trail)</option>
         </select>
       </div>
 
       <div class="mb-3">
-        <label class="form-label fw-semibold">Reset Password Baru</label>
-        <input type="password" class="form-control" name="password" placeholder="Kosongkan jika tidak ingin mengubah password...">
-        <div class="form-text small">Hanya diisi jika ingin mengganti password akun ini.</div>
+        <label class="form-label text-uppercase fw-bold text-muted" style="font-size: 0.75rem; letter-spacing: 0.04em;">Reset Password</label>
+        <input type="password" class="form-control" name="password" placeholder="Kosongkan jika tidak ingin merubah...">
+        <div class="form-text" style="font-size: 0.75rem;">Biarkan kosong kecuali ingin mengganti password.</div>
       </div>
 
       <div class="mb-3">
-        <label class="form-label fw-semibold">No. HP / WhatsApp</label>
+        <label class="form-label text-uppercase fw-bold text-muted" style="font-size: 0.75rem; letter-spacing: 0.04em;">No. Kontak WhatsApp</label>
         <input type="text" class="form-control" name="telepon" value="'.e($editTeleponVal).'" placeholder="Contoh: 08123456789">
       </div>
 
       <div class="mb-4">
-        <label class="form-label fw-semibold">Status Akun</label>
+        <label class="form-label text-uppercase fw-bold text-muted" style="font-size: 0.75rem; letter-spacing: 0.04em;">Status Akses Akun</label>
         <select class="form-select" name="status">
-          <option value="Aktif" '.($editStatus==='Aktif'?'selected':'').'>✅ Aktif (Dapat login ke sistem)</option>
-          <option value="Nonaktif" '.($editStatus==='Nonaktif'?'selected':'').'>⛔ Nonaktif (Blokir akses login)</option>
+          <option value="Aktif" '.($editStatus==='Aktif'?'selected':'').'>Aktif (Diberikan Akses Login)</option>
+          <option value="Nonaktif" '.($editStatus==='Nonaktif'?'selected':'').'>Nonaktif (Akses Ditangguhkan)</option>
         </select>
       </div>
 
       <div class="d-flex gap-2">
-        <a class="btn btn-outline-secondary flex-fill" href="'.e(module_url('users_admin.php')).'">Batal</a>
-        <button type="submit" class="btn btn-warning text-dark flex-fill fw-bold py-2"><i class="bi bi-save me-1"></i> Simpan Perubahan</button>
+        <a class="btn btn-outline-secondary flex-fill fw-semibold" href="'.e(module_url('users_admin.php')).'">Batal</a>
+        <button type="submit" class="btn btn-primary flex-fill fw-bold py-2"><i class="bi bi-save me-1"></i> Simpan Perubahan</button>
       </div>
     </form>';
 } else {
-    $formCardTitle = '<h5 class="fw-bold text-primary mb-3 border-bottom pb-2"><i class="bi bi-person-plus-fill me-2"></i>Buat Akun Teknisi / User Baru</h5>';
+    $formCardHeader = '
+    <div class="card-header bg-white py-3 px-4" style="border-bottom: 1px solid var(--app-border);">
+      <div class="text-uppercase small fw-bold" style="font-size: 0.72rem; letter-spacing: 0.06em; color: var(--app-accent);">PENGGUNA BARU</div>
+      <h6 class="fw-bold mb-0 text-dark"><i class="bi bi-person-plus text-primary me-2"></i>Tambah Akun Petugas</h6>
+    </div>';
+
     $formContent = '
-    <form method="post">
+    <form method="post" class="p-4">
       <input type="hidden" name="_csrf" value="'.e(csrf_token()).'">
       <input type="hidden" name="action" value="add">
 
       <div class="mb-3">
-        <label class="form-label fw-semibold">Username Login <span class="text-danger">*</span></label>
-        <input type="text" class="form-control font-monospace" name="username" required placeholder="Contoh: teknisi.budi, ahmad.it" autocomplete="off">
-        <div class="form-text small">Gunakan huruf kecil tanpa spasi.</div>
+        <label class="form-label text-uppercase fw-bold text-muted" style="font-size: 0.75rem; letter-spacing: 0.04em;">Username Login <span class="text-danger">*</span></label>
+        <input type="text" class="form-control font-monospace" name="username" required placeholder="Contoh: teknisi.budi" autocomplete="off">
+        <div class="form-text" style="font-size: 0.75rem;">Gunakan huruf kecil tanpa spasi.</div>
       </div>
 
       <div class="mb-3">
-        <label class="form-label fw-semibold">Password <span class="text-danger">*</span></label>
-        <input type="password" class="form-control" name="password" required placeholder="Masukkan password login..." autocomplete="new-password">
+        <label class="form-label text-uppercase fw-bold text-muted" style="font-size: 0.75rem; letter-spacing: 0.04em;">Password <span class="text-danger">*</span></label>
+        <input type="password" class="form-control" name="password" required placeholder="Password login akun..." autocomplete="new-password">
       </div>
 
       <div class="mb-3">
-        <label class="form-label fw-semibold">Nama Lengkap Petugas / Teknisi <span class="text-danger">*</span></label>
+        <label class="form-label text-uppercase fw-bold text-muted" style="font-size: 0.75rem; letter-spacing: 0.04em;">Nama Lengkap Petugas <span class="text-danger">*</span></label>
         <input type="text" class="form-control" name="nama" required placeholder="Contoh: Budi Santoso, S.Kom">
-        <div class="form-text small">Nama ini yang akan tercatat di log setiap scan maintenance.</div>
+        <div class="form-text" style="font-size: 0.75rem;">Nama ini tercatat di riwayat audit dan checklist.</div>
       </div>
 
       <div class="mb-3">
-        <label class="form-label fw-semibold">Nama Panggilan Teknisi <span class="badge bg-primary-subtle text-primary border border-primary-subtle ms-1">Paraf Kartu Kontrol</span></label>
+        <label class="form-label text-uppercase fw-bold text-muted" style="font-size: 0.75rem; letter-spacing: 0.04em;">Nama Panggilan (Paraf Kartu)</label>
         <input type="text" class="form-control" name="nama_panggilan" placeholder="Contoh: Budi">
-        <div class="form-text small">Nama pendek ini yang akan dicetak di kolom <strong>PARAF</strong> kartu checklist kontrol IT.</div>
+        <div class="form-text" style="font-size: 0.75rem;">Dicetak pada kolom PARAF kartu inspeksi fisik.</div>
       </div>
 
       <div class="mb-3">
-        <label class="form-label fw-semibold">Peran / Hak Akses <span class="text-danger">*</span></label>
+        <label class="form-label text-uppercase fw-bold text-muted" style="font-size: 0.75rem; letter-spacing: 0.04em;">Hak Akses / Peran <span class="text-danger">*</span></label>
         <select class="form-select" name="role">
-          <option value="teknisi" selected>🛠️ Teknisi IT (Melakukan scan & checklist maintenance)</option>
-          <option value="admin">👑 Administrator (Akses penuh seluruh master & akun)</option>
-          <option value="auditor">👁️ Auditor / SKAI (Hanya lihat & verifikasi laporan)</option>
+          <option value="teknisi" selected>Teknisi IT (Inspeksi & Checklist)</option>
+          <option value="admin">Administrator (Akses Penuh Sistem)</option>
+          <option value="auditor">Auditor / SKAI (Read-Only Audit Trail)</option>
         </select>
       </div>
 
       <div class="mb-3">
-        <label class="form-label fw-semibold">No. HP / WhatsApp</label>
+        <label class="form-label text-uppercase fw-bold text-muted" style="font-size: 0.75rem; letter-spacing: 0.04em;">No. Kontak WhatsApp</label>
         <input type="text" class="form-control" name="telepon" placeholder="Contoh: 08123456789">
       </div>
 
       <div class="mb-4">
-        <label class="form-label fw-semibold">Status Akun</label>
+        <label class="form-label text-uppercase fw-bold text-muted" style="font-size: 0.75rem; letter-spacing: 0.04em;">Status Akses Akun</label>
         <select class="form-select" name="status">
-          <option value="Aktif" selected>✅ Aktif (Dapat langsung login)</option>
-          <option value="Nonaktif">⛔ Nonaktif (Tangguhkan sementara)</option>
+          <option value="Aktif" selected>Aktif (Dapat langsung login)</option>
+          <option value="Nonaktif">Nonaktif (Akses ditangguhkan)</option>
         </select>
       </div>
 
-      <button type="submit" class="btn btn-primary w-100 fw-bold py-2"><i class="bi bi-save me-1"></i> Buat Akun Pengguna</button>
+      <button type="submit" class="btn btn-primary w-100 fw-bold py-2"><i class="bi bi-person-plus-fill me-1"></i> Buat Akun Pengguna</button>
     </form>';
 }
 
@@ -405,35 +424,41 @@ $body = '
 '.$errorHtml.'
 '.$pendingBannerHtml.'
 
+<!-- Header Kicker & Action Bar -->
 <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
   <div>
-    '.$modeBadge.'
-    <h2 class="fw-bold mb-0 text-dark"><i class="bi bi-people-fill text-primary me-2"></i>Kelola Akun Teknisi & Pengguna</h2>
-    <div class="text-secondary">Daftar akun petugas IT, teknisi lapangan, dan hak akses sistem QR Maintenance.</div>
+    <div class="text-uppercase small fw-bold" style="letter-spacing: 0.08em; color: var(--app-accent); font-size: 0.72rem; margin-bottom: 2px;">MANAGEMENT / ACCESS CONTROL & STAFF</div>
+    <h2 class="h3 fw-bold text-dark mb-1 d-flex align-items-center gap-2">
+      <i class="bi bi-people text-primary"></i> Akun Petugas & Hak Akses
+    </h2>
+    <div class="text-muted small">Registri akun petugas teknisi IT, verifikasi data biometrik wajah, dan pembagian hak akses operasional.</div>
   </div>
-  <div class="d-flex gap-2">
-    <a class="btn btn-outline-secondary" href="'.e(module_url('dashboard.php')).'"><i class="bi bi-arrow-left me-1"></i> Ke Dashboard</a>
-    <a class="btn btn-primary fw-bold" href="'.e(module_url('users_admin.php')).'"><i class="bi bi-person-plus-fill me-1"></i> + Buat Akun Baru</a>
+  <div class="d-flex align-items-center gap-2">
+    '.$modeBadge.'
+    <a class="btn btn-outline-secondary fw-semibold btn-sm" href="'.e(module_url('dashboard.php')).'"><i class="bi bi-arrow-left me-1"></i> Dashboard</a>
+    <a class="btn btn-primary fw-semibold btn-sm" href="'.e(module_url('users_admin.php')).'"><i class="bi bi-person-plus me-1"></i> Pengguna Baru</a>
   </div>
 </div>
 
 <div class="row g-4">
   <!-- Kolom Kiri: Tabel Daftar Pengguna -->
   <div class="col-lg-8">
-    <div class="card p-4 border-0 shadow-sm h-100">
-      <div class="d-flex justify-content-between align-items-center mb-3 border-bottom pb-2">
-        <h5 class="fw-bold text-dark mb-0"><i class="bi bi-person-badge text-primary me-2"></i>Daftar Pengguna Aktif ('.count($users).')</h5>
+    <div class="card p-0 border shadow-sm h-100" style="border-radius: 8px; border-color: var(--app-border) !important; background: #fff;">
+      <div class="card-header bg-white py-3 px-4 d-flex justify-content-between align-items-center" style="border-bottom: 1px solid var(--app-border);">
+        <div class="fw-bold text-dark text-uppercase small" style="letter-spacing: 0.05em;">
+          <i class="bi bi-person-badge text-primary me-2"></i>Daftar Pengguna Aktif ('.count($users).')
+        </div>
       </div>
       <div class="table-responsive">
         <table class="table table-hover align-middle mb-0">
-          <thead class="table-light">
+          <thead style="background-color: var(--app-navy); color: #ffffff;">
             <tr>
-              <th style="width: 40px;" class="text-center">No</th>
-              <th>Nama & Username</th>
-              <th>Peran / Role</th>
-              <th class="text-center">Biometrik Wajah</th>
-              <th class="text-center">Status</th>
-              <th class="text-end">Aksi</th>
+              <th style="width: 50px; background-color: var(--app-navy); color: #ffffff;" class="text-center font-monospace">NO</th>
+              <th style="background-color: var(--app-navy); color: #ffffff;">NAMA & USERNAME</th>
+              <th style="background-color: var(--app-navy); color: #ffffff;">PERAN</th>
+              <th style="width: 150px; background-color: var(--app-navy); color: #ffffff;" class="text-center">BIOMETRIK WAJAH</th>
+              <th style="width: 110px; background-color: var(--app-navy); color: #ffffff;" class="text-center">STATUS</th>
+              <th style="width: 120px; background-color: var(--app-navy); color: #ffffff;" class="text-end">AKSI</th>
             </tr>
           </thead>
           <tbody>
@@ -446,8 +471,8 @@ $body = '
 
   <!-- Kolom Kanan: Form Tambah / Edit Pengguna -->
   <div class="col-lg-4">
-    <div class="card p-4 border-0 shadow-sm '.($editUser ? 'border-warning border-2' : '').'">
-      '.$formCardTitle.'
+    <div class="card p-0 border shadow-sm" style="border-radius: 8px; border-color: var(--app-border) !important; background: #fff;">
+      '.$formCardHeader.'
       '.$formContent.'
     </div>
   </div>

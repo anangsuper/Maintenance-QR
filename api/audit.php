@@ -106,23 +106,64 @@ if (!$tableRows) {
 
 $body = '
 <!-- Header & Action Bar -->
-<div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+<div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3 mb-4">
   <div>
-    <h2 class="fw-bold mb-1 text-dark"><i class="bi bi-shield-check text-primary me-2"></i>Audit Maintenance IT</h2>
-    <div class="text-secondary">Pemeriksaan kepatuhan pemeliharaan perangkat IT periode <strong>'.$monthName.' '.$year.'</strong>.</div>
+    <div class="tech-label mb-1">MONITORING & AUDIT</div>
+    <h1 class="h3 mb-1">Reports & Audit Trail</h1>
+    <p class="text-secondary small mb-0">Pemeriksaan kepatuhan pemeliharaan perangkat IT dan rekam jejak audit periode <strong>'.$monthName.' '.$year.'</strong>.</p>
   </div>
   <div class="d-flex gap-2 flex-wrap">
-    <a class="btn btn-outline-secondary fw-semibold" href="'.e(module_url('audit.php', ['bulan'=>$month,'tahun'=>$year,'cabang'=>$cabangId,'divisi'=>$divisiId,'kategori'=>$kategoriId,'teknisi'=>$techFilter,'status'=>$statusFilter,'refresh'=>'1'])).'"><i class="bi bi-arrow-clockwise me-1"></i> Segarkan Data</a>
-    <a class="btn btn-primary fw-semibold" target="_blank" href="'.e(module_url('print_report.php', ['bulan'=>$month,'tahun'=>$year,'cabang'=>$cabangId])).'"><i class="bi bi-printer-fill me-1"></i> Cetak Laporan PDF</a>
-    <a class="btn btn-outline-success fw-semibold" href="'.e(module_url('export_csv.php', ['bulan'=>$month,'tahun'=>$year,'cabang'=>$cabangId])).'"><i class="bi bi-file-earmark-spreadsheet me-1"></i> Export Excel (CSV)</a>
+    <a class="btn btn-light border d-inline-flex align-items-center gap-1" href="'.e(module_url('audit.php', ['bulan'=>$month,'tahun'=>$year,'cabang'=>$cabangId,'divisi'=>$divisiId,'kategori'=>$kategoriId,'teknisi'=>$techFilter,'status'=>$statusFilter,'refresh'=>'1'])).'"><i class="bi bi-arrow-clockwise"></i> Segarkan</a>
+    
+    <div class="dropdown">
+      <button class="btn btn-primary dropdown-toggle d-inline-flex align-items-center gap-1 fw-semibold" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+        <i class="bi bi-download"></i> Export & Cetak
+      </button>
+      <ul class="dropdown-menu dropdown-menu-end shadow-sm border mt-1">
+        <li><a class="dropdown-item py-2" target="_blank" href="'.e(module_url('print_report.php', ['bulan'=>$month,'tahun'=>$year,'cabang'=>$cabangId])).'"><i class="bi bi-printer me-2 text-primary"></i> Cetak Laporan Formal (PDF)</a></li>
+        <li><a class="dropdown-item py-2" href="'.e(module_url('export_csv.php', ['bulan'=>$month,'tahun'=>$year,'cabang'=>$cabangId])).'"><i class="bi bi-file-earmark-spreadsheet me-2 text-success"></i> Export Data ke Excel (CSV)</a></li>
+      </ul>
+    </div>
   </div>
 </div>
 
-<!-- Filter Box -->
-<div class="card p-3 p-md-4 border-0 shadow-sm mb-4">
+<!-- Statistik Cards -->
+<div class="row g-3 mb-4">
+  <div class="col-6 col-md-3">
+    <div class="card card-metric h-100" style="border-left-color: var(--blue-corporate);">
+      <div class="metric-value">'.$stats['total'].'</div>
+      <div class="metric-label">Total Unit Diperiksa</div>
+      <div class="small text-muted mt-2" style="font-size: 0.72rem;">Unit dalam target</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="card card-metric h-100" style="border-left-color: #16803C;">
+      <div class="metric-value text-success">'.$stats['done'].'</div>
+      <div class="metric-label">Sudah Maintenance</div>
+      <div class="small text-success mt-2" style="font-size: 0.72rem;"><i class="bi bi-check-circle me-1"></i>'.$stats['percent'].'% Kepatuhan</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="card card-metric h-100" style="border-left-color: #B54708;">
+      <div class="metric-value text-warning">'.$stats['pending'].'</div>
+      <div class="metric-label">Belum Maintenance</div>
+      <div class="small text-muted mt-2" style="font-size: 0.72rem;">Menunggu jadwal</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="card card-metric h-100" style="border-left-color: #B42318;">
+      <div class="metric-value text-danger">'.$stats['repair'].'</div>
+      <div class="metric-label">Temuan Masalah</div>
+      <div class="small text-danger mt-2" style="font-size: 0.72rem;">Perlu perbaikan</div>
+    </div>
+  </div>
+</div>
+
+<!-- Compact Filter Box -->
+<div class="card p-3 mb-4">
   <form method="get" class="row g-2 align-items-end">
     <div class="col-6 col-md-2">
-      <label class="form-label small fw-bold text-secondary">Bulan</label>
+      <label class="form-label text-secondary small fw-semibold mb-1">Bulan</label>
       <select class="form-select form-select-sm" name="bulan">';
 for ($m=1; $m<=12; $m++) {
     $body .= '<option value="'.$m.'"'.($m === $month ? ' selected' : '').'>'.$monthNames[$m].'</option>';
@@ -131,78 +172,49 @@ $body .= '
       </select>
     </div>
     <div class="col-6 col-md-2">
-      <label class="form-label small fw-bold text-secondary">Tahun</label>
+      <label class="form-label text-secondary small fw-semibold mb-1">Tahun</label>
       <input type="number" class="form-control form-control-sm" name="tahun" value="'.$year.'">
     </div>
     <div class="col-6 col-md-2">
-      <label class="form-label small fw-bold text-secondary">Cabang</label>
+      <label class="form-label text-secondary small fw-semibold mb-1">Cabang</label>
       <select class="form-select form-select-sm" name="cabang">'.$cabangOpts.'</select>
     </div>
     <div class="col-6 col-md-2">
-      <label class="form-label small fw-bold text-secondary">Divisi</label>
+      <label class="form-label text-secondary small fw-semibold mb-1">Divisi</label>
       <select class="form-select form-select-sm" name="divisi">'.$divisiOpts.'</select>
     </div>
     <div class="col-6 col-md-2">
-      <label class="form-label small fw-bold text-secondary">Status</label>
+      <label class="form-label text-secondary small fw-semibold mb-1">Status</label>
       <select class="form-select form-select-sm" name="status">
         <option value="">Semua Status</option>
-        <option value="done"'.($statusFilter==='done'?' selected':'').'>✓ Sudah Maintenance</option>
-        <option value="pending"'.($statusFilter==='pending'?' selected':'').'>✕ Belum Maintenance</option>
-        <option value="repair"'.($statusFilter==='repair'?' selected':'').'>⚠️ Ada Temuan / Perlu Perbaikan</option>
+        <option value="done"'.($statusFilter==='done'?' selected':'').'>Sudah Maintenance</option>
+        <option value="pending"'.($statusFilter==='pending'?' selected':'').'>Belum Maintenance</option>
+        <option value="repair"'.($statusFilter==='repair'?' selected':'').'>Ada Temuan Masalah</option>
       </select>
     </div>
     <div class="col-6 col-md-2">
-      <button type="submit" class="btn btn-primary btn-sm w-100 fw-bold py-2"><i class="bi bi-funnel-fill me-1"></i> Terapkan Filter</button>
+      <button type="submit" class="btn btn-primary btn-sm w-100 fw-semibold"><i class="bi bi-filter me-1"></i> Terapkan</button>
     </div>
   </form>
 </div>
 
-<!-- Statistik Cards -->
-<div class="row g-3 mb-4">
-  <div class="col-6 col-md-3">
-    <div class="card p-3 border-0 shadow-sm border-start border-primary border-4 h-100">
-      <div class="text-secondary small fw-bold">TOTAL PERANGKAT</div>
-      <div class="fs-2 fw-bold text-dark mt-1">'.$stats['total'].'</div>
-      <div class="text-muted small">Unit terdaftar</div>
-    </div>
-  </div>
-  <div class="col-6 col-md-3">
-    <div class="card p-3 border-0 shadow-sm border-start border-success border-4 h-100">
-      <div class="text-success small fw-bold">SUDAH MAINTENANCE</div>
-      <div class="fs-2 fw-bold text-success mt-1">'.$stats['done'].'</div>
-      <div class="small text-success fw-semibold"><i class="bi bi-check-circle-fill"></i> '.$stats['percent'].'% Progress</div>
-    </div>
-  </div>
-  <div class="col-6 col-md-3">
-    <div class="card p-3 border-0 shadow-sm border-start border-danger border-4 h-100">
-      <div class="text-danger small fw-bold">BELUM MAINTENANCE</div>
-      <div class="fs-2 fw-bold text-danger mt-1">'.$stats['pending'].'</div>
-      <div class="small text-danger fw-semibold"><i class="bi bi-x-circle-fill"></i> Perlu dilakukan</div>
-    </div>
-  </div>
-  <div class="col-6 col-md-3">
-    <div class="card p-3 border-0 shadow-sm border-start border-warning border-4 h-100">
-      <div class="text-warning-emphasis small fw-bold">PROSES / PERLU PERBAIKAN</div>
-      <div class="fs-2 fw-bold text-warning-emphasis mt-1">'.$stats['repair'].'</div>
-      <div class="small text-muted">Ada temuan kendala</div>
-    </div>
-  </div>
-</div>
-
 <!-- Tabel Data Audit -->
-<div class="card p-4 border-0 shadow-sm">
-  <div class="d-flex justify-content-between align-items-center mb-3">
-    <h5 class="fw-bold text-dark mb-0"><i class="bi bi-list-check text-primary me-2"></i>Daftar Pemeriksaan Perangkat ('.count($rows).' Unit)</h5>
+<div class="card overflow-hidden mb-4">
+  <div class="card-header bg-white py-3 px-4 d-flex justify-content-between align-items-center">
+    <div>
+      <h2 class="h6 mb-0 fw-semibold text-dark"><i class="bi bi-list-check text-primary me-2"></i>Daftar Pemeriksaan Perangkat</h2>
+      <div class="text-secondary small">Total '.count($rows).' unit komputer tercatat dalam log audit</div>
+    </div>
   </div>
-  <div class="table-responsive rounded-3 border">
+  <div class="table-responsive">
     <table class="table table-hover align-middle mb-0">
-      <thead class="table-light">
+      <thead>
         <tr>
           <th style="width:30px" class="text-center">No</th>
           <th>Tanggal</th>
           <th>Kode Inventaris</th>
           <th>Perangkat</th>
-          <th>Pengguna/User</th>
+          <th>Pengguna</th>
           <th>Divisi</th>
           <th>Cabang</th>
           <th>Teknisi</th>
@@ -215,4 +227,4 @@ $body .= '
   </div>
 </div>';
 
-render_page('Audit Maintenance · ' . $monthName . ' ' . $year, $body);
+render_page('Reports & Audit Trail · ' . $monthName . ' ' . $year, $body);
