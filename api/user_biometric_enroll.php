@@ -186,7 +186,46 @@ foreach ($allUsers as $u) {
 }
 $userOptionsHtml .= '<option value="-1">+ Tambah Nama Teknisi Baru (Ketik Sendiri)</option>';
 
-$backHref = $retUrl !== '' ? $retUrl : (is_logged_in() ? module_url('users_admin.php') : module_url('dashboard.php'));
+$isLoggedIn = is_logged_in();
+$isAdmin = is_admin();
+
+if ($retUrl !== '') {
+    $backHref = $retUrl;
+    $backText = 'Kembali';
+} elseif ($isAdmin) {
+    $backHref = module_url('users_admin.php');
+    $backText = 'Kelola Pengguna';
+} elseif ($isLoggedIn) {
+    $backHref = module_url('dashboard.php');
+    $backText = 'Halaman Utama';
+} else {
+    $backHref = module_url('login.php');
+    $backText = 'Masuk / Login';
+}
+
+// Susun tombol aksi selesai sesuai status autentikasi pengguna
+$successButtonsHtml = '';
+if ($retUrl !== '') {
+    $successButtonsHtml .= '<a href="'.e($retUrl).'" class="btn btn-success fw-bold py-2"><i class="bi bi-arrow-return-left me-1"></i> Kembali Lanjutkan Maintenance</a>';
+}
+
+if ($isAdmin) {
+    $successButtonsHtml .= '<a href="'.e(module_url('users_admin.php')).'" class="btn btn-primary fw-semibold py-2"><i class="bi bi-people-fill me-1"></i> Halaman Data Pengguna</a>';
+    $successButtonsHtml .= '<a href="'.e(module_url('dashboard.php')).'" class="btn btn-outline-secondary fw-semibold py-2"><i class="bi bi-house me-1"></i> Halaman Utama</a>';
+} elseif ($isLoggedIn) {
+    $successButtonsHtml .= '<a href="'.e(module_url('dashboard.php')).'" class="btn btn-primary fw-semibold py-2"><i class="bi bi-house me-1"></i> Halaman Utama</a>';
+} else {
+    // Pengguna belum login (teknisi baru mendaftar mandiri)
+    $successButtonsHtml .= '<a href="'.e(module_url('login.php')).'" class="btn btn-primary fw-semibold py-2"><i class="bi bi-box-arrow-in-right me-1"></i> Halaman Login Petugas</a>';
+}
+
+$successButtonsHtml .= '<button type="button" class="btn btn-outline-secondary btn-sm" onclick="location.reload()"><i class="bi bi-person-plus me-1"></i> Daftarkan Teknisi Lain</button>';
+
+if ($isAdmin) {
+    $successDescHtml = 'Data foto dan profil teknisi telah disimpan.<br><br>Sebagai Administrator IT, Anda dapat langsung mengonfirmasi akun ini di menu <a href="'.e(module_url('users_admin.php')).'" class="fw-bold text-decoration-none">Kelola Data &rarr; Akun Pengguna / Teknisi</a>.';
+} else {
+    $successDescHtml = 'Foto profil dan data verifikasi telah disimpan dengan status: <span class="badge bg-warning text-dark px-2 py-1"><i class="bi bi-hourglass-split me-1"></i> Menunggu Persetujuan Admin</span>.<br><br>Administrator IT akan mengonfirmasi akun Anda agar dapat langsung digunakan saat checklist maintenance.';
+}
 
 $head = '
 <style>
@@ -250,7 +289,7 @@ $body = '
         <h4 class="fw-bold mb-0 text-dark">Foto Profil & Biometrik Teknisi</h4>
       </div>
       <a class="btn btn-outline-secondary btn-sm rounded-pill px-3" href="'.e($backHref).'">
-        <i class="bi bi-arrow-left"></i> Kembali
+        <i class="bi bi-arrow-left"></i> '.e($backText).'
       </a>
     </div>
 
@@ -279,22 +318,23 @@ $body = '
         <label class="form-label fw-bold text-dark small mb-1">
           <i class="bi bi-person-plus text-primary me-1"></i> Masukkan Nama Lengkap Teknisi:
         </label>
-        <div class="input-group mb-2">
-          <input type="text" class="form-control" id="newTechName" placeholder="Contoh: Budi Santoso" maxlength="80">
-          <button type="button" class="btn btn-primary fw-semibold px-3" id="btnQuickSaveTech" onclick="saveNewTechOnly()">
-            <i class="bi bi-check-lg me-1"></i> Simpan Nama
+        <input type="text" class="form-control mb-2" id="newTechName" placeholder="Contoh: Akhmad Hafizh Firmansyah" autocomplete="name">
+        <div class="d-flex gap-2">
+          <button type="button" class="btn btn-primary btn-sm fw-semibold" id="btnQuickSaveTech" onclick="saveNewTechOnly()">
+            <i class="bi bi-save me-1"></i> Simpan Nama ke Sistem
           </button>
+          <button type="button" class="btn btn-outline-secondary btn-sm" onclick="cancelNewTech()">Batal</button>
         </div>
-        <div class="d-flex justify-content-between align-items-center">
-          <div class="form-text text-muted mb-0" style="font-size: 0.74rem;">
-            Nama akan otomatis didaftarkan sebagai akun teknisi baru.
-          </div>
-          <button type="button" class="btn btn-link btn-sm text-secondary text-decoration-none py-0 px-1" onclick="cancelNewTech()">Batal</button>
-        </div>
-        <div id="newTechStatus" class="small mt-2"></div>
+        <div class="mt-2 small" id="newTechStatus"></div>
       </div>
 
+      <!-- Foto Avatar Eksisting (Jika ada) -->
       '.$avatarHtml.'
+
+      <!-- Status Registrasi Wajah -->
+      <div class="text-center mb-3">
+        '.$badgeStatus.'
+      </div>
 
       <!-- Panduan Singkat -->
       <div class="alert alert-light border rounded-3 p-3 mb-3 small text-secondary">
@@ -345,14 +385,10 @@ $body = '
       <div class="mt-3 p-3 bg-success bg-opacity-10 border border-success rounded-3 text-center d-none" id="successBox">
         <h5 class="fw-bold text-success mb-1"><i class="bi bi-check-circle-fill me-1"></i> Data Berhasil Disimpan</h5>
         <div class="small text-dark mb-3" id="successDesc">
-          Foto profil dan identitas teknisi telah disimpan dengan status: <span class="badge bg-warning text-dark"><i class="bi bi-hourglass-split me-1"></i> Menunggu Verifikasi Admin</span>.<br><br>
-          Administrator IT akan mengonfirmasi akun Anda agar dapat langsung digunakan saat checklist maintenance.
+          '.$successDescHtml.'
         </div>
         <div class="d-grid gap-2">
-          '.($retUrl !== '' ? '<a href="'.e($retUrl).'" class="btn btn-success fw-bold py-2"><i class="bi bi-arrow-return-left me-1"></i> Kembali Lanjutkan Maintenance</a>' : '').'
-          <a href="'.e(module_url('users_admin.php')).'" class="btn btn-outline-primary fw-semibold py-2"><i class="bi bi-people-fill me-1"></i> Halaman Data Pengguna</a>
-          <a href="'.e(module_url('dashboard.php')).'" class="btn btn-light border fw-semibold py-2"><i class="bi bi-house me-1"></i> Halaman Utama</a>
-          <button type="button" class="btn btn-outline-secondary btn-sm" onclick="location.reload()">Daftarkan Teknisi Lain</button>
+          '.$successButtonsHtml.'
         </div>
       </div>
 
@@ -744,7 +780,11 @@ async function saveBiometrics() {
       
       const successDesc = document.getElementById("successDesc");
       if (successDesc) {
-        successDesc.innerHTML = 'Data foto dan profil berhasil disimpan dengan status: <span class="badge bg-warning text-dark px-2 py-1"><i class="bi bi-hourglass-split me-1"></i> Menunggu Persetujuan Admin</span>.<br><br><strong>Verifikasi:</strong> Administrator IT dapat mengonfirmasi data akun Anda pada menu <em>Kelola Data &rarr; Akun Pengguna / Teknisi</em>.';
+        if (result.is_admin) {
+          successDesc.innerHTML = 'Data foto dan profil teknisi telah disimpan.<br><br>Sebagai Administrator IT, Anda dapat langsung mengonfirmasi akun ini di menu <strong>Kelola Data &rarr; Akun Pengguna / Teknisi</strong>.';
+        } else {
+          successDesc.innerHTML = 'Foto profil dan identitas teknisi telah disimpan dengan status: <span class="badge bg-warning text-dark px-2 py-1"><i class="bi bi-hourglass-split me-1"></i> Menunggu Persetujuan Admin</span>.<br><br>Administrator IT akan mengonfirmasi akun Anda agar dapat langsung digunakan saat checklist maintenance.';
+        }
       }
       
       successBox.classList.remove("d-none");
