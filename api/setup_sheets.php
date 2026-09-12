@@ -194,6 +194,20 @@ if (empty($existing)) {
 $client->updateValues('Users!A1:M1', [['id', 'username', 'password', 'nama', 'role', 'telepon', 'status', 'created_at', 'face_descriptor', 'face_photo', 'face_status', 'passkey_credential', 'nama_panggilan']], 'RAW');
 $results[] = "✅ Tab Users — 13 kolom lengkap (termasuk Face ID, Passkey, & Nama Panggilan) siap";
 
+// ====== 11. Tab Audit_Trail ======
+$client->createSheetIfNotExists('Audit_Trail');
+$client->ensureMinColumns('Audit_Trail', 15);
+$existingAudit = $client->getValues('Audit_Trail!A1:K1');
+if (empty($existingAudit)) {
+    $client->appendValues('Audit_Trail!A:K', [
+        ['id', 'created_at', 'user_id', 'user_name', 'user_role', 'ip_address', 'action', 'module', 'target_id', 'target_label', 'details'],
+        [1, date('Y-m-d H:i:s'), 1, 'admin', 'admin', '127.0.0.1', 'CREATE', 'SISTEM', 1, 'Audit Trail Initialized', 'Inisialisasi modul Audit Trail POJK / ISO 27001']
+    ], 'USER_ENTERED');
+    $results[] = "✅ Tab Audit_Trail — dibuat + header & log inisialisasi";
+} else {
+    $results[] = "⏭️ Tab Audit_Trail — sudah ada";
+}
+
 // ====== Tampilkan Hasil ======
 $html = '<div class="card p-4"><h3>🔧 Setup Google Sheet — Selesai!</h3><hr>';
 foreach ($results as $r) {

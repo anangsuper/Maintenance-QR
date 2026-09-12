@@ -191,6 +191,11 @@ function create_new_asset(array $data): array {
             date('Y-m-d H:i:s')
         ]]);
 
+        $devLabel = trim($merk . ' ' . $model);
+        $label = $kode . ($devLabel !== '' ? " ({$devLabel})" : '');
+        $detail = "Registrasi unit baru. Pengguna: " . ($namaKar ?: '-') . ", IP: " . ($ip ?: '-');
+        record_audit_log('CREATE', 'ASET', $newAssetId, $label, $detail);
+
         return [
             'success' => true,
             'asset_id' => $newAssetId,
@@ -258,6 +263,11 @@ function create_new_asset(array $data): array {
         ");
         $insQr->execute([$assetId, $token, $placement]);
 
+        $devLabel = trim($merk . ' ' . $model);
+        $label = $kode . ($devLabel !== '' ? " ({$devLabel})" : '');
+        $detail = "Registrasi unit baru. Pengguna: " . ($namaKar ?: '-') . ", IP: " . ($ip ?: '-');
+        record_audit_log('CREATE', 'ASET', $assetId, $label, $detail);
+
         return [
             'success' => true,
             'asset_id' => $assetId,
@@ -295,6 +305,8 @@ function get_asset_by_id(int $id): ?array {
 
 function update_asset(int $id, array $data): array {
     if ($id <= 0) return ['success' => false, 'error' => 'ID aset tidak valid'];
+
+    $oldAsset = get_asset_by_id($id);
 
     $kode = trim((string)($data['kode_inventaris'] ?? ''));
     $merk = trim((string)($data['merk'] ?? ''));
@@ -394,6 +406,14 @@ function update_asset(int $id, array $data): array {
 
         map_sheets_assets(true);
 
+        if ($oldAsset) {
+            $diffs = diff_asset_changes($oldAsset, $data);
+            $devLabel = trim(($merk ?: ($oldAsset['merk'] ?? '')) . ' ' . ($model ?: ($oldAsset['model'] ?? '')));
+            $label = ($kode ?: ($oldAsset['kode_inventaris'] ?? '#' . $id)) . ($devLabel !== '' ? " ({$devLabel})" : '');
+            $detail = !empty($diffs) ? implode(' | ', $diffs) : 'Data aset diperbarui';
+            record_audit_log('UPDATE', 'ASET', $id, $label, $detail);
+        }
+
         return [
             'success' => true,
             'asset_id' => $id,
@@ -456,6 +476,14 @@ function update_asset(int $id, array $data): array {
         $upQr = db()->prepare("UPDATE asset_qr_tokens SET placement_label = ? WHERE asset_id = ?");
         $upQr->execute([$placement, $id]);
 
+        if ($oldAsset) {
+            $diffs = diff_asset_changes($oldAsset, $data);
+            $devLabel = trim(($merk ?: ($oldAsset['merk'] ?? '')) . ' ' . ($model ?: ($oldAsset['model'] ?? '')));
+            $label = ($kode ?: ($oldAsset['kode_inventaris'] ?? '#' . $id)) . ($devLabel !== '' ? " ({$devLabel})" : '');
+            $detail = !empty($diffs) ? implode(' | ', $diffs) : 'Data aset diperbarui';
+            record_audit_log('UPDATE', 'ASET', $id, $label, $detail);
+        }
+
         return [
             'success' => true,
             'asset_id' => $id,
@@ -469,6 +497,8 @@ function update_asset(int $id, array $data): array {
 
 function delete_asset(int $id): array {
     if ($id <= 0) return ['success' => false, 'error' => 'ID aset tidak valid'];
+
+    $oldAsset = get_asset_by_id($id);
 
     if (is_google_cloud_mode()) {
         $client = google_sheets_v4_client();
@@ -507,6 +537,14 @@ function delete_asset(int $id): array {
 
         $client->clearCache();
         map_sheets_assets(true);
+
+        if ($oldAsset) {
+            $devLabel = trim(($oldAsset['merk'] ?? '') . ' ' . ($oldAsset['model'] ?? ''));
+            $label = ($oldAsset['kode_inventaris'] ?? '#' . $id) . ($devLabel !== '' ? " ({$devLabel})" : '');
+            $detail = "Menghapus unit komputer. Pengguna: " . ($oldAsset['karyawan_nama'] ?? '-') . ", Cabang: " . ($oldAsset['cabang_nama'] ?? '-') . ", Divisi: " . ($oldAsset['divisi_nama'] ?? '-') . ", IP: " . ($oldAsset['ip_address'] ?? '-');
+            record_audit_log('DELETE', 'ASET', $id, $label, $detail);
+        }
+
         return ['success' => true];
     }
 
@@ -520,6 +558,13 @@ function delete_asset(int $id): array {
 
         $st = db()->prepare("DELETE FROM assets WHERE id = ?");
         $st->execute([$id]);
+
+        if ($oldAsset) {
+            $devLabel = trim(($oldAsset['merk'] ?? '') . ' ' . ($oldAsset['model'] ?? ''));
+            $label = ($oldAsset['kode_inventaris'] ?? '#' . $id) . ($devLabel !== '' ? " ({$devLabel})" : '');
+            $detail = "Menghapus unit komputer. Pengguna: " . ($oldAsset['karyawan_nama'] ?? '-') . ", Cabang: " . ($oldAsset['cabang_nama'] ?? '-') . ", Divisi: " . ($oldAsset['divisi_nama'] ?? '-') . ", IP: " . ($oldAsset['ip_address'] ?? '-');
+            record_audit_log('DELETE', 'ASET', $id, $label, $detail);
+        }
 
         return ['success' => true];
     } catch (Throwable $e) {

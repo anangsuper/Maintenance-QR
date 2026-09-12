@@ -75,3 +75,23 @@ CREATE TABLE IF NOT EXISTS maintenance_findings (
     KEY idx_finding_asset (asset_id),
     KEY idx_finding_status (repair_status)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS system_audit_logs (
+    id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    user_id INT NULL,
+    user_name VARCHAR(100) NOT NULL,
+    user_role VARCHAR(50) NOT NULL,
+    ip_address VARCHAR(45) NULL,
+    user_agent VARCHAR(255) NULL,
+    action VARCHAR(50) NOT NULL,
+    module VARCHAR(50) NOT NULL,
+    target_id INT NULL,
+    target_label VARCHAR(255) NULL,
+    details TEXT NULL,
+    PRIMARY KEY (id),
+    KEY idx_audit_created (created_at),
+    KEY idx_audit_module (module),
+    KEY idx_audit_action (action),
+    KEY idx_audit_user (user_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

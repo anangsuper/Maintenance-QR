@@ -7,6 +7,7 @@
  */
 require_once __DIR__ . '/includes/core.php';
 require_once __DIR__ . '/includes/auth.php';
+require_once __DIR__ . '/includes/audit_trail.php';
 require_once __DIR__ . '/includes/users.php';
 require_once __DIR__ . '/includes/master_data.php';
 require_once __DIR__ . '/includes/assets.php';

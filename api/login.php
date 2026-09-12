@@ -23,12 +23,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $result = authenticate_user($username, $password);
 
     if (!empty($result['success'])) {
+        record_audit_log('LOGIN_SUCCESS', 'KEAMANAN', (int)($_SESSION['user']['id'] ?? 0), $username, 'Login berhasil ke sistem', [
+            'user_name' => (string)($_SESSION['user']['nama'] ?? $username),
+            'user_role' => (string)($_SESSION['user']['role'] ?? 'teknisi'),
+            'user_id' => (int)($_SESSION['user']['id'] ?? 0)
+        ]);
         $redirect = $_SESSION['after_login'] ?? module_url('dashboard.php');
         unset($_SESSION['after_login']);
         header('Location: ' . $redirect);
         exit;
     } else {
         $error = $result['error'] ?? 'Username atau password salah.';
+        record_audit_log('LOGIN_FAILED', 'KEAMANAN', null, $username, 'Percobaan login gagal: ' . $error, [
+            'user_name' => $username,
+            'user_role' => 'tamu'
+        ]);
     }
 }
 

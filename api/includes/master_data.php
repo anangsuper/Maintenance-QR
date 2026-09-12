@@ -77,6 +77,8 @@ function create_new_cabang(array $data): array {
 
         $client->clearCache('Cabang');
 
+        record_audit_log('CREATE', 'CABANG', $newId, $nama, 'Menambahkan kantor cabang baru: ' . $nama);
+
         return [
             'success' => true,
             'id' => $newId,
@@ -96,6 +98,8 @@ function create_new_cabang(array $data): array {
         $ins = db()->prepare("INSERT INTO cabang (`{$cName}`) VALUES (?)");
         $ins->execute([$nama]);
         $newId = (int)db()->lastInsertId();
+
+        record_audit_log('CREATE', 'CABANG', $newId, $nama, 'Menambahkan kantor cabang baru: ' . $nama);
 
         return [
             'success' => true,
@@ -144,6 +148,13 @@ function update_cabang(int $id, array $data): array {
             return ['success' => false, 'error' => 'Gagal menentukan baris data cabang'];
         }
 
+        // Pastikan kolom E (penanggung_jawab) ada
+        $headers = $client->getHeaders('Cabang');
+        if (!in_array('penanggung_jawab', $headers, true)) {
+            $client->ensureMinColumns('Cabang', 5);
+            $client->updateValues('Cabang!E1', [['penanggung_jawab']]);
+        }
+
         $updated = $client->updateValues("Cabang!A{$rowNum}:E{$rowNum}", [[
             $id,
             $nama,
@@ -159,6 +170,8 @@ function update_cabang(int $id, array $data): array {
         $client->clearCache('Cabang');
         map_sheets_assets(true);
 
+        record_audit_log('UPDATE', 'CABANG', $id, $nama, 'Memperbarui data kantor cabang: ' . $nama);
+
         return ['success' => true, 'id' => $id, 'nama' => $nama];
     }
 
@@ -167,6 +180,9 @@ function update_cabang(int $id, array $data): array {
         $cName = name_column('cabang') ?: 'nama_cabang';
         $up = db()->prepare("UPDATE cabang SET `{$cName}` = ? WHERE id = ?");
         $up->execute([$nama, $id]);
+
+        record_audit_log('UPDATE', 'CABANG', $id, $nama, 'Memperbarui data kantor cabang: ' . $nama);
+
         return ['success' => true, 'id' => $id, 'nama' => $nama];
     } catch (Throwable $e) {
         return ['success' => false, 'error' => $e->getMessage()];
@@ -231,6 +247,8 @@ function create_new_divisi(array $data): array {
 
         $client->clearCache('Divisi');
 
+        record_audit_log('CREATE', 'DIVISI', $newId, $nama, 'Menambahkan divisi baru: ' . $nama);
+
         return [
             'success' => true,
             'id' => $newId,
@@ -256,6 +274,8 @@ function create_new_divisi(array $data): array {
             $ins->execute([$nama]);
         }
         $newId = (int)db()->lastInsertId();
+
+        record_audit_log('CREATE', 'DIVISI', $newId, $nama, 'Menambahkan divisi baru: ' . $nama);
 
         return [
             'success' => true,
@@ -311,6 +331,8 @@ function update_divisi(int $id, array $data): array {
         $client->clearCache('Divisi');
         map_sheets_assets(true);
 
+        record_audit_log('UPDATE', 'DIVISI', $id, $nama, 'Memperbarui data divisi: ' . $nama);
+
         return ['success' => true, 'id' => $id, 'nama' => $nama];
     }
 
@@ -325,6 +347,9 @@ function update_divisi(int $id, array $data): array {
             $up = db()->prepare("UPDATE divisi SET `{$dName}` = ? WHERE id = ?");
             $up->execute([$nama, $id]);
         }
+
+        record_audit_log('UPDATE', 'DIVISI', $id, $nama, 'Memperbarui data divisi: ' . $nama);
+
         return ['success' => true, 'id' => $id, 'nama' => $nama];
     } catch (Throwable $e) {
         return ['success' => false, 'error' => $e->getMessage()];

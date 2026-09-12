@@ -467,9 +467,14 @@ function create_new_user(array $data): array {
                 'role' => $role,
                 'telepon' => $teleponStored,
                 'status' => $status,
+                'created_at' => date('Y-m-d H:i:s'),
                 'face_status' => $faceStatus
             ]
         ];
+
+        record_audit_log('CREATE', 'PENGGUNA', $newId, "{$username} ({$nama})", "Menambahkan pengguna baru. Role: {$role}, Status: {$status}");
+
+        return $ret;
     }
 
     // MySQL Mode
@@ -536,6 +541,8 @@ function create_new_user(array $data): array {
         }
         $newId = (int)db()->lastInsertId();
 
+        record_audit_log('CREATE', 'PENGGUNA', $newId, "{$username} ({$nama})", "Menambahkan pengguna baru. Role: {$role}, Status: {$status}");
+
         return ['success' => true, 'id' => $newId, 'username' => $username, 'nama' => $nama, 'nama_panggilan' => $namaPanggilan];
     } catch (Throwable $e) {
         return ['success' => false, 'error' => $e->getMessage()];
@@ -544,6 +551,8 @@ function create_new_user(array $data): array {
 
 function update_user(int $id, array $data): array {
     if ($id <= 0) return ['success' => false, 'error' => 'ID pengguna tidak valid'];
+
+    $oldUser = get_user_by_id($id);
 
     $nama = trim((string)($data['nama'] ?? ''));
     $namaPanggilan = trim((string)($data['nama_panggilan'] ?? ''));
@@ -594,6 +603,7 @@ function update_user(int $id, array $data): array {
                     '', '', 'verified', '', $namaPanggilan
                 ]]);
                 $client->clearCache('Users');
+                record_audit_log('UPDATE', 'PENGGUNA', $id, "{$username} ({$nama})", "Menginisialisasi dan memperbarui akun pengguna default");
                 return ['success' => true, 'id' => $id, 'nama' => $nama, 'nama_panggilan' => $namaPanggilan];
             }
             return ['success' => false, 'error' => 'Pengguna tidak ditemukan'];
@@ -624,6 +634,18 @@ function update_user(int $id, array $data): array {
         }
 
         $client->clearCache('Users');
+
+        if ($oldUser) {
+            $diffs = [];
+            if (($oldUser['nama'] ?? '') !== $nama) $diffs[] = 'Nama: "' . ($oldUser['nama'] ?? '') . '" ➔ "' . $nama . '"';
+            if (($oldUser['role'] ?? '') !== $role) $diffs[] = 'Role: ' . ($oldUser['role'] ?? '') . ' ➔ ' . $role;
+            if (($oldUser['status'] ?? '') !== $status) $diffs[] = 'Status: ' . ($oldUser['status'] ?? '') . ' ➔ ' . $status;
+            if ($password !== '') $diffs[] = 'Password diperbarui';
+            $detail = !empty($diffs) ? implode(' | ', $diffs) : 'Data pengguna diperbarui';
+            $uLabel = ($oldUser['username'] ?? 'User') . ' (' . ($nama ?: ($oldUser['nama'] ?? '')) . ')';
+            record_audit_log('UPDATE', 'PENGGUNA', $id, $uLabel, $detail);
+        }
+
         return ['success' => true, 'id' => $id, 'nama' => $nama, 'nama_panggilan' => $namaPanggilan];
     }
 
@@ -656,6 +678,17 @@ function update_user(int $id, array $data): array {
             }
         }
 
+        if ($oldUser) {
+            $diffs = [];
+            if (($oldUser['nama'] ?? '') !== $nama) $diffs[] = 'Nama: "' . ($oldUser['nama'] ?? '') . '" ➔ "' . $nama . '"';
+            if (($oldUser['role'] ?? '') !== $role) $diffs[] = 'Role: ' . ($oldUser['role'] ?? '') . ' ➔ ' . $role;
+            if (($oldUser['status'] ?? '') !== $status) $diffs[] = 'Status: ' . ($oldUser['status'] ?? '') . ' ➔ ' . $status;
+            if ($password !== '') $diffs[] = 'Password diperbarui';
+            $detail = !empty($diffs) ? implode(' | ', $diffs) : 'Data pengguna diperbarui';
+            $uLabel = ($oldUser['username'] ?? 'User') . ' (' . ($nama ?: ($oldUser['nama'] ?? '')) . ')';
+            record_audit_log('UPDATE', 'PENGGUNA', $id, $uLabel, $detail);
+        }
+
         return ['success' => true, 'id' => $id, 'nama' => $nama, 'nama_panggilan' => $namaPanggilan];
     } catch (Throwable $e) {
         return ['success' => false, 'error' => $e->getMessage()];
@@ -671,6 +704,8 @@ function delete_user(int $id): array {
     if ($id === current_user_id()) {
         return ['success' => false, 'error' => 'Anda tidak dapat menghapus akun Anda sendiri yang sedang aktif digunakan.'];
     }
+
+    $oldUser = get_user_by_id($id);
 
     if (is_google_cloud_mode()) {
         $client = google_sheets_v4_client();
@@ -701,6 +736,12 @@ function delete_user(int $id): array {
 
         $client->clearCache('Users');
         get_user_list(true);
+
+        if ($oldUser) {
+            $uLabel = ($oldUser['username'] ?? '#' . $id) . ' (' . ($oldUser['nama'] ?? '-') . ')';
+            record_audit_log('DELETE', 'PENGGUNA', $id, $uLabel, "Menghapus akun pengguna. Role: " . ($oldUser['role'] ?? '-'));
+        }
+
         return ['success' => true];
     }
 
@@ -708,6 +749,12 @@ function delete_user(int $id): array {
     try {
         $st = db()->prepare("DELETE FROM users WHERE id = ?");
         $st->execute([$id]);
+
+        if ($oldUser) {
+            $uLabel = ($oldUser['username'] ?? '#' . $id) . ' (' . ($oldUser['nama'] ?? '-') . ')';
+            record_audit_log('DELETE', 'PENGGUNA', $id, $uLabel, "Menghapus akun pengguna. Role: " . ($oldUser['role'] ?? '-'));
+        }
+
         return ['success' => true];
     } catch (Throwable $e) {
         return ['success' => false, 'error' => 'Gagal menghapus pengguna: ' . $e->getMessage()];
