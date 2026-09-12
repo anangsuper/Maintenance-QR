@@ -177,6 +177,33 @@ foreach ($karyawanList as $k) {
 $flashHtml = $flash ? '<div class="alert alert-success alert-dismissible fade show no-print"><i class="bi bi-check-circle-fill me-2"></i>'.e($flash).'<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>' : '';
 $errorHtml = $error ? '<div class="alert alert-danger alert-dismissible fade show no-print"><i class="bi bi-exclamation-triangle-fill me-2"></i>'.e($error).'<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>' : '';
 
+$assetId = (int)($asset['id'] ?? 0);
+$assetHistory = get_asset_maintenance_history($assetId);
+$totalMaintCount = count($assetHistory);
+
+// Navigasi maintenance sebelum / sesudah untuk komputer yang sama
+$prevLogId = 0;
+$nextLogId = 0;
+for ($idx = 0; $idx < $totalMaintCount; $idx++) {
+    if ((int)($assetHistory[$idx]['id'] ?? 0) === $id) {
+        if (isset($assetHistory[$idx - 1])) {
+            $nextLogId = (int)($assetHistory[$idx - 1]['id'] ?? 0); // Lebih baru
+        }
+        if (isset($assetHistory[$idx + 1])) {
+            $prevLogId = (int)($assetHistory[$idx + 1]['id'] ?? 0); // Lebih lama
+        }
+        break;
+    }
+}
+
+$navPrevBtn = $prevLogId > 0
+    ? '<a href="'.e(module_url('maintenance_detail.php', ['id' => $prevLogId])).'" class="btn btn-outline-secondary btn-sm" title="Lihat maintenance sebelumnya pada komputer ini"><i class="bi bi-chevron-left me-1"></i> Sebelumnya (#'.$prevLogId.')</a>'
+    : '';
+
+$navNextBtn = $nextLogId > 0
+    ? '<a href="'.e(module_url('maintenance_detail.php', ['id' => $nextLogId])).'" class="btn btn-outline-secondary btn-sm" title="Lihat maintenance berikutnya pada komputer ini">Berikutnya (#'.$nextLogId.') <i class="bi bi-chevron-right ms-1"></i></a>'
+    : '';
+
 $editBtnTop = $isLoggedIn
     ? '<button type="button" class="btn btn-warning text-dark fw-bold" data-bs-toggle="modal" data-bs-target="#editChecklistModal"><i class="bi bi-pencil-square me-1"></i> Edit Data & Checklist</button>'
     : '<a class="btn btn-outline-primary" href="'.e(module_url('login.php')).'"><i class="bi bi-box-arrow-in-right me-1"></i> Login untuk Edit</a>';
@@ -200,10 +227,15 @@ $body = '
     
     <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4 no-print">
       <div>
-        <h3 class="fw-bold mb-1 text-dark"><i class="bi bi-file-earmark-medical text-primary me-2"></i>Rincian Hasil Maintenance #'.$id.'</h3>
-        <div class="text-secondary">Pencatatan 9 checklist pemeliharaan perangkat IT resmi untuk keperluan audit & verifikasi.</div>
+        <div class="d-flex align-items-center gap-2 flex-wrap mb-1">
+          <h3 class="fw-bold mb-0 text-dark"><i class="bi bi-file-earmark-medical text-primary me-2"></i>Rincian Hasil Maintenance #'.$id.'</h3>
+          <span class="badge bg-primary bg-opacity-10 text-primary border border-primary px-2 py-1 small fw-bold">Maintenance ke-'.($totalMaintCount > 0 ? (array_search($id, array_column($assetHistory, 'id')) !== false ? ($totalMaintCount - array_search($id, array_column($assetHistory, 'id'))) : '1') : '1').' dari '.$totalMaintCount.' Total Sesi</span>
+        </div>
+        <div class="text-secondary small">Pencatatan 9 checklist pemeliharaan resmi komputer <strong>'.e(asset_title($asset)).'</strong> ('.e($asset['kode_inventaris'] ?? '-').').</div>
       </div>
-      <div class="d-flex gap-2">
+      <div class="d-flex flex-wrap gap-2 align-items-center">
+        '.$navPrevBtn.'
+        '.$navNextBtn.'
         '.$backBtnTop.'
         '.$tindakBtnTop.'
         '.$editBtnTop.'
@@ -315,6 +347,79 @@ $body = '
             <div class="small text-dark">'.nl2br(e($recommendation)).'</div>
           </div>
         </div>
+      </div>
+    </div>
+
+    <!-- Card 3: Histori Lengkap Seluruh Maintenance Pada Komputer Ini -->
+    <div class="card p-4 border-0 shadow-sm mb-4">
+      <div class="d-flex justify-content-between align-items-center border-bottom pb-3 mb-3">
+        <div>
+          <h5 class="fw-bold text-primary mb-0"><i class="bi bi-clock-history me-2"></i>3. RIWAYAT SELURUH MAINTENANCE KOMPUTER INI ('.$totalMaintCount.' KALI)</h5>
+          <div class="text-secondary small mt-1">Daftar rekam jejak pemeliharaan berkala untuk aset <strong>'.e(asset_title($asset)).'</strong> ('.e($asset['kode_inventaris'] ?? '-').').</div>
+        </div>
+        '.(!empty($asset['token']) ? '<a href="'.e(module_url('scan.php', ['t' => $asset['token']])).'" class="btn btn-outline-primary btn-sm fw-bold"><i class="bi bi-card-checklist me-1"></i> Buka Kartu Kontrol 12 Bulan</a>' : '').'
+      </div>
+
+      <div class="table-responsive rounded-3 border">
+        <table class="table table-hover align-middle mb-0 small">
+          <thead class="table-light">
+            <tr class="fw-bold text-center">
+              <th style="width: 50px;">Log</th>
+              <th>Tanggal & Waktu</th>
+              <th>Petugas / Teknisi</th>
+              <th>Jenis</th>
+              <th>Status</th>
+              <th>Temuan / Masalah</th>
+              <th style="width: 110px;">Aksi</th>
+            </tr>
+          </thead>
+          <tbody>';
+
+if (empty($assetHistory)) {
+    $body .= '
+            <tr>
+              <td colspan="7" class="text-center text-muted py-4">Belum ada riwayat maintenance lain yang tercatat untuk komputer ini.</td>
+            </tr>';
+} else {
+    foreach ($assetHistory as $h) {
+        $hId = (int)($h['id'] ?? 0);
+        $isCurrent = ($hId === $id);
+        $hDate = format_id_date($h['maintenance_date'] ?? '');
+        $hTime = substr((string)($h['maintenance_time'] ?? ''), 0, 5);
+        $hTech = $h['technician_name'] ?? 'Teknisi';
+        $hStatus = $h['status'] ?? 'Selesai';
+        $hType = $h['maintenance_type'] ?? 'Maintenance';
+        $hFindings = trim((string)($h['findings'] ?? ''));
+
+        $hBadge = ($hStatus === 'Temuan' || $hStatus === 'Perlu Perbaikan')
+            ? '<span class="badge bg-danger-subtle text-danger border border-danger-subtle px-2 py-1">Perlu Perbaikan</span>'
+            : ($hStatus === 'Proses'
+                ? '<span class="badge bg-warning-subtle text-warning border border-warning-subtle px-2 py-1">Proses</span>'
+                : '<span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1">Selesai</span>');
+
+        $rowBg = $isCurrent ? 'table-primary fw-bold' : '';
+        $currentBadge = $isCurrent ? ' <span class="badge bg-primary ms-1" style="font-size:0.65rem;">Sedang Dibuka</span>' : '';
+
+        $body .= '
+            <tr class="'.$rowBg.'">
+              <td class="text-center font-monospace">#'.$hId.'</td>
+              <td>'.$hDate.' <span class="text-muted small">('.$hTime.' WITA)</span>'.$currentBadge.'</td>
+              <td><i class="bi bi-person me-1 text-secondary"></i>'.e($hTech).'</td>
+              <td>'.e($hType).'</td>
+              <td class="text-center">'.$hBadge.'</td>
+              <td>'.($hFindings !== '' && $hFindings !== '-' ? '<span class="text-danger">'.e($hFindings).'</span>' : '<span class="text-muted">Normal</span>').'</td>
+              <td class="text-center">
+                '.($isCurrent 
+                    ? '<span class="text-primary small fw-bold"><i class="bi bi-eye-fill me-1"></i>Aktif</span>' 
+                    : '<a href="'.e(module_url('maintenance_detail.php', ['id' => $hId])).'" class="btn btn-xs btn-outline-primary py-0 px-2 small">Buka #'.$hId.'</a>').'
+              </td>
+            </tr>';
+    }
+}
+
+$body .= '
+          </tbody>
+        </table>
       </div>
     </div>
 
