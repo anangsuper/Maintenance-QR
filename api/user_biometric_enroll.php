@@ -191,19 +191,20 @@ $backHref = $retUrl !== '' ? $retUrl : (is_logged_in() ? module_url('users_admin
 $head = '
 <style>
   .mobile-enroll-card {
-    border-radius: 24px;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+    border-radius: 16px;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 4px 20px rgba(15, 23, 42, 0.06);
   }
   .scanner-container {
     position: relative;
-    width: 320px;
-    height: 380px;
+    width: 300px;
+    height: 360px;
     max-width: 100%;
     margin: 0 auto;
-    background: #0f172a;
-    border-radius: 20px;
+    background: #1e293b;
+    border-radius: 16px;
     overflow: hidden;
-    box-shadow: 0 12px 28px rgba(0,0,0,0.25);
+    border: 2px solid #cbd5e1;
   }
   .scanner-video {
     width: 100%;
@@ -223,31 +224,16 @@ $head = '
     justify-content: center;
   }
   .face-oval {
-    width: 190px;
-    height: 240px;
-    border: 3px dashed #38bdf8;
+    width: 180px;
+    height: 230px;
+    border: 2px solid rgba(255, 255, 255, 0.7);
     border-radius: 50%;
-    box-shadow: 0 0 0 9999px rgba(15, 23, 42, 0.65);
-    transition: all 0.3s ease;
+    box-shadow: 0 0 0 9999px rgba(15, 23, 42, 0.55);
+    transition: border-color 0.25s ease;
   }
   .face-oval.active {
-    border-color: #22c55e;
-    border-style: solid;
-    box-shadow: 0 0 0 9999px rgba(15, 23, 42, 0.4), 0 0 25px rgba(34, 197, 94, 0.6);
-  }
-  .scanline {
-    position: absolute;
-    top: 25%;
-    left: calc(50% - 95px);
-    width: 190px;
-    height: 3px;
-    background: linear-gradient(90deg, transparent, #38bdf8, transparent);
-    animation: scanMove 2s infinite ease-in-out;
-  }
-  @keyframes scanMove {
-    0% { top: 20%; opacity: 0; }
-    50% { opacity: 1; }
-    100% { top: 80%; opacity: 0; }
+    border-color: #10b981;
+    box-shadow: 0 0 0 9999px rgba(15, 23, 42, 0.4);
   }
 </style>';
 
@@ -258,52 +244,50 @@ $body = '
     <!-- Top Bar Navigation -->
     <div class="d-flex justify-content-between align-items-center mb-3">
       <div>
-        <span class="badge bg-primary-subtle text-primary border border-primary-subtle fw-bold px-2 py-1 mb-1">
-          <i class="bi bi-phone-fill me-1"></i> Pendaftaran Mandiri via HP
+        <span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-25 px-2 py-1 mb-1" style="font-size: 0.72rem;">
+          <i class="bi bi-shield-check me-1"></i> Identitas Petugas IT
         </span>
-        <h4 class="fw-bold mb-0 text-dark">Daftar Wajah Teknisi</h4>
+        <h4 class="fw-bold mb-0 text-dark">Foto Profil & Biometrik Teknisi</h4>
       </div>
       <a class="btn btn-outline-secondary btn-sm rounded-pill px-3" href="'.e($backHref).'">
         <i class="bi bi-arrow-left"></i> Kembali
       </a>
     </div>
 
-    <!-- Card Utama Pendaftaran HP -->
-    <div class="card p-3 p-sm-4 border-0 mobile-enroll-card bg-white mb-4">
+    <div class="card mobile-enroll-card p-3 p-sm-4 bg-white">
       
-      <!-- 1. Pemilihan Teknisi -->
+      <!-- Pilih Teknisi -->
       <div class="mb-3">
-        <label class="form-label small fw-bold text-dark d-flex justify-content-between align-items-center mb-1">
-          <span><i class="bi bi-person-circle text-primary me-1"></i> Pilih Nama Teknisi Anda:</span>
-          '.$badgeStatus.'
+        <label class="form-label fw-bold text-dark small mb-1">
+          <i class="bi bi-person-fill text-primary me-1"></i> Pilih Nama Petugas / Teknisi:
         </label>
-        <div class="input-group shadow-sm">
-          <select class="form-select form-select-lg fw-bold" id="userSelect" onchange="handleUserChange(this.value)">
+        <div class="input-group">
+          <select class="form-select fw-semibold" id="userSelect" onchange="handleUserChange(this.value)">
             '.$userOptionsHtml.'
           </select>
-          <button type="button" class="btn btn-outline-success fw-bold px-3 d-flex align-items-center gap-1" onclick="showNewTechInput()" title="Tambah Nama Teknisi Baru">
-            <i class="bi bi-person-plus-fill"></i> <span class="d-none d-sm-inline">+ Nama Baru</span>
+          <button type="button" class="btn btn-outline-primary fw-semibold" onclick="showNewTechInput()" title="Ketik Nama Teknisi Baru jika belum ada">
+            <i class="bi bi-person-plus-fill me-1"></i> Baru
           </button>
+        </div>
+        <div class="form-text text-muted" style="font-size: 0.75rem;">
+          Pilih nama Anda dari daftar, atau klik <strong>"Baru"</strong> jika nama belum tercantum.
         </div>
       </div>
 
-      <!-- Field Tambah Nama Teknisi Baru (Tampil jika pilih + Tambah) -->
-      <div class="card border border-success border-opacity-50 p-3 bg-success bg-opacity-10 rounded-4 mb-3 d-none" id="newTechBox">
-        <div class="d-flex justify-content-between align-items-center mb-2">
-          <label class="form-label small fw-bold text-success mb-0">
-            <i class="bi bi-person-plus-fill me-1"></i> Masukkan Nama Lengkap Teknisi Baru:
-          </label>
-          <button type="button" class="btn-close btn-close-sm" onclick="cancelNewTech()" aria-label="Tutup"></button>
-        </div>
+      <!-- Kotak Input Nama Teknisi Baru -->
+      <div class="p-3 mb-3 bg-light rounded-3 border border-primary border-opacity-25 d-none" id="newTechBox">
+        <label class="form-label fw-bold text-dark small mb-1">
+          <i class="bi bi-person-plus text-primary me-1"></i> Masukkan Nama Lengkap Teknisi:
+        </label>
         <div class="input-group mb-2">
-          <input type="text" class="form-control form-control-lg fw-semibold" id="newTechName" placeholder="Contoh: Budi Santoso" autocomplete="off" onkeydown="if(event.key === \'Enter\'){ event.preventDefault(); saveNewTechOnly(); }">
-          <button type="button" class="btn btn-success fw-bold px-3 shadow-sm" id="btnQuickSaveTech" onclick="saveNewTechOnly()">
+          <input type="text" class="form-control" id="newTechName" placeholder="Contoh: Budi Santoso" maxlength="80">
+          <button type="button" class="btn btn-primary fw-semibold px-3" id="btnQuickSaveTech" onclick="saveNewTechOnly()">
             <i class="bi bi-check-lg me-1"></i> Simpan Nama
           </button>
         </div>
         <div class="d-flex justify-content-between align-items-center">
-          <div class="form-text text-muted mb-0" style="font-size: 0.75rem;">
-            Klik <strong>"Simpan Nama"</strong> untuk mendaftarkan akun teknisi.
+          <div class="form-text text-muted mb-0" style="font-size: 0.74rem;">
+            Nama akan otomatis didaftarkan sebagai akun teknisi baru.
           </div>
           <button type="button" class="btn btn-link btn-sm text-secondary text-decoration-none py-0 px-1" onclick="cancelNewTech()">Batal</button>
         </div>
@@ -312,83 +296,64 @@ $body = '
 
       '.$avatarHtml.'
 
-      <!-- Panduan Singkat Smartphone -->
-      <div class="alert alert-light border border-primary border-opacity-25 rounded-3 p-3 mb-3 small">
-        <div class="fw-bold text-primary mb-1 d-flex align-items-center gap-1">
-          <i class="bi bi-lightning-charge-fill text-warning"></i> Cara Scan Wajah via HP:
+      <!-- Panduan Singkat -->
+      <div class="alert alert-light border rounded-3 p-3 mb-3 small text-secondary">
+        <div class="fw-bold text-dark mb-1 d-flex align-items-center gap-1">
+          <i class="bi bi-info-circle-fill text-primary"></i> Panduan Pengambilan Foto:
         </div>
-        <ol class="mb-2 ps-3 text-secondary">
-          <li>Klik tombol <strong>"Aktifkan Kamera Depan HP"</strong> di bawah.</li>
-          <li>Pegang HP tegak lurus mengarah ke wajah Anda.</li>
-          <li>Arahkan wajah ke lingkaran oval hingga garis berubah <strong class="text-success">HIJAU</strong>.</li>
-          <li><strong>Kedipkan mata Anda 1 kali</strong> (uji keaslian / liveness check).</li>
-          <li>Tekan <strong>"SIMPAN BIOMETRIK WAJAH"</strong>.</li>
+        <ol class="mb-0 ps-3">
+          <li>Posisikan wajah tegak lurus menghadap kamera.</li>
+          <li>Pastikan pencahayaan cukup dan wajah terlihat jelas.</li>
+          <li>Tahan posisi sejenak hingga bingkai berubah hijau, lalu simpan.</li>
         </ol>
-        <div class="alert alert-warning border border-warning rounded-2 p-2 mb-0 mt-2 small text-dark d-flex align-items-start gap-2">
-          <i class="bi bi-shield-lock-fill text-warning fs-5 flex-shrink-0"></i>
-          <div>
-            <strong>Penting: Verifikasi Admin Diperlukan</strong><br>
-            Setelah wajah didaftarkan, Administrator IT akan memeriksa foto dan menyetujuinya (Approve) di panel Admin Pengguna. Wajah baru dapat digunakan untuk verifikasi checklist setelah disetujui.
-          </div>
-        </div>
       </div>
 
-      <!-- Scanner Container (Mobile Optimized) -->
+      <!-- Scanner Container (Clean Corporate) -->
       <div class="scanner-container mb-3" id="scannerContainer">
         <video id="videoElement" class="scanner-video" autoplay playsinline webkit-playsinline muted></video>
         <div class="scanner-overlay">
           <div class="face-oval" id="faceOval"></div>
-          <div class="scanline d-none" id="scanLine"></div>
         </div>
         <canvas id="snapshotCanvas" style="display:none;" width="160" height="160"></canvas>
       </div>
 
       <!-- Status Bar Feedback Realtime -->
       <div class="alert alert-secondary py-2 px-3 text-center mb-3 fw-semibold small" id="statusMessage">
-        <i class="bi bi-camera-video me-1 text-primary"></i>
-        Klik tombol <strong>"AKTIFKAN KAMERA DEPAN HP"</strong> untuk mulai scan wajah.
+        <i class="bi bi-camera me-1 text-primary"></i>
+        Tekan <strong>"Buka Kamera"</strong> untuk mengambil foto verifikasi.
       </div>
 
       <!-- Progress Liveness -->
-      <div class="progress mb-3" style="height: 6px;" id="progressBarContainer">
-        <div class="progress-bar progress-bar-striped progress-bar-animated bg-primary" id="progressBar" style="width: 0%;"></div>
+      <div class="progress mb-3" style="height: 4px;" id="progressBarContainer">
+        <div class="progress-bar bg-primary" id="progressBar" style="width: 0%;"></div>
       </div>
 
       <!-- Tombol Aksi HP -->
       <div class="d-grid gap-2">
-        <button type="button" class="btn btn-primary btn-lg fw-bold py-3 shadow" id="btnStartCapture" onclick="startCamera()">
-          <i class="bi bi-camera-video-fill me-2"></i> AKTIFKAN KAMERA DEPAN HP
+        <button type="button" class="btn btn-primary fw-bold py-2 shadow-sm" id="btnStartCapture" onclick="startCamera()">
+          <i class="bi bi-camera-fill me-2"></i> Buka Kamera Depan
         </button>
-        <button type="button" class="btn btn-warning text-dark btn-lg fw-bold py-3 shadow d-none" id="btnSnapNow" onclick="forceCaptureBiometric()">
-          <i class="bi bi-camera-fill me-2"></i> AMBIL SAMPEL WAJAH SEKARANG
+        <button type="button" class="btn btn-secondary fw-bold py-2 shadow-sm d-none" id="btnSnapNow" onclick="forceCaptureBiometric()">
+          <i class="bi bi-camera me-2"></i> Ambil Foto Sekarang
         </button>
-        <button type="button" class="btn btn-success btn-lg fw-bold py-3 shadow d-none" id="btnSaveBiometric" onclick="saveBiometrics()">
-          <i class="bi bi-check-circle-fill me-2"></i> SIMPAN BIOMETRIK WAJAH SAYA
+        <button type="button" class="btn btn-success fw-bold py-2 shadow-sm d-none" id="btnSaveBiometric" onclick="saveBiometrics()">
+          <i class="bi bi-check-circle-fill me-2"></i> Simpan Foto Profil & Wajah
         </button>
       </div>
 
       <!-- Success Action Box (Tampil setelah berhasil) -->
       <div class="mt-3 p-3 bg-success bg-opacity-10 border border-success rounded-3 text-center d-none" id="successBox">
-        <h5 class="fw-bold text-success mb-1"><i class="bi bi-check-circle-fill me-1"></i> Wajah Berhasil Disimpan!</h5>
+        <h5 class="fw-bold text-success mb-1"><i class="bi bi-check-circle-fill me-1"></i> Data Berhasil Disimpan</h5>
         <div class="small text-dark mb-3" id="successDesc">
-          Wajah teknisi berhasil direkam dengan status: <span class="badge bg-warning text-dark"><i class="bi bi-hourglass-split me-1"></i> Menunggu Persetujuan Admin</span>.<br><br>
-          <strong>Wajib Disetujui Admin:</strong> Administrator IT harus memeriksa & menyetujui (Approve) biometrik wajah ini di menu <em>Kelola Data &rarr; Akun Pengguna / Teknisi</em> sebelum dapat digunakan untuk checklist maintenance.<br><br>
-          <div class="alert alert-info py-2 px-3 small text-start mb-0 border-0 bg-info bg-opacity-10">
-            <strong><i class="bi bi-info-circle-fill me-1 text-primary"></i>Catatan:</strong> Pendaftaran wajah ini adalah untuk identitas akun teknisi Anda. Silakan klik tombol di bawah untuk melanjutkan.
-          </div>
+          Foto profil dan identitas teknisi telah disimpan dengan status: <span class="badge bg-warning text-dark"><i class="bi bi-hourglass-split me-1"></i> Menunggu Verifikasi Admin</span>.<br><br>
+          Administrator IT akan mengonfirmasi akun Anda agar dapat langsung digunakan saat checklist maintenance.
         </div>
         <div class="d-grid gap-2">
           '.($retUrl !== '' ? '<a href="'.e($retUrl).'" class="btn btn-success fw-bold py-2"><i class="bi bi-arrow-return-left me-1"></i> Kembali Lanjutkan Maintenance</a>' : '').'
-          <a href="'.e(module_url('users_admin.php')).'" class="btn btn-outline-primary fw-bold py-2"><i class="bi bi-people-fill me-1"></i> Buka Data Pengguna (Verifikasi Admin)</a>
-          <a href="'.e(module_url('dashboard.php')).'" class="btn btn-light border fw-semibold py-2"><i class="bi bi-qr-code-scan me-1"></i> Buka Dashboard QR</a>
+          <a href="'.e(module_url('users_admin.php')).'" class="btn btn-outline-primary fw-semibold py-2"><i class="bi bi-people-fill me-1"></i> Halaman Data Pengguna</a>
+          <a href="'.e(module_url('dashboard.php')).'" class="btn btn-light border fw-semibold py-2"><i class="bi bi-house me-1"></i> Halaman Utama</a>
           <button type="button" class="btn btn-outline-secondary btn-sm" onclick="location.reload()">Daftarkan Teknisi Lain</button>
         </div>
-      </div>
-
-      <div class="text-center mt-3">
-        <small class="text-muted" style="font-size: 0.72rem;">
-          <i class="bi bi-shield-lock me-1"></i> Enkripsi Vektor Biometrik AI Sesuai UU PDP No. 27/2022
-        </small>
       </div>
 
     </div>
@@ -414,7 +379,6 @@ const MODEL_URL = "https://cdn.jsdelivr.net/npm/@vladmandic/face-api/model/";
 
 const video = document.getElementById("videoElement");
 const faceOval = document.getElementById("faceOval");
-const scanLine = document.getElementById("scanLine");
 const statusMsg = document.getElementById("statusMessage");
 const progressBar = document.getElementById("progressBar");
 const btnSave = document.getElementById("btnSaveBiometric");
@@ -475,7 +439,7 @@ async function loadModels() {
   modelsLoading = true;
   try {
     if (statusMsg && !videoStream) {
-      statusMsg.innerHTML = '<span class="spinner-border spinner-border-sm me-2 text-primary"></span> Menyiapkan modul AI pengenalan wajah...';
+      statusMsg.innerHTML = '<span class="spinner-border spinner-border-sm me-2 text-primary"></span> Menyiapkan sistem kamera dan verifikasi...';
       progressBar.style.width = "40%";
     }
 
@@ -487,7 +451,7 @@ async function loadModels() {
     }
 
     if (typeof faceapi === "undefined") {
-      throw new Error("Pustaka face-api belum terunduh.");
+      throw new Error("Pustaka verifikasi belum terunduh.");
     }
     
     if (faceapi.tf) {
@@ -508,7 +472,7 @@ async function loadModels() {
     modelsLoading = false;
     if (statusMsg) {
       statusMsg.className = "alert alert-success py-2 px-3 text-center mb-3 small fw-semibold";
-      statusMsg.innerHTML = '<i class="bi bi-check-circle me-1"></i> Modul AI siap.';
+      statusMsg.innerHTML = '<i class="bi bi-check-circle me-1"></i> Sistem verifikasi siap.';
     }
     return true;
   } catch (err) {
@@ -516,7 +480,7 @@ async function loadModels() {
     modelsLoading = false;
     if (statusMsg) {
       statusMsg.className = "alert alert-secondary py-2 px-3 text-center mb-3 small fw-semibold";
-      statusMsg.innerHTML = '<i class="bi bi-camera-video me-1"></i> Posisikan wajah Anda di lingkaran oval.';
+      statusMsg.innerHTML = '<i class="bi bi-camera-video me-1"></i> Posisikan wajah Anda di bingkai foto.';
     }
     return false;
   }
@@ -525,7 +489,7 @@ async function loadModels() {
 async function startCamera() {
   btnStart.disabled = true;
   statusMsg.className = "alert alert-info py-2 px-3 text-center mb-3 small fw-semibold";
-  statusMsg.innerHTML = '<span class="spinner-border spinner-border-sm me-2 text-info"></span> Mengakses kamera depan smartphone...';
+  statusMsg.innerHTML = '<span class="spinner-border spinner-border-sm me-2 text-info"></span> Mengakses kamera...';
 
   try {
     video.setAttribute("playsinline", "");
@@ -544,14 +508,13 @@ async function startCamera() {
     await video.play();
 
     btnStart.classList.add("d-none");
-    scanLine.classList.remove("d-none");
     statusMsg.className = "alert alert-primary py-2 px-3 text-center mb-3 small fw-semibold";
-    statusMsg.innerHTML = '<i class="bi bi-person-bounding-box me-1"></i> Kamera aktif. Menyiapkan pendeteksi AI...';
+    statusMsg.innerHTML = '<i class="bi bi-person-bounding-box me-1"></i> Kamera aktif. Silakan posisikan wajah di bingkai.';
     
-    // Muat modul AI secara dinamis
+    // Muat modul verifikasi secara dinamis
     loadModels().then(() => {
       if (videoStream && !enrollCompleted) {
-        statusMsg.innerHTML = '<i class="bi bi-person-bounding-box me-1"></i> Arahkan wajah Anda tegak di dalam bingkai oval.';
+        statusMsg.innerHTML = '<i class="bi bi-person-bounding-box me-1"></i> Arahkan wajah tegak lurus di dalam bingkai foto.';
       }
     });
 
@@ -559,7 +522,7 @@ async function startCamera() {
   } catch (err) {
     console.error("Akses kamera gagal:", err);
     statusMsg.className = "alert alert-danger py-2 px-3 text-center mb-3 small";
-    statusMsg.innerHTML = '<i class="bi bi-camera-video-off me-1"></i> Kamera depan tidak dapat diakses: ' + (err.message || 'Periksa izin kamera di browser HP Anda.');
+    statusMsg.innerHTML = '<i class="bi bi-camera-video-off me-1"></i> Kamera tidak dapat diakses: ' + (err.message || 'Periksa izin kamera di browser Anda.');
     btnStart.disabled = false;
   }
 }
@@ -582,14 +545,14 @@ function completeEnrollment(descriptor) {
 
   if (btnSnapNow) btnSnapNow.classList.add("d-none");
   statusMsg.className = "alert alert-success py-2 px-3 text-center mb-3 fw-bold small";
-  statusMsg.innerHTML = '<i class="bi bi-check-circle-fill me-1"></i> Sampel Wajah Berhasil Diambil! Tekan "SIMPAN BIOMETRIK WAJAH SAYA" di bawah.';
+  statusMsg.innerHTML = '<i class="bi bi-check-circle-fill me-1"></i> Foto berhasil diambil. Klik "Simpan Foto Profil & Wajah" di bawah.';
   btnSave.classList.remove("d-none");
 }
 
 async function forceCaptureBiometric() {
   if (!video || !video.videoWidth || enrollCompleted) return;
   statusMsg.className = "alert alert-info py-2 px-3 text-center mb-3 fw-bold small";
-  statusMsg.innerHTML = '<span class="spinner-border spinner-border-sm me-2 text-primary"></span> Mengambil vektor biometrik instan...';
+  statusMsg.innerHTML = '<span class="spinner-border spinner-border-sm me-2 text-primary"></span> Memproses foto...';
 
   const useTinyLandmarks = faceapi.nets.faceLandmark68TinyNet && faceapi.nets.faceLandmark68TinyNet.isLoaded;
   const fastDetectorOptions = new faceapi.TinyFaceDetectorOptions({ inputSize: 160, scoreThreshold: 0.3 });
@@ -603,7 +566,7 @@ async function forceCaptureBiometric() {
       completeEnrollment(fullDetection.descriptor);
     } else {
       statusMsg.className = "alert alert-warning py-2 px-3 text-center mb-3 small";
-      statusMsg.innerHTML = '<i class="bi bi-person-exclamation me-1"></i> Wajah belum terdeteksi jelas. Posisikan wajah tepat di oval.';
+      statusMsg.innerHTML = '<i class="bi bi-person-exclamation me-1"></i> Wajah belum terdeteksi jelas. Pastikan wajah berada di dalam bingkai.';
     }
   } catch (err) {
     console.warn("Force capture err:", err);
@@ -636,7 +599,7 @@ function startFaceTracking() {
       isTrackingFrame = true;
       try {
         if (!isLivenessVerified) {
-          // Fase 1 Cepat: Deteksi wajah & landmarks
+          // Fase 1: Deteksi wajah
           const detection = await faceapi.detectSingleFace(video, fastDetectorOptions).withFaceLandmarks(useTinyLandmarks);
 
           if (detection) {
@@ -648,7 +611,7 @@ function startFaceTracking() {
             const rightEye = landmarks.getRightEye();
             const avgEAR = (calculateEAR(leftEye) + calculateEAR(rightEye)) / 2.0;
 
-            // Liveness Detection 1: Kedipan Mata (EAR)
+            // Pengecekan kedipan mata wajar
             if (avgEAR < 0.26) {
               lastEyeState = "closed";
             } else if (avgEAR > 0.27 && lastEyeState === "closed") {
@@ -656,7 +619,7 @@ function startFaceTracking() {
               isLivenessVerified = true;
             }
 
-            // Liveness Detection 2: Steady Hold (Tahan Wajah 1 Detik)
+            // Pengecekan posisi stabil
             enrollHoldFrames++;
             const pct = Math.min(100, Math.round((enrollHoldFrames / HOLD_FRAMES_REQUIRED) * 100));
             progressBar.style.width = pct + "%";
@@ -667,7 +630,7 @@ function startFaceTracking() {
 
             if (!isLivenessVerified) {
               statusMsg.className = "alert alert-warning py-2 px-3 text-center mb-3 fw-bold small";
-              statusMsg.innerHTML = '<i class="bi bi-eye-fill me-1"></i> Wajah Terdeteksi! <u>Tahan posisi 1 detik</u> atau <u>kedipkan mata</u>...';
+              statusMsg.innerHTML = '<i class="bi bi-camera me-1"></i> Wajah terdeteksi. <u>Tahan posisi wajah Anda</u> sejenak...';
             }
           } else {
             faceOval.classList.remove("active");
@@ -675,13 +638,13 @@ function startFaceTracking() {
             progressBar.style.width = "20%";
             if (!isLivenessVerified) {
               statusMsg.className = "alert alert-secondary py-2 px-3 text-center mb-3 small";
-              statusMsg.innerHTML = '<i class="bi bi-person-exclamation me-1"></i> Sesuaikan posisi wajah Anda tepat di dalam lingkaran oval.';
+              statusMsg.innerHTML = '<i class="bi bi-person-exclamation me-1"></i> Sesuaikan posisi wajah Anda tepat di dalam bingkai foto.';
             }
           }
         } else {
-          // Fase 2: Liveness lolos! Hitung descriptor
+          // Fase 2: Ambil data foto
           statusMsg.className = "alert alert-info py-2 px-3 text-center mb-3 fw-bold small";
-          statusMsg.innerHTML = '<span class="spinner-border spinner-border-sm me-2 text-primary"></span> Wajah stabil! Mengambil vektor biometrik...';
+          statusMsg.innerHTML = '<span class="spinner-border spinner-border-sm me-2 text-primary"></span> Posisi stabil. Mengambil data foto...';
 
           const fullDetection = await faceapi.detectSingleFace(video, fastDetectorOptions)
             .withFaceLandmarks(useTinyLandmarks)
@@ -721,7 +684,7 @@ function captureSnapshot() {
   capturedPhotoBase64 = canvas.toDataURL("image/jpeg", 0.65);
 }
 
-// Preload modul AI di awal agar saat klik "Aktifkan Kamera" langsung instan
+// Preload modul di awal agar siap saat kamera aktif
 if (document.readyState === "loading") {
   document.addEventListener("DOMContentLoaded", () => setTimeout(loadModels, 200));
 } else {
@@ -730,7 +693,7 @@ if (document.readyState === "loading") {
 
 async function saveBiometrics() {
   if (!detectedDescriptor || detectedDescriptor.length < 64) {
-    alert("Vektor biometrik belum lengkap. Silakan lakukan pemindaian ulang.");
+    alert("Foto belum terdeteksi jelas. Silakan ulangi pengambilan foto.");
     return;
   }
 
@@ -748,7 +711,7 @@ async function saveBiometrics() {
   }
 
   btnSave.disabled = true;
-  btnSave.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Menyimpan ke database...';
+  btnSave.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Menyimpan data...';
 
   try {
     const res = await fetch("user_biometric_enroll.php", {
@@ -772,7 +735,7 @@ async function saveBiometrics() {
 
     if (result && result.success) {
       statusMsg.className = "alert alert-success py-2 px-3 text-center mb-3 fw-bold small";
-      statusMsg.innerHTML = '<i class="bi bi-check-circle-fill me-1"></i> Wajah berhasil diunggah & tersimpan di sistem!';
+      statusMsg.innerHTML = '<i class="bi bi-check-circle-fill me-1"></i> Foto profil dan verifikasi berhasil disimpan!';
       
       if (videoStream) {
         videoStream.getTracks().forEach(track => track.stop());
@@ -781,19 +744,20 @@ async function saveBiometrics() {
       
       const successDesc = document.getElementById("successDesc");
       if (successDesc) {
-        successDesc.innerHTML = 'Data wajah berhasil direkam ke database dengan status: <span class="badge bg-warning text-dark px-2 py-1"><i class="bi bi-hourglass-split me-1"></i> Menunggu Persetujuan Admin</span>.<br><br><strong>Persetujuan Admin:</strong> Administrator IT dapat menyetujui (Approve) biometrik wajah Anda di menu <em>Kelola Data &rarr; Akun Pengguna / Teknisi</em> agar aktif untuk checklist maintenance.';
+        successDesc.innerHTML = 'Data foto dan profil berhasil disimpan dengan status: <span class="badge bg-warning text-dark px-2 py-1"><i class="bi bi-hourglass-split me-1"></i> Menunggu Persetujuan Admin</span>.<br><br><strong>Verifikasi:</strong> Administrator IT dapat mengonfirmasi data akun Anda pada menu <em>Kelola Data &rarr; Akun Pengguna / Teknisi</em>.';
       }
       
       successBox.classList.remove("d-none");
     } else {
-      alert("Gagal menyimpan biometrik: " + (result.error || "Kesalahan server"));
+      alert("Gagal menyimpan: " + (result.error || "Kesalahan server"));
       btnSave.disabled = false;
-      btnSave.innerHTML = '<i class="bi bi-check-circle-fill me-1"></i> SIMPAN BIOMETRIK WAJAH SAYA';
+      btnSave.innerHTML = '<i class="bi bi-check-circle-fill me-1"></i> Simpan Foto Profil & Wajah';
     }
   } catch (err) {
     console.error("Gagal kirim biometrik:", err);
-    alert(err.message || "Terjadi kesalahan koneksi saat menyimpan biometrik.");
+    alert(err.message || "Terjadi kesalahan koneksi saat menyimpan foto.");
     btnSave.disabled = false;
+    btnSave.innerHTML = '<i class="bi bi-check-circle-fill me-1"></i> Simpan Foto Profil & Wajah';
   }
 }
 

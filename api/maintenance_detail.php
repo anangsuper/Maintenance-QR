@@ -131,37 +131,40 @@ if ($isBioVerified) {
     }
 
     $photoThumb = $bioPhoto !== ''
-        ? '<img src="'.e($bioPhoto).'" class="rounded-circle border border-2 border-success shadow-sm" style="width: 56px; height: 56px; object-fit: cover;" alt="Foto Verifikasi">'
-        : '<div class="bg-success bg-opacity-10 text-success rounded-circle d-flex align-items-center justify-content-center border border-success" style="width: 56px; height: 56px;"><i class="bi bi-person-check fs-3"></i></div>';
+        ? '<img src="'.e($bioPhoto).'" class="rounded-circle border shadow-sm" style="width: 52px; height: 52px; object-fit: cover;" alt="Foto Petugas">'
+        : '<div class="bg-light text-secondary rounded-circle d-flex align-items-center justify-content-center border" style="width: 52px; height: 52px;"><i class="bi bi-person fs-3"></i></div>';
 
     $gpsLink = ($lat !== '' && $lng !== '')
-        ? '<a href="https://maps.google.com/?q='.e($lat).','.e($lng).'" target="_blank" class="badge bg-danger bg-opacity-10 text-danger border border-danger text-decoration-none py-2 px-3"><i class="bi bi-geo-alt-fill me-1"></i> Lokasi GPS: '.e(round((float)$lat, 4)).', '.e(round((float)$lng, 4)).' (Peta)</a>'
-        : '<span class="text-muted small"><i class="bi bi-geo-alt me-1"></i> GPS: Tidak terdeteksi</span>';
+        ? '<a href="https://maps.google.com/?q='.e($lat).','.e($lng).'" target="_blank" class="btn btn-outline-danger btn-sm text-decoration-none py-1 px-2"><i class="bi bi-geo-alt-fill me-1"></i> Lokasi GPS: '.e(round((float)$lat, 4)).', '.e(round((float)$lng, 4)).'</a>'
+        : '<span class="text-muted small"><i class="bi bi-geo-alt me-1"></i> GPS: Tidak terlampir</span>';
 
     $bioAuditHtml = '
-    <div class="p-3 rounded-3 mb-4 border border-success border-opacity-50 shadow-sm" style="background: linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 100%);">
-      <div class="d-flex flex-column flex-sm-row align-items-start align-items-sm-center justify-content-between gap-3">
-        <div class="d-flex align-items-center gap-3">
-          '.$photoThumb.'
-          <div>
-            <div class="d-flex align-items-center gap-2 flex-wrap mb-1">
-              <span class="badge bg-success fw-bold py-1 px-2"><i class="bi bi-shield-fill-check me-1"></i> Terverifikasi Biometrik AI</span>
-              <span class="badge bg-primary bg-opacity-10 text-primary border border-primary fw-bold py-1 px-2"><i class="bi bi-activity me-1"></i> Kecocokan: '.$bioConfidence.'%</span>
-              <span class="badge bg-secondary bg-opacity-10 text-dark border py-1 px-2"><i class="bi bi-eye-fill text-success me-1"></i> Liveness OK</span>
+    <div class="card border mb-4 shadow-sm">
+      <div class="card-body p-3">
+        <div class="d-flex flex-column flex-sm-row align-items-start align-items-sm-center justify-content-between gap-3">
+          <div class="d-flex align-items-center gap-3">
+            '.$photoThumb.'
+            <div>
+              <div class="d-flex align-items-center gap-2 flex-wrap mb-1">
+                <span class="badge bg-success py-1 px-2"><i class="bi bi-check-circle-fill me-1"></i> Presensi Terverifikasi</span>
+                <span class="badge bg-light text-dark border py-1 px-2"><i class="bi bi-person-badge me-1"></i> Petugas IT Lapangan</span>
+              </div>
+              <div class="text-secondary small">Diselesaikan oleh <strong>'.e($techName).'</strong> dengan konfirmasi kehadiran saat lembar checklist diisi.</div>
             </div>
-            <div class="text-dark small">Petugas <strong>'.e($techName).'</strong> terverifikasi melalui Biometric Face Recognition & Eye-Blink Liveness saat penyelesaian checklist.</div>
           </div>
-        </div>
-        <div>
-          '.$gpsLink.'
+          <div>
+            '.$gpsLink.'
+          </div>
         </div>
       </div>
     </div>';
 } else {
     $bioAuditHtml = '
-    <div class="p-2 px-3 rounded-3 mb-4 bg-light border d-flex align-items-center justify-content-between flex-wrap gap-2 small">
-      <div class="text-secondary"><i class="bi bi-person-badge me-1"></i> Metode Verifikasi: <span class="fw-bold text-dark">Pencatatan Manual (Non-Biometrik)</span></div>
-      <span class="badge bg-secondary bg-opacity-10 text-secondary border">Belum Pakai Scan Wajah</span>
+    <div class="card border mb-4 bg-light shadow-sm">
+      <div class="card-body py-2 px-3 d-flex align-items-center justify-content-between flex-wrap gap-2 small">
+        <div class="text-secondary"><i class="bi bi-person-badge me-1"></i> Konfirmasi Petugas: <span class="fw-semibold text-dark">Pencatatan Reguler</span></div>
+        <span class="badge bg-secondary bg-opacity-10 text-secondary border">Tanpa Foto Lampiran</span>
+      </div>
     </div>';
 }
 
