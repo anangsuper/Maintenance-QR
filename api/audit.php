@@ -3,12 +3,24 @@ require __DIR__ . '/bootstrap.php';
 require_login();
 
 $month = max(1, min(12, (int)($_GET['bulan'] ?? date('n'))));
-$year = max(2020, min(2100, (int)($_GET['tahun'] ?? date('Y'))));
+$currentYear = (int)date('Y');
+$yearParam = isset($_GET['tahun']) ? (int)$_GET['tahun'] : 0;
+$year = ($yearParam >= 2020 && $yearParam <= 2035) ? $yearParam : $currentYear;
 $cabangId = (int)($_GET['cabang'] ?? 0);
 $divisiId = (int)($_GET['divisi'] ?? 0);
 $kategoriId = (int)($_GET['kategori'] ?? 0);
 $techFilter = trim((string)($_GET['teknisi'] ?? ''));
 $statusFilter = trim((string)($_GET['status'] ?? ''));
+
+$yearOpts = '';
+$startYear = max(2023, $currentYear - 2);
+$endYear = $currentYear + 2;
+for ($y = $startYear; $y <= $endYear; $y++) {
+    $yearOpts .= '<option value="'.$y.'"'.($y === $year ? ' selected' : '').'>'.$y.'</option>';
+}
+if ($year < $startYear || $year > $endYear) {
+    $yearOpts .= '<option value="'.$year.'" selected>'.$year.'</option>';
+}
 
 $monthNames = [
     1 => 'Januari', 2 => 'Februari', 3 => 'Maret', 4 => 'April',
@@ -173,7 +185,7 @@ $body .= '
     </div>
     <div class="col-6 col-md-2">
       <label class="form-label text-secondary small fw-semibold mb-1">Tahun</label>
-      <input type="number" class="form-control form-control-sm" name="tahun" value="'.$year.'">
+      <select class="form-select form-select-sm font-monospace fw-semibold" name="tahun">'.$yearOpts.'</select>
     </div>
     <div class="col-6 col-md-2">
       <label class="form-label text-secondary small fw-semibold mb-1">Cabang</label>

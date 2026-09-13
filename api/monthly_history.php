@@ -2,8 +2,20 @@
 require __DIR__ . '/bootstrap.php';
 require_login();
 
-$year = max(2020, min(2100, (int)($_GET['tahun'] ?? date('Y'))));
+$currentYear = (int)date('Y');
+$yearParam = isset($_GET['tahun']) ? (int)$_GET['tahun'] : 0;
+$year = ($yearParam >= 2020 && $yearParam <= 2035) ? $yearParam : $currentYear;
 $cabangId = (int)($_GET['cabang'] ?? 0);
+
+$yearOpts = '';
+$startYear = max(2023, $currentYear - 2);
+$endYear = $currentYear + 2;
+for ($y = $startYear; $y <= $endYear; $y++) {
+    $yearOpts .= '<option value="'.$y.'"'.($y === $year ? ' selected' : '').'>Tahun '.$y.'</option>';
+}
+if ($year < $startYear || $year > $endYear) {
+    $yearOpts .= '<option value="'.$year.'" selected>Tahun '.$year.'</option>';
+}
 
 $cabangs = get_cabang_list();
 $overview = get_monthly_overview($year, $cabangId);
@@ -91,12 +103,9 @@ $body = '
     <h1 class="h3 mb-1">Riwayat Maintenance Bulanan</h1>
     <div class="text-secondary small">Ringkasan progress pemeliharaan komputer 12 bulan sepanjang tahun <strong>'.$year.'</strong>.</div>
   </div>
-  <form method="get" class="d-flex gap-2 align-items-center">
-    <select class="form-select form-select-sm" name="cabang" onchange="this.form.submit()">'.$cabangOpts.'</select>
-    <div class="input-group input-group-sm" style="width: 170px;">
-      <span class="input-group-text bg-white">Tahun</span>
-      <input type="number" class="form-control form-control-sm font-monospace fw-semibold" name="tahun" value="'.$year.'" min="2020" max="2100" onchange="this.form.submit()">
-    </div>
+  <form method="get" class="d-flex flex-wrap gap-2 align-items-center">
+    <select class="form-select form-select-sm" name="cabang" style="min-width: 160px;" onchange="this.form.submit()">'.$cabangOpts.'</select>
+    <select class="form-select form-select-sm font-monospace fw-semibold" name="tahun" style="width: 140px;" onchange="this.form.submit()">'.$yearOpts.'</select>
   </form>
 </div>
 

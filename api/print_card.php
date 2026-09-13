@@ -3,9 +3,20 @@ require __DIR__ . '/bootstrap.php';
 require_login();
 
 $assetId = max(0, (int)($_GET['id'] ?? $_GET['asset_id'] ?? 0));
-$cabangId = isset($_GET['cabang']) ? max(0, (int)$_GET['cabang']) : 0;
-$year = max(2020, min(2100, (int)($_GET['tahun'] ?? date('Y'))));
+$currentYear = (int)date('Y');
+$yearParam = isset($_GET['tahun']) ? (int)$_GET['tahun'] : 0;
+$year = ($yearParam >= 2020 && $yearParam <= 2035) ? $yearParam : $currentYear;
 $layout = trim((string)($_GET['layout'] ?? 'grid6')); // 'grid6' (default: 6 per A4), 'grid8', or 'single'
+
+$yearOpts = '';
+$startYear = max(2023, $currentYear - 2);
+$endYear = $currentYear + 2;
+for ($y = $startYear; $y <= $endYear; $y++) {
+    $yearOpts .= '<option value="'.$y.'"'.($y === $year ? ' selected' : '').'>Tahun '.$y.'</option>';
+}
+if ($year < $startYear || $year > $endYear) {
+    $yearOpts .= '<option value="'.$year.'" selected>Tahun '.$year.'</option>';
+}
 
 // Ambil daftar aset yang akan dicetak
 $assetList = [];
@@ -803,7 +814,7 @@ $body = '
           <option value="single"'.($layout === 'single' ? ' selected' : '').'>📄 1 Kartu Besar / Lembar</option>
         </select>
 
-        <input type="number" class="form-control form-control-sm font-monospace fw-bold" name="tahun" value="'.$year.'" min="2020" max="2100" style="width: 95px;" onchange="this.form.submit()">
+        <select class="form-select form-select-sm font-monospace fw-bold text-primary" name="tahun" style="width: 125px;" onchange="this.form.submit()">'.$yearOpts.'</select>
 
         <button type="button" class="btn btn-primary btn-sm fw-bold px-3 shadow-sm" onclick="window.print()">
           <i class="bi bi-printer-fill me-1"></i> CETAK (PRINT)
