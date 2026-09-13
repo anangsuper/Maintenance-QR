@@ -100,7 +100,7 @@ $body = '
   <div>
     <div class="tech-label mb-1">MONITORING</div>
     <h1 class="h3 mb-1">Riwayat Maintenance Bulanan</h1>
-    <div class="text-secondary small">Ringkasan progress pemeliharaan komputer 12 bulan tahun <strong>'.$year.'</strong>.</div>
+    <div class="text-secondary small">Ringkasan progress pemeliharaan komputer 12 bulan tahun <strong>'.$year.'</strong>. Target unit terkunci otomatis per cut-off akhir bulan sesuai inventaris aktif pada periode bersangkutan.</div>
   </div>
   <form method="get" class="d-flex flex-wrap gap-2 align-items-center">
     <select class="form-select form-select-sm" name="cabang" style="min-width: 160px;" onchange="this.form.submit()">'.$cabangOpts.'</select>

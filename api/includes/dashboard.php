@@ -702,6 +702,10 @@ function get_branch_maintenance_summary(int $month, int $year): array {
     $cabangs = get_cabang_list();
     $results = [];
 
+    $lastDay = (int)date('t', strtotime(sprintf('%04d-%02d-01', $year, $month)));
+    $periodCutoffTime = strtotime(sprintf('%04d-%02d-%02d 23:59:59', $year, $month, $lastDay));
+    $cutoffDateStr = sprintf('%04d-%02d-%02d 23:59:59', $year, $month, $lastDay);
+
     if (is_google_cloud_mode()) {
         $client = google_sheets_v4_client();
         $allAssets = array_filter(map_sheets_assets(), function($a) {
@@ -734,7 +738,18 @@ function get_branch_maintenance_summary(int $month, int $year): array {
             $cId = (int)($c['id'] ?? 0);
             $cName = $c['nama'] ?? $c['nama_cabang'] ?? 'Cabang #' . $cId;
             
-            $bAssets = array_filter($allAssets, fn($a) => (int)($a['id_cabang'] ?? 0) === $cId);
+            // Cut-off baseline: jangan sertakan aset yang baru dibuat setelah periode audit ini
+            $bAssets = array_filter($allAssets, function($a) use ($cId, $scannedAssetIds, $periodCutoffTime) {
+                if ((int)($a['id_cabang'] ?? 0) !== $cId) return false;
+                $aid = (int)($a['id'] ?? 0);
+                $isScanned = !empty($scannedAssetIds[$aid]);
+                $aCreatedAt = trim((string)($a['created_at'] ?? ''));
+                if (!$isScanned && $aCreatedAt !== '' && $periodCutoffTime > 0) {
+                    $cTime = strtotime($aCreatedAt);
+                    if ($cTime && $cTime > $periodCutoffTime) return false;
+                }
+                return true;
+            });
             $total = count($bAssets);
             $done = 0;
             $findings = 0;
@@ -765,12 +780,29 @@ function get_branch_maintenance_summary(int $month, int $year): array {
 
     // MySQL Mode
     $cName = name_column('cabang') ?: 'id';
+    $assetCols = table_columns('assets');
+    $hasAssetCreatedAt = in_array('created_at', $assetCols, true);
+    $createdCol = $hasAssetCreatedAt ? "COALESCE(a.created_at, aqt.created_at, '')" : "COALESCE(aqt.created_at, '')";
+
     foreach ($cabangs as $c) {
         $cId = (int)($c['id'] ?? 0);
         $cNama = $c['nama'] ?? $c['nama_cabang'] ?? 'Cabang #' . $cId;
 
-        $totSt = db()->prepare("SELECT COUNT(*) FROM assets WHERE (status = 'Aktif' OR status = 'aktif' OR status IS NULL OR status = '') AND id_cabang = ?");
-        $totSt->execute([$cId]);
+        $totSt = db()->prepare("
+            SELECT COUNT(DISTINCT a.id)
+            FROM assets a
+            LEFT JOIN asset_qr_tokens aqt ON aqt.asset_id = a.id
+            LEFT JOIN maintenance_scan ms ON ms.asset_id = a.id AND ms.maintenance_month = ? AND ms.maintenance_year = ?
+            WHERE (a.status = 'Aktif' OR a.status = 'aktif' OR a.status IS NULL OR a.status = '')
+              AND a.id_cabang = ?
+              AND (
+                ms.id IS NOT NULL
+                OR {$createdCol} = ''
+                OR {$createdCol} IS NULL
+                OR {$createdCol} <= ?
+              )
+        ");
+        $totSt->execute([$month, $year, $cId, $cutoffDateStr]);
         $total = (int)$totSt->fetchColumn();
 
         $doneSt = db()->prepare("
@@ -948,6 +980,10 @@ function get_audit_maintenance_data(array $filters): array {
     $filterTech = trim((string)($filters['teknisi'] ?? ''));
     $filterStatus = trim((string)($filters['status'] ?? ''));
 
+    // Cut-off baseline: Batas akhir bulan periode audit (misal: 2026-01-31 23:59:59)
+    $lastDay = (int)date('t', strtotime(sprintf('%04d-%02d-01', $year, $month)));
+    $periodCutoffTime = strtotime(sprintf('%04d-%02d-%02d 23:59:59', $year, $month, $lastDay));
+
     // 1. Ambil semua master aset aktif
     if (is_google_cloud_mode()) {
         $client = google_sheets_v4_client();
@@ -1026,6 +1062,16 @@ function get_audit_maintenance_data(array $filters): array {
 
             $isDone = ($scan !== null);
             $st = $isDone ? ($scan['status'] ?? $scan['col_8'] ?? 'Selesai') : 'Belum Maintenance';
+
+            // Cut-off baseline: jika aset baru didaftarkan setelah bulan audit berakhir dan belum pernah discan pada bulan ini,
+            // jangan dimasukkan ke target/rekapitulasi bulan lampau ini agar total komputer bulan lampau tidak bertambah.
+            $aCreatedAt = trim((string)($a['created_at'] ?? ''));
+            if (!$isDone && $aCreatedAt !== '' && $periodCutoffTime > 0) {
+                $cTime = strtotime($aCreatedAt);
+                if ($cTime && $cTime > $periodCutoffTime) {
+                    continue;
+                }
+            }
             
             // Filter status
             if ($filterStatus !== '') {
@@ -1100,6 +1146,8 @@ function get_audit_maintenance_data(array $filters): array {
     $assetCols = table_columns('assets');
     $ipCol = in_array('ip_address', $assetCols, true) ? 'a.ip_address' : "'-' AS ip_address";
     $prtCol = in_array('printer', $assetCols, true) ? 'a.printer' : "'-' AS printer";
+    $hasAssetCreatedAt = in_array('created_at', $assetCols, true);
+    $createdCol = $hasAssetCreatedAt ? "COALESCE(a.created_at, aqt.created_at, '')" : "COALESCE(aqt.created_at, '')";
 
     $scanCols = table_columns('maintenance_scan');
     $bioVerCol = in_array('biometric_verified', $scanCols, true) ? 'ms.biometric_verified' : "0 AS biometric_verified";
@@ -1111,6 +1159,7 @@ function get_audit_maintenance_data(array $filters): array {
     $sql = "
         SELECT a.id AS asset_id, a.kode_inventaris, a.serial_number, a.merk, a.model,
                {$ipCol}, {$prtCol},
+               {$createdCol} AS asset_created_at,
                c.`{$cName}` AS cabang_nama,
                k.`{$kName}` AS karyawan_nama,
                d.`{$dName}` AS divisi_nama,
@@ -1123,6 +1172,7 @@ function get_audit_maintenance_data(array $filters): array {
                {$bioVerCol}, {$bioConfCol}, {$bioPhotoCol}, {$latCol}, {$lngCol},
                COALESCE(ms.technician_name, u.`{$uName}`, 'Teknisi') AS technician_name
         FROM assets a
+        LEFT JOIN asset_qr_tokens aqt ON aqt.asset_id = a.id
         LEFT JOIN cabang c ON c.id = a.id_cabang
         LEFT JOIN karyawan k ON k.id = a.id_karyawan
         LEFT JOIN divisi d ON d.id = a.id_divisi
@@ -1145,6 +1195,16 @@ function get_audit_maintenance_data(array $filters): array {
     foreach ($allRows as $r) {
         $isDone = !empty($r['log_id']);
         $stVal = $isDone ? ($r['scan_status'] ?: 'Selesai') : 'Belum Maintenance';
+
+        // Cut-off baseline: jika aset baru didaftarkan setelah bulan audit berakhir dan belum pernah discan pada bulan ini,
+        // jangan dimasukkan ke target/rekapitulasi bulan lampau ini agar total komputer bulan lampau tidak bertambah.
+        $assetCreatedAt = trim((string)($r['asset_created_at'] ?? ''));
+        if (!$isDone && $assetCreatedAt !== '' && $periodCutoffTime > 0) {
+            $cTime = strtotime($assetCreatedAt);
+            if ($cTime && $cTime > $periodCutoffTime) {
+                continue;
+            }
+        }
 
         if ($filterTech !== '' && $isDone && strcasecmp(trim($r['technician_name'] ?? ''), $filterTech) !== 0) {
             continue;

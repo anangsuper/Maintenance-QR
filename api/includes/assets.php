@@ -88,6 +88,7 @@ function map_sheets_assets(bool $refresh = false): array {
             'keterangan' => $a['keterangan'] ?? '',
             'ip_address' => $a['ip_address'] ?? $a['ip'] ?? '',
             'printer' => $a['printer'] ?? '',
+            'created_at' => trim((string)($a['created_at'] ?? $a['tanggal_pengadaan'] ?? $a['created_date'] ?? $qr['created_at'] ?? $qr['col_5'] ?? '')),
             'cabang_nama' => $cabangMap[$a['id_cabang'] ?? 0] ?? '-',
             'divisi_nama' => $divMap[$a['id_divisi'] ?? 0] ?? '-',
             'karyawan_nama' => $karMap[$a['id_karyawan'] ?? 0] ?? '-',
@@ -169,10 +170,11 @@ function create_new_asset(array $data): array {
             $status,
             $ket,
             $ip,
-            $printer
+            $printer,
+            date('Y-m-d H:i:s')
         ];
 
-        $appended = $client->appendValues('Assets!A:M', [$assetRow]);
+        $appended = $client->appendValues('Assets!A:N', [$assetRow]);
         if (!$appended) {
             return ['success' => false, 'error' => 'Gagal menyimpan data ke tab Assets'];
         }
@@ -232,9 +234,24 @@ function create_new_asset(array $data): array {
             try { db()->exec("ALTER TABLE assets ADD COLUMN ip_address VARCHAR(45) NULL, ADD COLUMN printer VARCHAR(100) NULL"); } catch (Throwable $e) {}
             $cols = table_columns('assets');
         }
+        if (!in_array('created_at', $cols, true)) {
+            try { db()->exec("ALTER TABLE assets ADD COLUMN created_at DATETIME DEFAULT CURRENT_TIMESTAMP"); } catch (Throwable $e) {}
+            $cols = table_columns('assets');
+        }
         $hasIp = in_array('ip_address', $cols, true);
+        $hasCreatedAt = in_array('created_at', $cols, true);
+        $nowStr = date('Y-m-d H:i:s');
 
-        if ($hasIp) {
+        if ($hasIp && $hasCreatedAt) {
+            $ins = db()->prepare("
+                INSERT INTO assets
+                (kode_inventaris, merk, model, serial_number, id_kategori, id_cabang, id_divisi, id_karyawan, status, keterangan, ip_address, printer, created_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ");
+            $ins->execute([
+                $kode, $merk, $model, $sn, $idKat, $idCab, $idDiv, $idKar, $status, $ket, $ip, $printer, $nowStr
+            ]);
+        } elseif ($hasIp) {
             $ins = db()->prepare("
                 INSERT INTO assets
                 (kode_inventaris, merk, model, serial_number, id_kategori, id_cabang, id_divisi, id_karyawan, status, keterangan, ip_address, printer)
@@ -242,6 +259,15 @@ function create_new_asset(array $data): array {
             ");
             $ins->execute([
                 $kode, $merk, $model, $sn, $idKat, $idCab, $idDiv, $idKar, $status, $ket, $ip, $printer
+            ]);
+        } elseif ($hasCreatedAt) {
+            $ins = db()->prepare("
+                INSERT INTO assets
+                (kode_inventaris, merk, model, serial_number, id_kategori, id_cabang, id_divisi, id_karyawan, status, keterangan, created_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ");
+            $ins->execute([
+                $kode, $merk, $model, $sn, $idKat, $idCab, $idDiv, $idKar, $status, $ket, $nowStr
             ]);
         } else {
             $ins = db()->prepare("
