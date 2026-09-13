@@ -183,6 +183,58 @@ $assetId = (int)($asset['id'] ?? 0);
 $assetHistory = get_asset_maintenance_history($assetId);
 $totalMaintCount = count($assetHistory);
 
+// Daftar nama bulan bahasa Indonesia
+$indonesianMonths = [
+    1 => 'Januari', 2 => 'Februari', 3 => 'Maret', 4 => 'April',
+    5 => 'Mei', 6 => 'Juni', 7 => 'Juli', 8 => 'Agustus',
+    9 => 'September', 10 => 'Oktober', 11 => 'November', 12 => 'Desember'
+];
+
+$curMonth = (int)date('n');
+$curYear = (int)date('Y');
+
+// Bulan & Tahun dari sesi yang sedang dilihat
+$scanDate = $scan['maintenance_date'] ?? '';
+$scanMonth = (int)($scan['maintenance_month'] ?? 0);
+if ($scanMonth <= 0 && !empty($scanDate)) {
+    $scanMonth = (int)date('n', strtotime($scanDate));
+}
+$scanYear = (int)($scan['maintenance_year'] ?? 0);
+if ($scanYear <= 0 && !empty($scanDate)) {
+    $scanYear = (int)date('Y', strtotime($scanDate));
+}
+
+// Rekapitulasi frekuensi per bulan untuk perangkat ini
+$assetMonthlyBreakdown = [];
+$thisMonthAssetCount = 0;
+$scanMonthAssetCount = 0;
+
+foreach ($assetHistory as $h) {
+    $hRawDate = $h['maintenance_date'] ?? '';
+    $hM = (int)($h['maintenance_month'] ?? ($hRawDate ? date('n', strtotime($hRawDate)) : 0));
+    $hY = (int)($h['maintenance_year'] ?? ($hRawDate ? date('Y', strtotime($hRawDate)) : 0));
+    if ($hM >= 1 && $hM <= 12 && $hY > 2000) {
+        $ymKey = sprintf('%04d-%02d', $hY, $hM);
+        if (!isset($assetMonthlyBreakdown[$ymKey])) {
+            $assetMonthlyBreakdown[$ymKey] = [
+                'year' => $hY,
+                'month' => $hM,
+                'label' => ($indonesianMonths[$hM] ?? 'Bulan ' . $hM) . ' ' . $hY,
+                'short_label' => ($indonesianMonths[$hM] ?? 'Bulan ' . $hM),
+                'count' => 0
+            ];
+        }
+        $assetMonthlyBreakdown[$ymKey]['count']++;
+        if ($hM === $curMonth && $hY === $curYear) {
+            $thisMonthAssetCount++;
+        }
+        if ($hM === $scanMonth && $hY === $scanYear) {
+            $scanMonthAssetCount++;
+        }
+    }
+}
+krsort($assetMonthlyBreakdown);
+
 // Navigasi maintenance sebelum / sesudah untuk komputer yang sama
 $prevLogId = 0;
 $nextLogId = 0;
@@ -201,6 +253,15 @@ for ($idx = 0; $idx < $totalMaintCount; $idx++) {
 // Ambil SELURUH sesi sistem (pencatatan semua sesi)
 $allSessions = get_history_rows(0, 0, 0);
 $totalAllSessions = count($allSessions);
+$allSessionsThisMonth = 0;
+foreach ($allSessions as $sRow) {
+    $sDate = $sRow['maintenance_date'] ?? '';
+    $sM = (int)($sRow['maintenance_month'] ?? ($sDate ? date('n', strtotime($sDate)) : 0));
+    $sY = (int)($sRow['maintenance_year'] ?? ($sDate ? date('Y', strtotime($sDate)) : 0));
+    if ($sM === $curMonth && $sY === $curYear) {
+        $allSessionsThisMonth++;
+    }
+}
 
 $navPrevBtn = $prevLogId > 0
     ? '<a href="'.e(module_url('maintenance_detail.php', ['id' => $prevLogId])).'" class="btn btn-outline-secondary btn-sm" title="Lihat maintenance sebelumnya pada komputer ini"><i class="bi bi-chevron-left me-1"></i> Sebelumnya (#'.$prevLogId.')</a>'
@@ -224,20 +285,44 @@ $tindakBtnTop = (!empty($asset['token']) && ($status === 'Temuan' || $status ===
     ? '<a class="btn btn-danger btn-sm fw-bold" href="'.e(module_url('scan.php', ['t' => $asset['token'], 'action' => 'tindak_lanjut'])).'"><i class="bi bi-tools me-1"></i> Form Tindak Lanjut</a>'
     : '';
 
+// Pills dan Dropdown Filter Per Bulan
+$monthlyPillsHtml = '';
+$monthlyOptionsHtml = '';
+if (!empty($assetMonthlyBreakdown)) {
+    foreach ($assetMonthlyBreakdown as $ymKey => $bData) {
+        $isCurrentCalMonth = ($bData['month'] === $curMonth && $bData['year'] === $curYear);
+        $badgeClass = $isCurrentCalMonth ? 'bg-primary text-white' : 'bg-secondary text-white';
+        $monthlyPillsHtml .= '
+        <button type="button" class="btn btn-sm btn-outline-secondary py-1 px-2.5 small month-pill-btn d-inline-flex align-items-center gap-1.5" data-ym="'.e($ymKey).'" onclick="selectMonthPill(\''.e($ymKey).'\')" style="font-size: 0.78rem; border-radius: 20px; transition: all 0.2s ease;">
+          <span class="fw-semibold">'.e($bData['label']).'</span>
+          <span class="badge '.$badgeClass.' rounded-pill" style="font-size: 0.72rem;">'.$bData['count'].'x</span>
+        </button>';
+        $monthlyOptionsHtml .= '<option value="'.e($ymKey).'">'.e($bData['label']).' ('.$bData['count'].' kali)</option>';
+    }
+} else {
+    $monthlyPillsHtml = '<span class="text-muted small fst-italic">Belum ada riwayat tercatat.</span>';
+}
+
 // Tabel Sesi Komputer Ini (Tab 1)
 $thisAssetRowsHtml = '';
 if (empty($assetHistory)) {
-    $thisAssetRowsHtml = '<tr><td colspan="7" class="text-center text-muted py-4">Belum ada riwayat maintenance lain yang tercatat untuk komputer ini.</td></tr>';
+    $thisAssetRowsHtml = '<tr id="assetNoDataRow"><td colspan="7" class="text-center text-muted py-4">Belum ada riwayat maintenance lain yang tercatat untuk komputer ini.</td></tr>';
 } else {
     foreach ($assetHistory as $h) {
         $hId = (int)($h['id'] ?? 0);
         $isCurrent = ($hId === $id);
-        $hDate = format_id_date($h['maintenance_date'] ?? '');
+        $hRawDate = $h['maintenance_date'] ?? '';
+        $hDate = format_id_date($hRawDate);
         $hTime = substr((string)($h['maintenance_time'] ?? ''), 0, 5);
         $hTech = $h['technician_name'] ?? 'Teknisi';
         $hStatus = $h['status'] ?? 'Selesai';
         $hType = $h['maintenance_type'] ?? 'Maintenance';
         $hFindings = trim((string)($h['findings'] ?? ''));
+
+        $hM = (int)($h['maintenance_month'] ?? ($hRawDate ? date('n', strtotime($hRawDate)) : 0));
+        $hY = (int)($h['maintenance_year'] ?? ($hRawDate ? date('Y', strtotime($hRawDate)) : 0));
+        $hYm = ($hM > 0 && $hY > 0) ? sprintf('%04d-%02d', $hY, $hM) : '';
+        $isThisMonthRow = ($hM === $curMonth && $hY === $curYear);
 
         $hBadge = ($hStatus === 'Temuan' || $hStatus === 'Perlu Perbaikan')
             ? '<span class="badge-chip chip-danger"><i class="bi bi-exclamation-triangle-fill"></i> Temuan</span>'
@@ -247,11 +332,12 @@ if (empty($assetHistory)) {
 
         $rowBg = $isCurrent ? 'style="background-color: #EAF3FF; font-weight: 600;"' : 'style="border-bottom: 1px solid var(--app-border);"';
         $currentBadge = $isCurrent ? ' <span class="badge-chip chip-primary ms-1" style="font-size:0.68rem;"><i class="bi bi-eye"></i> Sedang Dibuka</span>' : '';
+        $monthBadge = $isThisMonthRow ? ' <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 ms-1" style="font-size: 0.68rem; vertical-align: middle;"><i class="bi bi-calendar-check me-0.5"></i> Bulan Ini</span>' : '';
 
         $thisAssetRowsHtml .= '
-        <tr '.$rowBg.'>
+        <tr class="asset-history-row" data-month="'.e($hYm).'" '.$rowBg.'>
           <td class="text-center font-monospace fw-bold text-primary">#'.$hId.'</td>
-          <td>'.$hDate.' <span class="text-muted small">('.$hTime.' WITA)</span>'.$currentBadge.'</td>
+          <td>'.$hDate.' <span class="text-muted small">('.$hTime.' WITA)</span>'.$currentBadge.$monthBadge.'</td>
           <td><i class="bi bi-person text-secondary me-1"></i>'.e($hTech).'</td>
           <td>'.e($hType).'</td>
           <td class="text-center">'.$hBadge.'</td>
@@ -263,6 +349,8 @@ if (empty($assetHistory)) {
           </td>
         </tr>';
     }
+    // Baris penampung jika hasil filter bulan kosong
+    $thisAssetRowsHtml .= '<tr id="assetFilterEmptyRow" style="display: none;"><td colspan="7" class="text-center text-muted py-4"><i class="bi bi-calendar-x me-1 fs-5 d-block mb-1 opacity-50"></i>Tidak ada riwayat pemeliharaan pada bulan yang dipilih.</td></tr>';
 }
 
 // Tabel Seluruh Sesi Sistem (Tab 2)
@@ -485,12 +573,12 @@ $body = '
         <ul class="nav nav-pills mb-3 gap-2" id="pills-session-tab" role="tablist">
           <li class="nav-item" role="presentation">
             <button class="nav-link active fw-bold small py-2 px-3 border" id="pills-this-asset-tab" data-bs-toggle="pill" data-bs-target="#pills-this-asset" type="button" role="tab" aria-controls="pills-this-asset" aria-selected="true" style="border-radius: 6px;">
-              <i class="bi bi-laptop me-1"></i> Sesi Perangkat Ini ('.$totalMaintCount.' Sesi)
+              <i class="bi bi-laptop me-1"></i> Sesi Perangkat Ini ('.$totalMaintCount.' Sesi &bull; <span class="badge bg-primary-subtle text-primary border ms-1 px-1.5 py-0.5">'.$thisMonthAssetCount.'x Bulan Ini</span>)
             </button>
           </li>
           <li class="nav-item" role="presentation">
             <button class="nav-link fw-bold small py-2 px-3 border" id="pills-all-sessions-tab" data-bs-toggle="pill" data-bs-target="#pills-all-sessions" type="button" role="tab" aria-controls="pills-all-sessions" aria-selected="false" style="border-radius: 6px;">
-              <i class="bi bi-collection me-1"></i> Semua Sesi Pemeliharaan Sistem (Total '.$totalAllSessions.' Sesi Tercatat)
+              <i class="bi bi-collection me-1"></i> Semua Sesi Pemeliharaan Sistem (Total '.$totalAllSessions.' Sesi &bull; <span class="badge bg-secondary-subtle text-secondary border ms-1 px-1.5 py-0.5">'.$allSessionsThisMonth.'x Bulan Ini</span>)
             </button>
           </li>
         </ul>
@@ -498,6 +586,52 @@ $body = '
         <div class="tab-content" id="pills-session-tabContent">
           <!-- TAB 1: Sesi Komputer Ini -->
           <div class="tab-pane fade show active" id="pills-this-asset" role="tabpanel" aria-labelledby="pills-this-asset-tab">
+            
+            <!-- Panel Ringkasan Frekuensi Pemeliharaan Per Bulan -->
+            <div class="card p-3 mb-3 border shadow-sm" style="border-radius: 8px; border-color: var(--app-border) !important; background: #F8FAFC;">
+              <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-2 mb-2">
+                <div class="d-flex align-items-center flex-wrap gap-2">
+                  <div class="badge bg-primary px-3 py-2 fs-6 text-white d-inline-flex align-items-center shadow-xs">
+                    <i class="bi bi-calendar-check-fill me-2 fs-5"></i>
+                    <div class="text-start">
+                      <div class="text-uppercase" style="font-size: 0.68rem; letter-spacing: 0.05em; opacity: 0.85;">Frekuensi Bulan Ini ('.($indonesianMonths[$curMonth] ?? '').' '.$curYear.')</div>
+                      <div class="fw-bold fs-6">'.$thisMonthAssetCount.' Kali Pemeliharaan</div>
+                    </div>
+                  </div>
+                  '.(($scanMonth !== $curMonth || $scanYear !== $curYear) ? '
+                  <div class="badge bg-secondary bg-opacity-75 px-3 py-2 fs-6 text-white d-inline-flex align-items-center">
+                    <i class="bi bi-calendar-event me-2 fs-5"></i>
+                    <div class="text-start">
+                      <div class="text-uppercase" style="font-size: 0.68rem; letter-spacing: 0.05em; opacity: 0.85;">Bulan Sesi Ini ('.($indonesianMonths[$scanMonth] ?? '').' '.$scanYear.')</div>
+                      <div class="fw-bold fs-6">'.$scanMonthAssetCount.' Kali</div>
+                    </div>
+                  </div>' : '').'
+                  <div class="text-secondary small ms-md-1">
+                    <i class="bi bi-info-circle me-1"></i>Total kumulatif: <strong class="text-dark">'.$totalMaintCount.' Sesi</strong>
+                  </div>
+                </div>
+
+                <div class="d-flex align-items-center gap-2">
+                  <label for="filterAssetMonth" class="text-muted small fw-semibold text-nowrap"><i class="bi bi-funnel me-1"></i>Filter:</label>
+                  <select class="form-select form-select-sm" id="filterAssetMonth" onchange="filterAssetTableByMonth(this.value)" style="min-width: 170px;">
+                    <option value="all">Semua Bulan ('.$totalMaintCount.')</option>
+                    '.$monthlyOptionsHtml.'
+                  </select>
+                </div>
+              </div>
+
+              <!-- Rekapitulasi Rincian Per Bulan (Interactive Pills) -->
+              <div class="d-flex align-items-center flex-wrap gap-1.5 pt-2 border-top" style="border-color: #E2E8F0 !important;">
+                <span class="text-secondary small fw-bold me-1" style="font-size: 0.74rem; letter-spacing: 0.03em;">
+                  <i class="bi bi-bar-chart-fill text-primary me-1"></i>REKAP PER BULAN:
+                </span>
+                <button type="button" class="btn btn-sm btn-primary py-0 px-2.5 small month-pill-btn" data-ym="all" onclick="selectMonthPill(\'all\')" style="font-size: 0.75rem; border-radius: 20px;">
+                  Semua ('.$totalMaintCount.')
+                </button>
+                '.$monthlyPillsHtml.'
+              </div>
+            </div>
+
             <div class="table-responsive rounded border" style="border-color: var(--app-border) !important;">
               <table class="table table-hover align-middle mb-0 small">
                 <thead style="background-color: var(--app-navy); color: #ffffff;">
@@ -520,9 +654,12 @@ $body = '
 
           <!-- TAB 2: Seluruh Sesi Sistem -->
           <div class="tab-pane fade" id="pills-all-sessions" role="tabpanel" aria-labelledby="pills-all-sessions-tab">
-            <div class="d-flex justify-content-between align-items-center mb-2">
+            <div class="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-2">
               <div class="text-muted small">Menampilkan seluruh catatan sesi pemeliharaan yang terekam di sistem IT Bank Mitra.</div>
-              <span class="badge-chip chip-primary font-monospace">'.$totalAllSessions.' Total Sesi</span>
+              <div class="d-flex align-items-center gap-2">
+                <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 font-monospace small px-2 py-1"><i class="bi bi-calendar-check me-1"></i>'.$allSessionsThisMonth.' Sesi Bulan Ini</span>
+                <span class="badge-chip chip-primary font-monospace">'.$totalAllSessions.' Total Sesi</span>
+              </div>
             </div>
             <div class="table-responsive rounded border" style="border-color: var(--app-border) !important; max-height: 480px; overflow-y: auto;">
               <table class="table table-hover align-middle mb-0 small">
@@ -634,4 +771,46 @@ if ($isLoggedIn) {
 </div>';
 }
 
-render_page('Detail Maintenance #' . $id, $body, '', '', $isLoggedIn);
+$extraScript = '
+<script>
+function filterAssetTableByMonth(ym) {
+  var rows = document.querySelectorAll(".asset-history-row");
+  var visibleCount = 0;
+  rows.forEach(function(r) {
+    if (ym === "all" || r.getAttribute("data-month") === ym) {
+      r.style.display = "";
+      visibleCount++;
+    } else {
+      r.style.display = "none";
+    }
+  });
+
+  var emptyRow = document.getElementById("assetFilterEmptyRow");
+  if (emptyRow) {
+    emptyRow.style.display = (visibleCount === 0 && rows.length > 0) ? "" : "none";
+  }
+
+  // Update pill styles
+  var pills = document.querySelectorAll(".month-pill-btn");
+  pills.forEach(function(p) {
+    if (p.getAttribute("data-ym") === ym) {
+      p.classList.remove("btn-outline-secondary");
+      p.classList.add("btn-primary", "text-white");
+    } else {
+      p.classList.remove("btn-primary", "text-white");
+      p.classList.add("btn-outline-secondary");
+    }
+  });
+
+  var sel = document.getElementById("filterAssetMonth");
+  if (sel && sel.value !== ym) {
+    sel.value = ym;
+  }
+}
+
+function selectMonthPill(ym) {
+  filterAssetTableByMonth(ym);
+}
+</script>';
+
+render_page('Detail Maintenance #' . $id, $body, '', $extraScript, $isLoggedIn);
