@@ -5,6 +5,7 @@ function render_page(string $title, string $content, string $extraHead = '', str
     $userName = current_user_name();
     $userInitial = strtoupper(substr($userName, 0, 1) ?: 'U');
     $isAdmin = is_admin();
+    $isLoggedIn = is_logged_in();
 
     // Context section
     $sectionContext = 'OPERATIONS';
@@ -60,15 +61,10 @@ function render_page(string $title, string $content, string $extraHead = '', str
 
     $sidebarHtml = '
     <aside class="app-sidebar d-none d-lg-flex flex-column" id="appDesktopSidebar">
-      <div class="sidebar-brand">
-        <a href="'.e(module_url('dashboard.php')).'" class="d-flex align-items-center gap-3 text-decoration-none">
-          <div class="sidebar-brand-badge">
-            <i class="bi bi-shield-check"></i>
-          </div>
-          <div>
-            <div class="sidebar-brand-title">BANK MITRA</div>
-            <div class="sidebar-brand-sub">IT OPERATIONS CENTER</div>
-          </div>
+      <div class="sidebar-brand py-3 px-3">
+        <a href="'.e(module_url('dashboard.php')).'" class="d-flex align-items-center justify-content-between text-decoration-none">
+          <img src="'.e(module_url('logo.png')).'" alt="Bank Mitra Logo" class="sidebar-brand-img" style="height: 44px; width: auto; max-width: 170px; object-fit: contain;">
+          <span class="badge bg-primary bg-opacity-25 text-white border border-primary border-opacity-50" style="font-size: 0.62rem; letter-spacing: 0.05em; font-weight: 600;">IT OPS</span>
         </a>
       </div>
 
@@ -94,14 +90,10 @@ function render_page(string $title, string $content, string $extraHead = '', str
 
     <!-- Offcanvas Mobile Drawer -->
     <div class="offcanvas offcanvas-start bg-navy-dark text-white" tabindex="-1" id="appMobileSidebar" aria-labelledby="appMobileSidebarLabel">
-      <div class="offcanvas-header border-bottom border-navy-subtle">
-        <div class="d-flex align-items-center gap-2">
-          <div class="sidebar-brand-badge"><i class="bi bi-shield-check"></i></div>
-          <div>
-            <div class="sidebar-brand-title text-white">BANK MITRA</div>
-            <div class="sidebar-brand-sub">IT OPERATIONS</div>
-          </div>
-        </div>
+      <div class="offcanvas-header border-bottom border-navy-subtle py-3">
+        <a href="'.e(module_url('dashboard.php')).'" class="d-flex align-items-center gap-2 text-decoration-none">
+          <img src="'.e(module_url('logo.png')).'" alt="Bank Mitra Logo" style="height: 38px; width: auto; max-width: 160px; object-fit: contain;">
+        </a>
         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas" aria-label="Close"></button>
       </div>
       <div class="offcanvas-body custom-scrollbar p-3">
@@ -173,14 +165,13 @@ function render_page(string $title, string $content, string $extraHead = '', str
 
     // Public header if nav is disabled
     $publicHeaderHtml = '
-    <header class="public-topbar py-3 px-4 bg-white border-bottom shadow-sm d-flex align-items-center justify-content-between">
-      <div class="d-flex align-items-center gap-3">
-        <div class="sidebar-brand-badge" style="width:34px; height:34px; font-size: 1rem;"><i class="bi bi-shield-check"></i></div>
-        <div>
-          <div class="fw-bold text-dark lh-1" style="font-size: 0.95rem; letter-spacing: 0.3px;">BANK MITRA</div>
-          <div class="tech-label" style="font-size: 0.68rem;">IT OPERATIONS · INSPECTION PORTAL</div>
+    <header class="public-topbar py-2 px-3 px-md-4 bg-white border-bottom shadow-sm d-flex align-items-center justify-content-between">
+      <a href="'.e(module_url('dashboard.php')).'" class="d-flex align-items-center gap-3 text-decoration-none">
+        <img src="'.e(module_url('logo.png')).'" alt="Bank Mitra Logo" style="height: 40px; width: auto; object-fit: contain;">
+        <div class="border-start ps-3 d-none d-sm-block">
+          <div class="tech-label" style="font-size: 0.68rem; color: #667085;">IT OPERATIONS · INSPECTION PORTAL</div>
         </div>
-      </div>
+      </a>
       <div>
         '.(is_logged_in() 
             ? '<a href="'.e(module_url('dashboard.php')).'" class="btn btn-sm btn-outline-primary"><i class="bi bi-speedometer2 me-1"></i> Dashboard</a>' 
@@ -194,6 +185,7 @@ function render_page(string $title, string $content, string $extraHead = '', str
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>'.e($title).' · IT Operations Bank Mitra</title>
+<link rel="icon" type="image/png" href="'.e(module_url('logo.png')).'">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -703,9 +695,31 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 @media print {
-  .no-print, .app-sidebar, .app-topbar, .public-topbar, #top-progress-bar { display: none !important; }
+  .no-print, .app-sidebar, .app-topbar, .public-topbar, #top-progress-bar, #sessionLockModal { display: none !important; }
   .app-content-container { padding: 0 !important; max-width: 100% !important; }
   body { background: #FFFFFF !important; }
+}
+
+/* Bank Mitra Inactivity Lock Screen Styling */
+body.session-locked .app-layout-wrapper,
+body.session-locked .public-topbar,
+body.session-locked main {
+  filter: blur(6px) grayscale(20%);
+  pointer-events: none !important;
+  user-select: none !important;
+  transition: filter 0.3s ease;
+}
+#sessionLockModal {
+  z-index: 1070 !important;
+}
+#sessionLockModal .modal-dialog {
+  filter: none !important;
+  pointer-events: auto !important;
+}
+.modal-backdrop.session-lock-backdrop {
+  z-index: 1065 !important;
+  background-color: rgba(8, 24, 47, 0.85) !important;
+  backdrop-filter: blur(5px);
 }
 </style>
 '.$extraHead.'
@@ -771,6 +785,72 @@ h1, h2, h3, h4, h5, h6 {
   </div>
 </div>
 
+'.($isLoggedIn ? '
+<!-- Modal Kunci Layar (Lock Screen Inactivity Alert - 15 Menit) -->
+<div class="modal fade" id="sessionLockModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false" aria-labelledby="sessionLockModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered" style="max-width: 420px;">
+    <div class="modal-content border-0 shadow-lg" style="border-radius: 16px; overflow: hidden;">
+      <div class="modal-header border-0 pb-0 justify-content-center pt-4">
+        <div class="text-center w-100 px-3">
+          <div class="d-inline-flex align-items-center justify-content-center rounded-circle mb-2" style="width: 58px; height: 58px; background-color: #FEF3F2; color: #B42318; border: 4px solid #FEE4E2;">
+            <i class="bi bi-shield-lock-fill fs-3"></i>
+          </div>
+          <h5 class="modal-title fw-bold text-dark mb-1" id="sessionLockModalLabel">Sesi Diamankan</h5>
+          <p class="text-muted small mb-0">Tidak ada aktivitas selama 15 menit. Masukkan kata sandi akun Anda untuk membuka kunci layar dan melanjutkan pekerjaan.</p>
+        </div>
+      </div>
+      <div class="modal-body px-4 pt-3 pb-4">
+        <!-- Profil Pengguna Terkunci -->
+        <div class="d-flex align-items-center gap-3 p-2 mb-3 bg-light rounded-3 border">
+          <div class="sidebar-user-avatar" style="width: 40px; height: 40px; font-size: 1rem; background-color: var(--blue-corporate); color: white; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-weight: bold;">
+            '.e($userInitial).'
+          </div>
+          <div class="overflow-hidden flex-grow-1">
+            <div class="fw-semibold text-dark text-truncate">'.e($userName).'</div>
+            <div class="small text-muted text-capitalize"><i class="bi bi-shield-check me-1 text-success"></i>'.e($role).'</div>
+          </div>
+          <span class="badge bg-danger-subtle text-danger border px-2 py-1 small"><i class="bi bi-lock-fill me-1"></i>Terkunci</span>
+        </div>
+
+        <!-- Alert Error jika Password Salah -->
+        <div id="lockScreenError" class="alert alert-danger py-2 px-3 small d-none align-items-center gap-2 mb-3" style="border-radius: 8px;">
+          <i class="bi bi-exclamation-circle-fill fs-6 flex-shrink-0"></i>
+          <span id="lockScreenErrorMsg">Kata sandi tidak sesuai. Silakan coba lagi.</span>
+        </div>
+
+        <!-- Form Masukkan Password -->
+        <form id="lockScreenForm" autocomplete="off" onsubmit="return false;">
+          <div class="mb-3">
+            <label for="lockPasswordInput" class="form-label small fw-semibold text-secondary">Kata Sandi Akun</label>
+            <div class="input-group">
+              <span class="input-group-text bg-white border-end-0 text-muted"><i class="bi bi-key-fill"></i></span>
+              <input type="password" class="form-control border-start-0 border-end-0 ps-0" id="lockPasswordInput" placeholder="Ketik kata sandi akun Anda..." required autocomplete="current-password">
+              <button class="btn btn-outline-secondary border-start-0 bg-white" type="button" id="btnToggleLockPassword" title="Lihat/Sembunyikan sandi">
+                <i class="bi bi-eye" id="iconToggleLockPassword"></i>
+              </button>
+            </div>
+          </div>
+
+          <div class="d-grid gap-2">
+            <button type="submit" class="btn btn-primary fw-semibold py-2 d-flex align-items-center justify-content-center gap-2" id="btnUnlockSubmit">
+              <span class="spinner-border spinner-border-sm d-none" id="spinnerUnlock" role="status" aria-hidden="true"></span>
+              <i class="bi bi-unlock-fill" id="iconUnlock"></i>
+              <span id="labelUnlock">Buka Kunci Layar</span>
+            </button>
+            <a href="'.e(module_url('logout.php')).'" class="btn btn-light text-danger border py-2 small fw-semibold d-flex align-items-center justify-content-center gap-2">
+              <i class="bi bi-box-arrow-right"></i> Keluar / Ganti Akun
+            </a>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer justify-content-center py-2 bg-light border-top">
+        <span class="small text-muted" style="font-size: 0.75rem;"><i class="bi bi-check2-circle me-1 text-success"></i>Semua isian formulir di layar tetap tersimpan dan tidak hilang.</span>
+      </div>
+    </div>
+  </div>
+</div>
+' : '').'
+
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script>
 (function(){
@@ -835,19 +915,211 @@ h1, h2, h3, h4, h5, h6 {
     });
   }
 
-  // Auto-Lock idle timer (15 min)
-  var idleTimeoutMs = 900 * 1000;
-  var idleTimer;
-  function resetIdleTimer() {
-    clearTimeout(idleTimer);
-    idleTimer = setTimeout(function(){
-      window.location.href = "'.e(module_url('login.php', ['expired' => 1])).'";
-    }, idleTimeoutMs);
+  // =========================================================================
+  // SISTEM IDLE TIMEOUT: LOCK SCREEN (15 MENIT) & TOTAL LOGOUT (2 JAM)
+  // =========================================================================
+  var isUserLoggedIn = '.($isLoggedIn ? 'true' : 'false').';
+  var idleLockTimeoutMs = 15 * 60 * 1000;       // 15 menit (900 detik) -> Lock Screen & Minta Password
+  var idleLogoutTimeoutMs = 2 * 60 * 60 * 1000; // 2 jam (7200 detik) -> Total Logout Sesi
+  var unlockUrl = "'.e(module_url('unlock.php')).'";
+  var loginExpiredUrl = "'.e(module_url('login.php', ['expired' => 1])).'";
+
+  var lockTimer = null;
+  var logoutTimer = null;
+  var isSessionLocked = false;
+
+  function showLockScreen() {
+    if (isSessionLocked || !isUserLoggedIn) return;
+    isSessionLocked = true;
+    document.body.classList.add("session-locked");
+
+    var modalEl = document.getElementById("sessionLockModal");
+    if (modalEl && window.bootstrap) {
+      var lockModal = bootstrap.Modal.getOrCreateInstance(modalEl, {
+        backdrop: "static",
+        keyboard: false
+      });
+      lockModal.show();
+      var passInput = document.getElementById("lockPasswordInput");
+      if (passInput) {
+        passInput.value = "";
+        setTimeout(function(){ passInput.focus(); }, 350);
+      }
+      var errBox = document.getElementById("lockScreenError");
+      if (errBox) errBox.classList.add("d-none");
+    }
   }
-  ["mousemove", "mousedown", "keydown", "scroll", "touchstart", "click"].forEach(function(evt){
-    document.addEventListener(evt, resetIdleTimer, {passive: true});
-  });
-  resetIdleTimer();
+
+  function handleTotalLogout() {
+    window.location.href = loginExpiredUrl;
+  }
+
+  function resetIdleTimers() {
+    // Jika layar sedang terkunci, jangan reset timer saat ada gerakan (harus masukkan password)
+    if (isSessionLocked) return;
+
+    clearTimeout(lockTimer);
+    clearTimeout(logoutTimer);
+
+    if (isUserLoggedIn) {
+      lockTimer = setTimeout(showLockScreen, idleLockTimeoutMs);
+      logoutTimer = setTimeout(handleTotalLogout, idleLogoutTimeoutMs);
+    }
+  }
+
+  if (isUserLoggedIn) {
+    ["mousemove", "mousedown", "keydown", "scroll", "touchstart", "click"].forEach(function(evt){
+      document.addEventListener(evt, resetIdleTimers, { passive: true });
+    });
+    resetIdleTimers();
+
+    var btnToggle = document.getElementById("btnToggleLockPassword");
+    if (btnToggle) {
+      btnToggle.addEventListener("click", function(){
+        var inp = document.getElementById("lockPasswordInput");
+        var icon = document.getElementById("iconToggleLockPassword");
+        if (inp && icon) {
+          if (inp.type === "password") {
+            inp.type = "text";
+            icon.classList.replace("bi-eye", "bi-eye-slash");
+          } else {
+            inp.type = "password";
+            icon.classList.replace("bi-eye-slash", "bi-eye");
+          }
+        }
+      });
+    }
+
+    var lockForm = document.getElementById("lockScreenForm");
+    if (lockForm) {
+      lockForm.addEventListener("submit", function(e){
+        e.preventDefault();
+        var passInput = document.getElementById("lockPasswordInput");
+        var password = passInput ? passInput.value.trim() : "";
+        var errBox = document.getElementById("lockScreenError");
+        var errMsg = document.getElementById("lockScreenErrorMsg");
+        var btnSubmit = document.getElementById("btnUnlockSubmit");
+        var spinner = document.getElementById("spinnerUnlock");
+        var iconUnlock = document.getElementById("iconUnlock");
+        var labelUnlock = document.getElementById("labelUnlock");
+
+        if (!password) {
+          if (errBox && errMsg) {
+            errMsg.textContent = "Silakan masukkan kata sandi akun Anda.";
+            errBox.classList.remove("d-none");
+          }
+          if (passInput) passInput.focus();
+          return;
+        }
+
+        if (btnSubmit) btnSubmit.disabled = true;
+        if (spinner) spinner.classList.remove("d-none");
+        if (iconUnlock) iconUnlock.classList.add("d-none");
+        if (labelUnlock) labelUnlock.textContent = "Memverifikasi...";
+        if (errBox) errBox.classList.add("d-none");
+
+        fetch(unlockUrl, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "X-Requested-With": "XMLHttpRequest"
+          },
+          body: JSON.stringify({ password: password })
+        })
+        .then(function(res){
+          return res.json().then(function(data){ return { status: res.status, ok: res.ok, data: data }; });
+        })
+        .then(function(res){
+          if (btnSubmit) btnSubmit.disabled = false;
+          if (spinner) spinner.classList.add("d-none");
+          if (iconUnlock) iconUnlock.classList.remove("d-none");
+          if (labelUnlock) labelUnlock.textContent = "Buka Kunci Layar";
+
+          if (res.ok && res.data && res.data.success) {
+            isSessionLocked = false;
+            document.body.classList.remove("session-locked");
+            var modalEl = document.getElementById("sessionLockModal");
+            if (modalEl && window.bootstrap) {
+              var lockModal = bootstrap.Modal.getInstance(modalEl);
+              if (lockModal) lockModal.hide();
+            }
+            if (passInput) passInput.value = "";
+            resetIdleTimers();
+          } else {
+            if (res.data && res.data.expired) {
+              window.location.href = loginExpiredUrl;
+              return;
+            }
+            if (errBox && errMsg) {
+              errMsg.textContent = (res.data && res.data.error) ? res.data.error : "Kata sandi tidak sesuai. Silakan coba lagi.";
+              errBox.classList.remove("d-none");
+            }
+            if (passInput) {
+              passInput.classList.add("is-invalid");
+              setTimeout(function(){ passInput.classList.remove("is-invalid"); }, 1500);
+              passInput.focus();
+              passInput.select();
+            }
+          }
+        })
+        .catch(function(){
+          if (btnSubmit) btnSubmit.disabled = false;
+          if (spinner) spinner.classList.add("d-none");
+          if (iconUnlock) iconUnlock.classList.remove("d-none");
+          if (labelUnlock) labelUnlock.textContent = "Buka Kunci Layar";
+          if (errBox && errMsg) {
+            errMsg.textContent = "Gagal terhubung ke server. Silakan periksa koneksi Anda.";
+            errBox.classList.remove("d-none");
+          }
+        });
+      });
+    }
+  }
+
+  // =========================================================================
+  // AUTOSAVE DRAFT FORM INPUT (Mencegah kehilangan data isian pengguna)
+  // =========================================================================
+  (function initFormAutosave() {
+    var form = document.querySelector("form:not(#lockScreenForm):not(#globalSearchModal form)");
+    if (!form) return;
+    var storageKey = "bm_form_draft_" + window.location.pathname;
+
+    try {
+      var saved = sessionStorage.getItem(storageKey);
+      if (saved) {
+        var data = JSON.parse(saved);
+        if (data && typeof data === "object") {
+          Object.keys(data).forEach(function(k){
+            var el = form.elements[k];
+            if (el && !el.value && el.type !== "password" && el.type !== "file" && el.type !== "hidden") {
+              el.value = data[k];
+            }
+          });
+        }
+      }
+    } catch(e){}
+
+    var saveTimer = null;
+    form.addEventListener("input", function(){
+      clearTimeout(saveTimer);
+      saveTimer = setTimeout(function(){
+        try {
+          var draft = {};
+          for (var i = 0; i < form.elements.length; i++) {
+            var el = form.elements[i];
+            if (el.name && el.type !== "password" && el.type !== "file" && el.type !== "hidden") {
+              draft[el.name] = el.value;
+            }
+          }
+          sessionStorage.setItem(storageKey, JSON.stringify(draft));
+        } catch(e){}
+      }, 500);
+    }, { passive: true });
+
+    form.addEventListener("submit", function(){
+      try { sessionStorage.removeItem(storageKey); } catch(e){}
+    });
+  })();
 })();
 </script>
 '.$extraScript.'

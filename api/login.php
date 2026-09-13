@@ -6,8 +6,11 @@ if (!empty($_GET['redirect'])) {
     $_SESSION['after_login'] = (string)$_GET['redirect'];
 }
 
-// Jika sudah login, langsung redirect ke halaman tujuan atau dashboard
-if (is_logged_in()) {
+// Jika sesi telah berakhir (idle timeout), pastikan auth session dibersihkan
+if (!empty($_GET['expired'])) {
+    logout_user();
+} elseif (is_logged_in()) {
+    // Jika sudah login aktif, langsung redirect ke halaman tujuan atau dashboard
     $redirect = $_SESSION['after_login'] ?? module_url('dashboard.php');
     unset($_SESSION['after_login']);
     header('Location: ' . $redirect);
@@ -57,6 +60,7 @@ $expiredHtml = (!empty($_GET['expired']) && !$error && !$flashLogin)
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Masuk ke Sistem · IT Operations Bank Mitra</title>
+<link rel="icon" type="image/png" href="<?= e(module_url('logo.png')) ?>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -365,11 +369,10 @@ body {
   <!-- Left Side: Corporate Identity & Technical Overview -->
   <div class="brand-panel">
     <div class="brand-panel-header">
-      <div class="brand-badge">
-        <i class="bi bi-shield-check"></i>
+      <div class="mb-3">
+        <img src="<?= e(module_url('logo.png')) ?>" alt="Bank Mitra Logo" style="height: 64px; width: auto; object-fit: contain;">
       </div>
-      <div class="brand-title">BANK MITRA</div>
-      <div class="brand-sub">PT. BPR MITRATAMA ARTHABUANA</div>
+      <div class="brand-sub">PT. BPR MITRATAMA ARTHABUANA · IT OPERATIONS</div>
     </div>
 
     <div class="brand-panel-content">
@@ -405,11 +408,8 @@ body {
     <div></div>
     <div class="form-panel-content">
       <div class="form-header">
-        <div class="d-lg-none mb-3">
-          <div class="brand-badge" style="width:38px; height:38px; font-size:1.15rem; margin-bottom:8px;">
-            <i class="bi bi-shield-check"></i>
-          </div>
-          <div class="brand-title text-dark" style="font-size:1.1rem;">BANK MITRA</div>
+        <div class="d-lg-none mb-4 text-center">
+          <img src="<?= e(module_url('logo.png')) ?>" alt="Bank Mitra Logo" style="height: 48px; width: auto; object-fit: contain; margin-bottom: 6px;">
           <div class="brand-sub">IT OPERATIONS</div>
         </div>
         <h2 class="form-title">Masuk ke Sistem</h2>

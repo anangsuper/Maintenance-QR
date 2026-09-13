@@ -132,26 +132,21 @@ function is_logged_in(): bool {
     if (empty($_SESSION['user_id']) || (int)$_SESSION['user_id'] <= 0) {
         restore_auth_from_cookie();
     }
-    $timeout = (int)cfg('session_timeout', envv('SESSION_TIMEOUT', '2592000')); // 30 hari default
+    $timeout = (int)cfg('session_timeout', envv('SESSION_TIMEOUT', '7200')); // 2 jam default
     $hasUser = current_user_id() > 0;
     if (!$hasUser) return false;
     if (!empty($_SESSION['last_activity']) && (time() - (int)$_SESSION['last_activity'] > $timeout)) {
         return false;
     }
-    // Refresh waktu aktivitas jika masih aktif
-    $_SESSION['last_activity'] = time();
     return true;
 }
 
 function require_login(): void {
-    $timeout = (int)cfg('session_timeout', envv('SESSION_TIMEOUT', '2592000')); // 30 hari default
+    $timeout = (int)cfg('session_timeout', envv('SESSION_TIMEOUT', '7200')); // 2 jam default
 
-    // Cek apakah user sudah login
-    $isLoggedIn = is_logged_in();
-
-    if ($isLoggedIn) {
-        // Cek sesi kedaluwarsa karena tidak ada aktivitas (idle)
-        if (!empty($_SESSION['last_activity']) && (time() - (int)$_SESSION['last_activity'] > $timeout)) {
+    // Cek apakah user ada di sesi dan sudah kedaluwarsa karena tidak ada aktivitas (idle)
+    if (!empty($_SESSION['user_id']) && !empty($_SESSION['last_activity'])) {
+        if (time() - (int)$_SESSION['last_activity'] > $timeout) {
             $savedRedirect = request_uri_full();
             logout_user();
             if (session_status() !== PHP_SESSION_ACTIVE) {
@@ -161,7 +156,12 @@ function require_login(): void {
             header('Location: ' . module_url('login.php', ['expired' => 1]));
             exit;
         }
+    }
 
+    // Cek apakah user sudah login
+    $isLoggedIn = is_logged_in();
+
+    if ($isLoggedIn) {
         // Perbarui waktu aktivitas terakhir
         $_SESSION['last_activity'] = time();
         return;
@@ -453,4 +453,24 @@ function logout_user(): void {
     setcookie('_auth_session', '', time() - 42000, '/', '', is_https(), true);
     @session_destroy();
 }
+
+function verify_current_user_password(string $password): array {
+    $password = trim($password);
+    if ($password === '') {
+        return ['success' => false, 'error' => 'Kata sandi tidak boleh kosong.'];
+    }
+    $username = (string)($_SESSION['username'] ?? '');
+    if ($username === '') {
+        return ['success' => false, 'error' => 'Sesi pengguna tidak ditemukan. Silakan login kembali.', 'expired' => true];
+    }
+
+    $auth = authenticate_user($username, $password);
+    if (!empty($auth['success'])) {
+        $_SESSION['last_activity'] = time();
+        return ['success' => true, 'name' => $auth['name'] ?? $username];
+    }
+
+    return ['success' => false, 'error' => 'Kata sandi tidak sesuai. Silakan coba lagi.'];
+}
+
 
