@@ -274,10 +274,8 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .sidebar-brand-img {
-  image-rendering: -webkit-optimize-contrast;
-  image-rendering: crisp-edges;
-  transform: translateZ(0);
-  filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.3));
+  image-rendering: auto;
+  object-fit: contain;
 }
 
 .sidebar-brand-badge {

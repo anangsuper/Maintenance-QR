@@ -130,9 +130,8 @@ body {
 }
 
 .brand-logo-img {
-  image-rendering: -webkit-optimize-contrast;
-  image-rendering: crisp-edges;
-  transform: translateZ(0);
+  image-rendering: auto;
+  object-fit: contain;
 }
 
 .brand-badge {
