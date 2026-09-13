@@ -142,7 +142,45 @@ $script = <<<'HTML'
 <script>
 let html5QrcodeScanner = null;
 
+function playScanAudioFeedback() {
+  try {
+    const AudioContext = window.AudioContext || window.webkitAudioContext;
+    if (AudioContext) {
+      const ctx = new AudioContext();
+      if (ctx.state === 'suspended') {
+        ctx.resume();
+      }
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(880, ctx.currentTime); // 880 Hz (A5 pleasant scanner beep)
+
+      gain.gain.setValueAtTime(0.25, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.12);
+
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+
+      osc.start();
+      osc.stop(ctx.currentTime + 0.12);
+    }
+  } catch (e) {}
+}
+
+function triggerScanHapticFeedback() {
+  try {
+    if (navigator.vibrate) {
+      navigator.vibrate([100, 40, 100]); // Dual pulse confirmation
+    }
+  } catch (e) {}
+}
+
 function onScanSuccess(decodedText) {
+  // 1. Umpan balik audio (beep) & getar (haptic) instan
+  playScanAudioFeedback();
+  triggerScanHapticFeedback();
+
   const statusEl = document.getElementById("scannerStatus");
   if (statusEl) {
     statusEl.innerHTML = '<span class="text-success fw-bold"><i class="bi bi-check-circle-fill me-1"></i> QR Terdeteksi! Membuka data aset...</span>';
@@ -153,13 +191,15 @@ function onScanSuccess(decodedText) {
     }
   } catch (e) {}
 
-  if (decodedText.startsWith("http://") || decodedText.startsWith("https://")) {
-    window.location.href = decodedText;
-  } else if (decodedText.includes("scan.php?t=")) {
-    window.location.href = decodedText;
-  } else {
-    window.location.href = "scan.php?t=" + encodeURIComponent(decodedText.trim());
-  }
+  setTimeout(function() {
+    if (decodedText.startsWith("http://") || decodedText.startsWith("https://")) {
+      window.location.href = decodedText;
+    } else if (decodedText.includes("scan.php?t=")) {
+      window.location.href = decodedText;
+    } else {
+      window.location.href = "scan.php?t=" + encodeURIComponent(decodedText.trim());
+    }
+  }, 180);
 }
 
 function handleManualToken(e) {

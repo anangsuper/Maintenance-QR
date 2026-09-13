@@ -32,6 +32,11 @@ foreach ($rows as $r) {
 
     $cards .= '
     <div class="qr-sticker-wrapper">
+      <div class="qr-sticker-actions no-print">
+        <button type="button" class="btn btn-sm qr-dl-btn" onclick="downloadSticker(this, \''.e(addslashes($kode)).'\')" title="Unduh Stiker Gambar (PNG)">
+          <i class="bi bi-download text-primary me-1"></i><span class="d-none d-sm-inline">Unduh PNG</span>
+        </button>
+      </div>
       <div class="qr-sticker">
         <!-- Header Berwarna & Modern -->
         <div class="qr-top-bar">
@@ -97,9 +102,35 @@ body {
 }
 
 .qr-sticker-wrapper {
-  display: inline-block;
+  display: inline-flex;
+  flex-direction: column;
   box-sizing: border-box;
   page-break-inside: avoid;
+}
+
+.qr-sticker-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 4px;
+}
+
+.qr-dl-btn {
+  font-size: 0.72rem;
+  padding: 2px 8px;
+  background: #ffffff;
+  border: 1px solid #CBD5E1;
+  color: #1E3A60;
+  border-radius: 4px;
+  font-weight: 600;
+  transition: all 0.15s ease;
+  cursor: pointer;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+}
+
+.qr-dl-btn:hover {
+  background: #EFF6FF;
+  border-color: #3B82F6;
+  color: #1D4ED8;
 }
 
 .qr-sticker {
@@ -340,6 +371,59 @@ body {
 .qr-container.size-atm .qr-user-name { font-size: 8pt; padding: 0.5mm 1.6mm; border-radius: 1mm; }
 .qr-container.size-atm .qr-bot-bar { margin: 0 -2.8mm -2.2mm -2.8mm; padding: 1mm 0; font-size: 5.5pt; }
 
+/* --- UKURAN 4: TOM & JERRY 121 (7.5 x 3.8 cm) --- */
+.qr-container.size-tj121 .qr-sticker-wrapper {
+  width: 75mm;
+  height: 38mm;
+}
+.qr-container.size-tj121 .qr-sticker {
+  width: 75mm;
+  height: 38mm;
+  border-radius: 2mm;
+  padding: 1.5mm 2mm;
+}
+.qr-container.size-tj121 .qr-top-bar {
+  margin: -1.5mm -2mm 0 -2mm;
+  padding: 1mm 2mm;
+}
+.qr-container.size-tj121 .qr-dot { width: 3.5px; height: 3.5px; }
+.qr-container.size-tj121 .qr-org { font-size: 5pt; }
+.qr-container.size-tj121 .qr-cabang { font-size: 4.5pt; padding: 0.2mm 1.5mm; max-width: 36mm; }
+.qr-container.size-tj121 .qr-main-body { gap: 2.2mm; padding: 0.6mm 0; }
+.qr-container.size-tj121 .qr-box-wrap { width: 23mm; height: 23mm; padding: 0.5mm; border-radius: 1.2mm; }
+.qr-container.size-tj121 .qr-text-wrap { gap: 0.6mm; }
+.qr-container.size-tj121 .qr-kode-badge { font-size: 7.2pt; padding: 0.3mm 1.2mm; border-radius: 0.8mm; }
+.qr-container.size-tj121 .qr-device-name { font-size: 6.2pt; }
+.qr-container.size-tj121 .qr-user-name { font-size: 6.5pt; padding: 0.3mm 1.2mm; border-radius: 0.6mm; }
+.qr-container.size-tj121 .qr-bot-bar { margin: 0 -2mm -1.5mm -2mm; padding: 0.7mm 0; font-size: 4.4pt; }
+
+/* --- UKURAN 5: TOM & JERRY 108 (3.8 x 1.8 cm) --- */
+.qr-container.size-tj108 .qr-sticker-wrapper {
+  width: 38mm;
+  height: 18mm;
+}
+.qr-container.size-tj108 .qr-sticker {
+  width: 38mm;
+  height: 18mm;
+  border-radius: 1mm;
+  padding: 0.8mm 1mm;
+  border-width: 0.8px;
+}
+.qr-container.size-tj108 .qr-top-bar {
+  margin: -0.8mm -1mm 0 -1mm;
+  padding: 0.4mm 1mm;
+}
+.qr-container.size-tj108 .qr-dot { width: 2px; height: 2px; }
+.qr-container.size-tj108 .qr-org { font-size: 3.2pt; letter-spacing: 0; }
+.qr-container.size-tj108 .qr-cabang { font-size: 3pt; padding: 0.1mm 0.8mm; max-width: 15mm; }
+.qr-container.size-tj108 .qr-main-body { gap: 1mm; padding: 0.2mm 0; }
+.qr-container.size-tj108 .qr-box-wrap { width: 11mm; height: 11mm; padding: 0.2mm; border-width: 0.8px; }
+.qr-container.size-tj108 .qr-text-wrap { gap: 0.3mm; }
+.qr-container.size-tj108 .qr-kode-badge { font-size: 4.5pt; padding: 0.1mm 0.8mm; border-width: 0.5px; }
+.qr-container.size-tj108 .qr-device-name { font-size: 3.8pt; -webkit-line-clamp: 1; }
+.qr-container.size-tj108 .qr-user-name { font-size: 3.8pt; padding: 0.1mm 0.8mm; border-width: 0.5px; -webkit-line-clamp: 1; }
+.qr-container.size-tj108 .qr-bot-bar { margin: 0 -1mm -0.8mm -1mm; padding: 0.3mm 0; font-size: 3pt; }
+
 /* =========================================================================
    CETAK (PRINT)
    ========================================================================= */
@@ -417,15 +501,22 @@ $body = '
       <button type="button" class="btn btn-outline-primary active" id="btnMedium" onclick="applySize(\'medium\')">Kompak (7.0 x 4.4 cm)</button>
       <button type="button" class="btn btn-outline-primary" id="btnMini" onclick="applySize(\'mini\')">Mini (6.0 x 3.8 cm)</button>
       <button type="button" class="btn btn-outline-primary" id="btnAtm" onclick="applySize(\'atm\')">ATM (8.5 x 5.4 cm)</button>
+      <button type="button" class="btn btn-outline-primary" id="btnTj121" onclick="applySize(\'tj121\')" title="Format label Tom & Jerry No. 121 (7.5 x 3.8 cm - 10 label per lembar)">Tom & Jerry 121</button>
+      <button type="button" class="btn btn-outline-primary" id="btnTj108" onclick="applySize(\'tj108\')" title="Format label Tom & Jerry No. 108 (3.8 x 1.8 cm - ultra kompak)">Tom & Jerry 108</button>
     </div>
   </div>
 </div>
 
 <div class="qr-container size-medium" id="qrContainer">'.$cards.'</div>';
 
+$logoDataUri = app_logo_url();
+
 $script = '
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script>
+var appLogoUri = '.json_encode($logoDataUri).';
+
 document.querySelectorAll(".qrbox").forEach(function(el){
   if (typeof QRCode === "undefined") {
     el.innerHTML = "<small>QR library gagal dimuat.</small>";
@@ -433,21 +524,151 @@ document.querySelectorAll(".qrbox").forEach(function(el){
   }
   new QRCode(el, {
     text: el.dataset.qr,
-    width: 140,
-    height: 140,
-    correctLevel: QRCode.CorrectLevel.M
+    width: 220,
+    height: 220,
+    correctLevel: QRCode.CorrectLevel.H // Level H = 30% error correction
   });
+
+  attachLogoToQr(el, appLogoUri);
 });
 
+function attachLogoToQr(containerEl, logoUri) {
+  if (!logoUri) return;
+  var tries = 0;
+  var timer = setInterval(function(){
+    tries++;
+    var canvas = containerEl.querySelector("canvas");
+    if (canvas && canvas.width > 0) {
+      clearInterval(timer);
+      drawLogoOnCanvas(canvas, logoUri, containerEl);
+    } else if (tries > 25) {
+      clearInterval(timer);
+    }
+  }, 40);
+}
+
+function drawLogoOnCanvas(canvas, logoUri, containerEl) {
+  var ctx = canvas.getContext("2d");
+  var img = new Image();
+  img.onload = function() {
+    var size = canvas.width;
+    // Logo takes ~22% of QR width (safely within 30% Level H tolerance)
+    var logoSize = Math.round(size * 0.22);
+    var center = Math.round((size - logoSize) / 2);
+    var pad = Math.round(size * 0.025);
+
+    var bgX = center - pad;
+    var bgY = center - pad;
+    var bgW = logoSize + (pad * 2);
+    var bgH = logoSize + (pad * 2);
+    var rad = Math.round(size * 0.035);
+
+    // 1. Draw rounded white background
+    ctx.save();
+    ctx.fillStyle = "#FFFFFF";
+    ctx.beginPath();
+    ctx.moveTo(bgX + rad, bgY);
+    ctx.lineTo(bgX + bgW - rad, bgY);
+    ctx.quadraticCurveTo(bgX + bgW, bgY, bgX + bgW, bgY + rad);
+    ctx.lineTo(bgX + bgW, bgY + bgH - rad);
+    ctx.quadraticCurveTo(bgX + bgW, bgY + bgH, bgX + bgW - rad, bgY + bgH);
+    ctx.lineTo(bgX + rad, bgY + bgH);
+    ctx.quadraticCurveTo(bgX, bgY + bgH, bgX, bgY + bgH - rad);
+    ctx.lineTo(bgX, bgY + rad);
+    ctx.quadraticCurveTo(bgX, bgY, bgX + rad, bgY);
+    ctx.closePath();
+    ctx.fill();
+
+    // 2. Subtle cyan border
+    ctx.strokeStyle = "#30B0E0";
+    ctx.lineWidth = Math.max(1, Math.round(size * 0.012));
+    ctx.stroke();
+    ctx.restore();
+
+    // 3. Draw Bank Mitra logo inside keeping aspect ratio
+    var aspect = (img.naturalWidth && img.naturalHeight) ? (img.naturalWidth / img.naturalHeight) : 1;
+    var dw = logoSize;
+    var dh = logoSize;
+    if (aspect > 1) {
+      dh = logoSize / aspect;
+    } else {
+      dw = logoSize * aspect;
+    }
+    var dx = center + (logoSize - dw) / 2;
+    var dy = center + (logoSize - dh) / 2;
+
+    ctx.drawImage(img, dx, dy, dw, dh);
+
+    // Update <img> tag created by qrcodejs if present
+    var qImg = containerEl.querySelector("img");
+    if (qImg) {
+      try {
+        qImg.src = canvas.toDataURL("image/png");
+      } catch(e) {}
+    }
+  };
+  img.src = logoUri;
+}
+
+function downloadSticker(btn, kode) {
+  var wrapper = btn.closest(".qr-sticker-wrapper");
+  if (!wrapper) return;
+  var sticker = wrapper.querySelector(".qr-sticker");
+  if (!sticker) return;
+
+  var origHtml = btn.innerHTML;
+  btn.disabled = true;
+  btn.innerHTML = \'<span class="spinner-border spinner-border-sm me-1"></span> Menyimpan...\';
+
+  if (typeof html2canvas === "function") {
+    html2canvas(sticker, {
+      scale: 3, // 300 DPI ultra-sharp
+      useCORS: true,
+      backgroundColor: null,
+      logging: false
+    }).then(function(canvas) {
+      var a = document.createElement("a");
+      a.download = "stiker-" + (kode || "aset") + ".png";
+      a.href = canvas.toDataURL("image/png");
+      a.click();
+      btn.disabled = false;
+      btn.innerHTML = origHtml;
+    }).catch(function(err) {
+      console.error(err);
+      fallbackDownload(sticker, kode, btn, origHtml);
+    });
+  } else {
+    fallbackDownload(sticker, kode, btn, origHtml);
+  }
+}
+
+function fallbackDownload(sticker, kode, btn, origHtml) {
+  var canvas = sticker.querySelector("canvas");
+  if (canvas) {
+    var a = document.createElement("a");
+    a.download = "qr-" + (kode || "aset") + ".png";
+    a.href = canvas.toDataURL("image/png");
+    a.click();
+  } else {
+    alert("Gagal memproses gambar stiker.");
+  }
+  btn.disabled = false;
+  btn.innerHTML = origHtml;
+}
+
 function applySize(size) {
-  var btnMedium = document.getElementById("btnMedium");
-  var btnMini = document.getElementById("btnMini");
-  var btnAtm = document.getElementById("btnAtm");
+  var buttons = {
+    medium: document.getElementById("btnMedium"),
+    mini: document.getElementById("btnMini"),
+    atm: document.getElementById("btnAtm"),
+    tj121: document.getElementById("btnTj121"),
+    tj108: document.getElementById("btnTj108")
+  };
   var container = document.getElementById("qrContainer");
 
-  if (btnMedium) btnMedium.classList.toggle("active", size === "medium");
-  if (btnMini) btnMini.classList.toggle("active", size === "mini");
-  if (btnAtm) btnAtm.classList.toggle("active", size === "atm");
+  Object.keys(buttons).forEach(function(k){
+    if (buttons[k]) buttons[k].classList.toggle("active", k === size);
+  });
 
   if (container) {
     container.className = "qr-container size-" + size;
