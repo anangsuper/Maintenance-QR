@@ -61,9 +61,9 @@ function render_page(string $title, string $content, string $extraHead = '', str
 
     $sidebarHtml = '
     <aside class="app-sidebar d-none d-lg-flex flex-column" id="appDesktopSidebar">
-      <div class="sidebar-brand py-3 px-3">
+      <div class="sidebar-brand py-2 px-3">
         <a href="'.e(module_url('dashboard.php')).'" class="d-flex align-items-center justify-content-between text-decoration-none">
-          <img src="'.app_logo_url().'" alt="Bank Mitra Logo" class="sidebar-brand-img" style="height: 44px; width: auto; max-width: 170px; object-fit: contain;">
+          <img src="'.app_logo_url().'" alt="Bank Mitra Logo" class="sidebar-brand-img" style="height: 54px; width: auto; max-width: 175px; object-fit: contain;">
           <span class="badge bg-primary bg-opacity-25 text-white border border-primary border-opacity-50" style="font-size: 0.62rem; letter-spacing: 0.05em; font-weight: 600;">IT OPS</span>
         </a>
       </div>
@@ -90,9 +90,9 @@ function render_page(string $title, string $content, string $extraHead = '', str
 
     <!-- Offcanvas Mobile Drawer -->
     <div class="offcanvas offcanvas-start bg-navy-dark text-white" tabindex="-1" id="appMobileSidebar" aria-labelledby="appMobileSidebarLabel">
-      <div class="offcanvas-header border-bottom border-navy-subtle py-3">
+      <div class="offcanvas-header border-bottom border-navy-subtle py-2 px-3">
         <a href="'.e(module_url('dashboard.php')).'" class="d-flex align-items-center gap-2 text-decoration-none">
-          <img src="'.app_logo_url().'" alt="Bank Mitra Logo" style="height: 38px; width: auto; max-width: 160px; object-fit: contain;">
+          <img src="'.app_logo_url().'" alt="Bank Mitra Logo" class="sidebar-brand-img" style="height: 48px; width: auto; max-width: 170px; object-fit: contain;">
         </a>
         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas" aria-label="Close"></button>
       </div>
@@ -167,7 +167,7 @@ function render_page(string $title, string $content, string $extraHead = '', str
     $publicHeaderHtml = '
     <header class="public-topbar py-2 px-3 px-md-4 bg-white border-bottom shadow-sm d-flex align-items-center justify-content-between">
       <a href="'.e(module_url('dashboard.php')).'" class="d-flex align-items-center gap-3 text-decoration-none">
-        <img src="'.app_logo_url().'" alt="Bank Mitra Logo" style="height: 40px; width: auto; object-fit: contain;">
+        <img src="'.app_logo_url().'" alt="Bank Mitra Logo" class="sidebar-brand-img" style="height: 48px; width: auto; object-fit: contain;">
         <div class="border-start ps-3 d-none d-sm-block">
           <div class="tech-label" style="font-size: 0.68rem; color: #667085;">IT OPERATIONS · INSPECTION PORTAL</div>
         </div>
@@ -269,8 +269,15 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .sidebar-brand {
-  padding: 20px 18px 16px;
+  padding: 16px 18px 14px;
   border-bottom: 1px solid var(--navy-subtle);
+}
+
+.sidebar-brand-img {
+  image-rendering: -webkit-optimize-contrast;
+  image-rendering: crisp-edges;
+  transform: translateZ(0);
+  filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.3));
 }
 
 .sidebar-brand-badge {

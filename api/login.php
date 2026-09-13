@@ -129,6 +129,12 @@ body {
   z-index: 1;
 }
 
+.brand-logo-img {
+  image-rendering: -webkit-optimize-contrast;
+  image-rendering: crisp-edges;
+  transform: translateZ(0);
+}
+
 .brand-badge {
   width: 44px;
   height: 44px;
@@ -370,7 +376,7 @@ body {
   <div class="brand-panel">
     <div class="brand-panel-header">
       <div class="mb-3">
-        <img src="<?= app_logo_url() ?>" alt="Bank Mitra Logo" style="height: 64px; width: auto; object-fit: contain;">
+        <img src="<?= app_logo_url() ?>" alt="Bank Mitra Logo" class="brand-logo-img" style="height: 86px; width: auto; max-width: 260px; object-fit: contain;">
       </div>
       <div class="brand-sub">PT. BPR MITRATAMA ARTHABUANA · IT OPERATIONS</div>
     </div>
@@ -409,7 +415,7 @@ body {
     <div class="form-panel-content">
       <div class="form-header">
         <div class="d-lg-none mb-4 text-center">
-          <img src="<?= app_logo_url() ?>" alt="Bank Mitra Logo" style="height: 48px; width: auto; object-fit: contain; margin-bottom: 6px;">
+          <img src="<?= app_logo_url() ?>" alt="Bank Mitra Logo" class="brand-logo-img" style="height: 58px; width: auto; max-width: 220px; object-fit: contain; margin-bottom: 6px;">
           <div class="brand-sub">IT OPERATIONS</div>
         </div>
         <h2 class="form-title">Masuk ke Sistem</h2>
