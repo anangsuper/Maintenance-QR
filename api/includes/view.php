@@ -63,7 +63,7 @@ function render_page(string $title, string $content, string $extraHead = '', str
     <aside class="app-sidebar d-none d-lg-flex flex-column" id="appDesktopSidebar">
       <div class="sidebar-brand py-3 px-3">
         <a href="'.e(module_url('dashboard.php')).'" class="d-flex align-items-center justify-content-between text-decoration-none">
-          <img src="'.e(module_url('logo.png')).'" alt="Bank Mitra Logo" class="sidebar-brand-img" style="height: 44px; width: auto; max-width: 170px; object-fit: contain;">
+          <img src="'.app_logo_url().'" alt="Bank Mitra Logo" class="sidebar-brand-img" style="height: 44px; width: auto; max-width: 170px; object-fit: contain;">
           <span class="badge bg-primary bg-opacity-25 text-white border border-primary border-opacity-50" style="font-size: 0.62rem; letter-spacing: 0.05em; font-weight: 600;">IT OPS</span>
         </a>
       </div>
@@ -92,7 +92,7 @@ function render_page(string $title, string $content, string $extraHead = '', str
     <div class="offcanvas offcanvas-start bg-navy-dark text-white" tabindex="-1" id="appMobileSidebar" aria-labelledby="appMobileSidebarLabel">
       <div class="offcanvas-header border-bottom border-navy-subtle py-3">
         <a href="'.e(module_url('dashboard.php')).'" class="d-flex align-items-center gap-2 text-decoration-none">
-          <img src="'.e(module_url('logo.png')).'" alt="Bank Mitra Logo" style="height: 38px; width: auto; max-width: 160px; object-fit: contain;">
+          <img src="'.app_logo_url().'" alt="Bank Mitra Logo" style="height: 38px; width: auto; max-width: 160px; object-fit: contain;">
         </a>
         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas" aria-label="Close"></button>
       </div>
@@ -167,7 +167,7 @@ function render_page(string $title, string $content, string $extraHead = '', str
     $publicHeaderHtml = '
     <header class="public-topbar py-2 px-3 px-md-4 bg-white border-bottom shadow-sm d-flex align-items-center justify-content-between">
       <a href="'.e(module_url('dashboard.php')).'" class="d-flex align-items-center gap-3 text-decoration-none">
-        <img src="'.e(module_url('logo.png')).'" alt="Bank Mitra Logo" style="height: 40px; width: auto; object-fit: contain;">
+        <img src="'.app_logo_url().'" alt="Bank Mitra Logo" style="height: 40px; width: auto; object-fit: contain;">
         <div class="border-start ps-3 d-none d-sm-block">
           <div class="tech-label" style="font-size: 0.68rem; color: #667085;">IT OPERATIONS · INSPECTION PORTAL</div>
         </div>
@@ -185,7 +185,7 @@ function render_page(string $title, string $content, string $extraHead = '', str
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>'.e($title).' · IT Operations Bank Mitra</title>
-<link rel="icon" type="image/png" href="'.e(module_url('logo.png')).'">
+<link rel="icon" type="image/png" href="'.app_logo_url().'">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">

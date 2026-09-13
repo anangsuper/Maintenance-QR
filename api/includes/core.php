@@ -228,3 +228,32 @@ function name_column(string $table): ?string {
     return col($table, $map[$table] ?? ['nama', 'name']);
 }
 
+function app_logo_data_uri(): string {
+    static $cached = null;
+    if ($cached !== null) return $cached;
+
+    $candidates = [
+        dirname(__DIR__) . '/logo.png',
+        dirname(__DIR__) . '/Logo Storek Putih Di text.png',
+        dirname(__DIR__, 2) . '/Logo Storek Putih Di text.png',
+        dirname(__DIR__, 2) . '/logo.png'
+    ];
+
+    foreach ($candidates as $p) {
+        if (file_exists($p)) {
+            $data = @file_get_contents($p);
+            if ($data !== false && strlen($data) > 0) {
+                $cached = 'data:image/png;base64,' . base64_encode($data);
+                return $cached;
+            }
+        }
+    }
+
+    return module_url('logo.png');
+}
+
+function app_logo_url(): string {
+    return app_logo_data_uri();
+}
+
+

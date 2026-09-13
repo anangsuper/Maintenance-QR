@@ -60,7 +60,7 @@ $expiredHtml = (!empty($_GET['expired']) && !$error && !$flashLogin)
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Masuk ke Sistem · IT Operations Bank Mitra</title>
-<link rel="icon" type="image/png" href="<?= e(module_url('logo.png')) ?>">
+<link rel="icon" type="image/png" href="<?= app_logo_url() ?>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -370,7 +370,7 @@ body {
   <div class="brand-panel">
     <div class="brand-panel-header">
       <div class="mb-3">
-        <img src="<?= e(module_url('logo.png')) ?>" alt="Bank Mitra Logo" style="height: 64px; width: auto; object-fit: contain;">
+        <img src="<?= app_logo_url() ?>" alt="Bank Mitra Logo" style="height: 64px; width: auto; object-fit: contain;">
       </div>
       <div class="brand-sub">PT. BPR MITRATAMA ARTHABUANA · IT OPERATIONS</div>
     </div>
@@ -409,7 +409,7 @@ body {
     <div class="form-panel-content">
       <div class="form-header">
         <div class="d-lg-none mb-4 text-center">
-          <img src="<?= e(module_url('logo.png')) ?>" alt="Bank Mitra Logo" style="height: 48px; width: auto; object-fit: contain; margin-bottom: 6px;">
+          <img src="<?= app_logo_url() ?>" alt="Bank Mitra Logo" style="height: 48px; width: auto; object-fit: contain; margin-bottom: 6px;">
           <div class="brand-sub">IT OPERATIONS</div>
         </div>
         <h2 class="form-title">Masuk ke Sistem</h2>
