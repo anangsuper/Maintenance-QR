@@ -2,20 +2,8 @@
 require __DIR__ . '/bootstrap.php';
 require_login();
 
-$currentYear = (int)date('Y');
-$yearParam = isset($_GET['tahun']) ? (int)$_GET['tahun'] : 0;
-$year = ($yearParam >= 2020 && $yearParam <= 2035) ? $yearParam : $currentYear;
+$year = (int)date('Y');
 $cabangId = (int)($_GET['cabang'] ?? 0);
-
-$yearOpts = '';
-$startYear = max(2023, $currentYear - 2);
-$endYear = $currentYear + 2;
-for ($y = $startYear; $y <= $endYear; $y++) {
-    $yearOpts .= '<option value="'.$y.'"'.($y === $year ? ' selected' : '').'>Tahun '.$y.'</option>';
-}
-if ($year < $startYear || $year > $endYear) {
-    $yearOpts .= '<option value="'.$year.'" selected>Tahun '.$year.'</option>';
-}
 
 $cabangs = get_cabang_list();
 $overview = get_monthly_overview($year, $cabangId);
@@ -58,7 +46,6 @@ foreach ($overview as $mNum => $m) {
             '.$iconClass.'
             <div>
               <h5 class="fw-bold text-dark mb-0">'.e($m['month_name']).'</h5>
-              <div class="small text-muted">Tahun '.$year.'</div>
             </div>
           </div>
           '.($isCurrent ? '<span class="badge bg-primary px-2 py-1">Bulan Berjalan</span>' : '').'
@@ -101,11 +88,10 @@ $body = '
   <div>
     <div class="tech-label mb-1">MONITORING</div>
     <h1 class="h3 mb-1">Riwayat Maintenance Bulanan</h1>
-    <div class="text-secondary small">Ringkasan progress pemeliharaan komputer 12 bulan sepanjang tahun <strong>'.$year.'</strong>.</div>
+    <div class="text-secondary small">Ringkasan progress pemeliharaan komputer 12 bulan sepanjang periode berjalan.</div>
   </div>
-  <form method="get" class="d-flex flex-wrap gap-2 align-items-center">
-    <select class="form-select form-select-sm" name="cabang" style="min-width: 160px;" onchange="this.form.submit()">'.$cabangOpts.'</select>
-    <select class="form-select form-select-sm font-monospace fw-semibold" name="tahun" style="width: 140px;" onchange="this.form.submit()">'.$yearOpts.'</select>
+  <form method="get" class="d-flex gap-2 align-items-center">
+    <select class="form-select form-select-sm" name="cabang" style="min-width: 180px;" onchange="this.form.submit()">'.$cabangOpts.'</select>
   </form>
 </div>
 
@@ -113,4 +99,4 @@ $body = '
   '.$monthCardsHtml.'
 </div>';
 
-render_page('Riwayat Bulanan · ' . $year, $body);
+render_page('Riwayat Maintenance Bulanan', $body);
