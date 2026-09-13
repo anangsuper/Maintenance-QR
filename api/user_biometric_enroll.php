@@ -228,27 +228,33 @@ if ($isAdmin) {
 
 $head = '
 <style>
-  .mobile-enroll-card {
+  .enroll-main-card {
     border-radius: 16px;
     border: 1px solid #e2e8f0;
-    box-shadow: 0 4px 20px rgba(15, 23, 42, 0.06);
+    box-shadow: 0 4px 24px rgba(15, 23, 42, 0.08);
+  }
+  @media (min-width: 992px) {
+    .border-end-lg {
+      border-right: 1px solid #e2e8f0 !important;
+    }
   }
   .scanner-container {
     position: relative;
-    width: 300px;
-    height: 360px;
-    max-width: 100%;
+    width: 100%;
+    max-width: 440px;
+    height: 380px;
     margin: 0 auto;
-    background: #1e293b;
+    background: #0f172a;
     border-radius: 16px;
     overflow: hidden;
     border: 2px solid #cbd5e1;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
   }
   .scanner-video {
     width: 100%;
     height: 100%;
     object-fit: cover;
-    transform: scaleX(-1); /* Mirror view untuk kamera depan HP */
+    transform: scaleX(-1); /* Mirror view untuk kamera depan / webcam */
   }
   .scanner-overlay {
     position: absolute;
@@ -262,9 +268,9 @@ $head = '
     justify-content: center;
   }
   .face-oval {
-    width: 180px;
-    height: 230px;
-    border: 2px solid rgba(255, 255, 255, 0.7);
+    width: 200px;
+    height: 250px;
+    border: 2px solid rgba(255, 255, 255, 0.75);
     border-radius: 50%;
     box-shadow: 0 0 0 9999px rgba(15, 23, 42, 0.55);
     transition: border-color 0.25s ease;
@@ -277,120 +283,145 @@ $head = '
 
 $body = '
 <div class="row justify-content-center">
-  <div class="col-md-8 col-lg-6 col-xl-5">
+  <div class="col-12 col-lg-11 col-xl-10">
     
     <!-- Top Bar Navigation -->
-    <div class="d-flex justify-content-between align-items-center mb-3">
+    <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
       <div>
-        <span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-25 px-2 py-1 mb-1" style="font-size: 0.72rem;">
+        <span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-25 px-2.5 py-1 mb-1" style="font-size: 0.72rem;">
           <i class="bi bi-shield-check me-1"></i> Identitas Petugas IT
         </span>
         <h4 class="fw-bold mb-0 text-dark">Foto Profil & Biometrik Teknisi</h4>
+        <div class="text-muted small">Registrasi dan verifikasi sampel wajah teknisi untuk presensi checklist pemeliharaan.</div>
       </div>
-      <a class="btn btn-outline-secondary btn-sm rounded-pill px-3" href="'.e($backHref).'">
-        <i class="bi bi-arrow-left"></i> '.e($backText).'
+      <a class="btn btn-outline-secondary btn-sm rounded-pill px-3 py-1.5 fw-semibold" href="'.e($backHref).'">
+        <i class="bi bi-arrow-left me-1"></i> '.e($backText).'
       </a>
     </div>
 
-    <div class="card mobile-enroll-card p-3 p-sm-4 bg-white">
-      
-      <!-- Pilih Teknisi -->
-      <div class="mb-3">
-        <label class="form-label fw-bold text-dark small mb-1">
-          <i class="bi bi-person-fill text-primary me-1"></i> Pilih Nama Petugas / Teknisi:
-        </label>
-        <div class="input-group">
-          <select class="form-select fw-semibold" id="userSelect" onchange="handleUserChange(this.value)">
-            '.$userOptionsHtml.'
-          </select>
-          <button type="button" class="btn btn-outline-primary fw-semibold" onclick="showNewTechInput()" title="Ketik Nama Teknisi Baru jika belum ada">
-            <i class="bi bi-person-plus-fill me-1"></i> Baru
-          </button>
+    <div class="card enroll-main-card p-3 p-sm-4 p-lg-4 bg-white mb-4">
+      <div class="row g-4 align-items-start">
+
+        <!-- KOLOM KIRI: Pemilihan Teknisi, Status & Panduan -->
+        <div class="col-lg-5 border-end-lg pe-lg-4">
+          
+          <!-- Pilih Teknisi -->
+          <div class="mb-3">
+            <label class="form-label fw-bold text-dark small mb-1">
+              <i class="bi bi-person-fill text-primary me-1"></i> Pilih Nama Petugas / Teknisi:
+            </label>
+            <div class="input-group">
+              <select class="form-select fw-semibold" id="userSelect" onchange="handleUserChange(this.value)">
+                '.$userOptionsHtml.'
+              </select>
+              <button type="button" class="btn btn-outline-primary fw-semibold" onclick="showNewTechInput()" title="Ketik Nama Teknisi Baru jika belum ada">
+                <i class="bi bi-person-plus-fill me-1"></i> Baru
+              </button>
+            </div>
+            <div class="form-text text-muted" style="font-size: 0.75rem;">
+              Pilih nama Anda dari daftar, atau klik <strong>"Baru"</strong> jika nama belum tercantum.
+            </div>
+          </div>
+
+          <!-- Kotak Input Nama Teknisi Baru -->
+          <div class="p-3 mb-3 bg-light rounded-3 border border-primary border-opacity-25 d-none" id="newTechBox">
+            <label class="form-label fw-bold text-dark small mb-1">
+              <i class="bi bi-person-plus text-primary me-1"></i> Masukkan Nama Lengkap Teknisi:
+            </label>
+            <input type="text" class="form-control mb-2" id="newTechName" placeholder="Contoh: Akhmad Hafizh Firmansyah" autocomplete="name">
+            <div class="d-flex gap-2">
+              <button type="button" class="btn btn-primary btn-sm fw-semibold" id="btnQuickSaveTech" onclick="saveNewTechOnly()">
+                <i class="bi bi-save me-1"></i> Simpan Nama ke Sistem
+              </button>
+              <button type="button" class="btn btn-outline-secondary btn-sm" onclick="cancelNewTech()">Batal</button>
+            </div>
+            <div class="mt-2 small" id="newTechStatus"></div>
+          </div>
+
+          <!-- Foto Avatar Eksisting (Jika ada) -->
+          '.$avatarHtml.'
+
+          <!-- Status Registrasi Wajah -->
+          <div class="text-center mb-3">
+            '.$badgeStatus.'
+          </div>
+
+          <!-- Panduan Singkat -->
+          <div class="alert alert-light border rounded-3 p-3 mb-3 small text-secondary">
+            <div class="fw-bold text-dark mb-1.5 d-flex align-items-center gap-1.5">
+              <i class="bi bi-info-circle-fill text-primary"></i> Panduan Pengambilan Foto:
+            </div>
+            <ol class="mb-0 ps-3" style="line-height: 1.6;">
+              <li>Posisikan wajah tegak lurus menghadap kamera.</li>
+              <li>Pastikan pencahayaan cukup dan wajah terlihat jelas tanpa masker/topi.</li>
+              <li>Tahan posisi sejenak hingga bingkai berubah hijau, lalu simpan.</li>
+            </ol>
+          </div>
+
+          <!-- Info Keamanan & Privasi -->
+          <div class="p-2.5 bg-light rounded-3 border small text-muted d-flex align-items-center gap-2">
+            <i class="bi bi-shield-lock-fill text-success fs-5 flex-shrink-0"></i>
+            <div style="font-size: 0.72rem; line-height: 1.35;">
+              Vektor biometrik wajah dienkripsi aman untuk validasi presensi dan audit operasional IT Bank Mitra.
+            </div>
+          </div>
         </div>
-        <div class="form-text text-muted" style="font-size: 0.75rem;">
-          Pilih nama Anda dari daftar, atau klik <strong>"Baru"</strong> jika nama belum tercantum.
+
+        <!-- KOLOM KANAN: Kamera Pemindai & Tombol Aksi -->
+        <div class="col-lg-7 ps-lg-4">
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <span class="fw-bold text-dark small text-uppercase" style="letter-spacing: 0.04em;">
+              <i class="bi bi-camera-video text-primary me-1"></i> Pemindai Kamera & Verifikasi Wajah:
+            </span>
+          </div>
+
+          <!-- Scanner Container -->
+          <div class="scanner-container mb-3" id="scannerContainer">
+            <video id="videoElement" class="scanner-video" autoplay playsinline webkit-playsinline muted></video>
+            <div class="scanner-overlay">
+              <div class="face-oval" id="faceOval"></div>
+            </div>
+            <canvas id="snapshotCanvas" style="display:none;" width="160" height="160"></canvas>
+          </div>
+
+          <!-- Status Bar Feedback Realtime -->
+          <div class="alert alert-secondary py-2 px-3 text-center mb-3 fw-semibold small" id="statusMessage">
+            <i class="bi bi-camera me-1 text-primary"></i>
+            Tekan <strong>"Buka Kamera"</strong> untuk mengambil foto verifikasi.
+          </div>
+
+          <!-- Progress Liveness -->
+          <div class="progress mb-3" style="height: 5px; border-radius: 4px;" id="progressBarContainer">
+            <div class="progress-bar bg-primary" id="progressBar" style="width: 0%;"></div>
+          </div>
+
+          <!-- Tombol Aksi -->
+          <div class="d-grid gap-2 mb-3">
+            <button type="button" class="btn btn-primary fw-bold py-2.5 shadow-sm" id="btnStartCapture" onclick="startCamera()">
+              <i class="bi bi-camera-fill me-2"></i> Buka Kamera Depan / Webcam
+            </button>
+            <button type="button" class="btn btn-secondary fw-bold py-2.5 shadow-sm d-none" id="btnSnapNow" onclick="forceCaptureBiometric()">
+              <i class="bi bi-camera me-2"></i> Ambil Foto Sekarang
+            </button>
+            <button type="button" class="btn btn-success fw-bold py-2.5 shadow-sm d-none" id="btnSaveBiometric" onclick="saveBiometrics()">
+              <i class="bi bi-check-circle-fill me-2"></i> Simpan Foto Profil & Wajah
+            </button>
+          </div>
+
+          <!-- Success Action Box (Tampil setelah berhasil) -->
+          <div class="p-3 bg-success bg-opacity-10 border border-success rounded-3 text-center d-none" id="successBox">
+            <h5 class="fw-bold text-success mb-1"><i class="bi bi-check-circle-fill me-1"></i> Data Berhasil Disimpan</h5>
+            <div class="small text-dark mb-3" id="successDesc">
+              '.$successDescHtml.'
+            </div>
+            <div class="d-grid gap-2">
+              '.$successButtonsHtml.'
+            </div>
+          </div>
+
         </div>
+
       </div>
-
-      <!-- Kotak Input Nama Teknisi Baru -->
-      <div class="p-3 mb-3 bg-light rounded-3 border border-primary border-opacity-25 d-none" id="newTechBox">
-        <label class="form-label fw-bold text-dark small mb-1">
-          <i class="bi bi-person-plus text-primary me-1"></i> Masukkan Nama Lengkap Teknisi:
-        </label>
-        <input type="text" class="form-control mb-2" id="newTechName" placeholder="Contoh: Akhmad Hafizh Firmansyah" autocomplete="name">
-        <div class="d-flex gap-2">
-          <button type="button" class="btn btn-primary btn-sm fw-semibold" id="btnQuickSaveTech" onclick="saveNewTechOnly()">
-            <i class="bi bi-save me-1"></i> Simpan Nama ke Sistem
-          </button>
-          <button type="button" class="btn btn-outline-secondary btn-sm" onclick="cancelNewTech()">Batal</button>
-        </div>
-        <div class="mt-2 small" id="newTechStatus"></div>
-      </div>
-
-      <!-- Foto Avatar Eksisting (Jika ada) -->
-      '.$avatarHtml.'
-
-      <!-- Status Registrasi Wajah -->
-      <div class="text-center mb-3">
-        '.$badgeStatus.'
-      </div>
-
-      <!-- Panduan Singkat -->
-      <div class="alert alert-light border rounded-3 p-3 mb-3 small text-secondary">
-        <div class="fw-bold text-dark mb-1 d-flex align-items-center gap-1">
-          <i class="bi bi-info-circle-fill text-primary"></i> Panduan Pengambilan Foto:
-        </div>
-        <ol class="mb-0 ps-3">
-          <li>Posisikan wajah tegak lurus menghadap kamera.</li>
-          <li>Pastikan pencahayaan cukup dan wajah terlihat jelas.</li>
-          <li>Tahan posisi sejenak hingga bingkai berubah hijau, lalu simpan.</li>
-        </ol>
-      </div>
-
-      <!-- Scanner Container (Clean Corporate) -->
-      <div class="scanner-container mb-3" id="scannerContainer">
-        <video id="videoElement" class="scanner-video" autoplay playsinline webkit-playsinline muted></video>
-        <div class="scanner-overlay">
-          <div class="face-oval" id="faceOval"></div>
-        </div>
-        <canvas id="snapshotCanvas" style="display:none;" width="160" height="160"></canvas>
-      </div>
-
-      <!-- Status Bar Feedback Realtime -->
-      <div class="alert alert-secondary py-2 px-3 text-center mb-3 fw-semibold small" id="statusMessage">
-        <i class="bi bi-camera me-1 text-primary"></i>
-        Tekan <strong>"Buka Kamera"</strong> untuk mengambil foto verifikasi.
-      </div>
-
-      <!-- Progress Liveness -->
-      <div class="progress mb-3" style="height: 4px;" id="progressBarContainer">
-        <div class="progress-bar bg-primary" id="progressBar" style="width: 0%;"></div>
-      </div>
-
-      <!-- Tombol Aksi HP -->
-      <div class="d-grid gap-2">
-        <button type="button" class="btn btn-primary fw-bold py-2 shadow-sm" id="btnStartCapture" onclick="startCamera()">
-          <i class="bi bi-camera-fill me-2"></i> Buka Kamera Depan
-        </button>
-        <button type="button" class="btn btn-secondary fw-bold py-2 shadow-sm d-none" id="btnSnapNow" onclick="forceCaptureBiometric()">
-          <i class="bi bi-camera me-2"></i> Ambil Foto Sekarang
-        </button>
-        <button type="button" class="btn btn-success fw-bold py-2 shadow-sm d-none" id="btnSaveBiometric" onclick="saveBiometrics()">
-          <i class="bi bi-check-circle-fill me-2"></i> Simpan Foto Profil & Wajah
-        </button>
-      </div>
-
-      <!-- Success Action Box (Tampil setelah berhasil) -->
-      <div class="mt-3 p-3 bg-success bg-opacity-10 border border-success rounded-3 text-center d-none" id="successBox">
-        <h5 class="fw-bold text-success mb-1"><i class="bi bi-check-circle-fill me-1"></i> Data Berhasil Disimpan</h5>
-        <div class="small text-dark mb-3" id="successDesc">
-          '.$successDescHtml.'
-        </div>
-        <div class="d-grid gap-2">
-          '.$successButtonsHtml.'
-        </div>
-      </div>
-
     </div>
   </div>
 </div>';
@@ -868,4 +899,4 @@ async function saveNewTechOnly() {
 </script>
 HTML;
 
-render_page('Daftar Wajah Teknisi (HP)', $body, $head, $script, false);
+render_page('Daftar Wajah Teknisi · IT Operations', $body, $head, $script, false);
