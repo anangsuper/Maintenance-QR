@@ -139,6 +139,19 @@ function render_page(string $title, string $content, string $extraHead = '', str
           <span class="status-text">Sistem Operasional</span>
         </div>
 
+        <!-- Tombol Antrean Offline PWA (Muncul otomatis jika ada data tersimpan di HP) -->
+        <button type="button" class="btn btn-sm btn-warning d-none pwa-queue-btn align-items-center gap-1 fw-bold px-2 py-1 shadow-sm" data-bs-toggle="modal" data-bs-target="#modalPWAQueue" title="Antrean Pemeliharaan Offline">
+          <i class="bi bi-cloud-arrow-up-fill"></i>
+          <span class="d-none d-sm-inline">Antrean:</span>
+          <span class="badge bg-dark text-white pwa-queue-badge">0</span>
+        </button>
+
+        <!-- Tombol Pasang PWA -->
+        <button type="button" class="btn btn-sm btn-outline-info d-none btn-pwa-install align-items-center gap-1 fw-semibold px-2 py-1" title="Pasang ke Layar Utama HP">
+          <i class="bi bi-download"></i>
+          <span class="d-none d-md-inline">Pasang App</span>
+        </button>
+
         <a href="'.e(module_url('asset_add.php')).'" class="btn btn-sm btn-primary d-none d-sm-inline-flex align-items-center gap-1 fw-semibold px-3">
           <i class="bi bi-plus-lg"></i>
           <span>Tambah Aset</span>
@@ -172,7 +185,19 @@ function render_page(string $title, string $content, string $extraHead = '', str
           <div class="tech-label" style="font-size: 0.68rem; color: #667085;">IT OPERATIONS · INSPECTION PORTAL</div>
         </div>
       </a>
-      <div>
+      <div class="d-flex align-items-center gap-2">
+        <!-- Tombol Antrean Offline PWA -->
+        <button type="button" class="btn btn-sm btn-warning d-none pwa-queue-btn align-items-center gap-1 fw-bold px-2 py-1 shadow-sm" data-bs-toggle="modal" data-bs-target="#modalPWAQueue" title="Antrean Pemeliharaan Offline">
+          <i class="bi bi-cloud-arrow-up-fill"></i>
+          <span class="d-none d-sm-inline">Antrean:</span>
+          <span class="badge bg-dark text-white pwa-queue-badge">0</span>
+        </button>
+
+        <button type="button" class="btn btn-sm btn-outline-info d-none btn-pwa-install align-items-center gap-1 fw-semibold px-2 py-1" title="Pasang ke Layar Utama HP">
+          <i class="bi bi-download"></i>
+          <span class="d-none d-sm-inline">Pasang App</span>
+        </button>
+
         '.(is_logged_in() 
             ? '<a href="'.e(module_url('dashboard.php')).'" class="btn btn-sm btn-outline-primary"><i class="bi bi-speedometer2 me-1"></i> Dashboard</a>' 
             : '<a href="'.e(module_url('login.php')).'" class="btn btn-sm btn-outline-secondary"><i class="bi bi-person-circle me-1"></i> Login Petugas</a>').'
@@ -185,6 +210,12 @@ function render_page(string $title, string $content, string $extraHead = '', str
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>'.e($title).' · IT Operations Bank Mitra</title>
+<link rel="manifest" href="'.e(module_url('manifest.webmanifest')).'">
+<meta name="theme-color" content="#0D2748">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="QR Maint">
+<link rel="apple-touch-icon" href="'.e(module_url('pwa_icons.php', ['size' => 192])).'">
 <link rel="icon" type="image/png" href="'.app_logo_url().'">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -222,6 +253,53 @@ function render_page(string $title, string $content, string $extraHead = '', str
   --radius-xl: 12px;
   --shadow-subtle: 0 1px 2px rgba(16, 24, 40, 0.05);
   --shadow-card: 0 1px 3px rgba(16, 24, 40, 0.08);
+}
+
+/* PWA Offline & Network Banner Styles */
+.pwa-network-banner {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 99999;
+  font-size: 0.82rem;
+  padding: 8px 16px;
+  text-align: center;
+  font-weight: 600;
+  transition: all 0.3s ease;
+}
+.pwa-network-offline {
+  background-color: #B42318;
+  color: #FFFFFF;
+  box-shadow: 0 4px 12px rgba(180, 35, 24, 0.35);
+}
+.pwa-network-online {
+  background-color: #16803C;
+  color: #FFFFFF;
+  box-shadow: 0 4px 12px rgba(22, 128, 60, 0.35);
+}
+.pwa-sync-toast {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  background: #08182F;
+  color: #FFFFFF;
+  border: 1px solid #22C55E;
+  padding: 12px 18px;
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+  font-size: 0.85rem;
+  font-weight: 600;
+  z-index: 99998;
+  opacity: 0;
+  transform: translateY(20px);
+  transition: all 0.3s ease;
+  pointer-events: none;
+}
+.pwa-sync-toast.show {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
 }
 
 * { box-sizing: border-box; }
@@ -787,6 +865,46 @@ body.session-locked main {
         <span class="small text-muted" style="font-size: 0.75rem;">PT. BPR Mitratama Arthabuana</span>
       </div>
     </div>
+<!-- Modal Antrean Pemeliharaan Offline PWA -->
+<div class="modal fade" id="modalPWAQueue" tabindex="-1" aria-labelledby="modalPWAQueueLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
+      <div class="modal-header bg-dark text-white border-0 py-3">
+        <div class="d-flex align-items-center gap-2">
+          <div class="p-2 bg-warning bg-opacity-25 rounded-circle text-warning fs-5">
+            <i class="bi bi-cloud-arrow-up-fill"></i>
+          </div>
+          <div>
+            <h6 class="modal-title fw-bold mb-0">Antrean Pemeliharaan Offline</h6>
+            <div class="text-white-50 small" style="font-size: 0.72rem;">Data tersimpan di memori HP karena sinyal lemah / offline</div>
+          </div>
+        </div>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body p-3">
+        <div class="table-responsive">
+          <table class="table table-sm align-middle mb-0">
+            <thead class="table-light small">
+              <tr>
+                <th>Perangkat</th>
+                <th>Teknisi</th>
+                <th>Tipe</th>
+                <th class="text-end">Aksi</th>
+              </tr>
+            </thead>
+            <tbody id="pwaQueueListBody">
+              <tr><td colspan="4" class="text-center py-3 text-muted">Memuat antrean...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="modal-footer justify-content-between py-2 bg-light border-top">
+        <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Tutup</button>
+        <button type="button" class="btn btn-primary btn-sm fw-bold" id="btnSyncAllQueue">
+          <i class="bi bi-arrow-repeat me-1"></i> Sinkronkan Semua Sekarang
+        </button>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -1126,7 +1244,21 @@ body.session-locked main {
     });
   })();
 })();
+
+// PWA Service Worker Registration
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", function() {
+    navigator.serviceWorker.register("'.e(module_url('sw.js')).'")
+      .then(function(reg) {
+        // Success
+      })
+      .catch(function(err) {
+        console.warn("SW registration error:", err);
+      });
+  });
+}
 </script>
+<script src="'.e(module_url('pwa-offline-queue.js')).'"></script>
 '.$extraScript.'
 </body>
 </html>';

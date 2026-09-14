@@ -60,6 +60,12 @@ $expiredHtml = (!empty($_GET['expired']) && !$error && !$flashLogin)
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Masuk ke Sistem · IT Operations Bank Mitra</title>
+<link rel="manifest" href="<?= module_url('manifest.webmanifest') ?>">
+<meta name="theme-color" content="#0D2748">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="QR Maint">
+<link rel="apple-touch-icon" href="<?= module_url('pwa_icons.php', ['size' => 192]) ?>">
 <link rel="icon" type="image/png" href="<?= app_logo_url() ?>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -477,6 +483,15 @@ function togglePassword() {
     inp.type = "password";
     ico.className = "bi bi-eye";
   }
+}
+
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", function() {
+    navigator.serviceWorker.register("<?= module_url('sw.js') ?>")
+      .catch(function(err) {
+        console.warn("SW reg error:", err);
+      });
+  });
 }
 </script>
 </body>

@@ -1,0 +1,55 @@
+{
+  "name": "QR Maintenance IT - Bank Mitra",
+  "short_name": "QR Maint",
+  "description": "Sistem Pemeliharaan IT Berbasis QR Code & Kartu Kontrol Digital",
+  "start_url": "dashboard.php",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#08182F",
+  "theme_color": "#0D2748",
+  "categories": ["business", "productivity", "utilities"],
+  "icons": [
+    {
+      "src": "pwa_icons.php?size=192",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "pwa_icons.php?size=512",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "logo.png",
+      "sizes": "192x192 256x256 512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Scan QR Komputer",
+      "short_name": "Scanner",
+      "description": "Pindai stiker QR komputer kantor",
+      "url": "scanner.php",
+      "icons": [{ "src": "pwa_icons.php?size=192", "sizes": "192x192" }]
+    },
+    {
+      "name": "Dashboard Monitoring",
+      "short_name": "Dashboard",
+      "description": "Pantau persentase kepatuhan pemeliharaan IT",
+      "url": "dashboard.php",
+      "icons": [{ "src": "pwa_icons.php?size=192", "sizes": "192x192" }]
+    },
+    {
+      "name": "Riwayat Bulanan",
+      "short_name": "Riwayat",
+      "description": "Daftar pemeliharaan bulan berjalan",
+      "url": "monthly_history.php",
+      "icons": [{ "src": "pwa_icons.php?size=192", "sizes": "192x192" }]
+    }
+  ]
+}

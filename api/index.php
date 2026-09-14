@@ -9,8 +9,8 @@ if ($path === '' || $path === 'index.php') {
     $path = 'dashboard.php';
 }
 
-// Support serving static images/assets directly on Vercel
-$staticExtensions = ['png', 'jpg', 'jpeg', 'svg', 'gif', 'webp', 'ico', 'css', 'js'];
+// Support serving static images/assets and PWA files directly on Vercel
+$staticExtensions = ['png', 'jpg', 'jpeg', 'svg', 'gif', 'webp', 'ico', 'css', 'js', 'json', 'webmanifest'];
 $ext = strtolower(pathinfo($path, PATHINFO_EXTENSION));
 if (in_array($ext, $staticExtensions, true)) {
     $filePath = __DIR__ . '/' . basename($path);
@@ -27,10 +27,17 @@ if (in_array($ext, $staticExtensions, true)) {
             'webp' => 'image/webp',
             'ico' => 'image/x-icon',
             'css' => 'text/css',
-            'js' => 'application/javascript'
+            'js' => 'application/javascript',
+            'json' => 'application/json',
+            'webmanifest' => 'application/manifest+json'
         ];
         header('Content-Type: ' . ($mimeTypes[$ext] ?? 'application/octet-stream'));
-        header('Cache-Control: public, max-age=604800');
+        if (basename($path) === 'sw.js') {
+            header('Service-Worker-Allowed: /');
+            header('Cache-Control: no-cache, no-store, must-revalidate');
+        } else {
+            header('Cache-Control: public, max-age=604800');
+        }
         readfile($filePath);
         exit;
     }

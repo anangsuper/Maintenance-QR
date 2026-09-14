@@ -208,6 +208,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (($_POST['action'] ?? '') === 'save
 }
 
 // =========================================================================
+// 2. JIKA REQUEST VIA AJAX / FETCH JSON, KEMBALIKAN RESPONS JSON
+// =========================================================================
+$isJsonRequest = (
+    (isset($_SERVER['HTTP_ACCEPT']) && strpos($_SERVER['HTTP_ACCEPT'], 'application/json') !== false) ||
+    (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest')
+);
+
+if ($isJsonRequest) {
+    header('Content-Type: application/json; charset=utf-8');
+    if ($successData) {
+        echo json_encode(['success' => true, 'action' => 'maintenance', 'data' => $successData]);
+        exit;
+    } elseif ($successTindakLanjut) {
+        echo json_encode(['success' => true, 'action' => 'tindak_lanjut', 'data' => $successTindakLanjut]);
+        exit;
+    } elseif ($error !== '') {
+        http_response_code(400);
+        echo json_encode(['success' => false, 'error' => $error]);
+        exit;
+    }
+}
+
+// =========================================================================
 // 2. JIKA PROSES SIMPAN BERHASIL, TAMPILKAN VIEW SUKSES
 // =========================================================================
 if ($successData || $successTindakLanjut) {
