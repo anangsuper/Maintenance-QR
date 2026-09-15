@@ -217,8 +217,12 @@ function render_page(string $title, string $content, string $extraHead = '', str
 <meta name="apple-mobile-web-app-title" content="QR Maint">
 <link rel="apple-touch-icon" href="'.e(module_url('pwa_icons.php', ['size' => 192])).'">
 <link rel="icon" type="image/png" href="'.app_logo_url().'">
+<link rel="dns-prefetch" href="https://cdn.jsdelivr.net">
+<link rel="dns-prefetch" href="https://fonts.googleapis.com">
+<link rel="dns-prefetch" href="https://fonts.gstatic.com">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
@@ -913,26 +917,6 @@ h1, h2, h3, h4, h5, h6 {
       if (inp) inp.focus();
     });
   }
-
-  // Instant prefetch on link hover
-  var preloaded = {};
-  function doPrefetch(url) {
-    if (!url || preloaded[url]) return;
-    if (url.indexOf("javascript:") === 0 || url.indexOf("#") !== -1) return;
-    try {
-      var u = new URL(url, location.href);
-      if (u.origin !== location.origin) return;
-      preloaded[url] = true;
-      var link = document.createElement("link");
-      link.rel = "prefetch";
-      link.href = url;
-      document.head.appendChild(link);
-    } catch(e){}
-  }
-  document.addEventListener("mouseover", function(e){
-    var a = e.target.closest("a");
-    if (a && a.href && !a.target && a.origin === location.origin) doPrefetch(a.href);
-  }, {passive: true});
 
   // Client-side quick filter in Global Search
   var searchInput = document.getElementById("globalSearchInput");

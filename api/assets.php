@@ -27,6 +27,10 @@ $divisis = get_divisi_list();
 // 2. Query data aset dasar
 $rawAssets = [];
 if (is_google_cloud_mode()) {
+    $client = google_sheets_v4_client();
+    if ($client) {
+        $client->preloadSheets(['Assets', 'Cabang', 'Divisi', 'Karyawan', 'Kategori_Aset', 'Asset_QR_Tokens', 'Maintenance_Scan']);
+    }
     $rawAssets = map_sheets_assets();
 } else {
     try {

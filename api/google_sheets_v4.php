@@ -37,8 +37,10 @@ class GoogleSheetsV4Client {
         curl_setopt_array($ch, $opts + [
             CURLOPT_RETURNTRANSFER => true,
             CURLOPT_TIMEOUT => 20,
+            CURLOPT_ENCODING => '', // Enable GZIP/deflate compression from Google Cloud
             CURLOPT_SSL_VERIFYPEER => true,
             CURLOPT_FOLLOWLOCATION => true,
+            CURLOPT_IPRESOLVE => CURL_IPRESOLVE_V4,
         ]);
         $response = curl_exec($ch);
         if ($response === false) {
@@ -189,6 +191,54 @@ class GoogleSheetsV4Client {
                     }
                 }
                 error_log("Google Sheets getValues failed on '{$range}': " . substr($response, 0, 300));
+                break;
+            }
+        }
+
+        return [];
+    }
+
+    public function batchGetValues(array $ranges): array {
+        if (empty($ranges)) return [];
+        $token = $this->getAccessToken();
+        if (!$token) return [];
+
+        $queryParams = [];
+        foreach ($ranges as $r) {
+            $queryParams[] = 'ranges=' . urlencode($r);
+        }
+        $url = sprintf(
+            'https://sheets.googleapis.com/v4/spreadsheets/%s/values:batchGet?%s',
+            urlencode($this->spreadsheetId),
+            implode('&', $queryParams)
+        );
+
+        $attempt = 0;
+        $maxAttempts = 2;
+        while ($attempt < $maxAttempts) {
+            $attempt++;
+            $response = $this->curlExec($url, [
+                CURLOPT_HTTPHEADER => ['Authorization: Bearer ' . $token],
+            ]);
+
+            $data = json_decode($response, true);
+            if (isset($data['valueRanges'])) {
+                $result = [];
+                foreach ($data['valueRanges'] as $vr) {
+                    $rangeStr = (string)($vr['range'] ?? '');
+                    $rawName = explode('!', $rangeStr)[0];
+                    $sheetName = trim($rawName, "' ");
+                    $result[$sheetName] = $vr['values'] ?? [];
+                }
+                return $result;
+            }
+
+            if (!empty($data['error']['code']) && $data['error']['code'] == 401) {
+                self::$cachedAccessToken = null;
+                $token = $this->getAccessToken();
+                if (!$token) break;
+            } else {
+                error_log("Google Sheets batchGetValues failed: " . substr($response, 0, 300));
                 break;
             }
         }
@@ -447,58 +497,8 @@ class GoogleSheetsV4Client {
         }
     }
 
-    public function getSheetData(string $sheetName, bool $forceRefresh = false): array {
-        // 1. Cek runtime memory cache di request PHP saat ini
-        if (!$forceRefresh && isset(self::$runtimeCache[$sheetName])) {
-            return self::$runtimeCache[$sheetName];
-        }
-
-        // Tiered cache TTL: 60 detik untuk scan & checklist, 300 detik (5 menit) untuk master data
-        $ttl = in_array($sheetName, ['Maintenance_Scan', 'Maintenance_Checklists'], true) ? 60 : 300;
-
-        // 2. Cek warm session cache untuk pergantian halaman secepat kilat (0.01 detik)
-        if (!$forceRefresh && session_status() === PHP_SESSION_ACTIVE) {
-            $cacheKey = '_gs_cache_' . $sheetName;
-            $timeKey = '_gs_time_' . $sheetName;
-            if (!empty($_SESSION[$cacheKey]) && !empty($_SESSION[$timeKey]) && (time() - (int)$_SESSION[$timeKey] < $ttl)) {
-                self::$runtimeCache[$sheetName] = $_SESSION[$cacheKey];
-                return self::$runtimeCache[$sheetName];
-            }
-        }
-
-        // 3. Cek warm disk cache di /tmp (bertahan antar request di container)
-        if (!$forceRefresh) {
-            $filePath = $this->getCacheFilePath($sheetName);
-            if (file_exists($filePath) && (time() - filemtime($filePath) < $ttl)) {
-                $cachedContent = @file_get_contents($filePath);
-                if ($cachedContent) {
-                    $cachedJson = json_decode($cachedContent, true);
-                    if (is_array($cachedJson)) {
-                        self::$runtimeCache[$sheetName] = $cachedJson;
-                        if (session_status() === PHP_SESSION_ACTIVE) {
-                            $_SESSION['_gs_cache_' . $sheetName] = $cachedJson;
-                            $_SESSION['_gs_time_' . $sheetName] = time();
-                        }
-                        return $cachedJson;
-                    }
-                }
-            }
-        }
-
-        // 4. Ambil data dari Google Sheets API jika cache kedaluwarsa / force refresh
-        $rows = $this->getValues($sheetName);
-        if (empty($rows)) {
-            $rows = $this->getValues($sheetName . '!A1:Z');
-        }
-
-        // 5. Jika API gagal (misal rate limit/timeout), gunakan session cache sebelumnya agar data tidak hilang
-        if (empty($rows)) {
-            if (session_status() === PHP_SESSION_ACTIVE && !empty($_SESSION['_gs_cache_' . $sheetName])) {
-                self::$runtimeCache[$sheetName] = $_SESSION['_gs_cache_' . $sheetName];
-                return self::$runtimeCache[$sheetName];
-            }
-            return [];
-        }
+    public function parseSheetRows(string $sheetName, array $rows): array {
+        if (empty($rows)) return [];
 
         $defaultHeaders = [
             'Cabang' => ['id', 'nama_cabang', 'alamat', 'telepon', 'penanggung_jawab'],
@@ -605,15 +605,89 @@ class GoogleSheetsV4Client {
             $result[] = $obj;
         }
 
-        // Simpan ke cache runtime, session, dan file temp
-        self::$runtimeCache[$sheetName] = $result;
-        if (session_status() === PHP_SESSION_ACTIVE) {
-            $_SESSION['_gs_cache_' . $sheetName] = $result;
-            $_SESSION['_gs_time_' . $sheetName] = time();
-        }
-        @file_put_contents($this->getCacheFilePath($sheetName), json_encode($result));
-
         return $result;
+    }
+
+    /**
+     * Batch Preload multiple sheets dalam 1 single HTTP request ke Google Cloud API
+     */
+    public function preloadSheets(array $sheetNames, bool $forceRefresh = false): array {
+        $needed = [];
+        $results = [];
+
+        foreach ($sheetNames as $sheetName) {
+            // 1. Cek runtime memory cache
+            if (!$forceRefresh && isset(self::$runtimeCache[$sheetName])) {
+                $results[$sheetName] = self::$runtimeCache[$sheetName];
+                continue;
+            }
+
+            // Tiered cache TTL: 120s scan/checklist, 300s assets, 900s master data
+            $ttl = in_array($sheetName, ['Maintenance_Scan', 'Maintenance_Checklists'], true) ? 120 : (in_array($sheetName, ['Assets'], true) ? 300 : 900);
+
+            // 2. Cek warm disk cache di /tmp
+            if (!$forceRefresh) {
+                $filePath = $this->getCacheFilePath($sheetName);
+                if (file_exists($filePath) && (time() - filemtime($filePath) < $ttl)) {
+                    $cachedContent = @file_get_contents($filePath);
+                    if ($cachedContent) {
+                        $cachedJson = json_decode($cachedContent, true);
+                        if (is_array($cachedJson)) {
+                            self::$runtimeCache[$sheetName] = $cachedJson;
+                            $results[$sheetName] = $cachedJson;
+                            continue;
+                        }
+                    }
+                }
+            }
+
+            $needed[] = $sheetName;
+        }
+
+        if (!empty($needed)) {
+            // Fetch all missing sheets in ONE single batchGet call!
+            $batchData = count($needed) > 1 ? $this->batchGetValues($needed) : [];
+
+            foreach ($needed as $name) {
+                $rows = [];
+                // Search in batchData case-insensitively
+                foreach ($batchData as $bKey => $bRows) {
+                    if (strcasecmp($bKey, $name) === 0) {
+                        $rows = $bRows;
+                        break;
+                    }
+                }
+
+                // Fallback jika batch kosong atau pemanggilan tunggal
+                if (empty($rows)) {
+                    $rows = $this->getValues($name);
+                    if (empty($rows)) {
+                        $rows = $this->getValues($name . '!A1:Z');
+                    }
+                }
+
+                $parsed = $this->parseSheetRows($name, $rows);
+                // Jika API gagal (rate limit), fallback ke disk cache yang ada jika tersedia
+                if (empty($parsed)) {
+                    $filePath = $this->getCacheFilePath($name);
+                    if (file_exists($filePath)) {
+                        $cached = json_decode((string)@file_get_contents($filePath), true);
+                        if (is_array($cached)) $parsed = $cached;
+                    }
+                }
+
+                self::$runtimeCache[$name] = $parsed;
+                @file_put_contents($this->getCacheFilePath($name), json_encode($parsed));
+                $results[$name] = $parsed;
+            }
+        }
+
+        return $results;
+    }
+
+    public function getSheetData(string $sheetName, bool $forceRefresh = false): array {
+        $data = $this->preloadSheets([$sheetName], $forceRefresh);
+        return $data[$sheetName] ?? [];
     }
 
     /**

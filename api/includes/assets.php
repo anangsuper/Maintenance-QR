@@ -48,6 +48,9 @@ function map_sheets_assets(bool $refresh = false): array {
     $client = google_sheets_v4_client();
     if (!$client) return [];
 
+    // Preload all 6 sheets in 1 single batch request to Google Cloud
+    $client->preloadSheets(['Assets', 'Cabang', 'Divisi', 'Karyawan', 'Kategori_Aset', 'Asset_QR_Tokens'], $refresh);
+
     $assets = $client->getSheetData('Assets', $refresh);
     // Filter baris kosong / yang sudah dihapus
     $assets = array_values(array_filter($assets, function($a) {

@@ -29,6 +29,13 @@ $monthNames = [
 ];
 $monthName = $monthNames[$month] ?? date('F');
 
+if (is_google_cloud_mode()) {
+    $client = google_sheets_v4_client();
+    if ($client) {
+        $client->preloadSheets(['Assets', 'Cabang', 'Divisi', 'Karyawan', 'Kategori_Aset', 'Asset_QR_Tokens', 'Maintenance_Scan', 'Maintenance_Checklists']);
+    }
+}
+
 $cabangs = get_cabang_list();
 $divisis = get_divisi_list();
 $kategoris = get_kategori_list();

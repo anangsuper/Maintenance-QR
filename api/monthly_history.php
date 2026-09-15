@@ -17,6 +17,13 @@ if ($year < $startYear || $year > $endYear) {
     $yearOpts .= '<option value="'.$year.'" selected>'.$year.'</option>';
 }
 
+if (is_google_cloud_mode()) {
+    $client = google_sheets_v4_client();
+    if ($client) {
+        $client->preloadSheets(['Assets', 'Cabang', 'Divisi', 'Karyawan', 'Kategori_Aset', 'Asset_QR_Tokens', 'Maintenance_Scan']);
+    }
+}
+
 $cabangs = get_cabang_list();
 $overview = get_monthly_overview($year, $cabangId);
 
