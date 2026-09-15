@@ -778,31 +778,9 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 @media print {
-  .no-print, .app-sidebar, .app-topbar, .public-topbar, #top-progress-bar, #sessionLockModal { display: none !important; }
+  .no-print, .app-sidebar, .app-topbar, .public-topbar, #top-progress-bar { display: none !important; }
   .app-content-container { padding: 0 !important; max-width: 100% !important; }
   body { background: #FFFFFF !important; }
-}
-
-/* Bank Mitra Inactivity Lock Screen Styling */
-body.session-locked .app-layout-wrapper,
-body.session-locked .public-topbar,
-body.session-locked main {
-  filter: blur(6px) grayscale(20%);
-  pointer-events: none !important;
-  user-select: none !important;
-  transition: filter 0.3s ease;
-}
-#sessionLockModal {
-  z-index: 1070 !important;
-}
-#sessionLockModal .modal-dialog {
-  filter: none !important;
-  pointer-events: auto !important;
-}
-.modal-backdrop.session-lock-backdrop {
-  z-index: 1065 !important;
-  background-color: rgba(8, 24, 47, 0.85) !important;
-  backdrop-filter: blur(5px);
 }
 </style>
 '.$extraHead.'
@@ -865,6 +843,9 @@ body.session-locked main {
         <span class="small text-muted" style="font-size: 0.75rem;">PT. BPR Mitratama Arthabuana</span>
       </div>
     </div>
+  </div>
+</div>
+
 <!-- Modal Antrean Pemeliharaan Offline PWA -->
 <div class="modal fade" id="modalPWAQueue" tabindex="-1" aria-labelledby="modalPWAQueueLabel" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered">
@@ -907,72 +888,6 @@ body.session-locked main {
     </div>
   </div>
 </div>
-
-'.($isLoggedIn ? '
-<!-- Modal Kunci Layar (Lock Screen Inactivity Alert - 15 Menit) -->
-<div class="modal fade" id="sessionLockModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false" aria-labelledby="sessionLockModalLabel" aria-hidden="true">
-  <div class="modal-dialog modal-dialog-centered" style="max-width: 420px;">
-    <div class="modal-content border-0 shadow-lg" style="border-radius: 16px; overflow: hidden;">
-      <div class="modal-header border-0 pb-0 justify-content-center pt-4">
-        <div class="text-center w-100 px-3">
-          <div class="d-inline-flex align-items-center justify-content-center rounded-circle mb-2" style="width: 58px; height: 58px; background-color: #FEF3F2; color: #B42318; border: 4px solid #FEE4E2;">
-            <i class="bi bi-shield-lock-fill fs-3"></i>
-          </div>
-          <h5 class="modal-title fw-bold text-dark mb-1" id="sessionLockModalLabel">Sesi Diamankan</h5>
-          <p class="text-muted small mb-0">Tidak ada aktivitas selama 15 menit. Masukkan kata sandi akun Anda untuk membuka kunci layar dan melanjutkan pekerjaan.</p>
-        </div>
-      </div>
-      <div class="modal-body px-4 pt-3 pb-4">
-        <!-- Profil Pengguna Terkunci -->
-        <div class="d-flex align-items-center gap-3 p-2 mb-3 bg-light rounded-3 border">
-          <div class="sidebar-user-avatar" style="width: 40px; height: 40px; font-size: 1rem; background-color: var(--blue-corporate); color: white; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-weight: bold;">
-            '.e($userInitial).'
-          </div>
-          <div class="overflow-hidden flex-grow-1">
-            <div class="fw-semibold text-dark text-truncate">'.e($userName).'</div>
-            <div class="small text-muted text-capitalize"><i class="bi bi-shield-check me-1 text-success"></i>'.e($role).'</div>
-          </div>
-          <span class="badge bg-danger-subtle text-danger border px-2 py-1 small"><i class="bi bi-lock-fill me-1"></i>Terkunci</span>
-        </div>
-
-        <!-- Alert Error jika Password Salah -->
-        <div id="lockScreenError" class="alert alert-danger py-2 px-3 small d-none align-items-center gap-2 mb-3" style="border-radius: 8px;">
-          <i class="bi bi-exclamation-circle-fill fs-6 flex-shrink-0"></i>
-          <span id="lockScreenErrorMsg">Kata sandi tidak sesuai. Silakan coba lagi.</span>
-        </div>
-
-        <!-- Form Masukkan Password -->
-        <form id="lockScreenForm" autocomplete="off" onsubmit="return false;">
-          <div class="mb-3">
-            <label for="lockPasswordInput" class="form-label small fw-semibold text-secondary">Kata Sandi Akun</label>
-            <div class="input-group">
-              <span class="input-group-text bg-white border-end-0 text-muted"><i class="bi bi-key-fill"></i></span>
-              <input type="password" class="form-control border-start-0 border-end-0 ps-0" id="lockPasswordInput" placeholder="Ketik kata sandi akun Anda..." required autocomplete="current-password">
-              <button class="btn btn-outline-secondary border-start-0 bg-white" type="button" id="btnToggleLockPassword" title="Lihat/Sembunyikan sandi">
-                <i class="bi bi-eye" id="iconToggleLockPassword"></i>
-              </button>
-            </div>
-          </div>
-
-          <div class="d-grid gap-2">
-            <button type="submit" class="btn btn-primary fw-semibold py-2 d-flex align-items-center justify-content-center gap-2" id="btnUnlockSubmit">
-              <span class="spinner-border spinner-border-sm d-none" id="spinnerUnlock" role="status" aria-hidden="true"></span>
-              <i class="bi bi-unlock-fill" id="iconUnlock"></i>
-              <span id="labelUnlock">Buka Kunci Layar</span>
-            </button>
-            <a href="'.e(module_url('logout.php')).'" class="btn btn-light text-danger border py-2 small fw-semibold d-flex align-items-center justify-content-center gap-2">
-              <i class="bi bi-box-arrow-right"></i> Keluar / Ganti Akun
-            </a>
-          </div>
-        </form>
-      </div>
-      <div class="modal-footer justify-content-center py-2 bg-light border-top">
-        <span class="small text-muted" style="font-size: 0.75rem;"><i class="bi bi-check2-circle me-1 text-success"></i>Semua isian formulir di layar tetap tersimpan dan tidak hilang.</span>
-      </div>
-    </div>
-  </div>
-</div>
-' : '').'
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script>
@@ -1039,54 +954,19 @@ body.session-locked main {
   }
 
   // =========================================================================
-  // SISTEM IDLE TIMEOUT: LOCK SCREEN (15 MENIT) & TOTAL LOGOUT (2 JAM)
+  // SISTEM IDLE TIMEOUT (2 JAM LOGOUT OTOMATIS JIKA DITINGGAL TOTAL)
   // =========================================================================
   var isUserLoggedIn = '.($isLoggedIn ? 'true' : 'false').';
-  var idleLockTimeoutMs = 15 * 60 * 1000;       // 15 menit (900 detik) -> Lock Screen & Minta Password
-  var idleLogoutTimeoutMs = 2 * 60 * 60 * 1000; // 2 jam (7200 detik) -> Total Logout Sesi
-  var unlockUrl = "'.e(module_url('unlock.php')).'";
+  var idleLogoutTimeoutMs = 2 * 60 * 60 * 1000; // 2 jam (7200 detik) -> Logout saat ditinggal total
   var loginExpiredUrl = "'.e(module_url('login.php', ['expired' => 1])).'";
-
-  var lockTimer = null;
   var logoutTimer = null;
-  var isSessionLocked = false;
-
-  function showLockScreen() {
-    if (isSessionLocked || !isUserLoggedIn) return;
-    isSessionLocked = true;
-    document.body.classList.add("session-locked");
-
-    var modalEl = document.getElementById("sessionLockModal");
-    if (modalEl && window.bootstrap) {
-      var lockModal = bootstrap.Modal.getOrCreateInstance(modalEl, {
-        backdrop: "static",
-        keyboard: false
-      });
-      lockModal.show();
-      var passInput = document.getElementById("lockPasswordInput");
-      if (passInput) {
-        passInput.value = "";
-        setTimeout(function(){ passInput.focus(); }, 350);
-      }
-      var errBox = document.getElementById("lockScreenError");
-      if (errBox) errBox.classList.add("d-none");
-    }
-  }
-
-  function handleTotalLogout() {
-    window.location.href = loginExpiredUrl;
-  }
 
   function resetIdleTimers() {
-    // Jika layar sedang terkunci, jangan reset timer saat ada gerakan (harus masukkan password)
-    if (isSessionLocked) return;
-
-    clearTimeout(lockTimer);
     clearTimeout(logoutTimer);
-
     if (isUserLoggedIn) {
-      lockTimer = setTimeout(showLockScreen, idleLockTimeoutMs);
-      logoutTimer = setTimeout(handleTotalLogout, idleLogoutTimeoutMs);
+      logoutTimer = setTimeout(function(){
+        window.location.href = loginExpiredUrl;
+      }, idleLogoutTimeoutMs);
     }
   }
 
@@ -1095,108 +975,6 @@ body.session-locked main {
       document.addEventListener(evt, resetIdleTimers, { passive: true });
     });
     resetIdleTimers();
-
-    var btnToggle = document.getElementById("btnToggleLockPassword");
-    if (btnToggle) {
-      btnToggle.addEventListener("click", function(){
-        var inp = document.getElementById("lockPasswordInput");
-        var icon = document.getElementById("iconToggleLockPassword");
-        if (inp && icon) {
-          if (inp.type === "password") {
-            inp.type = "text";
-            icon.classList.replace("bi-eye", "bi-eye-slash");
-          } else {
-            inp.type = "password";
-            icon.classList.replace("bi-eye-slash", "bi-eye");
-          }
-        }
-      });
-    }
-
-    var lockForm = document.getElementById("lockScreenForm");
-    if (lockForm) {
-      lockForm.addEventListener("submit", function(e){
-        e.preventDefault();
-        var passInput = document.getElementById("lockPasswordInput");
-        var password = passInput ? passInput.value.trim() : "";
-        var errBox = document.getElementById("lockScreenError");
-        var errMsg = document.getElementById("lockScreenErrorMsg");
-        var btnSubmit = document.getElementById("btnUnlockSubmit");
-        var spinner = document.getElementById("spinnerUnlock");
-        var iconUnlock = document.getElementById("iconUnlock");
-        var labelUnlock = document.getElementById("labelUnlock");
-
-        if (!password) {
-          if (errBox && errMsg) {
-            errMsg.textContent = "Silakan masukkan kata sandi akun Anda.";
-            errBox.classList.remove("d-none");
-          }
-          if (passInput) passInput.focus();
-          return;
-        }
-
-        if (btnSubmit) btnSubmit.disabled = true;
-        if (spinner) spinner.classList.remove("d-none");
-        if (iconUnlock) iconUnlock.classList.add("d-none");
-        if (labelUnlock) labelUnlock.textContent = "Memverifikasi...";
-        if (errBox) errBox.classList.add("d-none");
-
-        fetch(unlockUrl, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "X-Requested-With": "XMLHttpRequest"
-          },
-          body: JSON.stringify({ password: password })
-        })
-        .then(function(res){
-          return res.json().then(function(data){ return { status: res.status, ok: res.ok, data: data }; });
-        })
-        .then(function(res){
-          if (btnSubmit) btnSubmit.disabled = false;
-          if (spinner) spinner.classList.add("d-none");
-          if (iconUnlock) iconUnlock.classList.remove("d-none");
-          if (labelUnlock) labelUnlock.textContent = "Buka Kunci Layar";
-
-          if (res.ok && res.data && res.data.success) {
-            isSessionLocked = false;
-            document.body.classList.remove("session-locked");
-            var modalEl = document.getElementById("sessionLockModal");
-            if (modalEl && window.bootstrap) {
-              var lockModal = bootstrap.Modal.getInstance(modalEl);
-              if (lockModal) lockModal.hide();
-            }
-            if (passInput) passInput.value = "";
-            resetIdleTimers();
-          } else {
-            if (res.data && res.data.expired) {
-              window.location.href = loginExpiredUrl;
-              return;
-            }
-            if (errBox && errMsg) {
-              errMsg.textContent = (res.data && res.data.error) ? res.data.error : "Kata sandi tidak sesuai. Silakan coba lagi.";
-              errBox.classList.remove("d-none");
-            }
-            if (passInput) {
-              passInput.classList.add("is-invalid");
-              setTimeout(function(){ passInput.classList.remove("is-invalid"); }, 1500);
-              passInput.focus();
-              passInput.select();
-            }
-          }
-        })
-        .catch(function(){
-          if (btnSubmit) btnSubmit.disabled = false;
-          if (spinner) spinner.classList.add("d-none");
-          if (iconUnlock) iconUnlock.classList.remove("d-none");
-          if (labelUnlock) labelUnlock.textContent = "Buka Kunci Layar";
-          if (errBox && errMsg) {
-            errMsg.textContent = "Gagal terhubung ke server. Silakan periksa koneksi Anda.";
-            errBox.classList.remove("d-none");
-          }
-        });
-      });
-    }
   }
 
   // =========================================================================
