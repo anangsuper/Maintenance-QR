@@ -790,15 +790,64 @@ h1, h2, h3, h4, h5, h6 {
   position: fixed;
   top: 0;
   left: 0;
-  height: 2.5px;
-  background-color: var(--blue-accent);
-  z-index: 9999;
-  transition: width .2s ease;
-  width: 0;
+  height: 3px;
+  background: linear-gradient(90deg, #124E96, #2E7CF6, #00D2FF);
+  box-shadow: 0 0 10px rgba(46, 124, 246, 0.8), 0 0 4px rgba(0, 210, 255, 0.6);
+  z-index: 99999;
+  transition: width 0.25s cubic-bezier(0.1, 0.85, 0.25, 1), opacity 0.2s ease;
+  width: 0%;
+  opacity: 0;
+  pointer-events: none;
+}
+
+#top-progress-bar.active {
+  opacity: 1;
+}
+
+/* Floating Page Transition Loader */
+.page-nav-loader {
+  position: fixed;
+  top: 16px;
+  right: 20px;
+  z-index: 99998;
+  background: rgba(13, 39, 72, 0.94);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  color: #ffffff;
+  padding: 5px 12px;
+  border-radius: 20px;
+  font-size: 0.76rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.2), 0 0 0 1px rgba(255, 255, 255, 0.12);
+  pointer-events: none;
+  animation: pageLoaderFadeIn 0.2s ease-out;
+}
+
+.page-nav-spinner {
+  width: 13px;
+  height: 13px;
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  border-top-color: #00D2FF;
+  border-radius: 50%;
+  animation: pageLoaderSpin 0.65s infinite linear;
+}
+
+@keyframes pageLoaderSpin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+@keyframes pageLoaderFadeIn {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 @media print {
-  .no-print, .app-sidebar, .app-topbar, .public-topbar, #top-progress-bar { display: none !important; }
+  .no-print, .app-sidebar, .app-topbar, .public-topbar, #top-progress-bar, .page-nav-loader { display: none !important; }
   .app-main-viewport { margin-left: 0 !important; width: 100% !important; }
   .app-content-container { padding: 0 !important; max-width: 100% !important; }
   body { background: #FFFFFF !important; }
@@ -808,6 +857,10 @@ h1, h2, h3, h4, h5, h6 {
 </head>
 <body>
 <div id="top-progress-bar"></div>
+<div id="page-nav-loader" class="page-nav-loader" style="display: none;">
+  <div class="page-nav-spinner"></div>
+  <span>Memuat...</span>
+</div>
 
 '.($showNav ? '
 <div class="app-layout-wrapper">
@@ -1022,6 +1075,93 @@ h1, h2, h3, h4, h5, h6 {
       try { sessionStorage.removeItem(storageKey); } catch(e){}
     });
   })();
+
+  // =========================================================================
+  // INDIKATOR PROSES LOADING PERPINDAHAN HALAMAN (PAGE TRANSITION PROGRESS)
+  // =========================================================================
+  var progressBar = document.getElementById("top-progress-bar");
+  var pageNavLoader = document.getElementById("page-nav-loader");
+  var progressTimer = null;
+  var progressVal = 0;
+
+  function setProgress(val) {
+    if (!progressBar) return;
+    progressVal = val;
+    progressBar.classList.add("active");
+    progressBar.style.opacity = "1";
+    progressBar.style.width = val + "%";
+  }
+
+  function startPageLoading() {
+    if (progressTimer) clearInterval(progressTimer);
+    setProgress(18);
+    if (pageNavLoader) pageNavLoader.style.display = "flex";
+
+    progressTimer = setInterval(function() {
+      if (progressVal < 50) {
+        setProgress(progressVal + 12);
+      } else if (progressVal < 80) {
+        setProgress(progressVal + 6);
+      } else if (progressVal < 94) {
+        setProgress(progressVal + 1.5);
+      }
+    }, 150);
+  }
+
+  function stopPageLoading() {
+    if (progressTimer) {
+      clearInterval(progressTimer);
+      progressTimer = null;
+    }
+    if (progressBar) {
+      setProgress(100);
+      setTimeout(function() {
+        progressBar.style.opacity = "0";
+        setTimeout(function() {
+          progressBar.classList.remove("active");
+          progressBar.style.width = "0%";
+          if (pageNavLoader) pageNavLoader.style.display = "none";
+        }, 220);
+      }, 140);
+    } else {
+      if (pageNavLoader) pageNavLoader.style.display = "none";
+    }
+  }
+
+  // Tangkap klik pada seluruh link internal ke halaman lain
+  document.addEventListener("click", function(e) {
+    var a = e.target.closest("a");
+    if (!a || !a.href) return;
+
+    if (a.target && a.target !== "_self") return;
+    if (a.hasAttribute("download")) return;
+    if (a.href.indexOf("javascript:") === 0) return;
+    if (a.getAttribute("data-bs-toggle") || a.getAttribute("data-bs-target")) return;
+    if (a.origin !== location.origin) return;
+    if (a.pathname === location.pathname && a.search === location.search && a.hash) return;
+    if (e.ctrlKey || e.metaKey || e.shiftKey || e.which === 2) return;
+
+    startPageLoading();
+  }, { capture: true, passive: true });
+
+  // Tangkap pengiriman form (filter, submit data, dsb)
+  document.addEventListener("submit", function(e) {
+    var form = e.target;
+    if (!form || (form.target && form.target !== "_self")) return;
+    if (form.getAttribute("data-ajax") || form.id === "lockScreenForm") return;
+    startPageLoading();
+  }, { passive: true });
+
+  // Tangani saat halaman selesai dimuat atau kembali dari cache history browser
+  window.addEventListener("pageshow", function() {
+    stopPageLoading();
+  });
+
+  // Animasi awal saat halaman pertama kali selesai dirender
+  document.addEventListener("DOMContentLoaded", function() {
+    startPageLoading();
+    setTimeout(stopPageLoading, 160);
+  });
 })();
 
 // PWA Service Worker Registration
