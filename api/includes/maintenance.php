@@ -1726,7 +1726,8 @@ function get_history_rows(int $month, int $year, int $cabangId, string $status =
                 'model' => $a['model'] ?? '',
                 'kategori_nama' => $a['kategori_nama'] ?? '-',
                 'karyawan_nama' => $a['karyawan_nama'] ?? '-',
-                'cabang_nama' => $a['cabang_nama'] ?? '-'
+                'cabang_nama' => $a['cabang_nama'] ?? '-',
+                'divisi_nama' => $a['divisi_nama'] ?? '-'
             ];
         }
         usort($rows, fn($a, $b) => strcmp($b['maintenance_date'], $a['maintenance_date']));
@@ -1734,17 +1735,20 @@ function get_history_rows(int $month, int $year, int $cabangId, string $status =
     }
 
     $cName = name_column('cabang') ?: 'id';
+    $dName = name_column('divisi') ?: 'id';
     $kName = name_column('karyawan') ?: 'id';
     $uName = name_column('users') ?: 'id';
 
     $sql = "
     SELECT ms.*, a.kode_inventaris, a.serial_number, a.merk, a.model,
            c.`{$cName}` AS cabang_nama,
+           d.`{$dName}` AS divisi_nama,
            k.`{$kName}` AS karyawan_nama,
            COALESCE(ms.technician_name, u.`{$uName}`, 'Teknisi') AS technician_name
     FROM maintenance_scan ms
     JOIN assets a ON a.id = ms.asset_id
     LEFT JOIN cabang c ON c.id = a.id_cabang
+    LEFT JOIN divisi d ON d.id = a.id_divisi
     LEFT JOIN karyawan k ON k.id = a.id_karyawan
     LEFT JOIN users u ON u.id = ms.technician_user_id
     WHERE 1=1
