@@ -4,12 +4,24 @@ require_admin();
 
 $assetId = max(0, (int)($_GET['asset_id'] ?? 0));
 $cabangId = max(0, (int)($_GET['cabang'] ?? 0));
+$rawIds = trim((string)($_GET['ids'] ?? $_POST['ids'] ?? ''));
+$idList = [];
+if ($rawIds !== '') {
+    foreach (explode(',', $rawIds) as $item) {
+        $cleanId = (int)trim($item);
+        if ($cleanId > 0) $idList[] = $cleanId;
+    }
+}
 
-$rows = get_qr_admin_rows($cabangId);
-if ($assetId > 0) {
-    $rows = array_filter($rows, function($r) use ($assetId) {
+$rows = get_qr_admin_rows(!empty($idList) ? 0 : $cabangId);
+if (!empty($idList)) {
+    $rows = array_values(array_filter($rows, function($r) use ($idList) {
+        return in_array((int)($r['id'] ?? 0), $idList, true);
+    }));
+} elseif ($assetId > 0) {
+    $rows = array_values(array_filter($rows, function($r) use ($assetId) {
         return (int)($r['id'] ?? 0) === $assetId;
-    });
+    }));
 }
 
 $cards = '';

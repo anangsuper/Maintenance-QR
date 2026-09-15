@@ -414,7 +414,10 @@ foreach ($pageAssets as $a) {
     }
 
     $tableRows .= '
-    <tr>
+    <tr id="row-asset-'.$aid.'">
+      <td class="text-center">
+        <input class="form-check-input asset-checkbox" type="checkbox" value="'.$aid.'" data-id="'.$aid.'" style="cursor: pointer; width: 1.15rem; height: 1.15rem;" title="Pilih unit '.e($kode).'">
+      </td>
       <td class="text-center text-muted small">'.$startNum.'</td>
       <td>
         <div class="d-flex align-items-center gap-2">
@@ -457,7 +460,7 @@ foreach ($pageAssets as $a) {
 if (empty($tableRows)) {
     $tableRows = '
     <tr>
-      <td colspan="8" class="text-center py-5">
+      <td colspan="9" class="text-center py-5">
         <div class="text-secondary opacity-75 mb-2"><i class="bi bi-pc-display fs-1"></i></div>
         <h6 class="fw-bold text-secondary">Tidak ada data komputer yang cocok dengan filter.</h6>
         <p class="text-muted small mb-3">Coba ubah kata kunci pencarian atau reset filter di atas.</p>
@@ -624,17 +627,42 @@ $body = '
 
 <!-- Table Surface Card -->
 <div class="card overflow-hidden mb-4">
-  <div class="card-header bg-white py-3 px-4 d-flex justify-content-between align-items-center">
+  <div class="card-header bg-white py-3 px-4 d-flex justify-content-between align-items-center flex-wrap gap-2">
     <div>
       <h2 class="h6 mb-0 fw-semibold text-dark"><i class="bi bi-pc-display me-2 text-primary"></i>Daftar Perangkat IT & Komputer</h2>
       <div class="text-secondary small">Seluruh unit PC Desktop, Laptop, dan Printer terdata</div>
     </div>
-    <span class="small text-muted">Halaman '.$page.' dari '.$totalPages.'</span>
+    <div class="d-flex align-items-center gap-2">
+      <span class="small text-muted">Halaman '.$page.' dari '.$totalPages.'</span>
+    </div>
   </div>
+
+  <!-- Selection Action Bar (Appears when items are selected) -->
+  <div id="selectionActionBar" class="border-bottom px-4 py-2 d-none align-items-center justify-content-between flex-wrap gap-2" style="background-color: #EFF6FF !important;">
+    <div class="d-flex align-items-center gap-2">
+      <span class="badge bg-primary fs-6 px-2 py-1"><i class="bi bi-check-square me-1"></i> <span id="selectedCountText">0</span> Dipilih</span>
+      <span class="text-secondary small fw-semibold">Aksi untuk aset terpilih:</span>
+    </div>
+    <div class="d-flex align-items-center gap-2 flex-wrap">
+      <button type="button" class="btn btn-sm btn-primary fw-semibold shadow-sm" onclick="batchPrintCards()">
+        <i class="bi bi-printer me-1"></i> Cetak Kartu Kontrol (<span class="selectedCountNum">0</span>)
+      </button>
+      <button type="button" class="btn btn-sm btn-dark fw-semibold shadow-sm" onclick="batchPrintQR()">
+        <i class="bi bi-qr-code me-1"></i> Cetak Label QR (<span class="selectedCountNum">0</span>)
+      </button>
+      <button type="button" class="btn btn-sm btn-outline-secondary" onclick="deselectAllAssets()">
+        <i class="bi bi-x-circle me-1"></i> Batalkan
+      </button>
+    </div>
+  </div>
+
   <div class="table-responsive">
     <table class="table table-hover align-middle mb-0">
       <thead>
         <tr>
+          <th style="width: 40px;" class="text-center">
+            <input class="form-check-input" type="checkbox" id="checkAllAssets" title="Pilih Semua di Halaman Ini" style="cursor: pointer; width: 1.15rem; height: 1.15rem;">
+          </th>
           <th style="width: 40px;" class="text-center">No</th>
           <th style="width: 150px;">Kode Inventaris</th>
           <th>Perangkat / Spesifikasi</th>
@@ -654,6 +682,165 @@ $body = '
     '.$paginationHtml.'
   </div>
 </div>
+
+<!-- Floating Sticky Selection Bar for Mobile & Quick Action -->
+<div id="floatingSelectionBar" class="position-fixed bottom-0 start-50 translate-middle-x mb-4 shadow-lg rounded-pill px-4 py-2 bg-dark text-white d-none align-items-center gap-3" style="z-index: 1050; border: 1px solid rgba(255,255,255,0.2); animation: fadeInUp 0.25s ease;">
+  <div class="d-flex align-items-center gap-2">
+    <span class="badge bg-primary rounded-pill px-2 py-1"><span class="selectedCountNum">0</span></span>
+    <span class="small fw-semibold">Dipilih</span>
+  </div>
+  <div class="vr bg-secondary opacity-50"></div>
+  <div class="d-flex gap-2">
+    <button type="button" class="btn btn-sm btn-primary rounded-pill px-3 fw-semibold" onclick="batchPrintCards()">
+      <i class="bi bi-printer me-1"></i> Cetak Kartu
+    </button>
+    <button type="button" class="btn btn-sm btn-light rounded-pill px-3 fw-semibold" onclick="batchPrintQR()">
+      <i class="bi bi-qr-code me-1"></i> Cetak Label QR
+    </button>
+    <button type="button" class="btn btn-sm btn-link text-white-50 text-decoration-none p-0 ms-1" onclick="deselectAllAssets()" title="Batalkan Pilihan">
+      <i class="bi bi-x-lg"></i>
+    </button>
+  </div>
+</div>
 ';
 
-render_page('Asset Registry', $body);
+$extraHead = '
+<style>
+.table-row-selected {
+  background-color: #eff6ff !important;
+}
+.table-row-selected > td {
+  background-color: #eff6ff !important;
+}
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translate(-50%, 20px);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+}
+</style>
+';
+
+$extraScript = '
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+  const checkAll = document.getElementById("checkAllAssets");
+  const rowChecks = document.querySelectorAll(".asset-checkbox");
+  const topBar = document.getElementById("selectionActionBar");
+  const floatBar = document.getElementById("floatingSelectionBar");
+  const countLabels = document.querySelectorAll(".selectedCountNum");
+  const countText = document.getElementById("selectedCountText");
+
+  function getSelectedIds() {
+    const ids = [];
+    document.querySelectorAll(".asset-checkbox:checked").forEach(function(cb) {
+      ids.push(cb.value);
+    });
+    return ids;
+  }
+
+  function updateSelectionUI() {
+    const ids = getSelectedIds();
+    const count = ids.length;
+
+    countLabels.forEach(function(el) { el.textContent = count; });
+    if (countText) countText.textContent = count;
+
+    if (count > 0) {
+      if (topBar) {
+        topBar.classList.remove("d-none");
+        topBar.classList.add("d-flex");
+      }
+      if (floatBar) {
+        floatBar.classList.remove("d-none");
+        floatBar.classList.add("d-flex");
+      }
+    } else {
+      if (topBar) {
+        topBar.classList.add("d-none");
+        topBar.classList.remove("d-flex");
+      }
+      if (floatBar) {
+        floatBar.classList.add("d-none");
+        floatBar.classList.remove("d-flex");
+      }
+    }
+
+    if (checkAll) {
+      if (count === 0) {
+        checkAll.checked = false;
+        checkAll.indeterminate = false;
+      } else if (count === rowChecks.length) {
+        checkAll.checked = true;
+        checkAll.indeterminate = false;
+      } else {
+        checkAll.checked = false;
+        checkAll.indeterminate = true;
+      }
+    }
+
+    rowChecks.forEach(function(cb) {
+      const row = cb.closest("tr");
+      if (row) {
+        if (cb.checked) {
+          row.classList.add("table-row-selected");
+        } else {
+          row.classList.remove("table-row-selected");
+        }
+      }
+    });
+  }
+
+  if (checkAll) {
+    checkAll.addEventListener("change", function() {
+      const isChecked = this.checked;
+      rowChecks.forEach(function(cb) {
+        cb.checked = isChecked;
+      });
+      updateSelectionUI();
+    });
+  }
+
+  rowChecks.forEach(function(cb) {
+    cb.addEventListener("change", function() {
+      updateSelectionUI();
+    });
+  });
+
+  window.deselectAllAssets = function() {
+    if (checkAll) {
+      checkAll.checked = false;
+      checkAll.indeterminate = false;
+    }
+    rowChecks.forEach(function(cb) { cb.checked = false; });
+    updateSelectionUI();
+  };
+
+  window.batchPrintCards = function() {
+    const ids = getSelectedIds();
+    if (!ids.length) {
+      alert("Silakan pilih minimal 1 komputer untuk dicetak.");
+      return;
+    }
+    const url = "print_card.php?ids=" + encodeURIComponent(ids.join(",")) + "&layout=grid6";
+    window.open(url, "_blank");
+  };
+
+  window.batchPrintQR = function() {
+    const ids = getSelectedIds();
+    if (!ids.length) {
+      alert("Silakan pilih minimal 1 komputer untuk dicetak stiker QR-nya.");
+      return;
+    }
+    const url = "print_qr.php?ids=" + encodeURIComponent(ids.join(","));
+    window.open(url, "_blank");
+  };
+});
+</script>
+';
+
+render_page('Asset Registry', $body, $extraHead, $extraScript);

@@ -3,6 +3,15 @@ require __DIR__ . '/bootstrap.php';
 require_login();
 
 $assetId = max(0, (int)($_GET['id'] ?? $_GET['asset_id'] ?? 0));
+$cabangId = max(0, (int)($_GET['cabang'] ?? 0));
+$rawIds = trim((string)($_GET['ids'] ?? $_POST['ids'] ?? ''));
+$idList = [];
+if ($rawIds !== '') {
+    foreach (explode(',', $rawIds) as $item) {
+        $cleanId = (int)trim($item);
+        if ($cleanId > 0) $idList[] = $cleanId;
+    }
+}
 $currentYear = (int)date('Y');
 $yearParam = isset($_GET['tahun']) ? (int)$_GET['tahun'] : 0;
 $year = ($yearParam >= 2020 && $yearParam <= 2035) ? $yearParam : $currentYear;
@@ -20,7 +29,28 @@ if ($year < $startYear || $year > $endYear) {
 
 // Ambil daftar aset yang akan dicetak
 $assetList = [];
-if ($assetId > 0) {
+if (!empty($idList)) {
+    if (is_google_cloud_mode()) {
+        $allAssets = map_sheets_assets();
+        $assetMap = [];
+        foreach ($allAssets as $as) {
+            $assetMap[(int)($as['id'] ?? 0)] = $as;
+        }
+        foreach ($idList as $tarId) {
+            if (isset($assetMap[$tarId])) {
+                $assetList[] = $assetMap[$tarId];
+            } else {
+                $sg = get_asset_by_id($tarId);
+                if ($sg) $assetList[] = $sg;
+            }
+        }
+    } else {
+        foreach ($idList as $tarId) {
+            $sg = get_asset_by_id($tarId);
+            if ($sg) $assetList[] = $sg;
+        }
+    }
+} elseif ($assetId > 0) {
     $a = get_asset_by_id($assetId);
     if ($a) {
         $assetList[] = $a;
@@ -34,11 +64,15 @@ $cabangs = get_cabang_list();
 $totalAssets = count($assetList);
 
 // Cabang name label
-$selectedCabangName = 'Semua Cabang';
-foreach ($cabangs as $c) {
-    if ((int)($c['id'] ?? 0) === $cabangId) {
-        $selectedCabangName = $c['nama'] ?? $c['nama_cabang'] ?? ('Cabang #' . $cabangId);
-        break;
+if (!empty($idList)) {
+    $selectedCabangName = count($assetList) . ' Unit Pilihan';
+} else {
+    $selectedCabangName = 'Semua Cabang';
+    foreach ($cabangs as $c) {
+        if ((int)($c['id'] ?? 0) === $cabangId) {
+            $selectedCabangName = $c['nama'] ?? $c['nama_cabang'] ?? ('Cabang #' . $cabangId);
+            break;
+        }
     }
 }
 
@@ -803,10 +837,13 @@ $body = '
       <!-- Filter Form -->
       <form method="get" class="d-flex flex-wrap align-items-center gap-2">
         <input type="hidden" name="id" value="'.$assetId.'">
+        '.($rawIds !== '' ? '<input type="hidden" name="ids" value="'.e($rawIds).'">' : '').'
         
+        '.(empty($idList) ? '
         <select class="form-select form-select-sm" name="cabang" style="width: 170px;" onchange="this.form.submit()">
           '.$cabangOptions.'
         </select>
+        ' : '').'
 
         <select class="form-select form-select-sm fw-bold text-primary" name="layout" style="width: 200px;" onchange="this.form.submit()">
           <option value="grid6"'.($layout === 'grid6' ? ' selected' : '').'>📄 6 Kartu / Lembar A4 (Rekomendasi)</option>
