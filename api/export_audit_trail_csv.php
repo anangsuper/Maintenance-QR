@@ -1,6 +1,6 @@
 <?php
 require __DIR__ . '/bootstrap.php';
-require_login();
+require_admin();
 
 // Ambil parameter filter
 $module = trim((string)($_GET['module'] ?? 'ALL'));
@@ -52,14 +52,14 @@ foreach ($rows as $r) {
 
     fputcsv($out, [
         $no,
-        $timeFormatted,
-        $r['user_name'] ?? 'System',
-        strtoupper((string)($r['user_role'] ?? 'system')),
-        $r['ip_address'] ?? '-',
-        strtoupper((string)($r['module'] ?? '-')),
-        strtoupper((string)($r['action'] ?? '-')),
-        $r['target_label'] ?? '-',
-        $r['details'] ?? '-'
+        sanitize_csv_cell($timeFormatted),
+        sanitize_csv_cell($r['user_name'] ?? 'System'),
+        sanitize_csv_cell(strtoupper((string)($r['user_role'] ?? 'system'))),
+        sanitize_csv_cell($r['ip_address'] ?? '-'),
+        sanitize_csv_cell(strtoupper((string)($r['module'] ?? '-'))),
+        sanitize_csv_cell(strtoupper((string)($r['action'] ?? '-'))),
+        sanitize_csv_cell($r['target_label'] ?? '-'),
+        sanitize_csv_cell($r['details'] ?? '-')
     ], ';');
 }
 

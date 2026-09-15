@@ -1,5 +1,6 @@
 <?php
 require __DIR__ . '/bootstrap.php';
+require_login();
 
 $head = '<style>
 .scanner-container-dark {

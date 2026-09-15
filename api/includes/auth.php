@@ -148,6 +148,68 @@ function login_url(): string {
     return $scheme . '://' . $host . '/' . ltrim($u, '/');
 }
 
+/**
+ * Validasi URL redirect untuk mencegah kerentanan Open Redirect (CWE-601) dan CRLF Injection
+ */
+function safe_redirect_url(?string $url, ?string $fallback = null): string {
+    if ($fallback === null) {
+        $fallback = module_url('dashboard.php');
+    }
+    if ($url === null || $url === '') {
+        return $fallback;
+    }
+
+    // Hapus karakter control CRLF & null bytes untuk mencegah response splitting
+    $url = str_replace(["\r", "\n", "\0"], '', trim($url));
+    if ($url === '') {
+        return $fallback;
+    }
+
+    // Cegah protocol-relative URLs (//evil.com, /\evil.com, \\evil.com)
+    if (str_starts_with($url, '//') || str_starts_with($url, '/\\') || str_starts_with($url, '\\')) {
+        return $fallback;
+    }
+
+    // Cegah skema berbahaya (javascript:, data:, vbscript:, file:)
+    if (preg_match('/^(javascript|data|vbscript|file):/i', $url)) {
+        return $fallback;
+    }
+
+    // Relative path yang aman diawali satu slash '/'
+    if (str_starts_with($url, '/') && !str_starts_with($url, '//') && !str_starts_with($url, '/\\')) {
+        return $url;
+    }
+
+    // Parsing komponen URL
+    $parsed = parse_url($url);
+    if ($parsed === false) {
+        return $fallback;
+    }
+
+    // Relative tanpa slash (seperti dashboard.php atau scan.php?t=...)
+    if (empty($parsed['scheme']) && empty($parsed['host'])) {
+        if (str_contains($url, ':')) {
+            return $fallback;
+        }
+        return '/' . ltrim($url, '/');
+    }
+
+    // Jika berupa URL absolut, verifikasi bahwa host sama dengan domain aplikasi saat ini
+    $currentHost = $_SERVER['HTTP_X_FORWARDED_HOST'] ?? $_SERVER['HTTP_HOST'] ?? '';
+    if (!empty($parsed['host']) && !empty($currentHost)) {
+        $parsedHost = strtolower(explode(':', $parsed['host'])[0]);
+        $expectedHost = strtolower(explode(':', $currentHost)[0]);
+        if ($parsedHost === $expectedHost) {
+            $scheme = strtolower($parsed['scheme'] ?? 'https');
+            if ($scheme === 'http' || $scheme === 'https') {
+                return $url;
+            }
+        }
+    }
+
+    return $fallback;
+}
+
 function is_logged_in(): bool {
     if (empty($_SESSION['user_id']) || (int)$_SESSION['user_id'] <= 0) {
         restore_auth_from_cookie();

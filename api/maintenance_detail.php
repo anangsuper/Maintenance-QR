@@ -1,6 +1,7 @@
 <?php
 require __DIR__ . '/bootstrap.php';
-$isLoggedIn = is_logged_in();
+require_login();
+$isLoggedIn = true;
 
 $id = max(0, (int)($_GET['id'] ?? 0));
 if ($id <= 0) {

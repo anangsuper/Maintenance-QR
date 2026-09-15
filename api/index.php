@@ -13,11 +13,30 @@ if ($path === '' || $path === 'index.php') {
 $staticExtensions = ['png', 'jpg', 'jpeg', 'svg', 'gif', 'webp', 'ico', 'css', 'js', 'json', 'webmanifest'];
 $ext = strtolower(pathinfo($path, PATHINFO_EXTENSION));
 if (in_array($ext, $staticExtensions, true)) {
-    $filePath = __DIR__ . '/' . basename($path);
-    if (!is_file($filePath)) {
-        $filePath = dirname(__DIR__) . '/' . $path;
+    // Mencegah Directory Traversal (CWE-22)
+    if (str_contains($path, '..') || str_contains($path, '\\')) {
+        http_response_code(403);
+        exit('Akses Ditolak');
     }
-    if (is_file($filePath)) {
+
+    $fileName = basename($path);
+    // Larang akses ke file konfigurasi atau dotfile tersembunyi
+    $blockedFiles = ['vercel.json', 'composer.json', 'package.json', 'package-lock.json', 'tsconfig.json'];
+    if (in_array(strtolower($fileName), $blockedFiles, true) || str_starts_with($fileName, '.')) {
+        http_response_code(403);
+        exit('Akses Ditolak');
+    }
+
+    $baseDir = dirname(__DIR__);
+    $filePath = __DIR__ . '/' . $fileName;
+    if (!is_file($filePath)) {
+        $filePath = $baseDir . '/' . $path;
+    }
+
+    $realPath = realpath($filePath);
+    $realBase = realpath($baseDir);
+
+    if ($realPath && $realBase && str_starts_with($realPath, $realBase) && is_file($realPath)) {
         $mimeTypes = [
             'png' => 'image/png',
             'jpg' => 'image/jpeg',
@@ -32,13 +51,13 @@ if (in_array($ext, $staticExtensions, true)) {
             'webmanifest' => 'application/manifest+json'
         ];
         header('Content-Type: ' . ($mimeTypes[$ext] ?? 'application/octet-stream'));
-        if (basename($path) === 'sw.js') {
+        if ($fileName === 'sw.js') {
             header('Service-Worker-Allowed: /');
             header('Cache-Control: no-cache, no-store, must-revalidate');
         } else {
             header('Cache-Control: public, max-age=604800');
         }
-        readfile($filePath);
+        readfile($realPath);
         exit;
     }
 }

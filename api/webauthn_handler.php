@@ -31,12 +31,25 @@ $action = trim((string)($_GET['action'] ?? $_POST['action'] ?? ''));
 // 1. REGISTER OPTIONS: Buat tantangan kriptografi untuk pendaftaran Face ID
 // =========================================================================
 if ($action === 'register_options') {
-    $userId = (int)($_GET['user_id'] ?? current_user_id() ?? 0);
-    if ($userId <= 0) {
-        $allUsers = get_user_list(true);
-        if (!empty($allUsers)) {
-            $userId = (int)($allUsers[0]['id'] ?? 0);
+    if (!is_logged_in()) {
+        json_out(['success' => false, 'error' => 'Autentikasi diperlukan. Silakan masuk terlebih dahulu.'], 401);
+    }
+
+    $reqUserId = (int)($_GET['user_id'] ?? 0);
+    $currUserId = current_user_id();
+
+    // Kontrol Akses: Teknisi hanya boleh daftarkan kredensial akun miliknya sendiri
+    if ($reqUserId > 0 && $reqUserId !== $currUserId) {
+        if (!is_admin()) {
+            json_out(['success' => false, 'error' => 'Akses ditolak. Anda hanya dapat mendaftarkan biometrik untuk akun sendiri.'], 403);
         }
+        $userId = $reqUserId;
+    } else {
+        $userId = $currUserId;
+    }
+
+    if ($userId <= 0) {
+        json_out(['success' => false, 'error' => 'Sesi akun tidak valid.'], 400);
     }
 
     $user = get_user_by_id($userId, true);
@@ -96,6 +109,10 @@ if ($action === 'register_options') {
 // 2. REGISTER VERIFY: Simpan Kredensial Face ID ke Google Sheets / Database
 // =========================================================================
 if ($action === 'register_verify') {
+    if (!is_logged_in()) {
+        json_out(['success' => false, 'error' => 'Autentikasi diperlukan. Silakan masuk terlebih dahulu.'], 401);
+    }
+
     $raw = file_get_contents('php://input');
     $body = json_decode($raw, true);
     if (!is_array($body)) {
@@ -246,7 +263,7 @@ if ($action === 'auth_verify') {
     login_user_session($user);
 
     $purpose = trim((string)($body['purpose'] ?? 'login'));
-    $redirectUrl = $_SESSION['after_login'] ?? module_url('dashboard.php');
+    $redirectUrl = safe_redirect_url($_SESSION['after_login'] ?? null, module_url('dashboard.php'));
     unset($_SESSION['after_login']);
 
     json_out([

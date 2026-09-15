@@ -1,9 +1,9 @@
 <?php
 require __DIR__ . '/bootstrap.php';
 
-// Simpan redirect URL jika dikirim via GET
+// Simpan redirect URL jika dikirim via GET (Wajib divalidasi mencegah Open Redirect CWE-601)
 if (!empty($_GET['redirect'])) {
-    $_SESSION['after_login'] = (string)$_GET['redirect'];
+    $_SESSION['after_login'] = safe_redirect_url((string)$_GET['redirect']);
 }
 
 // Jika sesi telah berakhir (idle timeout), pastikan auth session dibersihkan
@@ -11,7 +11,7 @@ if (!empty($_GET['expired'])) {
     logout_user();
 } elseif (is_logged_in()) {
     // Jika sudah login aktif, langsung redirect ke halaman tujuan atau dashboard
-    $redirect = $_SESSION['after_login'] ?? module_url('dashboard.php');
+    $redirect = safe_redirect_url($_SESSION['after_login'] ?? null, module_url('dashboard.php'));
     unset($_SESSION['after_login']);
     header('Location: ' . $redirect);
     exit;
@@ -31,7 +31,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'user_role' => (string)($_SESSION['user']['role'] ?? 'teknisi'),
             'user_id' => (int)($_SESSION['user']['id'] ?? 0)
         ]);
-        $redirect = $_SESSION['after_login'] ?? module_url('dashboard.php');
+        $redirect = safe_redirect_url($_SESSION['after_login'] ?? null, module_url('dashboard.php'));
         unset($_SESSION['after_login']);
         header('Location: ' . $redirect);
         exit;

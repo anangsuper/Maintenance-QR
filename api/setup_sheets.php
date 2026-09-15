@@ -4,6 +4,7 @@
  * Akses halaman ini sekali saja: https://domain-vercel-anda/setup_sheets.php
  */
 require __DIR__ . '/bootstrap.php';
+require_admin();
 
 if (!is_google_cloud_mode()) {
     echo "Mode Google Cloud tidak aktif. Pastikan environment variable sudah diset.";

@@ -1,5 +1,6 @@
 <?php
 require __DIR__ . '/bootstrap.php';
+require_login();
 
 // Handle AJAX POST simpan biometrik atau tambah teknisi baru langsung dari HP
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -14,14 +15,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $data = $_POST;
     }
 
+    $isAdmin = is_admin();
+    $currUserId = current_user_id();
+
     $action = trim((string)($data['action'] ?? $_GET['action'] ?? ''));
     $newTechName = trim((string)($data['new_name'] ?? ''));
     $targetUserId = (int)($data['user_id'] ?? 0);
     $descriptor = trim((string)($data['descriptor'] ?? ''));
     $photo = trim((string)($data['photo'] ?? ''));
 
-    // Aksi 1: Simpan Nama Teknisi Baru Langsung (Tanpa perlu wajah / biometrik)
+    // Aksi 1: Simpan Nama Teknisi Baru Langsung (Hanya Admin yang berwenang)
     if ($action === 'add_tech_only' || ($newTechName !== '' && empty($descriptor))) {
+        if (!$isAdmin) {
+            echo json_encode(['success' => false, 'error' => 'Akses ditolak. Penambahan akun teknisi baru hanya dapat dilakukan oleh Administrator.']);
+            exit;
+        }
         if ($newTechName === '') {
             echo json_encode(['success' => false, 'error' => 'Nama teknisi baru tidak boleh kosong.']);
             exit;
@@ -59,8 +67,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit;
     }
 
-    // Jika teknisi mendaftar dengan nama baru secara mandiri bersama wajah
+    // Jika teknisi mendaftar dengan nama baru secara mandiri bersama wajah (Hanya Admin)
     if ($targetUserId === -1 && $newTechName !== '') {
+        if (!$isAdmin) {
+            echo json_encode(['success' => false, 'error' => 'Akses ditolak. Penambahan akun baru hanya diizinkan untuk Administrator.']);
+            exit;
+        }
         $created = create_new_user([
             'nama' => $newTechName,
             'role' => 'teknisi',
@@ -91,6 +103,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit;
     }
 
+    // Otorisasi: Teknisi non-admin HANYA boleh mendaftarkan biometrik untuk akun login miliknya sendiri
+    if (!$isAdmin && $targetUserId !== $currUserId) {
+        echo json_encode(['success' => false, 'error' => 'Akses ditolak. Anda hanya berwenang mendaftarkan sampel wajah untuk akun login Anda sendiri.']);
+        exit;
+    }
+
     // WAJIB: Seluruh pendaftaran biometrik berstatus 'pending' dan memerlukan approval dari Admin sebelum aktif
     $enrollStatus = 'pending';
     $res = save_user_biometrics($targetUserId, $descriptor, $photo, $enrollStatus);
@@ -105,12 +123,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 // Ambil seluruh daftar pengguna / teknisi untuk dipilih di HP (selalu data terkini)
 $allUsers = get_user_list(true);
 $currId = current_user_id();
-$reqId = isset($_GET['id']) ? (int)$_GET['id'] : 0;
-$retUrl = trim((string)($_GET['ret'] ?? ''));
+$isAdmin = is_admin();
+$isLoggedIn = is_logged_in();
 
-// Tentukan user aktif
+$rawRet = trim((string)($_GET['ret'] ?? ''));
+$retUrl = ($rawRet !== '') ? safe_redirect_url($rawRet, '') : '';
+
+$reqId = isset($_GET['id']) ? (int)$_GET['id'] : 0;
+
+// Tentukan user aktif: non-admin selalu diarahkan ke profil sendiri
 $selectedUserId = 0;
-if ($reqId > 0) {
+if (!$isAdmin) {
+    $selectedUserId = $currId;
+} elseif ($reqId > 0) {
     $selectedUserId = $reqId;
 } elseif ($currId > 0) {
     $selectedUserId = $currId;
@@ -165,6 +190,10 @@ foreach ($allUsers as $u) {
     if ($uid <= 0 || strcasecmp($unama, 'nama') === 0 || $unama === '') {
         continue;
     }
+    // Jika bukan admin, hanya tampilkan opsi akun login miliknya sendiri
+    if (!$isAdmin && $uid !== $currId) {
+        continue;
+    }
     $urole = ucfirst($u['role'] ?? 'Teknisi');
     $uHasBio = !empty($u['face_descriptor']);
     $uStat = strtolower(trim((string)($u['face_status'] ?? '')));
@@ -184,10 +213,9 @@ foreach ($allUsers as $u) {
     }
     $userOptionsHtml .= '<option value="'.$uid.'" '.$sel.'>'.e($unama).' ('.e($urole).')'.$bioMark.'</option>';
 }
-$userOptionsHtml .= '<option value="-1">+ Tambah Nama Teknisi Baru (Ketik Sendiri)</option>';
-
-$isLoggedIn = is_logged_in();
-$isAdmin = is_admin();
+if ($isAdmin) {
+    $userOptionsHtml .= '<option value="-1">+ Tambah Nama Teknisi Baru (Ketik Sendiri)</option>';
+}
 
 if ($retUrl !== '') {
     $backHref = $retUrl;

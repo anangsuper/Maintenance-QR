@@ -282,4 +282,20 @@ function app_logo_url(): string {
     return app_logo_data_uri();
 }
 
+/**
+ * Sanitasi cell CSV untuk mencegah kerentanan CSV / Formula Injection (CWE-1236)
+ * Saat file CSV dibuka di Microsoft Excel atau Calc, karakter '=', '+', '-', '@', dll
+ * dapat memicu eksekusi rumus atau command DDE eksternal.
+ */
+function sanitize_csv_cell(mixed $val): string {
+    $str = (string)($val ?? '');
+    if ($str === '') return '';
+    $first = $str[0];
+    if (in_array($first, ['=', '+', '-', '@', "\t", "\r"], true)) {
+        return "'" . $str;
+    }
+    return $str;
+}
+
+
 

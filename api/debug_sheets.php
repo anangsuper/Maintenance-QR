@@ -4,6 +4,7 @@
  * Akses: https://domain-vercel/debug_sheets.php
  */
 require __DIR__ . '/bootstrap.php';
+require_admin();
 
 $results = [];
 $alerts = [];

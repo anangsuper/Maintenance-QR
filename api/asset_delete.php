@@ -1,6 +1,6 @@
 <?php
 require __DIR__ . '/bootstrap.php';
-require_login();
+require_admin();
 
 $id = max(0, (int)($_GET['id'] ?? $_POST['id'] ?? 0));
 if ($id <= 0) {
@@ -19,7 +19,7 @@ if (!$asset) {
 $kode = $asset['kode_inventaris'] ?? ('#' . $id);
 $namaPerangkat = trim(($asset['merk'] ?? '') . ' ' . ($asset['model'] ?? ''));
 
-$redirectUrl = !empty($_REQUEST['redirect']) ? (string)$_REQUEST['redirect'] : module_url('assets.php');
+$redirectUrl = safe_redirect_url(!empty($_REQUEST['redirect']) ? (string)$_REQUEST['redirect'] : null, module_url('assets.php'));
 
 // Handle POST deletion
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {

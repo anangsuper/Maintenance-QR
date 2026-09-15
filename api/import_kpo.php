@@ -1,6 +1,6 @@
 <?php
 require __DIR__ . '/bootstrap.php';
-require_login();
+require_admin();
 
 // ================================================================
 // IMPORT BATCH LANGSUNG KE GOOGLE SHEETS (1x tulis semua data)
