@@ -37,7 +37,7 @@ $findingsCount = (int)($data['findings'] ?? count($findingsRows));
 $pendingRows = $data['pendingRows'] ?? [];
 $cabangs = get_cabang_list();
 
-$cabangName = 'Semua Kantor Cabang';
+$cabangName = 'Semua Cabang';
 if ($cabangId > 0 && is_array($cabangs)) {
     foreach ($cabangs as $c) {
         if ((int)($c['id'] ?? 0) === $cabangId) {
@@ -50,30 +50,10 @@ if ($cabangId > 0 && is_array($cabangs)) {
 $pending = max(0, $total - $done);
 $percent = $total > 0 ? round(($done / $total) * 100) : 0;
 
-// Mapping Map Temuan per Asset ID / Kode Inventaris
+// Mapping Map Temuan per Asset ID
 $findingMap = [];
 foreach ($findingsRows as $f) {
-    $fKode = $f['kode_inventaris'] ?? '';
-    if ($fKode !== '') {
-        $findingMap[$fKode] = $f;
-    }
-}
-
-// Clean duplicate repeated words in titles like "ASUS AIO AIO ASUS ..."
-function clean_report_device_title(string $rawTitle): string {
-    $rawTitle = trim($rawTitle);
-    if ($rawTitle === '') return '-';
-    $words = preg_split('/\s+/', $rawTitle);
-    $deduped = [];
-    $prevLower = '';
-    foreach ($words as $w) {
-        $lower = strtolower($w);
-        if ($lower !== $prevLower) {
-            $deduped[] = $w;
-            $prevLower = $lower;
-        }
-    }
-    return implode(' ', $deduped);
+    $findingMap[$f['kode_inventaris']] = $f;
 }
 
 // Unified Rows Construction
@@ -81,60 +61,32 @@ $allRows = [];
 foreach ($historyRows as $r) {
     $kode = $r['kode_inventaris'] ?? '-';
     $fData = $findingMap[$kode] ?? null;
-    
-    // Perangkat Name
-    $devRaw = trim(($r['kategori_nama'] ?? '').' '.($r['merk'] ?? '').' '.($r['model'] ?? ''));
-    if ($devRaw === '' || $devRaw === '-') {
-        $devRaw = trim(($r['merk'] ?? '').' '.($r['model'] ?? ''));
-    }
-    $devTitle = clean_report_device_title($devRaw);
-    
-    // Cabang & Divisi
-    $cName = $r['cabang_nama'] ?? '-';
-    $dName = $r['divisi_nama'] ?? '';
-    $locDisplay = ($dName !== '' && $dName !== '-') ? "{$cName} &bull; <span class=\"text-muted\">{$dName}</span>" : $cName;
-
-    $waktuFormatted = '-';
-    if (!empty($r['maintenance_date'])) {
-        $waktuFormatted = date('d/m/y', strtotime($r['maintenance_date']));
-        if (!empty($r['maintenance_time'])) {
-            $waktuFormatted .= ' ' . substr((string)$r['maintenance_time'], 0, 5);
-        }
-    }
-
     $allRows[] = [
         'is_done' => true,
         'status_type' => ($r['status'] ?? '') === 'Temuan' ? 'temuan' : 'selesai',
-        'waktu' => $waktuFormatted,
+        'waktu' => format_id_date((string)($r['maintenance_date'] ?? '')).' '.substr((string)($r['maintenance_time'] ?? ''), 0, 5),
         'kode' => $kode,
-        'perangkat' => $devTitle,
+        'perangkat' => trim(($r['merk'] ?? '').' '.($r['model'] ?? '')),
         'pemilik' => $r['karyawan_nama'] ?? '-',
-        'cabang_divisi' => $locDisplay,
-        'teknisi' => $r['teknisi_nama'] ?? $r['technician_name'] ?? 'Teknisi IT',
+        'cabang_divisi' => $r['cabang_nama'] ?? '-',
+        'teknisi' => $r['teknisi_nama'] ?? $r['technician_name'] ?? 'Teknisi',
         'is_bio' => !empty($r['biometric_verified']),
         'bio_conf' => (int)($r['biometric_confidence'] ?? 0),
-        'status_label' => ($r['status'] ?? '') === 'Temuan' ? 'Temuan' : 'Selesai',
-        'finding_note' => $fData ? ($fData['finding'] ?? '') : ($r['findings'] ?? ''),
+        'status_label' => ($r['status'] ?? '') === 'Temuan' ? 'Ada Temuan' : 'Selesai',
+        'finding_note' => $fData ? $fData['finding'] : '',
     ];
 }
 
 foreach ($pendingRows as $r) {
-    $kode = $r['kode_inventaris'] ?? '-';
-    $cName = $r['cabang_nama'] ?? '-';
-    $dName = $r['divisi_nama'] ?? '';
-    $locDisplay = ($dName !== '' && $dName !== '-') ? "{$cName} &bull; <span class=\"text-muted\">{$dName}</span>" : $cName;
-
     $allRows[] = [
         'is_done' => false,
         'status_type' => 'belum',
         'waktu' => '-',
-        'kode' => $kode,
-        'perangkat' => clean_report_device_title(asset_title($r)),
+        'kode' => $r['kode_inventaris'] ?? '-',
+        'perangkat' => asset_title($r),
         'pemilik' => $r['karyawan_nama'] ?? '-',
-        'cabang_divisi' => $locDisplay,
+        'cabang_divisi' => ($r['cabang_nama'] ?? '-').' ('.($r['divisi_nama'] ?? '-').')',
         'teknisi' => '-',
-        'is_bio' => false,
-        'bio_conf' => 0,
         'status_label' => 'Belum',
         'finding_note' => '',
     ];
@@ -164,450 +116,145 @@ $num = 0;
 foreach ($allRows as $r) {
     $num++;
     $badge = match($r['status_type']) {
-        'selesai' => '<span class="status-pill status-selesai"><i class="bi bi-check-circle-fill"></i> Selesai</span>',
-        'temuan' => '<span class="status-pill status-temuan"><i class="bi bi-exclamation-triangle-fill"></i> Temuan</span>',
-        default => '<span class="status-pill status-belum"><i class="bi bi-clock-history"></i> Belum</span>'
+        'selesai' => '<span class="badge text-bg-success badge-compact">Selesai</span>',
+        'temuan' => '<span class="badge text-bg-danger badge-compact">Temuan</span>',
+        default => '<span class="badge text-bg-warning badge-compact">Belum</span>'
     };
 
     $noteHtml = '';
     if (!empty($r['finding_note'])) {
-        $noteHtml = '<div class="finding-tag"><i class="bi bi-info-circle"></i> '.e($r['finding_note']).'</div>';
+        $noteHtml = '<div class="small text-danger mt-1"><strong>Temuan:</strong> '.e($r['finding_note']).'</div>';
     }
 
     $trs .= '<tr>
-      <td class="col-num">'.$num.'</td>
-      <td class="col-kode"><span class="kode-tag">'.e($r['kode']).'</span></td>
-      <td class="col-perangkat"><strong>'.e($r['perangkat']).'</strong></td>
-      <td class="col-pemilik">'.e($r['pemilik']).'</td>
-      <td class="col-lokasi">'.$r['cabang_divisi'].'</td>
-      <td class="col-waktu">'.e($r['waktu']).'</td>
-      <td class="col-teknisi">'.e($r['teknisi']).(!empty($r['is_bio']) ? ' <span class="ai-verify" title="Verifikasi AI Biometrik">&#10003; AI</span>' : '').'</td>
-      <td class="col-status">'.$badge.$noteHtml.'</td>
+      <td class="col-center">'.$num.'</td>
+      <td class="col-nowrap fw-bold text-primary">'.e($r['kode']).'</td>
+      <td>'.e($r['perangkat']).'</td>
+      <td>'.e($r['pemilik']).'</td>
+      <td>'.e($r['cabang_divisi']).'</td>
+      <td class="col-nowrap text-center col-waktu">'.e($r['waktu']).'</td>
+      <td class="col-nowrap">'.e($r['teknisi']).(!empty($r['is_bio']) ? ' <span style="color:#16a34a;font-weight:bold;font-size:7.5pt;" title="Terverifikasi Biometrik AI">✓ AI</span>' : '').'</td>
+      <td class="col-nowrap text-center">'.$badge.$noteHtml.'</td>
     </tr>';
 }
 
 if (!$trs) {
-    $trs = '<tr><td colspan="8" class="empty-state">Tidak ada data aset untuk periode dan filter yang dipilih.</td></tr>';
+    $trs = '<tr><td colspan="8" class="text-center py-4 text-muted">Tidak ada data untuk filter yang dipilih.</td></tr>';
 }
-
-$logoUrl = app_logo_url();
 
 $head = '<style>
 /* Base Screen Styling */
-:root {
-  --bank-navy: #0b2545;
-  --bank-blue: #134074;
-  --bank-gold: #c69214;
-  --bank-gold-light: #fef9e7;
-  --bank-slate: #475569;
-  --bank-border: #cbd5e1;
-  --bank-bg-table: #f8fafc;
-}
-
 body {
-  background: #f1f5f9;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-  color: #1e293b;
-  -webkit-font-smoothing: antialiased;
+  background: #f4f6fa;
+  font-family: "Segoe UI", Tahoma, Arial, sans-serif;
+  color: #212529;
 }
 
 .report-wrapper {
-  max-width: 1140px;
-  margin: 1.5rem auto 3rem auto;
-  padding: 0 1rem;
+  max-width: 1100px;
+  margin: 0 auto;
 }
 
 .report-page {
-  background: #ffffff;
-  border-radius: 12px;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.07);
-  padding: 36px 42px;
-  position: relative;
+  background: #fff;
+  border-radius: 10px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.06);
+  padding: 30px 35px;
 }
 
-/* KOP SURAT RESMI BANK */
-.kop-surat {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding-bottom: 16px;
-  gap: 20px;
+.report-header {
+  border-bottom: 2px solid #dee2e6;
+  padding-bottom: 15px;
+  margin-bottom: 25px;
 }
 
-.kop-logo-wrapper {
-  flex-shrink: 0;
-}
-
-.kop-logo {
-  height: 58px;
-  width: auto;
-  max-width: 220px;
-  object-fit: contain;
-}
-
-.kop-info {
-  flex-grow: 1;
-  text-align: center;
-}
-
-.kop-bank-name {
-  font-size: 15pt;
-  font-weight: 800;
-  letter-spacing: 0.5px;
-  color: var(--bank-navy);
-  margin-bottom: 2px;
-  text-transform: uppercase;
-}
-
-.kop-doc-title {
-  font-size: 12pt;
+.report-title {
+  font-size: 1.35rem;
   font-weight: 700;
-  color: var(--bank-blue);
-  letter-spacing: 0.3px;
+  color: #0d6efd;
   margin-bottom: 4px;
 }
 
-.kop-sub {
-  font-size: 8.5pt;
-  color: var(--bank-slate);
+.report-sub {
+  font-size: 1rem;
+  color: #6c757d;
 }
 
-.kop-sub strong {
-  color: #0f172a;
-}
+/* Visibility Helpers */
+.print-only { display: none !important; }
+.screen-only { display: flex !important; }
 
-.kop-meta {
-  flex-shrink: 0;
-  text-align: right;
-  font-size: 7.5pt;
-  color: #64748b;
-  line-height: 1.4;
-  border-left: 2px solid #e2e8f0;
-  padding-left: 12px;
-}
-
-/* Double Accent Corporate Divider */
-.kop-divider {
-  height: 3px;
-  background: var(--bank-navy);
-  margin-top: 4px;
-  margin-bottom: 2px;
-  border-radius: 2px;
-}
-
-.kop-divider-gold {
-  height: 1.5px;
-  background: var(--bank-gold);
-  margin-bottom: 16px;
-  border-radius: 2px;
-}
-
-/* METRIC SCORECARDS (Corporate Executive Style) */
-.scorecard-grid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 12px;
-  margin-bottom: 20px;
-}
-
-.scorecard-box {
-  background: #ffffff;
-  border: 1px solid #e2e8f0;
-  border-radius: 8px;
-  padding: 10px 14px;
-  position: relative;
-  overflow: hidden;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.03);
-}
-
-.scorecard-box::before {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: 0;
-  bottom: 0;
-  width: 4px;
-}
-
-.scorecard-box.sc-total::before { background: #3b82f6; }
-.scorecard-box.sc-done::before { background: #10b981; }
-.scorecard-box.sc-pending::before { background: #f59e0b; }
-.scorecard-box.sc-finding::before { background: #ef4444; }
-
-.sc-label {
-  font-size: 7.5pt;
-  font-weight: 700;
-  color: #64748b;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  margin-bottom: 2px;
-}
-
-.sc-value {
-  font-size: 18pt;
-  font-weight: 800;
-  line-height: 1.1;
-  color: #0f172a;
-}
-
-.sc-sub {
-  font-size: 7.5pt;
-  color: #64748b;
-  margin-top: 3px;
-}
-
-/* TABLE STYLING */
+/* Table Screen View */
 .table-report {
   width: 100%;
   border-collapse: collapse;
-  margin-bottom: 24px;
-  font-size: 8.5pt;
+  margin-bottom: 25px;
 }
 
 .table-report th {
-  background: var(--bank-navy);
-  color: #ffffff;
-  font-weight: 700;
-  font-size: 8pt;
-  text-transform: uppercase;
-  letter-spacing: 0.4px;
-  padding: 8px 8px;
-  border: 1px solid #1e3a8a;
-  text-align: left;
+  background: #f8f9fa;
+  color: #495057;
+  font-weight: 600;
+  border: 1px solid #dee2e6;
+  padding: 9px 12px;
   vertical-align: middle;
-}
-
-.table-report th.col-num,
-.table-report th.col-waktu,
-.table-report th.col-status {
-  text-align: center;
 }
 
 .table-report td {
-  padding: 6px 8px;
-  border: 1px solid #cbd5e1;
+  border: 1px solid #dee2e6;
+  padding: 8px 12px;
   vertical-align: middle;
-  line-height: 1.25;
 }
 
-.table-report tbody tr:nth-child(even) {
-  background-color: var(--bank-bg-table);
+.col-center { text-align: center !important; }
+.col-nowrap { white-space: nowrap !important; }
+
+/* Signature Screen View */
+.signature-section {
+  margin-top: 40px;
 }
 
-.table-report tbody tr:hover {
-  background-color: #f1f5f9;
-}
-
-.col-num {
-  width: 28px;
+.sig-box {
   text-align: center;
-  font-weight: 600;
-  color: #64748b;
-}
-
-.col-kode {
-  width: 100px;
-  white-space: nowrap;
-}
-
-.kode-tag {
-  display: inline-block;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-  font-weight: 700;
-  color: #0f172a;
-  background: #e2e8f0;
-  padding: 1px 5px;
-  border-radius: 4px;
-  font-size: 8pt;
-  border: 1px solid #cbd5e1;
-}
-
-.col-perangkat {
-  font-size: 8.5pt;
-  color: #0f172a;
-}
-
-.col-pemilik {
-  font-size: 8.5pt;
-  color: #334155;
-  white-space: nowrap;
-}
-
-.col-lokasi {
-  font-size: 8pt;
-  color: #475569;
-}
-
-.col-waktu {
-  width: 95px;
-  text-align: center;
-  white-space: nowrap;
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-  font-size: 7.5pt;
-  color: #334155;
-}
-
-.col-teknisi {
-  width: 80px;
-  white-space: nowrap;
-  font-size: 8pt;
-  color: #334155;
-}
-
-.ai-verify {
-  color: #10b981;
-  font-weight: 800;
-  font-size: 7pt;
-  background: #ecfdf5;
-  padding: 1px 3px;
-  border-radius: 3px;
-  border: 1px solid #a7f3d0;
-}
-
-.col-status {
-  width: 80px;
-  text-align: center;
-  white-space: nowrap;
-}
-
-.status-pill {
-  display: inline-block;
-  padding: 2px 7px;
-  border-radius: 12px;
-  font-size: 7pt;
-  font-weight: 700;
-  letter-spacing: 0.2px;
-  text-transform: uppercase;
-}
-
-.status-selesai {
-  background: #dcfce7;
-  color: #15803d;
-  border: 1px solid #bbf7d0;
-}
-
-.status-temuan {
-  background: #fee2e2;
-  color: #b91c1c;
-  border: 1px solid #fecaca;
-}
-
-.status-belum {
-  background: #fef3c7;
-  color: #b45309;
-  border: 1px solid #fde68a;
-}
-
-.finding-tag {
-  font-size: 7pt;
-  color: #b91c1c;
-  background: #fff1f2;
-  border: 1px solid #fecdd3;
-  border-radius: 4px;
-  padding: 2px 5px;
-  margin-top: 3px;
-  text-align: left;
-  line-height: 1.15;
-}
-
-.empty-state {
-  text-align: center;
-  padding: 24px !important;
-  color: #64748b;
-  font-style: italic;
-}
-
-/* SIGNATURE BLOCK RESMI */
-.signature-block {
-  margin-top: 24px;
-  page-break-inside: avoid;
-}
-
-.sig-date {
-  text-align: right;
-  font-size: 8.5pt;
-  color: #334155;
-  margin-bottom: 12px;
-}
-
-.sig-cards {
-  display: flex;
-  justify-content: space-between;
-  gap: 24px;
-}
-
-.sig-card {
-  flex: 1;
-  text-align: center;
-  background: #ffffff;
-  border: 1px solid #cbd5e1;
-  border-radius: 6px;
-  padding: 12px 14px 10px 14px;
-}
-
-.sig-title {
-  font-size: 8pt;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.3px;
-  color: var(--bank-navy);
-}
-
-.sig-role {
-  font-size: 7.5pt;
-  color: #64748b;
-}
-
-.sig-space {
-  height: 52px;
 }
 
 .sig-line {
-  border-bottom: 1px solid #0f172a;
-  width: 80%;
-  margin: 0 auto 4px auto;
-}
-
-.sig-name {
-  font-size: 8.5pt;
-  font-weight: 700;
-  color: #0f172a;
-}
-
-.doc-footer-note {
-  margin-top: 14px;
-  padding-top: 8px;
-  border-top: 1px dashed #cbd5e1;
-  font-size: 7pt;
-  color: #94a3b8;
-  display: flex;
-  justify-content: space-between;
+  width: 200px;
+  margin: 60px auto 4px auto;
+  border-bottom: 1px solid #333;
 }
 
 /* =========================================================
-   PRINT ENGINE OPTIMIZATION (PORTRAIT A4 DENSITY)
-   Preserves crisp fonts, rich badge colors & compact layout
+   PRINT VIEW (KHUSUS SAAT DICETAK / PDF: PORTRAIT A4)
+   Ultra-Compact, High-Density, Paper-Saving
 ========================================================= */
 @page {
   size: A4 portrait;
-  margin: 6mm 7mm 7mm 7mm;
+  margin: 7mm 7mm;
 }
 
 @media print {
   body {
-    background: #ffffff !important;
+    background: #fff !important;
     margin: 0 !important;
     padding: 0 !important;
-    color: #000000 !important;
-    -webkit-print-color-adjust: exact !important;
-    print-color-adjust: exact !important;
+    font-size: 8pt !important;
+    color: #000 !important;
   }
 
   .no-print, nav, header {
     display: none !important;
   }
 
-  .report-wrapper, .report-page {
+  .screen-only {
+    display: none !important;
+  }
+
+  .print-only {
+    display: flex !important;
+  }
+
+  .container, main.container, .report-wrapper, .report-page {
     max-width: 100% !important;
     width: 100% !important;
     margin: 0 !important;
@@ -616,169 +263,79 @@ body {
     border-radius: 0 !important;
   }
 
-  .kop-surat {
-    padding-bottom: 8px !important;
-    gap: 12px !important;
+  .report-header {
+    border-bottom: 1.5px solid #000 !important;
+    padding-bottom: 4px !important;
+    margin-bottom: 6px !important;
   }
 
-  .kop-logo {
-    height: 48px !important;
-  }
-
-  .kop-bank-name {
-    font-size: 13pt !important;
-  }
-
-  .kop-doc-title {
+  .report-title {
     font-size: 10.5pt !important;
+    color: #000 !important;
+    margin-bottom: 2px !important;
   }
 
-  .kop-sub {
+  .report-sub {
+    font-size: 8pt !important;
+    color: #333 !important;
+  }
+
+  /* Compact 1-Line Summary Strip */
+  .summary-strip {
+    display: flex !important;
+    justify-content: space-between;
+    background: #f8f8f8 !important;
+    border: 1px solid #555 !important;
+    border-radius: 3px !important;
+    padding: 3px 8px !important;
+    margin-bottom: 6px !important;
     font-size: 7.5pt !important;
   }
 
-  .kop-meta {
-    font-size: 6.5pt !important;
-    padding-left: 8px !important;
+  .summary-strip .val {
+    font-weight: 700 !important;
   }
 
-  .kop-divider {
-    height: 2.5px !important;
-    background: #0b2545 !important;
-    margin-top: 2px !important;
-    margin-bottom: 1.5px !important;
-  }
-
-  .kop-divider-gold {
-    height: 1.2px !important;
-    background: #c69214 !important;
-    margin-bottom: 8px !important;
-  }
-
-  /* Compact scorecards during print */
-  .scorecard-grid {
-    gap: 6px !important;
-    margin-bottom: 10px !important;
-  }
-
-  .scorecard-box {
-    padding: 5px 8px !important;
-    border: 1px solid #94a3b8 !important;
-  }
-
-  .sc-label {
-    font-size: 6.5pt !important;
-    margin-bottom: 1px !important;
-  }
-
-  .sc-value {
-    font-size: 13pt !important;
-  }
-
-  .sc-sub {
-    font-size: 6.5pt !important;
-    margin-top: 1px !important;
-  }
-
-  /* Dense portrait table */
+  /* Ultra High-Density Table for Portrait */
   .table-report {
+    margin-bottom: 8px !important;
     font-size: 7.5pt !important;
-    margin-bottom: 10px !important;
+    width: 100% !important;
   }
 
   .table-report th {
-    background: #0b2545 !important;
-    color: #ffffff !important;
-    border: 1px solid #000000 !important;
-    padding: 4px 4px !important;
-    font-size: 7pt !important;
+    background: #eaeaea !important;
+    color: #000 !important;
+    border: 1px solid #333 !important;
+    padding: 3px 4px !important;
+    font-weight: 700 !important;
   }
 
   .table-report td {
-    border: 1px solid #94a3b8 !important;
-    padding: 2.5px 4px !important;
+    border: 1px solid #555 !important;
+    padding: 2px 4px !important;
     line-height: 1.15 !important;
   }
 
-  .col-num {
-    width: 22px !important;
-  }
-
-  .col-kode {
-    width: 82px !important;
-  }
-
-  .kode-tag {
-    font-size: 7pt !important;
-    padding: 0 3px !important;
-    border: 0.5px solid #64748b !important;
-    background: #f1f5f9 !important;
-  }
-
   .col-waktu {
-    width: 80px !important;
-    font-size: 6.8pt !important;
-  }
-
-  .col-teknisi {
-    width: 65px !important;
     font-size: 7pt !important;
   }
 
-  .col-status {
-    width: 68px !important;
-  }
-
-  .status-pill {
-    padding: 1px 4px !important;
-    font-size: 6.5pt !important;
-  }
-
-  .status-selesai {
-    background: #dcfce7 !important;
-    color: #15803d !important;
-    border: 0.5px solid #15803d !important;
-  }
-
-  .status-temuan {
-    background: #fee2e2 !important;
-    color: #b91c1c !important;
-    border: 0.5px solid #b91c1c !important;
-  }
-
-  .status-belum {
-    background: #fef3c7 !important;
-    color: #b45309 !important;
-    border: 0.5px solid #b45309 !important;
-  }
-
-  .finding-tag {
-    font-size: 6.2pt !important;
+  .badge-compact {
     padding: 1px 3px !important;
-    margin-top: 1.5px !important;
+    font-size: 7pt !important;
+    border-radius: 2px !important;
   }
 
-  .signature-block {
-    margin-top: 10px !important;
+  .signature-section {
+    margin-top: 12px !important;
     page-break-inside: avoid !important;
   }
 
-  .sig-cards {
-    gap: 12px !important;
-  }
-
-  .sig-card {
-    padding: 6px 8px !important;
-    border: 1px solid #475569 !important;
-  }
-
-  .sig-space {
-    height: 38px !important;
-  }
-
   .sig-line {
-    width: 70% !important;
-    border-bottom: 1px solid #000000 !important;
+    width: 160px !important;
+    margin: 30px auto 2px auto !important;
+    border-bottom: 1px solid #000 !important;
   }
 
   tr {
@@ -790,18 +347,18 @@ body {
 $body = '
 <div class="report-wrapper">
   <!-- Interactive Controls Bar (Hidden during Print) -->
-  <div class="no-print mb-4 p-3 bg-white rounded-3 shadow-sm border">
+  <div class="no-print mb-4 p-3 bg-white rounded-3 shadow-sm">
     <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 border-bottom pb-3 mb-3">
       <div class="d-flex align-items-center gap-2">
         <a class="btn btn-outline-secondary btn-sm" href="'.e(module_url('dashboard.php', ['bulan'=>$month,'tahun'=>$year,'cabang'=>$cabangId])).'"><i class="bi bi-arrow-left"></i> Dashboard</a>
-        <h5 class="mb-0 fw-bold text-dark"><i class="bi bi-printer me-2 text-primary"></i>Cetak Laporan Maintenance IT (Format Portrait)</h5>
+        <h5 class="mb-0 fw-bold text-dark"><i class="bi bi-printer me-2 text-primary"></i>Cetak Laporan Maintenance (Format Portrait)</h5>
       </div>
-      <button class="btn btn-primary fw-semibold px-4 shadow-sm" onclick="window.print()"><i class="bi bi-printer-fill me-1"></i> Cetak / Simpan PDF</button>
+      <button class="btn btn-primary fw-semibold px-4" onclick="window.print()"><i class="bi bi-printer-fill me-1"></i> Print / Download PDF</button>
     </div>
 
     <form method="get" class="row g-2 align-items-end">
       <div class="col-6 col-md-2">
-        <label class="form-label small fw-semibold text-muted mb-1">Bulan</label>
+        <label class="form-label small fw-semibold">Bulan</label>
         <select class="form-select form-select-sm" name="bulan">';
 for ($m=1;$m<=12;$m++) {
     $body .= '<option value="'.$m.'"'.($m===$month?' selected':'').'>'.$monthNames[$m].'</option>';
@@ -809,94 +366,97 @@ for ($m=1;$m<=12;$m++) {
 $body .= '</select>
       </div>
       <div class="col-6 col-md-2">
-        <label class="form-label small fw-semibold text-muted mb-1">Tahun</label>
+        <label class="form-label small fw-semibold">Tahun</label>
         <select class="form-select form-select-sm font-monospace fw-semibold" name="tahun">'.$yearOpts.'</select>
       </div>
       <div class="col-md-3">
-        <label class="form-label small fw-semibold text-muted mb-1">Kantor Cabang</label>
+        <label class="form-label small fw-semibold">Cabang</label>
         <select class="form-select form-select-sm" name="cabang">
-          <option value="0">Semua Kantor Cabang</option>
+          <option value="0">Semua Cabang</option>
           '.$cabangOpts.'
         </select>
       </div>
       <div class="col-md-3">
-        <label class="form-label small fw-semibold text-muted mb-1">Filter Status</label>
+        <label class="form-label small fw-semibold">Filter Status</label>
         <select class="form-select form-select-sm" name="status">
-          <option value="all"'.($filterStatus==='all'?' selected':'').'>Semua Status (Lengkap)</option>
+          <option value="all"'.($filterStatus==='all'?' selected':'').'>Semua Aset (Rekap Lengkap)</option>
           <option value="selesai"'.($filterStatus==='selesai'?' selected':'').'>Hanya Selesai</option>
-          <option value="temuan"'.($filterStatus==='temuan'?' selected':'').'>Hanya Temuan Kerusakan</option>
-          <option value="belum"'.($filterStatus==='belum'?' selected':'').'>Hanya Belum Dikerjakan</option>
+          <option value="temuan"'.($filterStatus==='temuan'?' selected':'').'>Hanya Ada Temuan</option>
+          <option value="belum"'.($filterStatus==='belum'?' selected':'').'>Hanya Belum</option>
         </select>
       </div>
       <div class="col-md-2">
-        <button type="submit" class="btn btn-outline-primary btn-sm w-100 fw-semibold"><i class="bi bi-filter me-1"></i> Tampilkan</button>
+        <button type="submit" class="btn btn-outline-primary btn-sm w-100"><i class="bi bi-filter me-1"></i> Tampilkan</button>
       </div>
     </form>
   </div>
 
   <!-- Main Report Container -->
   <div class="report-page">
-    
-    <!-- Kop Surat Resmi Bank -->
-    <div class="kop-surat">
-      <div class="kop-logo-wrapper">
-        <img src="'.e($logoUrl).'" alt="Bank Logo" class="kop-logo">
-      </div>
-      <div class="kop-info">
-        <div class="kop-bank-name">PT BPR MITRATAMA ARTHABUANA</div>
-        <div class="kop-doc-title">CHECKLIST MAINTENANCE PERANGKAT IT</div>
-        <div class="kop-sub">
-          Periode: <strong>'.$monthName.' '.$year.'</strong> &nbsp;&bull;&nbsp; 
-          Lokasi: <strong>'.e($cabangName).'</strong>
+    <!-- Header Dokumen -->
+    <div class="report-header d-flex justify-content-between align-items-end flex-wrap gap-2">
+      <div>
+        <div class="small fw-bold text-secondary text-uppercase tracking-wider">PT BPR MITRATAMA ARTHABUANA</div>
+        <div class="report-title">CHECKLIST MAINTENANCE PERANGKAT IT</div>
+        <div class="report-sub">
+          Periode: <strong class="text-dark">'.$monthName.' '.$year.'</strong> &nbsp;|&nbsp; 
+          Cabang / Lokasi: <strong class="text-dark">'.e($cabangName).'</strong>
         </div>
       </div>
-      <div class="kop-meta">
-        <div>Dicetak: <strong>'.date('d/m/Y H:i').'</strong></div>
-        <div>Sistem: <strong>QR Maintenance</strong></div>
-        <div>Dokumen: <strong>IT-MNT-'.str_pad((string)$month, 2, '0', STR_PAD_LEFT).'-'.$year.'</strong></div>
+      <div class="text-end small text-muted">
+        <div>Tanggal Cetak: <strong>'.date('d-m-Y').'</strong> ('.date('H:i').' WITA)</div>
+        <div>Modul QR Maintenance System</div>
       </div>
     </div>
 
-    <!-- Double Corporate Line Divider -->
-    <div class="kop-divider"></div>
-    <div class="kop-divider-gold"></div>
-
-    <!-- Executive Scorecard Strip (Always Visible: Screen & Print) -->
-    <div class="scorecard-grid">
-      <div class="scorecard-box sc-total">
-        <div class="sc-label">Total Aset IT</div>
-        <div class="sc-value">'.$total.'</div>
-        <div class="sc-sub">Unit Terdaftar</div>
+    <!-- TAMPILAN LAYAR: 4 Kartu Statistik Elegan (Screen Only) -->
+    <div class="row g-3 mb-4 screen-only">
+      <div class="col-6 col-md-3">
+        <div class="card p-3 border-0 bg-light">
+          <div class="small text-muted fw-bold">TOTAL KOMPUTER / ASET</div>
+          <div class="fs-2 fw-bold text-dark mt-1">'.$total.'</div>
+        </div>
       </div>
-      <div class="scorecard-box sc-done">
-        <div class="sc-label">Sudah Maintenance</div>
-        <div class="sc-value" style="color: #15803d;">'.$done.'</div>
-        <div class="sc-sub"><strong>'.$percent.'%</strong> Dari Target</div>
+      <div class="col-6 col-md-3">
+        <div class="card p-3 border-0 bg-light">
+          <div class="small text-muted fw-bold">SUDAH MAINTENANCE</div>
+          <div class="fs-2 fw-bold text-success mt-1">'.$done.' <small class="fs-6 fw-normal text-muted">('.$percent.'%)</small></div>
+        </div>
       </div>
-      <div class="scorecard-box sc-pending">
-        <div class="sc-label">Belum Maintenance</div>
-        <div class="sc-value" style="color: #b45309;">'.$pending.'</div>
-        <div class="sc-sub">Menunggu Pengecekan</div>
+      <div class="col-6 col-md-3">
+        <div class="card p-3 border-0 bg-light">
+          <div class="small text-muted fw-bold">BELUM MAINTENANCE</div>
+          <div class="fs-2 fw-bold text-warning mt-1">'.$pending.'</div>
+        </div>
       </div>
-      <div class="scorecard-box sc-finding">
-        <div class="sc-label">Temuan Masalah</div>
-        <div class="sc-value" style="color: #b91c1c;">'.$findingsCount.'</div>
-        <div class="sc-sub">Perlu Tindak Lanjut</div>
+      <div class="col-6 col-md-3">
+        <div class="card p-3 border-0 bg-light">
+          <div class="small text-muted fw-bold">TEMUAN KERUSAKAN</div>
+          <div class="fs-2 fw-bold text-danger mt-1">'.$findingsCount.'</div>
+        </div>
       </div>
     </div>
 
-    <!-- Tabel Rekapitulasi Maintenance -->
+    <!-- TAMPILAN CETAK: 1 Baris Ringkasan Kompak (Print Only) -->
+    <div class="summary-strip print-only">
+      <div><span>Total Komputer:</span> <span class="val">'.$total.'</span></div>
+      <div><span>Sudah Maintenance:</span> <span class="val text-success">'.$done.' ('.$percent.'%)</span></div>
+      <div><span>Belum Maintenance:</span> <span class="val text-warning">'.$pending.'</span></div>
+      <div><span>Temuan Kerusakan:</span> <span class="val text-danger">'.$findingsCount.'</span></div>
+    </div>
+
+    <!-- Tabel Rekapitulasi -->
     <table class="table-report">
       <thead>
         <tr>
-          <th class="col-num">No</th>
-          <th class="col-kode">Kode Inventaris</th>
-          <th>Perangkat (Merk & Model)</th>
-          <th>Pengguna / User</th>
+          <th class="col-center" style="width: 25px;">No</th>
+          <th class="col-nowrap" style="width: 95px;">Kode Inventaris</th>
+          <th>Perangkat (Merk & Tipe)</th>
+          <th>Pengguna / Pemilik</th>
           <th>Cabang & Divisi</th>
-          <th class="col-waktu">Waktu Cek</th>
-          <th class="col-teknisi">Teknisi</th>
-          <th class="col-status">Status</th>
+          <th class="col-nowrap col-center" style="width: 105px;">Waktu Maintenance</th>
+          <th class="col-nowrap" style="width: 75px;">Teknisi</th>
+          <th class="col-nowrap col-center" style="width: 70px;">Status</th>
         </tr>
       </thead>
       <tbody>
@@ -904,34 +464,24 @@ $body .= '</select>
       </tbody>
     </table>
 
-    <!-- Bagian Tanda Tangan Resmi Bank -->
-    <div class="signature-block">
-      <div class="sig-date">
-        '.e($cabangName !== 'Semua Kantor Cabang' ? $cabangName : 'Denpasar').', '.format_id_date(date('Y-m-d')).'
-      </div>
-      <div class="sig-cards">
-        <div class="sig-card">
-          <div class="sig-title">Dibuat & Dilaksanakan Oleh</div>
-          <div class="sig-role">Teknisi Pelaksana IT</div>
-          <div class="sig-space"></div>
+    <!-- Bagian Tanda Tangan -->
+    <div class="signature-section">
+      <div class="row">
+        <div class="col-6 sig-box">
+          <div>Dibuat Oleh,</div>
+          <div class="small text-muted">Teknisi Pelaksana IT</div>
           <div class="sig-line"></div>
-          <div class="sig-name">'.e(current_user_name()).'</div>
+          <div><strong>'.e(current_user_name()).'</strong></div>
         </div>
-        <div class="sig-card">
-          <div class="sig-title">Mengetahui & Menyetujui</div>
-          <div class="sig-role">Kepala Cabang / IT Manager</div>
-          <div class="sig-space"></div>
+        <div class="col-6 sig-box">
+          <div>Mengetahui / Menyetujui,</div>
+          <div class="small text-muted">Kepala Cabang / IT Manager</div>
           <div class="sig-line"></div>
-          <div class="sig-name">( &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; )</div>
+          <div><strong>( .................................................. )</strong></div>
         </div>
-      </div>
-      <div class="doc-footer-note">
-        <span>* Laporan ini dicetak secara otomatis melalui Sistem QR Maintenance IT PT BPR Mitratama Arthabuana.</span>
-        <span>Halaman 1 / 1</span>
       </div>
     </div>
-
   </div>
 </div>';
 
-render_page('Checklist Maintenance Perangkat IT', $body, $head);
+render_page('Laporan Maintenance Bulanan', $body, $head);
