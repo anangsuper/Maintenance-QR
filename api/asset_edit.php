@@ -67,7 +67,7 @@ $successData = null;
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     verify_csrf();
 
-    $kode = trim((string)($_POST['kode_inventaris'] ?? ''));
+    $kode = normalize_kode_inventaris(trim((string)($_POST['kode_inventaris'] ?? '')));
     $merk = trim((string)($_POST['merk'] ?? ''));
     $model = trim((string)($_POST['model'] ?? ''));
     $sn = trim((string)($_POST['serial_number'] ?? ''));
@@ -112,7 +112,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             $successData = [
                 'asset_id' => $id,
-                'kode_inventaris' => $res['kode_inventaris'] ?? $kode,
+                'kode_inventaris' => normalize_kode_inventaris($res['kode_inventaris'] ?? $kode),
                 'merk' => $merk,
                 'model' => $model,
                 'qr_token' => $asset['qr_token'] ?? '',
@@ -235,7 +235,7 @@ $body = '
     <div class="d-flex flex-column flex-sm-row justify-content-between align-items-sm-center gap-2 mb-4">
       <div>
         <div class="tech-label mb-1">ASSET MANAGEMENT</div>
-        <h1 class="h4 mb-1">Edit Perangkat #'.(int)$asset['id'].' · '.e($asset['kode_inventaris'] ?? '').'</h1>
+        <h1 class="h4 mb-1">Edit Perangkat #'.(int)$asset['id'].' · '.e(normalize_kode_inventaris($asset['kode_inventaris'] ?? '')).'</h1>
         <div class="text-secondary small">Perbarui konfigurasi spesifikasi, penempatan kantor, atau status operasional perangkat.</div>
       </div>
       <a class="btn btn-light border btn-sm d-inline-flex align-items-center gap-1" href="'.e(module_url('assets.php')).'"><i class="bi bi-arrow-left"></i> Kembali ke Aset</a>
@@ -263,7 +263,7 @@ $body = '
           <div class="col-md-6">
             <label class="form-label text-secondary small fw-semibold">Kode Inventaris</label>
             <div class="input-group">
-              <input type="text" class="form-control font-monospace" name="kode_inventaris" id="kodeInventaris" value="'.e($asset['kode_inventaris'] ?? '').'" placeholder="Contoh: INV-IT-006">
+              <input type="text" class="form-control font-monospace" name="kode_inventaris" id="kodeInventaris" value="'.e(normalize_kode_inventaris($asset['kode_inventaris'] ?? '')).'" placeholder="Contoh: 0450007417122025">
               <button class="btn btn-light border" type="button" onclick="autoGenerateKode()" title="Generate Otomatis"><i class="bi bi-magic me-1"></i>Auto</button>
             </div>
           </div>

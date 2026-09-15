@@ -172,7 +172,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'impor
 
         // Asset row: id, kode, merk, model, sn, id_kategori, id_cabang, id_divisi, id_karyawan, status, keterangan
         $assetId = $nextAssetId;
-        $newAssetRows[] = [$assetId, $kode, $merk, $model, $sn, $katId, $cabangKpoId, $divisiId, $karId, 'Aktif', $ket];
+        $newAssetRows[] = [$assetId, sheet_cell_text($kode), $merk, $model, $sn, $katId, $cabangKpoId, $divisiId, $karId, 'Aktif', $ket];
 
         // QR Token
         $token = bin2hex(random_bytes(16));

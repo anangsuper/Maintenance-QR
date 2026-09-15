@@ -48,7 +48,7 @@ $successData = null;
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     verify_csrf();
 
-    $kode = trim((string)($_POST['kode_inventaris'] ?? ''));
+    $kode = normalize_kode_inventaris(trim((string)($_POST['kode_inventaris'] ?? '')));
     $merk = trim((string)($_POST['merk'] ?? ''));
     $model = trim((string)($_POST['model'] ?? ''));
     $sn = trim((string)($_POST['serial_number'] ?? ''));
@@ -93,7 +93,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             $successData = [
                 'asset_id' => $res['asset_id'],
-                'kode_inventaris' => $res['kode_inventaris'],
+                'kode_inventaris' => normalize_kode_inventaris($res['kode_inventaris']),
                 'merk' => $merk,
                 'model' => $model,
                 'qr_token' => $res['qr_token'] ?? '',

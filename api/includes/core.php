@@ -12,11 +12,11 @@ function is_https(): bool {
 }
 
 if (session_status() !== PHP_SESSION_ACTIVE) {
-    $lifetime = (int)cfg('session_timeout', envv('SESSION_TIMEOUT', '2592000')); // 30 hari (2592000 detik)
-    ini_set('session.gc_maxlifetime', (string)$lifetime);
+    $idleTimeout = (int)cfg('session_timeout', envv('SESSION_TIMEOUT', '7200')); // Idle timeout 2 jam
+    ini_set('session.gc_maxlifetime', (string)$idleTimeout);
 
     session_set_cookie_params([
-        'lifetime' => $lifetime,
+        'lifetime' => 0, // 0 = Cookie sesi berakhir dan otomatis logout saat browser ditutup
         'path' => '/',
         'domain' => '',
         'secure' => is_https(),
@@ -134,6 +134,32 @@ function format_phone_number(?string $phone): string {
     }
 
     return $phone;
+}
+
+function normalize_kode_inventaris(?string $kode): string {
+    if ($kode === null) return '';
+    $kode = trim((string)$kode, " '\t\n\r\0\x0B");
+    if ($kode === '' || $kode === '-') return $kode;
+
+    // Jika kode inventaris berupa angka murni (atau diawali angka) dan angka 0 di depannya terpotong
+    // oleh spreadsheet / format numerik (misal 450007417122025 menjadi 0450007417122025, 150047417122025 menjadi 0150047417122025)
+    // Format nomor inventaris standar perbankan terdiri dari 10-18 digit yang diawali angka 0 (01, 02, 04, dll.)
+    if (preg_match('/^[1-9]\d{9,18}(-[A-Za-z0-9]+)?$/', $kode)) {
+        return '0' . $kode;
+    }
+
+    return $kode;
+}
+
+function sheet_cell_text(string $val): string {
+    $val = trim($val);
+    if ($val === '') return '';
+    // Jika diawali angka 0 diikuti digit (seperti kode inventaris 04500... atau nomor telp 08...),
+    // beri prefix tanda kutip satu (') agar Google Sheets menyimpannya sebagai plain text dan angka 0 di depan tidak terpotong
+    if (preg_match('/^0\d+/', $val)) {
+        return "'" . $val;
+    }
+    return $val;
 }
 
 

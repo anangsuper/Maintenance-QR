@@ -1,69 +1,23 @@
 <?php
-function set_auth_cookie(array $userData, int $lifetime = 2592000): void {
-    $uid = (int)($userData['id'] ?? $userData['user_id'] ?? 0);
-    $nama = (string)($userData['nama'] ?? $userData['name'] ?? '');
-    $username = (string)($userData['username'] ?? '');
-    $role = (string)($userData['role'] ?? 'teknisi');
-
-    if ($uid <= 0 && $username === '') return;
-
-    $payload = json_encode([
-        'uid' => $uid,
-        'nama' => $nama,
-        'username' => $username,
-        'role' => $role,
-        'exp' => time() + $lifetime,
-    ], JSON_UNESCAPED_UNICODE);
-
-    $sig = hash_hmac('sha256', $payload, app_auth_secret());
-    $cookieVal = base64url_encode($payload) . '.' . $sig;
-
-    setcookie('_auth_session', $cookieVal, [
-        'expires' => time() + $lifetime,
-        'path' => '/',
-        'domain' => '',
-        'secure' => is_https(),
-        'httponly' => true,
-        'samesite' => 'Lax'
-    ]);
+function set_auth_cookie(array $userData, int $lifetime = 0): void {
+    // Sesi hanya disimpan di PHP session cookie (lifetime 0) yang otomatis kedaluwarsa saat browser ditutup.
+    // Jika cookie persisten lama masih ada, bersihkan agar tidak menimbulkan konflik.
+    if (!empty($_COOKIE['_auth_session'])) {
+        setcookie('_auth_session', '', time() - 42000, '/', '', is_https(), true);
+        unset($_COOKIE['_auth_session']);
+    }
 }
 
 function restore_auth_from_cookie(): bool {
-    // Jika $_SESSION sudah punya data valid, cukup perbarui
-    if (!empty($_SESSION['user_id']) && (int)$_SESSION['user_id'] > 0) {
-        return true;
+    // Bersihkan cookie _auth_session lama jika ada di browser agar sistem selalu logout saat browser ditutup
+    if (!empty($_COOKIE['_auth_session'])) {
+        setcookie('_auth_session', '', time() - 42000, '/', '', is_https(), true);
+        unset($_COOKIE['_auth_session']);
     }
-
-    $raw = $_COOKIE['_auth_session'] ?? '';
-    if (!$raw || !str_contains($raw, '.')) return false;
-
-    [$b64Payload, $sig] = explode('.', $raw, 2);
-    $payload = base64url_decode($b64Payload);
-    if (!$payload) return false;
-
-    $expectedSig = hash_hmac('sha256', $payload, app_auth_secret());
-    if (!hash_equals($expectedSig, $sig)) return false;
-
-    $data = json_decode($payload, true);
-    if (!is_array($data) || empty($data['exp']) || $data['exp'] < time()) {
-        return false;
-    }
-
-    $uid = (int)($data['uid'] ?? 0);
-    if ($uid <= 0 && empty($data['username'])) {
-        return false;
-    }
-
-    $_SESSION['user_id'] = $uid;
-    $_SESSION['nama'] = (string)($data['nama'] ?? '');
-    $_SESSION['username'] = (string)($data['username'] ?? '');
-    $_SESSION['role'] = (string)($data['role'] ?? 'teknisi');
-    $_SESSION['last_activity'] = time();
-
-    return true;
+    return false;
 }
 
-// Jalankan pemulihan autentikasi otomatis di setiap request
+// Pastikan cookie auth persisten lama dibersihkan
 restore_auth_from_cookie();
 
 
@@ -142,6 +96,11 @@ function is_logged_in(): bool {
 }
 
 function require_login(): void {
+    if (!headers_sent()) {
+        header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
+        header('Pragma: no-cache');
+    }
+
     $timeout = (int)cfg('session_timeout', envv('SESSION_TIMEOUT', '7200')); // 2 jam default
 
     // Cek apakah user ada di sesi dan sudah kedaluwarsa karena tidak ada aktivitas (idle)

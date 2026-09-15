@@ -589,10 +589,15 @@ class GoogleSheetsV4Client {
 
             foreach ($headers as $idx => $header) {
                 $val = $row[$idx + $colOffset] ?? '';
+                $normKey = strtolower(preg_replace('/[^a-zA-Z0-9_]/', '_', trim((string)$header)));
+                if ($sheetName === 'Assets' && in_array($normKey, ['kode_inventaris', 'kode'], true)) {
+                    if (function_exists('normalize_kode_inventaris')) {
+                        $val = normalize_kode_inventaris((string)$val);
+                    }
+                }
                 // Simpan key asli
                 $obj[$header] = $val;
                 // Simpan key ternormalisasi (huruf kecil & tanpa spasi)
-                $normKey = strtolower(preg_replace('/[^a-zA-Z0-9_]/', '_', trim((string)$header)));
                 if ($normKey !== '') {
                     $obj[$normKey] = $val;
                 }

@@ -76,7 +76,7 @@ function map_sheets_assets(bool $refresh = false): array {
         }
         return [
             'id' => $id,
-            'kode_inventaris' => $a['kode_inventaris'] ?? '',
+            'kode_inventaris' => normalize_kode_inventaris((string)($a['kode_inventaris'] ?? '')),
             'merk' => $a['merk'] ?? '',
             'model' => $a['model'] ?? '',
             'serial_number' => $a['serial_number'] ?? '',
@@ -104,7 +104,7 @@ function map_sheets_assets(bool $refresh = false): array {
 
 
 function create_new_asset(array $data): array {
-    $kode = trim((string)($data['kode_inventaris'] ?? ''));
+    $kode = normalize_kode_inventaris(trim((string)($data['kode_inventaris'] ?? '')));
     $merk = trim((string)($data['merk'] ?? ''));
     $model = trim((string)($data['model'] ?? ''));
     $sn = trim((string)($data['serial_number'] ?? ''));
@@ -159,7 +159,7 @@ function create_new_asset(array $data): array {
 
         $assetRow = [
             $newAssetId,
-            $kode,
+            sheet_cell_text($kode),
             $merk,
             $model,
             $sn,
@@ -323,6 +323,9 @@ function get_asset_by_id(int $id): ?array {
         $st = db()->prepare($base . " WHERE a.id = ? LIMIT 1");
         $st->execute([$id]);
         $row = $st->fetch();
+        if ($row && isset($row['kode_inventaris'])) {
+            $row['kode_inventaris'] = normalize_kode_inventaris((string)$row['kode_inventaris']);
+        }
         return $row ?: null;
     } catch (Throwable $e) {
         return null;
@@ -334,7 +337,7 @@ function update_asset(int $id, array $data): array {
 
     $oldAsset = get_asset_by_id($id);
 
-    $kode = trim((string)($data['kode_inventaris'] ?? ''));
+    $kode = normalize_kode_inventaris(trim((string)($data['kode_inventaris'] ?? '')));
     $merk = trim((string)($data['merk'] ?? ''));
     $model = trim((string)($data['model'] ?? ''));
     $sn = trim((string)($data['serial_number'] ?? ''));
@@ -399,7 +402,7 @@ function update_asset(int $id, array $data): array {
 
         $assetRow = [
             $id,
-            $kode,
+            sheet_cell_text($kode),
             $merk,
             $model,
             $sn,
@@ -602,6 +605,7 @@ function delete_asset(int $id): array {
 function get_asset_by_token(string $token): ?array {
     $token = trim($token);
     if ($token === '') return null;
+    $normToken = normalize_kode_inventaris($token);
 
     if (is_google_cloud_mode()) {
         $assets = map_sheets_assets();
@@ -615,7 +619,7 @@ function get_asset_by_token(string $token): ?array {
                 strcasecmp($qrToken, $token) === 0 ||
                 strcasecmp($staticTok, $token) === 0 ||
                 (is_numeric($token) && (int)$token === $aid) ||
-                ($kode !== '' && strcasecmp($kode, $token) === 0)
+                ($kode !== '' && (strcasecmp($kode, $token) === 0 || strcasecmp($kode, $normToken) === 0))
             ) {
                 return $a;
             }
@@ -649,7 +653,7 @@ function get_asset_by_token(string $token): ?array {
                     strcasecmp($qrToken, $token) === 0 ||
                     strcasecmp($staticTok, $token) === 0 ||
                     (is_numeric($token) && (int)$token === $aid) ||
-                    ($kode !== '' && strcasecmp($kode, $token) === 0)
+                    ($kode !== '' && (strcasecmp($kode, $token) === 0 || strcasecmp($kode, $normToken) === 0))
                 ) {
                     return $a;
                 }
@@ -658,11 +662,14 @@ function get_asset_by_token(string $token): ?array {
         return null;
     }
 
-    $sql = asset_query_base() . " WHERE (q.token = ? OR a.kode_inventaris = ? " . (is_numeric($token) ? " OR a.id = ? " : "") . ") LIMIT 1";
+    $sql = asset_query_base() . " WHERE (q.token = ? OR a.kode_inventaris = ? OR a.kode_inventaris = ? " . (is_numeric($token) ? " OR a.id = ? " : "") . ") LIMIT 1";
     $st = db()->prepare($sql);
-    $params = is_numeric($token) ? [$token, $token, (int)$token] : [$token, $token];
+    $params = is_numeric($token) ? [$token, $token, $normToken, (int)$token] : [$token, $token, $normToken];
     $st->execute($params);
     $asset = $st->fetch();
+    if ($asset && isset($asset['kode_inventaris'])) {
+        $asset['kode_inventaris'] = normalize_kode_inventaris((string)$asset['kode_inventaris']);
+    }
     return $asset ?: null;
 }
 
