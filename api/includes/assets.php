@@ -312,6 +312,9 @@ function get_asset_by_id(int $id): ?array {
         $assets = map_sheets_assets(true);
         foreach ($assets as $a) {
             if ((int)($a['id'] ?? 0) === $id) {
+                if (empty($a['qr_token'])) {
+                    $a['qr_token'] = get_static_qr_token($id);
+                }
                 return $a;
             }
         }
@@ -323,8 +326,13 @@ function get_asset_by_id(int $id): ?array {
         $st = db()->prepare($base . " WHERE a.id = ? LIMIT 1");
         $st->execute([$id]);
         $row = $st->fetch();
-        if ($row && isset($row['kode_inventaris'])) {
-            $row['kode_inventaris'] = normalize_kode_inventaris((string)$row['kode_inventaris']);
+        if ($row) {
+            if (isset($row['kode_inventaris'])) {
+                $row['kode_inventaris'] = normalize_kode_inventaris((string)$row['kode_inventaris']);
+            }
+            if (empty($row['qr_token'])) {
+                $row['qr_token'] = get_static_qr_token($id);
+            }
         }
         return $row ?: null;
     } catch (Throwable $e) {
@@ -421,16 +429,31 @@ function update_asset(int $id, array $data): array {
             return ['success' => false, 'error' => 'Gagal memperbarui data di Google Sheets'];
         }
 
-        // Update placement label di Asset_QR_Tokens jika ada
+        // Update placement label di Asset_QR_Tokens dan pastikan token tetap utuh & permanen
         $qrRows = $client->getSheetData('Asset_QR_Tokens');
+        $foundQr = false;
         foreach ($qrRows as $q) {
             if ((int)($q['asset_id'] ?? 0) === $id) {
+                $foundQr = true;
                 $qrRowNum = (int)($q['_row_num'] ?? 0);
                 if ($qrRowNum > 1) {
                     $client->updateValues("Asset_QR_Tokens!D{$qrRowNum}", [[$placement]]);
                 }
                 break;
             }
+        }
+        // Jika belum ada row di Asset_QR_Tokens, kunci token permanen agar tidak pernah berubah
+        if (!$foundQr) {
+            $nextQrId = count($qrRows) + 1;
+            $staticToken = get_static_qr_token($id);
+            $client->appendValues('Asset_QR_Tokens!A:F', [[
+                $nextQrId,
+                $id,
+                $staticToken,
+                $placement,
+                1,
+                date('Y-m-d H:i:s')
+            ]]);
         }
 
         map_sheets_assets(true);
@@ -502,8 +525,18 @@ function update_asset(int $id, array $data): array {
             ]);
         }
 
-        $upQr = db()->prepare("UPDATE asset_qr_tokens SET placement_label = ? WHERE asset_id = ?");
-        $upQr->execute([$placement, $id]);
+        // Pastikan asset_qr_tokens ada dan token tetap utuh & permanen
+        $checkQr = db()->prepare("SELECT token FROM asset_qr_tokens WHERE asset_id = ? LIMIT 1");
+        $checkQr->execute([$id]);
+        $existingToken = $checkQr->fetchColumn();
+        if ($existingToken) {
+            $upQr = db()->prepare("UPDATE asset_qr_tokens SET placement_label = ? WHERE asset_id = ?");
+            $upQr->execute([$placement, $id]);
+        } else {
+            $staticToken = get_static_qr_token($id);
+            $insQr = db()->prepare("INSERT INTO asset_qr_tokens (asset_id, token, placement_label, is_active) VALUES (?, ?, ?, 1)");
+            $insQr->execute([$id, $staticToken, $placement]);
+        }
 
         if ($oldAsset) {
             $diffs = diff_asset_changes($oldAsset, $data);

@@ -110,17 +110,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 }
             }
 
+            $savedAsset = get_asset_by_id($id);
+            $finalQrToken = !empty($savedAsset['qr_token']) ? $savedAsset['qr_token'] : (!empty($asset['qr_token']) ? $asset['qr_token'] : get_static_qr_token($id));
+
             $successData = [
                 'asset_id' => $id,
                 'kode_inventaris' => normalize_kode_inventaris($res['kode_inventaris'] ?? $kode),
                 'merk' => $merk,
                 'model' => $model,
-                'qr_token' => $asset['qr_token'] ?? '',
+                'qr_token' => $finalQrToken,
                 'cabang_nama' => $cabangNama,
                 'karyawan_nama' => $namaKar ?: '-',
             ];
             // Update current asset variable for display
-            $asset = get_asset_by_id($id) ?? $asset;
+            $asset = $savedAsset ?? $asset;
         } else {
             $error = $res['error'] ?? 'Terjadi kesalahan saat memperbarui data aset.';
         }
@@ -135,10 +138,20 @@ if ($successData) {
     <div class="row justify-content-center">
       <div class="col-lg-8">
         <div class="card p-4 border-0 shadow-sm">
-          <div class="text-center mb-4">
+          <div class="text-center mb-3">
             <div class="display-5 text-success mb-2"><i class="bi bi-check-circle-fill"></i></div>
             <h3 class="fw-bold text-success">Perubahan Data Berhasil Disimpan!</h3>
-            <p class="text-muted">Informasi komputer dan label QR telah diperbarui di sistem.</p>
+            <p class="text-muted mb-0">Informasi spesifikasi dan penempatan perangkat telah diperbarui.</p>
+          </div>
+
+          <div class="alert alert-success border-0 shadow-sm d-flex align-items-center gap-3 my-3 py-3 px-3" style="background-color: #F0FDF4; border: 1px solid #BBF7D0 !important;">
+            <i class="bi bi-shield-check text-success fs-2 flex-shrink-0"></i>
+            <div>
+              <div class="fw-bold text-success mb-1">Stiker QR Fisik Tetap Sama & Berlaku Selamanya</div>
+              <div class="small text-secondary">
+                Token QR (<code>'.e($successData['qr_token']).'</code>) <strong>tidak diganti atau diubah</strong>. Anda <u>tidak perlu mengganti stiker</u> pada casing komputer. Saat stiker fisik di-scan, sistem otomatis menampilkan informasi terbaru yang baru saja Anda simpan.
+              </div>
+            </div>
           </div>
 
           <div class="bg-light p-3 rounded-3 mb-4">
@@ -158,8 +171,9 @@ if ($successData) {
           </div>
 
           <div class="d-flex flex-column flex-sm-row gap-2 justify-content-center">
-            <a class="btn btn-primary btn-lg" target="_blank" href="'.e($printUrl).'"><i class="bi bi-printer-fill me-1"></i> Cetak Label QR</a>
-            <a class="btn btn-outline-secondary btn-lg" href="'.e(module_url('asset_edit.php', ['id' => $id])).'"><i class="bi bi-pencil me-1"></i> Edit Lagi</a>
+            <a class="btn btn-primary btn-lg px-4 fw-semibold" href="'.e(module_url('assets.php')).'"><i class="bi bi-arrow-left me-1"></i> Kembali ke Daftar Aset</a>
+            <a class="btn btn-outline-secondary btn-lg" target="_blank" href="'.e($printUrl).'"><i class="bi bi-printer me-1"></i> Cetak Ulang Label (Opsional)</a>
+            <a class="btn btn-light border btn-lg" href="'.e(module_url('asset_edit.php', ['id' => $id])).'"><i class="bi bi-pencil me-1"></i> Edit Lagi</a>
           </div>
 
           <hr class="my-4">
@@ -182,6 +196,7 @@ $curCabId = (int)($asset['id_cabang'] ?? 0);
 $curDivId = (int)($asset['id_divisi'] ?? 0);
 $curStatus = $asset['status'] ?? 'Aktif';
 $curKarName = ($asset['karyawan_nama'] ?? '') !== '-' ? ($asset['karyawan_nama'] ?? '') : '';
+$curQrToken = !empty($asset['qr_token']) ? $asset['qr_token'] : get_static_qr_token((int)$asset['id']);
 
 // Dropdown Kategori
 $optKat = '';
@@ -348,6 +363,15 @@ $body = '
               <option value="Meja Kerja">
               <option value="Badan Printer">
             </datalist>
+          </div>
+
+          <div class="col-md-6">
+            <label class="form-label text-secondary small fw-semibold"><i class="bi bi-qr-code text-primary me-1"></i>Token QR (Permanen & Terkunci)</label>
+            <div class="input-group">
+              <input type="text" class="form-control font-monospace bg-light text-secondary" value="'.e($curQrToken).'" readonly>
+              <span class="input-group-text bg-light text-success fw-semibold small" title="Token ini permanen, stiker fisik lama tetap berlaku selamanya"><i class="bi bi-lock-fill me-1"></i> Tetap</span>
+            </div>
+            <div class="form-text small text-muted">Token QR ini permanen dan tidak berubah saat diedit. Stiker fisik lama di komputer tetap berlaku.</div>
           </div>
         </div>
 
