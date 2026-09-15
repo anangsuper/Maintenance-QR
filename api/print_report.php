@@ -123,18 +123,18 @@ foreach ($allRows as $r) {
 
     $noteHtml = '';
     if (!empty($r['finding_note'])) {
-        $noteHtml = '<div class="small text-danger mt-1"><strong>Temuan:</strong> '.e($r['finding_note']).'</div>';
+        $noteHtml = '<div class="small text-danger mt-1" style="line-height: 1.2;"><strong>Temuan:</strong> '.e($r['finding_note']).'</div>';
     }
 
     $trs .= '<tr>
-      <td class="col-center">'.$num.'</td>
-      <td class="col-nowrap fw-bold text-primary">'.e($r['kode']).'</td>
-      <td>'.e($r['perangkat']).'</td>
-      <td>'.e($r['pemilik']).'</td>
-      <td>'.e($r['cabang_divisi']).'</td>
-      <td class="col-nowrap text-center col-waktu">'.e($r['waktu']).'</td>
-      <td class="col-nowrap">'.e($r['teknisi']).(!empty($r['is_bio']) ? ' <span style="color:#16a34a;font-weight:bold;font-size:7.5pt;" title="Terverifikasi Biometrik AI">✓ AI</span>' : '').'</td>
-      <td class="col-nowrap text-center">'.$badge.$noteHtml.'</td>
+      <td class="col-num col-center">'.$num.'</td>
+      <td class="col-kode fw-bold text-primary">'.e($r['kode']).'</td>
+      <td class="col-perangkat">'.e($r['perangkat']).'</td>
+      <td class="col-pemilik">'.e($r['pemilik']).'</td>
+      <td class="col-cabang">'.e($r['cabang_divisi']).'</td>
+      <td class="col-waktu col-center">'.e($r['waktu']).'</td>
+      <td class="col-teknisi">'.e($r['teknisi']).(!empty($r['is_bio']) ? ' <span style="color:#16a34a;font-weight:bold;font-size:7.5pt;" title="Terverifikasi Biometrik AI">✓ AI</span>' : '').'</td>
+      <td class="col-status col-center">'.$badge.$noteHtml.'</td>
     </tr>';
 }
 
@@ -151,21 +151,26 @@ body {
 }
 
 .report-wrapper {
+  width: 100%;
   max-width: 1100px;
   margin: 0 auto;
+  box-sizing: border-box;
 }
 
 .report-page {
   background: #fff;
   border-radius: 10px;
   box-shadow: 0 4px 20px rgba(0,0,0,0.06);
-  padding: 30px 35px;
+  padding: 26px 28px;
+  box-sizing: border-box;
+  width: 100%;
+  overflow: hidden;
 }
 
 .report-header {
   border-bottom: 2px solid #dee2e6;
   padding-bottom: 15px;
-  margin-bottom: 25px;
+  margin-bottom: 22px;
 }
 
 .report-title {
@@ -176,7 +181,7 @@ body {
 }
 
 .report-sub {
-  font-size: 1rem;
+  font-size: 0.95rem;
   color: #6c757d;
 }
 
@@ -185,10 +190,22 @@ body {
 .screen-only { display: flex !important; }
 
 /* Table Screen View */
+.report-table-wrapper {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  margin-bottom: 25px;
+  border: 1px solid #dee2e6;
+  border-radius: 6px;
+  background: #fff;
+}
+
 .table-report {
   width: 100%;
+  min-width: 780px;
   border-collapse: collapse;
-  margin-bottom: 25px;
+  margin-bottom: 0;
+  font-size: 0.85rem;
 }
 
 .table-report th {
@@ -204,14 +221,21 @@ body {
   border: 1px solid #dee2e6;
   padding: 8px 12px;
   vertical-align: middle;
+  word-break: break-word;
 }
 
 .col-center { text-align: center !important; }
 .col-nowrap { white-space: nowrap !important; }
 
+.col-num { width: 35px; text-align: center; }
+.col-kode { font-family: monospace; font-size: 0.82rem; white-space: nowrap; }
+.col-waktu { white-space: nowrap; font-size: 0.82rem; text-align: center; }
+.col-teknisi { white-space: nowrap; }
+.col-status { text-align: center; }
+
 /* Signature Screen View */
 .signature-section {
-  margin-top: 40px;
+  margin-top: 35px;
 }
 
 .sig-box {
@@ -220,7 +244,7 @@ body {
 
 .sig-line {
   width: 200px;
-  margin: 60px auto 4px auto;
+  margin: 50px auto 4px auto;
   border-bottom: 1px solid #333;
 }
 
@@ -230,19 +254,21 @@ body {
 ========================================================= */
 @page {
   size: A4 portrait;
-  margin: 7mm 7mm;
+  margin: 6mm 6mm;
 }
 
 @media print {
-  body {
+  html, body {
     background: #fff !important;
     margin: 0 !important;
     padding: 0 !important;
-    font-size: 8pt !important;
+    font-size: 7.8pt !important;
     color: #000 !important;
+    width: 100% !important;
+    overflow: visible !important;
   }
 
-  .no-print, nav, header {
+  .no-print, nav, header, aside, .app-sidebar, .app-topbar, #top-progress-bar {
     display: none !important;
   }
 
@@ -254,13 +280,15 @@ body {
     display: flex !important;
   }
 
-  .container, main.container, .report-wrapper, .report-page {
+  .container, main.container, .app-content-container, .app-main-viewport, .app-layout-wrapper, .report-wrapper, .report-page {
     max-width: 100% !important;
     width: 100% !important;
     margin: 0 !important;
     padding: 0 !important;
     box-shadow: none !important;
     border-radius: 0 !important;
+    border: none !important;
+    overflow: visible !important;
   }
 
   .report-header {
@@ -296,45 +324,64 @@ body {
     font-weight: 700 !important;
   }
 
+  .report-table-wrapper {
+    overflow: visible !important;
+    border: none !important;
+    margin-bottom: 6px !important;
+  }
+
   /* Ultra High-Density Table for Portrait */
   .table-report {
-    margin-bottom: 8px !important;
-    font-size: 7.5pt !important;
     width: 100% !important;
+    min-width: 100% !important;
+    table-layout: fixed !important;
+    margin-bottom: 6px !important;
+    font-size: 7.2pt !important;
+    border-collapse: collapse !important;
   }
 
   .table-report th {
     background: #eaeaea !important;
     color: #000 !important;
     border: 1px solid #333 !important;
-    padding: 3px 4px !important;
+    padding: 2.5px 3px !important;
     font-weight: 700 !important;
+    word-break: break-word !important;
+    white-space: normal !important;
   }
 
   .table-report td {
     border: 1px solid #555 !important;
-    padding: 2px 4px !important;
+    padding: 2px 3px !important;
     line-height: 1.15 !important;
+    word-break: break-word !important;
+    white-space: normal !important;
   }
 
-  .col-waktu {
-    font-size: 7pt !important;
-  }
+  /* Exact column percentages adding up to 100% on A4 Portrait */
+  .col-num       { width: 4% !important; text-align: center !important; }
+  .col-kode      { width: 17% !important; font-size: 6.8pt !important; word-break: break-all !important; }
+  .col-perangkat { width: 23% !important; }
+  .col-pemilik   { width: 14% !important; }
+  .col-cabang    { width: 16% !important; }
+  .col-waktu     { width: 10% !important; font-size: 6.8pt !important; text-align: center !important; }
+  .col-teknisi   { width: 8% !important; font-size: 6.8pt !important; }
+  .col-status    { width: 8% !important; text-align: center !important; }
 
   .badge-compact {
     padding: 1px 3px !important;
-    font-size: 7pt !important;
+    font-size: 6.5pt !important;
     border-radius: 2px !important;
   }
 
   .signature-section {
-    margin-top: 12px !important;
+    margin-top: 10px !important;
     page-break-inside: avoid !important;
   }
 
   .sig-line {
-    width: 160px !important;
-    margin: 30px auto 2px auto !important;
+    width: 150px !important;
+    margin: 25px auto 2px auto !important;
     border-bottom: 1px solid #000 !important;
   }
 
@@ -446,23 +493,25 @@ $body .= '</select>
     </div>
 
     <!-- Tabel Rekapitulasi -->
-    <table class="table-report">
-      <thead>
-        <tr>
-          <th class="col-center" style="width: 25px;">No</th>
-          <th class="col-nowrap" style="width: 95px;">Kode Inventaris</th>
-          <th>Perangkat (Merk & Tipe)</th>
-          <th>Pengguna / Pemilik</th>
-          <th>Cabang & Divisi</th>
-          <th class="col-nowrap col-center" style="width: 105px;">Waktu Maintenance</th>
-          <th class="col-nowrap" style="width: 75px;">Teknisi</th>
-          <th class="col-nowrap col-center" style="width: 70px;">Status</th>
-        </tr>
-      </thead>
-      <tbody>
-        '.$trs.'
-      </tbody>
-    </table>
+    <div class="table-responsive report-table-wrapper">
+      <table class="table-report">
+        <thead>
+          <tr>
+            <th class="col-num col-center" style="width: 35px;">No</th>
+            <th class="col-kode" style="width: 160px;">Kode Inventaris</th>
+            <th class="col-perangkat">Perangkat (Merk & Tipe)</th>
+            <th class="col-pemilik" style="width: 130px;">Pengguna / Pemilik</th>
+            <th class="col-cabang" style="width: 150px;">Cabang & Divisi</th>
+            <th class="col-waktu col-center" style="width: 120px;">Waktu Maintenance</th>
+            <th class="col-teknisi" style="width: 105px;">Teknisi</th>
+            <th class="col-status col-center" style="width: 85px;">Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          '.$trs.'
+        </tbody>
+      </table>
+    </div>
 
     <!-- Bagian Tanda Tangan -->
     <div class="signature-section">
