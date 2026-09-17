@@ -243,6 +243,18 @@ function render_page(string $title, string $content, string $extraHead = '', str
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
 <style>
+/* High-Performance Rendering & Hardware Acceleration */
+*, *::before, *::after {
+  -webkit-tap-highlight-color: transparent;
+  box-sizing: border-box;
+}
+img {
+  content-visibility: auto;
+}
+table tbody tr {
+  contain: layout style;
+}
+
 /* BANKING IT OPERATIONS CENTER DESIGN SYSTEM */
 :root {
   --navy-deep: #08182F;

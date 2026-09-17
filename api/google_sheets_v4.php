@@ -754,6 +754,16 @@ class GoogleSheetsV4Client {
     public function createSheetIfNotExists(string $sheetName): bool {
         static $checkedSheets = [];
         if (!empty($checkedSheets[$sheetName])) return true;
+        if (session_status() === PHP_SESSION_ACTIVE && !empty($_SESSION['_gs_sheet_exists_' . $sheetName])) {
+            $checkedSheets[$sheetName] = true;
+            return true;
+        }
+
+        $cacheFile = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'gs_exist_' . md5($this->spreadsheetId . '_' . $sheetName);
+        if (file_exists($cacheFile) && (time() - filemtime($cacheFile) < 86400)) {
+            $checkedSheets[$sheetName] = true;
+            return true;
+        }
 
         $token = $this->getAccessToken();
         if (!$token) return false;
@@ -785,6 +795,10 @@ class GoogleSheetsV4Client {
         ]);
 
         $checkedSheets[$sheetName] = true;
+        if (session_status() === PHP_SESSION_ACTIVE) {
+            $_SESSION['_gs_sheet_exists_' . $sheetName] = true;
+        }
+        @file_put_contents($cacheFile, '1');
         return true;
     }
 }

@@ -170,6 +170,11 @@ function get_cabang_from_nomor_rekening(?string $noRek): ?array {
  * Mengambil semua data dari tabel inventaris_kartu
  */
 function get_inventaris_kartu_rows(bool $refresh = false): array {
+    static $staticCardsCache = null;
+    if ($staticCardsCache !== null && !$refresh) {
+        return $staticCardsCache;
+    }
+
     // 1. Mode Google Sheets v4
     if (is_google_cloud_mode()) {
         $client = google_sheets_v4_client();
@@ -192,6 +197,7 @@ function get_inventaris_kartu_rows(bool $refresh = false): array {
                     ];
                 }
                 $client->appendValues('inventaris_kartu!A:G', $appendData);
+                $staticCardsCache = $defaults;
                 return $defaults;
             }
 
@@ -217,6 +223,7 @@ function get_inventaris_kartu_rows(bool $refresh = false): array {
                 ];
             }
             if (!empty($normalized)) {
+                $staticCardsCache = $normalized;
                 return $normalized;
             }
         }

@@ -11,6 +11,14 @@ function is_https(): bool {
     return false;
 }
 
+// Enable GZIP Output Compression for ultra-lightweight and faster payload transfer
+if (!ob_get_level() && !headers_sent()) {
+    if (extension_loaded('zlib') && !ini_get('zlib.output_compression')) {
+        @ini_set('zlib.output_compression', '1');
+        @ini_set('zlib.output_compression_level', '6');
+    }
+}
+
 if (session_status() !== PHP_SESSION_ACTIVE) {
     $idleTimeout = (int)cfg('session_timeout', envv('SESSION_TIMEOUT', '7200')); // Idle timeout 2 jam
     ini_set('session.gc_maxlifetime', (string)$idleTimeout);

@@ -12,7 +12,8 @@ function get_dashboard_data(int $month, int $year, int $cabangId): array {
             return true;
         });
 
-        $scans = $client->getSheetData('Maintenance_Scan', true);
+        $forceRefresh = isset($_GET['refresh']) && (string)$_GET['refresh'] === '1';
+        $scans = $client->getSheetData('Maintenance_Scan', $forceRefresh);
         $scannedAssetIds = [];
         $findingAssetIds = [];
 
