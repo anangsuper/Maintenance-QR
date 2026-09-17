@@ -44,11 +44,11 @@ function render_page(string $title, string $content, string $extraHead = '', str
     // Sidebar navigation menu
     $navLinks = [
         'OPERATIONS' => [
-            ['title' => 'Dashboard', 'url' => module_url('dashboard.php'), 'icon' => 'bi-speedometer2', 'active' => ($currentPage === 'dashboard.php')],
+            ['title' => 'Dashboard', 'url' => module_url('dashboard.php'), 'icon' => 'bi-speedometer2', 'active' => ($currentPage === 'dashboard.php' && ($_GET['tab'] ?? '') !== 'kartu')],
             ['title' => 'Asset Registry', 'url' => module_url('assets.php'), 'icon' => 'bi-pc-display', 'active' => in_array($currentPage, ['assets.php', 'asset_edit.php', 'asset_delete.php'], true)],
             ['title' => 'Maintenance', 'url' => module_url('audit.php'), 'icon' => 'bi-clipboard-check', 'active' => in_array($currentPage, ['audit.php', 'monthly_history.php', 'history.php', 'maintenance_detail.php'], true)],
             ['title' => 'QR Scanner', 'url' => module_url('scanner.php'), 'icon' => 'bi-qr-code-scan', 'active' => ($currentPage === 'scanner.php')],
-            ['title' => 'Kartu Inventaris (CR80)', 'url' => module_url('inventory_card.php'), 'icon' => 'bi-credit-card-2-front', 'active' => in_array($currentPage, ['inventory_card.php', 'cetak_kartu.php', 'print_inventory_card.php'], true)],
+            ['title' => 'Kartu Inventaris (CR80)', 'url' => module_url('dashboard.php', ['tab' => 'kartu']), 'icon' => 'bi-credit-card-2-front', 'active' => ($currentPage === 'dashboard.php' && ($_GET['tab'] ?? '') === 'kartu') || in_array($currentPage, ['inventory_card.php', 'cetak_kartu.php', 'print_inventory_card.php'], true)],
         ],
         'MONITORING' => $monitoringItems,
         'MANAGEMENT' => $managementItems,

@@ -2,7 +2,126 @@
 require __DIR__ . '/bootstrap.php';
 require_login();
 
-// 1. Ambil Parameter Filter dengan Validasi
+// =========================================================================
+// 1. TANGANI AKSI POST KARTU INVENTARIS CR80
+// =========================================================================
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    verify_csrf();
+    $action = $_POST['action'] ?? '';
+
+    // A. Tambah Data Kartu Baru
+    if ($action === 'create_card' || $action === 'create') {
+        $res = insert_inventaris_kartu([
+            'nomor_rekening'   => $_POST['nomor_rekening'] ?? '',
+            'nama_barang'      => $_POST['nama_barang'] ?? '',
+            'tanggal_perolehan'=> $_POST['tanggal_perolehan'] ?? date('Y-m-d'),
+            'barcode_data'     => $_POST['barcode_data'] ?? '',
+            'lokasi'           => $_POST['lokasi'] ?? 'KPO',
+            'pengguna'         => $_POST['pengguna'] ?? 'Umum / Pool'
+        ]);
+        if (!empty($res['success'])) {
+            $_SESSION['flash'] = 'Data kartu inventaris baru berhasil disimpan.';
+        } else {
+            $_SESSION['flash_error'] = 'Gagal menyimpan kartu: ' . ($res['error'] ?? 'Terjadi kesalahan.');
+        }
+        header('Location: ' . module_url('dashboard.php', ['tab' => 'kartu']));
+        exit;
+    }
+
+    // B. Edit Data Kartu
+    if ($action === 'update_card' || $action === 'update') {
+        $cardId = (int)($_POST['id'] ?? 0);
+        $ok = update_inventaris_kartu($cardId, [
+            'nomor_rekening'   => $_POST['nomor_rekening'] ?? '',
+            'nama_barang'      => $_POST['nama_barang'] ?? '',
+            'tanggal_perolehan'=> $_POST['tanggal_perolehan'] ?? date('Y-m-d'),
+            'barcode_data'     => $_POST['barcode_data'] ?? '',
+            'lokasi'           => $_POST['lokasi'] ?? 'KPO',
+            'pengguna'         => $_POST['pengguna'] ?? 'Umum / Pool'
+        ]);
+        if ($ok) {
+            $_SESSION['flash'] = 'Data kartu inventaris berhasil diperbarui.';
+        } else {
+            $_SESSION['flash_error'] = 'Gagal memperbarui data kartu.';
+        }
+        header('Location: ' . module_url('dashboard.php', ['tab' => 'kartu']));
+        exit;
+    }
+
+    // C. Hapus Data Kartu Satuan
+    if ($action === 'delete_card' || $action === 'delete') {
+        $cardId = (int)($_POST['id'] ?? 0);
+        if ($cardId > 0 && delete_inventaris_kartu($cardId)) {
+            $_SESSION['flash'] = 'Kartu inventaris berhasil dihapus.';
+        } else {
+            $_SESSION['flash_error'] = 'Gagal menghapus kartu inventaris.';
+        }
+        header('Location: ' . module_url('dashboard.php', ['tab' => 'kartu']));
+        exit;
+    }
+
+    // D. Hapus Terpilih (Bulk Delete)
+    if ($action === 'delete_batch_card' || $action === 'delete_batch') {
+        $rawIds = trim((string)($_POST['ids'] ?? ''));
+        $ids = [];
+        foreach (explode(',', $rawIds) as $item) {
+            $cId = (int)trim($item);
+            if ($cId > 0) $ids[] = $cId;
+        }
+        if (!empty($ids) && delete_inventaris_kartu($ids)) {
+            $_SESSION['flash'] = count($ids) . ' kartu inventaris terpilih berhasil dihapus.';
+        } else {
+            $_SESSION['flash_error'] = 'Gagal menghapus kartu terpilih.';
+        }
+        header('Location: ' . module_url('dashboard.php', ['tab' => 'kartu']));
+        exit;
+    }
+
+    // E. Import dari Aset IT
+    if ($action === 'import_from_assets') {
+        $selectedAssetIds = $_POST['asset_ids'] ?? [];
+        if (is_string($selectedAssetIds)) {
+            $selectedAssetIds = explode(',', $selectedAssetIds);
+        }
+        $importedCount = 0;
+        foreach ($selectedAssetIds as $aid) {
+            $aid = (int)$aid;
+            if ($aid <= 0) continue;
+            $asset = get_asset_by_id($aid);
+            if ($asset) {
+                $token = !empty($asset['qr_token']) ? $asset['qr_token'] : get_static_qr_token($aid);
+                $qrUrl = module_url('scan.php', ['t' => $token]);
+                $cId = (int)($asset['id_cabang'] ?? $asset['cabang_id'] ?? 0);
+                $cabangName = $asset['cabang_nama'] ?? 'KPO';
+                $divName = !empty($asset['divisi_nama']) && $asset['divisi_nama'] !== '-' ? $asset['divisi_nama'] : '';
+                $lokasi = $divName !== '' ? "{$cabangName} / {$divName}" : $cabangName;
+                $pengguna = !empty($asset['karyawan_nama']) && $asset['karyawan_nama'] !== '-' ? $asset['karyawan_nama'] : 'Umum / Pool';
+
+                $res = insert_inventaris_kartu([
+                    'nomor_rekening'   => $asset['kode_inventaris'] ?? ('INV-IT-' . $aid),
+                    'nama_barang'      => asset_title($asset),
+                    'tanggal_perolehan'=> $asset['tanggal_perolehan'] ?? $asset['created_at'] ?? date('Y-m-d'),
+                    'barcode_data'     => $qrUrl,
+                    'lokasi'           => $lokasi,
+                    'pengguna'         => $pengguna
+                ]);
+                if (!empty($res['success'])) {
+                    $importedCount++;
+                }
+            }
+        }
+        $_SESSION['flash'] = "{$importedCount} aset IT berhasil diimpor ke tabel Kartu Inventaris.";
+        header('Location: ' . module_url('dashboard.php', ['tab' => 'kartu']));
+        exit;
+    }
+}
+
+// 2. Ambil Parameter Filter dengan Validasi
+$activeTab = trim((string)($_GET['tab'] ?? ''));
+if ($activeTab === '' && (isset($_GET['q_kartu']) || isset($_GET['cabang_kartu']))) {
+    $activeTab = 'kartu';
+}
+
 $month = max(1, min(12, (int)($_GET['bulan'] ?? date('n'))));
 $year = max(2020, min(2100, (int)($_GET['tahun'] ?? date('Y'))));
 $cabangId = max(0, (int)($_GET['cabang'] ?? 0));
@@ -50,7 +169,32 @@ foreach ($cabangs as $c) {
         $selectedCabangName = $c['nama'] ?? $c['nama_cabang'] ?? ('Cabang #' . $cabangId);
         break;
     }
-}
+// Ambil Seluruh Data Kartu Inventaris CR80
+$allCards = get_inventaris_kartu_rows();
+$totalCardsCount = count($allCards);
+
+$searchCard = trim((string)($_GET['q_kartu'] ?? ''));
+$cabangCard = trim((string)($_GET['cabang_kartu'] ?? ''));
+
+$filteredCards = array_filter($allCards, function($r) use ($searchCard, $cabangCard) {
+    if ($searchCard !== '') {
+        $q = strtolower($searchCard);
+        $haystack = strtolower(($r['nomor_rekening'] ?? '') . ' ' . ($r['nama_barang'] ?? '') . ' ' . ($r['barcode_data'] ?? '') . ' ' . ($r['lokasi'] ?? ''));
+        if (strpos($haystack, $q) === false) return false;
+    }
+    if ($cabangCard !== '' && $cabangCard !== 'Semua Cabang') {
+        if (stripos($r['lokasi'] ?? '', $cabangCard) === false) return false;
+    }
+    return true;
+});
+usort($filteredCards, fn($a, $b) => ($b['id'] ?? 0) <=> ($a['id'] ?? 0));
+
+$rawAssetsForModal = is_google_cloud_mode() ? map_sheets_assets() : get_qr_admin_rows(0);
+$logoUri = app_logo_data_uri();
+
+$flash = $_SESSION['flash'] ?? '';
+$flashError = $_SESSION['flash_error'] ?? '';
+unset($_SESSION['flash'], $_SESSION['flash_error']);
 
 // 3. Tab Bar Navigasi Cepat Cabang
 $branchTabs = '<a class="branch-nav-pill '.($cabangId === 0 ? 'active' : '').'" href="'.e(module_url('dashboard.php', ['bulan'=>$month,'tahun'=>$year,'cabang'=>0,'status_aset'=>$statusAset,'status_maint'=>$statusMaint])).'">Semua Cabang</a>';
@@ -161,14 +305,105 @@ if (!empty($unresolvedFindings)) {
     $findingsListHtml = '<div class="text-center py-3 text-muted small"><i class="bi bi-check-circle text-success fs-5 d-block mb-1"></i>Tidak ada temuan kendala aktif. Seluruh perangkat beroperasi normal.</div>';
 }
 
+}
+
+// =========================================================================
+// 5. GENERASI DATA TABEL KARTU INVENTARIS CR80
+// =========================================================================
+$cardsTableRowsHtml = '';
+if (empty($filteredCards)) {
+    $cardsTableRowsHtml = '<tr><td colspan="8" class="text-center py-5 text-muted"><i class="bi bi-inbox fs-1 d-block mb-2 opacity-50"></i>Tidak ada data kartu inventaris yang ditemukan.</td></tr>';
+} else {
+    foreach ($filteredCards as $c) {
+        $cId = (int)$c['id'];
+        $rek = $c['nomor_rekening'] ?? '';
+        $nama = $c['nama_barang'] ?? '';
+        $tglRaw = $c['tanggal_perolehan'] ?? '';
+        $tglIndo = format_indo_date($tglRaw);
+        $gabungan = get_nomor_asset_gabungan($rek, $tglRaw);
+        $barcode = $c['barcode_data'] ?? '';
+        $lokasi = $c['lokasi'] ?? 'KPO';
+        $jsonPayload = json_encode(array_merge($c, ['gabungan' => $gabungan]), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP);
+
+        $cardsTableRowsHtml .= '
+        <tr id="card-row-'.$cId.'">
+          <td class="text-center">
+            <input class="form-check-input card-checkbox" type="checkbox" value="'.$cId.'" onchange="updateCardCounters()">
+          </td>
+          <td>
+            <span class="font-monospace fw-bold text-primary" style="font-size: 0.88rem;">'.e($rek).'</span>
+          </td>
+          <td>
+            <div class="fw-semibold text-dark">'.e($nama).'</div>
+            <div class="text-muted small" style="font-size: 0.74rem;">PIC: '.e($c['pengguna'] ?? 'Umum / Pool').'</div>
+          </td>
+          <td>
+            <span class="small text-secondary"><i class="bi bi-calendar-event text-primary me-1"></i>'.e($tglIndo).'</span>
+          </td>
+          <td>
+            <span class="badge-chip chip-primary font-monospace" style="font-weight: 700; letter-spacing: 0.04em;">'.e($gabungan).'</span>
+          </td>
+          <td>';
+        if ($barcode) {
+            $cardsTableRowsHtml .= '<a href="'.e($barcode).'" target="_blank" class="small text-truncate d-inline-block text-primary text-decoration-none" style="max-width: 180px;" title="'.e($barcode).'"><i class="bi bi-box-arrow-up-right me-1"></i>'.e($barcode).'</a>';
+        } else {
+            $cardsTableRowsHtml .= '<span class="text-muted small">-</span>';
+        }
+        $cardsTableRowsHtml .= '
+          </td>
+          <td>
+            <span class="badge-chip chip-secondary">'.e($lokasi).'</span>
+          </td>
+          <td class="text-end text-nowrap">
+            <div class="btn-group btn-group-sm">
+              <button type="button" class="btn btn-light border text-info" title="Pratinjau Fisik Kartu CR80" onclick=\'openCardPreviewModal('.$jsonPayload.')\'>
+                <i class="bi bi-eye-fill"></i>
+              </button>
+              <a class="btn btn-light border text-primary" target="_blank" href="'.e(module_url('print_inventory_card.php', ['source'=>'inventaris_kartu', 'id'=>$cId])).'\" title="Cetak Kartu Ini">
+                <i class="bi bi-printer"></i>
+              </a>
+              <button type="button" class="btn btn-light border text-warning" title="Edit Kartu" onclick=\'openCardEditModal('.$jsonPayload.')\'>
+                <i class="bi bi-pencil-square"></i>
+              </button>
+              <button type="button" class="btn btn-light border text-danger" title="Hapus Kartu" onclick="confirmDeleteCard('.$cId.', \''.e(addslashes($rek . ' - ' . $nama)).'\')">
+                <i class="bi bi-trash"></i>
+              </button>
+            </div>
+          </td>
+        </tr>';
+    }
+}
+
+// Widget Ringkasan Kartu di Tab Monitoring
+$quickCardsRowsHtml = '';
+foreach (array_slice($allCards, 0, 5) as $qc) {
+    $qId = (int)$qc['id'];
+    $qRek = $qc['nomor_rekening'] ?? '';
+    $qNama = $qc['nama_barang'] ?? '';
+    $qTgl = format_indo_date($qc['tanggal_perolehan'] ?? '');
+    $qGab = get_nomor_asset_gabungan($qRek, $qc['tanggal_perolehan'] ?? '');
+    $quickCardsRowsHtml .= '
+    <tr>
+      <td><span class="font-monospace fw-bold text-primary small">'.e($qRek).'</span></td>
+      <td><span class="fw-semibold text-dark small">'.e($qNama).'</span></td>
+      <td><span class="small text-secondary">'.e($qTgl).'</span></td>
+      <td><span class="badge-chip chip-primary font-monospace">'.e($qGab).'</span></td>
+      <td><span class="badge-chip chip-secondary">'.e($qc['lokasi'] ?? 'KPO').'</span></td>
+      <td class="text-end">
+        <a class="btn btn-sm btn-light border py-0 px-2" target="_blank" href="'.e(module_url('print_inventory_card.php', ['source'=>'inventaris_kartu', 'id'=>$qId])).'\" title="Cetak Kartu"><i class="bi bi-printer"></i></a>
+      </td>
+    </tr>';
+}
+
 $head = '
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <style>
 .branch-nav-bar {
   display: flex;
   gap: 6px;
   overflow-x: auto;
   padding-bottom: 6px;
-  margin-bottom: 24px;
+  margin-bottom: 20px;
 }
 .branch-nav-pill {
   white-space: nowrap;
@@ -206,15 +441,298 @@ $head = '
   min-width: 45px;
   font-size: 0.72rem;
 }
+.dashboard-main-nav {
+  display: flex;
+  gap: 8px;
+  border-bottom: 2px solid #E2E8F0;
+  margin-bottom: 24px;
+}
+.dashboard-nav-tab {
+  padding: 10px 18px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #64748B;
+  text-decoration: none;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -2px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.15s ease;
+}
+.dashboard-nav-tab:hover {
+  color: var(--blue-corporate);
+}
+.dashboard-nav-tab.active {
+  color: var(--blue-corporate);
+  border-bottom-color: var(--blue-corporate);
+}
+
+/* PREVIEW KARTU CR80 DALAM MODAL */
+.preview-cr80-box {
+  width: 85.6mm;
+  height: 54.0mm;
+  background: #ffffff;
+  border-radius: 3.8mm;
+  border: 1px solid #cbd5e1;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  overflow: hidden;
+  position: relative;
+  box-shadow: 0 4px 14px rgba(0, 56, 112, 0.12);
+  margin: 0 auto;
+  text-align: left;
+}
+.pv-header {
+  height: 12.2mm;
+  display: flex;
+  align-items: stretch;
+  justify-content: space-between;
+  background: #ffffff;
+  position: relative;
+  overflow: hidden;
+}
+.pv-logo-area {
+  width: 30mm;
+  padding: 1.2mm 1mm 1mm 2.8mm;
+  display: flex;
+  align-items: center;
+}
+.pv-logo-area img {
+  max-width: 100%;
+  max-height: 10mm;
+  object-fit: contain;
+}
+.pv-header-right {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+.pv-navy-bar {
+  background-color: #003870;
+  color: #ffffff;
+  font-size: 5.6pt;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+  text-align: center;
+  padding: 1.3mm 2mm 1.1mm;
+  text-transform: uppercase;
+  white-space: nowrap;
+  line-height: 1.1;
+  border-top-right-radius: 3.5mm;
+}
+.pv-sub-bar {
+  height: 5.6mm;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #ffffff;
+  position: relative;
+  overflow: hidden;
+}
+.pv-green-badge {
+  background-color: #6bb82a;
+  color: #ffffff;
+  font-size: 5.6pt;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  padding: 0 4mm 0 2.5mm;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  clip-path: polygon(0 0, 100% 0, calc(100% - 3.2mm) 100%, 0 100%);
+  white-space: nowrap;
+  text-transform: uppercase;
+}
+.pv-teal-slant {
+  width: 3.5mm;
+  height: 100%;
+  background-color: #008fa0;
+  margin-left: -2.2mm;
+  clip-path: polygon(0 0, 100% 0, calc(100% - 3.2mm) 100%, 0 100%);
+}
+.pv-dots-pattern {
+  display: grid;
+  grid-template-columns: repeat(3, 2.6px);
+  grid-gap: 2.2px;
+  padding-right: 3.5mm;
+  margin-left: auto;
+}
+.pv-dot {
+  width: 2.6px;
+  height: 2.6px;
+  background-color: #6bb82a;
+  border-radius: 50%;
+  display: block;
+}
+.pv-table-sec {
+  display: flex;
+  flex-direction: column;
+  background: #ffffff;
+  border-top: 1px solid #003870;
+}
+.pv-attr-row {
+  display: flex;
+  align-items: center;
+  height: 5.4mm;
+  border-bottom: 1px solid #cbd5e1;
+  background: #ffffff;
+}
+.pv-attr-row.pv-row-last {
+  border-bottom: 2px solid #6bb82a;
+}
+.pv-icon-box {
+  width: 6.8mm;
+  height: 100%;
+  background-color: #003870;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.pv-icon-box svg {
+  width: 3.2mm;
+  height: 3.2mm;
+  fill: #ffffff;
+}
+.pv-label {
+  width: 23mm;
+  padding-left: 2.5mm;
+  font-size: 5.2pt;
+  font-weight: 800;
+  color: #003870;
+  letter-spacing: 0.02em;
+  flex-shrink: 0;
+  text-transform: uppercase;
+}
+.pv-divider {
+  font-size: 6pt;
+  font-weight: 800;
+  color: #003870;
+  margin: 0 2mm 0 1mm;
+  flex-shrink: 0;
+}
+.pv-value {
+  flex: 1;
+  font-size: 5.5pt;
+  font-weight: 800;
+  color: #000000;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  padding-right: 2.5mm;
+}
+.pv-bottom-sec {
+  flex: 1;
+  display: flex;
+  align-items: stretch;
+  position: relative;
+  background: #ffffff;
+  overflow: hidden;
+}
+.pv-warn-col {
+  flex: 1;
+  padding: 1.8mm 2mm 1.5mm 2.8mm;
+  position: relative;
+  z-index: 2;
+  border-right: 1px solid #cbd5e1;
+  display: flex;
+  align-items: center;
+  gap: 2mm;
+}
+.pv-shield-box {
+  width: 5.5mm;
+  height: 7mm;
+  flex-shrink: 0;
+}
+.pv-warn-text {
+  flex: 1;
+  line-height: 1.15;
+}
+.pv-warn-head {
+  color: #dc2626;
+  font-size: 5.2pt;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  margin-bottom: 0.4mm;
+  text-transform: uppercase;
+}
+.pv-warn-body {
+  color: #334155;
+  font-size: 3.5pt;
+  font-weight: 500;
+  line-height: 1.2;
+}
+.pv-qr-col {
+  width: 25.5mm;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 1.2mm 1mm;
+  position: relative;
+  z-index: 2;
+}
+.pv-qr-holder {
+  width: 14.5mm;
+  height: 14.5mm;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #ffffff;
+}
+.pv-qr-holder canvas,
+.pv-qr-holder img {
+  width: 100% !important;
+  height: 100% !important;
+  display: block;
+}
+.pv-scan-pill {
+  background-color: #007a3d;
+  color: #ffffff;
+  border-radius: 10px;
+  padding: 0.5mm 2.2mm;
+  display: inline-flex;
+  align-items: center;
+  gap: 1mm;
+  margin-top: 1mm;
+  font-size: 3.5pt;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+.pv-scan-pill svg {
+  width: 2.4mm;
+  height: 2.4mm;
+  fill: #ffffff;
+}
+.pv-wave-svg {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 100%;
+  height: 6.5mm;
+  z-index: 1;
+  pointer-events: none;
+}
 </style>';
 
+// =========================================================================
+// 6. BODY KONTEN DASHBOARD
+// =========================================================================
 $body = '
+<!-- Flash Messages -->
+'.($flash ? '<div class="alert alert-success alert-dismissible fade show border-0 shadow-sm mb-3" style="border-left: 4px solid #10B981 !important;"><i class="bi bi-check-circle-fill me-2 text-success"></i>'.e($flash).'<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>' : '').'
+'.($flashError ? '<div class="alert alert-danger alert-dismissible fade show border-0 shadow-sm mb-3" style="border-left: 4px solid #EF4444 !important;"><i class="bi bi-exclamation-triangle-fill me-2 text-danger"></i>'.e($flashError).'<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>' : '').'
+
 <!-- Page Header -->
-<div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3 mb-4">
+<div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3 mb-3">
   <div>
     <div class="tech-label mb-1">BANKING IT OPERATIONS COMMAND</div>
-    <h1 class="h3 mb-1">Dashboard Monitoring IT</h1>
-    <p class="text-secondary small mb-0">Ringkasan aset, kepatuhan checklist pemeliharaan, dan tindak lanjut teknisi · Periode: <strong>'.$monthName.' '.$year.'</strong></p>
+    <h1 class="h3 mb-1 fw-bold text-dark">Dashboard IT Operations</h1>
+    <p class="text-secondary small mb-0">Pusat komando pemeliharaan aset IT, audit berkala, dan manajemen cetak label kartu inventaris CR80.</p>
   </div>
   <div class="d-flex align-items-center gap-2 flex-wrap">
     <div class="ops-header-badge" style="background:#ECFDF3; border:1px solid #A6F4C5; color:#16803C;">
@@ -235,27 +753,23 @@ for ($y = date('Y') - 1; $y <= date('Y') + 1; $y++) {
 $body .= '
       </select>
       <input type="hidden" name="cabang" value="'.$cabangId.'">
+      '.($activeTab ? '<input type="hidden" name="tab" value="'.e($activeTab).'">' : '').'
       <a href="'.e(module_url('dashboard.php', ['bulan'=>$month,'tahun'=>$year,'cabang'=>$cabangId,'refresh'=>1])).'" class="btn btn-sm btn-light border" title="Segarkan Data Google Sheets"><i class="bi bi-arrow-clockwise"></i></a>
     </form>
   </div>
 </div>
 
-<!-- Branch Switcher Bar -->
-<div class="branch-nav-bar custom-scrollbar">
-  '.$branchTabs.'
-</div>
-
-<!-- Top KPI Metrics (Dominant Numbers) -->
+<!-- TOP KPI METRICS (6 KOTAK METRIK UTAMA) -->
 <div class="row g-3 mb-4">
-  <div class="col-6 col-md-4 col-xl-2dot4" style="flex: 0 0 20%; max-width: 20%;">
+  <div class="col-6 col-md-4 col-xl-2">
     <div class="card card-metric h-100" style="border-left-color: var(--blue-corporate);">
       <div class="metric-value">'.$totalAll.'</div>
-      <div class="metric-label">Total Aset Komputer</div>
+      <div class="metric-label">Aset Komputer</div>
       <div class="small text-muted mt-2" style="font-size: 0.72rem;">Unit terdaftar</div>
     </div>
   </div>
 
-  <div class="col-6 col-md-4 col-xl-2dot4" style="flex: 0 0 20%; max-width: 20%;">
+  <div class="col-6 col-md-4 col-xl-2">
     <div class="card card-metric h-100" style="border-left-color: #16803C;">
       <div class="metric-value text-success">'.$totalDone.'</div>
       <div class="metric-label">Selesai Diperiksa</div>
@@ -263,7 +777,7 @@ $body .= '
     </div>
   </div>
 
-  <div class="col-6 col-md-4 col-xl-2dot4" style="flex: 0 0 20%; max-width: 20%;">
+  <div class="col-6 col-md-4 col-xl-2">
     <div class="card card-metric h-100" style="border-left-color: #B54708;">
       <div class="metric-value text-warning">'.$totalDue.'</div>
       <div class="metric-label">Belum Maintenance</div>
@@ -271,7 +785,7 @@ $body .= '
     </div>
   </div>
 
-  <div class="col-6 col-md-4 col-xl-2dot4" style="flex: 0 0 20%; max-width: 20%;">
+  <div class="col-6 col-md-4 col-xl-2">
     <div class="card card-metric h-100" style="border-left-color: #B42318;">
       <div class="metric-value text-danger">'.$totalUnresolvedFindings.'</div>
       <div class="metric-label">Temuan Kendala</div>
@@ -279,155 +793,704 @@ $body .= '
     </div>
   </div>
 
-  <div class="col-12 col-md-4 col-xl-2dot4" style="flex: 0 0 20%; max-width: 20%;">
+  <div class="col-6 col-md-4 col-xl-2">
     <div class="card card-metric h-100" style="border-left-color: #2E7CF6;">
       <div class="metric-value text-primary">'.($totalAll - $totalBroken).'</div>
       <div class="metric-label">Perangkat Aktif</div>
       <div class="small text-secondary mt-2" style="font-size: 0.72rem;">Siap pakai</div>
     </div>
   </div>
+
+  <div class="col-6 col-md-4 col-xl-2">
+    <a href="'.e(module_url('dashboard.php', ['tab' => 'kartu'])).'" class="text-decoration-none">
+      <div class="card card-metric h-100" style="border-left-color: #6bb82a; cursor: pointer;">
+        <div class="metric-value text-success">'.$totalCardsCount.'</div>
+        <div class="metric-label text-dark">Kartu CR80 Aktif</div>
+        <div class="small text-primary mt-2" style="font-size: 0.72rem;"><i class="bi bi-arrow-right-circle me-1"></i>Buka Kartu &raquo;</div>
+      </div>
+    </a>
+  </div>
 </div>
 
-<style>
-@media (max-width: 1199px) {
-  .col-xl-2dot4 { flex: 0 0 50% !important; max-width: 50% !important; }
-}
-@media (max-width: 575px) {
-  .col-xl-2dot4 { flex: 0 0 100% !important; max-width: 100% !important; }
-}
-</style>
+<!-- TABS NAVIGATION: SATU HALAMAN DASHBOARD -->
+<div class="dashboard-main-nav">
+  <a class="dashboard-nav-tab '.($activeTab !== 'kartu' ? 'active' : '').'" href="'.e(module_url('dashboard.php', ['bulan'=>$month,'tahun'=>$year,'cabang'=>$cabangId])).'">
+    <i class="bi bi-speedometer2"></i> Ringkasan Maintenance & Kepatuhan
+  </a>
+  <a class="dashboard-nav-tab '.($activeTab === 'kartu' ? 'active' : '').'" href="'.e(module_url('dashboard.php', ['tab' => 'kartu'])).'">
+    <i class="bi bi-credit-card-2-front"></i> Kartu Inventaris (CR80) & Label QR
+    <span class="badge bg-primary text-white rounded-pill ms-1">'.$totalCardsCount.'</span>
+  </a>
+</div>';
 
-<!-- Asymmetric Operations Center Layout -->
-<div class="row g-4">
-  <!-- Left Column (8 cols): Branch Matrix & Live Activity Stream -->
-  <div class="col-lg-8">
-    <!-- Branch Compliance Matrix -->
-    <div class="card mb-4">
-      <div class="card-header bg-white border-bottom py-3 px-4 d-flex align-items-center justify-content-between">
-        <div>
-          <h2 class="h6 mb-0 fw-semibold text-dark"><i class="bi bi-buildings me-2 text-primary"></i>Kepatuhan Maintenance Per Cabang</h2>
-          <div class="text-secondary small">Monitoring progres bulanan di masing-masing kantor kas & cabang</div>
-        </div>
-        <a href="'.e(module_url('print_report.php', ['bulan'=>$month,'tahun'=>$year])).'" target="_blank" class="btn btn-sm btn-light border"><i class="bi bi-printer me-1"></i> Cetak Rekap</a>
+// =========================================================================
+// 7. KONTEN TAB: KARTU INVENTARIS CR80 ATAU MONITORING
+// =========================================================================
+if ($activeTab === 'kartu') {
+    // --- TAMPILAN TAB KARTU INVENTARIS (DISAMAKAN PERSIS DENGAN WEBSITE QR) ---
+    $body .= '
+    <!-- Header Kicker & Action Bar -->
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+      <div>
+        <div class="text-uppercase small fw-bold" style="letter-spacing: 0.08em; color: var(--app-accent); font-size: 0.72rem; margin-bottom: 2px;">OPERATIONS / KARTU INVENTARIS CR80</div>
+        <h2 class="h4 fw-bold text-dark mb-1 d-flex align-items-center gap-2">
+          <i class="bi bi-credit-card-2-front text-primary"></i> Manajemen Kartu Inventaris (CR80)
+        </h2>
+        <div class="text-muted small">Kelola data kartu inventaris berstandar ATM (85.6mm × 54mm), cetak massal A4, dan cetak kartu pilihan.</div>
       </div>
+      <div class="d-flex gap-2 flex-wrap">
+        <button type="button" class="btn btn-danger btn-sm fw-semibold" id="btnDeleteSelected" disabled onclick="bulkDeleteCards()">
+          <i class="bi bi-trash me-1"></i> Hapus Terpilih ( <span id="countDelete">0</span> )
+        </button>
+        <button type="button" class="btn btn-primary btn-sm fw-semibold" id="btnPrintSelected" onclick="printSelectedCards()">
+          <i class="bi bi-printer-fill me-1"></i> Cetak Kartu Pilihan ( <span id="countPrint">0</span> )
+        </button>
+        <a href="'.e(module_url('print_inventory_card.php', ['source'=>'inventaris_kartu'])).'" target="_blank" class="btn btn-outline-primary btn-sm fw-semibold">
+          <i class="bi bi-printer me-1"></i> Cetak Semua (A4)
+        </a>
+        <a href="'.e(module_url('print_inventory_card.php', ['export'=>'csv'])).'" class="btn btn-outline-secondary btn-sm fw-semibold">
+          <i class="bi bi-file-earmark-spreadsheet me-1"></i> Ekspor CSV
+        </a>
+        <button type="button" class="btn btn-outline-primary btn-sm fw-semibold" data-bs-toggle="modal" data-bs-target="#importAssetModal">
+          <i class="bi bi-box-seam me-1"></i> Pilih dari Aset IT
+        </button>
+        <button type="button" class="btn btn-success btn-sm fw-semibold" data-bs-toggle="modal" data-bs-target="#addCardModal">
+          <i class="bi bi-plus-lg me-1"></i> Tambah Data Kartu
+        </button>
+      </div>
+    </div>
+
+    <!-- Filter Bar Card -->
+    <div class="card p-3 mb-4 border shadow-sm bg-white" style="border-radius: 8px; border-color: var(--app-border) !important;">
+      <form method="get" class="row g-2 align-items-center">
+        <input type="hidden" name="tab" value="kartu">
+        <div class="col-12 col-md-5">
+          <div class="input-group input-group-sm">
+            <span class="input-group-text bg-light text-muted"><i class="bi bi-search"></i></span>
+            <input type="text" name="q_kartu" value="'.e($searchCard).'" class="form-control form-control-sm" placeholder="Cari nomor rekening / nama barang...">
+          </div>
+        </div>
+        <div class="col-8 col-md-4">
+          <select name="cabang_kartu" class="form-select form-select-sm" onchange="this.form.submit()">
+            <option value="Semua Cabang">Semua Cabang / Lokasi</option>';
+    foreach ($cabangs as $c) {
+        $cName = $c['nama'] ?? $c['nama_cabang'] ?? '';
+        $body .= '<option value="'.e($cName).'" '.($cabangCard === $cName ? 'selected' : '').'>'.e($cName).'</option>';
+    }
+    $body .= '
+          </select>
+        </div>
+        <div class="col-4 col-md-3 d-flex gap-2">
+          <button type="submit" class="btn btn-sm btn-primary flex-grow-1">Filter</button>
+          <a href="'.e(module_url('dashboard.php', ['tab' => 'kartu'])).'" class="btn btn-sm btn-outline-secondary" title="Reset Filter"><i class="bi bi-arrow-clockwise"></i></a>
+        </div>
+      </form>
+    </div>
+
+    <!-- Table Container Card -->
+    <div class="card mb-4 border shadow-sm bg-white" style="border-radius: 8px; border-color: var(--app-border) !important;">
       <div class="table-responsive">
         <table class="table table-hover align-middle mb-0">
-          <thead>
+          <thead class="table-light" style="border-bottom: 2px solid var(--app-border);">
             <tr>
-              <th>Kantor Cabang</th>
-              <th class="text-center">Target Unit</th>
-              <th class="text-center">Selesai</th>
-              <th class="text-center">Belum</th>
-              <th class="text-center">Temuan</th>
-              <th class="text-center">Kepatuhan</th>
-              <th class="text-end">Aksi</th>
+              <th style="width: 44px;" class="text-center">
+                <input class="form-check-input" type="checkbox" id="checkAllRows" onchange="toggleSelectAllCards(this)">
+              </th>
+              <th style="width: 140px;">NOMOR REKENING</th>
+              <th>NAMA BARANG</th>
+              <th style="width: 160px;">TANGGAL PEROLEHAN</th>
+              <th style="width: 180px;">NOMOR ASSET (GABUNGAN)</th>
+              <th>KODE QR / BARCODE</th>
+              <th>LOKASI</th>
+              <th class="text-end" style="width: 150px;">AKSI</th>
             </tr>
           </thead>
           <tbody>
-            '.$branchRowsHtml.'
+            '.$cardsTableRowsHtml.'
           </tbody>
         </table>
       </div>
+      <div class="card-footer bg-white border-top py-2 px-3 d-flex justify-content-between align-items-center text-muted small">
+        <div>Menampilkan <strong>'.count($filteredCards).'</strong> dari <strong>'.$totalCardsCount.'</strong> kartu inventaris terdaftar</div>
+        <div class="font-monospace">CR80 ATM Standard: 85.6 × 54.0 mm</div>
+      </div>
+    </div>';
+
+} else {
+    // --- TAMPILAN TAB MONITORING (DENGAN WIDGET KARTU INVENTARIS TERPADU) ---
+    $body .= '
+    <!-- Branch Switcher Bar -->
+    <div class="branch-nav-bar custom-scrollbar">
+      '.$branchTabs.'
     </div>
 
-    <!-- Live Activity Stream -->
-    <div class="card">
-      <div class="card-header bg-white border-bottom py-3 px-4 d-flex align-items-center justify-content-between">
-        <div>
-          <h2 class="h6 mb-0 fw-semibold text-dark"><i class="bi bi-activity me-2 text-primary"></i>Live Activity Stream</h2>
-          <div class="text-secondary small">Log rekam jejak pemeriksaan maintenance dan audit terbaru</div>
+    <!-- Operations Center Layout -->
+    <div class="row g-4 mb-4">
+      <!-- Left Column (8 cols): Branch Compliance Matrix & Activity Stream -->
+      <div class="col-lg-8">
+        <!-- Branch Compliance Matrix -->
+        <div class="card mb-4 border shadow-sm bg-white" style="border-radius: 8px;">
+          <div class="card-header bg-white border-bottom py-3 px-4 d-flex align-items-center justify-content-between">
+            <div>
+              <h2 class="h6 mb-0 fw-semibold text-dark"><i class="bi bi-buildings me-2 text-primary"></i>Kepatuhan Maintenance Per Cabang</h2>
+              <div class="text-secondary small">Monitoring progres bulanan di masing-masing kantor kas & cabang</div>
+            </div>
+            <a href="'.e(module_url('print_report.php', ['bulan'=>$month,'tahun'=>$year])).'" target="_blank" class="btn btn-sm btn-light border"><i class="bi bi-printer me-1"></i> Cetak Rekap</a>
+          </div>
+          <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+              <thead class="table-light">
+                <tr>
+                  <th>Kantor Cabang</th>
+                  <th class="text-center">Target Unit</th>
+                  <th class="text-center">Selesai</th>
+                  <th class="text-center">Belum</th>
+                  <th class="text-center">Temuan</th>
+                  <th class="text-center">Kepatuhan</th>
+                  <th class="text-end">Aksi</th>
+                </tr>
+              </thead>
+              <tbody>
+                '.$branchRowsHtml.'
+              </tbody>
+            </table>
+          </div>
         </div>
-        <a href="'.e(module_url('audit.php')).'" class="btn btn-sm btn-light border">Lihat Semua Log</a>
+
+        <!-- Integrated Kartu Inventaris Widget -->
+        <div class="card mb-4 border shadow-sm bg-white" style="border-radius: 8px;">
+          <div class="card-header bg-white border-bottom py-3 px-4 d-flex align-items-center justify-content-between flex-wrap gap-2">
+            <div>
+              <div class="tech-label">INVENTORY CR80 REGISTRY</div>
+              <h2 class="h6 mb-0 fw-semibold text-dark d-flex align-items-center gap-2">
+                <i class="bi bi-credit-card-2-front text-primary"></i> Kartu Inventaris (CR80) & Label QR
+                <span class="badge bg-primary text-white rounded-pill ms-1">'.$totalCardsCount.' Unit</span>
+              </h2>
+            </div>
+            <div class="d-flex gap-2">
+              <a href="'.e(module_url('print_inventory_card.php', ['source'=>'inventaris_kartu'])).'" target="_blank" class="btn btn-sm btn-primary fw-semibold">
+                <i class="bi bi-printer-fill me-1"></i> Cetak Massal (A4)
+              </a>
+              <a href="'.e(module_url('dashboard.php', ['tab' => 'kartu'])).'" class="btn btn-sm btn-outline-primary fw-semibold">
+                <i class="bi bi-sliders me-1"></i> Kelola Lengkap &raquo;
+              </a>
+            </div>
+          </div>
+          <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+              <thead class="table-light">
+                <tr>
+                  <th>NO. REKENING</th>
+                  <th>NAMA BARANG</th>
+                  <th>TANGGAL</th>
+                  <th>NOMOR ASSET</th>
+                  <th>LOKASI</th>
+                  <th class="text-end">AKSI</th>
+                </tr>
+              </thead>
+              <tbody>
+                '.$quickCardsRowsHtml.'
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Live Activity Stream -->
+        <div class="card border shadow-sm bg-white" style="border-radius: 8px;">
+          <div class="card-header bg-white border-bottom py-3 px-4 d-flex align-items-center justify-content-between">
+            <div>
+              <h2 class="h6 mb-0 fw-semibold text-dark"><i class="bi bi-activity me-2 text-primary"></i>Live Activity Stream</h2>
+              <div class="text-secondary small">Log rekam jejak pemeriksaan maintenance dan audit terbaru</div>
+            </div>
+            <a href="'.e(module_url('audit.php')).'" class="btn btn-sm btn-light border">Lihat Semua Log</a>
+          </div>
+          <div class="card-body p-3 p-md-4">
+            <div class="activity-stream">
+              '.$activityStreamHtml.'
+            </div>
+          </div>
+        </div>
       </div>
-      <div class="card-body p-3 p-md-4">
-        <div class="activity-stream">
-          '.$activityStreamHtml.'
+
+      <!-- Right Column (4 cols): Compliance, Health & Findings -->
+      <div class="col-lg-4">
+        <!-- Maintenance Compliance Panel -->
+        <div class="card mb-4 border shadow-sm bg-white" style="border-radius: 8px;">
+          <div class="card-header bg-white border-bottom py-3 px-4">
+            <div class="tech-label">INSPECTION COMPLIANCE</div>
+            <h2 class="h6 mb-0 fw-semibold text-dark">Kepatuhan Periode Ini</h2>
+          </div>
+          <div class="card-body p-4">
+            <div class="d-flex align-items-baseline justify-content-between mb-2">
+              <span class="display-6 fw-bold text-dark">'.$percentDone.'%</span>
+              <span class="small text-secondary fw-semibold">'.$totalDone.' dari '.$totalActive.' unit</span>
+            </div>
+            <div class="progress mb-3" style="height: 8px;">
+              <div class="progress-bar '.($percentDone >= 80 ? 'bg-success' : ($percentDone >= 50 ? 'bg-primary' : 'bg-warning')).'" style="width: '.$percentDone.'%;"></div>
+            </div>
+            <div class="d-flex justify-content-between small text-secondary pt-1 border-top">
+              <span><span class="status-dot operational me-1"></span> Selesai: <strong>'.$totalDone.'</strong></span>
+              <span><span class="status-dot warning me-1"></span> Belum: <strong>'.$totalDue.'</strong></span>
+              <span><span class="status-dot critical me-1"></span> Temuan: <strong>'.$totalUnresolvedFindings.'</strong></span>
+            </div>
+          </div>
         </div>
+
+        <!-- Hardware Health Status -->
+        <div class="card mb-4 border shadow-sm bg-white" style="border-radius: 8px;">
+          <div class="card-header bg-white border-bottom py-3 px-4">
+            <div class="tech-label">HARDWARE HEALTH</div>
+            <h2 class="h6 mb-0 fw-semibold text-dark">Status Kondisi Perangkat</h2>
+          </div>
+          <div class="card-body p-4">
+            <div class="d-flex flex-column gap-3">
+              <div class="d-flex align-items-center justify-content-between">
+                <div class="d-flex align-items-center gap-2">
+                  <span class="status-dot operational"></span>
+                  <span class="small fw-semibold text-dark">Operasional Normal</span>
+                </div>
+                <span class="badge-chip chip-success">'.max(0, $totalAll - $totalBroken - $totalUnresolvedFindings).' Unit</span>
+              </div>
+              <div class="d-flex align-items-center justify-content-between">
+                <div class="d-flex align-items-center gap-2">
+                  <span class="status-dot warning"></span>
+                  <span class="small fw-semibold text-dark">Perlu Perhatian</span>
+                </div>
+                <span class="badge-chip chip-warning">'.$totalDue.' Unit</span>
+              </div>
+              <div class="d-flex align-items-center justify-content-between">
+                <div class="d-flex align-items-center gap-2">
+                  <span class="status-dot critical"></span>
+                  <span class="small fw-semibold text-dark">Temuan Kendala</span>
+                </div>
+                <span class="badge-chip chip-danger">'.$totalUnresolvedFindings.' Unit</span>
+              </div>
+              <div class="d-flex align-items-center justify-content-between">
+                <div class="d-flex align-items-center gap-2">
+                  <span class="status-dot offline"></span>
+                  <span class="small fw-semibold text-dark">Nonaktif / Rusak</span>
+                </div>
+                <span class="badge-chip chip-secondary">'.$totalBroken.' Unit</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Active Findings Panel -->
+        <div class="card border shadow-sm bg-white" style="border-radius: 8px;">
+          <div class="card-header bg-white border-bottom py-3 px-4 d-flex align-items-center justify-content-between">
+            <div>
+              <div class="tech-label">REPAIR & FINDINGS</div>
+              <h2 class="h6 mb-0 fw-semibold text-dark">Temuan Masalah Aktif</h2>
+            </div>
+            <span class="badge bg-danger rounded-pill">'.$totalUnresolvedFindings.'</span>
+          </div>
+          <div class="card-body p-3">
+            '.$findingsListHtml.'
+          </div>
+        </div>
+      </div>
+    </div>';
+}
+
+// =========================================================================
+// 8. MODALS TERPADU UNTUK KARTU INVENTARIS CR80
+// =========================================================================
+$body .= '
+<!-- MODAL: TAMBAH DATA KARTU INVENTARIS -->
+<div class="modal fade" id="addCardModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0 shadow-lg" style="border-radius: 12px;">
+      <form method="post">
+        <input type="hidden" name="_csrf" value="'.e(csrf_token()).'">
+        <input type="hidden" name="action" value="create_card">
+        <div class="modal-header bg-primary text-white py-2 px-3">
+          <h6 class="modal-title fw-bold d-flex align-items-center gap-2">
+            <i class="bi bi-plus-circle-fill"></i> Tambah Data Kartu Inventaris CR80
+          </h6>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body p-3">
+          <div class="mb-3">
+            <label class="form-label small fw-bold text-dark">Nomor Rekening</label>
+            <input type="text" name="nomor_rekening" class="form-control form-control-sm font-monospace" placeholder="Contoh: 01.05.0494" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label small fw-bold text-dark">Nama Barang / Perangkat</label>
+            <input type="text" name="nama_barang" class="form-control form-control-sm" placeholder="Contoh: PRINTER CANON G2010 KAS" required>
+          </div>
+          <div class="row g-2 mb-3">
+            <div class="col-6">
+              <label class="form-label small fw-bold text-dark">Tanggal Perolehan</label>
+              <input type="date" name="tanggal_perolehan" class="form-control form-control-sm" value="'.date('Y-m-d').'" required>
+            </div>
+            <div class="col-6">
+              <label class="form-label small fw-bold text-dark">Lokasi Penempatan</label>
+              <input type="text" name="lokasi" class="form-control form-control-sm" value="KPO" required>
+            </div>
+          </div>
+          <div class="mb-3">
+            <label class="form-label small fw-bold text-dark">Pengguna / PIC</label>
+            <input type="text" name="pengguna" class="form-control form-control-sm" value="Umum / Pool">
+          </div>
+          <div class="mb-2">
+            <label class="form-label small fw-bold text-dark">Kode QR / Barcode URL</label>
+            <input type="text" name="barcode_data" class="form-control form-control-sm font-monospace" placeholder="https://canva.link/... atau URL verifikasi">
+            <div class="form-text text-muted" style="font-size: 0.72rem;">Isi tautan Canva atau link QR verifikasi kartu.</div>
+          </div>
+        </div>
+        <div class="modal-footer py-2 px-3 bg-light">
+          <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-dismiss="modal">Batal</button>
+          <button type="submit" class="btn btn-sm btn-primary fw-bold">Simpan Kartu</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: EDIT DATA KARTU INVENTARIS -->
+<div class="modal fade" id="editCardModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0 shadow-lg" style="border-radius: 12px;">
+      <form method="post">
+        <input type="hidden" name="_csrf" value="'.e(csrf_token()).'">
+        <input type="hidden" name="action" value="update_card">
+        <input type="hidden" name="id" id="editCardId">
+        <div class="modal-header bg-warning text-dark py-2 px-3">
+          <h6 class="modal-title fw-bold d-flex align-items-center gap-2">
+            <i class="bi bi-pencil-square"></i> Edit Data Kartu Inventaris
+          </h6>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body p-3">
+          <div class="mb-3">
+            <label class="form-label small fw-bold text-dark">Nomor Rekening</label>
+            <input type="text" name="nomor_rekening" id="editCardRekening" class="form-control form-control-sm font-monospace" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label small fw-bold text-dark">Nama Barang</label>
+            <input type="text" name="nama_barang" id="editCardNama" class="form-control form-control-sm" required>
+          </div>
+          <div class="row g-2 mb-3">
+            <div class="col-6">
+              <label class="form-label small fw-bold text-dark">Tanggal Perolehan</label>
+              <input type="date" name="tanggal_perolehan" id="editCardTanggal" class="form-control form-control-sm" required>
+            </div>
+            <div class="col-6">
+              <label class="form-label small fw-bold text-dark">Lokasi Penempatan</label>
+              <input type="text" name="lokasi" id="editCardLokasi" class="form-control form-control-sm" required>
+            </div>
+          </div>
+          <div class="mb-3">
+            <label class="form-label small fw-bold text-dark">Pengguna / PIC</label>
+            <input type="text" name="pengguna" id="editCardPengguna" class="form-control form-control-sm">
+          </div>
+          <div class="mb-2">
+            <label class="form-label small fw-bold text-dark">Kode QR / Barcode URL</label>
+            <input type="text" name="barcode_data" id="editCardBarcode" class="form-control form-control-sm font-monospace">
+          </div>
+        </div>
+        <div class="modal-footer py-2 px-3 bg-light">
+          <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-dismiss="modal">Batal</button>
+          <button type="submit" class="btn btn-sm btn-primary fw-bold">Perbarui Kartu</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: PILIH DARI ASET IT (IMPORT CATALOG) -->
+<div class="modal fade" id="importAssetModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-content border-0 shadow-lg" style="border-radius: 12px;">
+      <form method="post">
+        <input type="hidden" name="_csrf" value="'.e(csrf_token()).'">
+        <input type="hidden" name="action" value="import_from_assets">
+        <div class="modal-header bg-primary text-white py-2 px-3">
+          <h6 class="modal-title fw-bold d-flex align-items-center gap-2">
+            <i class="bi bi-box-seam"></i> Pilih Perangkat dari Katalog Aset IT
+          </h6>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body p-3">
+          <p class="small text-muted mb-2">Pilih perangkat di bawah ini untuk didaftarkan ke tabel Kartu Inventaris CR80:</p>
+          <div class="table-responsive" style="max-height: 360px; overflow-y: auto;">
+            <table class="table table-hover align-middle mb-0">
+              <thead class="table-light">
+                <tr>
+                  <th style="width: 36px;"></th>
+                  <th>Kode Inventaris</th>
+                  <th>Nama Perangkat</th>
+                  <th>Pengguna</th>
+                  <th>Cabang</th>
+                </tr>
+              </thead>
+              <tbody>';
+foreach ($rawAssetsForModal as $a) {
+    $aid = (int)($a['id'] ?? 0);
+    $body .= '
+                <tr>
+                  <td class="text-center">
+                    <input class="form-check-input" type="checkbox" name="asset_ids[]" value="'.$aid.'">
+                  </td>
+                  <td><span class="font-monospace fw-bold text-primary small">'.e($a['kode_inventaris'] ?? ('ASET-' . $aid)).'</span></td>
+                  <td><span class="fw-semibold text-dark small">'.e(asset_title($a)).'</span></td>
+                  <td><span class="text-muted small">'.e($a['karyawan_nama'] ?? '-').'</span></td>
+                  <td><span class="badge-chip chip-secondary">'.e($a['cabang_nama'] ?? 'KPO').'</span></td>
+                </tr>';
+}
+$body .= '
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div class="modal-footer py-2 px-3 bg-light">
+          <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-dismiss="modal">Batal</button>
+          <button type="submit" class="btn btn-sm btn-primary fw-bold">Impor ke Kartu Inventaris</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: PRATINJAU DESAIN FISIK KARTU CR80 (PERSIS SESUAI DESAIN USER) -->
+<div class="modal fade" id="previewCardModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered" style="max-width: 520px;">
+    <div class="modal-content border-0 shadow-lg" style="border-radius: 16px; overflow: hidden;">
+      <div class="modal-header bg-primary text-white py-2 px-3">
+        <h6 class="modal-title fw-bold d-flex align-items-center gap-2">
+          <i class="bi bi-eye-fill"></i> Pratinjau Desain Kartu Fisik CR80
+        </h6>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body text-center bg-light p-4">
+        <!-- Outer Dashed Cutting Guide -->
+        <div style="display: inline-block; padding: 2.2mm; border: 1.5px dashed #94a3b8; border-radius: 5mm; background: #ffffff; transform: scale(1.3); transform-origin: top center; margin-bottom: 22mm;">
+          <div class="preview-cr80-box">
+            <!-- 1. Header -->
+            <div class="pv-header">
+              <div class="pv-logo-area">
+                <img src="'.e($logoUri).'" alt="Logo Bank Mitra">
+              </div>
+              <div class="pv-header-right">
+                <div class="pv-navy-bar">
+                  PT BPR MITRATAMA ARTHABUANA
+                </div>
+                <div class="pv-sub-bar">
+                  <div class="pv-green-badge">ASSET TETAP</div>
+                  <div class="pv-teal-slant"></div>
+                  <div class="pv-dots-pattern">
+                    <span class="pv-dot"></span><span class="pv-dot"></span><span class="pv-dot"></span>
+                    <span class="pv-dot"></span><span class="pv-dot"></span><span class="pv-dot"></span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 2. Table Section -->
+            <div class="pv-table-sec">
+              <div class="pv-attr-row">
+                <div class="pv-icon-box">
+                  <svg viewBox="0 0 16 16"><path d="M6 1a1 1 0 0 0-.707.293L.293 6.293a1 1 0 0 0 0 1.414l6 6a1 1 0 0 0 1.414 0l5-5A1 1 0 0 0 13 8V2a1 1 0 0 0-1-1H6zm-2 4a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3z"/></svg>
+                </div>
+                <div class="pv-label">NOMOR ASSET</div>
+                <div class="pv-divider">|</div>
+                <div class="pv-value font-monospace" id="pvNomorAsset">0105049326092026</div>
+              </div>
+
+              <div class="pv-attr-row">
+                <div class="pv-icon-box">
+                  <svg viewBox="0 0 16 16"><path d="M1 3a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v8a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1V3zm1.5.5v7h11v-7h-11zM6 13.5a.5.5 0 0 1 .5-.5h3a.5.5 0 0 1 0 1h-3a.5.5 0 0 1-.5-.5z"/></svg>
+                </div>
+                <div class="pv-label">NAMA ASSET</div>
+                <div class="pv-divider">|</div>
+                <div class="pv-value" id="pvNamaAsset">PRINTER EPSON L3211 KAS</div>
+              </div>
+
+              <div class="pv-attr-row">
+                <div class="pv-icon-box">
+                  <svg viewBox="0 0 16 16"><path d="M3.5 0a.5.5 0 0 1 .5.5V1h8V.5a.5.5 0 0 1 1 0V1h1a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V3a2 2 0 0 1 2-2h1V.5a.5.5 0 0 1 .5-.5zM1 4v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V4H1z"/></svg>
+                </div>
+                <div class="pv-label">TGL PEROLEHAN</div>
+                <div class="pv-divider">|</div>
+                <div class="pv-value" id="pvTglPerolehan">26/09/2026</div>
+              </div>
+
+              <div class="pv-attr-row pv-row-last">
+                <div class="pv-icon-box">
+                  <svg viewBox="0 0 16 16"><path d="M8 16s6-5.686 6-10A6 6 0 0 0 2 6c0 4.314 6 10 6 10zm0-7a3 3 0 1 1 0-6 3 3 0 0 1 0 6z"/></svg>
+                </div>
+                <div class="pv-label">LOKASI</div>
+                <div class="pv-divider">|</div>
+                <div class="pv-value" id="pvLokasi">KPO</div>
+              </div>
+            </div>
+
+            <!-- 3. Bottom Section -->
+            <div class="pv-bottom-sec">
+              <div class="pv-warn-col">
+                <div class="pv-shield-box">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="#003870" stroke-width="2" style="width:100%;height:100%;">
+                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" fill="#ffffff"/>
+                    <path d="M12 8v5M12 16v.5" stroke="#003870" stroke-width="2.5" stroke-linecap="round"/>
+                  </svg>
+                </div>
+                <div class="pv-warn-text">
+                  <div class="pv-warn-head">PERHATIAN</div>
+                  <div class="pv-warn-body">Perhatian Dilarang memindahkan barang inventaris ini tanpa seizin Human Resource Departement (HRD) Bank Mitra</div>
+                </div>
+              </div>
+
+              <div class="pv-qr-col">
+                <div class="pv-qr-holder">
+                  <div id="pvQrBox"></div>
+                </div>
+                <div class="pv-scan-pill">
+                  <svg viewBox="0 0 16 16"><path d="M11 1a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1h6zM5 0a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2V2a2 2 0 0 0-2-2H5z"/><path d="M8 14a1 1 0 1 0 0-2 1 1 0 0 0 0 2z"/></svg>
+                  <span>SCAN UNTUK INFO</span>
+                </div>
+              </div>
+
+              <!-- Wave Decor -->
+              <svg class="pv-wave-svg" viewBox="0 0 856 120" preserveAspectRatio="none">
+                <path d="M 0,55 C 100,50 180,95 270,95 C 330,95 380,85 450,110 L 450,120 L 0,120 Z" fill="#6bb82a" />
+                <path d="M 420,120 C 530,120 620,115 720,80 C 780,60 820,40 856,20 L 856,120 L 420,120 Z" fill="#003870" />
+              </svg>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer py-2 px-3 bg-white justify-content-between">
+        <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-dismiss="modal">Tutup</button>
+        <a id="pvPrintDirectBtn" href="#" target="_blank" class="btn btn-sm btn-primary fw-bold">
+          <i class="bi bi-printer-fill me-1"></i> Cetak Kartu Ini
+        </a>
       </div>
     </div>
   </div>
+</div>
 
-  <!-- Right Column (4 cols): Compliance Panel, Asset Health & Active Issues -->
-  <div class="col-lg-4">
-    <!-- Maintenance Compliance Panel -->
-    <div class="card mb-4">
-      <div class="card-header bg-white border-bottom py-3 px-4">
-        <div class="tech-label">INSPECTION COMPLIANCE</div>
-        <h2 class="h6 mb-0 fw-semibold text-dark">Kepatuhan Periode Ini</h2>
-      </div>
-      <div class="card-body p-4">
-        <div class="d-flex align-items-baseline justify-content-between mb-2">
-          <span class="display-6 fw-bold text-dark">'.$percentDone.'%</span>
-          <span class="small text-secondary fw-semibold">'.$totalDone.' dari '.$totalActive.' unit</span>
-        </div>
-        <div class="progress mb-3" style="height: 8px;">
-          <div class="progress-bar '.($percentDone >= 80 ? 'bg-success' : ($percentDone >= 50 ? 'bg-primary' : 'bg-warning')).'" style="width: '.$percentDone.'%;"></div>
-        </div>
-        <div class="d-flex justify-content-between small text-secondary pt-1 border-top">
-          <span><span class="status-dot operational me-1"></span> Selesai: <strong>'.$totalDone.'</strong></span>
-          <span><span class="status-dot warning me-1"></span> Belum: <strong>'.$totalDue.'</strong></span>
-          <span><span class="status-dot critical me-1"></span> Temuan: <strong>'.$totalUnresolvedFindings.'</strong></span>
-        </div>
-      </div>
-    </div>
+<!-- Forms Hidden untuk Hapus Satuan & Hapus Massal -->
+<form id="deleteCardForm" method="post" style="display: none;">
+  <input type="hidden" name="_csrf" value="'.e(csrf_token()).'">
+  <input type="hidden" name="action" value="delete_card">
+  <input type="hidden" name="id" id="deleteTargetCardId">
+</form>
 
-    <!-- Asset Health Status Dots -->
-    <div class="card mb-4">
-      <div class="card-header bg-white border-bottom py-3 px-4">
-        <div class="tech-label">HARDWARE HEALTH</div>
-        <h2 class="h6 mb-0 fw-semibold text-dark">Status Kondisi Perangkat</h2>
-      </div>
-      <div class="card-body p-4">
-        <div class="d-flex flex-column gap-3">
-          <div class="d-flex align-items-center justify-content-between">
-            <div class="d-flex align-items-center gap-2">
-              <span class="status-dot operational"></span>
-              <span class="small fw-semibold text-dark">Operasional Normal</span>
-            </div>
-            <span class="badge-chip chip-success">'.max(0, $totalAll - $totalBroken - $totalUnresolvedFindings).' Unit</span>
-          </div>
+<form id="deleteBatchCardForm" method="post" style="display: none;">
+  <input type="hidden" name="_csrf" value="'.e(csrf_token()).'">
+  <input type="hidden" name="action" value="delete_batch_card">
+  <input type="hidden" name="ids" id="deleteBatchCardIds">
+</form>';
 
-          <div class="d-flex align-items-center justify-content-between">
-            <div class="d-flex align-items-center gap-2">
-              <span class="status-dot warning"></span>
-              <span class="small fw-semibold text-dark">Perlu Perhatian / Maintenance</span>
-            </div>
-            <span class="badge-chip chip-warning">'.$totalDue.' Unit</span>
-          </div>
+// =========================================================================
+// 9. JAVASCRIPT LOGIC
+// =========================================================================
+$extraScript = '
+<script>
+function getSelectedCardIds() {
+  const cbs = document.querySelectorAll(".card-checkbox:checked");
+  const ids = [];
+  cbs.forEach(cb => ids.push(cb.value));
+  return ids;
+}
 
-          <div class="d-flex align-items-center justify-content-between">
-            <div class="d-flex align-items-center gap-2">
-              <span class="status-dot critical"></span>
-              <span class="small fw-semibold text-dark">Temuan Kerusakan Aktif</span>
-            </div>
-            <span class="badge-chip chip-danger">'.$totalUnresolvedFindings.' Unit</span>
-          </div>
+function updateCardCounters() {
+  const ids = getSelectedCardIds();
+  const count = ids.length;
+  const delBtn = document.getElementById("btnDeleteSelected");
+  const countDelSpan = document.getElementById("countDelete");
+  const countPrintSpan = document.getElementById("countPrint");
 
-          <div class="d-flex align-items-center justify-content-between">
-            <div class="d-flex align-items-center gap-2">
-              <span class="status-dot offline"></span>
-              <span class="small fw-semibold text-dark">Nonaktif / Rusak Permanen</span>
-            </div>
-            <span class="badge-chip chip-secondary">'.$totalBroken.' Unit</span>
-          </div>
-        </div>
-      </div>
-    </div>
+  if (countDelSpan) countDelSpan.innerText = count;
+  if (countPrintSpan) countPrintSpan.innerText = count;
+  if (delBtn) delBtn.disabled = (count === 0);
+}
 
-    <!-- Active Findings Panel -->
-    <div class="card">
-      <div class="card-header bg-white border-bottom py-3 px-4 d-flex align-items-center justify-content-between">
-        <div>
-          <div class="tech-label">REPAIR & FINDINGS</div>
-          <h2 class="h6 mb-0 fw-semibold text-dark">Temuan Masalah Aktif</h2>
-        </div>
-        <span class="badge bg-danger rounded-pill">'.$totalUnresolvedFindings.'</span>
-      </div>
-      <div class="card-body p-3">
-        '.$findingsListHtml.'
-      </div>
-    </div>
-  </div>
-</div>';
+function toggleSelectAllCards(masterCb) {
+  const cbs = document.querySelectorAll(".card-checkbox");
+  cbs.forEach(cb => cb.checked = masterCb.checked);
+  updateCardCounters();
+}
 
-render_page('Dashboard IT Operations', $body, $head);
+function printSelectedCards() {
+  const ids = getSelectedCardIds();
+  let targetUrl = "print_inventory_card.php?source=inventaris_kartu";
+  if (ids.length > 0) {
+    targetUrl += "&ids=" + encodeURIComponent(ids.join(","));
+  }
+  window.open(targetUrl, "_blank");
+}
+
+function bulkDeleteCards() {
+  const ids = getSelectedCardIds();
+  if (ids.length === 0) return;
+  if (confirm("Hapus " + ids.length + " data kartu inventaris terpilih?")) {
+    document.getElementById("deleteBatchCardIds").value = ids.join(",");
+    document.getElementById("deleteBatchCardForm").submit();
+  }
+}
+
+function confirmDeleteCard(id, label) {
+  if (confirm("Hapus kartu inventaris: " + label + "?")) {
+    document.getElementById("deleteTargetCardId").value = id;
+    document.getElementById("deleteCardForm").submit();
+  }
+}
+
+function openCardEditModal(card) {
+  document.getElementById("editCardId").value = card.id || "";
+  document.getElementById("editCardRekening").value = card.nomor_rekening || "";
+  document.getElementById("editCardNama").value = card.nama_barang || "";
+  document.getElementById("editCardTanggal").value = card.tanggal_perolehan || "";
+  document.getElementById("editCardLokasi").value = card.lokasi || "KPO";
+  document.getElementById("editCardPengguna").value = card.pengguna || "Umum / Pool";
+  document.getElementById("editCardBarcode").value = card.barcode_data || "";
+
+  const modal = new bootstrap.Modal(document.getElementById("editCardModal"));
+  modal.show();
+}
+
+function openCardPreviewModal(card) {
+  const rek = card.nomor_rekening || "";
+  const tglRaw = card.tanggal_perolehan || "";
+  
+  // Format DD/MM/YYYY
+  let tglDisplay = "-";
+  if (tglRaw) {
+    const parts = tglRaw.split("-");
+    if (parts.length === 3) {
+      tglDisplay = `${parts[2]}/${parts[1]}/${parts[0]}`;
+    } else {
+      tglDisplay = tglRaw;
+    }
+  }
+
+  document.getElementById("pvNomorAsset").innerText = card.gabungan || rek;
+  document.getElementById("pvNamaAsset").innerText = card.nama_barang || "-";
+  document.getElementById("pvTglPerolehan").innerText = tglDisplay;
+  document.getElementById("pvLokasi").innerText = card.lokasi || "KPO";
+
+  const qrTarget = card.barcode_data || window.location.origin;
+  const qrBox = document.getElementById("pvQrBox");
+  qrBox.innerHTML = "";
+  new QRCode(qrBox, {
+    text: qrTarget,
+    width: 55,
+    height: 55,
+    colorDark: "#000000",
+    colorLight: "#ffffff",
+    correctLevel: QRCode.CorrectLevel.M
+  });
+
+  const printBtn = document.getElementById("pvPrintDirectBtn");
+  if (printBtn) {
+    printBtn.href = "print_inventory_card.php?source=inventaris_kartu&id=" + (card.id || "");
+  }
+
+  const modal = new bootstrap.Modal(document.getElementById("previewCardModal"));
+  modal.show();
+}
+</script>';
+
+render_page('Dashboard IT Operations', $body, $head, $extraScript);
