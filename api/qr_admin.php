@@ -106,7 +106,7 @@ $body = '
     <a class="btn btn-outline-secondary fw-semibold btn-sm" href="'.e(module_url('dashboard.php')).'"><i class="bi bi-arrow-left me-1"></i> Dashboard</a>
     <a class="btn btn-action-add fw-semibold btn-sm" href="'.e(module_url('asset_add.php')).'"><i class="bi bi-plus-lg me-1"></i> Tambah Aset</a>
     <a class="btn btn-primary fw-semibold btn-sm" target="_blank" href="'.e(module_url('print_qr.php', ['cabang'=>$cabangId])).'"><i class="bi bi-printer-fill me-1"></i> Cetak Stiker QR Cabang Ini</a>
-    <a class="btn btn-outline-primary fw-semibold btn-sm" target="_blank" href="'.e(module_url('print_inventory_card.php', ['cabang'=>$cabangId])).'"><i class="bi bi-credit-card-2-front me-1"></i> Cetak Kartu CR80</a>
+    <a class="btn btn-outline-primary fw-semibold btn-sm" target="_blank" href="'.e(module_url('print_inventory_card.php', ['cabang'=>$cabangId])).'"><i class="bi bi-credit-card-2-front me-1"></i> Cetak Kartu Inventaris</a>
   </div>
 </div>
 

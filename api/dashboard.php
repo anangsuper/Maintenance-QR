@@ -168,7 +168,7 @@ foreach ($cabangs as $c) {
     }
 }
 
-// Ambil Seluruh Data Kartu Inventaris CR80
+// Ambil Seluruh Data Kartu Inventaris
 $allCards = get_inventaris_kartu_rows();
 $totalCardsCount = count($allCards);
 
@@ -178,15 +178,88 @@ $searchCard = trim((string)($_GET['q_kartu'] ?? ''));
 $cabangCard = trim((string)($_GET['cabang_kartu'] ?? ''));
 $tahunCard = trim((string)($_GET['tahun_kartu'] ?? ''));
 
-// Daftar tahun untuk filter kartu
+$todayDateStr = date('Y-m-d');
+$todayDateDmy = date('d/m/Y');
+$todayDateDmY = date('d-m-Y');
+
+$filterHariIni = isset($_GET['hari_ini']) && (string)$_GET['hari_ini'] === '1';
+
+$todayCardsCount = 0;
+$withQrCardsCount = 0;
+
+// Metrik Jumlah Kartu Inventaris Per Cabang (01 - 05)
+$cabangStats = [
+    '01' => ['code' => '01', 'name' => 'Kantor Pusat', 'count' => 0, 'today' => 0, 'color' => '#2E7CF6', 'icon' => 'bi-building'],
+    '02' => ['code' => '02', 'name' => 'Batulicin', 'count' => 0, 'today' => 0, 'color' => '#16803C', 'icon' => 'bi-geo-alt'],
+    '03' => ['code' => '03', 'name' => 'Martapura', 'count' => 0, 'today' => 0, 'color' => '#D97706', 'icon' => 'bi-geo-alt'],
+    '04' => ['code' => '04', 'name' => 'Tanjung', 'count' => 0, 'today' => 0, 'color' => '#8B5CF6', 'icon' => 'bi-geo-alt'],
+    '05' => ['code' => '05', 'name' => 'Handil Bakti', 'count' => 0, 'today' => 0, 'color' => '#EC4899', 'icon' => 'bi-geo-alt'],
+];
+
+$branchKeywordMap = [
+    '01' => ['kantor pusat', 'kpo', 'pusat'],
+    '02' => ['batulicin'],
+    '03' => ['martapura'],
+    '04' => ['tanjung'],
+    '05' => ['handil bakti', 'handil']
+];
+
+// Daftar tahun untuk filter kartu & hitung metrik
 $cardYears = [];
 foreach ($allCards as $ac) {
+    $rek = trim((string)($ac['nomor_rekening'] ?? ''));
+    $lok = strtolower(trim((string)($ac['lokasi'] ?? '')));
+    $assignedCode = '01'; // Default
+
+    if (preg_match('/^(\d{2})[\.\-]/', $rek, $m) && isset($cabangStats[$m[1]])) {
+        $assignedCode = $m[1];
+    } else {
+        foreach ($branchKeywordMap as $bCode => $keywords) {
+            foreach ($keywords as $kw) {
+                if (strpos($lok, $kw) !== false) {
+                    $assignedCode = $bCode;
+                    break 2;
+                }
+            }
+        }
+    }
+
     $t = trim((string)($ac['tanggal_perolehan'] ?? ''));
+    $createdAc = trim((string)($ac['created_at'] ?? ''));
+    
+    // Deteksi apakah diperoleh / dibuat hari ini
+    $isTodayItem = false;
     if ($t !== '' && $t !== '0000-00-00') {
-        $y = date('Y', strtotime($t));
+        if (preg_match('/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/', $t, $m)) {
+            $tglNorm = sprintf('%04d-%02d-%02d', $m[3], $m[2], $m[1]);
+            $y = $m[3];
+        } else {
+            $tglNorm = substr($t, 0, 10);
+            $y = date('Y', strtotime($t));
+        }
+        if ($tglNorm === $todayDateStr) {
+            $isTodayItem = true;
+        }
         if ($y && !in_array($y, $cardYears, true)) {
             $cardYears[] = $y;
         }
+    }
+    if (!$isTodayItem && $createdAc !== '') {
+        if (str_starts_with($createdAc, $todayDateStr) || str_starts_with($createdAc, $todayDateDmy) || str_starts_with($createdAc, $todayDateDmY)) {
+            $isTodayItem = true;
+        }
+    }
+    if ($isTodayItem) {
+        $todayCardsCount++;
+        if (isset($cabangStats[$assignedCode])) {
+            $cabangStats[$assignedCode]['today']++;
+        }
+    }
+    if (isset($cabangStats[$assignedCode])) {
+        $cabangStats[$assignedCode]['count']++;
+    }
+    if (!empty($ac['barcode_data'])) {
+        $withQrCardsCount++;
     }
 }
 rsort($cardYears);
@@ -198,8 +271,29 @@ foreach ($cardYears as $cy) {
     $optTahunKartuHtml .= '<option value="' . e($cy) . '"' . ($tahunCard === (string)$cy ? ' selected' : '') . '>' . e($cy) . '</option>';
 }
 
-// Filter Kartu Inventaris (Mendukung Pencarian, Cabang 01-05, dan Tahun)
-$filteredCards = array_filter($allCards, function($r) use ($searchCard, $cabangCard, $tahunCard) {
+// Filter Kartu Inventaris (Mendukung Pencarian, Cabang 01-05, Tahun, dan Hari Ini)
+$filteredCards = array_filter($allCards, function($r) use ($searchCard, $cabangCard, $tahunCard, $filterHariIni, $todayDateStr, $todayDateDmy, $todayDateDmY) {
+    if ($filterHariIni) {
+        $tgl = trim((string)($r['tanggal_perolehan'] ?? ''));
+        $created = trim((string)($r['created_at'] ?? ''));
+        $isToday = false;
+        if ($tgl !== '' && $tgl !== '0000-00-00') {
+            if (preg_match('/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/', $tgl, $m)) {
+                $tglNorm = sprintf('%04d-%02d-%02d', $m[3], $m[2], $m[1]);
+            } else {
+                $tglNorm = substr($tgl, 0, 10);
+            }
+            if ($tglNorm === $todayDateStr) {
+                $isToday = true;
+            }
+        }
+        if (!$isToday && $created !== '') {
+            if (str_starts_with($created, $todayDateStr) || str_starts_with($created, $todayDateDmy) || str_starts_with($created, $todayDateDmY)) {
+                $isToday = true;
+            }
+        }
+        if (!$isToday) return false;
+    }
     if ($searchCard !== '') {
         $q = strtolower($searchCard);
         $haystack = strtolower(($r['nomor_rekening'] ?? '') . ' ' . ($r['nama_barang'] ?? '') . ' ' . ($r['barcode_data'] ?? '') . ' ' . ($r['lokasi'] ?? ''));
@@ -237,7 +331,11 @@ $filteredCards = array_filter($allCards, function($r) use ($searchCard, $cabangC
     if ($tahunCard !== '' && $tahunCard !== 'all' && $tahunCard !== 'Semua Tahun') {
         $tgl = trim((string)($r['tanggal_perolehan'] ?? ''));
         if ($tgl !== '' && $tgl !== '0000-00-00') {
-            $y = date('Y', strtotime($tgl));
+            if (preg_match('/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/', $tgl, $m)) {
+                $y = $m[3];
+            } else {
+                $y = date('Y', strtotime($tgl));
+            }
             if ($y !== $tahunCard) return false;
         } else {
             return false;
@@ -364,7 +462,7 @@ if (!empty($unresolvedFindings)) {
 }
 
 // =========================================================================
-// 5. GENERASI DATA TABEL KARTU INVENTARIS CR80
+// 5. GENERASI DATA TABEL KARTU INVENTARIS
 // =========================================================================
 $cardsTableRowsHtml = '';
 if (empty($filteredCards)) {
@@ -381,6 +479,27 @@ if (empty($filteredCards)) {
         $lokasi = $c['lokasi'] ?? 'KPO';
         $jsonPayload = json_encode(array_merge($c, ['gabungan' => $gabungan]), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP);
 
+        // Deteksi apakah item baru diperoleh hari ini
+        $isCardToday = false;
+        $tglClean = trim((string)$tglRaw);
+        $createdClean = trim((string)($c['created_at'] ?? ''));
+        if ($tglClean !== '' && $tglClean !== '0000-00-00') {
+            if (preg_match('/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/', $tglClean, $m)) {
+                $tglNorm = sprintf('%04d-%02d-%02d', $m[3], $m[2], $m[1]);
+            } else {
+                $tglNorm = substr($tglClean, 0, 10);
+            }
+            if ($tglNorm === $todayDateStr) {
+                $isCardToday = true;
+            }
+        }
+        if (!$isCardToday && $createdClean !== '') {
+            if (str_starts_with($createdClean, $todayDateStr) || str_starts_with($createdClean, $todayDateDmy) || str_starts_with($createdClean, $todayDateDmY)) {
+                $isCardToday = true;
+            }
+        }
+        $todayBadge = $isCardToday ? '<span class="badge bg-success-subtle text-success border border-success-subtle ms-1" style="font-size: 0.68rem; font-weight: 700;"><i class="bi bi-stars me-1"></i>Hari Ini</span>' : '';
+
         $cardsTableRowsHtml .= '
         <tr id="card-row-'.$cId.'">
           <td class="text-center">
@@ -394,6 +513,7 @@ if (empty($filteredCards)) {
           </td>
           <td>
             <span class="small text-secondary font-monospace"><i class="bi bi-calendar-event text-primary me-1"></i>'.e($tglCard).'</span>
+            '.$todayBadge.'
           </td>
           <td>
             <span class="badge-chip chip-primary font-monospace" style="font-weight: 700; letter-spacing: 0.04em;">'.e($gabungan).'</span>
@@ -411,7 +531,7 @@ if (empty($filteredCards)) {
           </td>
           <td class="text-end text-nowrap">
             <div class="btn-group btn-group-sm">
-              <button type="button" class="btn btn-sm btn-light border" title="Pratinjau Fisik Kartu CR80" onclick=\'openCardPreviewModal('.$jsonPayload.')\'>
+              <button type="button" class="btn btn-sm btn-light border" title="Pratinjau Fisik Kartu" onclick=\'openCardPreviewModal('.$jsonPayload.')\'>
                 <i class="bi bi-eye"></i>
               </button>
               <a class="btn btn-sm btn-light border" target="_blank" href="'.e(module_url('print_inventory_card.php', ['source'=>'inventaris_kartu', 'id'=>$cId])).'" title="Cetak Kartu Ini">
@@ -435,17 +555,39 @@ foreach (array_slice($allCards, 0, 5) as $qc) {
     $qId = (int)$qc['id'];
     $qRek = $qc['nomor_rekening'] ?? '';
     $qNama = $qc['nama_barang'] ?? '';
-    $qTgl = format_card_date($qc['tanggal_perolehan'] ?? '');
-    $qGab = get_nomor_asset_gabungan($qRek, $qc['tanggal_perolehan'] ?? '');
+    $qTglRaw = $qc['tanggal_perolehan'] ?? '';
+    $qTgl = format_card_date($qTglRaw);
+    $qGab = get_nomor_asset_gabungan($qRek, $qTglRaw);
+
+    $isQToday = false;
+    $qTglClean = trim((string)$qTglRaw);
+    $qCreatedClean = trim((string)($qc['created_at'] ?? ''));
+    if ($qTglClean !== '' && $qTglClean !== '0000-00-00') {
+        if (preg_match('/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/', $qTglClean, $qm)) {
+            $qTglNorm = sprintf('%04d-%02d-%02d', $qm[3], $qm[2], $qm[1]);
+        } else {
+            $qTglNorm = substr($qTglClean, 0, 10);
+        }
+        if ($qTglNorm === $todayDateStr) {
+            $isQToday = true;
+        }
+    }
+    if (!$isQToday && $qCreatedClean !== '') {
+        if (str_starts_with($qCreatedClean, $todayDateStr) || str_starts_with($qCreatedClean, $todayDateDmy) || str_starts_with($qCreatedClean, $todayDateDmY)) {
+            $isQToday = true;
+        }
+    }
+    $qTodayBadge = $isQToday ? '<span class="badge bg-success-subtle text-success border border-success-subtle ms-1" style="font-size: 0.65rem; font-weight: 700;">Hari Ini</span>' : '';
+
     $quickCardsRowsHtml .= '
     <tr>
       <td><span class="font-monospace fw-bold text-primary small">'.e($qRek).'</span></td>
       <td><span class="fw-semibold text-dark small">'.e($qNama).'</span></td>
-      <td><span class="small text-secondary font-monospace">'.e($qTgl).'</span></td>
+      <td><span class="small text-secondary font-monospace">'.e($qTgl).'</span> '.$qTodayBadge.'</td>
       <td><span class="badge-chip chip-primary font-monospace">'.e($qGab).'</span></td>
       <td><span class="badge-chip chip-secondary">'.e($qc['lokasi'] ?? 'KPO').'</span></td>
       <td class="text-end">
-        <a class="btn btn-sm btn-light border py-0 px-2" target="_blank" href="'.e(module_url('print_inventory_card.php', ['source'=>'inventaris_kartu', 'id'=>$qId])).'\" title="Cetak Kartu"><i class="bi bi-printer"></i></a>
+        <a class="btn btn-sm btn-light border py-0 px-2" target="_blank" href="'.e(module_url('print_inventory_card.php', ['source'=>'inventaris_kartu', 'id'=>$qId])).'" title="Cetak Kartu"><i class="bi bi-printer"></i></a>
       </td>
     </tr>';
 }
@@ -866,12 +1008,40 @@ $body = '
 '.($flash ? '<div class="alert alert-success alert-dismissible fade show border-0 shadow-sm mb-3" style="border-left: 4px solid #10B981 !important;"><i class="bi bi-check-circle-fill me-2 text-success"></i>'.e($flash).'<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>' : '').'
 '.($flashError ? '<div class="alert alert-danger alert-dismissible fade show border-0 shadow-sm mb-3" style="border-left: 4px solid #EF4444 !important;"><i class="bi bi-exclamation-triangle-fill me-2 text-danger"></i>'.e($flashError).'<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>' : '').'
 
+// Persiapan Grid Jumlah Kartu Per Cabang (01 - 05)
+$branchCardsGridHtml = '';
+foreach ($cabangStats as $bCode => $b) {
+    $isBranchActive = ($cabangCard === $bCode);
+    $todayBadgeBranch = $b['today'] > 0 ? '<span class="badge bg-success-subtle text-success border border-success-subtle ms-1" style="font-size: 0.65rem; font-weight: 700;">+'.$b['today'].' Hari Ini</span>' : '';
+    $branchCardsGridHtml .= '
+    <div class="col-6 col-md-4 col-lg">
+      <a href="'.e(module_url('dashboard.php', ['tab'=>'kartu', 'cabang_kartu'=>($isBranchActive ? '' : $bCode)])).'" class="text-decoration-none">
+        <div class="p-2 px-3 rounded border '.($isBranchActive ? 'border-primary bg-primary-subtle shadow-sm' : 'border-light-subtle bg-light').' h-100 transition-all" style="cursor: pointer;">
+          <div class="d-flex justify-content-between align-items-center">
+            <span class="font-monospace fw-bold small '.($isBranchActive ? 'text-primary' : 'text-secondary').'">'.$bCode.'</span>
+            '.$todayBadgeBranch.'
+          </div>
+          <div class="fw-bold text-dark text-truncate mt-1" style="font-size: 0.85rem;">'.e($b['name']).'</div>
+          <div class="d-flex align-items-baseline gap-1 mt-1">
+            <span class="fs-5 fw-bold '.($isBranchActive ? 'text-primary' : 'text-dark').'">'.$b['count'].'</span>
+            <span class="text-muted small" style="font-size: 0.72rem;">kartu</span>
+          </div>
+        </div>
+      </a>
+    </div>';
+}
+
+$branchBadgesWidgetHtml = '';
+foreach ($cabangStats as $bCode => $b) {
+    $branchBadgesWidgetHtml .= '<span class="badge bg-light text-dark border py-1 px-2"><span class="font-monospace fw-bold text-primary me-1">'.$bCode.'</span>'.e($b['name']).': <strong>'.$b['count'].'</strong>'.($b['today'] > 0 ? ' <span class="text-success fw-bold">(+'.$b['today'].')</span>' : '').'</span>';
+}
+
 <!-- Page Header -->
 <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3 mb-3">
   <div>
     <div class="tech-label mb-1">BANKING IT OPERATIONS COMMAND</div>
     <h1 class="h3 mb-1 fw-bold text-dark">Dashboard IT Operations</h1>
-    <p class="text-secondary small mb-0">Pusat komando pemeliharaan aset IT, audit berkala, dan manajemen cetak label kartu inventaris CR80.</p>
+    <p class="text-secondary small mb-0">Pusat komando pemeliharaan aset IT, audit berkala, dan manajemen cetak label kartu inventaris.</p>
   </div>
   <div class="d-flex align-items-center gap-2 flex-wrap">
     <div class="ops-header-badge" style="background:#ECFDF3; border:1px solid #A6F4C5; color:#16803C;">
@@ -943,8 +1113,11 @@ $body .= '
   <div class="col-6 col-md-4 col-xl-2">
     <a href="'.e(module_url('dashboard.php', ['tab' => 'kartu'])).'" class="text-decoration-none">
       <div class="card card-metric h-100" style="border-left-color: #6bb82a; cursor: pointer;">
-        <div class="metric-value text-success">'.$totalCardsCount.'</div>
-        <div class="metric-label text-dark">Kartu CR80 Aktif</div>
+        <div class="metric-value text-success d-flex align-items-center justify-content-between">
+          <span>'.$totalCardsCount.'</span>
+          '.($todayCardsCount > 0 ? '<span class="badge bg-success-subtle text-success border border-success-subtle" style="font-size: 0.68rem; font-weight: 700;">+'.$todayCardsCount.' Hari Ini</span>' : '').'
+        </div>
+        <div class="metric-label text-dark">Kartu Inventaris Aktif</div>
         <div class="small text-primary mt-2" style="font-size: 0.72rem;"><i class="bi bi-arrow-right-circle me-1"></i>Buka Kartu &raquo;</div>
       </div>
     </a>
@@ -957,13 +1130,13 @@ $body .= '
     <i class="bi bi-speedometer2"></i> Ringkasan Maintenance & Kepatuhan
   </a>
   <a class="dashboard-nav-tab '.($activeTab === 'kartu' ? 'active' : '').'" href="'.e(module_url('dashboard.php', ['tab' => 'kartu'])).'">
-    <i class="bi bi-credit-card-2-front"></i> Kartu Inventaris (CR80) & Label QR
+    <i class="bi bi-credit-card-2-front"></i> Kartu Inventaris & Label QR
     <span class="badge bg-primary text-white rounded-pill ms-1">'.$totalCardsCount.'</span>
   </a>
 </div>';
 
 // =========================================================================
-// 7. KONTEN TAB: KARTU INVENTARIS CR80 ATAU MONITORING
+// 7. KONTEN TAB: KARTU INVENTARIS ATAU MONITORING
 // =========================================================================
 if ($activeTab === 'kartu') {
     // --- TAMPILAN TAB KARTU INVENTARIS (DISAMAKAN PERSIS DENGAN WEBSITE QR) ---
@@ -971,11 +1144,11 @@ if ($activeTab === 'kartu') {
     <!-- Header Kicker & Action Bar -->
     <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
       <div>
-        <div class="text-uppercase small fw-bold" style="letter-spacing: 0.08em; color: var(--app-accent); font-size: 0.72rem; margin-bottom: 2px;">OPERATIONS / KARTU INVENTARIS CR80</div>
+        <div class="text-uppercase small fw-bold" style="letter-spacing: 0.08em; color: var(--app-accent); font-size: 0.72rem; margin-bottom: 2px;">OPERATIONS / KARTU INVENTARIS</div>
         <h2 class="h4 fw-bold text-dark mb-1 d-flex align-items-center gap-2">
-          <i class="bi bi-credit-card-2-front text-primary"></i> Manajemen Kartu Inventaris (CR80)
+          <i class="bi bi-credit-card-2-front text-primary"></i> Manajemen Kartu Inventaris
         </h2>
-        <div class="text-muted small">Kelola data kartu inventaris berstandar ATM (85.6mm × 54mm), cetak massal A4, dan cetak kartu pilihan.</div>
+        <div class="text-muted small">Kelola data kartu inventaris, cetak massal A4, dan cetak kartu pilihan.</div>
       </div>
       <div class="d-flex gap-2 flex-wrap align-items-center">
         <button type="button" class="btn btn-primary d-inline-flex align-items-center gap-1 fw-semibold px-3" data-bs-toggle="modal" data-bs-target="#addCardModal">
@@ -1007,38 +1180,99 @@ if ($activeTab === 'kartu') {
       </div>
     </div>
 
+    <!-- 4 Kotak Metrik Ringkasan Tab Kartu Termasuk Baru Diperoleh Hari Ini -->
+    <div class="row g-3 mb-4">
+      <div class="col-6 col-md-3">
+        <div class="card card-metric h-100" style="border-left-color: #2E7CF6;">
+          <div class="metric-value text-primary">'.$totalCardsCount.'</div>
+          <div class="metric-label">Total Kartu Inventaris</div>
+          <div class="small text-secondary mt-2" style="font-size: 0.72rem;">Seluruh unit terdaftar</div>
+        </div>
+      </div>
+      <div class="col-6 col-md-3">
+        <a href="'.e(module_url('dashboard.php', ['tab'=>'kartu', 'hari_ini'=>1])).'" class="text-decoration-none">
+          <div class="card card-metric h-100 '.($filterHariIni ? 'bg-success-subtle border-success' : '').'" style="border-left-color: #16803C; cursor: pointer;">
+            <div class="metric-value text-success d-flex align-items-center justify-content-between">
+              <span>'.$todayCardsCount.'</span>
+              '.($todayCardsCount > 0 ? '<span class="badge bg-success text-white" style="font-size: 0.72rem; font-weight: 700;"><i class="bi bi-stars me-1"></i>Baru</span>' : '').'
+            </div>
+            <div class="metric-label text-dark">Baru Diperoleh Hari Ini</div>
+            <div class="small text-success mt-2" style="font-size: 0.72rem;"><i class="bi bi-arrow-right-circle me-1"></i>Filter aset hari ini ('.date('d/m/Y').') &raquo;</div>
+          </div>
+        </a>
+      </div>
+      <div class="col-6 col-md-3">
+        <div class="card card-metric h-100" style="border-left-color: #0284C7;">
+          <div class="metric-value" style="color: #0284C7;">'.$withQrCardsCount.'</div>
+          <div class="metric-label">Kartu Ber-Label QR</div>
+          <div class="small text-secondary mt-2" style="font-size: 0.72rem;">Siap scan & tracking</div>
+        </div>
+      </div>
+      <div class="col-6 col-md-3">
+        <div class="card card-metric h-100" style="border-left-color: #7C3AED;">
+          <div class="metric-value" style="color: #7C3AED;">5</div>
+          <div class="metric-label">Sebaran Kantor Cabang</div>
+          <div class="small text-secondary mt-2" style="font-size: 0.72rem;">01 Pusat s/d 05 Handil Bakti</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Ringkasan Jumlah Kartu Inventaris Per Cabang (01 - 05) -->
+    <div class="card p-3 mb-4 border shadow-sm bg-white" style="border-radius: 8px; border-color: var(--app-border) !important;">
+      <div class="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-2">
+        <div>
+          <div class="tech-label" style="font-size: 0.68rem;">DISTRIBUSI UNIT CABANG</div>
+          <h3 class="h6 fw-bold text-dark mb-0 d-flex align-items-center gap-2">
+            <i class="bi bi-buildings text-primary"></i> Jumlah Kartu Inventaris Per Cabang
+          </h3>
+        </div>
+        <div class="text-secondary small">
+          Total <strong>5 Kantor Cabang</strong> · Klik cabang untuk filter cepat
+        </div>
+      </div>
+      <div class="row g-2 mt-1">
+        '.$branchCardsGridHtml.'
+      </div>
+    </div>
+
     <!-- Compact Filter Bar (Sistem Filter Aset Komputer) -->
     <div class="card p-3 mb-4 border shadow-sm bg-white" style="border-radius: 8px; border-color: var(--app-border) !important;">
       <form method="get" class="row g-2 align-items-end">
         <input type="hidden" name="tab" value="kartu">
-        <div class="col-lg-5 col-md-6">
+        <div class="col-lg-4 col-md-6">
           <label class="form-label text-secondary small fw-semibold mb-1">Cari Nomor Rekening / Perangkat / PIC</label>
           <div class="input-group input-group-sm">
             <span class="input-group-text bg-white border-end-0"><i class="bi bi-search text-muted"></i></span>
             <input type="text" class="form-control form-control-sm border-start-0" name="q_kartu" value="'.e($searchCard).'" placeholder="Ketik nomor rekening, nama barang, kode QR, lokasi...">
           </div>
         </div>
-        <div class="col-lg-4 col-md-3 col-sm-6">
+        <div class="col-lg-3 col-md-3 col-sm-6">
           <label class="form-label text-secondary small fw-semibold mb-1">Kantor Cabang</label>
           <select class="form-select form-select-sm" name="cabang_kartu">
             <option value="">Semua Cabang (01 - 05)</option>
-            <option value="01"'.($cabangCard === '01' ? ' selected' : '').'>01 - Kantor Pusat</option>
-            <option value="02"'.($cabangCard === '02' ? ' selected' : '').'>02 - Batulicin</option>
-            <option value="03"'.($cabangCard === '03' ? ' selected' : '').'>03 - Martapura</option>
-            <option value="04"'.($cabangCard === '04' ? ' selected' : '').'>04 - Tanjung</option>
-            <option value="05"'.($cabangCard === '05' ? ' selected' : '').'>05 - Handil Bakti</option>
+            <option value="01"'.($cabangCard === '01' ? ' selected' : '').'>01 - Kantor Pusat ('.$cabangStats['01']['count'].')</option>
+            <option value="02"'.($cabangCard === '02' ? ' selected' : '').'>02 - Batulicin ('.$cabangStats['02']['count'].')</option>
+            <option value="03"'.($cabangCard === '03' ? ' selected' : '').'>03 - Martapura ('.$cabangStats['03']['count'].')</option>
+            <option value="04"'.($cabangCard === '04' ? ' selected' : '').'>04 - Tanjung ('.$cabangStats['04']['count'].')</option>
+            <option value="05"'.($cabangCard === '05' ? ' selected' : '').'>05 - Handil Bakti ('.$cabangStats['05']['count'].')</option>
           </select>
         </div>
-        <div class="col-lg-3 col-md-3 col-sm-6">
+        <div class="col-lg-2 col-md-3 col-sm-6">
           <label class="form-label text-secondary small fw-semibold mb-1">Tahun Perolehan</label>
           <select class="form-select form-select-sm" name="tahun_kartu">
             <option value="">Semua Tahun</option>
             '.$optTahunKartuHtml.'
           </select>
         </div>
+        <div class="col-lg-3 col-md-12 d-flex gap-1 justify-content-lg-end">
+          <a class="btn btn-sm '.($filterHariIni ? 'btn-success fw-bold' : 'btn-outline-success').' w-100" href="'.e(module_url('dashboard.php', ['tab' => 'kartu', 'hari_ini' => ($filterHariIni ? null : 1)])).'" title="Filter aset yang baru diperoleh / didaftarkan hari ini">
+            <i class="bi bi-stars me-1"></i> Baru Hari Ini ('.$todayCardsCount.')
+          </a>
+        </div>
         <div class="col-12 d-flex justify-content-between align-items-center pt-2 border-top mt-2 flex-wrap gap-2">
           <div class="text-secondary small">
             Menampilkan <strong>'.count($filteredCards).'</strong> kartu dari total <strong>'.$totalCardsCount.'</strong> kartu inventaris terdaftar.
+            '.($filterHariIni ? '<span class="badge bg-success-subtle text-success border border-success-subtle ms-1"><i class="bi bi-funnel me-1"></i>Filter Hari Ini Aktif</span>' : '').'
           </div>
           <div class="d-flex gap-2">
             <a class="btn btn-sm btn-light border px-3" href="'.e(module_url('dashboard.php', ['tab' => 'kartu'])).'"><i class="bi bi-x-circle me-1"></i> Reset</a>
@@ -1078,7 +1312,7 @@ if ($activeTab === 'kartu') {
               </th>
               <th style="width: 140px;">NOMOR REKENING</th>
               <th>NAMA BARANG</th>
-              <th style="width: 160px;">TANGGAL PEROLEHAN</th>
+              <th style="width: 170px;">TANGGAL PEROLEHAN</th>
               <th style="width: 180px;">NOMOR ASSET (GABUNGAN)</th>
               <th>KODE QR / BARCODE</th>
               <th>LOKASI</th>
@@ -1092,7 +1326,7 @@ if ($activeTab === 'kartu') {
       </div>
       <div class="card-footer bg-white border-top py-2 px-3 d-flex justify-content-between align-items-center text-muted small">
         <div>Menampilkan <strong>'.count($filteredCards).'</strong> dari <strong>'.$totalCardsCount.'</strong> kartu inventaris terdaftar</div>
-        <div class="font-monospace">CR80 ATM Standard: 85.6 × 54.0 mm</div>
+        <div class="font-monospace">Ukuran Standar Kartu: 85.6 × 54.0 mm</div>
       </div>
     </div>';
 
@@ -1141,10 +1375,11 @@ if ($activeTab === 'kartu') {
         <div class="card mb-4 border shadow-sm bg-white" style="border-radius: 8px;">
           <div class="card-header bg-white border-bottom py-3 px-4 d-flex align-items-center justify-content-between flex-wrap gap-2">
             <div>
-              <div class="tech-label">INVENTORY CR80 REGISTRY</div>
+              <div class="tech-label">INVENTORY REGISTRY</div>
               <h2 class="h6 mb-0 fw-semibold text-dark d-flex align-items-center gap-2">
-                <i class="bi bi-credit-card-2-front text-primary"></i> Kartu Inventaris (CR80) & Label QR
+                <i class="bi bi-credit-card-2-front text-primary"></i> Kartu Inventaris & Label QR
                 <span class="badge bg-primary text-white rounded-pill ms-1">'.$totalCardsCount.' Unit</span>
+                '.($todayCardsCount > 0 ? '<span class="badge bg-success-subtle text-success border border-success-subtle ms-1">+'.$todayCardsCount.' Baru Hari Ini</span>' : '').'
               </h2>
             </div>
             <div class="d-flex gap-2">
@@ -1155,6 +1390,10 @@ if ($activeTab === 'kartu') {
                 <i class="bi bi-sliders me-1"></i> Kelola Lengkap &raquo;
               </a>
             </div>
+          </div>
+          <div class="px-4 py-2 bg-light border-bottom d-flex gap-2 flex-wrap align-items-center" style="font-size: 0.75rem;">
+            <span class="text-muted fw-semibold me-1"><i class="bi bi-diagram-3 me-1"></i>Cabang:</span>
+            '.$branchBadgesWidgetHtml.'
           </div>
           <div class="table-responsive">
             <table class="table table-hover align-middle mb-0">
@@ -1384,7 +1623,7 @@ $body .= '
           <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
         </div>
         <div class="modal-body p-3">
-          <p class="small text-muted mb-2">Pilih perangkat di bawah ini untuk didaftarkan ke tabel Kartu Inventaris CR80:</p>
+          <p class="small text-muted mb-2">Pilih perangkat di bawah ini untuk didaftarkan ke tabel Kartu Inventaris:</p>
           <div class="table-responsive" style="max-height: 360px; overflow-y: auto;">
             <table class="table table-hover align-middle mb-0">
               <thead class="table-light">
@@ -1424,13 +1663,13 @@ $body .= '
   </div>
 </div>
 
-<!-- MODAL: PRATINJAU DESAIN FISIK KARTU CR80 (STANDAR ATM 85.6mm x 54.0mm) -->
+<!-- MODAL: PRATINJAU DESAIN FISIK KARTU -->
 <div class="modal fade" id="previewCardModal" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered" style="max-width: 540px;">
     <div class="modal-content border-0 shadow-lg" style="border-radius: 16px; overflow: hidden;">
       <div class="modal-header bg-primary text-white py-2 px-3">
         <h6 class="modal-title fw-bold d-flex align-items-center gap-2">
-          <i class="bi bi-eye-fill"></i> Pratinjau Desain Kartu Fisik CR80 (Standar ATM)
+          <i class="bi bi-eye-fill"></i> Pratinjau Desain Kartu Fisik
         </h6>
         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
       </div>

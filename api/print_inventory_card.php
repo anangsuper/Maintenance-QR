@@ -936,7 +936,7 @@ unset($_SESSION['flash'], $_SESSION['flash_error']);
         <div>
           <div class="toolbar-title d-flex align-items-center gap-2">
             <i class="bi bi-credit-card-2-front text-primary"></i>
-            <span>Cetak Kartu Inventaris CR80</span>
+            <span>Cetak Kartu Inventaris</span>
             <span class="badge bg-primary text-white" style="font-size: 0.72rem; font-weight: 600;"><i class="bi bi-geo-alt-fill me-1"></i>Cabang: <?= e($cabangDisplayTitle) ?></span>
             <span class="badge bg-secondary text-white" style="font-size: 0.72rem; font-weight: 600;"><i class="bi bi-calendar-event me-1"></i>Tgl: <?= e(date('d/m/Y')) ?></span>
           </div>
@@ -1231,7 +1231,7 @@ unset($_SESSION['flash'], $_SESSION['flash_error']);
       <div class="modal-content border-0 shadow-lg" style="border-radius: 16px; overflow: hidden;">
         <div class="modal-header bg-primary text-white py-2 px-3">
           <h6 class="modal-title fw-bold d-flex align-items-center gap-2">
-            <i class="bi bi-eye-fill"></i> Pratinjau Interaktif Kartu CR80
+            <i class="bi bi-eye-fill"></i> Pratinjau Interaktif Kartu
           </h6>
           <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
         </div>
