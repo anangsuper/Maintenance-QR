@@ -527,6 +527,7 @@ $body = '
   </div>
   <div class="d-flex gap-2 flex-wrap">
     <a class="btn btn-primary d-inline-flex align-items-center gap-1 fw-semibold px-3" href="'.e(module_url('asset_add.php')).'"><i class="bi bi-plus-lg"></i> Tambah Aset</a>
+    <a class="btn btn-outline-primary d-inline-flex align-items-center gap-1 fw-semibold" href="'.e(module_url('asset_import.php')).'"><i class="bi bi-file-earmark-arrow-up"></i> Import Excel / CSV</a>
     <a class="btn btn-light border d-inline-flex align-items-center gap-1" target="_blank" href="'.e(module_url('print_card.php', ['cabang' => $cabangId, 'tahun' => $year])).'"><i class="bi bi-printer"></i> Cetak Kartu Kontrol</a>
     <a class="btn btn-light border d-inline-flex align-items-center gap-1" target="_blank" href="'.e(module_url('print_inventory_card.php', ['cabang' => $cabangId])).'"><i class="bi bi-credit-card-2-front text-primary"></i> Cetak Kartu Inventaris</a>
     <a class="btn btn-light border d-inline-flex align-items-center gap-1" href="'.e(module_url('export_csv.php')).'"><i class="bi bi-download"></i> Export CSV</a>
