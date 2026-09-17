@@ -375,7 +375,7 @@ if (empty($filteredCards)) {
         $rek = $c['nomor_rekening'] ?? '';
         $nama = $c['nama_barang'] ?? '';
         $tglRaw = $c['tanggal_perolehan'] ?? '';
-        $tglIndo = format_indo_date($tglRaw);
+        $tglCard = format_card_date($tglRaw);
         $gabungan = get_nomor_asset_gabungan($rek, $tglRaw);
         $barcode = $c['barcode_data'] ?? '';
         $lokasi = $c['lokasi'] ?? 'KPO';
@@ -393,7 +393,7 @@ if (empty($filteredCards)) {
             <div class="fw-semibold text-dark">'.e($nama).'</div>
           </td>
           <td>
-            <span class="small text-secondary"><i class="bi bi-calendar-event text-primary me-1"></i>'.e($tglIndo).'</span>
+            <span class="small text-secondary font-monospace"><i class="bi bi-calendar-event text-primary me-1"></i>'.e($tglCard).'</span>
           </td>
           <td>
             <span class="badge-chip chip-primary font-monospace" style="font-weight: 700; letter-spacing: 0.04em;">'.e($gabungan).'</span>
@@ -435,13 +435,13 @@ foreach (array_slice($allCards, 0, 5) as $qc) {
     $qId = (int)$qc['id'];
     $qRek = $qc['nomor_rekening'] ?? '';
     $qNama = $qc['nama_barang'] ?? '';
-    $qTgl = format_indo_date($qc['tanggal_perolehan'] ?? '');
+    $qTgl = format_card_date($qc['tanggal_perolehan'] ?? '');
     $qGab = get_nomor_asset_gabungan($qRek, $qc['tanggal_perolehan'] ?? '');
     $quickCardsRowsHtml .= '
     <tr>
       <td><span class="font-monospace fw-bold text-primary small">'.e($qRek).'</span></td>
       <td><span class="fw-semibold text-dark small">'.e($qNama).'</span></td>
-      <td><span class="small text-secondary">'.e($qTgl).'</span></td>
+      <td><span class="small text-secondary font-monospace">'.e($qTgl).'</span></td>
       <td><span class="badge-chip chip-primary font-monospace">'.e($qGab).'</span></td>
       <td><span class="badge-chip chip-secondary">'.e($qc['lokasi'] ?? 'KPO').'</span></td>
       <td class="text-end">
@@ -1301,7 +1301,8 @@ $body .= '
           </div>
           <div class="mb-3">
             <label class="form-label small fw-bold text-dark">Tanggal Perolehan</label>
-            <input type="date" name="tanggal_perolehan" class="form-control form-control-sm" value="'.date('Y-m-d').'" required>
+            <input type="text" name="tanggal_perolehan" id="addCardTanggal" class="form-control form-control-sm font-monospace" placeholder="dd/mm/yyyy (contoh: '.date('d/m/Y').')" value="'.date('d/m/Y').'" maxlength="10" required oninput="handleDateInput(this, event)">
+            <div class="form-text text-muted" style="font-size: 0.72rem;">Format: <strong>dd/mm/yyyy</strong></div>
           </div>
           <div class="mb-3">
             <label class="form-label small fw-bold text-dark">Lokasi Barang</label>
@@ -1347,7 +1348,8 @@ $body .= '
           </div>
           <div class="mb-3">
             <label class="form-label small fw-bold text-dark">Tanggal Perolehan</label>
-            <input type="date" name="tanggal_perolehan" id="editCardTanggal" class="form-control form-control-sm" required>
+            <input type="text" name="tanggal_perolehan" id="editCardTanggal" class="form-control form-control-sm font-monospace" placeholder="dd/mm/yyyy" maxlength="10" required oninput="handleDateInput(this, event)">
+            <div class="form-text text-muted" style="font-size: 0.72rem;">Format: <strong>dd/mm/yyyy</strong></div>
           </div>
           <div class="mb-3">
             <label class="form-label small fw-bold text-dark">Lokasi Barang</label>
@@ -1688,6 +1690,31 @@ function handleRekeningInput(el, event) {
   }
 }
 
+function handleDateInput(el, event) {
+  if (!el) return;
+  const isDelete = event && event.inputType && event.inputType.startsWith("delete");
+  let digits = el.value.replace(/[^0-9]/g, "");
+  if (digits.length === 0) {
+    el.value = "";
+    return;
+  }
+  let d = digits.slice(0, 2);
+  let m = digits.slice(2, 4);
+  let y = digits.slice(4, 8);
+
+  if (digits.length < 2) {
+    el.value = digits;
+  } else if (digits.length === 2) {
+    el.value = isDelete ? d : d + "/";
+  } else if (digits.length < 4) {
+    el.value = d + "/" + digits.slice(2);
+  } else if (digits.length === 4) {
+    el.value = isDelete ? (d + "/" + m) : (d + "/" + m + "/");
+  } else {
+    el.value = d + "/" + m + "/" + y;
+  }
+}
+
 function autoSuggestBranchLokasi(code) {
   const addLok = document.getElementById("addCardLokasi");
   if (!addLok || addLok.dataset.customized === "true") return;
@@ -1739,7 +1766,16 @@ function openCardEditModal(card) {
   document.getElementById("editCardId").value = card.id || "";
   document.getElementById("editCardRekening").value = card.nomor_rekening || "";
   document.getElementById("editCardNama").value = card.nama_barang || "";
-  document.getElementById("editCardTanggal").value = card.tanggal_perolehan || "";
+
+  let rawDate = (card.tanggal_perolehan || "").trim();
+  let formattedDate = rawDate;
+  if (rawDate.includes("-")) {
+    const parts = rawDate.split("-");
+    if (parts.length === 3) {
+      formattedDate = `${parts[2]}/${parts[1]}/${parts[0]}`;
+    }
+  }
+  document.getElementById("editCardTanggal").value = formattedDate;
   document.getElementById("editCardLokasi").value = card.lokasi || "";
   document.getElementById("editCardBarcode").value = card.barcode_data || "";
 
@@ -1749,14 +1785,20 @@ function openCardEditModal(card) {
 
 function openCardPreviewModal(card) {
   const rek = card.nomor_rekening || "";
-  const tglRaw = card.tanggal_perolehan || "";
+  const tglRaw = (card.tanggal_perolehan || "").trim();
   
   // Format DD/MM/YYYY
   let tglDisplay = "-";
   if (tglRaw) {
-    const parts = tglRaw.split("-");
-    if (parts.length === 3) {
-      tglDisplay = `${parts[2]}/${parts[1]}/${parts[0]}`;
+    if (tglRaw.includes("/")) {
+      tglDisplay = tglRaw;
+    } else if (tglRaw.includes("-")) {
+      const parts = tglRaw.split("-");
+      if (parts.length === 3) {
+        tglDisplay = `${parts[2]}/${parts[1]}/${parts[0]}`;
+      } else {
+        tglDisplay = tglRaw;
+      }
     } else {
       tglDisplay = tglRaw;
     }

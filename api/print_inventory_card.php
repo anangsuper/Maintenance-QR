@@ -141,11 +141,7 @@ if ($source === 'inventaris_kartu') {
         }
         $tglRaw = trim((string)($r['tanggal_perolehan'] ?? ''));
 
-        $tglFormatted = '-';
-        if ($tglRaw !== '' && $tglRaw !== '0000-00-00') {
-            $ts = strtotime($tglRaw);
-            $tglFormatted = $ts ? date('d/m/Y', $ts) : $tglRaw;
-        }
+        $tglFormatted = format_card_date($tglRaw);
 
         $qrTarget = $barcode !== '' ? $barcode : module_url('scan.php', ['t' => get_static_qr_token($id)]);
 
@@ -207,11 +203,7 @@ if ($source === 'inventaris_kartu') {
         $pengguna = !empty($a['karyawan_nama']) && $a['karyawan_nama'] !== '-' ? $a['karyawan_nama'] : 'Umum / Pool';
 
         $tglRaw = (string)($a['tanggal_perolehan'] ?? $a['created_at'] ?? '');
-        $tglFormatted = '-';
-        if ($tglRaw !== '' && $tglRaw !== '0000-00-00') {
-            $ts = strtotime($tglRaw);
-            $tglFormatted = $ts ? date('d/m/Y', $ts) : $tglRaw;
-        }
+        $tglFormatted = format_card_date($tglRaw);
 
         $token = !empty($a['qr_token']) ? $a['qr_token'] : ($id > 0 ? get_static_qr_token($id) : '');
         $qrUrl = $token ? module_url('scan.php', ['t' => $token]) : module_url('assets.php');
@@ -1170,7 +1162,8 @@ unset($_SESSION['flash'], $_SESSION['flash_error']);
             </div>
             <div class="mb-3">
               <label class="form-label small fw-bold text-dark">Tanggal Perolehan</label>
-              <input type="date" name="tanggal_perolehan" class="form-control form-control-sm" value="<?= date('Y-m-d') ?>" required>
+              <input type="text" name="tanggal_perolehan" id="printAddCardTanggal" class="form-control form-control-sm font-monospace" placeholder="dd/mm/yyyy (contoh: <?= date('d/m/Y') ?>)" value="<?= date('d/m/Y') ?>" maxlength="10" required oninput="handleDateInput(this, event)">
+              <div class="form-text text-muted" style="font-size: 0.72rem;">Format: <strong>dd/mm/yyyy</strong></div>
             </div>
             <div class="mb-3">
               <label class="form-label small fw-bold text-dark">Lokasi Barang</label>
@@ -1579,6 +1572,31 @@ function doPost(e) {
 
       if (p0.length === 2) {
         autoSuggestPrintBranch(p0);
+      }
+    }
+
+    function handleDateInput(el, event) {
+      if (!el) return;
+      const isDelete = event && event.inputType && event.inputType.startsWith("delete");
+      let digits = el.value.replace(/[^0-9]/g, "");
+      if (digits.length === 0) {
+        el.value = "";
+        return;
+      }
+      let d = digits.slice(0, 2);
+      let m = digits.slice(2, 4);
+      let y = digits.slice(4, 8);
+
+      if (digits.length < 2) {
+        el.value = digits;
+      } else if (digits.length === 2) {
+        el.value = isDelete ? d : d + "/";
+      } else if (digits.length < 4) {
+        el.value = d + "/" + digits.slice(2);
+      } else if (digits.length === 4) {
+        el.value = isDelete ? (d + "/" + m) : (d + "/" + m + "/");
+      } else {
+        el.value = d + "/" + m + "/" + y;
       }
     }
 

@@ -56,12 +56,49 @@ function default_inventaris_kartu_rows(): array {
 }
 
 /**
+ * Format tanggal kartu inventaris ke format dd/mm/yyyy (contoh: 26/09/2026)
+ */
+function format_card_date(?string $dateStr): string {
+    if (empty($dateStr) || $dateStr === '0000-00-00') return '-';
+    $clean = trim((string)$dateStr);
+    if (preg_match('/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/', $clean, $m)) {
+        return sprintf('%02d/%02d/%04d', $m[1], $m[2], $m[3]);
+    }
+    if (preg_match('/^(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})$/', $clean, $m)) {
+        return sprintf('%02d/%02d/%04d', $m[3], $m[2], $m[1]);
+    }
+    $ts = strtotime($clean);
+    return $ts ? date('d/m/Y', $ts) : $clean;
+}
+
+/**
+ * Normalisasi format tanggal input (dd/mm/yyyy atau yyyy-mm-dd) ke format database standar Y-m-d
+ */
+function normalize_date_to_db(?string $dateStr): string {
+    $clean = trim((string)$dateStr);
+    if ($clean === '' || $clean === '0000-00-00') return date('Y-m-d');
+    if (preg_match('/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/', $clean, $m)) {
+        return sprintf('%04d-%02d-%02d', $m[3], $m[2], $m[1]);
+    }
+    if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $clean)) {
+        return $clean;
+    }
+    $ts = strtotime($clean);
+    return $ts ? date('Y-m-d', $ts) : date('Y-m-d');
+}
+
+/**
  * Format tanggal ke bahasa Indonesia (contoh: 26 September 2026)
  */
 function format_indo_date(?string $dateStr): string {
     if (empty($dateStr) || $dateStr === '0000-00-00') return '-';
-    $ts = strtotime($dateStr);
-    if (!$ts) return (string)$dateStr;
+    $clean = trim((string)$dateStr);
+    if (preg_match('/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/', $clean, $m)) {
+        $ts = mktime(0, 0, 0, (int)$m[2], (int)$m[1], (int)$m[3]);
+    } else {
+        $ts = strtotime($clean);
+    }
+    if (!$ts) return $clean;
     $bulan = [
         1 => 'Januari', 2 => 'Februari', 3 => 'Maret', 4 => 'April',
         5 => 'Mei', 6 => 'Juni', 7 => 'Juli', 8 => 'Agustus',
@@ -80,9 +117,16 @@ function get_nomor_asset_gabungan(string $noRek, ?string $tgl): string {
     $cleanRek = preg_replace('/[^0-9]/', '', $noRek);
     $tglPart = '';
     if (!empty($tgl) && $tgl !== '0000-00-00') {
-        $ts = strtotime($tgl);
-        if ($ts) {
-            $tglPart = date('dmY', $ts);
+        $cleanTgl = trim((string)$tgl);
+        if (preg_match('/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/', $cleanTgl, $m)) {
+            $tglPart = sprintf('%02d%02d%04d', $m[1], $m[2], $m[3]);
+        } else if (preg_match('/^(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})$/', $cleanTgl, $m)) {
+            $tglPart = sprintf('%02d%02d%04d', $m[3], $m[2], $m[1]);
+        } else {
+            $ts = strtotime($cleanTgl);
+            if ($ts) {
+                $tglPart = date('dmY', $ts);
+            }
         }
     }
     return $cleanRek . $tglPart;
@@ -229,7 +273,7 @@ function get_inventaris_kartu_rows(bool $refresh = false): array {
 function insert_inventaris_kartu(array $data): array {
     $rek = trim((string)($data['nomor_rekening'] ?? ''));
     $nama = trim((string)($data['nama_barang'] ?? ''));
-    $tgl = trim((string)($data['tanggal_perolehan'] ?? date('Y-m-d')));
+    $tgl = normalize_date_to_db($data['tanggal_perolehan'] ?? '');
     $barcode = trim((string)($data['barcode_data'] ?? ''));
     
     // Tentukan lokasi: gunakan input lokasi jika diisi, atau default berdasarkan cabang
@@ -280,7 +324,7 @@ function insert_inventaris_kartu(array $data): array {
 function update_inventaris_kartu(int $id, array $data): bool {
     $rek = trim((string)($data['nomor_rekening'] ?? ''));
     $nama = trim((string)($data['nama_barang'] ?? ''));
-    $tgl = trim((string)($data['tanggal_perolehan'] ?? date('Y-m-d')));
+    $tgl = normalize_date_to_db($data['tanggal_perolehan'] ?? '');
     $barcode = trim((string)($data['barcode_data'] ?? ''));
     
     // Tentukan lokasi: gunakan input lokasi jika diisi, atau default berdasarkan cabang
