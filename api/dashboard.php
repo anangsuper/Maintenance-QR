@@ -1293,7 +1293,7 @@ $body .= '
         <div class="modal-body p-3">
           <div class="mb-3">
             <label class="form-label small fw-bold text-dark">Nomor Rekening</label>
-            <input type="text" name="nomor_rekening" id="addCardRekening" class="form-control form-control-sm font-monospace" placeholder="Contoh: 01.5.00003" required oninput="handleRekeningInput(this, \'add\')">
+            <input type="text" name="nomor_rekening" id="addCardRekening" class="form-control form-control-sm font-monospace" placeholder="Contoh: 01.5.00003" required oninput="handleRekeningInput(this)">
           </div>
           <div class="mb-3">
             <label class="form-label small fw-bold text-dark">Nama Barang</label>
@@ -1334,7 +1334,7 @@ $body .= '
         <div class="modal-body p-3">
           <div class="mb-3">
             <label class="form-label small fw-bold text-dark">Nomor Rekening</label>
-            <input type="text" name="nomor_rekening" id="editCardRekening" class="form-control form-control-sm font-monospace" placeholder="Contoh: 01.5.00003" required oninput="handleRekeningInput(this, \'edit\')">
+            <input type="text" name="nomor_rekening" id="editCardRekening" class="form-control form-control-sm font-monospace" placeholder="Contoh: 01.5.00003" required oninput="handleRekeningInput(this)">
           </div>
           <div class="mb-3">
             <label class="form-label small fw-bold text-dark">Nama Barang</label>
@@ -1651,36 +1651,36 @@ function confirmDeleteCard(id, label) {
 
 function handleRekeningInput(el) {
   if (!el) return;
-  let val = el.value.replace(/[^0-9.]/g, '');
-  if (!val.includes('.')) {
+  let val = el.value.replace(/[^0-9.]/g, "");
+  if (!val.includes(".")) {
     if (val.length === 2) {
-      el.value = val + '.';
+      el.value = val + ".";
       return;
     }
     if (val.length > 2) {
       let p0 = val.slice(0, 2);
       let rest = val.slice(2);
       if (rest.length === 1) {
-        el.value = p0 + '.' + rest;
+        el.value = p0 + "." + rest;
       } else if (rest.length === 2) {
-        el.value = p0 + '.' + rest + '.';
+        el.value = p0 + "." + rest + ".";
       } else {
         let p1 = rest.slice(0, 2);
         let p2 = rest.slice(2, 7);
-        el.value = p0 + '.' + p1 + '.' + p2;
+        el.value = p0 + "." + p1 + "." + p2;
       }
       return;
     }
     el.value = val;
     return;
   }
-  let parts = val.split('.');
-  let p0 = (parts[0] || '').replace(/[^0-9]/g, '').slice(0, 2);
-  let p1 = (parts[1] || '').replace(/[^0-9]/g, '').slice(0, 2);
-  let p2 = (parts[2] || '').replace(/[^0-9]/g, '').slice(0, 5);
+  let parts = val.split(".");
+  let p0 = (parts[0] || "").replace(/[^0-9]/g, "").slice(0, 2);
+  let p1 = (parts[1] || "").replace(/[^0-9]/g, "").slice(0, 2);
+  let p2 = (parts[2] || "").replace(/[^0-9]/g, "").slice(0, 5);
   let res = p0;
-  if (parts.length > 1) res += '.' + p1;
-  if (parts.length > 2) res += '.' + p2;
+  if (parts.length > 1) res += "." + p1;
+  if (parts.length > 2) res += "." + p2;
   el.value = res;
 }
 
