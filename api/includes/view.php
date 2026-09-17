@@ -48,7 +48,7 @@ function render_page(string $title, string $content, string $extraHead = '', str
             ['title' => 'Asset Registry', 'url' => module_url('assets.php'), 'icon' => 'bi-pc-display', 'active' => in_array($currentPage, ['assets.php', 'asset_edit.php', 'asset_delete.php'], true)],
             ['title' => 'Maintenance', 'url' => module_url('audit.php'), 'icon' => 'bi-clipboard-check', 'active' => in_array($currentPage, ['audit.php', 'monthly_history.php', 'history.php', 'maintenance_detail.php'], true)],
             ['title' => 'QR Scanner', 'url' => module_url('scanner.php'), 'icon' => 'bi-qr-code-scan', 'active' => ($currentPage === 'scanner.php')],
-            ['title' => 'Kartu Inventaris (CR80)', 'url' => module_url('print_inventory_card.php'), 'icon' => 'bi-credit-card-2-front', 'active' => ($currentPage === 'print_inventory_card.php')],
+            ['title' => 'Kartu Inventaris (CR80)', 'url' => module_url('inventory_card.php'), 'icon' => 'bi-credit-card-2-front', 'active' => in_array($currentPage, ['inventory_card.php', 'cetak_kartu.php', 'print_inventory_card.php'], true)],
         ],
         'MONITORING' => $monitoringItems,
         'MANAGEMENT' => $managementItems,

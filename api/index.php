@@ -6,7 +6,12 @@ $uri = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH);
 $path = trim((string)$uri, '/');
 
 if ($path === '' || $path === 'index.php') {
-    $path = 'dashboard.php';
+    $pageParam = trim((string)($_GET['page'] ?? ''));
+    if ($pageParam !== '') {
+        $path = $pageParam;
+    } else {
+        $path = 'dashboard.php';
+    }
 }
 
 // Support serving static images/assets and PWA files directly on Vercel

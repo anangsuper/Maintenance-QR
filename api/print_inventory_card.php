@@ -153,6 +153,7 @@ if ($source === 'inventaris_kartu') {
             'nama'         => $nama,
             'tgl'          => $tglFormatted,
             'tgl_raw'      => $tglRaw,
+            'nomor_gabungan' => get_nomor_asset_gabungan($rek, $tglRaw),
             'lokasi'       => $lokasi,
             'pengguna'     => $pengguna,
             'barcode_data' => $barcode,
@@ -220,6 +221,7 @@ if ($source === 'inventaris_kartu') {
             'nama'         => $deviceFull,
             'tgl'          => $tglFormatted,
             'tgl_raw'      => $tglRaw,
+            'nomor_gabungan' => get_nomor_asset_gabungan($kode, $tglRaw),
             'lokasi'       => $lokasi,
             'pengguna'     => $pengguna,
             'barcode_data' => $qrUrl,
@@ -285,19 +287,18 @@ if ($exportMode === 'doc') {
         echo '<div class="cr80-header">';
         echo '<table style="width:100%; border-collapse:collapse;"><tr>';
         echo '<td style="width: 36pt;"><img src="'.e($logoUri).'" style="height: 20pt; width: auto;"></td>';
-        echo '<td style="text-align:right;"><div class="cr80-title">PT BPR MITRATAMA ARTHABUANA</div><div class="cr80-banner">KARTU INVENTARIS ASET</div></td>';
+        echo '<td style="text-align:right;"><div class="cr80-title">PT BPR MITRATAMA ARTHABUANA</div><div class="cr80-banner">ASSET TETAP</div></td>';
         echo '</tr></table>';
         echo '</div>';
         echo '<div class="cr80-body">';
         echo '<table class="field-table">';
-        echo '<tr><td class="field-label">NO. INV</td><td style="width:4pt;">:</td><td><span class="badge-kode">'.e($c['kode']).'</span></td></tr>';
-        echo '<tr><td class="field-label">BARANG</td><td>:</td><td><b>'.e($c['nama']).'</b></td></tr>';
-        echo '<tr><td class="field-label">TANGGAL</td><td>:</td><td>'.e($c['tgl']).'</td></tr>';
-        echo '<tr><td class="field-label">LOKASI</td><td>:</td><td>'.e($c['lokasi']).'</td></tr>';
-        echo '<tr><td class="field-label">USER/PIC</td><td>:</td><td>'.e($c['pengguna']).'</td></tr>';
+        echo '<tr><td class="field-label">NOMOR ASSET</td><td style="width:4pt;">|</td><td><b>'.e($c['nomor_gabungan']).'</b></td></tr>';
+        echo '<tr><td class="field-label">NAMA ASSET</td><td>|</td><td><b>'.e($c['nama']).'</b></td></tr>';
+        echo '<tr><td class="field-label">TGL PEROLEHAN</td><td>|</td><td><b>'.e($c['tgl']).'</b></td></tr>';
+        echo '<tr><td class="field-label">LOKASI</td><td>|</td><td><b>'.e($c['lokasi']).'</b></td></tr>';
         echo '</table>';
         echo '</div>';
-        echo '<div class="cr80-footer">Perhatian: Dilarang memindahkan barang inventaris ini tanpa seizin Departemen IT & Sarana Prasarana.</div>';
+        echo '<div class="cr80-footer" style="color:#dc2626;font-weight:bold;">PERHATIAN: <span style="color:#334155;font-weight:normal;">Perhatian Dilarang memindahkan barang inventaris ini tanpa seizin Human Resource Departement (HRD) Bank Mitra</span></div>';
         echo '</div>';
         echo '</td>';
         $colCount++;
@@ -417,256 +418,331 @@ unset($_SESSION['flash'], $_SESSION['flash_error']);
       position: relative;
       page-break-inside: avoid;
       break-inside: avoid;
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
 
     .cr80-card {
       width: 85.6mm;
       height: 54.0mm;
       background: #ffffff;
-      border-radius: 3.2mm;
-      border: 1px solid #d1d5db;
+      border-radius: 3.8mm;
+      border: 1px solid #cbd5e1;
       display: flex;
       flex-direction: column;
       justify-content: space-between;
       overflow: hidden;
       position: relative;
-      box-shadow: 0 2px 6px rgba(0, 59, 115, 0.08);
+      box-shadow: 0 2px 8px rgba(0, 56, 112, 0.08);
       transition: transform 0.15s ease, box-shadow 0.15s ease;
+      box-sizing: border-box;
     }
 
     .cr80-card:hover {
-      box-shadow: 0 6px 16px rgba(0, 59, 115, 0.15);
+      box-shadow: 0 6px 18px rgba(0, 56, 112, 0.16);
     }
 
+    /* Dashed Cutting Guide surrounding the card */
     .with-cut-guides .cr80-card-wrapper::after {
       content: "";
       position: absolute;
-      top: -2mm;
-      left: -2mm;
-      right: -2mm;
-      bottom: -2mm;
-      border: 0.5px dashed #cbd5e1;
+      top: -2.2mm;
+      left: -2.2mm;
+      right: -2.2mm;
+      bottom: -2.2mm;
+      border: 1px dashed #94a3b8;
       pointer-events: none;
-      border-radius: 4.5mm;
+      border-radius: 5mm;
     }
 
-    .card-header-bar {
-      height: 12.8mm;
-      background: #ffffff;
+    /* 1. HEADER SECTION */
+    .card-header-container {
+      height: 12.2mm;
       display: flex;
-      align-items: center;
+      align-items: stretch;
       justify-content: space-between;
-      padding: 1.2mm 2.2mm 1mm 2.4mm;
-      border-bottom: 0.8px solid #e2e8f0;
+      background: #ffffff;
+      position: relative;
+      padding: 0;
+      overflow: hidden;
     }
 
-    .header-logo-box {
-      width: 24mm;
-      height: 9.8mm;
+    .header-logo-area {
+      width: 30mm;
+      padding: 1.2mm 1mm 1mm 2.8mm;
       display: flex;
       align-items: center;
       justify-content: flex-start;
     }
 
-    .header-logo-box img {
+    .header-logo-area img {
       max-width: 100%;
-      max-height: 9.8mm;
+      max-height: 10mm;
       object-fit: contain;
     }
 
-    .header-title-box {
+    .header-right-col {
       flex: 1;
-      text-align: right;
       display: flex;
       flex-direction: column;
-      align-items: flex-end;
-      justify-content: center;
+      justify-content: stretch;
     }
 
-    .header-main-title {
+    .header-navy-bar {
+      background-color: #003870;
+      color: #ffffff;
       font-size: 5.6pt;
       font-weight: 800;
-      color: var(--primary-navy);
-      letter-spacing: 0.02em;
-      line-height: 1.15;
+      letter-spacing: 0.03em;
+      text-align: center;
+      padding: 1.3mm 2mm 1.1mm;
       text-transform: uppercase;
       white-space: nowrap;
+      line-height: 1.1;
+      border-top-right-radius: 3.5mm;
     }
 
-    .header-sub-sec {
+    .header-sub-bar {
+      height: 5.6mm;
       display: flex;
       align-items: center;
-      margin-top: 0.8mm;
-    }
-
-    .green-banner-wrapper {
-      display: inline-flex;
-      align-items: center;
-      border-radius: 1.2mm;
-      overflow: hidden;
-      box-shadow: 0 1px 2px rgba(0,0,0,0.06);
-    }
-
-    .teal-stripe {
-      width: 2.2mm;
-      height: 3.8mm;
-      background-color: var(--accent-teal);
-    }
-
-    .green-banner {
-      background-color: var(--accent-green);
-      color: #ffffff;
-      font-size: 4.8pt;
-      font-weight: 800;
-      padding: 0.6mm 2.4mm 0.6mm 1.8mm;
-      letter-spacing: 0.05em;
-      text-transform: uppercase;
-      line-height: 1;
-    }
-
-    .card-main-body {
-      flex: 1;
-      padding: 1.4mm 2.4mm 1mm 2.4mm;
-      display: flex;
-      align-items: stretch;
       justify-content: space-between;
-      gap: 1.8mm;
+      background: #ffffff;
+      position: relative;
+      overflow: hidden;
     }
 
-    .info-left-col {
-      flex: 1;
-      min-width: 0;
+    .sub-green-badge {
+      background-color: #6bb82a;
+      color: #ffffff;
+      font-size: 5.6pt;
+      font-weight: 800;
+      letter-spacing: 0.05em;
+      padding: 0 4mm 0 2.5mm;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      clip-path: polygon(0 0, 100% 0, calc(100% - 3.2mm) 100%, 0 100%);
+      white-space: nowrap;
+      text-transform: uppercase;
+    }
+
+    .sub-teal-slant {
+      width: 3.5mm;
+      height: 100%;
+      background-color: #008fa0;
+      margin-left: -2.2mm;
+      clip-path: polygon(0 0, 100% 0, calc(100% - 3.2mm) 100%, 0 100%);
+    }
+
+    .sub-dots-pattern {
+      display: grid;
+      grid-template-columns: repeat(3, 2.6px);
+      grid-gap: 2.2px;
+      padding-right: 3.5mm;
+      margin-left: auto;
+    }
+
+    .p-dot {
+      width: 2.6px;
+      height: 2.6px;
+      background-color: #6bb82a;
+      border-radius: 50%;
+      display: block;
+    }
+
+    /* 2. TABLE ROWS (4 ROWS) */
+    .card-table-section {
       display: flex;
       flex-direction: column;
-      justify-content: space-between;
+      background: #ffffff;
+      border-top: 1px solid #003870;
     }
 
-    .field-row {
+    .attr-row {
       display: flex;
       align-items: center;
-      line-height: 1.2;
-      font-size: 5.1pt;
-      margin-bottom: 0.6mm;
+      height: 5.4mm;
+      border-bottom: 1px solid #cbd5e1;
+      background: #ffffff;
     }
 
-    .field-row:last-child {
-      margin-bottom: 0;
+    .attr-row.row-bottom-last {
+      border-bottom: 2px solid #6bb82a;
     }
 
-    .field-lbl-wrap {
-      width: 17mm;
-      flex-shrink: 0;
+    .attr-icon-box {
+      width: 6.8mm;
+      height: 100%;
+      background-color: #003870;
       display: flex;
       align-items: center;
-      gap: 1mm;
-      color: var(--primary-navy);
-      font-weight: 700;
-    }
-
-    .field-icon {
-      font-size: 5pt;
-      color: var(--primary-navy);
-    }
-
-    .field-sep {
-      width: 1.5mm;
+      justify-content: center;
       flex-shrink: 0;
-      color: var(--text-muted);
-      font-weight: bold;
     }
 
-    .field-val-wrap {
+    .attr-svg {
+      width: 3.2mm;
+      height: 3.2mm;
+      color: #ffffff;
+      fill: #ffffff;
+    }
+
+    .attr-label {
+      width: 23mm;
+      padding-left: 2.5mm;
+      font-size: 5.2pt;
+      font-weight: 800;
+      color: #003870;
+      letter-spacing: 0.02em;
+      flex-shrink: 0;
+      text-transform: uppercase;
+    }
+
+    .attr-divider {
+      font-size: 6pt;
+      font-weight: 800;
+      color: #003870;
+      margin: 0 2mm 0 1mm;
+      flex-shrink: 0;
+    }
+
+    .attr-value {
       flex: 1;
-      min-width: 0;
-      font-weight: 600;
-      color: #1e293b;
+      font-size: 5.5pt;
+      font-weight: 800;
+      color: #000000;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
+      padding-right: 2.5mm;
     }
 
-    .kode-badge {
-      display: inline-block;
-      background: var(--primary-navy);
-      color: #ffffff;
-      padding: 0.4mm 1.8mm;
-      border-radius: 0.8mm;
-      font-family: 'JetBrains Mono', monospace;
+    .attr-value-rek {
+      font-family: 'JetBrains Mono', 'Plus Jakarta Sans', monospace, sans-serif;
+      letter-spacing: 0.02em;
+    }
+
+    /* 3. BOTTOM SECTION: WARNING & QR CODE */
+    .card-bottom-section {
+      flex: 1;
+      display: flex;
+      align-items: stretch;
+      position: relative;
+      background: #ffffff;
+      overflow: hidden;
+    }
+
+    .bottom-warning-col {
+      flex: 1;
+      padding: 1.8mm 2mm 1.5mm 2.8mm;
+      position: relative;
+      z-index: 2;
+      border-right: 1px solid #cbd5e1;
+      display: flex;
+      align-items: center;
+    }
+
+    .warning-content {
+      display: flex;
+      align-items: center;
+      gap: 2mm;
+    }
+
+    .warning-shield-icon {
+      width: 5.5mm;
+      height: 7mm;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .shield-svg {
+      width: 100%;
+      height: 100%;
+    }
+
+    .warning-text-wrap {
+      flex: 1;
+      line-height: 1.15;
+    }
+
+    .warning-heading {
+      color: #dc2626;
       font-size: 5.2pt;
-      font-weight: 700;
-      letter-spacing: 0.03em;
+      font-weight: 800;
+      letter-spacing: 0.04em;
+      margin-bottom: 0.4mm;
+      text-transform: uppercase;
     }
 
-    .field-val-device {
-      font-weight: 700;
-      color: #0f172a;
+    .warning-body {
+      color: #334155;
+      font-size: 3.5pt;
+      font-weight: 500;
+      line-height: 1.2;
     }
 
-    .qr-right-col {
-      width: 23.5mm;
+    .bottom-qr-col {
+      width: 25.5mm;
       flex-shrink: 0;
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      padding-left: 1mm;
-      border-left: 0.6px dashed #e2e8f0;
+      padding: 1.2mm 1mm;
+      position: relative;
+      z-index: 2;
     }
 
-    .qr-canvas-wrap {
-      width: 20mm;
-      height: 20mm;
-      background: #ffffff;
-      border: 1px solid var(--accent-teal);
-      border-radius: 1.2mm;
-      padding: 1mm;
+    .qr-canvas-holder {
+      width: 14.5mm;
+      height: 14.5mm;
       display: flex;
       align-items: center;
       justify-content: center;
-      box-shadow: 0 1px 3px rgba(0, 59, 115, 0.08);
+      background: #ffffff;
     }
 
-    .qr-canvas-wrap canvas,
-    .qr-canvas-wrap img {
+    .qr-canvas-holder canvas,
+    .qr-canvas-holder img {
       width: 100% !important;
       height: 100% !important;
       display: block;
     }
 
-    .qr-subtext {
-      font-size: 3.8pt;
-      font-weight: 800;
-      color: var(--primary-navy);
-      text-transform: uppercase;
-      letter-spacing: 0.02em;
-      margin-top: 0.8mm;
-      text-align: center;
-      line-height: 1.1;
-    }
-
-    .card-footer-sec {
-      background: #f8fafc;
-      border-top: 1px solid var(--accent-green);
-      padding: 0.8mm 2.4mm;
-      display: flex;
+    .scan-pill-badge {
+      background-color: #007a3d;
+      color: #ffffff;
+      border-radius: 10px;
+      padding: 0.5mm 2.2mm;
+      display: inline-flex;
       align-items: center;
       gap: 1mm;
-      font-size: 3.9pt;
-      color: #475569;
-      line-height: 1.15;
-    }
-
-    .card-footer-sec i {
-      color: #eab308;
-      font-size: 4.5pt;
-      flex-shrink: 0;
-    }
-
-    .card-footer-sec .disclaimer-text {
-      flex: 1;
+      margin-top: 1mm;
+      font-size: 3.5pt;
+      font-weight: 800;
+      letter-spacing: 0.02em;
       white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
+    }
+
+    .phone-svg {
+      width: 2.4mm;
+      height: 2.4mm;
+      fill: #ffffff;
+    }
+
+    /* Bottom Decorative Waves */
+    .bottom-wave-decor {
+      position: absolute;
+      left: 0;
+      bottom: 0;
+      width: 100%;
+      height: 6.5mm;
+      z-index: 1;
+      pointer-events: none;
     }
 
     @media print {
@@ -848,95 +924,106 @@ unset($_SESSION['flash'], $_SESSION['flash_error']);
                 <div class="cr80-card">
                   
                   <!-- 1. Header Kartu -->
-                  <div class="card-header-bar">
-                    <div class="header-logo-box">
-                      <img src="<?= e($logoUrl) ?>" alt="Logo Bank" loading="lazy">
+                  <div class="card-header-container">
+                    <div class="header-logo-area">
+                      <img src="<?= e($logoUrl) ?>" alt="Logo Bank Mitra" loading="lazy">
                     </div>
-                    <div class="header-title-box">
-                      <div class="header-main-title">PT BPR MITRATAMA ARTHABUANA</div>
-                      <div class="header-sub-sec">
-                        <div class="green-banner-wrapper">
-                          <div class="teal-stripe"></div>
-                          <div class="green-banner">KARTU INVENTARIS ASET</div>
+                    <div class="header-right-col">
+                      <div class="header-navy-bar">
+                        PT BPR MITRATAMA ARTHABUANA
+                      </div>
+                      <div class="header-sub-bar">
+                        <div class="sub-green-badge">
+                          ASSET TETAP
+                        </div>
+                        <div class="sub-teal-slant"></div>
+                        <div class="sub-dots-pattern">
+                          <span class="p-dot"></span><span class="p-dot"></span><span class="p-dot"></span>
+                          <span class="p-dot"></span><span class="p-dot"></span><span class="p-dot"></span>
                         </div>
                       </div>
                     </div>
                   </div>
 
-                  <!-- 2. Body Kartu -->
-                  <div class="card-main-body">
-                    <div class="info-left-col">
-                      <div class="field-row">
-                        <div class="field-lbl-wrap">
-                          <i class="bi bi-hash field-icon"></i>
-                          <span>NO. INV</span>
-                        </div>
-                        <div class="field-sep">:</div>
-                        <div class="field-val-wrap">
-                          <span class="kode-badge"><?= e($card['kode']) ?></span>
-                        </div>
+                  <!-- 2. Tabel 4 Baris Atribut -->
+                  <div class="card-table-section">
+                    <!-- Row 1: NOMOR ASSET -->
+                    <div class="attr-row">
+                      <div class="attr-icon-box">
+                        <svg viewBox="0 0 16 16" fill="currentColor" class="attr-svg"><path d="M6 1a1 1 0 0 0-.707.293L.293 6.293a1 1 0 0 0 0 1.414l6 6a1 1 0 0 0 1.414 0l5-5A1 1 0 0 0 13 8V2a1 1 0 0 0-1-1H6zm-2 4a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3z"/></svg>
                       </div>
+                      <div class="attr-label">NOMOR ASSET</div>
+                      <div class="attr-divider">|</div>
+                      <div class="attr-value attr-value-rek"><?= e($card['nomor_gabungan']) ?></div>
+                    </div>
 
-                      <div class="field-row">
-                        <div class="field-lbl-wrap">
-                          <i class="bi bi-box-seam field-icon"></i>
-                          <span>BARANG</span>
-                        </div>
-                        <div class="field-sep">:</div>
-                        <div class="field-val-wrap field-val-device" title="<?= e($card['nama']) ?>">
-                          <?= e($card['nama']) ?>
-                        </div>
+                    <!-- Row 2: NAMA ASSET -->
+                    <div class="attr-row">
+                      <div class="attr-icon-box">
+                        <svg viewBox="0 0 16 16" fill="currentColor" class="attr-svg"><path d="M1 3a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v8a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1V3zm1.5.5v7h11v-7h-11zM6 13.5a.5.5 0 0 1 .5-.5h3a.5.5 0 0 1 0 1h-3a.5.5 0 0 1-.5-.5z"/></svg>
                       </div>
+                      <div class="attr-label">NAMA ASSET</div>
+                      <div class="attr-divider">|</div>
+                      <div class="attr-value attr-value-nama" title="<?= e($card['nama']) ?>"><?= e($card['nama']) ?></div>
+                    </div>
 
-                      <div class="field-row">
-                        <div class="field-lbl-wrap">
-                          <i class="bi bi-calendar-event field-icon"></i>
-                          <span>TANGGAL</span>
-                        </div>
-                        <div class="field-sep">:</div>
-                        <div class="field-val-wrap">
-                          <?= e($card['tgl']) ?>
-                        </div>
+                    <!-- Row 3: TGL PEROLEHAN -->
+                    <div class="attr-row">
+                      <div class="attr-icon-box">
+                        <svg viewBox="0 0 16 16" fill="currentColor" class="attr-svg"><path d="M3.5 0a.5.5 0 0 1 .5.5V1h8V.5a.5.5 0 0 1 1 0V1h1a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V3a2 2 0 0 1 2-2h1V.5a.5.5 0 0 1 .5-.5zM1 4v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V4H1z"/></svg>
                       </div>
+                      <div class="attr-label">TGL PEROLEHAN</div>
+                      <div class="attr-divider">|</div>
+                      <div class="attr-value attr-value-tgl"><?= e($card['tgl']) ?></div>
+                    </div>
 
-                      <div class="field-row">
-                        <div class="field-lbl-wrap">
-                          <i class="bi bi-geo-alt-fill field-icon text-danger"></i>
-                          <span>LOKASI</span>
-                        </div>
-                        <div class="field-sep">:</div>
-                        <div class="field-val-wrap card-lokasi-text" title="<?= e($card['lokasi']) ?>">
-                          <?= e($card['lokasi']) ?>
-                        </div>
+                    <!-- Row 4: LOKASI -->
+                    <div class="attr-row row-bottom-last">
+                      <div class="attr-icon-box">
+                        <svg viewBox="0 0 16 16" fill="currentColor" class="attr-svg"><path d="M8 16s6-5.686 6-10A6 6 0 0 0 2 6c0 4.314 6 10 6 10zm0-7a3 3 0 1 1 0-6 3 3 0 0 1 0 6z"/></svg>
                       </div>
+                      <div class="attr-label">LOKASI</div>
+                      <div class="attr-divider">|</div>
+                      <div class="attr-value attr-value-lokasi" title="<?= e($card['lokasi']) ?>"><?= e($card['lokasi']) ?></div>
+                    </div>
+                  </div>
 
-                      <div class="field-row">
-                        <div class="field-lbl-wrap">
-                          <i class="bi bi-person-fill field-icon text-primary"></i>
-                          <span>PIC / USER</span>
+                  <!-- 3. Bottom Section: Perhatian & QR Code -->
+                  <div class="card-bottom-section">
+                    <!-- Kolom Kiri: Peringatan HRD -->
+                    <div class="bottom-warning-col">
+                      <div class="warning-content">
+                        <div class="warning-shield-icon">
+                          <svg viewBox="0 0 24 24" fill="none" stroke="#003870" stroke-width="2" class="shield-svg">
+                            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" fill="#ffffff"/>
+                            <path d="M12 8v5M12 16v.5" stroke="#003870" stroke-width="2.5" stroke-linecap="round"/>
+                          </svg>
                         </div>
-                        <div class="field-sep">:</div>
-                        <div class="field-val-wrap card-pengguna-text" title="<?= e($card['pengguna']) ?>">
-                          <?= e($card['pengguna']) ?>
+                        <div class="warning-text-wrap">
+                          <div class="warning-heading">PERHATIAN</div>
+                          <div class="warning-body card-disclaimer-val">
+                            Perhatian Dilarang memindahkan barang inventaris ini tanpa seizin Human Resource Departement (HRD) Bank Mitra
+                          </div>
                         </div>
                       </div>
                     </div>
 
-                    <!-- Kolom Kanan: Kotak QR Code -->
-                    <div class="qr-right-col">
-                      <div class="qr-canvas-wrap">
+                    <!-- Kolom Kanan: QR Code & Badge -->
+                    <div class="bottom-qr-col">
+                      <div class="qr-canvas-holder">
                         <div class="qr-box-inner" id="qr-box-<?= $cIdx ?>" data-qr="<?= e($card['qr_url']) ?>"></div>
                       </div>
-                      <div class="qr-subtext">SCAN PEMELIHARAAN</div>
+                      <div class="scan-pill-badge">
+                        <svg viewBox="0 0 16 16" fill="currentColor" class="phone-svg"><path d="M11 1a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1h6zM5 0a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2V2a2 2 0 0 0-2-2H5z"/><path d="M8 14a1 1 0 1 0 0-2 1 1 0 0 0 0 2z"/></svg>
+                        <span>SCAN UNTUK INFO</span>
+                      </div>
                     </div>
-                  </div>
 
-                  <!-- 3. Footer Kartu -->
-                  <div class="card-footer-sec">
-                    <i class="bi bi-exclamation-triangle-fill"></i>
-                    <span class="disclaimer-text card-disclaimer-val">
-                      Perhatian: Dilarang memindahkan barang inventaris ini tanpa seizin Departemen IT & Sarana Prasarana.
-                    </span>
+                    <!-- Bottom Wave Decoration -->
+                    <svg class="bottom-wave-decor" viewBox="0 0 856 120" preserveAspectRatio="none">
+                      <path d="M 0,55 C 100,50 180,95 270,95 C 330,95 380,85 450,110 L 450,120 L 0,120 Z" fill="#6bb82a" />
+                      <path d="M 420,120 C 530,120 620,115 720,80 C 780,60 820,40 856,20 L 856,120 L 420,120 Z" fill="#003870" />
+                    </svg>
                   </div>
 
                 </div>
@@ -1202,9 +1289,9 @@ function doPost(e) {
         if (qrUrl) {
           new QRCode(box, {
             text: qrUrl,
-            width: 72,
-            height: 72,
-            colorDark: "#003b73",
+            width: 58,
+            height: 58,
+            colorDark: "#000000",
             colorLight: "#ffffff",
             correctLevel: QRCode.CorrectLevel.M
           });
@@ -1264,7 +1351,7 @@ function doPost(e) {
         alert("Silakan ketik nama lokasi terlebih dahulu.");
         return;
       }
-      document.querySelectorAll(".card-lokasi-text").forEach(el => {
+      document.querySelectorAll(".attr-value-lokasi").forEach(el => {
         el.innerText = locVal;
         el.setAttribute("title", locVal);
       });
