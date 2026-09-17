@@ -1293,7 +1293,7 @@ $body .= '
         <div class="modal-body p-3">
           <div class="mb-3">
             <label class="form-label small fw-bold text-dark">Nomor Rekening</label>
-            <input type="text" name="nomor_rekening" id="addCardRekening" class="form-control form-control-sm font-monospace" placeholder="Contoh: 00.0.00000" maxlength="10" required oninput="handleRekeningInput(this, event)">
+            <input type="text" name="nomor_rekening" id="addCardRekening" class="form-control form-control-sm font-monospace" placeholder="Contoh: 01.05.0493" maxlength="11" required oninput="handleRekeningInput(this, event)">
           </div>
           <div class="mb-3">
             <label class="form-label small fw-bold text-dark">Nama Barang</label>
@@ -1340,7 +1340,7 @@ $body .= '
         <div class="modal-body p-3">
           <div class="mb-3">
             <label class="form-label small fw-bold text-dark">Nomor Rekening</label>
-            <input type="text" name="nomor_rekening" id="editCardRekening" class="form-control form-control-sm font-monospace" placeholder="Contoh: 00.0.00000" maxlength="10" required oninput="handleRekeningInput(this, event)">
+            <input type="text" name="nomor_rekening" id="editCardRekening" class="form-control form-control-sm font-monospace" placeholder="Contoh: 01.05.0493" maxlength="11" required oninput="handleRekeningInput(this, event)">
           </div>
           <div class="mb-3">
             <label class="form-label small fw-bold text-dark">Nama Barang</label>
@@ -1672,14 +1672,16 @@ function handleRekeningInput(el, event) {
   }
 
   let p0 = digits.slice(0, 2);
-  let p1 = digits.slice(2, 3);
-  let p2 = digits.slice(3, 8); // Maksimal 5 digit setelah titik terakhir (00.0.00000)
+  let p1 = digits.slice(2, 4);
+  let p2 = digits.slice(4, 9); // Mendukung 4 hingga 5 digit di belakang (contoh: 01.05.0493 atau 01.05.00354)
 
   if (digits.length < 2) {
     el.value = digits;
   } else if (digits.length === 2) {
     el.value = isDelete ? p0 : p0 + ".";
-  } else if (digits.length === 3) {
+  } else if (digits.length < 4) {
+    el.value = p0 + "." + digits.slice(2);
+  } else if (digits.length === 4) {
     el.value = isDelete ? (p0 + "." + p1) : (p0 + "." + p1 + ".");
   } else {
     el.value = p0 + "." + p1 + "." + p2;
