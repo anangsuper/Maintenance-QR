@@ -14,3 +14,4 @@ require_once __DIR__ . '/includes/assets.php';
 require_once __DIR__ . '/includes/maintenance.php';
 require_once __DIR__ . '/includes/dashboard.php';
 require_once __DIR__ . '/includes/view.php';
+require_once __DIR__ . '/helpers/GoogleSheetsBridge.php';

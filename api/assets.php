@@ -528,6 +528,7 @@ $body = '
   <div class="d-flex gap-2 flex-wrap">
     <a class="btn btn-primary d-inline-flex align-items-center gap-1 fw-semibold px-3" href="'.e(module_url('asset_add.php')).'"><i class="bi bi-plus-lg"></i> Tambah Aset</a>
     <a class="btn btn-light border d-inline-flex align-items-center gap-1" target="_blank" href="'.e(module_url('print_card.php', ['cabang' => $cabangId, 'tahun' => $year])).'"><i class="bi bi-printer"></i> Cetak Kartu Kontrol</a>
+    <a class="btn btn-light border d-inline-flex align-items-center gap-1" target="_blank" href="'.e(module_url('print_inventory_card.php', ['cabang' => $cabangId])).'"><i class="bi bi-credit-card-2-front text-primary"></i> Cetak Kartu CR80</a>
     <a class="btn btn-light border d-inline-flex align-items-center gap-1" href="'.e(module_url('export_csv.php')).'"><i class="bi bi-download"></i> Export CSV</a>
   </div>
 </div>
@@ -653,6 +654,9 @@ $body = '
       </button>
       <button type="button" class="btn btn-sm btn-dark fw-semibold shadow-sm" onclick="batchPrintQR()">
         <i class="bi bi-qr-code me-1"></i> Cetak Label QR (<span class="selectedCountNum">0</span>)
+      </button>
+      <button type="button" class="btn btn-sm btn-info text-white fw-semibold shadow-sm" onclick="batchPrintInventoryCards()">
+        <i class="bi bi-credit-card-2-front me-1"></i> Cetak Kartu CR80 (<span class="selectedCountNum">0</span>)
       </button>
       <button type="button" class="btn btn-sm btn-outline-secondary" onclick="deselectAllAssets()">
         <i class="bi bi-x-circle me-1"></i> Batalkan
@@ -841,6 +845,16 @@ document.addEventListener("DOMContentLoaded", function() {
       return;
     }
     const url = "print_qr.php?ids=" + encodeURIComponent(ids.join(","));
+    window.open(url, "_blank");
+  };
+
+  window.batchPrintInventoryCards = function() {
+    const ids = getSelectedIds();
+    if (!ids.length) {
+      alert("Silakan pilih minimal 1 komputer untuk dicetak kartu inventarisnya.");
+      return;
+    }
+    const url = "print_inventory_card.php?ids=" + encodeURIComponent(ids.join(",")) + "&layout=10";
     window.open(url, "_blank");
   };
 });
