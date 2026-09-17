@@ -1162,7 +1162,7 @@ unset($_SESSION['flash'], $_SESSION['flash_error']);
           <div class="modal-body p-3">
             <div class="mb-3">
               <label class="form-label small fw-bold text-dark">Nomor Rekening</label>
-              <input type="text" name="nomor_rekening" id="printAddCardRekening" class="form-control form-control-sm font-monospace" placeholder="Contoh: 01.5.00003" required oninput="handleRekeningInput(this)">
+              <input type="text" name="nomor_rekening" id="printAddCardRekening" class="form-control form-control-sm font-monospace" placeholder="Contoh: 00.0.0000 / 01.5.00003" required oninput="handleRekeningInput(this, event)">
             </div>
             <div class="mb-3">
               <label class="form-label small fw-bold text-dark">Nama Barang</label>
@@ -1553,42 +1553,33 @@ function doPost(e) {
       });
     }
 
-    function handleRekeningInput(el) {
+    function handleRekeningInput(el, event) {
       if (!el) return;
-      let val = el.value.replace(/[^0-9.]/g, "");
-      if (!val.includes(".")) {
-        if (val.length === 2) {
-          el.value = val + ".";
-          autoSuggestPrintBranch(val);
-          return;
-        }
-        if (val.length > 2) {
-          let p0 = val.slice(0, 2);
-          let rest = val.slice(2);
-          if (rest.length === 1) {
-            el.value = p0 + "." + rest;
-          } else if (rest.length === 2) {
-            el.value = p0 + "." + rest + ".";
-          } else {
-            let p1 = rest.slice(0, 2);
-            let p2 = rest.slice(2, 7);
-            el.value = p0 + "." + p1 + "." + p2;
-          }
-          autoSuggestPrintBranch(p0);
-          return;
-        }
-        el.value = val;
+      const isDelete = event && event.inputType && event.inputType.startsWith("delete");
+      let digits = el.value.replace(/[^0-9]/g, "");
+
+      if (digits.length === 0) {
+        el.value = "";
         return;
       }
-      let parts = val.split(".");
-      let p0 = (parts[0] || "").replace(/[^0-9]/g, "").slice(0, 2);
-      let p1 = (parts[1] || "").replace(/[^0-9]/g, "").slice(0, 2);
-      let p2 = (parts[2] || "").replace(/[^0-9]/g, "").slice(0, 5);
-      let res = p0;
-      if (parts.length > 1) res += "." + p1;
-      if (parts.length > 2) res += "." + p2;
-      el.value = res;
-      autoSuggestPrintBranch(p0);
+
+      let p0 = digits.slice(0, 2);
+      let p1 = digits.slice(2, 3);
+      let p2 = digits.slice(3, 10);
+
+      if (digits.length < 2) {
+        el.value = digits;
+      } else if (digits.length === 2) {
+        el.value = isDelete ? p0 : p0 + ".";
+      } else if (digits.length === 3) {
+        el.value = isDelete ? (p0 + "." + p1) : (p0 + "." + p1 + ".");
+      } else {
+        el.value = p0 + "." + p1 + "." + p2;
+      }
+
+      if (p0.length === 2) {
+        autoSuggestPrintBranch(p0);
+      }
     }
 
     function autoSuggestPrintBranch(code) {
