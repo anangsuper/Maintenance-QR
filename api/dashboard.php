@@ -1003,10 +1003,6 @@ $head = '
 // =========================================================================
 // 6. BODY KONTEN DASHBOARD
 // =========================================================================
-$body = '
-<!-- Flash Messages -->
-'.($flash ? '<div class="alert alert-success alert-dismissible fade show border-0 shadow-sm mb-3" style="border-left: 4px solid #10B981 !important;"><i class="bi bi-check-circle-fill me-2 text-success"></i>'.e($flash).'<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>' : '').'
-'.($flashError ? '<div class="alert alert-danger alert-dismissible fade show border-0 shadow-sm mb-3" style="border-left: 4px solid #EF4444 !important;"><i class="bi bi-exclamation-triangle-fill me-2 text-danger"></i>'.e($flashError).'<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>' : '').'
 
 // Persiapan Grid Jumlah Kartu Per Cabang (01 - 05)
 $branchCardsGridHtml = '';
@@ -1035,6 +1031,11 @@ $branchBadgesWidgetHtml = '';
 foreach ($cabangStats as $bCode => $b) {
     $branchBadgesWidgetHtml .= '<span class="badge bg-light text-dark border py-1 px-2"><span class="font-monospace fw-bold text-primary me-1">'.$bCode.'</span>'.e($b['name']).': <strong>'.$b['count'].'</strong>'.($b['today'] > 0 ? ' <span class="text-success fw-bold">(+'.$b['today'].')</span>' : '').'</span>';
 }
+
+$body = '
+<!-- Flash Messages -->
+'.($flash ? '<div class="alert alert-success alert-dismissible fade show border-0 shadow-sm mb-3" style="border-left: 4px solid #10B981 !important;"><i class="bi bi-check-circle-fill me-2 text-success"></i>'.e($flash).'<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>' : '').'
+'.($flashError ? '<div class="alert alert-danger alert-dismissible fade show border-0 shadow-sm mb-3" style="border-left: 4px solid #EF4444 !important;"><i class="bi bi-exclamation-triangle-fill me-2 text-danger"></i>'.e($flashError).'<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>' : '').'
 
 <!-- Page Header -->
 <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3 mb-3">
