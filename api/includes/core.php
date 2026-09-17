@@ -154,9 +154,10 @@ function normalize_kode_inventaris(?string $kode): string {
 function sheet_cell_text(string $val): string {
     $val = trim($val);
     if ($val === '') return '';
-    // Jika diawali angka 0 diikuti digit (seperti kode inventaris 04500... atau nomor telp 08...),
-    // beri prefix tanda kutip satu (') agar Google Sheets menyimpannya sebagai plain text dan angka 0 di depan tidak terpotong
-    if (preg_match('/^0\d+/', $val)) {
+    if (str_starts_with($val, "'")) return $val;
+    // Jika diawali angka 0 atau berpola nomor rekening (misal 02.05.1983 / 01.05.0493),
+    // beri prefix tanda kutip satu (') agar Google Sheets menyimpannya sebagai plain text dan TIDAK otomatis berubah jadi format tanggal
+    if (preg_match('/^0\d+/', $val) || preg_match('/^\d{1,4}[\.\-]\d{1,4}[\.\-]\d+/', $val)) {
         return "'" . $val;
     }
     return $val;

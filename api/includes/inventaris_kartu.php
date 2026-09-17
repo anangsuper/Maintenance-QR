@@ -299,7 +299,7 @@ function insert_inventaris_kartu(array $data): array {
             }
             $newId = $maxId + 1;
             $client->appendValues('inventaris_kartu!A:G', [[
-                $newId, $rek, $nama, $tgl, $barcode, $lokasi, $nowStr
+                $newId, sheet_cell_text($rek), $nama, $tgl, $barcode, $lokasi, $nowStr
             ]]);
             return ['success' => true, 'id' => $newId];
         }
@@ -344,7 +344,7 @@ function update_inventaris_kartu(int $id, array $data): bool {
                 if ((int)($r['id'] ?? 0) === $id) {
                     $rowNum = $idx + 2;
                     $client->updateValues("inventaris_kartu!B{$rowNum}:F{$rowNum}", [[
-                        $rek, $nama, $tgl, $barcode, $lokasi
+                        sheet_cell_text($rek), $nama, $tgl, $barcode, $lokasi
                     ]]);
                     return true;
                 }
