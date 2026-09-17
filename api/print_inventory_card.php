@@ -1,9 +1,41 @@
 <?php
 require __DIR__ . '/bootstrap.php';
 require_once __DIR__ . '/helpers/GoogleSheetsBridge.php';
+require_once __DIR__ . '/includes/inventaris_kartu.php';
 require_login();
 
-// 1. Tangani AJAX Action (Sinkronisasi ke Google Sheets atau Simpan URL)
+// Helper untuk URL query parameter pada halaman ini
+function card_url(array $params = []): string {
+    $merged = array_merge($_GET, $params);
+    foreach ($merged as $k => $v) {
+        if ($v === null || $v === '') {
+            unset($merged[$k]);
+        }
+    }
+    return module_url('print_inventory_card.php', $merged);
+}
+
+// 1. Tangani Form Tambah Kartu Baru
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['form_action']) && $_POST['form_action'] === 'add_card') {
+    verify_csrf();
+    $res = insert_inventaris_kartu([
+        'nomor_rekening'   => $_POST['nomor_rekening'] ?? '',
+        'nama_barang'      => $_POST['nama_barang'] ?? '',
+        'tanggal_perolehan'=> $_POST['tanggal_perolehan'] ?? date('Y-m-d'),
+        'barcode_data'     => $_POST['barcode_data'] ?? '',
+        'lokasi'           => $_POST['lokasi'] ?? 'KPO / Operasional',
+        'pengguna'         => $_POST['pengguna'] ?? 'Umum / Pool'
+    ]);
+    if (!empty($res['success'])) {
+        $_SESSION['flash'] = 'Kartu inventaris baru berhasil ditambahkan.';
+    } else {
+        $_SESSION['flash_error'] = 'Gagal menambahkan kartu: ' . ($res['error'] ?? 'Terjadi kesalahan.');
+    }
+    header('Location: ' . card_url(['source' => 'inventaris_kartu']));
+    exit;
+}
+
+// Tangani AJAX Action (Sinkronisasi ke Google Sheets atau Simpan URL)
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax_action'])) {
     header('Content-Type: application/json; charset=utf-8');
     verify_csrf();
@@ -29,12 +61,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax_action'])) {
         $errors = [];
         foreach ($cards as $card) {
             $payload = [
+                'id'               => $card['id'] ?? null,
                 'nomor_rekening'   => $card['kode'] ?? '',
                 'nama_barang'      => $card['nama'] ?? '',
-                'tanggal_perolehan'=> $card['tgl'] ?? '',
+                'tanggal_perolehan'=> $card['tgl_raw'] ?? ($card['tgl'] ?? ''),
+                'barcode_data'     => $card['barcode_data'] ?? ($card['qr_url'] ?? ''),
                 'lokasi'           => $card['lokasi'] ?? '',
-                'pengguna'         => $card['pengguna'] ?? '',
-                'barcode_data'     => $card['qr_url'] ?? ''
+                'pengguna'         => $card['pengguna'] ?? ''
             ];
             $res = GoogleSheetsBridge::post('insert', $payload, null, 'inventaris_kartu');
             if (!empty($res['success'])) {
@@ -58,6 +91,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax_action'])) {
 }
 
 // 2. Tangkap Parameter Query
+$source = trim((string)($_GET['source'] ?? 'inventaris_kartu')); // 'inventaris_kartu' (default) atau 'assets'
 $cabangId = max(0, (int)($_GET['cabang'] ?? 0));
 $singleId = max(0, (int)($_GET['id'] ?? $_GET['asset_id'] ?? 0));
 $rawIds = trim((string)($_GET['ids'] ?? $_POST['ids'] ?? ''));
@@ -77,109 +111,122 @@ if ($rawIds !== '') {
     }
 }
 
-// 3. Ambil Data Aset
-$rawAssets = [];
-if (is_google_cloud_mode()) {
-    $all = map_sheets_assets();
-    $rawAssets = $all;
-} else {
-    $rawAssets = get_qr_admin_rows(0);
-}
-
-// Filter sesuai parameter
-$assetList = [];
-if (!empty($idList)) {
-    $map = [];
-    foreach ($rawAssets as $a) {
-        $map[(int)($a['id'] ?? 0)] = $a;
-    }
-    foreach ($idList as $tarId) {
-        if (isset($map[$tarId])) {
-            $assetList[] = $map[$tarId];
-        } else {
-            $sg = get_asset_by_id($tarId);
-            if ($sg) $assetList[] = $sg;
-        }
-    }
-} elseif ($singleId > 0) {
-    foreach ($rawAssets as $a) {
-        if ((int)($a['id'] ?? 0) === $singleId) {
-            $assetList[] = $a;
-            break;
-        }
-    }
-    if (empty($assetList)) {
-        $sg = get_asset_by_id($singleId);
-        if ($sg) $assetList[] = $sg;
-    }
-} else {
-    if ($cabangId > 0) {
-        $assetList = array_values(array_filter($rawAssets, function($a) use ($cabangId) {
-            return (int)($a['id_cabang'] ?? $a['cabang_id'] ?? 0) === $cabangId;
-        }));
-    } else {
-        $assetList = $rawAssets;
-    }
-}
-
-// Data Master Cabang untuk Filter
-$cabangs = get_cabang_list();
-$cabangMap = [];
-foreach ($cabangs as $c) {
-    $cId = (int)($c['id'] ?? 0);
-    $cabangMap[$cId] = $c['nama'] ?? $c['nama_cabang'] ?? ('Cabang #' . $cId);
-}
-
-// Normalisasi Data Kartu
+// 3. Ambil Data Sesuai Source
 $cardsData = [];
 $index = 0;
-foreach ($assetList as $a) {
-    $index++;
-    $id = (int)($a['id'] ?? 0);
-    $kode = normalize_kode_inventaris((string)($a['kode_inventaris'] ?? 'ASET-' . $id));
-    $device = asset_title($a);
-    $sn = trim((string)($a['serial_number'] ?? $a['nomor_seri'] ?? ''));
-    if ($sn !== '' && $sn !== '-') {
-        $deviceFull = $device . ' (' . $sn . ')';
-    } else {
-        $deviceFull = $device;
+
+if ($source === 'inventaris_kartu') {
+    // Mode Default: Tabel Terpisah inventaris_kartu
+    $invRows = get_inventaris_kartu_rows();
+    if (!empty($idList)) {
+        $invRows = array_values(array_filter($invRows, function($r) use ($idList) {
+            return in_array((int)$r['id'], $idList, true);
+        }));
+    } elseif ($singleId > 0) {
+        $invRows = array_values(array_filter($invRows, function($r) use ($singleId) {
+            return (int)$r['id'] === $singleId;
+        }));
     }
 
-    $cId = (int)($a['id_cabang'] ?? $a['cabang_id'] ?? 0);
-    $cabangName = $a['cabang_nama'] ?? ($cabangMap[$cId] ?? 'KPO');
-    $divisiName = !empty($a['divisi_nama']) && $a['divisi_nama'] !== '-' ? $a['divisi_nama'] : '';
-    $lokasi = $divisiName !== '' ? "{$cabangName} / {$divisiName}" : $cabangName;
+    foreach ($invRows as $r) {
+        $index++;
+        $id = (int)($r['id'] ?? 0);
+        $rek = trim((string)($r['nomor_rekening'] ?? ''));
+        $nama = trim((string)($r['nama_barang'] ?? ''));
+        $barcode = trim((string)($r['barcode_data'] ?? ''));
+        $lokasi = trim((string)($r['lokasi'] ?? 'KPO / Operasional')) ?: 'KPO / Operasional';
+        $pengguna = trim((string)($r['pengguna'] ?? 'Umum / Pool')) ?: 'Umum / Pool';
+        $tglRaw = trim((string)($r['tanggal_perolehan'] ?? ''));
 
-    $pengguna = !empty($a['karyawan_nama']) && $a['karyawan_nama'] !== '-' ? $a['karyawan_nama'] : 'Umum / Pool';
-    
-    $tglRaw = (string)($a['tanggal_perolehan'] ?? $a['created_at'] ?? '');
-    $tglFormatted = '-';
-    if ($tglRaw !== '' && $tglRaw !== '0000-00-00') {
-        $ts = strtotime($tglRaw);
-        if ($ts && $ts > 0) {
-            $tglFormatted = date('d/m/Y', $ts);
-        } else {
-            $tglFormatted = $tglRaw;
+        $tglFormatted = '-';
+        if ($tglRaw !== '' && $tglRaw !== '0000-00-00') {
+            $ts = strtotime($tglRaw);
+            $tglFormatted = $ts ? date('d/m/Y', $ts) : $tglRaw;
         }
+
+        $qrTarget = $barcode !== '' ? $barcode : module_url('scan.php', ['t' => get_static_qr_token($id)]);
+
+        $cardsData[] = [
+            'index'        => $index,
+            'id'           => $id,
+            'kode'         => $rek !== '' ? $rek : ('INV-' . $id),
+            'nama'         => $nama,
+            'tgl'          => $tglFormatted,
+            'tgl_raw'      => $tglRaw,
+            'lokasi'       => $lokasi,
+            'pengguna'     => $pengguna,
+            'barcode_data' => $barcode,
+            'qr_url'       => $qrTarget,
+            'created_at'   => $r['created_at'] ?? ''
+        ];
+    }
+} else {
+    // Mode Alternatif: Dari Katalog Asset Registry Komputer
+    $rawAssets = is_google_cloud_mode() ? map_sheets_assets() : get_qr_admin_rows(0);
+    $cabangs = get_cabang_list();
+    $cabangMap = [];
+    foreach ($cabangs as $c) {
+        $cId = (int)($c['id'] ?? 0);
+        $cabangMap[$cId] = $c['nama'] ?? $c['nama_cabang'] ?? ('Cabang #' . $cId);
     }
 
-    $token = !empty($a['qr_token']) ? $a['qr_token'] : ($id > 0 ? get_static_qr_token($id) : '');
-    $qrUrl = $token ? module_url('scan.php', ['t' => $token]) : module_url('assets.php');
+    if (!empty($idList)) {
+        $map = [];
+        foreach ($rawAssets as $a) $map[(int)($a['id'] ?? 0)] = $a;
+        $filtered = [];
+        foreach ($idList as $tarId) {
+            if (isset($map[$tarId])) $filtered[] = $map[$tarId];
+            else { $sg = get_asset_by_id($tarId); if ($sg) $filtered[] = $sg; }
+        }
+        $rawAssets = $filtered;
+    } elseif ($singleId > 0) {
+        $rawAssets = array_values(array_filter($rawAssets, function($a) use ($singleId) {
+            return (int)($a['id'] ?? 0) === $singleId;
+        }));
+    } elseif ($cabangId > 0) {
+        $rawAssets = array_values(array_filter($rawAssets, function($a) use ($cabangId) {
+            return (int)($a['id_cabang'] ?? $a['cabang_id'] ?? 0) === $cabangId;
+        }));
+    }
 
-    $cardsData[] = [
-        'index'       => $index,
-        'id'          => $id,
-        'kode'        => $kode,
-        'nama'        => $deviceFull,
-        'device_pure' => $device,
-        'serial'      => $sn,
-        'tgl'         => $tglFormatted,
-        'lokasi'      => $lokasi,
-        'pengguna'    => $pengguna,
-        'token'       => $token,
-        'qr_url'      => $qrUrl,
-        'cabang_nama' => $cabangName,
-    ];
+    foreach ($rawAssets as $a) {
+        $index++;
+        $id = (int)($a['id'] ?? 0);
+        $kode = normalize_kode_inventaris((string)($a['kode_inventaris'] ?? 'ASET-' . $id));
+        $device = asset_title($a);
+        $sn = trim((string)($a['serial_number'] ?? $a['nomor_seri'] ?? ''));
+        $deviceFull = ($sn !== '' && $sn !== '-') ? "{$device} ({$sn})" : $device;
+
+        $cId = (int)($a['id_cabang'] ?? $a['cabang_id'] ?? 0);
+        $cabangName = $a['cabang_nama'] ?? ($cabangMap[$cId] ?? 'KPO');
+        $divisiName = !empty($a['divisi_nama']) && $a['divisi_nama'] !== '-' ? $a['divisi_nama'] : '';
+        $lokasi = $divisiName !== '' ? "{$cabangName} / {$divisiName}" : $cabangName;
+        $pengguna = !empty($a['karyawan_nama']) && $a['karyawan_nama'] !== '-' ? $a['karyawan_nama'] : 'Umum / Pool';
+
+        $tglRaw = (string)($a['tanggal_perolehan'] ?? $a['created_at'] ?? '');
+        $tglFormatted = '-';
+        if ($tglRaw !== '' && $tglRaw !== '0000-00-00') {
+            $ts = strtotime($tglRaw);
+            $tglFormatted = $ts ? date('d/m/Y', $ts) : $tglRaw;
+        }
+
+        $token = !empty($a['qr_token']) ? $a['qr_token'] : ($id > 0 ? get_static_qr_token($id) : '');
+        $qrUrl = $token ? module_url('scan.php', ['t' => $token]) : module_url('assets.php');
+
+        $cardsData[] = [
+            'index'        => $index,
+            'id'           => $id,
+            'kode'         => $kode,
+            'nama'         => $deviceFull,
+            'tgl'          => $tglFormatted,
+            'tgl_raw'      => $tglRaw,
+            'lokasi'       => $lokasi,
+            'pengguna'     => $pengguna,
+            'barcode_data' => $qrUrl,
+            'qr_url'       => $qrUrl,
+            'created_at'   => $tglRaw
+        ];
+    }
 }
 
 // 4. Tangani Ekspor CSV
@@ -188,18 +235,17 @@ if ($exportMode === 'csv') {
     header('Content-Disposition: attachment; filename="Kartu_Inventaris_CR80_' . date('Ymd_His') . '.csv"');
     $out = fopen('php://output', 'w');
     fprintf($out, chr(0xEF).chr(0xBB).chr(0xBF)); // BOM UTF-8
-    fputcsv($out, ['No', 'ID Aset', 'Kode Inventaris', 'Nama Perangkat', 'Nomor Seri', 'Tanggal Perolehan', 'Lokasi Penempatan', 'Pengguna / PIC', 'URL QR Scan']);
+    fputcsv($out, ['No', 'ID', 'Nomor Rekening / Kode', 'Nama Barang', 'Tanggal Perolehan', 'Barcode Data (URL)', 'Lokasi', 'Pengguna']);
     foreach ($cardsData as $c) {
         fputcsv($out, [
             $c['index'],
             $c['id'],
             sanitize_csv_cell($c['kode']),
             sanitize_csv_cell($c['nama']),
-            sanitize_csv_cell($c['serial']),
             sanitize_csv_cell($c['tgl']),
+            sanitize_csv_cell($c['barcode_data']),
             sanitize_csv_cell($c['lokasi']),
-            sanitize_csv_cell($c['pengguna']),
-            sanitize_csv_cell($c['qr_url'])
+            sanitize_csv_cell($c['pengguna'])
         ]);
     }
     fclose($out);
@@ -210,78 +256,54 @@ if ($exportMode === 'csv') {
 if ($exportMode === 'doc') {
     header('Content-Type: application/msword; charset=utf-8');
     header('Content-Disposition: attachment; filename="Kartu_Inventaris_CR80_' . date('Ymd_His') . '.doc"');
-    
     $logoUri = app_logo_data_uri();
     echo '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40">';
     echo '<head><meta charset="utf-8"><title>Kartu Inventaris CR80</title>';
     echo '<style>
-        @page { size: A4 portrait; margin: 1.2cm 1cm; }
-        body { font-family: "Segoe UI", Arial, sans-serif; font-size: 8pt; color: #1e293b; background: #fff; }
-        table.word-grid { width: 100%; border-collapse: collapse; margin-bottom: 15px; }
+        @page { size: A4 portrait; margin: 1cm 0.8cm; }
+        body { font-family: Arial, sans-serif; font-size: 8pt; color: #1e293b; }
+        table.word-grid { width: 100%; border-collapse: collapse; }
         td.word-card-cell { width: 50%; vertical-align: top; padding: 4px; }
-        .cr80-box { border: 1.5pt solid #003b73; border-radius: 6pt; overflow: hidden; background: #ffffff; width: 85.6mm; min-height: 54mm; }
+        .cr80-box { border: 1.5pt solid #003b73; border-radius: 6pt; overflow: hidden; width: 85.6mm; min-height: 54mm; }
         .cr80-header { background-color: #003b73; color: #ffffff; padding: 4pt 6pt; }
-        .cr80-title { font-size: 8pt; font-weight: bold; color: #ffffff; }
-        .cr80-banner { background-color: #7ac142; color: #ffffff; font-size: 6.5pt; font-weight: bold; padding: 1pt 4pt; border-radius: 2pt; display: inline-block; margin-top: 2pt; }
+        .cr80-title { font-size: 7.5pt; font-weight: bold; color: #ffffff; }
+        .cr80-banner { background-color: #7ac142; color: #ffffff; font-size: 6.5pt; font-weight: bold; padding: 1pt 4pt; border-radius: 2pt; display: inline-block; }
         .cr80-body { padding: 4pt 6pt; }
         .field-table { width: 100%; border-collapse: collapse; }
-        .field-table td { font-size: 7pt; padding: 1pt 0; vertical-align: middle; }
-        .field-label { font-weight: bold; color: #003b73; width: 45pt; }
-        .field-val { font-weight: 600; color: #0f172a; }
-        .badge-kode { background-color: #003b73; color: #ffffff; font-weight: bold; padding: 1pt 4pt; border-radius: 2pt; font-size: 7pt; display: inline-block; }
-        .cr80-footer { border-top: 1pt solid #7ac142; padding: 2pt 6pt; font-size: 5.5pt; color: #64748b; background: #f8fafc; }
+        .field-table td { font-size: 7pt; padding: 1.5pt 0; vertical-align: middle; }
+        .field-label { font-weight: bold; color: #003b73; width: 48pt; }
+        .badge-kode { background-color: #003b73; color: #ffffff; font-weight: bold; padding: 1pt 4pt; border-radius: 2pt; font-size: 7pt; }
+        .cr80-footer { border-top: 1pt solid #7ac142; padding: 2.5pt 6pt; font-size: 5.5pt; color: #64748b; background: #f8fafc; }
     </style>';
     echo '</head><body>';
-    
-    echo '<h3 style="text-align: center; color: #003b73; margin-bottom: 6pt;">PT BPR MITRATAMA ARTHABUANA</h3>';
-    echo '<p style="text-align: center; font-size: 8pt; color: #64748b; margin-top: 0; margin-bottom: 12pt;">Dokumen Cetak Kartu Inventaris CR80 (Ukuran Standar 85.6mm x 54.0mm)</p>';
-
     echo '<table class="word-grid">';
     $colCount = 0;
     foreach ($cardsData as $c) {
-        if ($colCount % 2 === 0) {
-            echo '<tr>';
-        }
+        if ($colCount % 2 === 0) echo '<tr>';
         echo '<td class="word-card-cell">';
         echo '<div class="cr80-box">';
-        
-        // Header
         echo '<div class="cr80-header">';
         echo '<table style="width:100%; border-collapse:collapse;"><tr>';
-        echo '<td style="width: 38pt; vertical-align:middle;"><img src="'.e($logoUri).'" style="height: 22pt; width: auto;" alt="Logo"></td>';
-        echo '<td style="vertical-align:middle; text-align:right;">';
-        echo '<div class="cr80-title">PT BPR MITRATAMA ARTHABUANA</div>';
-        echo '<div class="cr80-banner">KARTU INVENTARIS ASET</div>';
-        echo '</td></tr></table>';
+        echo '<td style="width: 36pt;"><img src="'.e($logoUri).'" style="height: 20pt; width: auto;"></td>';
+        echo '<td style="text-align:right;"><div class="cr80-title">PT BPR MITRATAMA ARTHABUANA</div><div class="cr80-banner">KARTU INVENTARIS ASET</div></td>';
+        echo '</tr></table>';
         echo '</div>';
-
-        // Body
         echo '<div class="cr80-body">';
         echo '<table class="field-table">';
-        echo '<tr><td class="field-label">NO. INV</td><td style="width:4pt;">:</td><td class="field-val"><span class="badge-kode">'.e($c['kode']).'</span></td></tr>';
-        echo '<tr><td class="field-label">BARANG</td><td>:</td><td class="field-val">'.e($c['nama']).'</td></tr>';
-        echo '<tr><td class="field-label">TANGGAL</td><td>:</td><td class="field-val">'.e($c['tgl']).'</td></tr>';
-        echo '<tr><td class="field-label">LOKASI</td><td>:</td><td class="field-val">'.e($c['lokasi']).'</td></tr>';
-        echo '<tr><td class="field-label">USER/PIC</td><td>:</td><td class="field-val">'.e($c['pengguna']).'</td></tr>';
+        echo '<tr><td class="field-label">NO. INV</td><td style="width:4pt;">:</td><td><span class="badge-kode">'.e($c['kode']).'</span></td></tr>';
+        echo '<tr><td class="field-label">BARANG</td><td>:</td><td><b>'.e($c['nama']).'</b></td></tr>';
+        echo '<tr><td class="field-label">TANGGAL</td><td>:</td><td>'.e($c['tgl']).'</td></tr>';
+        echo '<tr><td class="field-label">LOKASI</td><td>:</td><td>'.e($c['lokasi']).'</td></tr>';
+        echo '<tr><td class="field-label">USER/PIC</td><td>:</td><td>'.e($c['pengguna']).'</td></tr>';
         echo '</table>';
         echo '</div>';
-
-        // Footer
-        echo '<div class="cr80-footer">';
-        echo 'Perhatian: Dilarang memindahkan barang inventaris ini tanpa seizin Departemen IT & Sarana Prasarana.';
+        echo '<div class="cr80-footer">Perhatian: Dilarang memindahkan barang inventaris ini tanpa seizin Departemen IT & Sarana Prasarana.</div>';
         echo '</div>';
-
-        echo '</div>'; // end cr80-box
         echo '</td>';
-
         $colCount++;
-        if ($colCount % 2 === 0) {
-            echo '</tr>';
-        }
+        if ($colCount % 2 === 0) echo '</tr>';
     }
-    if ($colCount % 2 !== 0) {
-        echo '<td class="word-card-cell">&nbsp;</td></tr>';
-    }
+    if ($colCount % 2 !== 0) echo '<td class="word-card-cell">&nbsp;</td></tr>';
     echo '</table>';
     echo '</body></html>';
     exit;
@@ -289,6 +311,9 @@ if ($exportMode === 'doc') {
 
 $logoUrl = app_logo_data_uri();
 $storedGasUrl = GoogleSheetsBridge::getUrl();
+$flashMsg = $_SESSION['flash'] ?? '';
+$flashErr = $_SESSION['flash_error'] ?? '';
+unset($_SESSION['flash'], $_SESSION['flash_error']);
 ?>
 <!DOCTYPE html>
 <html lang="id">
@@ -330,9 +355,6 @@ $storedGasUrl = GoogleSheetsBridge::getUrl();
       padding: 0;
     }
 
-    /* =========================================================================
-       TOOLBAR ATAS (NO-PRINT)
-       ========================================================================= */
     .top-toolbar {
       background: #ffffff;
       border-bottom: 1px solid #e2e8f0;
@@ -349,9 +371,6 @@ $storedGasUrl = GoogleSheetsBridge::getUrl();
       letter-spacing: -0.01em;
     }
 
-    /* =========================================================================
-       CONTAINER & GRID CETAK KERTAS A4
-       ========================================================================= */
     .print-stage {
       padding: 24px 0;
       display: flex;
@@ -371,7 +390,6 @@ $storedGasUrl = GoogleSheetsBridge::getUrl();
       box-sizing: border-box;
     }
 
-    /* Format 10 Kartu / Lembar (2x5 Portrait) */
     .layout-10 {
       width: 210mm;
       min-height: 297mm;
@@ -379,7 +397,6 @@ $storedGasUrl = GoogleSheetsBridge::getUrl();
       gap: 3.5mm 6mm;
     }
 
-    /* Format 8 Kartu / Lembar (2x4 Portrait) */
     .layout-8 {
       width: 210mm;
       min-height: 297mm;
@@ -387,7 +404,6 @@ $storedGasUrl = GoogleSheetsBridge::getUrl();
       gap: 9mm 6mm;
     }
 
-    /* Format 12 Kartu / Lembar (3x4 Landscape) */
     .layout-12 {
       width: 297mm;
       min-height: 210mm;
@@ -395,9 +411,6 @@ $storedGasUrl = GoogleSheetsBridge::getUrl();
       gap: 3mm 4mm;
     }
 
-    /* =========================================================================
-       KARTU CR80 FISIK (85.6mm x 54.0mm)
-       ========================================================================= */
     .cr80-card-wrapper {
       width: 85.6mm;
       height: 54.0mm;
@@ -410,7 +423,7 @@ $storedGasUrl = GoogleSheetsBridge::getUrl();
       width: 85.6mm;
       height: 54.0mm;
       background: #ffffff;
-      border-radius: 3.2mm; /* Radius sudut kartu ATM CR80 */
+      border-radius: 3.2mm;
       border: 1px solid #d1d5db;
       display: flex;
       flex-direction: column;
@@ -425,7 +438,6 @@ $storedGasUrl = GoogleSheetsBridge::getUrl();
       box-shadow: 0 6px 16px rgba(0, 59, 115, 0.15);
     }
 
-    /* Cut Guides (Garis Panduan Potong) */
     .with-cut-guides .cr80-card-wrapper::after {
       content: "";
       position: absolute;
@@ -438,7 +450,6 @@ $storedGasUrl = GoogleSheetsBridge::getUrl();
       border-radius: 4.5mm;
     }
 
-    /* 1. Header Kartu */
     .card-header-bar {
       height: 12.8mm;
       background: #ffffff;
@@ -513,7 +524,6 @@ $storedGasUrl = GoogleSheetsBridge::getUrl();
       line-height: 1;
     }
 
-    /* 2. Body Kartu */
     .card-main-body {
       flex: 1;
       padding: 1.4mm 2.4mm 1mm 2.4mm;
@@ -592,7 +602,6 @@ $storedGasUrl = GoogleSheetsBridge::getUrl();
       color: #0f172a;
     }
 
-    /* Sisi Kanan: QR Code Box */
     .qr-right-col {
       width: 23.5mm;
       flex-shrink: 0;
@@ -635,7 +644,6 @@ $storedGasUrl = GoogleSheetsBridge::getUrl();
       line-height: 1.1;
     }
 
-    /* 3. Footer Kartu */
     .card-footer-sec {
       background: #f8fafc;
       border-top: 1px solid var(--accent-green);
@@ -661,9 +669,6 @@ $storedGasUrl = GoogleSheetsBridge::getUrl();
       text-overflow: ellipsis;
     }
 
-    /* =========================================================================
-       PRINT STYLING (@media print)
-       ========================================================================= */
     @media print {
       @page {
         <?php if ($layout === '12'): ?>
@@ -683,7 +688,7 @@ $storedGasUrl = GoogleSheetsBridge::getUrl();
       .no-print,
       .top-toolbar,
       .modal,
-      .toast {
+      .alert {
         display: none !important;
       }
 
@@ -707,15 +712,13 @@ $storedGasUrl = GoogleSheetsBridge::getUrl();
 </head>
 <body>
 
-  <!-- =========================================================================
-       TOP TOOLBAR (KONTROL DAN AKSI)
-       ========================================================================= -->
+  <!-- TOP TOOLBAR -->
   <header class="top-toolbar py-2 px-3 no-print">
     <div class="container-fluid d-flex flex-wrap justify-content-between align-items-center gap-2">
       
-      <!-- Kiri: Brand & Informasi Aset -->
+      <!-- Kiri: Brand & Info -->
       <div class="d-flex align-items-center gap-3">
-        <a href="<?= e(module_url('assets.php')) ?>" class="btn btn-sm btn-outline-secondary" title="Kembali ke Asset Registry">
+        <a href="<?= e(module_url('assets.php')) ?>" class="btn btn-sm btn-outline-secondary" title="Kembali">
           <i class="bi bi-arrow-left"></i>
         </a>
         <div>
@@ -725,119 +728,115 @@ $storedGasUrl = GoogleSheetsBridge::getUrl();
             <span class="badge bg-primary text-white" style="font-size: 0.72rem; font-weight: 600;">Standard ATM 85.6x54mm</span>
           </div>
           <div class="text-muted small" style="font-size: 0.74rem;">
-            Total: <strong><?= count($cardsData) ?></strong> unit kartu aset · PT BPR Mitratama Arthabuana
+            Tabel: <strong><?= e($source === 'inventaris_kartu' ? 'inventaris_kartu (Khusus Kartu)' : 'assets (Asset Registry)') ?></strong> · Total: <strong><?= count($cardsData) ?></strong> unit kartu
           </div>
         </div>
       </div>
 
-      <!-- Tengah: Filter & Kontrol Layout -->
+      <!-- Tengah: Filter & Layout -->
       <div class="d-flex align-items-center gap-2 flex-wrap">
         
-        <!-- Filter Cabang -->
-        <form method="get" class="d-inline-flex align-items-center gap-1">
-          <?php if (!empty($rawIds)): ?>
-            <input type="hidden" name="ids" value="<?= e($rawIds) ?>">
-          <?php endif; ?>
-          <input type="hidden" name="layout" value="<?= e($layout) ?>">
-          <select name="cabang" class="form-select form-select-sm" style="width: 170px;" onchange="this.form.submit()">
-            <option value="0">Semua Cabang</option>
-            <?php foreach ($cabangs as $c): ?>
-              <?php $cId = (int)($c['id'] ?? 0); ?>
-              <option value="<?= $cId ?>" <?= $cId === $cabangId ? 'selected' : '' ?>>
-                <?= e($c['nama'] ?? $c['nama_cabang'] ?? 'Cabang #' . $cId) ?>
-              </option>
-            <?php endforeach; ?>
-          </select>
-        </form>
+        <!-- Pilihan Tabel / Sumber Data -->
+        <div class="btn-group btn-group-sm" role="group">
+          <a href="<?= e(card_url(['source' => 'inventaris_kartu'])) ?>" class="btn <?= $source === 'inventaris_kartu' ? 'btn-primary fw-bold' : 'btn-outline-secondary' ?>" title="Data dari tabel khusus inventaris_kartu (5 Kartu Utama)">
+            <i class="bi bi-table me-1"></i> Tabel Inventaris Kartu
+          </a>
+          <a href="<?= e(card_url(['source' => 'assets'])) ?>" class="btn <?= $source === 'assets' ? 'btn-primary fw-bold' : 'btn-outline-secondary' ?>" title="Data dari katalog komputer Asset Registry">
+            <i class="bi bi-pc-display me-1"></i> Dari Asset Registry
+          </a>
+        </div>
 
         <!-- Layout Selector -->
-        <div class="btn-group btn-group-sm" role="group" aria-label="Layout Selector">
-          <a href="<?= e(filter_query(['layout' => '8'])) ?>" class="btn <?= $layout === '8' ? 'btn-primary' : 'btn-outline-secondary' ?>" title="8 Kartu per Lembar (2x4 Portrait, Margin Longgar)">
-            <i class="bi bi-grid-fill me-1"></i> 8 / A4
+        <div class="btn-group btn-group-sm" role="group">
+          <a href="<?= e(card_url(['layout' => '8'])) ?>" class="btn <?= $layout === '8' ? 'btn-dark' : 'btn-outline-secondary' ?>" title="8 Kartu per Lembar A4 Portrait">
+            8 / A4
           </a>
-          <a href="<?= e(filter_query(['layout' => '10'])) ?>" class="btn <?= $layout === '10' ? 'btn-primary' : 'btn-outline-secondary' ?>" title="10 Kartu per Lembar (2x5 Portrait, Standar Kartu Nama)">
-            <i class="bi bi-grid-3x3-gap-fill me-1"></i> 10 / A4
+          <a href="<?= e(card_url(['layout' => '10'])) ?>" class="btn <?= $layout === '10' ? 'btn-dark' : 'btn-outline-secondary' ?>" title="10 Kartu per Lembar A4 Portrait">
+            10 / A4
           </a>
-          <a href="<?= e(filter_query(['layout' => '12'])) ?>" class="btn <?= $layout === '12' ? 'btn-primary' : 'btn-outline-secondary' ?>" title="12 Kartu per Lembar (3x4 Landscape, Kapasitas Maksimal)">
-            <i class="bi bi-grid-3x2-gap-fill me-1"></i> 12 / A4
+          <a href="<?= e(card_url(['layout' => '12'])) ?>" class="btn <?= $layout === '12' ? 'btn-dark' : 'btn-outline-secondary' ?>" title="12 Kartu per Lembar A4 Landscape">
+            12 / A4
           </a>
         </div>
 
         <!-- Toggle Garis Potong -->
-        <div class="form-check form-switch ms-2 d-none d-md-inline-block">
+        <div class="form-check form-switch ms-1 d-none d-md-inline-block">
           <input class="form-check-input" type="checkbox" id="cutGuideToggle" checked onchange="toggleCutGuides(this)">
-          <label class="form-check-label small" for="cutGuideToggle" style="font-size: 0.76rem;">Garis Potong</label>
+          <label class="form-check-label small" for="cutGuideToggle" style="font-size: 0.74rem;">Garis Potong</label>
         </div>
       </div>
 
-      <!-- Kanan: Aksi Cetak & Ekspor -->
+      <!-- Kanan: Aksi -->
       <div class="d-flex align-items-center gap-2 flex-wrap">
-        
-        <!-- Live Preview Modal Trigger -->
+        <button type="button" class="btn btn-sm btn-success fw-semibold" data-bs-toggle="modal" data-bs-target="#addCardModal">
+          <i class="bi bi-plus-lg me-1"></i> Tambah Data
+        </button>
+
         <button type="button" class="btn btn-sm btn-outline-info fw-semibold" onclick="openLivePreviewModal()">
-          <i class="bi bi-eye me-1"></i> Pratinjau 1-per-1
+          <i class="bi bi-eye me-1"></i> Pratinjau
         </button>
 
-        <!-- Input Lokasi Cepat Trigger -->
         <button type="button" class="btn btn-sm btn-outline-secondary fw-semibold" data-bs-toggle="modal" data-bs-target="#quickEditModal">
-          <i class="bi bi-pencil-square me-1"></i> Set Lokasi Massal
+          <i class="bi bi-pencil-square me-1"></i> Set Lokasi
         </button>
 
-        <!-- Ekspor Dropdown -->
         <div class="dropdown">
           <button class="btn btn-sm btn-outline-secondary dropdown-toggle fw-semibold" type="button" data-bs-toggle="dropdown">
             <i class="bi bi-download me-1"></i> Ekspor
           </button>
           <ul class="dropdown-menu dropdown-menu-end shadow-sm" style="font-size: 0.85rem;">
             <li>
-              <a class="dropdown-item" href="<?= e(filter_query(['export' => 'doc'])) ?>">
+              <a class="dropdown-item" href="<?= e(card_url(['export' => 'doc'])) ?>">
                 <i class="bi bi-file-earmark-word-fill text-primary me-2"></i> Dokumen Microsoft Word (.doc)
               </a>
             </li>
             <li>
-              <a class="dropdown-item" href="<?= e(filter_query(['export' => 'csv'])) ?>">
+              <a class="dropdown-item" href="<?= e(card_url(['export' => 'csv'])) ?>">
                 <i class="bi bi-file-earmark-spreadsheet-fill text-success me-2"></i> Spreadsheet CSV / Excel
               </a>
             </li>
             <li><hr class="dropdown-divider"></li>
             <li>
               <button class="dropdown-item" type="button" data-bs-toggle="modal" data-bs-target="#googleSheetsModal">
-                <i class="bi bi-google text-danger me-2"></i> Database Google Sheets Otomatis
+                <i class="bi bi-google text-danger me-2"></i> Sinkron Google Sheets
               </button>
             </li>
           </ul>
         </div>
 
-        <!-- Tombol Cetak Browser Utama -->
         <button type="button" class="btn btn-sm btn-primary fw-bold shadow-sm" onclick="window.print()">
-          <i class="bi bi-printer-fill me-1"></i> Cetak / Simpan PDF
+          <i class="bi bi-printer-fill me-1"></i> Cetak / PDF
         </button>
       </div>
 
     </div>
   </header>
 
-  <!-- =========================================================================
-       PRINT STAGE: LEMBAR A4 DENGAN KARTU CR80
-       ========================================================================= -->
+  <?php if ($flashMsg): ?>
+    <div class="alert alert-success m-3 py-2 px-3 small no-print"><i class="bi bi-check-circle-fill me-2"></i><?= e($flashMsg) ?></div>
+  <?php endif; ?>
+  <?php if ($flashErr): ?>
+    <div class="alert alert-danger m-3 py-2 px-3 small no-print"><i class="bi bi-exclamation-triangle-fill me-2"></i><?= e($flashErr) ?></div>
+  <?php endif; ?>
+
+  <!-- PRINT STAGE -->
   <main class="print-stage">
     <?php if (empty($cardsData)): ?>
       <div class="card p-5 text-center my-5 shadow-sm" style="max-width: 500px;">
         <i class="bi bi-credit-card-2-front fs-1 text-muted mb-3 opacity-50"></i>
-        <h5 class="fw-bold text-dark">Tidak Ada Kartu yang Dipilih</h5>
-        <p class="text-muted small">Pilih aset dari halaman Asset Registry atau filter berdasarkan Kantor Cabang untuk mencetak kartu inventaris CR80.</p>
+        <h5 class="fw-bold text-dark">Tidak Ada Data Kartu</h5>
+        <p class="text-muted small">Belum ada data inventaris yang dapat dicetak.</p>
         <div class="mt-3">
-          <a href="<?= e(module_url('assets.php')) ?>" class="btn btn-primary btn-sm">
-            <i class="bi bi-arrow-left me-1"></i> Ke Asset Registry
-          </a>
+          <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addCardModal">
+            <i class="bi bi-plus-lg me-1"></i> Tambah Data Sekarang
+          </button>
         </div>
       </div>
     <?php else: ?>
       
       <?php
-        $cardsPerPage = (int)$layout; // 8, 10, atau 12
+        $cardsPerPage = (int)$layout;
         $pages = array_chunk($cardsData, $cardsPerPage);
-        $totalPageCount = count($pages);
       ?>
 
       <div id="sheetsContainer" class="with-cut-guides">
@@ -848,7 +847,7 @@ $storedGasUrl = GoogleSheetsBridge::getUrl();
               <div class="cr80-card-wrapper" id="card-wrap-<?= $cIdx ?>" data-card-id="<?= $card['id'] ?>">
                 <div class="cr80-card">
                   
-                  <!-- 1. Header Kartu Berwarna -->
+                  <!-- 1. Header Kartu -->
                   <div class="card-header-bar">
                     <div class="header-logo-box">
                       <img src="<?= e($logoUrl) ?>" alt="Logo Bank" loading="lazy">
@@ -864,10 +863,8 @@ $storedGasUrl = GoogleSheetsBridge::getUrl();
                     </div>
                   </div>
 
-                  <!-- 2. Body Kartu: Kolom Informasi & Kolom QR Code -->
+                  <!-- 2. Body Kartu -->
                   <div class="card-main-body">
-                    
-                    <!-- Kolom Kiri: Detail Aset -->
                     <div class="info-left-col">
                       <div class="field-row">
                         <div class="field-lbl-wrap">
@@ -882,7 +879,7 @@ $storedGasUrl = GoogleSheetsBridge::getUrl();
 
                       <div class="field-row">
                         <div class="field-lbl-wrap">
-                          <i class="bi bi-pc-display field-icon"></i>
+                          <i class="bi bi-box-seam field-icon"></i>
                           <span>BARANG</span>
                         </div>
                         <div class="field-sep">:</div>
@@ -932,10 +929,9 @@ $storedGasUrl = GoogleSheetsBridge::getUrl();
                       </div>
                       <div class="qr-subtext">SCAN PEMELIHARAAN</div>
                     </div>
-
                   </div>
 
-                  <!-- 3. Footer Kartu: Perhatian -->
+                  <!-- 3. Footer Kartu -->
                   <div class="card-footer-sec">
                     <i class="bi bi-exclamation-triangle-fill"></i>
                     <span class="disclaimer-text card-disclaimer-val">
@@ -953,9 +949,56 @@ $storedGasUrl = GoogleSheetsBridge::getUrl();
     <?php endif; ?>
   </main>
 
-  <!-- =========================================================================
-       MODAL 1: LIVE PREVIEW INTERAKTIF (1-PER-1 SKALA NYATA)
-       ========================================================================= -->
+  <!-- MODAL: TAMBAH DATA KARTU INVENTARIS BARU -->
+  <div class="modal fade" id="addCardModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content border-0 shadow-lg" style="border-radius: 14px;">
+        <form method="post">
+          <input type="hidden" name="_csrf" value="<?= e(csrf_token()) ?>">
+          <input type="hidden" name="form_action" value="add_card">
+          <div class="modal-header py-2 px-3 bg-primary text-white">
+            <h6 class="modal-title fw-bold"><i class="bi bi-plus-circle me-2"></i>Tambah Data Kartu Inventaris</h6>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body p-3">
+            <div class="mb-2">
+              <label class="form-label small fw-bold text-dark">Nomor Rekening / Kode Inventaris</label>
+              <input type="text" name="nomor_rekening" class="form-control form-control-sm font-monospace" placeholder="Contoh: 01.05.0494" required>
+            </div>
+            <div class="mb-2">
+              <label class="form-label small fw-bold text-dark">Nama Barang / Perangkat</label>
+              <input type="text" name="nama_barang" class="form-control form-control-sm" placeholder="Contoh: PC Desktop Kasir 2" required>
+            </div>
+            <div class="row g-2 mb-2">
+              <div class="col-6">
+                <label class="form-label small fw-bold text-dark">Tanggal Perolehan</label>
+                <input type="date" name="tanggal_perolehan" class="form-control form-control-sm" value="<?= date('Y-m-d') ?>" required>
+              </div>
+              <div class="col-6">
+                <label class="form-label small fw-bold text-dark">Lokasi Penempatan</label>
+                <input type="text" name="lokasi" class="form-control form-control-sm" value="KPO / Operasional" required>
+              </div>
+            </div>
+            <div class="mb-2">
+              <label class="form-label small fw-bold text-dark">Pengguna / PIC</label>
+              <input type="text" name="pengguna" class="form-control form-control-sm" value="Umum / Pool">
+            </div>
+            <div class="mb-2">
+              <label class="form-label small fw-bold text-dark">Barcode Data / Target URL QR</label>
+              <input type="text" name="barcode_data" class="form-control form-control-sm" placeholder="https://canva.link/... atau teks barcode">
+              <div class="form-text" style="font-size: 0.72rem;">Jika dikosongkan, QR Code akan otomatis diarahkan ke URL verifikasi sistem.</div>
+            </div>
+          </div>
+          <div class="modal-footer py-2 px-3">
+            <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Batal</button>
+            <button type="submit" class="btn btn-sm btn-primary fw-bold">Simpan Kartu</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: LIVE PREVIEW INTERAKTIF -->
   <div class="modal fade" id="livePreviewModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered" style="max-width: 540px;">
       <div class="modal-content border-0 shadow-lg" style="border-radius: 16px; overflow: hidden;">
@@ -966,15 +1009,9 @@ $storedGasUrl = GoogleSheetsBridge::getUrl();
           <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
         </div>
         <div class="modal-body text-center bg-light p-4">
-          
-          <!-- Wrapper Zoom Preview -->
           <div class="d-flex justify-content-center mb-3">
-            <div id="previewCardTarget" style="transform: scale(1.35); transform-origin: top center; margin-bottom: 24mm;">
-              <!-- Kartu CR80 akan di-clone ke sini -->
-            </div>
+            <div id="previewCardTarget" style="transform: scale(1.35); transform-origin: top center; margin-bottom: 24mm;"></div>
           </div>
-
-          <!-- Controls Navigasi Kartu -->
           <div class="d-flex justify-content-between align-items-center bg-white p-2 rounded-3 border shadow-sm mt-2">
             <button type="button" class="btn btn-sm btn-outline-secondary fw-semibold" id="prevCardBtn" onclick="navigateCard(-1)">
               <i class="bi bi-chevron-left"></i> Sebelumnya
@@ -984,31 +1021,26 @@ $storedGasUrl = GoogleSheetsBridge::getUrl();
               Berikutnya <i class="bi bi-chevron-right"></i>
             </button>
           </div>
-
         </div>
         <div class="modal-footer py-2 px-3 justify-content-between">
           <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-dismiss="modal">Tutup</button>
           <button type="button" class="btn btn-sm btn-primary fw-bold" onclick="window.print()">
-            <i class="bi bi-printer-fill me-1"></i> Cetak Seluruh Kartu
+            <i class="bi bi-printer-fill me-1"></i> Cetak Sekarang
           </button>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- =========================================================================
-       MODAL 2: INPUT LOKASI CEPAT & MASSAL
-       ========================================================================= -->
+  <!-- MODAL: INPUT LOKASI CEPAT & MASSAL -->
   <div class="modal fade" id="quickEditModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
       <div class="modal-content border-0 shadow-lg" style="border-radius: 14px;">
         <div class="modal-header py-2 px-3 bg-dark text-white">
-          <h6 class="modal-title fw-bold"><i class="bi bi-sliders me-2"></i>Kustomisasi Teks Kartu Cetak</h6>
+          <h6 class="modal-title fw-bold"><i class="bi bi-sliders me-2"></i>Kustomisasi Teks Kartu</h6>
           <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
         </div>
         <div class="modal-body p-3">
-          
-          <!-- Lokasi Massal -->
           <div class="mb-3">
             <label class="form-label small fw-bold text-dark">Lokasi Penempatan Massal</label>
             <div class="input-group input-group-sm">
@@ -1019,8 +1051,6 @@ $storedGasUrl = GoogleSheetsBridge::getUrl();
             </div>
             <div class="form-text" style="font-size: 0.74rem;">Mengganti nilai lokasi pada seluruh kartu yang ada di layar cetak saat ini.</div>
           </div>
-
-          <!-- Teks Perhatian / Disclaimer -->
           <div class="mb-2">
             <label class="form-label small fw-bold text-dark">Teks Catatan Perhatian (Footer Kartu)</label>
             <textarea id="bulkDisclaimerInput" class="form-control form-control-sm" rows="2">Perhatian: Dilarang memindahkan barang inventaris ini tanpa seizin Departemen IT & Sarana Prasarana.</textarea>
@@ -1028,7 +1058,6 @@ $storedGasUrl = GoogleSheetsBridge::getUrl();
               Terapkan Perhatian ke Semua Kartu
             </button>
           </div>
-
         </div>
         <div class="modal-footer py-2 px-3">
           <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Selesai</button>
@@ -1037,9 +1066,7 @@ $storedGasUrl = GoogleSheetsBridge::getUrl();
     </div>
   </div>
 
-  <!-- =========================================================================
-       MODAL 3: INTEGRASI & SINKRONISASI GOOGLE SHEETS
-       ========================================================================= -->
+  <!-- MODAL: INTEGRASI GOOGLE SHEETS -->
   <div class="modal fade" id="googleSheetsModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-lg">
       <div class="modal-content border-0 shadow-lg" style="border-radius: 16px;">
@@ -1048,7 +1075,6 @@ $storedGasUrl = GoogleSheetsBridge::getUrl();
           <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
         </div>
         <div class="modal-body p-4">
-          
           <ul class="nav nav-pills nav-fill mb-3" id="gasTabs" role="tablist">
             <li class="nav-item">
               <button class="nav-link active fw-bold btn-sm" id="gas-sync-tab" data-bs-toggle="pill" data-bs-target="#gas-sync" type="button">
@@ -1063,22 +1089,17 @@ $storedGasUrl = GoogleSheetsBridge::getUrl();
           </ul>
 
           <div class="tab-content">
-            
-            <!-- Tab 1: Sinkronisasi URL -->
             <div class="tab-pane fade show active" id="gas-sync">
               <div class="alert alert-info py-2 px-3 small border-0 shadow-sm mb-3">
                 <i class="bi bi-info-circle-fill me-1"></i> Modul ini akan otomatis membuat tab sheet <code>inventaris_kartu</code> beserta kolom header jika belum ada di Spreadsheet Anda.
               </div>
-
               <div class="mb-3">
                 <label class="form-label small fw-bold text-dark">URL Google Apps Script Web App (Exec URL)</label>
                 <div class="input-group input-group-sm">
                   <input type="url" id="gasUrlInput" class="form-control font-monospace" value="<?= e($storedGasUrl) ?>" placeholder="https://script.google.com/macros/s/AKfycb.../exec">
                   <button class="btn btn-outline-secondary" type="button" onclick="saveGasUrl()">Simpan URL</button>
                 </div>
-                <div class="form-text" style="font-size: 0.74rem;">URL hasil Deploy Web App (Who has access: Anyone) dari Spreadsheet Anda.</div>
               </div>
-
               <div class="card p-3 bg-light border-0">
                 <div class="d-flex justify-content-between align-items-center mb-2">
                   <span class="small fw-bold text-dark">Aset yang akan disinkronkan:</span>
@@ -1091,7 +1112,6 @@ $storedGasUrl = GoogleSheetsBridge::getUrl();
               </div>
             </div>
 
-            <!-- Tab 2: Salin Kode Apps Script -->
             <div class="tab-pane fade" id="gas-code">
               <div class="d-flex justify-content-between align-items-center mb-2">
                 <span class="small text-muted">Pasang kode ini di Extensions &gt; Apps Script Google Sheets Anda:</span>
@@ -1130,7 +1150,7 @@ function doPost(e) {
     var postData = JSON.parse(e.postData.contents);
     var table = postData.table || 'inventaris_kartu';
     var data = postData.data || {};
-    var headers = ['id', 'nomor_rekening', 'nama_barang', 'tanggal_perolehan', 'lokasi', 'pengguna', 'barcode_data', 'created_at'];
+    var headers = ['id', 'nomor_rekening', 'nama_barang', 'tanggal_perolehan', 'barcode_data', 'created_at'];
     var ss = SpreadsheetApp.getActiveSpreadsheet();
     var sheet = ss.getSheetByName(table);
     if (!sheet) {
@@ -1162,27 +1182,19 @@ function doPost(e) {
 }
               </textarea>
             </div>
-
           </div>
-
         </div>
       </div>
     </div>
   </div>
 
-  <!-- CSRF Token untuk Form AJAX -->
   <input type="hidden" id="csrfToken" value="<?= e(csrf_token()) ?>">
-
-  <!-- Bootstrap Bundle JS -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 
-  <!-- Script Generator & Logika Interaktif -->
   <script>
-    // Data Kartu dalam Memory Client
     const CARDS_DATA = <?= json_encode($cardsData, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) ?>;
     let currentPreviewIndex = 0;
 
-    // 1. Generate QR Code Client-Side untuk setiap kartu
     document.addEventListener("DOMContentLoaded", function() {
       const qrBoxes = document.querySelectorAll(".qr-box-inner");
       qrBoxes.forEach(box => {
@@ -1200,9 +1212,9 @@ function doPost(e) {
       });
     });
 
-    // 2. Toggle Garis Potong
     function toggleCutGuides(el) {
       const container = document.getElementById("sheetsContainer");
+      if (!container) return;
       if (el.checked) {
         container.classList.add("with-cut-guides");
       } else {
@@ -1210,9 +1222,8 @@ function doPost(e) {
       }
     }
 
-    // 3. Live Preview Modal (1-per-1)
     function openLivePreviewModal() {
-      if (CARDS_DATA.length === 0) return;
+      if (!CARDS_DATA || CARDS_DATA.length === 0) return;
       currentPreviewIndex = 0;
       renderPreviewCard();
       const modal = new bootstrap.Modal(document.getElementById('livePreviewModal'));
@@ -1230,9 +1241,13 @@ function doPost(e) {
         target.innerHTML = sourceWrap.innerHTML;
       }
 
-      counter.innerText = `Kartu ${currentPreviewIndex + 1} dari ${CARDS_DATA.length}`;
-      document.getElementById("prevCardBtn").disabled = (currentPreviewIndex === 0);
-      document.getElementById("nextCardBtn").disabled = (currentPreviewIndex === CARDS_DATA.length - 1);
+      if (counter) {
+        counter.innerText = `Kartu ${currentPreviewIndex + 1} dari ${CARDS_DATA.length}`;
+      }
+      const prevBtn = document.getElementById("prevCardBtn");
+      const nextBtn = document.getElementById("nextCardBtn");
+      if (prevBtn) prevBtn.disabled = (currentPreviewIndex === 0);
+      if (nextBtn) nextBtn.disabled = (currentPreviewIndex === CARDS_DATA.length - 1);
     }
 
     function navigateCard(step) {
@@ -1243,7 +1258,6 @@ function doPost(e) {
       }
     }
 
-    // 4. Quick Edit: Terapkan Lokasi Massal
     function applyBulkLocation() {
       const locVal = document.getElementById("bulkLocationInput").value.trim();
       if (!locVal) {
@@ -1260,7 +1274,6 @@ function doPost(e) {
       alert(`Lokasi "${locVal}" berhasil diterapkan ke semua kartu.`);
     }
 
-    // 5. Quick Edit: Terapkan Disclaimer Massal
     function applyBulkDisclaimer() {
       const discVal = document.getElementById("bulkDisclaimerInput").value.trim();
       if (!discVal) return;
@@ -1270,7 +1283,6 @@ function doPost(e) {
       alert("Catatan perhatian footer berhasil diperbarui.");
     }
 
-    // 6. Simpan URL Apps Script
     function saveGasUrl() {
       const gasUrl = document.getElementById("gasUrlInput").value.trim();
       if (!gasUrl) {
@@ -1298,7 +1310,6 @@ function doPost(e) {
       .catch(err => alert("Terjadi kesalahan jaringan: " + err));
     }
 
-    // 7. Sinkronisasi ke Google Sheets
     function syncCardsToGoogleSheets() {
       const gasUrl = document.getElementById("gasUrlInput").value.trim();
       if (!gasUrl) {
@@ -1344,7 +1355,6 @@ function doPost(e) {
       });
     }
 
-    // 8. Salin Kode Apps Script
     function copyGasScript() {
       const area = document.getElementById("gasScriptArea");
       area.select();

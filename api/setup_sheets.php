@@ -205,8 +205,21 @@ if (empty($existingAudit)) {
         [1, date('Y-m-d H:i:s'), 1, 'admin', 'admin', '127.0.0.1', 'CREATE', 'SISTEM', 1, 'Audit Trail Initialized', 'Inisialisasi modul Audit Trail POJK / ISO 27001']
     ], 'USER_ENTERED');
     $results[] = "✅ Tab Audit_Trail — dibuat + header & log inisialisasi";
+// ====== 12. Tab inventaris_kartu ======
+$client->createSheetIfNotExists('inventaris_kartu');
+$existingInv = $client->getValues('inventaris_kartu!A1:H1');
+if (empty($existingInv)) {
+    $client->appendValues('inventaris_kartu!A:H', [
+        ['id', 'nomor_rekening', 'nama_barang', 'tanggal_perolehan', 'barcode_data', 'lokasi', 'pengguna', 'created_at'],
+        [9, '03.05.1973', 'KIPAS ANGIN EMBUN', '2026-02-27', 'https://canva.link/ko9ckx76pbojj2y', 'KPO / Operasional', 'Umum / Pool', '2026-08-10 05:00:02'],
+        [10, '01.05.0359', 'ROLLER BLIND U/ RUANG PERPUS', '2023-01-31', 'https://canva.link/t9fcx334gfbmhrw', 'Ruang Perpustakaan', 'Umum / Perpustakaan', '2026-08-11 05:11:48'],
+        [11, '01.05.0302', 'Roller Blind KPO', '2022-05-23', 'https://canva.link/q5kkycw9vtomob7', 'KPO', 'Operasional KPO', '2026-08-11 05:13:00'],
+        [12, '01.05.0492', 'LAPTOP MSI THIN STAFF IT', '2026-08-26', 'https://canva.link/axqdgjgztd1uu3r', 'Ruang IT', 'Staff IT', '2026-09-08 03:12:05'],
+        [13, '01.05.0493', 'PRINTER EPSON L3211 KAS', '2026-09-26', 'https://canva.link/tyu3nb63s2yjau9', 'KPO / Kasir', 'Kas / Teller', '2026-09-08 03:15:02'],
+    ], 'USER_ENTERED');
+    $results[] = "✅ Tab inventaris_kartu — dibuat + 5 kartu aset default";
 } else {
-    $results[] = "⏭️ Tab Audit_Trail — sudah ada";
+    $results[] = "⏭️ Tab inventaris_kartu — sudah ada";
 }
 
 // ====== Tampilkan Hasil ======
