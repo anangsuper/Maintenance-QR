@@ -1162,7 +1162,7 @@ unset($_SESSION['flash'], $_SESSION['flash_error']);
           <div class="modal-body p-3">
             <div class="mb-3">
               <label class="form-label small fw-bold text-dark">Nomor Rekening</label>
-              <input type="text" name="nomor_rekening" id="printAddCardRekening" class="form-control form-control-sm font-monospace" placeholder="Contoh: 00.0.0000 / 01.5.00003" required oninput="handleRekeningInput(this, event)">
+              <input type="text" name="nomor_rekening" id="printAddCardRekening" class="form-control form-control-sm font-monospace" placeholder="Contoh: 00.0.0000" maxlength="9" required oninput="handleRekeningInput(this, event)">
             </div>
             <div class="mb-3">
               <label class="form-label small fw-bold text-dark">Nama Barang</label>
@@ -1565,7 +1565,7 @@ function doPost(e) {
 
       let p0 = digits.slice(0, 2);
       let p1 = digits.slice(2, 3);
-      let p2 = digits.slice(3, 10);
+      let p2 = digits.slice(3, 7); // Maksimal 4 digit setelah titik terakhir (00.0.0000)
 
       if (digits.length < 2) {
         el.value = digits;
