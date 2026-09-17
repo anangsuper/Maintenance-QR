@@ -134,8 +134,11 @@ if ($source === 'inventaris_kartu') {
         $rek = trim((string)($r['nomor_rekening'] ?? ''));
         $nama = trim((string)($r['nama_barang'] ?? ''));
         $barcode = trim((string)($r['barcode_data'] ?? ''));
-        $lokasi = trim((string)($r['lokasi'] ?? 'KPO / Operasional')) ?: 'KPO / Operasional';
-        $pengguna = trim((string)($r['pengguna'] ?? 'Umum / Pool')) ?: 'Umum / Pool';
+        $lokasi = trim((string)($r['lokasi'] ?? ''));
+        if ($lokasi === '' || $lokasi === 'KPO' || $lokasi === 'KPO / Operasional') {
+            $cBranch = get_cabang_from_nomor_rekening($rek);
+            $lokasi = $cBranch ? $cBranch['lokasi'] : 'Kantor Pusat (KPO)';
+        }
         $tglRaw = trim((string)($r['tanggal_perolehan'] ?? ''));
 
         $tglFormatted = '-';
@@ -155,7 +158,6 @@ if ($source === 'inventaris_kartu') {
             'tgl_raw'      => $tglRaw,
             'nomor_gabungan' => get_nomor_asset_gabungan($rek, $tglRaw),
             'lokasi'       => $lokasi,
-            'pengguna'     => $pengguna,
             'barcode_data' => $barcode,
             'qr_url'       => $qrTarget,
             'created_at'   => $r['created_at'] ?? ''
@@ -237,7 +239,7 @@ if ($exportMode === 'csv') {
     header('Content-Disposition: attachment; filename="Kartu_Inventaris_CR80_' . date('Ymd_His') . '.csv"');
     $out = fopen('php://output', 'w');
     fprintf($out, chr(0xEF).chr(0xBB).chr(0xBF)); // BOM UTF-8
-    fputcsv($out, ['No', 'ID', 'Nomor Rekening / Kode', 'Nama Barang', 'Tanggal Perolehan', 'Barcode Data (URL)', 'Lokasi', 'Pengguna']);
+    fputcsv($out, ['No', 'ID', 'Nomor Rekening / Kode', 'Nama Barang', 'Tanggal Perolehan', 'Barcode Data (URL)', 'Lokasi']);
     foreach ($cardsData as $c) {
         fputcsv($out, [
             $c['index'],
@@ -246,8 +248,7 @@ if ($exportMode === 'csv') {
             sanitize_csv_cell($c['nama']),
             sanitize_csv_cell($c['tgl']),
             sanitize_csv_cell($c['barcode_data']),
-            sanitize_csv_cell($c['lokasi']),
-            sanitize_csv_cell($c['pengguna'])
+            sanitize_csv_cell($c['lokasi'])
         ]);
     }
     fclose($out);
@@ -897,7 +898,7 @@ unset($_SESSION['flash'], $_SESSION['flash_error']);
       
       <!-- Kiri: Brand & Info -->
       <div class="d-flex align-items-center gap-3">
-        <a href="<?= e(module_url('assets.php')) ?>" class="btn btn-sm btn-outline-secondary" title="Kembali">
+        <a href="<?= e(module_url('assets.php')) ?>" class="btn btn-sm btn-light border" title="Kembali">
           <i class="bi bi-arrow-left"></i>
         </a>
         <div>
@@ -917,23 +918,23 @@ unset($_SESSION['flash'], $_SESSION['flash_error']);
         
         <!-- Pilihan Tabel / Sumber Data -->
         <div class="btn-group btn-group-sm" role="group">
-          <a href="<?= e(card_url(['source' => 'inventaris_kartu'])) ?>" class="btn <?= $source === 'inventaris_kartu' ? 'btn-primary fw-bold' : 'btn-outline-secondary' ?>" title="Data dari tabel khusus inventaris_kartu (5 Kartu Utama)">
+          <a href="<?= e(card_url(['source' => 'inventaris_kartu'])) ?>" class="btn <?= $source === 'inventaris_kartu' ? 'btn-primary fw-semibold' : 'btn-light border' ?>" title="Data dari tabel khusus inventaris_kartu (5 Kartu Utama)">
             <i class="bi bi-table me-1"></i> Tabel Inventaris Kartu
           </a>
-          <a href="<?= e(card_url(['source' => 'assets'])) ?>" class="btn <?= $source === 'assets' ? 'btn-primary fw-bold' : 'btn-outline-secondary' ?>" title="Data dari katalog komputer Asset Registry">
+          <a href="<?= e(card_url(['source' => 'assets'])) ?>" class="btn <?= $source === 'assets' ? 'btn-primary fw-semibold' : 'btn-light border' ?>" title="Data dari katalog komputer Asset Registry">
             <i class="bi bi-pc-display me-1"></i> Dari Asset Registry
           </a>
         </div>
 
         <!-- Layout Selector -->
         <div class="btn-group btn-group-sm" role="group">
-          <a href="<?= e(card_url(['layout' => '8'])) ?>" class="btn <?= $layout === '8' ? 'btn-dark' : 'btn-outline-secondary' ?>" title="8 Kartu per Lembar A4 Portrait">
+          <a href="<?= e(card_url(['layout' => '8'])) ?>" class="btn <?= $layout === '8' ? 'btn-dark fw-semibold' : 'btn-light border' ?>" title="8 Kartu per Lembar A4 Portrait">
             8 / A4
           </a>
-          <a href="<?= e(card_url(['layout' => '10'])) ?>" class="btn <?= $layout === '10' ? 'btn-dark' : 'btn-outline-secondary' ?>" title="10 Kartu per Lembar A4 Portrait">
+          <a href="<?= e(card_url(['layout' => '10'])) ?>" class="btn <?= $layout === '10' ? 'btn-dark fw-semibold' : 'btn-light border' ?>" title="10 Kartu per Lembar A4 Portrait">
             10 / A4
           </a>
-          <a href="<?= e(card_url(['layout' => '12'])) ?>" class="btn <?= $layout === '12' ? 'btn-dark' : 'btn-outline-secondary' ?>" title="12 Kartu per Lembar A4 Landscape">
+          <a href="<?= e(card_url(['layout' => '12'])) ?>" class="btn <?= $layout === '12' ? 'btn-dark fw-semibold' : 'btn-light border' ?>" title="12 Kartu per Lembar A4 Landscape">
             12 / A4
           </a>
         </div>
@@ -947,21 +948,21 @@ unset($_SESSION['flash'], $_SESSION['flash_error']);
 
       <!-- Kanan: Aksi -->
       <div class="d-flex align-items-center gap-2 flex-wrap">
-        <button type="button" class="btn btn-sm btn-success fw-semibold" data-bs-toggle="modal" data-bs-target="#addCardModal">
-          <i class="bi bi-plus-lg me-1"></i> Tambah Data
+        <button type="button" class="btn btn-sm btn-primary fw-semibold d-inline-flex align-items-center gap-1" data-bs-toggle="modal" data-bs-target="#addCardModal">
+          <i class="bi bi-plus-lg"></i> Tambah Data
         </button>
 
-        <button type="button" class="btn btn-sm btn-outline-info fw-semibold" onclick="openLivePreviewModal()">
-          <i class="bi bi-eye me-1"></i> Pratinjau
+        <button type="button" class="btn btn-sm btn-light border d-inline-flex align-items-center gap-1" onclick="openLivePreviewModal()">
+          <i class="bi bi-eye"></i> Pratinjau
         </button>
 
-        <button type="button" class="btn btn-sm btn-outline-secondary fw-semibold" data-bs-toggle="modal" data-bs-target="#quickEditModal">
-          <i class="bi bi-pencil-square me-1"></i> Set Lokasi
+        <button type="button" class="btn btn-sm btn-light border d-inline-flex align-items-center gap-1" data-bs-toggle="modal" data-bs-target="#quickEditModal">
+          <i class="bi bi-pencil-square"></i> Set Lokasi
         </button>
 
         <div class="dropdown">
-          <button class="btn btn-sm btn-outline-secondary dropdown-toggle fw-semibold" type="button" data-bs-toggle="dropdown">
-            <i class="bi bi-download me-1"></i> Ekspor
+          <button class="btn btn-sm btn-light border dropdown-toggle d-inline-flex align-items-center gap-1" type="button" data-bs-toggle="dropdown">
+            <i class="bi bi-download"></i> Ekspor
           </button>
           <ul class="dropdown-menu dropdown-menu-end shadow-sm" style="font-size: 0.85rem;">
             <li>
@@ -983,8 +984,8 @@ unset($_SESSION['flash'], $_SESSION['flash_error']);
           </ul>
         </div>
 
-        <button type="button" class="btn btn-sm btn-primary fw-bold shadow-sm" onclick="window.print()">
-          <i class="bi bi-printer-fill me-1"></i> Cetak / PDF
+        <button type="button" class="btn btn-sm btn-primary fw-bold shadow-sm d-inline-flex align-items-center gap-1" onclick="window.print()">
+          <i class="bi bi-printer-fill"></i> Cetak / PDF
         </button>
       </div>
 
@@ -1176,9 +1177,9 @@ unset($_SESSION['flash'], $_SESSION['flash_error']);
               <input type="text" name="barcode_data" class="form-control form-control-sm font-monospace" placeholder="Salin/tempel kode QR di sini">
             </div>
           </div>
-          <div class="modal-footer py-2 px-3">
-            <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Batal</button>
-            <button type="submit" class="btn btn-sm btn-primary fw-bold px-3">Simpan</button>
+          <div class="modal-footer py-2 px-3 bg-light">
+            <button type="button" class="btn btn-sm btn-light border" data-bs-dismiss="modal">Batal</button>
+            <button type="submit" class="btn btn-sm btn-primary fw-semibold px-3"><i class="bi bi-save me-1"></i> Simpan Data</button>
           </div>
         </form>
       </div>

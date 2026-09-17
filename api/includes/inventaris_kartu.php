@@ -13,8 +13,7 @@ function default_inventaris_kartu_rows(): array {
             'nama_barang' => 'PRINTER EPSON L3211 KAS',
             'tanggal_perolehan' => '2026-09-26',
             'barcode_data' => 'https://canva.link/tyu3nb63s2yjau9',
-            'lokasi' => 'KPO',
-            'pengguna' => 'Kas / Teller',
+            'lokasi' => 'Kantor Pusat (KPO)',
             'created_at' => '2026-09-08 03:15:02'
         ],
         [
@@ -23,8 +22,7 @@ function default_inventaris_kartu_rows(): array {
             'nama_barang' => 'LAPTOP MSI THIN STAFF IT',
             'tanggal_perolehan' => '2026-08-26',
             'barcode_data' => 'https://canva.link/axqdgjgztd1uu3r',
-            'lokasi' => 'Ruang IT',
-            'pengguna' => 'Staff IT',
+            'lokasi' => 'Kantor Pusat (KPO)',
             'created_at' => '2026-09-08 03:12:05'
         ],
         [
@@ -33,8 +31,7 @@ function default_inventaris_kartu_rows(): array {
             'nama_barang' => 'Roller Blind KPO',
             'tanggal_perolehan' => '2022-05-23',
             'barcode_data' => 'https://canva.link/q5kkycw9vtomob7',
-            'lokasi' => 'KPO',
-            'pengguna' => 'Operasional KPO',
+            'lokasi' => 'Kantor Pusat (KPO)',
             'created_at' => '2026-08-11 05:13:00'
         ],
         [
@@ -43,8 +40,7 @@ function default_inventaris_kartu_rows(): array {
             'nama_barang' => 'ROLLER BLIND U/ RUANG PERPUS',
             'tanggal_perolehan' => '2023-01-31',
             'barcode_data' => 'https://canva.link/t9fcx334gfbmhrw',
-            'lokasi' => 'Ruang Perpustakaan',
-            'pengguna' => 'Umum / Perpustakaan',
+            'lokasi' => 'Kantor Pusat (KPO)',
             'created_at' => '2026-08-11 05:11:48'
         ],
         [
@@ -54,7 +50,6 @@ function default_inventaris_kartu_rows(): array {
             'tanggal_perolehan' => '2026-02-27',
             'barcode_data' => 'https://canva.link/ko9ckx76pbojj2y',
             'lokasi' => 'Martapura / Operasional',
-            'pengguna' => 'Umum / Pool',
             'created_at' => '2026-08-10 05:00:02'
         ]
     ];
@@ -139,7 +134,7 @@ function get_inventaris_kartu_rows(bool $refresh = false): array {
             $rows = $client->getSheetData('inventaris_kartu', $refresh);
             if (empty($rows)) {
                 $defaults = default_inventaris_kartu_rows();
-                $headers = ['id', 'nomor_rekening', 'nama_barang', 'tanggal_perolehan', 'barcode_data', 'lokasi', 'pengguna', 'created_at'];
+                $headers = ['id', 'nomor_rekening', 'nama_barang', 'tanggal_perolehan', 'barcode_data', 'lokasi', 'created_at'];
                 $appendData = [$headers];
                 foreach ($defaults as $d) {
                     $appendData[] = [
@@ -149,11 +144,10 @@ function get_inventaris_kartu_rows(bool $refresh = false): array {
                         $d['tanggal_perolehan'],
                         $d['barcode_data'],
                         $d['lokasi'],
-                        $d['pengguna'],
                         $d['created_at']
                     ];
                 }
-                $client->appendValues('inventaris_kartu!A:H', $appendData);
+                $client->appendValues('inventaris_kartu!A:G', $appendData);
                 return $defaults;
             }
 
@@ -161,14 +155,20 @@ function get_inventaris_kartu_rows(bool $refresh = false): array {
             foreach ($rows as $r) {
                 $id = (int)($r['id'] ?? 0);
                 if ($id <= 0) continue;
+                $rek = trim((string)($r['nomor_rekening'] ?? ''));
+                $lokasi = trim((string)($r['lokasi'] ?? ''));
+                if ($lokasi === '' || $lokasi === 'KPO' || $lokasi === 'KPO / Operasional') {
+                    $cBranch = get_cabang_from_nomor_rekening($rek);
+                    $lokasi = $cBranch ? $cBranch['lokasi'] : 'Kantor Pusat (KPO)';
+                }
+
                 $normalized[] = [
                     'id'                => $id,
-                    'nomor_rekening'   => trim((string)($r['nomor_rekening'] ?? '')),
+                    'nomor_rekening'   => $rek,
                     'nama_barang'      => trim((string)($r['nama_barang'] ?? '')),
                     'tanggal_perolehan'=> trim((string)($r['tanggal_perolehan'] ?? '')),
                     'barcode_data'     => trim((string)($r['barcode_data'] ?? '')),
-                    'lokasi'           => trim((string)($r['lokasi'] ?? 'KPO / Operasional')),
-                    'pengguna'         => trim((string)($r['pengguna'] ?? 'Umum / Pool')),
+                    'lokasi'           => $lokasi,
                     'created_at'       => trim((string)($r['created_at'] ?? ''))
                 ];
             }
@@ -188,8 +188,7 @@ function get_inventaris_kartu_rows(bool $refresh = false): array {
                 nama_barang VARCHAR(255) NOT NULL,
                 tanggal_perolehan DATE NOT NULL,
                 barcode_data TEXT NOT NULL,
-                lokasi VARCHAR(150) NULL DEFAULT 'KPO / Operasional',
-                pengguna VARCHAR(150) NULL DEFAULT 'Umum / Pool',
+                lokasi VARCHAR(150) NULL DEFAULT 'Kantor Pusat (KPO)',
                 created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
                 PRIMARY KEY (id)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
@@ -201,8 +200,8 @@ function get_inventaris_kartu_rows(bool $refresh = false): array {
         if (empty($rows)) {
             $defaults = default_inventaris_kartu_rows();
             $ins = $pdo->prepare("
-                INSERT INTO inventaris_kartu (id, nomor_rekening, nama_barang, tanggal_perolehan, barcode_data, lokasi, pengguna, created_at)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                INSERT INTO inventaris_kartu (id, nomor_rekening, nama_barang, tanggal_perolehan, barcode_data, lokasi, created_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
             ");
             foreach ($defaults as $d) {
                 $ins->execute([
@@ -212,7 +211,6 @@ function get_inventaris_kartu_rows(bool $refresh = false): array {
                     $d['tanggal_perolehan'],
                     $d['barcode_data'],
                     $d['lokasi'],
-                    $d['pengguna'],
                     $d['created_at']
                 ]);
             }
@@ -241,7 +239,6 @@ function insert_inventaris_kartu(array $data): array {
         $lokasi = $cBranch ? $cBranch['lokasi'] : 'Kantor Pusat (KPO)';
     }
     
-    $pengguna = trim((string)($data['pengguna'] ?? '')) ?: '-';
     $nowStr = date('Y-m-d H:i:s');
 
     if ($rek === '' || $nama === '') {
@@ -257,8 +254,8 @@ function insert_inventaris_kartu(array $data): array {
                 if ($r['id'] > $maxId) $maxId = $r['id'];
             }
             $newId = $maxId + 1;
-            $client->appendValues('inventaris_kartu!A:H', [[
-                $newId, $rek, $nama, $tgl, $barcode, $lokasi, $pengguna, $nowStr
+            $client->appendValues('inventaris_kartu!A:G', [[
+                $newId, $rek, $nama, $tgl, $barcode, $lokasi, $nowStr
             ]]);
             return ['success' => true, 'id' => $newId];
         }
@@ -266,10 +263,10 @@ function insert_inventaris_kartu(array $data): array {
 
     try {
         $ins = db()->prepare("
-            INSERT INTO inventaris_kartu (nomor_rekening, nama_barang, tanggal_perolehan, barcode_data, lokasi, pengguna, created_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO inventaris_kartu (nomor_rekening, nama_barang, tanggal_perolehan, barcode_data, lokasi, created_at)
+            VALUES (?, ?, ?, ?, ?, ?)
         ");
-        $ins->execute([$rek, $nama, $tgl, $barcode, $lokasi, $pengguna, $nowStr]);
+        $ins->execute([$rek, $nama, $tgl, $barcode, $lokasi, $nowStr]);
         $newId = (int)db()->lastInsertId();
         return ['success' => true, 'id' => $newId];
     } catch (Throwable $e) {
@@ -292,8 +289,6 @@ function update_inventaris_kartu(int $id, array $data): bool {
         $cBranch = get_cabang_from_nomor_rekening($rek);
         $lokasi = $cBranch ? $cBranch['lokasi'] : 'Kantor Pusat (KPO)';
     }
-    
-    $pengguna = trim((string)($data['pengguna'] ?? '')) ?: '-';
 
     if ($id <= 0 || $rek === '' || $nama === '') return false;
 
@@ -304,8 +299,8 @@ function update_inventaris_kartu(int $id, array $data): bool {
             foreach ($rows as $idx => $r) {
                 if ((int)($r['id'] ?? 0) === $id) {
                     $rowNum = $idx + 2;
-                    $client->updateValues("inventaris_kartu!B{$rowNum}:G{$rowNum}", [[
-                        $rek, $nama, $tgl, $barcode, $lokasi, $pengguna
+                    $client->updateValues("inventaris_kartu!B{$rowNum}:F{$rowNum}", [[
+                        $rek, $nama, $tgl, $barcode, $lokasi
                     ]]);
                     return true;
                 }
@@ -317,10 +312,10 @@ function update_inventaris_kartu(int $id, array $data): bool {
     try {
         $st = db()->prepare("
             UPDATE inventaris_kartu
-            SET nomor_rekening = ?, nama_barang = ?, tanggal_perolehan = ?, barcode_data = ?, lokasi = ?, pengguna = ?
+            SET nomor_rekening = ?, nama_barang = ?, tanggal_perolehan = ?, barcode_data = ?, lokasi = ?
             WHERE id = ?
         ");
-        return $st->execute([$rek, $nama, $tgl, $barcode, $lokasi, $pengguna, $id]);
+        return $st->execute([$rek, $nama, $tgl, $barcode, $lokasi, $id]);
     } catch (Throwable $e) {
         return false;
     }
@@ -342,7 +337,7 @@ function delete_inventaris_kartu(array|int $ids): bool {
                 $curId = (int)($rows[$i]['id'] ?? 0);
                 if (in_array($curId, $idArray, true)) {
                     $rowNum = $i + 2;
-                    $client->clearValues("inventaris_kartu!A{$rowNum}:H{$rowNum}");
+                    $client->clearValues("inventaris_kartu!A{$rowNum}:G{$rowNum}");
                 }
             }
             return true;

@@ -16,8 +16,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'nama_barang'      => $_POST['nama_barang'] ?? '',
             'tanggal_perolehan'=> $_POST['tanggal_perolehan'] ?? date('Y-m-d'),
             'barcode_data'     => $_POST['barcode_data'] ?? '',
-            'lokasi'           => $_POST['lokasi'] ?? 'KPO',
-            'pengguna'         => $_POST['pengguna'] ?? 'Umum / Pool'
+            'lokasi'           => $_POST['lokasi'] ?? ''
         ]);
         if (!empty($res['success'])) {
             $_SESSION['flash'] = 'Data kartu inventaris baru berhasil disimpan.';
@@ -36,8 +35,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'nama_barang'      => $_POST['nama_barang'] ?? '',
             'tanggal_perolehan'=> $_POST['tanggal_perolehan'] ?? date('Y-m-d'),
             'barcode_data'     => $_POST['barcode_data'] ?? '',
-            'lokasi'           => $_POST['lokasi'] ?? 'KPO',
-            'pengguna'         => $_POST['pengguna'] ?? 'Umum / Pool'
+            'lokasi'           => $_POST['lokasi'] ?? ''
         ]);
         if ($ok) {
             $_SESSION['flash'] = 'Data kartu inventaris berhasil diperbarui.';
@@ -102,8 +100,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     'nama_barang'      => asset_title($asset),
                     'tanggal_perolehan'=> $asset['tanggal_perolehan'] ?? $asset['created_at'] ?? date('Y-m-d'),
                     'barcode_data'     => $qrUrl,
-                    'lokasi'           => $lokasi,
-                    'pengguna'         => $pengguna
+                    'lokasi'           => $lokasi
                 ]);
                 if (!empty($res['success'])) {
                     $importedCount++;
@@ -205,7 +202,7 @@ foreach ($cardYears as $cy) {
 $filteredCards = array_filter($allCards, function($r) use ($searchCard, $cabangCard, $tahunCard) {
     if ($searchCard !== '') {
         $q = strtolower($searchCard);
-        $haystack = strtolower(($r['nomor_rekening'] ?? '') . ' ' . ($r['nama_barang'] ?? '') . ' ' . ($r['barcode_data'] ?? '') . ' ' . ($r['lokasi'] ?? '') . ' ' . ($r['pengguna'] ?? ''));
+        $haystack = strtolower(($r['nomor_rekening'] ?? '') . ' ' . ($r['nama_barang'] ?? '') . ' ' . ($r['barcode_data'] ?? '') . ' ' . ($r['lokasi'] ?? ''));
         if (strpos($haystack, $q) === false) return false;
     }
     if ($cabangCard !== '' && $cabangCard !== 'Semua Cabang' && $cabangCard !== 'all') {
@@ -414,16 +411,16 @@ if (empty($filteredCards)) {
           </td>
           <td class="text-end text-nowrap">
             <div class="btn-group btn-group-sm">
-              <button type="button" class="btn btn-light border text-info" title="Pratinjau Fisik Kartu CR80" onclick=\'openCardPreviewModal('.$jsonPayload.')\'>
-                <i class="bi bi-eye-fill"></i>
+              <button type="button" class="btn btn-sm btn-light border" title="Pratinjau Fisik Kartu CR80" onclick=\'openCardPreviewModal('.$jsonPayload.')\'>
+                <i class="bi bi-eye"></i>
               </button>
-              <a class="btn btn-light border text-primary" target="_blank" href="'.e(module_url('print_inventory_card.php', ['source'=>'inventaris_kartu', 'id'=>$cId])).'\" title="Cetak Kartu Ini">
+              <a class="btn btn-sm btn-light border" target="_blank" href="'.e(module_url('print_inventory_card.php', ['source'=>'inventaris_kartu', 'id'=>$cId])).'" title="Cetak Kartu Ini">
                 <i class="bi bi-printer"></i>
               </a>
-              <button type="button" class="btn btn-light border text-warning" title="Edit Kartu" onclick=\'openCardEditModal('.$jsonPayload.')\'>
-                <i class="bi bi-pencil-square"></i>
+              <button type="button" class="btn btn-sm btn-light border" title="Edit Kartu" onclick=\'openCardEditModal('.$jsonPayload.')\'>
+                <i class="bi bi-pencil"></i>
               </button>
-              <button type="button" class="btn btn-light border text-danger" title="Hapus Kartu" onclick="confirmDeleteCard('.$cId.', \''.e(addslashes($rek . ' - ' . $nama)).'\')">
+              <button type="button" class="btn btn-sm btn-light border text-danger" title="Hapus Kartu" onclick="confirmDeleteCard('.$cId.', \''.e(addslashes($rek . ' - ' . $nama)).'\')">
                 <i class="bi bi-trash"></i>
               </button>
             </div>
@@ -980,25 +977,33 @@ if ($activeTab === 'kartu') {
         </h2>
         <div class="text-muted small">Kelola data kartu inventaris berstandar ATM (85.6mm × 54mm), cetak massal A4, dan cetak kartu pilihan.</div>
       </div>
-      <div class="d-flex gap-2 flex-wrap">
-        <button type="button" class="btn btn-danger btn-sm fw-semibold" id="btnDeleteSelected" disabled onclick="bulkDeleteCards()">
-          <i class="bi bi-trash me-1"></i> Hapus Terpilih ( <span id="countDelete">0</span> )
+      <div class="d-flex gap-2 flex-wrap align-items-center">
+        <button type="button" class="btn btn-primary d-inline-flex align-items-center gap-1 fw-semibold px-3" data-bs-toggle="modal" data-bs-target="#addCardModal">
+          <i class="bi bi-plus-lg"></i> Tambah Data Kartu
         </button>
-        <button type="button" class="btn btn-primary btn-sm fw-semibold" id="btnPrintSelected" onclick="printSelectedCards()">
-          <i class="bi bi-printer-fill me-1"></i> Cetak Kartu Pilihan ( <span id="countPrint">0</span> )
+        <button type="button" class="btn btn-light border d-inline-flex align-items-center gap-1" data-bs-toggle="modal" data-bs-target="#importAssetModal">
+          <i class="bi bi-box-seam"></i> Pilih dari Aset IT
         </button>
-        <a href="'.e(module_url('print_inventory_card.php', ['source'=>'inventaris_kartu'])).'" target="_blank" class="btn btn-outline-primary btn-sm fw-semibold">
-          <i class="bi bi-printer me-1"></i> Cetak Semua (A4)
+        <a href="'.e(module_url('print_inventory_card.php', ['source'=>'inventaris_kartu'])).'" target="_blank" class="btn btn-light border d-inline-flex align-items-center gap-1">
+          <i class="bi bi-printer"></i> Cetak Semua (A4)
         </a>
-        <a href="'.e(module_url('print_inventory_card.php', ['export'=>'csv'])).'" class="btn btn-outline-secondary btn-sm fw-semibold">
-          <i class="bi bi-file-earmark-spreadsheet me-1"></i> Ekspor CSV
-        </a>
-        <button type="button" class="btn btn-outline-primary btn-sm fw-semibold" data-bs-toggle="modal" data-bs-target="#importAssetModal">
-          <i class="bi bi-box-seam me-1"></i> Pilih dari Aset IT
-        </button>
-        <button type="button" class="btn btn-success btn-sm fw-semibold" data-bs-toggle="modal" data-bs-target="#addCardModal">
-          <i class="bi bi-plus-lg me-1"></i> Tambah Data Kartu
-        </button>
+        <div class="dropdown">
+          <button class="btn btn-light border dropdown-toggle d-inline-flex align-items-center gap-1" type="button" data-bs-toggle="dropdown">
+            <i class="bi bi-download"></i> Ekspor
+          </button>
+          <ul class="dropdown-menu dropdown-menu-end shadow-sm" style="font-size: 0.85rem;">
+            <li>
+              <a class="dropdown-item" href="'.e(module_url('print_inventory_card.php', ['export'=>'doc'])).'">
+                <i class="bi bi-file-earmark-word-fill text-primary me-2"></i> Dokumen Microsoft Word (.doc)
+              </a>
+            </li>
+            <li>
+              <a class="dropdown-item" href="'.e(module_url('print_inventory_card.php', ['export'=>'csv'])).'">
+                <i class="bi bi-file-earmark-spreadsheet-fill text-success me-2"></i> Spreadsheet CSV (.csv)
+              </a>
+            </li>
+          </ul>
+        </div>
       </div>
     </div>
 
@@ -1044,13 +1049,32 @@ if ($activeTab === 'kartu') {
     </div>
 
     <!-- Table Container Card -->
-    <div class="card mb-4 border shadow-sm bg-white" style="border-radius: 8px; border-color: var(--app-border) !important;">
+    <div class="card mb-4 border shadow-sm bg-white overflow-hidden" style="border-radius: 8px; border-color: var(--app-border) !important;">
+      <!-- Selection Action Bar (Muncul bila kartu dicentang, sama persis dengan Asset Registry) -->
+      <div id="selectionCardBar" class="border-bottom px-4 py-2 d-none align-items-center justify-content-between flex-wrap gap-2" style="background-color: #EFF6FF !important;">
+        <div class="d-flex align-items-center gap-2">
+          <span class="badge bg-primary fs-6 px-2 py-1"><i class="bi bi-check-square me-1"></i> <span id="countSelectedText">0</span> Dipilih</span>
+          <span class="text-secondary small fw-semibold">Aksi untuk kartu inventaris terpilih:</span>
+        </div>
+        <div class="d-flex align-items-center gap-2 flex-wrap">
+          <button type="button" class="btn btn-sm btn-primary fw-semibold shadow-sm d-inline-flex align-items-center gap-1" id="btnPrintSelected" onclick="printSelectedCards()">
+            <i class="bi bi-printer-fill"></i> Cetak Kartu Pilihan (<span id="countPrint">0</span>)
+          </button>
+          <button type="button" class="btn btn-sm btn-danger fw-semibold shadow-sm d-inline-flex align-items-center gap-1" id="btnDeleteSelected" onclick="bulkDeleteCards()">
+            <i class="bi bi-trash"></i> Hapus Terpilih (<span id="countDelete">0</span>)
+          </button>
+          <button type="button" class="btn btn-sm btn-outline-secondary d-inline-flex align-items-center gap-1" onclick="deselectAllCards()">
+            <i class="bi bi-x-circle"></i> Batal
+          </button>
+        </div>
+      </div>
+
       <div class="table-responsive">
         <table class="table table-hover align-middle mb-0">
           <thead class="table-light" style="border-bottom: 2px solid var(--app-border);">
             <tr>
               <th style="width: 44px;" class="text-center">
-                <input class="form-check-input" type="checkbox" id="checkAllRows" onchange="toggleSelectAllCards(this)">
+                <input class="form-check-input" type="checkbox" id="checkAllRows" onchange="toggleSelectAllCards(this)" title="Pilih Semua Kartu" style="cursor: pointer; width: 1.15rem; height: 1.15rem;">
               </th>
               <th style="width: 140px;">NOMOR REKENING</th>
               <th>NAMA BARANG</th>
@@ -1256,9 +1280,6 @@ $body .= '
 <!-- MODAL: TAMBAH DATA KARTU INVENTARIS -->
 <div class="modal fade" id="addCardModal" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered">
-<!-- MODAL: TAMBAH DATA KARTU INVENTARIS -->
-<div class="modal fade" id="addCardModal" tabindex="-1" aria-hidden="true">
-  <div class="modal-dialog modal-dialog-centered">
     <div class="modal-content border-0 shadow-lg" style="border-radius: 14px;">
       <form method="post">
         <input type="hidden" name="_csrf" value="'.e(csrf_token()).'">
@@ -1288,8 +1309,8 @@ $body .= '
           </div>
         </div>
         <div class="modal-footer py-2 px-3 bg-light">
-          <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-dismiss="modal">Batal</button>
-          <button type="submit" class="btn btn-sm btn-primary fw-bold px-3">Simpan</button>
+          <button type="button" class="btn btn-sm btn-light border" data-bs-dismiss="modal">Batal</button>
+          <button type="submit" class="btn btn-sm btn-primary fw-semibold px-3"><i class="bi bi-save me-1"></i> Simpan Data</button>
         </div>
       </form>
     </div>
@@ -1329,8 +1350,8 @@ $body .= '
           </div>
         </div>
         <div class="modal-footer py-2 px-3 bg-light">
-          <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-dismiss="modal">Batal</button>
-          <button type="submit" class="btn btn-sm btn-primary fw-bold px-3">Simpan Perubahan</button>
+          <button type="button" class="btn btn-sm btn-light border" data-bs-dismiss="modal">Batal</button>
+          <button type="submit" class="btn btn-sm btn-primary fw-semibold px-3"><i class="bi bi-check-lg me-1"></i> Simpan Perubahan</button>
         </div>
       </form>
     </div>
@@ -1383,8 +1404,8 @@ $body .= '
           </div>
         </div>
         <div class="modal-footer py-2 px-3 bg-light">
-          <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-dismiss="modal">Batal</button>
-          <button type="submit" class="btn btn-sm btn-primary fw-bold">Impor ke Kartu Inventaris</button>
+          <button type="button" class="btn btn-sm btn-light border" data-bs-dismiss="modal">Batal</button>
+          <button type="submit" class="btn btn-sm btn-primary fw-semibold px-3"><i class="bi bi-box-arrow-in-down me-1"></i> Impor ke Kartu Inventaris</button>
         </div>
       </form>
     </div>
@@ -1560,18 +1581,46 @@ function getSelectedCardIds() {
 function updateCardCounters() {
   const ids = getSelectedCardIds();
   const count = ids.length;
-  const delBtn = document.getElementById("btnDeleteSelected");
   const countDelSpan = document.getElementById("countDelete");
   const countPrintSpan = document.getElementById("countPrint");
+  const countSelectedText = document.getElementById("countSelectedText");
+  const selBar = document.getElementById("selectionCardBar");
 
   if (countDelSpan) countDelSpan.innerText = count;
   if (countPrintSpan) countPrintSpan.innerText = count;
-  if (delBtn) delBtn.disabled = (count === 0);
+  if (countSelectedText) countSelectedText.innerText = count;
+
+  if (selBar) {
+    if (count > 0) {
+      selBar.classList.remove("d-none");
+      selBar.classList.add("d-flex");
+    } else {
+      selBar.classList.add("d-none");
+      selBar.classList.remove("d-flex");
+    }
+  }
+
+  const checkAll = document.getElementById("checkAllRows");
+  const rowChecks = document.querySelectorAll(".card-checkbox");
+  if (checkAll && rowChecks.length > 0) {
+    checkAll.checked = count === rowChecks.length;
+    checkAll.indeterminate = count > 0 && count < rowChecks.length;
+  }
 }
 
 function toggleSelectAllCards(masterCb) {
   const cbs = document.querySelectorAll(".card-checkbox");
   cbs.forEach(cb => cb.checked = masterCb.checked);
+  updateCardCounters();
+}
+
+function deselectAllCards() {
+  const checkAll = document.getElementById("checkAllRows");
+  if (checkAll) {
+    checkAll.checked = false;
+    checkAll.indeterminate = false;
+  }
+  document.querySelectorAll(".card-checkbox").forEach(cb => cb.checked = false);
   updateCardCounters();
 }
 
