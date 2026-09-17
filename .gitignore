@@ -1,3 +1,86 @@
+# ===================================================
+# SECURITY & SENSITIVE CREDENTIALS (DO NOT UPLOAD)
+# ===================================================
+# Local configurations & secrets
 config.local.php
-*.rar
+config.*.php
+!config.local.example.php
+*.local.php
+*.local.env
+*.local.json
+
+# Environment Variables & Secrets
+.env
+.env.*
+!.env.example
+*.env
+
+# Google Cloud Service Account & Private Keys
+*.pem
+*.key
+*.crt
+*.pfx
+*.p12
+*.cer
+credentials*.json
+client_secret*.json
+service-account*.json
+service_account*.json
+google-key*.json
+gs_*.json
+oauth*.json
+*_credential.json
+token.json
+
+# Temporary Cache, Session, and Runtime Files
+*.tmp
+*.temp
+*.cache
+*.log
+error_log
+logs/
+cache/
+tmp/
+temp/
+gs_cache_*.json
+gs_oauth_*.json
+gs_exist_*.json
+
+# Database Dumps & Backups
+*.sql.gz
+*.sql.bak
+*.bak
+*.backup
+*.dump
+
+# Compressed Archives
 *.zip
+*.rar
+*.7z
+*.tar
+*.tar.gz
+*.tgz
+*.iso
+
+# IDE & Editor Settings
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+.project
+.settings/
+
+# OS Generated Files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# Vercel / Deployment artifacts
+.vercel/
+.system_generated/
