@@ -1,6 +1,6 @@
 <?php
 require __DIR__ . '/bootstrap.php';
-require_login();
+require_admin();
 
 $pageTitle = 'Dokumen Perancangan Sistem (DFD & Use Case) · QR Maintenance';
 $dashboardUrl = e(module_url('dashboard.php'));

@@ -38,8 +38,8 @@ function render_page(string $title, string $content, string $extraHead = '', str
     $systemItems = [];
     if ($isAdminUser) {
         $systemItems[] = ['title' => 'QR Aset Label', 'url' => module_url('qr_admin.php'), 'icon' => 'bi-qr-code', 'active' => ($currentPage === 'qr_admin.php')];
+        $systemItems[] = ['title' => 'Dokumen Desain', 'url' => module_url('system_design.php'), 'icon' => 'bi-file-earmark-pdf', 'active' => ($currentPage === 'system_design.php')];
     }
-    $systemItems[] = ['title' => 'Dokumen Desain', 'url' => module_url('system_design.php'), 'icon' => 'bi-file-earmark-pdf', 'active' => ($currentPage === 'system_design.php')];
 
     // Sidebar navigation menu
     $navLinks = [
@@ -56,6 +56,9 @@ function render_page(string $title, string $content, string $extraHead = '', str
 
     $sidebarMenuHtml = '';
     foreach ($navLinks as $groupName => $items) {
+        if (empty($items)) {
+            continue;
+        }
         $sidebarMenuHtml .= '<div class="sidebar-section-title">'.$groupName.'</div>';
         $sidebarMenuHtml .= '<ul class="nav flex-column mb-3">';
         foreach ($items as $item) {
