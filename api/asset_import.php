@@ -228,6 +228,22 @@ function resolve_kategori_id(string $input, array &$kategoriList, $client = null
     return $newId;
 }
 
+// Helper untuk normalisasi Status Unit dari Excel/Dropdown
+function normalize_asset_status(string $input): string {
+    $clean = strtolower(trim($input));
+    if ($clean === '') return 'Aktif';
+    if (strpos($clean, 'backup') !== false || strpos($clean, 'cadangan') !== false) {
+        return 'Backup';
+    }
+    if (strpos($clean, 'rusak') !== false || strpos($clean, 'perbaikan') !== false || strpos($clean, 'servis') !== false) {
+        return 'Perbaikan';
+    }
+    if (strpos($clean, 'nonaktif') !== false || strpos($clean, 'afkir') !== false || strpos($clean, 'mati') !== false) {
+        return 'Nonaktif';
+    }
+    return 'Aktif';
+}
+
 // PROSES POST FORM IMPORT
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'process_import') {
     csrf_validate();
@@ -329,7 +345,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
         $karyawanStr = trim($row[$colMap['karyawan']] ?? '');
         $ip = trim($row[$colMap['ip']] ?? '');
         $printer = trim($row[$colMap['printer']] ?? '');
-        $status = trim($row[$colMap['status']] ?? 'Aktif') ?: 'Aktif';
+        $status = normalize_asset_status((string)($row[$colMap['status']] ?? 'Aktif'));
         $ket = trim($row[$colMap['ket']] ?? '');
 
         // Abaikan jika baris kosong total
@@ -478,27 +494,32 @@ $body .= '
     
     <!-- STEP 1: DOWNLOAD TEMPLATE RESMI -->
     <div class="card border shadow-sm mb-4 bg-white" style="border-radius: 12px; border-color: var(--app-border) !important;">
-      <div class="card-header bg-white py-3 px-4 border-bottom d-flex align-items-center justify-content-between">
+      <div class="card-header bg-white py-3 px-4 border-bottom d-flex align-items-center justify-content-between flex-wrap gap-2">
         <div class="d-flex align-items-center gap-2">
           <span class="badge bg-primary text-white rounded-circle d-flex align-items-center justify-content-center" style="width: 26px; height: 26px; font-size: 0.8rem;">1</span>
           <h2 class="h6 mb-0 fw-bold text-dark">Unduh Format Template Excel</h2>
         </div>
-        <a href="'.e(module_url('asset_import_template.php')).'" class="btn btn-sm btn-success fw-bold px-3 shadow-sm d-inline-flex align-items-center gap-1">
-          <i class="bi bi-file-earmark-spreadsheet-fill"></i> Download Template Excel (.csv)
-        </a>
+        <div class="d-flex gap-2 flex-wrap">
+          <a href="'.e(module_url('asset_import_template.php', ['format' => 'xlsx'])).'" class="btn btn-sm btn-success fw-bold px-3 shadow-sm d-inline-flex align-items-center gap-1">
+            <i class="bi bi-file-earmark-excel-fill"></i> Download Excel (.xlsx) &mdash; Ada Dropdown
+          </a>
+          <a href="'.e(module_url('asset_import_template.php', ['format' => 'csv'])).'" class="btn btn-sm btn-outline-secondary d-inline-flex align-items-center gap-1">
+            <i class="bi bi-filetype-csv"></i> Format CSV
+          </a>
+        </div>
       </div>
       <div class="card-body p-4">
-        <p class="text-secondary small mb-3">Gunakan template resmi yang telah disiapkan agar susunan kolom sesuai dengan database sistem IT Operations Bank Mitra. Buka file di Microsoft Excel, isi baris data komputer Anda, lalu simpan.</p>
+        <p class="text-secondary small mb-3">Gunakan template resmi yang telah disiapkan. Template Excel (<code>.xlsx</code>) telah dilengkapi <strong>Dropdown Pilihan Interaktif</strong> (Kategori, Cabang, Divisi, dan Status) sehingga Anda tinggal memilih dari daftar opsi yang sama persis dengan form sistem.</p>
         
         <div class="p-3 bg-light rounded-3 border">
           <div class="d-flex align-items-start gap-2">
             <i class="bi bi-info-circle-fill text-primary mt-1"></i>
             <div class="small text-secondary">
-              <strong>Petunjuk Pengisian:</strong>
+              <strong>Fitur & Petunjuk Template Excel:</strong>
               <ul class="mb-0 ps-3 mt-1" style="font-size: 0.78rem;">
-                <li><strong>Kode Inventaris:</strong> Boleh diisi kode internal (contoh: <code>INV-KPO-001</code> atau <code>01.05.0493</code>) atau dikosongkan agar dibuat otomatis.</li>
-                <li><strong>Kantor Cabang:</strong> Tuliskan nama cabang (contoh: <code>Kantor Pusat</code>, <code>Batulicin</code>, <code>Martapura</code>, <code>Tanjung</code>, <code>Handil Bakti</code>).</li>
-                <li><strong>Status Unit:</strong> Isi dengan <code>Aktif</code>, <code>Backup</code>, <code>Perbaikan</code>, atau <code>Nonaktif</code>.</li>
+                <li><strong>Dropdown Otomatis:</strong> Kolom <em>Kategori</em>, <em>Kantor Cabang</em>, <em>Divisi</em>, dan <em>Status Unit</em> memiliki panah dropdown di Excel.</li>
+                <li><strong>Kode Inventaris:</strong> Boleh diisi nomor register internal atau dikosongkan agar digenerate otomatis.</li>
+                <li><strong>Kemudahan Pengisian:</strong> Cukup klik sel pada kolom bersangkutan lalu pilih opsi yang sesuai dari dropdown.</li>
               </ul>
             </div>
           </div>
@@ -522,7 +543,7 @@ $body .= '
             <div class="input-group">
               <input type="file" name="file_excel" class="form-control" accept=".csv, .xlsx, .xls, text/csv, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" required>
             </div>
-            <div class="form-text text-muted small mt-1">Mendukung format <code>.csv</code> (Pemisah titik koma / koma) dan Microsoft Excel <code>.xlsx</code>.</div>
+            <div class="form-text text-muted small mt-1">Mendukung format Microsoft Excel <code>.xlsx</code> dan <code>.csv</code>.</div>
           </div>
 
           <div class="p-3 bg-light rounded-3 border mb-4">
@@ -551,17 +572,17 @@ $body .= '
     <div class="card border shadow-sm bg-white" style="border-radius: 12px; border-color: var(--app-border) !important;">
       <div class="card-header bg-white py-3 px-4 border-bottom">
         <h2 class="h6 mb-0 fw-bold text-dark d-flex align-items-center gap-2">
-          <i class="bi bi-layout-text-window-reverse text-primary"></i> Struktur Kolom Import
+          <i class="bi bi-layout-text-window-reverse text-primary"></i> Struktur Kolom & Opsi Pilihan
         </h2>
       </div>
       <div class="card-body p-0">
-        <div class="table-responsive" style="max-height: 480px; overflow-y: auto;">
+        <div class="table-responsive" style="max-height: 520px; overflow-y: auto;">
           <table class="table table-sm table-striped align-middle mb-0" style="font-size: 0.8rem;">
             <thead class="table-light">
               <tr>
                 <th>Nama Kolom</th>
-                <th>Keterangan</th>
-                <th>Wajib?</th>
+                <th>Keterangan / Opsi Dropdown</th>
+                <th>Tipe</th>
               </tr>
             </thead>
             <tbody>
@@ -572,58 +593,58 @@ $body .= '
               </tr>
               <tr>
                 <td><code>Kategori</code></td>
-                <td>PC Desktop, Laptop, Printer, Server</td>
-                <td><span class="badge bg-success-subtle text-success">Disarankan</span></td>
+                <td><strong>Dropdown:</strong> Laptop, PC Desktop, Printer, Monitor, Server, Scanner, UPS, Network Device</td>
+                <td><span class="badge bg-success-subtle text-success">Dropdown</span></td>
               </tr>
               <tr>
                 <td><code>Merk</code></td>
-                <td>Lenovo, Dell, HP, MSI, Epson, dll.</td>
+                <td>Lenovo, Dell, HP, MSI, Epson, Asus, dll.</td>
                 <td><span class="badge bg-success-subtle text-success">Disarankan</span></td>
               </tr>
               <tr>
                 <td><code>Model / Tipe</code></td>
-                <td>ThinkCentre, OptiPlex, L3211, dll.</td>
-                <td><span class="badge bg-secondary-subtle text-secondary">Opsional</span></td>
+                <td>ThinkCentre M70q, OptiPlex 3090, L3211, dll.</td>
+                <td><span class="badge bg-secondary-subtle text-secondary">Teks Bebas</span></td>
               </tr>
               <tr>
                 <td><code>Serial Number</code></td>
-                <td>Nomor seri dari pabrik perangkat</td>
-                <td><span class="badge bg-secondary-subtle text-secondary">Opsional</span></td>
+                <td>Nomor seri pabrikan perangkat IT</td>
+                <td><span class="badge bg-secondary-subtle text-secondary">Teks Bebas</span></td>
               </tr>
               <tr>
                 <td><code>Kantor Cabang</code></td>
-                <td>Nama Cabang (Pusat, Batulicin, Martapura, Tanjung, Handil)</td>
-                <td><span class="badge bg-danger-subtle text-danger">Penting</span></td>
+                <td><strong>Dropdown:</strong> Kantor Pusat Operasional, Cabang Batulicin, Cabang Martapura, Cabang Tanjung, Cabang Handil</td>
+                <td><span class="badge bg-danger-subtle text-danger">Dropdown</span></td>
               </tr>
               <tr>
-                <td><code>Divisi</code></td>
-                <td>Operasional, IT, CS, Teller, SKAI, dll.</td>
-                <td><span class="badge bg-secondary-subtle text-secondary">Opsional</span></td>
+                <td><code>Divisi / Unit Kerja</code></td>
+                <td><strong>Dropdown:</strong> IT / MIS, Operasional, Akunting, Kredit, Direksi, SKAI, SDM & UMUM, Kepatuhan</td>
+                <td><span class="badge bg-secondary-subtle text-secondary">Dropdown</span></td>
               </tr>
               <tr>
                 <td><code>Pengguna / PIC</code></td>
-                <td>Nama karyawan / staf pemegang unit</td>
-                <td><span class="badge bg-secondary-subtle text-secondary">Opsional</span></td>
+                <td>Nama staf / pemegang unit (Teller, CS, dll)</td>
+                <td><span class="badge bg-secondary-subtle text-secondary">Teks Bebas</span></td>
               </tr>
               <tr>
                 <td><code>Alamat IP</code></td>
-                <td>IP Address (misal: 192.168.1.50)</td>
-                <td><span class="badge bg-secondary-subtle text-secondary">Opsional</span></td>
+                <td>Alamat IP lokal (misal: 192.168.1.50)</td>
+                <td><span class="badge bg-secondary-subtle text-secondary">Teks Bebas</span></td>
               </tr>
               <tr>
                 <td><code>Printer Terhubung</code></td>
-                <td>Model printer yang tersambung</td>
-                <td><span class="badge bg-secondary-subtle text-secondary">Opsional</span></td>
+                <td>Nama printer yang terpasang</td>
+                <td><span class="badge bg-secondary-subtle text-secondary">Teks Bebas</span></td>
               </tr>
               <tr>
                 <td><code>Status Unit</code></td>
-                <td>Aktif, Backup, Perbaikan, Nonaktif</td>
-                <td><span class="badge bg-secondary-subtle text-secondary">Opsional</span></td>
+                <td><strong>Dropdown:</strong> Aktif (Digunakan), Backup / Cadangan, Sedang Dalam Perbaikan, Nonaktif</td>
+                <td><span class="badge bg-warning-subtle text-warning-emphasis">Dropdown</span></td>
               </tr>
               <tr>
                 <td><code>Keterangan</code></td>
-                <td>Catatan tambahan penempatan perangkat</td>
-                <td><span class="badge bg-secondary-subtle text-secondary">Opsional</span></td>
+                <td>Catatan penempatan perangkat atau fungsi khusus</td>
+                <td><span class="badge bg-secondary-subtle text-secondary">Teks Bebas</span></td>
               </tr>
             </tbody>
           </table>
