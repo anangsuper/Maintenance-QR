@@ -1304,6 +1304,11 @@ $body .= '
             <input type="date" name="tanggal_perolehan" class="form-control form-control-sm" value="'.date('Y-m-d').'" required>
           </div>
           <div class="mb-3">
+            <label class="form-label small fw-bold text-dark">Lokasi Barang</label>
+            <input type="text" name="lokasi" id="addCardLokasi" class="form-control form-control-sm" placeholder="Contoh: Kantor Pusat / Operasional / Ruang IT" onkeydown="handleLokasiKeydown(event, this)" oninput="this.dataset.customized=\'true\'">
+            <div class="form-text text-muted" style="font-size: 0.72rem;"><i class="bi bi-info-circle me-1"></i>Tekan <strong>Enter</strong> untuk otomatis menambahkan tanda <code> / </code></div>
+          </div>
+          <div class="mb-3">
             <label class="form-label small fw-bold text-dark">Kode QR / Barcode (Data QR Code)</label>
             <input type="text" name="barcode_data" class="form-control form-control-sm font-monospace" placeholder="Salin/tempel kode QR di sini">
           </div>
@@ -1343,6 +1348,11 @@ $body .= '
           <div class="mb-3">
             <label class="form-label small fw-bold text-dark">Tanggal Perolehan</label>
             <input type="date" name="tanggal_perolehan" id="editCardTanggal" class="form-control form-control-sm" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label small fw-bold text-dark">Lokasi Barang</label>
+            <input type="text" name="lokasi" id="editCardLokasi" class="form-control form-control-sm" placeholder="Contoh: Kantor Pusat / Operasional / Ruang IT" onkeydown="handleLokasiKeydown(event, this)">
+            <div class="form-text text-muted" style="font-size: 0.72rem;"><i class="bi bi-info-circle me-1"></i>Tekan <strong>Enter</strong> untuk otomatis menambahkan tanda <code> / </code></div>
           </div>
           <div class="mb-3">
             <label class="form-label small fw-bold text-dark">Kode QR / Barcode (Data QR Code)</label>
@@ -1655,6 +1665,7 @@ function handleRekeningInput(el) {
   if (!val.includes(".")) {
     if (val.length === 2) {
       el.value = val + ".";
+      autoSuggestBranchLokasi(val);
       return;
     }
     if (val.length > 2) {
@@ -1669,6 +1680,7 @@ function handleRekeningInput(el) {
         let p2 = rest.slice(2, 7);
         el.value = p0 + "." + p1 + "." + p2;
       }
+      autoSuggestBranchLokasi(p0);
       return;
     }
     el.value = val;
@@ -1682,6 +1694,54 @@ function handleRekeningInput(el) {
   if (parts.length > 1) res += "." + p1;
   if (parts.length > 2) res += "." + p2;
   el.value = res;
+  autoSuggestBranchLokasi(p0);
+}
+
+function autoSuggestBranchLokasi(code) {
+  const addLok = document.getElementById("addCardLokasi");
+  if (!addLok || addLok.dataset.customized === "true") return;
+  const map = {
+    "01": "Kantor Pusat / ",
+    "02": "Batulicin / ",
+    "03": "Martapura / ",
+    "04": "Tanjung / ",
+    "05": "Handil Bakti / "
+  };
+  if (map[code]) {
+    addLok.value = map[code];
+  }
+}
+
+function handleLokasiKeydown(e, el) {
+  if (!e || !el) return;
+  if (e.key === "Enter") {
+    e.preventDefault();
+    el.dataset.customized = "true";
+    const start = el.selectionStart !== null ? el.selectionStart : el.value.length;
+    const end = el.selectionEnd !== null ? el.selectionEnd : el.value.length;
+    const val = el.value;
+    const before = val.substring(0, start);
+    const after = val.substring(end);
+
+    if (before.trimEnd().endsWith("/")) {
+      if (!before.endsWith(" ")) {
+        el.value = before + " " + after;
+        el.selectionStart = el.selectionEnd = start + 1;
+      }
+      return;
+    }
+
+    let insert = " / ";
+    if (before.length === 0) {
+      insert = "/ ";
+    } else if (before.endsWith(" ")) {
+      insert = "/ ";
+    }
+
+    el.value = before + insert + after;
+    const newPos = start + insert.length;
+    el.selectionStart = el.selectionEnd = newPos;
+  }
 }
 
 function openCardEditModal(card) {
@@ -1689,6 +1749,7 @@ function openCardEditModal(card) {
   document.getElementById("editCardRekening").value = card.nomor_rekening || "";
   document.getElementById("editCardNama").value = card.nama_barang || "";
   document.getElementById("editCardTanggal").value = card.tanggal_perolehan || "";
+  document.getElementById("editCardLokasi").value = card.lokasi || "";
   document.getElementById("editCardBarcode").value = card.barcode_data || "";
 
   const modal = new bootstrap.Modal(document.getElementById("editCardModal"));

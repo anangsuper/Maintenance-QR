@@ -232,9 +232,9 @@ function insert_inventaris_kartu(array $data): array {
     $tgl = trim((string)($data['tanggal_perolehan'] ?? date('Y-m-d')));
     $barcode = trim((string)($data['barcode_data'] ?? ''));
     
-    // Otomatis tentukan lokasi berdasarkan kode cabang pada nomor rekening
+    // Tentukan lokasi: gunakan input lokasi jika diisi, atau default berdasarkan cabang
     $lokasi = trim((string)($data['lokasi'] ?? ''));
-    if ($lokasi === '' || $lokasi === 'KPO' || $lokasi === 'KPO / Operasional') {
+    if ($lokasi === '') {
         $cBranch = get_cabang_from_nomor_rekening($rek);
         $lokasi = $cBranch ? $cBranch['lokasi'] : 'Kantor Pusat (KPO)';
     }
@@ -283,9 +283,9 @@ function update_inventaris_kartu(int $id, array $data): bool {
     $tgl = trim((string)($data['tanggal_perolehan'] ?? date('Y-m-d')));
     $barcode = trim((string)($data['barcode_data'] ?? ''));
     
-    // Otomatis tentukan lokasi berdasarkan kode cabang pada nomor rekening
+    // Tentukan lokasi: gunakan input lokasi jika diisi, atau default berdasarkan cabang
     $lokasi = trim((string)($data['lokasi'] ?? ''));
-    if ($lokasi === '' || $lokasi === 'KPO' || $lokasi === 'KPO / Operasional') {
+    if ($lokasi === '') {
         $cBranch = get_cabang_from_nomor_rekening($rek);
         $lokasi = $cBranch ? $cBranch['lokasi'] : 'Kantor Pusat (KPO)';
     }

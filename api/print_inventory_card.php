@@ -1173,6 +1173,11 @@ unset($_SESSION['flash'], $_SESSION['flash_error']);
               <input type="date" name="tanggal_perolehan" class="form-control form-control-sm" value="<?= date('Y-m-d') ?>" required>
             </div>
             <div class="mb-3">
+              <label class="form-label small fw-bold text-dark">Lokasi Barang</label>
+              <input type="text" name="lokasi" id="printAddCardLokasi" class="form-control form-control-sm" placeholder="Contoh: Kantor Pusat / Operasional / Ruang IT" onkeydown="handleLokasiKeydown(event, this)">
+              <div class="form-text text-muted" style="font-size: 0.72rem;"><i class="bi bi-info-circle me-1"></i>Tekan <strong>Enter</strong> untuk otomatis menambahkan tanda <code> / </code></div>
+            </div>
+            <div class="mb-3">
               <label class="form-label small fw-bold text-dark">Kode QR / Barcode (Data QR Code)</label>
               <input type="text" name="barcode_data" class="form-control form-control-sm font-monospace" placeholder="Salin/tempel kode QR di sini">
             </div>
@@ -1237,7 +1242,7 @@ unset($_SESSION['flash'], $_SESSION['flash_error']);
           <div class="mb-3">
             <label class="form-label small fw-bold text-dark">Lokasi Penempatan Massal</label>
             <div class="input-group input-group-sm">
-              <input type="text" id="bulkLocationInput" class="form-control" placeholder="Contoh: KPO / Lantai 2 / Ruang IT">
+              <input type="text" id="bulkLocationInput" class="form-control" placeholder="Contoh: KPO / Lantai 2 / Ruang IT" onkeydown="handleLokasiKeydown(event, this)">
               <button class="btn btn-primary fw-semibold" type="button" onclick="applyBulkLocation()">
                 <i class="bi bi-check-lg me-1"></i> Terapkan ke Semua
               </button>
@@ -1550,37 +1555,87 @@ function doPost(e) {
 
     function handleRekeningInput(el) {
       if (!el) return;
-      let val = el.value.replace(/[^0-9.]/g, '');
-      if (!val.includes('.')) {
+      let val = el.value.replace(/[^0-9.]/g, "");
+      if (!val.includes(".")) {
         if (val.length === 2) {
-          el.value = val + '.';
+          el.value = val + ".";
+          autoSuggestPrintBranch(val);
           return;
         }
         if (val.length > 2) {
           let p0 = val.slice(0, 2);
           let rest = val.slice(2);
           if (rest.length === 1) {
-            el.value = p0 + '.' + rest;
+            el.value = p0 + "." + rest;
           } else if (rest.length === 2) {
-            el.value = p0 + '.' + rest + '.';
+            el.value = p0 + "." + rest + ".";
           } else {
             let p1 = rest.slice(0, 2);
             let p2 = rest.slice(2, 7);
-            el.value = p0 + '.' + p1 + '.' + p2;
+            el.value = p0 + "." + p1 + "." + p2;
           }
+          autoSuggestPrintBranch(p0);
           return;
         }
         el.value = val;
         return;
       }
-      let parts = val.split('.');
-      let p0 = (parts[0] || '').replace(/[^0-9]/g, '').slice(0, 2);
-      let p1 = (parts[1] || '').replace(/[^0-9]/g, '').slice(0, 2);
-      let p2 = (parts[2] || '').replace(/[^0-9]/g, '').slice(0, 5);
+      let parts = val.split(".");
+      let p0 = (parts[0] || "").replace(/[^0-9]/g, "").slice(0, 2);
+      let p1 = (parts[1] || "").replace(/[^0-9]/g, "").slice(0, 2);
+      let p2 = (parts[2] || "").replace(/[^0-9]/g, "").slice(0, 5);
       let res = p0;
-      if (parts.length > 1) res += '.' + p1;
-      if (parts.length > 2) res += '.' + p2;
+      if (parts.length > 1) res += "." + p1;
+      if (parts.length > 2) res += "." + p2;
       el.value = res;
+      autoSuggestPrintBranch(p0);
+    }
+
+    function autoSuggestPrintBranch(code) {
+      const addLok = document.getElementById("printAddCardLokasi");
+      if (!addLok || addLok.dataset.customized === "true") return;
+      const map = {
+        "01": "Kantor Pusat / ",
+        "02": "Batulicin / ",
+        "03": "Martapura / ",
+        "04": "Tanjung / ",
+        "05": "Handil Bakti / "
+      };
+      if (map[code]) {
+        addLok.value = map[code];
+      }
+    }
+
+    function handleLokasiKeydown(e, el) {
+      if (!e || !el) return;
+      if (e.key === "Enter") {
+        e.preventDefault();
+        el.dataset.customized = "true";
+        const start = el.selectionStart !== null ? el.selectionStart : el.value.length;
+        const end = el.selectionEnd !== null ? el.selectionEnd : el.value.length;
+        const val = el.value;
+        const before = val.substring(0, start);
+        const after = val.substring(end);
+
+        if (before.trimEnd().endsWith("/")) {
+          if (!before.endsWith(" ")) {
+            el.value = before + " " + after;
+            el.selectionStart = el.selectionEnd = start + 1;
+          }
+          return;
+        }
+
+        let insert = " / ";
+        if (before.length === 0) {
+          insert = "/ ";
+        } else if (before.endsWith(" ")) {
+          insert = "/ ";
+        }
+
+        el.value = before + insert + after;
+        const newPos = start + insert.length;
+        el.selectionStart = el.selectionEnd = newPos;
+      }
     }
 
     function copyGasScript() {
