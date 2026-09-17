@@ -476,7 +476,7 @@ $head = '
   border: 1.2px solid #e2e8f0 !important;
   border-radius: 8px !important;
   background: #ffffff !important;
-  font-family: 'Plus Jakarta Sans', Arial, sans-serif !important;
+  font-family: "Plus Jakarta Sans", Arial, sans-serif !important;
   color: #0f172a !important;
   overflow: hidden !important;
   position: relative !important;
