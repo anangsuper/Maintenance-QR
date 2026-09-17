@@ -225,10 +225,50 @@ if ($source === 'inventaris_kartu') {
     }
 }
 
+// Deteksi Nama Cabang untuk Penamaan Dokumen & Format Nama File PDF: Inventaris_(Nama Cabang)_(tanggal dicetak)
+$detectedCabangNames = [];
+foreach ($cardsData as $cItem) {
+    $rekVal = $cItem['kode'] ?? '';
+    $br = get_cabang_from_nomor_rekening($rekVal);
+    if ($br && !empty($br['name'])) {
+        $detectedCabangNames[$br['name']] = true;
+    } elseif (!empty($cItem['lokasi'])) {
+        $lokPart = trim(explode('/', $cItem['lokasi'])[0]);
+        $cleanLok = trim(preg_replace('/\s*\([^)]*\)/', '', $lokPart));
+        if (stripos($cleanLok, 'KC-BTL') !== false || stripos($cleanLok, 'Batulicin') !== false) {
+            $detectedCabangNames['Batulicin'] = true;
+        } elseif (stripos($cleanLok, 'KPO') !== false || stripos($cleanLok, 'Kantor Pusat') !== false) {
+            $detectedCabangNames['Kantor Pusat'] = true;
+        } elseif (stripos($cleanLok, 'Martapura') !== false) {
+            $detectedCabangNames['Martapura'] = true;
+        } elseif (stripos($cleanLok, 'Tanjung') !== false) {
+            $detectedCabangNames['Tanjung'] = true;
+        } elseif (stripos($cleanLok, 'Handil Bakti') !== false) {
+            $detectedCabangNames['Handil Bakti'] = true;
+        } elseif ($cleanLok !== '') {
+            $detectedCabangNames[$cleanLok] = true;
+        }
+    }
+}
+
+if (count($detectedCabangNames) === 1) {
+    $cabangDisplayTitle = array_key_first($detectedCabangNames);
+} elseif (count($detectedCabangNames) > 1) {
+    $cabangDisplayTitle = 'Semua Cabang';
+} else {
+    $cabangDisplayTitle = 'Kantor Pusat';
+}
+
+$cabangSlug = str_replace(' ', '_', preg_replace('/[^A-Za-z0-9 ]+/', '', trim($cabangDisplayTitle)));
+$tglCetakFormatted = date('d-m-Y');
+
+// Format Nama File PDF: Inventaris_(Nama Cabang)_(tanggal dicetak)
+$pdfFileName = "Inventaris_{$cabangSlug}_{$tglCetakFormatted}";
+
 // 4. Tangani Ekspor CSV
 if ($exportMode === 'csv') {
     header('Content-Type: text/csv; charset=utf-8');
-    header('Content-Disposition: attachment; filename="Kartu_Inventaris_CR80_' . date('Ymd_His') . '.csv"');
+    header('Content-Disposition: attachment; filename="' . $pdfFileName . '.csv"');
     $out = fopen('php://output', 'w');
     fprintf($out, chr(0xEF).chr(0xBB).chr(0xBF)); // BOM UTF-8
     fputcsv($out, ['No', 'ID', 'Nomor Rekening / Kode', 'Nama Barang', 'Tanggal Perolehan', 'Barcode Data (URL)', 'Lokasi']);
@@ -250,11 +290,11 @@ if ($exportMode === 'csv') {
 // 5. Tangani Ekspor Microsoft Word (.doc)
 if ($exportMode === 'doc') {
     header('Content-Type: application/msword; charset=utf-8');
-    header('Content-Disposition: attachment; filename="Kartu_Inventaris_CR80_' . date('Ymd_His') . '.doc"');
+    header('Content-Disposition: attachment; filename="' . $pdfFileName . '.doc"');
     $logoUri = app_logo_data_uri();
     
     echo '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40">';
-    echo '<head><meta charset="utf-8"><title>Kartu Inventaris CR80 - PT BPR MITRATAMA ARTHABUANA</title>';
+    echo '<head><meta charset="utf-8"><title>' . e($pdfFileName) . '</title>';
     echo '<!--[if gte mso 9]>
     <xml>
       <w:WordDocument>
@@ -404,7 +444,7 @@ unset($_SESSION['flash'], $_SESSION['flash_error']);
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Cetak Kartu Inventaris (CR80) · PT BPR MITRATAMA ARTHABUANA</title>
+  <title><?= e($pdfFileName) ?></title>
   
   <!-- CSS Framework & Icons -->
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
@@ -897,10 +937,11 @@ unset($_SESSION['flash'], $_SESSION['flash_error']);
           <div class="toolbar-title d-flex align-items-center gap-2">
             <i class="bi bi-credit-card-2-front text-primary"></i>
             <span>Cetak Kartu Inventaris CR80</span>
-            <span class="badge bg-primary text-white" style="font-size: 0.72rem; font-weight: 600;">Standard ATM 85.6x54mm</span>
+            <span class="badge bg-primary text-white" style="font-size: 0.72rem; font-weight: 600;"><i class="bi bi-geo-alt-fill me-1"></i>Cabang: <?= e($cabangDisplayTitle) ?></span>
+            <span class="badge bg-secondary text-white" style="font-size: 0.72rem; font-weight: 600;"><i class="bi bi-calendar-event me-1"></i>Tgl: <?= e(date('d/m/Y')) ?></span>
           </div>
           <div class="text-muted small" style="font-size: 0.74rem;">
-            Tabel: <strong><?= e($source === 'inventaris_kartu' ? 'inventaris_kartu (Khusus Kartu)' : 'assets (Asset Registry)') ?></strong> · Total: <strong><?= count($cardsData) ?></strong> unit kartu
+            Nama File PDF: <strong class="text-primary font-monospace"><?= e($pdfFileName) ?>.pdf</strong> · Total: <strong><?= count($cardsData) ?></strong> unit kartu
           </div>
         </div>
       </div>
