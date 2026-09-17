@@ -423,326 +423,339 @@ unset($_SESSION['flash'], $_SESSION['flash_error']);
       justify-content: center;
     }
 
-    .cr80-card {
-      width: 85.6mm;
-      height: 54.0mm;
-      background: #ffffff;
-      border-radius: 3.8mm;
-      border: 1px solid #cbd5e1;
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
-      overflow: hidden;
-      position: relative;
-      box-shadow: 0 2px 8px rgba(0, 56, 112, 0.08);
-      transition: transform 0.15s ease, box-shadow 0.15s ease;
-      box-sizing: border-box;
+    /* Ukuran Standar Kartu ATM (CR80: 85.6mm x 54.0mm) */
+    .atm-card {
+      width: 85.6mm !important;
+      height: 54.0mm !important;
+      box-sizing: border-box !important;
+      border: 1.2px solid #e2e8f0 !important;
+      border-radius: 8px !important;
+      background: #ffffff !important;
+      font-family: 'Plus Jakarta Sans', Arial, sans-serif !important;
+      color: #0f172a !important;
+      overflow: hidden !important;
+      position: relative !important;
+      display: flex !important;
+      flex-direction: column !important;
+      padding: 0 !important;
+      margin: 0 !important;
+      box-shadow: 0 4px 10px rgba(15, 23, 42, 0.08) !important;
+      outline: 0.8px dashed #cbd5e1 !important;
+      outline-offset: 1.5mm !important;
     }
 
-    .cr80-card:hover {
-      box-shadow: 0 6px 18px rgba(0, 56, 112, 0.16);
+    /* 1. Header Section */
+    .card-header-sec {
+      display: flex !important;
+      width: 100% !important;
+      height: 11.5mm !important;
+      border-bottom: 1.5px solid #003b73 !important;
+      box-sizing: border-box !important;
     }
-
-    /* Dashed Cutting Guide surrounding the card */
-    .with-cut-guides .cr80-card-wrapper::after {
-      content: "";
-      position: absolute;
-      top: -2.2mm;
-      left: -2.2mm;
-      right: -2.2mm;
-      bottom: -2.2mm;
-      border: 1px dashed #94a3b8;
-      pointer-events: none;
-      border-radius: 5mm;
+    .header-logo-box {
+      width: 27% !important;
+      height: 100% !important;
+      border-right: 1px solid #e2e8f0 !important;
+      display: flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      background: #ffffff !important;
+      box-sizing: border-box !important;
+      padding: 0.8mm !important;
     }
-
-    /* 1. HEADER SECTION */
-    .card-header-container {
-      height: 12.2mm;
-      display: flex;
-      align-items: stretch;
-      justify-content: space-between;
-      background: #ffffff;
-      position: relative;
-      padding: 0;
-      overflow: hidden;
+    .header-logo-box img {
+      max-height: 9.8mm !important;
+      max-width: 95% !important;
+      object-fit: contain !important;
     }
-
-    .header-logo-area {
-      width: 30mm;
-      padding: 1.2mm 1mm 1mm 2.8mm;
-      display: flex;
-      align-items: center;
-      justify-content: flex-start;
+    .header-title-box {
+      width: 73% !important;
+      height: 100% !important;
+      display: flex !important;
+      flex-direction: column !important;
+      box-sizing: border-box !important;
     }
-
-    .header-logo-area img {
-      max-width: 100%;
-      max-height: 10mm;
-      object-fit: contain;
+    .header-main-title {
+      background-color: #003b73 !important;
+      color: #ffffff !important;
+      font-weight: 800 !important;
+      font-size: 7.8pt !important;
+      text-align: center !important;
+      height: 5.5mm !important;
+      line-height: 5.5mm !important;
+      text-transform: uppercase !important;
+      letter-spacing: 0.2px !important;
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
     }
-
-    .header-right-col {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      justify-content: stretch;
+    .header-sub-sec {
+      height: 6.0mm !important;
+      background: #ffffff !important;
+      display: flex !important;
+      align-items: center !important;
+      justify-content: space-between !important;
+      padding: 0 !important;
+      box-sizing: border-box !important;
+      position: relative !important;
     }
-
-    .header-navy-bar {
-      background-color: #003870;
-      color: #ffffff;
-      font-size: 5.6pt;
-      font-weight: 800;
-      letter-spacing: 0.03em;
-      text-align: center;
-      padding: 1.3mm 2mm 1.1mm;
-      text-transform: uppercase;
-      white-space: nowrap;
-      line-height: 1.1;
-      border-top-right-radius: 3.5mm;
+    /* Pita Banner Hijau & Stripe Teal */
+    .green-banner-wrapper {
+      position: relative !important;
+      display: flex !important;
+      height: 100% !important;
+      width: 75% !important;
     }
-
-    .header-sub-bar {
-      height: 5.6mm;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      background: #ffffff;
-      position: relative;
-      overflow: hidden;
-    }
-
-    .sub-green-badge {
-      background-color: #6bb82a;
-      color: #ffffff;
-      font-size: 5.6pt;
-      font-weight: 800;
-      letter-spacing: 0.05em;
-      padding: 0 4mm 0 2.5mm;
-      height: 100%;
-      display: flex;
-      align-items: center;
-      clip-path: polygon(0 0, 100% 0, calc(100% - 3.2mm) 100%, 0 100%);
-      white-space: nowrap;
-      text-transform: uppercase;
-    }
-
-    .sub-teal-slant {
-      width: 3.5mm;
-      height: 100%;
-      background-color: #008fa0;
-      margin-left: -2.2mm;
-      clip-path: polygon(0 0, 100% 0, calc(100% - 3.2mm) 100%, 0 100%);
-    }
-
-    .sub-dots-pattern {
-      display: grid;
-      grid-template-columns: repeat(3, 2.6px);
-      grid-gap: 2.2px;
-      padding-right: 3.5mm;
-      margin-left: auto;
-    }
-
-    .p-dot {
-      width: 2.6px;
-      height: 2.6px;
-      background-color: #6bb82a;
-      border-radius: 50%;
-      display: block;
-    }
-
-    /* 2. TABLE ROWS (4 ROWS) */
-    .card-table-section {
-      display: flex;
-      flex-direction: column;
-      background: #ffffff;
-      border-top: 1px solid #003870;
-    }
-
-    .attr-row {
-      display: flex;
-      align-items: center;
-      height: 5.4mm;
-      border-bottom: 1px solid #cbd5e1;
-      background: #ffffff;
-    }
-
-    .attr-row.row-bottom-last {
-      border-bottom: 2px solid #6bb82a;
-    }
-
-    .attr-icon-box {
-      width: 6.8mm;
-      height: 100%;
-      background-color: #003870;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      flex-shrink: 0;
-    }
-
-    .attr-svg {
-      width: 3.2mm;
-      height: 3.2mm;
-      color: #ffffff;
-      fill: #ffffff;
-    }
-
-    .attr-label {
-      width: 23mm;
-      padding-left: 2.5mm;
-      font-size: 5.2pt;
-      font-weight: 800;
-      color: #003870;
-      letter-spacing: 0.02em;
-      flex-shrink: 0;
-      text-transform: uppercase;
-    }
-
-    .attr-divider {
-      font-size: 6pt;
-      font-weight: 800;
-      color: #003870;
-      margin: 0 2mm 0 1mm;
-      flex-shrink: 0;
-    }
-
-    .attr-value {
-      flex: 1;
-      font-size: 5.5pt;
-      font-weight: 800;
-      color: #000000;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      padding-right: 2.5mm;
-    }
-
-    .attr-value-rek {
-      font-family: 'JetBrains Mono', 'Plus Jakarta Sans', monospace, sans-serif;
-      letter-spacing: 0.02em;
-    }
-
-    /* 3. BOTTOM SECTION: WARNING & QR CODE */
-    .card-bottom-section {
-      flex: 1;
-      display: flex;
-      align-items: stretch;
-      position: relative;
-      background: #ffffff;
-      overflow: hidden;
-    }
-
-    .bottom-warning-col {
-      flex: 1;
-      padding: 1.8mm 2mm 1.5mm 2.8mm;
-      position: relative;
-      z-index: 2;
-      border-right: 1px solid #cbd5e1;
-      display: flex;
-      align-items: center;
-    }
-
-    .warning-content {
-      display: flex;
-      align-items: center;
-      gap: 2mm;
-    }
-
-    .warning-shield-icon {
-      width: 5.5mm;
-      height: 7mm;
-      flex-shrink: 0;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-
-    .shield-svg {
-      width: 100%;
-      height: 100%;
-    }
-
-    .warning-text-wrap {
-      flex: 1;
-      line-height: 1.15;
-    }
-
-    .warning-heading {
-      color: #dc2626;
-      font-size: 5.2pt;
-      font-weight: 800;
-      letter-spacing: 0.04em;
-      margin-bottom: 0.4mm;
-      text-transform: uppercase;
-    }
-
-    .warning-body {
-      color: #334155;
-      font-size: 3.5pt;
-      font-weight: 500;
-      line-height: 1.2;
-    }
-
-    .bottom-qr-col {
-      width: 25.5mm;
-      flex-shrink: 0;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      padding: 1.2mm 1mm;
-      position: relative;
-      z-index: 2;
-    }
-
-    .qr-canvas-holder {
-      width: 14.5mm;
-      height: 14.5mm;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      background: #ffffff;
-    }
-
-    .qr-canvas-holder canvas,
-    .qr-canvas-holder img {
+    .teal-stripe {
+      position: absolute !important;
+      top: 0 !important;
+      left: 0 !important;
       width: 100% !important;
       height: 100% !important;
+      background-color: #009ca6 !important;
+      clip-path: polygon(0 0, 78% 0, 71% 100%, 0 100%) !important;
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+    }
+    .green-banner {
+      position: absolute !important;
+      top: 0 !important;
+      left: 0 !important;
+      width: 92% !important;
+      height: 100% !important;
+      background: #7ac142 !important;
+      clip-path: polygon(0 0, 78% 0, 71% 100%, 0 100%) !important;
+      color: #ffffff !important;
+      font-weight: 800 !important;
+      font-size: 7.2pt !important;
+      letter-spacing: 0.5px !important;
+      display: flex !important;
+      align-items: center !important;
+      padding-left: 2.5mm !important;
+      box-sizing: border-box !important;
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+    }
+    .header-dots-container {
+      display: flex !important;
+      align-items: center !important;
+      padding-right: 3mm !important;
+      height: 100% !important;
+    }
+    .header-dots {
+      display: grid !important;
+      grid-template-columns: repeat(3, 1mm) !important;
+      grid-gap: 0.8mm !important;
+    }
+    .header-dots span {
+      width: 0.9mm !important;
+      height: 0.9mm !important;
+      background-color: #7ac142 !important;
+      border-radius: 50% !important;
+      display: block !important;
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+    }
+
+    /* 2. Baris Data (Fields) */
+    .card-fields-sec {
+      display: flex !important;
+      flex-direction: column !important;
+      width: 100% !important;
+      padding: 0 !important;
+      margin: 0 !important;
+      box-sizing: border-box !important;
+    }
+    .card-field-row {
+      display: flex !important;
+      width: 100% !important;
+      height: 6.125mm !important;
+      border-bottom: 1px solid #e2e8f0 !important;
+      box-sizing: border-box !important;
+    }
+    .field-icon-box {
+      width: 8.5mm !important;
+      height: 100% !important;
+      background-color: #003b73 !important;
+      color: #ffffff !important;
+      display: flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      box-sizing: border-box !important;
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+    }
+    .field-svg-icon {
+      width: 3.5mm !important;
+      height: 3.5mm !important;
+      color: #ffffff !important;
+    }
+    .field-content-box {
+      display: flex !important;
+      align-items: center !important;
+      width: 77.1mm !important;
+      height: 100% !important;
+      background: #ffffff !important;
+      box-sizing: border-box !important;
+    }
+    .field-lbl {
+      width: 25.5mm !important;
+      color: #003b73 !important;
+      font-weight: 800 !important;
+      font-size: 7.0pt !important;
+      display: flex !important;
+      align-items: center !important;
+      padding-left: 3.0mm !important;
+      box-sizing: border-box !important;
+      text-transform: uppercase !important;
+      letter-spacing: 0.2px !important;
+    }
+    .field-sep {
+      color: #7ac142 !important;
+      font-weight: 800 !important;
+      font-size: 9.0pt !important;
+      margin: 0 1.0mm 0 2.0mm !important;
+      display: flex !important;
+      align-items: center !important;
+    }
+    .field-val {
+      font-size: 7.0pt !important;
+      color: #1e293b !important;
+      font-weight: 800 !important;
+      padding-left: 2.0mm !important;
+      white-space: normal !important;
+      line-height: 1.05 !important;
+      overflow: hidden !important;
+      display: -webkit-box !important;
+      -webkit-line-clamp: 2 !important;
+      -webkit-box-orient: vertical !important;
+      text-transform: uppercase !important;
+      flex-grow: 1;
+      align-self: center !important;
+      word-break: break-word !important;
+    }
+
+    /* 3. Bottom Section (Waves, Attention & QR Code) */
+    .card-bottom-sec {
+      display: flex !important;
+      width: 100% !important;
+      height: 18.0mm !important;
+      border-top: 1.5px solid #7ac142 !important;
+      background-color: #ffffff !important;
+      box-sizing: border-box !important;
+      position: relative !important;
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+    }
+    .card-waves {
+      position: absolute !important;
+      bottom: 0 !important;
+      left: 0 !important;
+      width: 85.6mm !important;
+      height: 7.5mm !important;
+      z-index: 1 !important;
+      pointer-events: none !important;
+    }
+    .bottom-left-attention {
+      width: 66% !important;
+      height: 100% !important;
+      display: flex !important;
+      align-items: center !important;
+      padding: 1.0mm 1.5mm 1.0mm 3.0mm !important;
+      box-sizing: border-box !important;
+      z-index: 2 !important;
+    }
+    .attention-icon {
+      margin-right: 2.0mm !important;
+      display: flex !important;
+      align-items: center !important;
+    }
+    .attention-svg-icon {
+      width: 7.0mm !important;
+      height: 7.0mm !important;
+      color: #003b73 !important;
+    }
+    .attention-text-box {
+      display: flex !important;
+      flex-direction: column !important;
+    }
+    .attention-title {
+      font-weight: 800 !important;
+      font-size: 6.8pt !important;
+      color: #dc2626 !important;
+      margin-bottom: 0.3mm !important;
+      text-transform: uppercase !important;
+      letter-spacing: 0.3px !important;
+    }
+    .attention-desc {
+      font-size: 4.6pt !important;
+      line-height: 1.25 !important;
+      color: #475569 !important;
+      font-weight: 600 !important;
+    }
+    .attention-qr-separator {
+      width: 1px !important;
+      height: 13.0mm !important;
+      background-color: #e2e8f0 !important;
+      align-self: center !important;
+      z-index: 2 !important;
+    }
+    .bottom-right-qr {
+      width: 34% !important;
+      height: 100% !important;
+      display: flex !important;
+      flex-direction: column !important;
+      align-items: center !important;
+      justify-content: center !important;
+      box-sizing: border-box !important;
+      padding: 0.8mm 1.0mm !important;
+      z-index: 2 !important;
+    }
+    .qr-border-box {
+      border: 1px solid #e2e8f0 !important;
+      border-radius: 5px !important;
+      padding: 0.5mm !important;
+      background: #ffffff !important;
+      display: flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.02) !important;
+      margin-bottom: 0.6mm !important;
+    }
+    .card-qr-img {
+      width: 10.5mm !important;
+      height: 10.5mm !important;
+    }
+    .card-qr-img canvas, .card-qr-img img {
+      width: 10.5mm !important;
+      height: 10.5mm !important;
+      margin: 0 auto !important;
       display: block;
     }
-
-    .scan-pill-badge {
-      background-color: #007a3d;
-      color: #ffffff;
-      border-radius: 10px;
-      padding: 0.5mm 2.2mm;
-      display: inline-flex;
-      align-items: center;
-      gap: 1mm;
-      margin-top: 1mm;
-      font-size: 3.5pt;
-      font-weight: 800;
-      letter-spacing: 0.02em;
-      white-space: nowrap;
+    .scan-info-capsule {
+      background-color: #008744 !important;
+      color: #ffffff !important;
+      border-radius: 12px !important;
+      padding: 0.4mm 1.6mm !important;
+      display: flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      gap: 0.5mm !important;
+      height: 2.8mm !important;
+      width: 19.0mm !important;
+      box-sizing: border-box !important;
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
     }
-
-    .phone-svg {
-      width: 2.4mm;
-      height: 2.4mm;
-      fill: #ffffff;
+    .scan-icon {
+      width: 1.8mm !important;
+      height: 1.8mm !important;
+      color: #ffffff !important;
     }
-
-    /* Bottom Decorative Waves */
-    .bottom-wave-decor {
-      position: absolute;
-      left: 0;
-      bottom: 0;
-      width: 100%;
-      height: 6.5mm;
-      z-index: 1;
-      pointer-events: none;
+    .scan-info-capsule span {
+      font-size: 3.5pt !important;
+      font-weight: 800 !important;
+      white-space: nowrap !important;
+      letter-spacing: 0.1px !important;
     }
 
     @media print {
@@ -921,111 +934,119 @@ unset($_SESSION['flash'], $_SESSION['flash_error']);
             <?php foreach ($pageCards as $card): ?>
               <?php $cIdx = $card['index']; ?>
               <div class="cr80-card-wrapper" id="card-wrap-<?= $cIdx ?>" data-card-id="<?= $card['id'] ?>">
-                <div class="cr80-card">
-                  
-                  <!-- 1. Header Kartu -->
-                  <div class="card-header-container">
-                    <div class="header-logo-area">
-                      <img src="<?= e($logoUrl) ?>" alt="Logo Bank Mitra" loading="lazy">
+                <div class="atm-card">
+                  <!-- Top Header -->
+                  <div class="card-header-sec">
+                    <div class="header-logo-box">
+                      <img src="<?= e($logoUrl) ?>" alt="Logo Bank Mitra" loading="lazy" onerror="this.src='logo.png'">
                     </div>
-                    <div class="header-right-col">
-                      <div class="header-navy-bar">
-                        PT BPR MITRATAMA ARTHABUANA
-                      </div>
-                      <div class="header-sub-bar">
-                        <div class="sub-green-badge">
-                          ASSET TETAP
+                    <div class="header-title-box">
+                      <div class="header-main-title">PT BPR MITRATAMA ARTHABUANA</div>
+                      <div class="header-sub-sec">
+                        <div class="green-banner-wrapper">
+                          <div class="teal-stripe"></div>
+                          <div class="green-banner">ASSET TETAP</div>
                         </div>
-                        <div class="sub-teal-slant"></div>
-                        <div class="sub-dots-pattern">
-                          <span class="p-dot"></span><span class="p-dot"></span><span class="p-dot"></span>
-                          <span class="p-dot"></span><span class="p-dot"></span><span class="p-dot"></span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  <!-- 2. Tabel 4 Baris Atribut -->
-                  <div class="card-table-section">
-                    <!-- Row 1: NOMOR ASSET -->
-                    <div class="attr-row">
-                      <div class="attr-icon-box">
-                        <svg viewBox="0 0 16 16" fill="currentColor" class="attr-svg"><path d="M6 1a1 1 0 0 0-.707.293L.293 6.293a1 1 0 0 0 0 1.414l6 6a1 1 0 0 0 1.414 0l5-5A1 1 0 0 0 13 8V2a1 1 0 0 0-1-1H6zm-2 4a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3z"/></svg>
-                      </div>
-                      <div class="attr-label">NOMOR ASSET</div>
-                      <div class="attr-divider">|</div>
-                      <div class="attr-value attr-value-rek"><?= e($card['nomor_gabungan']) ?></div>
-                    </div>
-
-                    <!-- Row 2: NAMA ASSET -->
-                    <div class="attr-row">
-                      <div class="attr-icon-box">
-                        <svg viewBox="0 0 16 16" fill="currentColor" class="attr-svg"><path d="M1 3a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v8a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1V3zm1.5.5v7h11v-7h-11zM6 13.5a.5.5 0 0 1 .5-.5h3a.5.5 0 0 1 0 1h-3a.5.5 0 0 1-.5-.5z"/></svg>
-                      </div>
-                      <div class="attr-label">NAMA ASSET</div>
-                      <div class="attr-divider">|</div>
-                      <div class="attr-value attr-value-nama" title="<?= e($card['nama']) ?>"><?= e($card['nama']) ?></div>
-                    </div>
-
-                    <!-- Row 3: TGL PEROLEHAN -->
-                    <div class="attr-row">
-                      <div class="attr-icon-box">
-                        <svg viewBox="0 0 16 16" fill="currentColor" class="attr-svg"><path d="M3.5 0a.5.5 0 0 1 .5.5V1h8V.5a.5.5 0 0 1 1 0V1h1a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V3a2 2 0 0 1 2-2h1V.5a.5.5 0 0 1 .5-.5zM1 4v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V4H1z"/></svg>
-                      </div>
-                      <div class="attr-label">TGL PEROLEHAN</div>
-                      <div class="attr-divider">|</div>
-                      <div class="attr-value attr-value-tgl"><?= e($card['tgl']) ?></div>
-                    </div>
-
-                    <!-- Row 4: LOKASI -->
-                    <div class="attr-row row-bottom-last">
-                      <div class="attr-icon-box">
-                        <svg viewBox="0 0 16 16" fill="currentColor" class="attr-svg"><path d="M8 16s6-5.686 6-10A6 6 0 0 0 2 6c0 4.314 6 10 6 10zm0-7a3 3 0 1 1 0-6 3 3 0 0 1 0 6z"/></svg>
-                      </div>
-                      <div class="attr-label">LOKASI</div>
-                      <div class="attr-divider">|</div>
-                      <div class="attr-value attr-value-lokasi" title="<?= e($card['lokasi']) ?>"><?= e($card['lokasi']) ?></div>
-                    </div>
-                  </div>
-
-                  <!-- 3. Bottom Section: Perhatian & QR Code -->
-                  <div class="card-bottom-section">
-                    <!-- Kolom Kiri: Peringatan HRD -->
-                    <div class="bottom-warning-col">
-                      <div class="warning-content">
-                        <div class="warning-shield-icon">
-                          <svg viewBox="0 0 24 24" fill="none" stroke="#003870" stroke-width="2" class="shield-svg">
-                            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" fill="#ffffff"/>
-                            <path d="M12 8v5M12 16v.5" stroke="#003870" stroke-width="2.5" stroke-linecap="round"/>
-                          </svg>
-                        </div>
-                        <div class="warning-text-wrap">
-                          <div class="warning-heading">PERHATIAN</div>
-                          <div class="warning-body card-disclaimer-val">
-                            Perhatian Dilarang memindahkan barang inventaris ini tanpa seizin Human Resource Departement (HRD) Bank Mitra
+                        <div class="header-dots-container">
+                          <div class="header-dots">
+                            <span></span><span></span><span></span>
+                            <span></span><span></span><span></span>
                           </div>
                         </div>
                       </div>
                     </div>
+                  </div>
 
-                    <!-- Kolom Kanan: QR Code & Badge -->
-                    <div class="bottom-qr-col">
-                      <div class="qr-canvas-holder">
-                        <div class="qr-box-inner" id="qr-box-<?= $cIdx ?>" data-qr="<?= e($card['qr_url']) ?>"></div>
+                  <!-- Data Fields Section -->
+                  <div class="card-fields-sec">
+                    <!-- 1. Nomor Asset -->
+                    <div class="card-field-row">
+                      <div class="field-icon-box">
+                        <svg viewBox="0 0 16 16" fill="currentColor" class="field-svg-icon"><path d="M2 2a1 1 0 0 1 1-1h4.586a1 1 0 0 1 .707.293l7 7a1 1 0 0 1 0 1.414l-4.586 4.586a1 1 0 0 1-1.414 0l-7-7A1 1 0 0 1 2 8.586V2zm3.5 3.5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3z"/></svg>
                       </div>
-                      <div class="scan-pill-badge">
-                        <svg viewBox="0 0 16 16" fill="currentColor" class="phone-svg"><path d="M11 1a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1h6zM5 0a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2V2a2 2 0 0 0-2-2H5z"/><path d="M8 14a1 1 0 1 0 0-2 1 1 0 0 0 0 2z"/></svg>
-                        <span>SCAN UNTUK INFO</span>
+                      <div class="field-content-box">
+                        <span class="field-lbl">NOMOR ASSET</span>
+                        <span class="field-sep">|</span>
+                        <span class="field-val"><?= e($card['nomor_gabungan']) ?></span>
                       </div>
                     </div>
 
-                    <!-- Bottom Wave Decoration -->
-                    <svg class="bottom-wave-decor" viewBox="0 0 856 120" preserveAspectRatio="none">
-                      <path d="M 0,55 C 100,50 180,95 270,95 C 330,95 380,85 450,110 L 450,120 L 0,120 Z" fill="#6bb82a" />
-                      <path d="M 420,120 C 530,120 620,115 720,80 C 780,60 820,40 856,20 L 856,120 L 420,120 Z" fill="#003870" />
-                    </svg>
+                    <!-- 2. Nama Asset -->
+                    <div class="card-field-row">
+                      <div class="field-icon-box">
+                        <svg viewBox="0 0 16 16" fill="currentColor" class="field-svg-icon"><path d="M12 1H4a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V3a2 2 0 0 0-2-2zM4 2h8a1 1 0 0 1 1 1v7H3V3a1 1 0 0 1 1-1z"/><path d="M8 12a1 1 0 1 0 0-2 1 1 0 0 0 0 2z"/></svg>
+                      </div>
+                      <div class="field-content-box">
+                        <span class="field-lbl">NAMA ASSET</span>
+                        <span class="field-sep">|</span>
+                        <span class="field-val" title="<?= e($card['nama']) ?>"><?= e($card['nama']) ?></span>
+                      </div>
+                    </div>
+
+                    <!-- 3. Tgl Perolehan -->
+                    <div class="card-field-row">
+                      <div class="field-icon-box">
+                        <svg viewBox="0 0 16 16" fill="currentColor" class="field-svg-icon"><path d="M3.5 0a.5.5 0 0 1 .5.5V1h8V.5a.5.5 0 0 1 1 0V1h1a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V3a2 2 0 0 1 2-2h1V.5a.5.5 0 0 1 .5-.5zM1 4v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V4H1z"/></svg>
+                      </div>
+                      <div class="field-content-box">
+                        <span class="field-lbl">TGL PEROLEHAN</span>
+                        <span class="field-sep">|</span>
+                        <span class="field-val"><?= e($card['tgl']) ?></span>
+                      </div>
+                    </div>
+
+                    <!-- 4. Lokasi -->
+                    <div class="card-field-row">
+                      <div class="field-icon-box">
+                        <svg viewBox="0 0 16 16" fill="currentColor" class="field-svg-icon"><path d="M8 16s6-5.686 6-10A6 6 0 0 0 2 6c0 4.314 6 10 6 10zm0-7a3 3 0 1 1 0-6 3 3 0 0 1 0 6z"/></svg>
+                      </div>
+                      <div class="field-content-box">
+                        <span class="field-lbl">LOKASI</span>
+                        <span class="field-sep">|</span>
+                        <span class="field-val attr-value-lokasi" title="<?= e($card['lokasi']) ?>"><?= e($card['lokasi']) ?></span>
+                      </div>
+                    </div>
                   </div>
 
+                  <!-- Bottom Section -->
+                  <div class="card-bottom-sec">
+                    <!-- Background Waves SVG -->
+                    <div class="card-waves">
+                      <svg viewBox="0 0 85.6 7.5" preserveAspectRatio="none" style="width: 100%; height: 100%; display: block;">
+                        <path d="M 0 3 C 8 2.5, 18 5, 24 7.5 L 0 7.5 Z" fill="#7ac142" />
+                        <path d="M 5 7.5 Q 32 3, 58 6.5 T 85.6 3.5 L 85.6 7.5 Z" fill="#003b73" />
+                      </svg>
+                    </div>
+                    <!-- Left: Attention Disclaimer -->
+                    <div class="bottom-left-attention">
+                      <div class="attention-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="#003b73" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" class="attention-svg-icon">
+                          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                          <line x1="12" y1="8" x2="12" y2="13" />
+                          <line x1="12" y1="16.5" x2="12.01" y2="16.5" stroke-width="3" />
+                        </svg>
+                      </div>
+                      <div class="attention-text-box">
+                        <div class="attention-title">Perhatian</div>
+                        <div class="attention-desc card-disclaimer-val">Perhatian Dilarang memindahkan barang inventaris ini tanpa seizin Human Resource Departement (HRD) Bank Mitra</div>
+                      </div>
+                    </div>
+                    <!-- Separator Line -->
+                    <div class="attention-qr-separator"></div>
+                    <!-- Right: QR Code & Scan Capsule -->
+                    <div class="bottom-right-qr">
+                      <div class="qr-border-box">
+                        <div id="qr-box-<?= $cIdx ?>" class="card-qr-img qr-box-inner" data-qr="<?= e($card['qr_url']) ?>"></div>
+                      </div>
+                      <div class="scan-info-capsule">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="scan-icon">
+                          <rect x="5" y="2" width="14" height="20" rx="2" ry="2"/>
+                          <line x1="12" y1="18" x2="12.01" y2="18"/>
+                        </svg>
+                        <span>SCAN UNTUK INFO</span>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
             <?php endforeach; ?>
@@ -1110,10 +1131,15 @@ unset($_SESSION['flash'], $_SESSION['flash_error']);
           </div>
         </div>
         <div class="modal-footer py-2 px-3 justify-content-between">
-          <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-dismiss="modal">Tutup</button>
-          <button type="button" class="btn btn-sm btn-primary fw-bold" onclick="window.print()">
-            <i class="bi bi-printer-fill me-1"></i> Cetak Sekarang
-          </button>
+          <a href="kartu_template.html" target="_blank" class="btn btn-sm btn-outline-secondary">
+            <i class="bi bi-filetype-html me-1"></i> Buka File Template (kartu_template.html)
+          </a>
+          <div class="d-flex gap-2">
+            <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-dismiss="modal">Tutup</button>
+            <button type="button" class="btn btn-sm btn-primary fw-bold" onclick="window.print()">
+              <i class="bi bi-printer-fill me-1"></i> Cetak Sekarang
+            </button>
+          </div>
         </div>
       </div>
     </div>

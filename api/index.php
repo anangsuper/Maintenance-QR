@@ -15,7 +15,7 @@ if ($path === '' || $path === 'index.php') {
 }
 
 // Support serving static images/assets and PWA files directly on Vercel
-$staticExtensions = ['png', 'jpg', 'jpeg', 'svg', 'gif', 'webp', 'ico', 'css', 'js', 'json', 'webmanifest'];
+$staticExtensions = ['png', 'jpg', 'jpeg', 'svg', 'gif', 'webp', 'ico', 'css', 'js', 'json', 'webmanifest', 'html'];
 $ext = strtolower(pathinfo($path, PATHINFO_EXTENSION));
 if (in_array($ext, $staticExtensions, true)) {
     // Mencegah Directory Traversal (CWE-22)
@@ -53,7 +53,8 @@ if (in_array($ext, $staticExtensions, true)) {
             'css' => 'text/css',
             'js' => 'application/javascript',
             'json' => 'application/json',
-            'webmanifest' => 'application/manifest+json'
+            'webmanifest' => 'application/manifest+json',
+            'html' => 'text/html; charset=utf-8'
         ];
         header('Content-Type: ' . ($mimeTypes[$ext] ?? 'application/octet-stream'));
         if ($fileName === 'sw.js') {
