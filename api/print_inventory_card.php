@@ -259,53 +259,143 @@ if ($exportMode === 'doc') {
     header('Content-Type: application/msword; charset=utf-8');
     header('Content-Disposition: attachment; filename="Kartu_Inventaris_CR80_' . date('Ymd_His') . '.doc"');
     $logoUri = app_logo_data_uri();
+    
     echo '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40">';
-    echo '<head><meta charset="utf-8"><title>Kartu Inventaris CR80</title>';
+    echo '<head><meta charset="utf-8"><title>Kartu Inventaris CR80 - PT BPR MITRATAMA ARTHABUANA</title>';
+    echo '<!--[if gte mso 9]>
+    <xml>
+      <w:WordDocument>
+        <w:View>Print</w:View>
+        <w:Zoom>100</w:Zoom>
+        <w:DoNotOptimizeForBrowser/>
+      </w:WordDocument>
+    </xml>
+    <![endif]-->';
     echo '<style>
-        @page { size: A4 portrait; margin: 1cm 0.8cm; }
-        body { font-family: Arial, sans-serif; font-size: 8pt; color: #1e293b; }
-        table.word-grid { width: 100%; border-collapse: collapse; }
-        td.word-card-cell { width: 50%; vertical-align: top; padding: 4px; }
-        .cr80-box { border: 1.5pt solid #003b73; border-radius: 6pt; overflow: hidden; width: 85.6mm; min-height: 54mm; }
-        .cr80-header { background-color: #003b73; color: #ffffff; padding: 4pt 6pt; }
-        .cr80-title { font-size: 7.5pt; font-weight: bold; color: #ffffff; }
-        .cr80-banner { background-color: #7ac142; color: #ffffff; font-size: 6.5pt; font-weight: bold; padding: 1pt 4pt; border-radius: 2pt; display: inline-block; }
-        .cr80-body { padding: 4pt 6pt; }
-        .field-table { width: 100%; border-collapse: collapse; }
-        .field-table td { font-size: 7pt; padding: 1.5pt 0; vertical-align: middle; }
-        .field-label { font-weight: bold; color: #003b73; width: 48pt; }
-        .badge-kode { background-color: #003b73; color: #ffffff; font-weight: bold; padding: 1pt 4pt; border-radius: 2pt; font-size: 7pt; }
-        .cr80-footer { border-top: 1pt solid #7ac142; padding: 2.5pt 6pt; font-size: 5.5pt; color: #64748b; background: #f8fafc; }
+        @page Section1 {
+            size: 210mm 297mm; /* A4 Portrait */
+            margin: 10mm 8mm 10mm 8mm;
+            mso-header-margin: 0mm;
+            mso-footer-margin: 0mm;
+        }
+        div.Section1 { page: Section1; }
+        body { font-family: Arial, Helvetica, sans-serif; font-size: 8pt; color: #1e293b; margin: 0; padding: 0; background: #FFFFFF; }
+        table { border-collapse: collapse; mso-table-lspace: 0pt; mso-table-rspace: 0pt; }
+        .word-page-break { page-break-before: always; mso-special-character: line-break; }
     </style>';
     echo '</head><body>';
-    echo '<table class="word-grid">';
+    echo '<div class="Section1">';
+    echo '<table width="100%" border="0" cellspacing="0" cellpadding="6" style="margin: 0 auto; width: 100%; border-collapse: collapse;">';
+    
     $colCount = 0;
+    $cardIndexOnPage = 0;
     foreach ($cardsData as $c) {
-        if ($colCount % 2 === 0) echo '<tr>';
-        echo '<td class="word-card-cell">';
-        echo '<div class="cr80-box">';
-        echo '<div class="cr80-header">';
-        echo '<table style="width:100%; border-collapse:collapse;"><tr>';
-        echo '<td style="width: 36pt;"><img src="'.e($logoUri).'" style="height: 20pt; width: auto;"></td>';
-        echo '<td style="text-align:right;"><div class="cr80-title">PT BPR MITRATAMA ARTHABUANA</div><div class="cr80-banner">ASSET TETAP</div></td>';
-        echo '</tr></table>';
-        echo '</div>';
-        echo '<div class="cr80-body">';
-        echo '<table class="field-table">';
-        echo '<tr><td class="field-label">NOMOR ASSET</td><td style="width:4pt;">|</td><td><b>'.e($c['nomor_gabungan']).'</b></td></tr>';
-        echo '<tr><td class="field-label">NAMA ASSET</td><td>|</td><td><b>'.e($c['nama']).'</b></td></tr>';
-        echo '<tr><td class="field-label">TGL PEROLEHAN</td><td>|</td><td><b>'.e($c['tgl']).'</b></td></tr>';
-        echo '<tr><td class="field-label">LOKASI</td><td>|</td><td><b>'.e($c['lokasi']).'</b></td></tr>';
-        echo '</table>';
-        echo '</div>';
-        echo '<div class="cr80-footer" style="color:#dc2626;font-weight:bold;">PERHATIAN: <span style="color:#334155;font-weight:normal;">Perhatian Dilarang memindahkan barang inventaris ini tanpa seizin Human Resource Departement (HRD) Bank Mitra</span></div>';
-        echo '</div>';
+        $qrTarget = !empty($c['barcode_data']) ? $c['barcode_data'] : ($c['qr_url'] ?? module_url('scan.php', ['t' => get_static_qr_token((int)($c['id'] ?? 0))]));
+        $qrImgUrl = 'https://api.qrserver.com/v1/create-qr-code/?size=110x110&margin=0&data=' . urlencode($qrTarget);
+
+        if ($colCount % 2 === 0) {
+            echo '<tr>';
+        }
+        
+        echo '<td width="50%" align="center" valign="top" style="padding: 6px 4px;">';
+        
+        // Kotak Fisik Kartu CR80 Standar ATM (85.6mm x 54.0mm)
+        echo '<table width="324" height="204" border="1" bordercolor="#003B73" cellspacing="0" cellpadding="0" style="width: 85.6mm; height: 54.0mm; border: 1.5pt solid #003B73; border-collapse: collapse; background-color: #FFFFFF; table-layout: fixed; margin: 0 auto;">';
+        
+        // 1. Header Kartu
+        echo '<tr height="44"><td colspan="2" style="border-bottom: 1.5pt solid #003B73; padding: 0;">';
+        echo '<table width="100%" border="0" cellspacing="0" cellpadding="0" style="border-collapse: collapse;"><tr>';
+        echo '<td width="86" height="44" align="center" valign="middle" style="background-color: #FFFFFF; border-right: 1pt solid #E2E8F0; padding: 2px;">';
+        echo '<img src="' . e($logoUri) . '" width="80" height="25" border="0" style="width: 80px; height: 25px; display: block; margin: auto;" alt="Logo Bank Mitra">';
         echo '</td>';
+        echo '<td width="238" height="44" valign="top" style="padding: 0;">';
+        echo '<table width="100%" border="0" cellspacing="0" cellpadding="0" style="border-collapse: collapse;">';
+        echo '<tr height="22" bgcolor="#003B73">';
+        echo '<td align="center" valign="middle" style="background-color: #003B73; padding: 1px 4px;">';
+        echo '<font face="Arial, sans-serif" size="1" color="#FFFFFF" style="font-size: 7.5pt; font-weight: bold; letter-spacing: 0.3px;"><b>PT BPR MITRATAMA ARTHABUANA</b></font>';
+        echo '</td></tr>';
+        echo '<tr height="22" bgcolor="#FFFFFF">';
+        echo '<td valign="middle" style="background-color: #FFFFFF; padding: 1px 6px;">';
+        echo '<table border="0" cellspacing="0" cellpadding="0" style="border-collapse: collapse;"><tr>';
+        echo '<td bgcolor="#7AC142" style="background-color: #7AC142; padding: 2px 10px; border-radius: 2px;">';
+        echo '<font face="Arial, sans-serif" size="1" color="#FFFFFF" style="font-size: 6.8pt; font-weight: bold;"><b>ASSET TETAP</b></font>';
+        echo '</td></tr></table>';
+        echo '</td></tr>';
+        echo '</table>';
+        echo '</td></tr></table>';
+        echo '</td></tr>';
+        
+        // 2. Data Fields (Nomor Asset, Nama Asset, Tgl Perolehan, Lokasi)
+        echo '<tr height="95"><td colspan="2" valign="top" style="padding: 6px 8px 2px 8px;">';
+        echo '<table width="100%" border="0" cellspacing="0" cellpadding="0" style="border-collapse: collapse;">';
+        
+        echo '<tr height="22">';
+        echo '<td width="92" valign="middle"><font face="Arial" size="1" color="#003B73" style="font-size: 6.8pt; font-weight: bold;"><b>NOMOR ASSET</b></font></td>';
+        echo '<td width="10" align="center" valign="middle"><font face="Arial" size="1" color="#94A3B8">|</font></td>';
+        echo '<td valign="middle"><font face="Arial" size="1" color="#003B73" style="font-size: 7.2pt; font-weight: bold;"><b>' . e($c['nomor_gabungan']) . '</b></font></td>';
+        echo '</tr>';
+
+        echo '<tr height="22">';
+        echo '<td width="92" valign="middle"><font face="Arial" size="1" color="#003B73" style="font-size: 6.8pt; font-weight: bold;"><b>NAMA ASSET</b></font></td>';
+        echo '<td width="10" align="center" valign="middle"><font face="Arial" size="1" color="#94A3B8">|</font></td>';
+        echo '<td valign="middle"><font face="Arial" size="1" color="#0F172A" style="font-size: 7.0pt; font-weight: bold;"><b>' . e($c['nama']) . '</b></font></td>';
+        echo '</tr>';
+
+        echo '<tr height="22">';
+        echo '<td width="92" valign="middle"><font face="Arial" size="1" color="#003B73" style="font-size: 6.8pt; font-weight: bold;"><b>TGL PEROLEHAN</b></font></td>';
+        echo '<td width="10" align="center" valign="middle"><font face="Arial" size="1" color="#94A3B8">|</font></td>';
+        echo '<td valign="middle"><font face="Arial" size="1" color="#334155" style="font-size: 7.0pt;"><b>' . e($c['tgl']) . '</b></font></td>';
+        echo '</tr>';
+
+        echo '<tr height="22">';
+        echo '<td width="92" valign="middle"><font face="Arial" size="1" color="#003B73" style="font-size: 6.8pt; font-weight: bold;"><b>LOKASI</b></font></td>';
+        echo '<td width="10" align="center" valign="middle"><font face="Arial" size="1" color="#94A3B8">|</font></td>';
+        echo '<td valign="middle"><font face="Arial" size="1" color="#003B73" style="font-size: 7.0pt; font-weight: bold;"><b>' . e($c['lokasi']) . '</b></font></td>';
+        echo '</tr>';
+        
+        echo '</table>';
+        echo '</td></tr>';
+        
+        // 3. Bottom Section: Disclaimer di Kiri, QR Code di Kanan
+        echo '<tr height="62">';
+        echo '<td width="238" valign="bottom" style="padding: 2px 6px 4px 6px;">';
+        echo '<table width="100%" border="0" cellspacing="0" cellpadding="0" style="border-collapse: collapse;">';
+        echo '<tr><td style="padding-bottom: 3px;">';
+        echo '<table width="100%" border="0" cellspacing="0" cellpadding="0"><tr><td height="2" bgcolor="#7AC142" style="background-color: #7AC142; font-size: 1px; line-height: 1px;">&nbsp;</td></tr></table>';
+        echo '</td></tr>';
+        echo '<tr><td style="border: 0.75pt solid #003B73; background-color: #F8FAFC; padding: 3px 5px;">';
+        echo '<font face="Arial" size="1" color="#D92D20" style="font-size: 5.5pt; font-weight: bold;"><b>PERHATIAN: </b></font>';
+        echo '<font face="Arial" size="1" color="#334155" style="font-size: 5.2pt;">Perhatian Dilarang memindahkan barang inventaris ini tanpa seizin Human Resource Departement (HRD) Bank Mitra</font>';
+        echo '</td></tr></table>';
+        echo '</td>';
+        
+        echo '<td width="86" align="center" valign="middle" style="padding: 2px 4px 4px 2px;">';
+        echo '<img src="' . e($qrImgUrl) . '" width="50" height="50" border="1" style="border: 1pt solid #003B73; display: block; margin: auto;" alt="QR Code">';
+        echo '<div style="font-family: Arial; font-size: 4.8pt; color: #003B73; font-weight: bold; margin-top: 2px; text-align: center;">SCAN UNTUK INFO</div>';
+        echo '</td>';
+        echo '</tr>';
+        
+        echo '</table>';
+        echo '</td>';
+        
         $colCount++;
-        if ($colCount % 2 === 0) echo '</tr>';
+        $cardIndexOnPage++;
+        
+        if ($colCount % 2 === 0) {
+            echo '</tr>';
+            // Setiap 10 kartu (5 baris), lakukan page break di Word
+            if ($cardIndexOnPage % 10 === 0 && $colCount < count($cardsData)) {
+                echo '</table><br clear="all" style="mso-special-character:line-break;page-break-before:always"><table width="100%" border="0" cellspacing="0" cellpadding="6" style="margin: 0 auto; width: 100%; border-collapse: collapse;">';
+            }
+        }
     }
-    if ($colCount % 2 !== 0) echo '<td class="word-card-cell">&nbsp;</td></tr>';
+    
+    if ($colCount % 2 !== 0) {
+        echo '<td width="50%">&nbsp;</td></tr>';
+    }
+    
     echo '</table>';
+    echo '</div>';
     echo '</body></html>';
     exit;
 }
@@ -1065,41 +1155,30 @@ unset($_SESSION['flash'], $_SESSION['flash_error']);
           <input type="hidden" name="_csrf" value="<?= e(csrf_token()) ?>">
           <input type="hidden" name="form_action" value="add_card">
           <div class="modal-header py-2 px-3 bg-primary text-white">
-            <h6 class="modal-title fw-bold"><i class="bi bi-plus-circle me-2"></i>Tambah Data Kartu Inventaris</h6>
+            <h6 class="modal-title fw-bold"><i class="bi bi-plus-circle me-2"></i>Tambah Kartu Inventaris</h6>
             <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
           </div>
           <div class="modal-body p-3">
-            <div class="mb-2">
-              <label class="form-label small fw-bold text-dark">Nomor Rekening / Kode Inventaris</label>
-              <input type="text" name="nomor_rekening" class="form-control form-control-sm font-monospace" placeholder="Contoh: 01.05.0494" required>
+            <div class="mb-3">
+              <label class="form-label small fw-bold text-dark">Nomor Rekening</label>
+              <input type="text" name="nomor_rekening" id="printAddCardRekening" class="form-control form-control-sm font-monospace" placeholder="Contoh: 01.5.00003" required oninput="handleRekeningInput(this)">
             </div>
-            <div class="mb-2">
-              <label class="form-label small fw-bold text-dark">Nama Barang / Perangkat</label>
-              <input type="text" name="nama_barang" class="form-control form-control-sm" placeholder="Contoh: PC Desktop Kasir 2" required>
+            <div class="mb-3">
+              <label class="form-label small fw-bold text-dark">Nama Barang</label>
+              <input type="text" name="nama_barang" class="form-control form-control-sm" placeholder="Contoh: BANGUNAN GEDUNG KANTOR PUSA" required>
             </div>
-            <div class="row g-2 mb-2">
-              <div class="col-6">
-                <label class="form-label small fw-bold text-dark">Tanggal Perolehan</label>
-                <input type="date" name="tanggal_perolehan" class="form-control form-control-sm" value="<?= date('Y-m-d') ?>" required>
-              </div>
-              <div class="col-6">
-                <label class="form-label small fw-bold text-dark">Lokasi Penempatan</label>
-                <input type="text" name="lokasi" class="form-control form-control-sm" value="KPO / Operasional" required>
-              </div>
+            <div class="mb-3">
+              <label class="form-label small fw-bold text-dark">Tanggal Perolehan</label>
+              <input type="date" name="tanggal_perolehan" class="form-control form-control-sm" value="<?= date('Y-m-d') ?>" required>
             </div>
-            <div class="mb-2">
-              <label class="form-label small fw-bold text-dark">Pengguna / PIC</label>
-              <input type="text" name="pengguna" class="form-control form-control-sm" value="Umum / Pool">
-            </div>
-            <div class="mb-2">
-              <label class="form-label small fw-bold text-dark">Barcode Data / Target URL QR</label>
-              <input type="text" name="barcode_data" class="form-control form-control-sm" placeholder="https://canva.link/... atau teks barcode">
-              <div class="form-text" style="font-size: 0.72rem;">Jika dikosongkan, QR Code akan otomatis diarahkan ke URL verifikasi sistem.</div>
+            <div class="mb-3">
+              <label class="form-label small fw-bold text-dark">Kode QR / Barcode (Data QR Code)</label>
+              <input type="text" name="barcode_data" class="form-control form-control-sm font-monospace" placeholder="Salin/tempel kode QR di sini">
             </div>
           </div>
           <div class="modal-footer py-2 px-3">
             <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Batal</button>
-            <button type="submit" class="btn btn-sm btn-primary fw-bold">Simpan Kartu</button>
+            <button type="submit" class="btn btn-sm btn-primary fw-bold px-3">Simpan</button>
           </div>
         </form>
       </div>
@@ -1466,6 +1545,41 @@ function doPost(e) {
         status.className = "mt-2 small text-danger text-center";
         status.innerText = "Kesalahan koneksi: " + err;
       });
+    }
+
+    function handleRekeningInput(el) {
+      if (!el) return;
+      let val = el.value.replace(/[^0-9.]/g, '');
+      if (!val.includes('.')) {
+        if (val.length === 2) {
+          el.value = val + '.';
+          return;
+        }
+        if (val.length > 2) {
+          let p0 = val.slice(0, 2);
+          let rest = val.slice(2);
+          if (rest.length === 1) {
+            el.value = p0 + '.' + rest;
+          } else if (rest.length === 2) {
+            el.value = p0 + '.' + rest + '.';
+          } else {
+            let p1 = rest.slice(0, 2);
+            let p2 = rest.slice(2, 7);
+            el.value = p0 + '.' + p1 + '.' + p2;
+          }
+          return;
+        }
+        el.value = val;
+        return;
+      }
+      let parts = val.split('.');
+      let p0 = (parts[0] || '').replace(/[^0-9]/g, '').slice(0, 2);
+      let p1 = (parts[1] || '').replace(/[^0-9]/g, '').slice(0, 2);
+      let p2 = (parts[2] || '').replace(/[^0-9]/g, '').slice(0, 5);
+      let res = p0;
+      if (parts.length > 1) res += '.' + p1;
+      if (parts.length > 2) res += '.' + p2;
+      el.value = res;
     }
 
     function copyGasScript() {

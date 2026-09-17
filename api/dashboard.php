@@ -169,21 +169,82 @@ foreach ($cabangs as $c) {
         $selectedCabangName = $c['nama'] ?? $c['nama_cabang'] ?? ('Cabang #' . $cabangId);
         break;
     }
+}
+
 // Ambil Seluruh Data Kartu Inventaris CR80
 $allCards = get_inventaris_kartu_rows();
 $totalCardsCount = count($allCards);
 
+$standardCabangs = get_standard_cabang_list();
+
 $searchCard = trim((string)($_GET['q_kartu'] ?? ''));
 $cabangCard = trim((string)($_GET['cabang_kartu'] ?? ''));
+$tahunCard = trim((string)($_GET['tahun_kartu'] ?? ''));
 
-$filteredCards = array_filter($allCards, function($r) use ($searchCard, $cabangCard) {
+// Daftar tahun untuk filter kartu
+$cardYears = [];
+foreach ($allCards as $ac) {
+    $t = trim((string)($ac['tanggal_perolehan'] ?? ''));
+    if ($t !== '' && $t !== '0000-00-00') {
+        $y = date('Y', strtotime($t));
+        if ($y && !in_array($y, $cardYears, true)) {
+            $cardYears[] = $y;
+        }
+    }
+}
+rsort($cardYears);
+if (!in_array((string)date('Y'), $cardYears, true)) {
+    array_unshift($cardYears, (string)date('Y'));
+}
+$optTahunKartuHtml = '';
+foreach ($cardYears as $cy) {
+    $optTahunKartuHtml .= '<option value="' . e($cy) . '"' . ($tahunCard === (string)$cy ? ' selected' : '') . '>' . e($cy) . '</option>';
+}
+
+// Filter Kartu Inventaris (Mendukung Pencarian, Cabang 01-05, dan Tahun)
+$filteredCards = array_filter($allCards, function($r) use ($searchCard, $cabangCard, $tahunCard) {
     if ($searchCard !== '') {
         $q = strtolower($searchCard);
-        $haystack = strtolower(($r['nomor_rekening'] ?? '') . ' ' . ($r['nama_barang'] ?? '') . ' ' . ($r['barcode_data'] ?? '') . ' ' . ($r['lokasi'] ?? ''));
+        $haystack = strtolower(($r['nomor_rekening'] ?? '') . ' ' . ($r['nama_barang'] ?? '') . ' ' . ($r['barcode_data'] ?? '') . ' ' . ($r['lokasi'] ?? '') . ' ' . ($r['pengguna'] ?? ''));
         if (strpos($haystack, $q) === false) return false;
     }
-    if ($cabangCard !== '' && $cabangCard !== 'Semua Cabang') {
-        if (stripos($r['lokasi'] ?? '', $cabangCard) === false) return false;
+    if ($cabangCard !== '' && $cabangCard !== 'Semua Cabang' && $cabangCard !== 'all') {
+        $rek = trim((string)($r['nomor_rekening'] ?? ''));
+        $lokasi = strtolower(trim((string)($r['lokasi'] ?? '')));
+        
+        $matchFound = false;
+        // Cek prefix nomor rekening (01., 02., 03., 04., 05.)
+        if (preg_match('/^' . preg_quote($cabangCard, '/') . '[\.\-]/', $rek)) {
+            $matchFound = true;
+        } else {
+            $branchMap = [
+                '01' => ['kantor pusat', 'kpo', 'pusat'],
+                '02' => ['batulicin'],
+                '03' => ['martapura'],
+                '04' => ['tanjung'],
+                '05' => ['handil bakti', 'handil']
+            ];
+            if (isset($branchMap[$cabangCard])) {
+                foreach ($branchMap[$cabangCard] as $kw) {
+                    if (strpos($lokasi, $kw) !== false) {
+                        $matchFound = true;
+                        break;
+                    }
+                }
+            } elseif (strpos($lokasi, strtolower($cabangCard)) !== false) {
+                $matchFound = true;
+            }
+        }
+        if (!$matchFound) return false;
+    }
+    if ($tahunCard !== '' && $tahunCard !== 'all' && $tahunCard !== 'Semua Tahun') {
+        $tgl = trim((string)($r['tanggal_perolehan'] ?? ''));
+        if ($tgl !== '' && $tgl !== '0000-00-00') {
+            $y = date('Y', strtotime($tgl));
+            if ($y !== $tahunCard) return false;
+        } else {
+            return false;
+        }
     }
     return true;
 });
@@ -305,8 +366,6 @@ if (!empty($unresolvedFindings)) {
     $findingsListHtml = '<div class="text-center py-3 text-muted small"><i class="bi bi-check-circle text-success fs-5 d-block mb-1"></i>Tidak ada temuan kendala aktif. Seluruh perangkat beroperasi normal.</div>';
 }
 
-}
-
 // =========================================================================
 // 5. GENERASI DATA TABEL KARTU INVENTARIS CR80
 // =========================================================================
@@ -335,7 +394,6 @@ if (empty($filteredCards)) {
           </td>
           <td>
             <div class="fw-semibold text-dark">'.e($nama).'</div>
-            <div class="text-muted small" style="font-size: 0.74rem;">PIC: '.e($c['pengguna'] ?? 'Umum / Pool').'</div>
           </td>
           <td>
             <span class="small text-secondary"><i class="bi bi-calendar-event text-primary me-1"></i>'.e($tglIndo).'</span>
@@ -944,29 +1002,43 @@ if ($activeTab === 'kartu') {
       </div>
     </div>
 
-    <!-- Filter Bar Card -->
+    <!-- Compact Filter Bar (Sistem Filter Aset Komputer) -->
     <div class="card p-3 mb-4 border shadow-sm bg-white" style="border-radius: 8px; border-color: var(--app-border) !important;">
-      <form method="get" class="row g-2 align-items-center">
+      <form method="get" class="row g-2 align-items-end">
         <input type="hidden" name="tab" value="kartu">
-        <div class="col-12 col-md-5">
+        <div class="col-lg-5 col-md-6">
+          <label class="form-label text-secondary small fw-semibold mb-1">Cari Nomor Rekening / Perangkat / PIC</label>
           <div class="input-group input-group-sm">
-            <span class="input-group-text bg-light text-muted"><i class="bi bi-search"></i></span>
-            <input type="text" name="q_kartu" value="'.e($searchCard).'" class="form-control form-control-sm" placeholder="Cari nomor rekening / nama barang...">
+            <span class="input-group-text bg-white border-end-0"><i class="bi bi-search text-muted"></i></span>
+            <input type="text" class="form-control form-control-sm border-start-0" name="q_kartu" value="'.e($searchCard).'" placeholder="Ketik nomor rekening, nama barang, kode QR, lokasi...">
           </div>
         </div>
-        <div class="col-8 col-md-4">
-          <select name="cabang_kartu" class="form-select form-select-sm" onchange="this.form.submit()">
-            <option value="Semua Cabang">Semua Cabang / Lokasi</option>';
-    foreach ($cabangs as $c) {
-        $cName = $c['nama'] ?? $c['nama_cabang'] ?? '';
-        $body .= '<option value="'.e($cName).'" '.($cabangCard === $cName ? 'selected' : '').'>'.e($cName).'</option>';
-    }
-    $body .= '
+        <div class="col-lg-4 col-md-3 col-sm-6">
+          <label class="form-label text-secondary small fw-semibold mb-1">Kantor Cabang</label>
+          <select class="form-select form-select-sm" name="cabang_kartu">
+            <option value="">Semua Cabang (01 - 05)</option>
+            <option value="01"'.($cabangCard === '01' ? ' selected' : '').'>01 - Kantor Pusat</option>
+            <option value="02"'.($cabangCard === '02' ? ' selected' : '').'>02 - Batulicin</option>
+            <option value="03"'.($cabangCard === '03' ? ' selected' : '').'>03 - Martapura</option>
+            <option value="04"'.($cabangCard === '04' ? ' selected' : '').'>04 - Tanjung</option>
+            <option value="05"'.($cabangCard === '05' ? ' selected' : '').'>05 - Handil Bakti</option>
           </select>
         </div>
-        <div class="col-4 col-md-3 d-flex gap-2">
-          <button type="submit" class="btn btn-sm btn-primary flex-grow-1">Filter</button>
-          <a href="'.e(module_url('dashboard.php', ['tab' => 'kartu'])).'" class="btn btn-sm btn-outline-secondary" title="Reset Filter"><i class="bi bi-arrow-clockwise"></i></a>
+        <div class="col-lg-3 col-md-3 col-sm-6">
+          <label class="form-label text-secondary small fw-semibold mb-1">Tahun Perolehan</label>
+          <select class="form-select form-select-sm" name="tahun_kartu">
+            <option value="">Semua Tahun</option>
+            '.$optTahunKartuHtml.'
+          </select>
+        </div>
+        <div class="col-12 d-flex justify-content-between align-items-center pt-2 border-top mt-2 flex-wrap gap-2">
+          <div class="text-secondary small">
+            Menampilkan <strong>'.count($filteredCards).'</strong> kartu dari total <strong>'.$totalCardsCount.'</strong> kartu inventaris terdaftar.
+          </div>
+          <div class="d-flex gap-2">
+            <a class="btn btn-sm btn-light border px-3" href="'.e(module_url('dashboard.php', ['tab' => 'kartu'])).'"><i class="bi bi-x-circle me-1"></i> Reset</a>
+            <button type="submit" class="btn btn-sm btn-primary px-3 fw-semibold"><i class="bi bi-filter me-1"></i> Terapkan</button>
+          </div>
         </div>
       </form>
     </div>
@@ -1184,48 +1256,40 @@ $body .= '
 <!-- MODAL: TAMBAH DATA KARTU INVENTARIS -->
 <div class="modal fade" id="addCardModal" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered">
-    <div class="modal-content border-0 shadow-lg" style="border-radius: 12px;">
+<!-- MODAL: TAMBAH DATA KARTU INVENTARIS -->
+<div class="modal fade" id="addCardModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0 shadow-lg" style="border-radius: 14px;">
       <form method="post">
         <input type="hidden" name="_csrf" value="'.e(csrf_token()).'">
         <input type="hidden" name="action" value="create_card">
         <div class="modal-header bg-primary text-white py-2 px-3">
           <h6 class="modal-title fw-bold d-flex align-items-center gap-2">
-            <i class="bi bi-plus-circle-fill"></i> Tambah Data Kartu Inventaris CR80
+            <i class="bi bi-plus-circle-fill"></i> Tambah Kartu Inventaris
           </h6>
           <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
         </div>
         <div class="modal-body p-3">
           <div class="mb-3">
             <label class="form-label small fw-bold text-dark">Nomor Rekening</label>
-            <input type="text" name="nomor_rekening" class="form-control form-control-sm font-monospace" placeholder="Contoh: 01.05.0494" required>
+            <input type="text" name="nomor_rekening" id="addCardRekening" class="form-control form-control-sm font-monospace" placeholder="Contoh: 01.5.00003" required oninput="handleRekeningInput(this, \'add\')">
           </div>
           <div class="mb-3">
-            <label class="form-label small fw-bold text-dark">Nama Barang / Perangkat</label>
-            <input type="text" name="nama_barang" class="form-control form-control-sm" placeholder="Contoh: PRINTER CANON G2010 KAS" required>
-          </div>
-          <div class="row g-2 mb-3">
-            <div class="col-6">
-              <label class="form-label small fw-bold text-dark">Tanggal Perolehan</label>
-              <input type="date" name="tanggal_perolehan" class="form-control form-control-sm" value="'.date('Y-m-d').'" required>
-            </div>
-            <div class="col-6">
-              <label class="form-label small fw-bold text-dark">Lokasi Penempatan</label>
-              <input type="text" name="lokasi" class="form-control form-control-sm" value="KPO" required>
-            </div>
+            <label class="form-label small fw-bold text-dark">Nama Barang</label>
+            <input type="text" name="nama_barang" class="form-control form-control-sm" placeholder="Contoh: BANGUNAN GEDUNG KANTOR PUSA" required>
           </div>
           <div class="mb-3">
-            <label class="form-label small fw-bold text-dark">Pengguna / PIC</label>
-            <input type="text" name="pengguna" class="form-control form-control-sm" value="Umum / Pool">
+            <label class="form-label small fw-bold text-dark">Tanggal Perolehan</label>
+            <input type="date" name="tanggal_perolehan" class="form-control form-control-sm" value="'.date('Y-m-d').'" required>
           </div>
-          <div class="mb-2">
-            <label class="form-label small fw-bold text-dark">Kode QR / Barcode URL</label>
-            <input type="text" name="barcode_data" class="form-control form-control-sm font-monospace" placeholder="https://canva.link/... atau URL verifikasi">
-            <div class="form-text text-muted" style="font-size: 0.72rem;">Isi tautan Canva atau link QR verifikasi kartu.</div>
+          <div class="mb-3">
+            <label class="form-label small fw-bold text-dark">Kode QR / Barcode (Data QR Code)</label>
+            <input type="text" name="barcode_data" class="form-control form-control-sm font-monospace" placeholder="Salin/tempel kode QR di sini">
           </div>
         </div>
         <div class="modal-footer py-2 px-3 bg-light">
           <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-dismiss="modal">Batal</button>
-          <button type="submit" class="btn btn-sm btn-primary fw-bold">Simpan Kartu</button>
+          <button type="submit" class="btn btn-sm btn-primary fw-bold px-3">Simpan</button>
         </div>
       </form>
     </div>
@@ -1235,48 +1299,38 @@ $body .= '
 <!-- MODAL: EDIT DATA KARTU INVENTARIS -->
 <div class="modal fade" id="editCardModal" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered">
-    <div class="modal-content border-0 shadow-lg" style="border-radius: 12px;">
+    <div class="modal-content border-0 shadow-lg" style="border-radius: 14px;">
       <form method="post">
         <input type="hidden" name="_csrf" value="'.e(csrf_token()).'">
         <input type="hidden" name="action" value="update_card">
         <input type="hidden" name="id" id="editCardId">
         <div class="modal-header bg-warning text-dark py-2 px-3">
           <h6 class="modal-title fw-bold d-flex align-items-center gap-2">
-            <i class="bi bi-pencil-square"></i> Edit Data Kartu Inventaris
+            <i class="bi bi-pencil-square"></i> Edit Kartu Inventaris
           </h6>
           <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
         </div>
         <div class="modal-body p-3">
           <div class="mb-3">
             <label class="form-label small fw-bold text-dark">Nomor Rekening</label>
-            <input type="text" name="nomor_rekening" id="editCardRekening" class="form-control form-control-sm font-monospace" required>
+            <input type="text" name="nomor_rekening" id="editCardRekening" class="form-control form-control-sm font-monospace" placeholder="Contoh: 01.5.00003" required oninput="handleRekeningInput(this, \'edit\')">
           </div>
           <div class="mb-3">
             <label class="form-label small fw-bold text-dark">Nama Barang</label>
             <input type="text" name="nama_barang" id="editCardNama" class="form-control form-control-sm" required>
           </div>
-          <div class="row g-2 mb-3">
-            <div class="col-6">
-              <label class="form-label small fw-bold text-dark">Tanggal Perolehan</label>
-              <input type="date" name="tanggal_perolehan" id="editCardTanggal" class="form-control form-control-sm" required>
-            </div>
-            <div class="col-6">
-              <label class="form-label small fw-bold text-dark">Lokasi Penempatan</label>
-              <input type="text" name="lokasi" id="editCardLokasi" class="form-control form-control-sm" required>
-            </div>
+          <div class="mb-3">
+            <label class="form-label small fw-bold text-dark">Tanggal Perolehan</label>
+            <input type="date" name="tanggal_perolehan" id="editCardTanggal" class="form-control form-control-sm" required>
           </div>
           <div class="mb-3">
-            <label class="form-label small fw-bold text-dark">Pengguna / PIC</label>
-            <input type="text" name="pengguna" id="editCardPengguna" class="form-control form-control-sm">
-          </div>
-          <div class="mb-2">
-            <label class="form-label small fw-bold text-dark">Kode QR / Barcode URL</label>
-            <input type="text" name="barcode_data" id="editCardBarcode" class="form-control form-control-sm font-monospace">
+            <label class="form-label small fw-bold text-dark">Kode QR / Barcode (Data QR Code)</label>
+            <input type="text" name="barcode_data" id="editCardBarcode" class="form-control form-control-sm font-monospace" placeholder="Salin/tempel kode QR di sini">
           </div>
         </div>
         <div class="modal-footer py-2 px-3 bg-light">
           <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-dismiss="modal">Batal</button>
-          <button type="submit" class="btn btn-sm btn-primary fw-bold">Perbarui Kartu</button>
+          <button type="submit" class="btn btn-sm btn-primary fw-bold px-3">Simpan Perubahan</button>
         </div>
       </form>
     </div>
@@ -1546,13 +1600,46 @@ function confirmDeleteCard(id, label) {
   }
 }
 
+function handleRekeningInput(el) {
+  if (!el) return;
+  let val = el.value.replace(/[^0-9.]/g, '');
+  if (!val.includes('.')) {
+    if (val.length === 2) {
+      el.value = val + '.';
+      return;
+    }
+    if (val.length > 2) {
+      let p0 = val.slice(0, 2);
+      let rest = val.slice(2);
+      if (rest.length === 1) {
+        el.value = p0 + '.' + rest;
+      } else if (rest.length === 2) {
+        el.value = p0 + '.' + rest + '.';
+      } else {
+        let p1 = rest.slice(0, 2);
+        let p2 = rest.slice(2, 7);
+        el.value = p0 + '.' + p1 + '.' + p2;
+      }
+      return;
+    }
+    el.value = val;
+    return;
+  }
+  let parts = val.split('.');
+  let p0 = (parts[0] || '').replace(/[^0-9]/g, '').slice(0, 2);
+  let p1 = (parts[1] || '').replace(/[^0-9]/g, '').slice(0, 2);
+  let p2 = (parts[2] || '').replace(/[^0-9]/g, '').slice(0, 5);
+  let res = p0;
+  if (parts.length > 1) res += '.' + p1;
+  if (parts.length > 2) res += '.' + p2;
+  el.value = res;
+}
+
 function openCardEditModal(card) {
   document.getElementById("editCardId").value = card.id || "";
   document.getElementById("editCardRekening").value = card.nomor_rekening || "";
   document.getElementById("editCardNama").value = card.nama_barang || "";
   document.getElementById("editCardTanggal").value = card.tanggal_perolehan || "";
-  document.getElementById("editCardLokasi").value = card.lokasi || "KPO";
-  document.getElementById("editCardPengguna").value = card.pengguna || "Umum / Pool";
   document.getElementById("editCardBarcode").value = card.barcode_data || "";
 
   const modal = new bootstrap.Modal(document.getElementById("editCardModal"));

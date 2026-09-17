@@ -53,7 +53,7 @@ function default_inventaris_kartu_rows(): array {
             'nama_barang' => 'KIPAS ANGIN EMBUN',
             'tanggal_perolehan' => '2026-02-27',
             'barcode_data' => 'https://canva.link/ko9ckx76pbojj2y',
-            'lokasi' => 'KPO / Operasional',
+            'lokasi' => 'Martapura / Operasional',
             'pengguna' => 'Umum / Pool',
             'created_at' => '2026-08-10 05:00:02'
         ]
@@ -91,6 +91,40 @@ function get_nomor_asset_gabungan(string $noRek, ?string $tgl): string {
         }
     }
     return $cleanRek . $tglPart;
+}
+
+/**
+ * Pemetaan Resmi 5 Kantor Cabang Standar
+ * 01: Kantor Pusat (KPO)
+ * 02: Batulicin
+ * 03: Martapura
+ * 04: Tanjung
+ * 05: Handil Bakti
+ */
+function get_standard_cabang_list(): array {
+    return [
+        ['code' => '01', 'name' => 'Kantor Pusat', 'lokasi' => 'Kantor Pusat (KPO)'],
+        ['code' => '02', 'name' => 'Batulicin', 'lokasi' => 'Batulicin'],
+        ['code' => '03', 'name' => 'Martapura', 'lokasi' => 'Martapura'],
+        ['code' => '04', 'name' => 'Tanjung', 'lokasi' => 'Tanjung'],
+        ['code' => '05', 'name' => 'Handil Bakti', 'lokasi' => 'Handil Bakti'],
+    ];
+}
+
+function get_standard_cabang_by_code(string $code): ?array {
+    $code = trim($code);
+    foreach (get_standard_cabang_list() as $c) {
+        if ($c['code'] === $code) return $c;
+    }
+    return null;
+}
+
+function get_cabang_from_nomor_rekening(?string $noRek): ?array {
+    $clean = trim((string)$noRek);
+    if (preg_match('/^(\d{2})[\.\-]/', $clean, $m)) {
+        return get_standard_cabang_by_code($m[1]);
+    }
+    return null;
 }
 
 /**
@@ -199,8 +233,15 @@ function insert_inventaris_kartu(array $data): array {
     $nama = trim((string)($data['nama_barang'] ?? ''));
     $tgl = trim((string)($data['tanggal_perolehan'] ?? date('Y-m-d')));
     $barcode = trim((string)($data['barcode_data'] ?? ''));
-    $lokasi = trim((string)($data['lokasi'] ?? 'KPO / Operasional')) ?: 'KPO / Operasional';
-    $pengguna = trim((string)($data['pengguna'] ?? 'Umum / Pool')) ?: 'Umum / Pool';
+    
+    // Otomatis tentukan lokasi berdasarkan kode cabang pada nomor rekening
+    $lokasi = trim((string)($data['lokasi'] ?? ''));
+    if ($lokasi === '' || $lokasi === 'KPO' || $lokasi === 'KPO / Operasional') {
+        $cBranch = get_cabang_from_nomor_rekening($rek);
+        $lokasi = $cBranch ? $cBranch['lokasi'] : 'Kantor Pusat (KPO)';
+    }
+    
+    $pengguna = trim((string)($data['pengguna'] ?? '')) ?: '-';
     $nowStr = date('Y-m-d H:i:s');
 
     if ($rek === '' || $nama === '') {
@@ -244,8 +285,15 @@ function update_inventaris_kartu(int $id, array $data): bool {
     $nama = trim((string)($data['nama_barang'] ?? ''));
     $tgl = trim((string)($data['tanggal_perolehan'] ?? date('Y-m-d')));
     $barcode = trim((string)($data['barcode_data'] ?? ''));
-    $lokasi = trim((string)($data['lokasi'] ?? 'KPO / Operasional')) ?: 'KPO / Operasional';
-    $pengguna = trim((string)($data['pengguna'] ?? 'Umum / Pool')) ?: 'Umum / Pool';
+    
+    // Otomatis tentukan lokasi berdasarkan kode cabang pada nomor rekening
+    $lokasi = trim((string)($data['lokasi'] ?? ''));
+    if ($lokasi === '' || $lokasi === 'KPO' || $lokasi === 'KPO / Operasional') {
+        $cBranch = get_cabang_from_nomor_rekening($rek);
+        $lokasi = $cBranch ? $cBranch['lokasi'] : 'Kantor Pusat (KPO)';
+    }
+    
+    $pengguna = trim((string)($data['pengguna'] ?? '')) ?: '-';
 
     if ($id <= 0 || $rek === '' || $nama === '') return false;
 
