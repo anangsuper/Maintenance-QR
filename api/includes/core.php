@@ -226,6 +226,10 @@ function verify_csrf(): void {
     exit;
 }
 
+function csrf_validate(): void {
+    verify_csrf();
+}
+
 function e(?string $v): string {
     return htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8');
 }

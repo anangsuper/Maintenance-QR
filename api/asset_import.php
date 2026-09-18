@@ -246,7 +246,7 @@ function normalize_asset_status(string $input): string {
 
 // PROSES POST FORM IMPORT
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'process_import') {
-    csrf_validate();
+    verify_csrf();
 
     if (empty($_FILES['file_excel']['tmp_name']) || !is_uploaded_file($_FILES['file_excel']['tmp_name'])) {
         $_SESSION['flash_error'] = 'Silakan pilih file Excel (.xlsx) atau CSV (.csv) untuk diunggah.';
