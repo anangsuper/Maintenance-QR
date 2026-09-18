@@ -40,6 +40,23 @@ if ($format === 'csv' || !class_exists('ZipArchive')) {
     ];
     fputcsv($out, $headers, ';');
 
+    $sampleRow = [
+        'INV-KPO-001',
+        'PC Desktop',
+        'Asus',
+        'ExpertCenter D500',
+        'SN1234567890',
+        'Kantor Pusat Operasional',
+        'IT / MIS',
+        'Budi Santoso',
+        'Bodi Casing',
+        '192.168.1.50',
+        'Epson L3210',
+        'Aktif (Digunakan)',
+        'Core i5 Gen 12 / RAM 16GB / SSD 512GB'
+    ];
+    fputcsv($out, $sampleRow, ';');
+
     fclose($out);
     exit;
 }
@@ -162,6 +179,30 @@ $colLetters = ['A','B','C','D','E','F','G','H','I','J','K','L','M'];
 foreach ($headers as $cIdx => $hText) {
     $cRef = $colLetters[$cIdx] . '1';
     $sheetDataXml .= '<c r="' . $cRef . '" s="1" t="inlineStr"><is><t>' . htmlspecialchars($hText, ENT_XML1, 'UTF-8') . '</t></is></c>';
+}
+$sheetDataXml .= '</row>';
+
+// 1 Baris Contoh Data
+$sampleData = [
+    'INV-KPO-001',
+    'PC Desktop',
+    'Asus',
+    'ExpertCenter D500',
+    'SN1234567890',
+    'Kantor Pusat Operasional',
+    'IT / MIS',
+    'Budi Santoso',
+    'Bodi Casing',
+    '192.168.1.50',
+    'Epson L3210',
+    'Aktif (Digunakan)',
+    'Core i5 Gen 12 / RAM 16GB / SSD 512GB'
+];
+
+$sheetDataXml .= '<row r="2" ht="22" customHeight="1">';
+foreach ($sampleData as $cIdx => $val) {
+    $cRef = $colLetters[$cIdx] . '2';
+    $sheetDataXml .= '<c r="' . $cRef . '" s="2" t="inlineStr"><is><t>' . htmlspecialchars($val, ENT_XML1, 'UTF-8') . '</t></is></c>';
 }
 $sheetDataXml .= '</row>';
 $sheetDataXml .= '</sheetData>';
