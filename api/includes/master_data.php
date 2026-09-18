@@ -356,6 +356,79 @@ function update_divisi(int $id, array $data): array {
     }
 }
 
+function delete_divisi(int $id): array {
+    if ($id <= 0) {
+        return ['success' => false, 'error' => 'ID divisi tidak valid'];
+    }
+
+    $oldDivisi = get_divisi_by_id($id);
+    if (!$oldDivisi) {
+        return ['success' => false, 'error' => 'Data divisi tidak ditemukan'];
+    }
+    $nama = $oldDivisi['nama_divisi'] ?? $oldDivisi['nama'] ?? ('Divisi #' . $id);
+
+    // Cek apakah ada aset yang terdaftar pada divisi ini
+    $assets = map_sheets_assets(true);
+    $linkedAssets = 0;
+    foreach ($assets as $a) {
+        if ((int)($a['id_divisi'] ?? $a['divisi_id'] ?? 0) === $id) {
+            $linkedAssets++;
+        }
+    }
+
+    if ($linkedAssets > 0) {
+        return [
+            'success' => false,
+            'error' => "Divisi '{$nama}' tidak dapat dihapus karena masih digunakan oleh {$linkedAssets} unit aset. Silakan ubah divisi pada aset terkait terlebih dahulu."
+        ];
+    }
+
+    if (is_google_cloud_mode()) {
+        $client = google_sheets_v4_client();
+        if (!$client) return ['success' => false, 'error' => 'Google Sheets client tidak tersedia'];
+
+        $rows = $client->getSheetData('Divisi', true);
+        $targetRow = null;
+        foreach ($rows as $r) {
+            if ((int)($r['id'] ?? 0) === $id) {
+                $targetRow = $r;
+                break;
+            }
+        }
+
+        if (!$targetRow) {
+            return ['success' => false, 'error' => 'Data divisi tidak ditemukan di Google Sheets'];
+        }
+
+        $rowNum = (int)($targetRow['_row_num'] ?? 0);
+        if ($rowNum > 1) {
+            $deleted = $client->deleteRow('Divisi', $rowNum);
+            if (!$deleted) {
+                $client->clearValues("Divisi!A{$rowNum}:C{$rowNum}");
+            }
+        }
+
+        $client->clearCache('Divisi');
+        map_sheets_assets(true);
+
+        record_audit_log('DELETE', 'DIVISI', $id, $nama, 'Menghapus data divisi: ' . $nama);
+
+        return ['success' => true, 'id' => $id, 'nama' => $nama];
+    }
+
+    // MySQL Mode
+    try {
+        $st = db()->prepare("DELETE FROM divisi WHERE id = ?");
+        $st->execute([$id]);
+
+        record_audit_log('DELETE', 'DIVISI', $id, $nama, 'Menghapus data divisi: ' . $nama);
+
+        return ['success' => true, 'id' => $id, 'nama' => $nama];
+    } catch (Throwable $e) {
+        return ['success' => false, 'error' => 'Gagal menghapus divisi: ' . $e->getMessage()];
+    }
+}
+
 function get_kategori_list(): array {
     if (is_google_cloud_mode()) {
         $client = google_sheets_v4_client();

@@ -44,6 +44,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } else {
             $error = $res['error'] ?? 'Gagal memperbarui data divisi.';
         }
+    } elseif ($action === 'delete') {
+        $id = (int)($_POST['divisi_id'] ?? 0);
+        $res = delete_divisi($id);
+
+        if (!empty($res['success'])) {
+            $_SESSION['flash'] = "Divisi '{$res['nama']}' berhasil dihapus dari sistem.";
+            header('Location: ' . module_url('divisi_admin.php'));
+            exit;
+        } else {
+            $error = $res['error'] ?? 'Gagal menghapus divisi.';
+        }
     }
 }
 
@@ -58,6 +69,7 @@ $year = (int)date('Y');
 $divisiSummaries = get_divisi_maintenance_summary($month, $year);
 
 $divisiRowsHtml = '';
+$deleteModalsHtml = '';
 $no = 0;
 foreach ($divisiSummaries as $ds) {
     $no++;
@@ -100,9 +112,53 @@ foreach ($divisiSummaries as $ds) {
         <div class="btn-group btn-group-sm">
           <a class="btn btn-outline-secondary" href="'.e(module_url('divisi_admin.php', ['edit'=>$dId])).'" title="Edit Divisi"><i class="bi bi-pencil-square"></i></a>
           <a class="btn btn-outline-secondary" href="'.e(module_url('audit.php', ['divisi'=>$dId])).'" title="Daftar Aset Divisi"><i class="bi bi-list-check"></i></a>
+          <button type="button" class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#modalDeleteDivisi'.$dId.'" title="Hapus Divisi"><i class="bi bi-trash"></i></button>
         </div>
       </td>
     </tr>';
+
+    $deleteModalsHtml .= '
+    <div class="modal fade" id="modalDeleteDivisi'.$dId.'" tabindex="-1" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+          <div class="modal-header bg-danger text-white py-3">
+            <h6 class="modal-title fw-bold"><i class="bi bi-exclamation-triangle-fill me-2"></i>Konfirmasi Hapus Divisi</h6>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body p-4 text-center">
+            <div class="rounded-circle bg-danger-subtle text-danger d-inline-flex align-items-center justify-content-center p-3 mb-3" style="width:64px;height:64px;">
+              <i class="bi bi-trash-fill fs-2"></i>
+            </div>
+            <h5 class="fw-bold text-dark mb-2">Hapus Divisi '.e($dName).'?</h5>
+            '.($tot > 0 ? '
+            <div class="alert alert-warning text-start small mb-3 border-0 shadow-sm">
+              <i class="bi bi-exclamation-octagon-fill me-1 text-warning"></i>
+              Divisi ini masih terhubung dengan <strong>'.$tot.' unit aset</strong>. Untuk menjaga integritas data, Anda harus memindahkan aset ke divisi lain terlebih dahulu sebelum divisi ini dapat dihapus.
+            </div>
+            ' : '
+            <p class="text-secondary small mb-3">Divisi ini tidak memiliki unit aset terkait dan dapat dihapus dengan aman dari master data. Tindakan ini tidak dapat dibatalkan.</p>
+            ').'
+          </div>
+          <div class="modal-footer bg-light py-2 px-4 justify-content-between">
+            <button type="button" class="btn btn-secondary btn-sm px-3" data-bs-dismiss="modal">Batal</button>
+            '.($tot > 0 ? '
+            <a href="'.e(module_url('audit.php', ['divisi'=>$dId])).'" class="btn btn-warning btn-sm fw-bold px-3">
+              <i class="bi bi-pc-display me-1"></i> Lihat &amp; Pindahkan Aset
+            </a>
+            ' : '
+            <form method="post" class="d-inline">
+              <input type="hidden" name="_csrf" value="'.e(csrf_token()).'">
+              <input type="hidden" name="action" value="delete">
+              <input type="hidden" name="divisi_id" value="'.$dId.'">
+              <button type="submit" class="btn btn-danger btn-sm fw-bold px-3">
+                <i class="bi bi-trash-fill me-1"></i> Ya, Hapus Divisi
+              </button>
+            </form>
+            ').'
+          </div>
+        </div>
+      </div>
+    </div>';
 }
 
 if (!$divisiRowsHtml) {
@@ -228,6 +284,8 @@ $body = '
       '.$formContent.'
     </div>
   </div>
-</div>';
+</div>
+
+'.$deleteModalsHtml;
 
 render_page('Kelola Divisi / Unit Kerja', $body);
