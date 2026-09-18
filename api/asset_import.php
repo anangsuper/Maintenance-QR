@@ -228,10 +228,21 @@ function resolve_divisi_id(string $input, array &$divisiList, $client = null): i
     $clean = strtolower(trim($input));
     if ($clean === '') return 1;
 
+    // 1. Exact match
     foreach ($divisiList as $d) {
         $name = strtolower(trim((string)($d['nama_divisi'] ?? $d['nama'] ?? '')));
-        if ($name === $clean || strpos($name, $clean) !== false) {
+        if ($name === $clean) {
             return (int)($d['id'] ?? 1);
+        }
+    }
+
+    // 2. Substring match (jika minimal 3 karakter)
+    if (strlen($clean) >= 3) {
+        foreach ($divisiList as $d) {
+            $name = strtolower(trim((string)($d['nama_divisi'] ?? $d['nama'] ?? '')));
+            if ($name !== '' && (strpos($name, $clean) !== false || strpos($clean, $name) !== false)) {
+                return (int)($d['id'] ?? 1);
+            }
         }
     }
 
@@ -251,7 +262,7 @@ function resolve_kategori_id(string $input, array &$kategoriList, $client = null
 
     foreach ($kategoriList as $k) {
         $name = strtolower(trim((string)($k['nama_kategori'] ?? $k['nama'] ?? '')));
-        if ($name === $clean || strpos($name, $clean) !== false) {
+        if ($name === $clean || ($name !== '' && strlen($clean) >= 3 && strpos($name, $clean) !== false)) {
             return (int)($k['id'] ?? 1);
         }
     }
@@ -279,6 +290,45 @@ function normalize_asset_status(string $input): string {
         return 'Nonaktif';
     }
     return 'Aktif';
+}
+
+// Helper cerdas untuk me-render pilihan <option> pada dropdown tabel preview import
+function render_import_select_options(array $options, string $currentValue, bool $allowCustom = true): string {
+    $cleanCurrent = trim($currentValue);
+    $html = '';
+    $matchedIndex = -1;
+
+    if ($cleanCurrent !== '') {
+        // 1. Cek Exact Match (Case Insensitive)
+        foreach ($options as $idx => $opt) {
+            if (strcasecmp($opt, $cleanCurrent) === 0) {
+                $matchedIndex = $idx;
+                break;
+            }
+        }
+
+        // 2. Cek Substring Match jika belum ketemu dan panjang karakter >= 3
+        if ($matchedIndex === -1 && strlen($cleanCurrent) >= 3) {
+            foreach ($options as $idx => $opt) {
+                if (stripos($opt, $cleanCurrent) !== false || stripos($cleanCurrent, $opt) !== false) {
+                    $matchedIndex = $idx;
+                    break;
+                }
+            }
+        }
+    }
+
+    foreach ($options as $idx => $opt) {
+        $sel = ($idx === $matchedIndex) ? 'selected' : '';
+        $html .= '<option value="' . e($opt) . '" ' . $sel . '>' . e($opt) . '</option>';
+    }
+
+    // Jika nilai dari Excel tidak ada di opsi default, tambahkan sebagai opsi khusus yang terpilih
+    if ($allowCustom && $cleanCurrent !== '' && $matchedIndex === -1) {
+        $html .= '<option value="' . e($cleanCurrent) . '" selected>' . e($cleanCurrent) . '</option>';
+    }
+
+    return $html;
 }
 
 // PROSES POST FORM: TAHAP 1 (PARSING & PREVIEW)
@@ -327,19 +377,35 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     ];
 
     foreach ($headerRow as $idx => $h) {
-        $hClean = trim($h);
-        if (strpos($hClean, 'kode') !== false) $colMap['kode'] = $idx;
-        elseif (strpos($hClean, 'kategori') !== false || strpos($hClean, 'jenis') !== false) $colMap['kategori'] = $idx;
-        elseif (strpos($hClean, 'merk') !== false || strpos($hClean, 'brand') !== false) $colMap['merk'] = $idx;
-        elseif (strpos($hClean, 'model') !== false || strpos($hClean, 'tipe') !== false) $colMap['model'] = $idx;
-        elseif (strpos($hClean, 'serial') !== false || strpos($hClean, 'sn') !== false) $colMap['sn'] = $idx;
-        elseif (strpos($hClean, 'cabang') !== false || strpos($hClean, 'lokasi') !== false) $colMap['cabang'] = $idx;
-        elseif (strpos($hClean, 'divisi') !== false || strpos($hClean, 'unit') !== false || strpos($hClean, 'bagian') !== false) $colMap['divisi'] = $idx;
-        elseif (strpos($hClean, 'pengguna') !== false || strpos($hClean, 'karyawan') !== false || strpos($hClean, 'user') !== false || strpos($hClean, 'pic') !== false) $colMap['karyawan'] = $idx;
-        elseif (strpos($hClean, 'ip') !== false || strpos($hClean, 'alamat') !== false) $colMap['ip'] = $idx;
-        elseif (strpos($hClean, 'printer') !== false) $colMap['printer'] = $idx;
-        elseif (strpos($hClean, 'status') !== false || strpos($hClean, 'kondisi') !== false) $colMap['status'] = $idx;
-        elseif (strpos($hClean, 'keterangan') !== false || strpos($hClean, 'ket') !== false || strpos($hClean, 'notes') !== false) $colMap['ket'] = $idx;
+        $hClean = strtolower(trim($h));
+        if ($hClean === '') continue;
+
+        // Prioritaskan 'status' terlebih dahulu agar tidak tertukar dengan 'status unit' / 'unit'
+        if (strpos($hClean, 'status') !== false || strpos($hClean, 'kondisi') !== false || strpos($hClean, 'condition') !== false) {
+            $colMap['status'] = $idx;
+        } elseif (strpos($hClean, 'kode') !== false || strpos($hClean, 'inventaris') !== false || strpos($hClean, 'barcode') !== false) {
+            $colMap['kode'] = $idx;
+        } elseif (strpos($hClean, 'kategori') !== false || strpos($hClean, 'category') !== false || strpos($hClean, 'jenis') !== false) {
+            $colMap['kategori'] = $idx;
+        } elseif (strpos($hClean, 'merk') !== false || strpos($hClean, 'brand') !== false || strpos($hClean, 'make') !== false) {
+            $colMap['merk'] = $idx;
+        } elseif (strpos($hClean, 'model') !== false || strpos($hClean, 'tipe') !== false || strpos($hClean, 'type') !== false) {
+            $colMap['model'] = $idx;
+        } elseif (strpos($hClean, 'serial') !== false || strpos($hClean, 'sn') !== false || strpos($hClean, 'no seri') !== false || strpos($hClean, 'nomor seri') !== false) {
+            $colMap['sn'] = $idx;
+        } elseif (strpos($hClean, 'cabang') !== false || strpos($hClean, 'lokasi') !== false || strpos($hClean, 'branch') !== false || strpos($hClean, 'kantor') !== false) {
+            $colMap['cabang'] = $idx;
+        } elseif (strpos($hClean, 'divisi') !== false || strpos($hClean, 'division') !== false || strpos($hClean, 'satker') !== false || strpos($hClean, 'unit kerja') !== false || strpos($hClean, 'bagian') !== false || strpos($hClean, 'departemen') !== false || strpos($hClean, 'dept') !== false) {
+            $colMap['divisi'] = $idx;
+        } elseif (strpos($hClean, 'pengguna') !== false || strpos($hClean, 'karyawan') !== false || strpos($hClean, 'user') !== false || strpos($hClean, 'pic') !== false || strpos($hClean, 'pemilik') !== false || strpos($hClean, 'pegawai') !== false || strpos($hClean, 'nama') !== false) {
+            $colMap['karyawan'] = $idx;
+        } elseif (strpos($hClean, 'ip') !== false || strpos($hClean, 'alamat ip') !== false || strpos($hClean, 'host') !== false) {
+            $colMap['ip'] = $idx;
+        } elseif (strpos($hClean, 'printer') !== false) {
+            $colMap['printer'] = $idx;
+        } elseif (strpos($hClean, 'keterangan') !== false || strpos($hClean, 'ket') !== false || strpos($hClean, 'notes') !== false || strpos($hClean, 'catatan') !== false || strpos($hClean, 'remark') !== false) {
+            $colMap['ket'] = $idx;
+        }
     }
 
     // Default fallback urutan kolom jika header standar (0..11)
@@ -623,9 +689,32 @@ if ($importResult) {
 
 // 2. TAMPILAN PREVIEW & PERBAIKAN DATA (REVIEW SEBELUM ACCEPT)
 } elseif ($previewRows !== null) {
+    $masters = get_master_maps();
+
     $kategoriOpts = ['Laptop', 'PC Desktop', 'Printer', 'Monitor', 'Server', 'Scanner', 'UPS', 'Network Device'];
+    if (!empty($masters['kategoris'])) {
+        foreach ($masters['kategoris'] as $k) {
+            $n = trim((string)($k['nama_kategori'] ?? $k['nama'] ?? ''));
+            if ($n !== '' && !in_array($n, $kategoriOpts, true)) $kategoriOpts[] = $n;
+        }
+    }
+
     $cabangOpts = ['Kantor Pusat Operasional', 'Cabang Batulicin', 'Cabang Martapura', 'Cabang Tanjung', 'Cabang Handil'];
+    if (!empty($masters['cabangs'])) {
+        foreach ($masters['cabangs'] as $c) {
+            $n = trim((string)($c['nama_cabang'] ?? $c['nama'] ?? ''));
+            if ($n !== '' && !in_array($n, $cabangOpts, true)) $cabangOpts[] = $n;
+        }
+    }
+
     $divisiOpts = ['IT / MIS', 'Operasional', 'Akunting', 'Kredit', 'Direksi', 'SKAI', 'SDM & UMUM', 'Kepatuhan'];
+    if (!empty($masters['divisis'])) {
+        foreach ($masters['divisis'] as $d) {
+            $n = trim((string)($d['nama_divisi'] ?? $d['nama'] ?? ''));
+            if ($n !== '' && !in_array($n, $divisiOpts, true)) $divisiOpts[] = $n;
+        }
+    }
+
     $statusOpts = ['Aktif', 'Backup', 'Perbaikan', 'Nonaktif'];
 
     $duplicateCount = count(array_filter($previewRows, fn($r) => !empty($r['is_duplicate'])));
@@ -720,48 +809,29 @@ if ($importResult) {
                     '.($isDup ? '<div class="text-danger small fw-semibold mt-1" style="font-size:0.75rem;"><i class="bi bi-exclamation-circle-fill me-1"></i>Kode sudah ada di sistem</div>' : '').'
                   </td>
                   <td>
-                    <select name="items['.$idx.'][kategori]" class="form-select form-select-sm">';
-        foreach ($kategoriOpts as $ko) {
-            $sel = (strcasecmp($r['kategori'], $ko) === 0 || strpos(strtolower($r['kategori']), strtolower($ko)) !== false) ? 'selected' : '';
-            $body .= '<option value="'.e($ko).'" '.$sel.'>'.e($ko).'</option>';
-        }
-        $body .= '
+                    <select name="items['.$idx.'][kategori]" class="form-select form-select-sm">
+                      '.render_import_select_options($kategoriOpts, $r['kategori'], true).'
                     </select>
                   </td>
                   <td><input type="text" name="items['.$idx.'][merk]" class="form-control form-control-sm" value="'.e($r['merk']).'" placeholder="Merk"></td>
                   <td><input type="text" name="items['.$idx.'][model]" class="form-control form-control-sm" value="'.e($r['model']).'" placeholder="Model/Tipe"></td>
                   <td><input type="text" name="items['.$idx.'][sn]" class="form-control form-control-sm font-monospace" value="'.e($r['sn']).'" placeholder="Serial Number"></td>
                   <td>
-                    <select name="items['.$idx.'][cabang]" class="form-select form-select-sm">';
-        foreach ($cabangOpts as $co) {
-            $sel = (strcasecmp($r['cabang'], $co) === 0 || strpos(strtolower($co), strtolower($r['cabang'])) !== false) ? 'selected' : '';
-            $body .= '<option value="'.e($co).'" '.$sel.'>'.e($co).'</option>';
-        }
-        $body .= '
+                    <select name="items['.$idx.'][cabang]" class="form-select form-select-sm">
+                      '.render_import_select_options($cabangOpts, $r['cabang'], true).'
                     </select>
                   </td>
                   <td>
-                    <select name="items['.$idx.'][divisi]" class="form-select form-select-sm">';
-        foreach ($divisiOpts as $do) {
-            $sel = (strcasecmp($r['divisi'], $do) === 0 || strpos(strtolower($do), strtolower($r['divisi'])) !== false) ? 'selected' : '';
-            $body .= '<option value="'.e($do).'" '.$sel.'>'.e($do).'</option>';
-        }
-        if (!in_array($r['divisi'], $divisiOpts, true) && $r['divisi'] !== '') {
-            $body .= '<option value="'.e($r['divisi']).'" selected>'.e($r['divisi']).'</option>';
-        }
-        $body .= '
+                    <select name="items['.$idx.'][divisi]" class="form-select form-select-sm">
+                      '.render_import_select_options($divisiOpts, $r['divisi'], true).'
                     </select>
                   </td>
                   <td><input type="text" name="items['.$idx.'][karyawan]" class="form-control form-control-sm" value="'.e($r['karyawan']).'" placeholder="PIC"></td>
                   <td><input type="text" name="items['.$idx.'][ip]" class="form-control form-control-sm font-monospace" value="'.e($r['ip']).'" placeholder="192.168.x.x"></td>
                   <td><input type="text" name="items['.$idx.'][printer]" class="form-control form-control-sm" value="'.e($r['printer']).'" placeholder="Printer"></td>
                   <td>
-                    <select name="items['.$idx.'][status]" class="form-select form-select-sm">';
-        foreach ($statusOpts as $so) {
-            $sel = (strcasecmp($r['status'], $so) === 0) ? 'selected' : '';
-            $body .= '<option value="'.e($so).'" '.$sel.'>'.e($so).'</option>';
-        }
-        $body .= '
+                    <select name="items['.$idx.'][status]" class="form-select form-select-sm">
+                      '.render_import_select_options($statusOpts, $r['status'], false).'
                     </select>
                   </td>
                   <td><input type="text" name="items['.$idx.'][ket]" class="form-control form-control-sm" value="'.e($r['ket']).'" placeholder="Catatan"></td>
