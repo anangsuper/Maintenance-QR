@@ -370,6 +370,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
         'cabang'    => -1,
         'divisi'    => -1,
         'karyawan'  => -1,
+        'posisi'    => -1,
         'ip'        => -1,
         'printer'   => -1,
         'status'    => -1,
@@ -383,6 +384,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
         // Prioritaskan 'status' terlebih dahulu agar tidak tertukar dengan 'status unit' / 'unit'
         if (strpos($hClean, 'status') !== false || strpos($hClean, 'kondisi') !== false || strpos($hClean, 'condition') !== false) {
             $colMap['status'] = $idx;
+        } elseif (strpos($hClean, 'posisi') !== false || strpos($hClean, 'stiker') !== false || strpos($hClean, 'sticker') !== false || strpos($hClean, 'placement') !== false || strpos($hClean, 'letak') !== false) {
+            $colMap['posisi'] = $idx;
         } elseif (strpos($hClean, 'kode') !== false || strpos($hClean, 'inventaris') !== false || strpos($hClean, 'barcode') !== false) {
             $colMap['kode'] = $idx;
         } elseif (strpos($hClean, 'kategori') !== false || strpos($hClean, 'category') !== false || strpos($hClean, 'jenis') !== false) {
@@ -408,7 +411,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
         }
     }
 
-    // Default fallback urutan kolom jika header standar (0..11)
+    // Default fallback urutan kolom jika header standar
     if ($colMap['kode'] === -1) $colMap['kode'] = 0;
     if ($colMap['kategori'] === -1) $colMap['kategori'] = 1;
     if ($colMap['merk'] === -1) $colMap['merk'] = 2;
@@ -417,10 +420,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     if ($colMap['cabang'] === -1) $colMap['cabang'] = 5;
     if ($colMap['divisi'] === -1) $colMap['divisi'] = 6;
     if ($colMap['karyawan'] === -1) $colMap['karyawan'] = 7;
-    if ($colMap['ip'] === -1) $colMap['ip'] = 8;
-    if ($colMap['printer'] === -1) $colMap['printer'] = 9;
-    if ($colMap['status'] === -1) $colMap['status'] = 10;
-    if ($colMap['ket'] === -1) $colMap['ket'] = 11;
+    if ($colMap['posisi'] === -1 && count($headerRow) >= 13) {
+        $colMap['posisi'] = 8;
+        if ($colMap['ip'] === -1) $colMap['ip'] = 9;
+        if ($colMap['printer'] === -1) $colMap['printer'] = 10;
+        if ($colMap['status'] === -1) $colMap['status'] = 11;
+        if ($colMap['ket'] === -1) $colMap['ket'] = 12;
+    } else {
+        if ($colMap['ip'] === -1) $colMap['ip'] = 8;
+        if ($colMap['printer'] === -1) $colMap['printer'] = 9;
+        if ($colMap['status'] === -1) $colMap['status'] = 10;
+        if ($colMap['ket'] === -1) $colMap['ket'] = 11;
+    }
 
     // Ambil aset yang sudah ada untuk mendeteksi duplikasi kode inventaris
     $existingAssets = map_sheets_assets(true);
@@ -442,6 +453,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
         $cabangStr = trim($row[$colMap['cabang']] ?? '');
         $divisiStr = trim($row[$colMap['divisi']] ?? '');
         $karyawanStr = trim($row[$colMap['karyawan']] ?? '');
+        $posisiStr = ($colMap['posisi'] >= 0) ? trim($row[$colMap['posisi']] ?? '') : '';
         $ip = trim($row[$colMap['ip']] ?? '');
         $printer = trim($row[$colMap['printer']] ?? '');
         $status = normalize_asset_status((string)($row[$colMap['status']] ?? 'Aktif'));
@@ -450,6 +462,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
         // Abaikan jika baris kosong total
         if ($kode === '' && $merk === '' && $model === '' && $kategoriStr === '' && $sn === '' && $cabangStr === '' && $karyawanStr === '') {
             continue;
+        }
+
+        if ($posisiStr === '') {
+            $posisiStr = 'Bodi Casing';
         }
 
         $normKode = strtoupper($kode);
@@ -479,19 +495,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
         }
 
         $previewRows[] = [
-            'kode'          => $kode,
-            'kategori'      => $kategoriStr,
-            'merk'          => $merk,
-            'model'         => $model,
-            'sn'            => $sn,
-            'cabang'        => $cabangStr,
-            'divisi'        => $divisiStr,
-            'karyawan'      => $karyawanStr,
-            'ip'            => $ip,
-            'printer'       => $printer,
-            'status'        => $status,
-            'ket'           => $ket,
-            'is_duplicate'  => $isDuplicate
+            'kode'              => $kode,
+            'kategori'          => $kategoriStr,
+            'merk'              => $merk,
+            'model'             => $model,
+            'sn'                => $sn,
+            'cabang'            => $cabangStr,
+            'divisi'            => $divisiStr,
+            'karyawan'          => $karyawanStr,
+            'placement_label'   => $posisiStr,
+            'ip'                => $ip,
+            'printer'           => $printer,
+            'status'            => $status,
+            'ket'               => $ket,
+            'is_duplicate'      => $isDuplicate
         ];
     }
 
@@ -535,6 +552,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
         $cabangStr = trim((string)($item['cabang'] ?? ''));
         $divisiStr = trim((string)($item['divisi'] ?? ''));
         $karyawanStr = trim((string)($item['karyawan'] ?? ''));
+        $placement = trim((string)($item['placement_label'] ?? 'Bodi Casing'));
+        if ($placement === '') $placement = 'Bodi Casing';
         $ip = trim((string)($item['ip'] ?? ''));
         $printer = trim((string)($item['printer'] ?? ''));
         $status = normalize_asset_status((string)($item['status'] ?? 'Aktif'));
@@ -569,11 +588,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
             'id_cabang'         => $idCab,
             'id_divisi'         => $idDiv,
             'nama_karyawan'     => $karyawanStr,
+            'placement_label'   => $placement,
             'ip_address'        => $ip,
             'printer'           => $printer,
             'status'            => $status,
-            'keterangan'        => $ket,
-            'placement_label'   => 'Bodi Casing'
+            'keterangan'        => $ket
         ];
 
         $res = create_new_asset($payload);
@@ -715,6 +734,7 @@ if ($importResult) {
         }
     }
 
+    $placementOpts = ['Bodi Casing', 'Cover Atas Laptop', 'Samping CPU', 'Belakang Monitor', 'Meja Kerja', 'Badan Printer'];
     $statusOpts = ['Aktif', 'Backup', 'Perbaikan', 'Nonaktif'];
 
     $duplicateCount = count(array_filter($previewRows, fn($r) => !empty($r['is_duplicate'])));
@@ -725,7 +745,7 @@ if ($importResult) {
         border-radius: 12px;
       }
       #previewTable {
-        min-width: 2300px;
+        min-width: 2500px;
         font-size: 0.85rem;
       }
       #previewTable th {
@@ -787,6 +807,7 @@ if ($importResult) {
                   <th style="width: 260px; min-width: 260px;">Kantor Cabang</th>
                   <th style="width: 190px; min-width: 190px;">Divisi / Satker</th>
                   <th style="width: 180px; min-width: 180px;">Pengguna / PIC</th>
+                  <th style="width: 190px; min-width: 190px;">Posisi Stiker QR</th>
                   <th style="width: 150px; min-width: 150px;">Alamat IP</th>
                   <th style="width: 170px; min-width: 170px;">Printer</th>
                   <th style="width: 150px; min-width: 150px;">Status</th>
@@ -827,6 +848,11 @@ if ($importResult) {
                     </select>
                   </td>
                   <td><input type="text" name="items['.$idx.'][karyawan]" class="form-control form-control-sm" value="'.e($r['karyawan']).'" placeholder="PIC"></td>
+                  <td>
+                    <select name="items['.$idx.'][placement_label]" class="form-select form-select-sm">
+                      '.render_import_select_options($placementOpts, $r['placement_label'], true).'
+                    </select>
+                  </td>
                   <td><input type="text" name="items['.$idx.'][ip]" class="form-control form-control-sm font-monospace" value="'.e($r['ip']).'" placeholder="192.168.x.x"></td>
                   <td><input type="text" name="items['.$idx.'][printer]" class="form-control form-control-sm" value="'.e($r['printer']).'" placeholder="Printer"></td>
                   <td>
@@ -935,6 +961,16 @@ if ($importResult) {
             </select>
           </td>
           <td><input type="text" name="items[${idx}][karyawan]" class="form-control form-control-sm" placeholder="PIC"></td>
+          <td>
+            <select name="items[${idx}][placement_label]" class="form-select form-select-sm">
+              <option value="Bodi Casing" selected>Bodi Casing</option>
+              <option value="Cover Atas Laptop">Cover Atas Laptop</option>
+              <option value="Samping CPU">Samping CPU</option>
+              <option value="Belakang Monitor">Belakang Monitor</option>
+              <option value="Meja Kerja">Meja Kerja</option>
+              <option value="Badan Printer">Badan Printer</option>
+            </select>
+          </td>
           <td><input type="text" name="items[${idx}][ip]" class="form-control form-control-sm font-monospace" placeholder="192.168.x.x"></td>
           <td><input type="text" name="items[${idx}][printer]" class="form-control form-control-sm" placeholder="Printer"></td>
           <td>
@@ -989,7 +1025,7 @@ if ($importResult) {
             </div>
           </div>
           <div class="card-body p-4">
-            <p class="text-secondary small mb-3">Gunakan template resmi yang telah disiapkan. Template Excel (<code>.xlsx</code>) telah dilengkapi <strong>Dropdown Pilihan Interaktif</strong> (Kategori, Cabang, Divisi, dan Status) sehingga Anda tinggal memilih dari daftar opsi yang sama persis dengan form sistem.</p>
+            <p class="text-secondary small mb-3">Gunakan template resmi yang telah disiapkan. Template Excel (<code>.xlsx</code>) telah dilengkapi <strong>Dropdown Pilihan Interaktif</strong> (Kategori, Cabang, Divisi, Posisi Stiker QR, dan Status) sehingga Anda tinggal memilih dari daftar opsi yang sama persis dengan form sistem.</p>
             
             <div class="p-3 bg-light rounded-3 border">
               <div class="d-flex align-items-start gap-2">
@@ -999,7 +1035,7 @@ if ($importResult) {
                   <ul class="mb-0 ps-3 mt-1" style="font-size: 0.78rem;">
                     <li><strong>Review Dulu:</strong> Setelah file diunggah, Anda akan melihat tabel preview seluruh data dan dapat mengedit atau menghapus baris sebelum disimpan.</li>
                     <li><strong>Kode Inventaris:</strong> Boleh diisi nomor register internal atau dikosongkan agar digenerate otomatis oleh sistem.</li>
-                    <li><strong>Dropdown Otomatis:</strong> Kolom Kategori, Kantor Cabang, Divisi, dan Status Unit sudah dilengkapi dropdown.</li>
+                    <li><strong>Dropdown Otomatis:</strong> Kolom Kategori, Kantor Cabang, Divisi, Posisi Stiker QR, dan Status Unit sudah dilengkapi dropdown.</li>
                   </ul>
                 </div>
               </div>
@@ -1098,6 +1134,11 @@ if ($importResult) {
                     <td><span class="badge bg-secondary-subtle text-secondary">Teks Bebas</span></td>
                   </tr>
                   <tr>
+                    <td><code>Posisi Stiker QR</code></td>
+                    <td><strong>Dropdown:</strong> Bodi Casing, Cover Atas Laptop, Samping CPU, Belakang Monitor, Meja Kerja, Badan Printer</td>
+                    <td><span class="badge bg-primary-subtle text-primary">Dropdown</span></td>
+                  </tr>
+                  <tr>
                     <td><code>Alamat IP</code></td>
                     <td>Alamat IP lokal (misal: 192.168.1.50)</td>
                     <td><span class="badge bg-secondary-subtle text-secondary">Teks Bebas</span></td>
@@ -1114,7 +1155,7 @@ if ($importResult) {
                   </tr>
                   <tr>
                     <td><code>Keterangan</code></td>
-                    <td>Catatan penempatan perangkat atau fungsi khusus</td>
+                    <td>Catatan spesifikasi/fungsi khusus perangkat</td>
                     <td><span class="badge bg-secondary-subtle text-secondary">Teks Bebas</span></td>
                   </tr>
                 </tbody>

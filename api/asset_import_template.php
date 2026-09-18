@@ -32,6 +32,7 @@ if ($format === 'csv' || !class_exists('ZipArchive')) {
         'Kantor Cabang',
         'Divisi / Unit Kerja',
         'Pengguna / PIC',
+        'Posisi Stiker QR',
         'Alamat IP',
         'Printer Terhubung',
         'Status Unit',
@@ -130,6 +131,7 @@ $headers = [
     'Kantor Cabang',
     'Divisi / Unit Kerja',
     'Pengguna / PIC',
+    'Posisi Stiker QR',
     'Alamat IP',
     'Printer Terhubung',
     'Status Unit',
@@ -145,17 +147,18 @@ $colsXml = '<cols>
   <col min="6" max="6" width="28" customWidth="1"/>
   <col min="7" max="7" width="24" customWidth="1"/>
   <col min="8" max="8" width="24" customWidth="1"/>
-  <col min="9" max="9" width="18" customWidth="1"/>
-  <col min="10" max="10" width="22" customWidth="1"/>
-  <col min="11" max="11" width="24" customWidth="1"/>
-  <col min="12" max="12" width="32" customWidth="1"/>
+  <col min="9" max="9" width="22" customWidth="1"/>
+  <col min="10" max="10" width="18" customWidth="1"/>
+  <col min="11" max="11" width="22" customWidth="1"/>
+  <col min="12" max="12" width="24" customWidth="1"/>
+  <col min="13" max="13" width="32" customWidth="1"/>
 </cols>';
 
 $sheetDataXml = '<sheetData>';
 
 // Header Row
 $sheetDataXml .= '<row r="1" ht="28" customHeight="1">';
-$colLetters = ['A','B','C','D','E','F','G','H','I','J','K','L'];
+$colLetters = ['A','B','C','D','E','F','G','H','I','J','K','L','M'];
 foreach ($headers as $cIdx => $hText) {
     $cRef = $colLetters[$cIdx] . '1';
     $sheetDataXml .= '<c r="' . $cRef . '" s="1" t="inlineStr"><is><t>' . htmlspecialchars($hText, ENT_XML1, 'UTF-8') . '</t></is></c>';
@@ -167,9 +170,10 @@ $sheetDataXml .= '</sheetData>';
 $kategoriList = '&quot;Laptop,PC Desktop,Printer,Monitor,Server,Scanner,UPS,Network Device&quot;';
 $cabangList = '&quot;Kantor Pusat Operasional,Cabang Batulicin,Cabang Martapura,Cabang Tanjung,Cabang Handil&quot;';
 $divisiList = '&quot;IT / MIS,Operasional,Akunting,Kredit,Direksi,SKAI,SDM &amp; UMUM,Kepatuhan&quot;';
+$placementList = '&quot;Bodi Casing,Cover Atas Laptop,Samping CPU,Belakang Monitor,Meja Kerja,Badan Printer&quot;';
 $statusList = '&quot;Aktif (Digunakan),Backup / Cadangan,Sedang Dalam Perbaikan,Nonaktif&quot;';
 
-$dataValidationsXml = '<dataValidations count="4">
+$dataValidationsXml = '<dataValidations count="5">
   <dataValidation type="list" allowBlank="1" showInputMessage="1" showErrorMessage="1" sqref="B2:B500">
     <formula1>' . $kategoriList . '</formula1>
   </dataValidation>
@@ -179,7 +183,10 @@ $dataValidationsXml = '<dataValidations count="4">
   <dataValidation type="list" allowBlank="1" showInputMessage="1" showErrorMessage="1" sqref="G2:G500">
     <formula1>' . $divisiList . '</formula1>
   </dataValidation>
-  <dataValidation type="list" allowBlank="1" showInputMessage="1" showErrorMessage="1" sqref="K2:K500">
+  <dataValidation type="list" allowBlank="1" showInputMessage="1" showErrorMessage="1" sqref="I2:I500">
+    <formula1>' . $placementList . '</formula1>
+  </dataValidation>
+  <dataValidation type="list" allowBlank="1" showInputMessage="1" showErrorMessage="1" sqref="L2:L500">
     <formula1>' . $statusList . '</formula1>
   </dataValidation>
 </dataValidations>';
