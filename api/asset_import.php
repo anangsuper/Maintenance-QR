@@ -631,14 +631,48 @@ if ($importResult) {
     $duplicateCount = count(array_filter($previewRows, fn($r) => !empty($r['is_duplicate'])));
 
     $body .= '
-    <div class="card border-0 shadow-sm mb-4 bg-white" style="border-radius: 12px;">
+    <style>
+      .import-preview-wrapper {
+        border-radius: 12px;
+      }
+      #previewTable {
+        min-width: 2300px;
+        font-size: 0.85rem;
+      }
+      #previewTable th {
+        white-space: nowrap;
+        padding: 12px 14px;
+        font-size: 0.78rem;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        font-weight: 700;
+        vertical-align: middle;
+      }
+      #previewTable td {
+        padding: 10px 12px;
+        vertical-align: middle;
+      }
+      #previewTable .form-control-sm,
+      #previewTable .form-select-sm {
+        font-size: 0.84rem;
+        padding: 0.4rem 0.65rem;
+        border-radius: 6px;
+      }
+      #previewTable .form-select-sm {
+        padding-right: 2rem;
+      }
+    </style>
+    <div class="card border-0 shadow-sm mb-4 bg-white import-preview-wrapper">
       <div class="card-header bg-white py-3 px-4 border-bottom d-flex align-items-center justify-content-between flex-wrap gap-2">
         <div>
           <span class="badge bg-warning text-dark px-2 py-1 mb-1 font-monospace fw-bold"><i class="bi bi-eye-fill me-1"></i> REVIEW &amp; PERBAIKAN DATA</span>
           <h2 class="h5 mb-0 fw-bold text-dark">Periksa dan Edit Data Sebelum Disimpan</h2>
           <p class="text-secondary small mb-0 mt-1">Anda dapat langsung mengedit nilai pada tabel di bawah ini, atau menghapus baris yang tidak diinginkan sebelum menekan tombol Accept.</p>
         </div>
-        <div class="d-flex align-items-center gap-2">
+        <div class="d-flex align-items-center gap-2 flex-wrap">
+          <span class="badge bg-light text-secondary border px-3 py-2 fw-medium">
+            <i class="bi bi-arrows-expand me-1 text-primary"></i> Geser tabel ke samping untuk melihat semua kolom
+          </span>
           <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-3 py-2 fw-semibold" id="rowCountBadge">
             <i class="bi bi-list-ol me-1"></i> '.count($previewRows).' Baris Siap Diimport
           </span>
@@ -651,24 +685,24 @@ if ($importResult) {
           <input type="hidden" name="_csrf" value="'.e(csrf_token()).'">
           <input type="hidden" name="action" value="confirm_import">
 
-          <div class="table-responsive border rounded-3 mb-3" style="max-height: 550px; overflow-y: auto;">
-            <table class="table table-hover table-sm align-middle mb-0 table-bordered" style="min-width: 1400px; font-size: 0.82rem;" id="previewTable">
+          <div class="table-responsive border rounded-3 mb-3 custom-scrollbar shadow-sm bg-white" style="max-height: 600px; overflow: auto;">
+            <table class="table table-hover align-middle mb-0 table-bordered" id="previewTable">
               <thead class="table-dark align-middle sticky-top" style="z-index: 5;">
                 <tr>
-                  <th style="width: 40px;" class="text-center">No</th>
-                  <th style="width: 150px;">Kode Inventaris</th>
-                  <th style="width: 130px;">Kategori</th>
-                  <th style="width: 120px;">Merk</th>
-                  <th style="width: 170px;">Model / Tipe</th>
-                  <th style="width: 130px;">Serial Number</th>
-                  <th style="width: 180px;">Kantor Cabang</th>
-                  <th style="width: 130px;">Divisi</th>
-                  <th style="width: 130px;">Pengguna / PIC</th>
-                  <th style="width: 110px;">Alamat IP</th>
-                  <th style="width: 110px;">Printer</th>
-                  <th style="width: 110px;">Status</th>
-                  <th style="width: 150px;">Keterangan</th>
-                  <th style="width: 50px;" class="text-center">Aksi</th>
+                  <th style="width: 50px; min-width: 50px;" class="text-center">No</th>
+                  <th style="width: 210px; min-width: 210px;">Kode Inventaris</th>
+                  <th style="width: 170px; min-width: 170px;">Kategori</th>
+                  <th style="width: 150px; min-width: 150px;">Merk</th>
+                  <th style="width: 230px; min-width: 230px;">Model / Tipe</th>
+                  <th style="width: 180px; min-width: 180px;">Serial Number</th>
+                  <th style="width: 260px; min-width: 260px;">Kantor Cabang</th>
+                  <th style="width: 190px; min-width: 190px;">Divisi / Satker</th>
+                  <th style="width: 180px; min-width: 180px;">Pengguna / PIC</th>
+                  <th style="width: 150px; min-width: 150px;">Alamat IP</th>
+                  <th style="width: 170px; min-width: 170px;">Printer</th>
+                  <th style="width: 150px; min-width: 150px;">Status</th>
+                  <th style="width: 240px; min-width: 240px;">Keterangan</th>
+                  <th style="width: 60px; min-width: 60px;" class="text-center">Aksi</th>
                 </tr>
               </thead>
               <tbody id="previewTbody">';
@@ -683,7 +717,7 @@ if ($importResult) {
                   <td class="text-center text-muted fw-bold row-num">'.$rowNum.'</td>
                   <td>
                     <input type="text" name="items['.$idx.'][kode]" class="form-control form-control-sm font-monospace '.($isDup ? 'is-invalid border-danger fw-bold' : '').'" value="'.e($r['kode']).'" placeholder="Otomatis jika kosong">
-                    '.($isDup ? '<div class="text-danger small" style="font-size:0.7rem;">Kode sudah ada di sistem</div>' : '').'
+                    '.($isDup ? '<div class="text-danger small fw-semibold mt-1" style="font-size:0.75rem;"><i class="bi bi-exclamation-circle-fill me-1"></i>Kode sudah ada di sistem</div>' : '').'
                   </td>
                   <td>
                     <select name="items['.$idx.'][kategori]" class="form-select form-select-sm">';
