@@ -13,29 +13,31 @@ unset($_SESSION['flash'], $_SESSION['flash_error']);
 $importResult = null;
 $previewRows = null;
 
+// Helper untuk konversi referensi kolom Excel (A, B, C, ... AA) ke indeks 0-based
+function xlsx_col_to_index(string $cellRef): int {
+    if (preg_match('/^([A-Z]+)/i', $cellRef, $matches)) {
+        $letters = strtoupper($matches[1]);
+        $len = strlen($letters);
+        $num = 0;
+        for ($i = 0; $i < $len; $i++) {
+            $num = $num * 26 + (ord($letters[$i]) - ord('A') + 1);
+        }
+        return $num - 1;
+    }
+    return -1;
+}
+
 // Fungsi Parser CSV Cerdas (Mampu mendeteksi pemisah ; , \t dan membuang UTF-8 BOM)
 function parse_uploaded_csv(string $filepath): array {
-    $content = @file_get_contents($filepath);
-    if ($content === false || trim($content) === '') {
-        return [];
-    }
+    if (!file_exists($filepath)) return [];
 
-    // Bersihkan UTF-8 BOM
-    if (str_starts_with($content, "\xEF\xBB\xBF")) {
-        $content = substr($content, 3);
+    $firstLine = '';
+    $f = @fopen($filepath, 'r');
+    if ($f) {
+        $firstLine = (string)fgets($f);
+        fclose($f);
     }
-
-    $lines = preg_split('/\r\n|\r|\n/', trim($content));
-    if (empty($lines)) return [];
-
-    // Deteksi Delimiter otomatis dari baris pertama
-    $firstLine = $lines[0];
-    $delimiters = [';' => 0, ',' => 0, "\t" => 0, '|' => 0];
-    foreach ($delimiters as $d => $count) {
-        $delimiters[$d] = substr_count($firstLine, $d);
-    }
-    arsort($delimiters);
-    $delim = key($delimiters) ?: ';';
+    $delim = (strpos($firstLine, ';') !== false) ? ';' : ',';
 
     $handle = fopen($filepath, 'r');
     if (!$handle) return [];
@@ -48,13 +50,14 @@ function parse_uploaded_csv(string $filepath): array {
 
     $rows = [];
     while (($data = fgetcsv($handle, 4096, $delim)) !== false) {
-        // Lewati baris kosong
-        if (count($data) === 1 && trim((string)$data[0]) === '') {
-            continue;
-        }
-        $rows[] = array_map(function($v) {
+        $trimmed = array_map(function($v) {
             return trim((string)$v);
         }, $data);
+        // Lewati jika seluruh baris kosong
+        if (implode('', $trimmed) === '') {
+            continue;
+        }
+        $rows[] = $trimmed;
     }
     fclose($handle);
     return $rows;
@@ -100,16 +103,50 @@ function parse_uploaded_xlsx(string $filepath): array {
         if ($xml && isset($xml->sheetData->row)) {
             foreach ($xml->sheetData->row as $r) {
                 $rowCells = [];
+                $maxCol = 0;
                 foreach ($r->c as $c) {
-                    $type = (string)($c['t'] ?? '');
-                    $val = (string)($c->v ?? '');
-                    if ($type === 's' && isset($sharedStrings[(int)$val])) {
-                        $val = $sharedStrings[(int)$val];
+                    $cRef = (string)($c['r'] ?? '');
+                    $colIdx = xlsx_col_to_index($cRef);
+                    if ($colIdx < 0) {
+                        $colIdx = $maxCol;
                     }
-                    $rowCells[] = trim($val);
+
+                    $type = (string)($c['t'] ?? '');
+                    $val = '';
+                    if ($type === 's') {
+                        $sIdx = (int)($c->v ?? 0);
+                        $val = $sharedStrings[$sIdx] ?? '';
+                    } elseif ($type === 'inlineStr') {
+                        if (isset($c->is->t)) {
+                            $val = (string)$c->is->t;
+                        } elseif (isset($c->is->r)) {
+                            foreach ($c->is->r as $ir) {
+                                $val .= (string)($ir->t ?? '');
+                            }
+                        }
+                    } else {
+                        $val = (string)($c->v ?? '');
+                    }
+
+                    $rowCells[$colIdx] = trim($val);
+                    if ($colIdx >= $maxCol) {
+                        $maxCol = $colIdx + 1;
+                    }
                 }
-                if (!empty($rowCells) && implode('', $rowCells) !== '') {
-                    $rows[] = $rowCells;
+
+                if ($maxCol > 0) {
+                    $fullRow = [];
+                    $hasAnyContent = false;
+                    for ($i = 0; $i < $maxCol; $i++) {
+                        $cellVal = $rowCells[$i] ?? '';
+                        $fullRow[$i] = $cellVal;
+                        if ($cellVal !== '') {
+                            $hasAnyContent = true;
+                        }
+                    }
+                    if ($hasAnyContent) {
+                        $rows[] = $fullRow;
+                    }
                 }
             }
         }
@@ -348,12 +385,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
         $status = normalize_asset_status((string)($row[$colMap['status']] ?? 'Aktif'));
         $ket = trim($row[$colMap['ket']] ?? '');
 
-        // Abaikan jika baris kosong total
-        if ($kode === '' && $merk === '' && $model === '') {
+        // Abaikan jika baris kosong (tidak ada data yang terisi)
+        if ($kode === '' && $merk === '' && $model === '' && $kategoriStr === '' && $sn === '' && $cabangStr === '' && $karyawanStr === '') {
             continue;
         }
 
-        // Cek duplikasi kode inventaris
+        // Cek duplikasi kode inventaris jika kode diisi
         $normKode = strtoupper($kode);
         if ($normKode !== '' && isset($existingCodes[$normKode])) {
             $skipCount++;
@@ -363,6 +400,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
         $idCab = resolve_cabang_id($cabangStr, $masters['cabangs']);
         $idDiv = resolve_divisi_id($divisiStr, $masters['divisis'], $client);
         $idKat = resolve_kategori_id($kategoriStr, $masters['kategoris'], $client);
+
+        if ($merk === '' && $model === '') {
+            $model = $kategoriStr !== '' ? $kategoriStr : 'Perangkat IT';
+        }
 
         $payload = [
             'kode_inventaris'   => $kode,
@@ -383,12 +424,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
         $res = create_new_asset($payload);
         if (!empty($res['success'])) {
             $successCount++;
-            if ($normKode !== '') {
-                $existingCodes[$normKode] = true;
+            $assignedKode = (string)($res['kode_inventaris'] ?? ($kode !== '' ? $kode : ('INV-IT-' . ($res['asset_id'] ?? $res['id'] ?? $successCount))));
+            if ($assignedKode !== '') {
+                $existingCodes[strtoupper($assignedKode)] = true;
             }
             $importedItems[] = [
-                'kode'      => $kode ?: ('ASET-' . ($res['id'] ?? $successCount)),
-                'nama'      => trim($merk . ' ' . $model) ?: 'Perangkat IT',
+                'kode'      => $assignedKode,
+                'nama'      => trim($merk . ' ' . $model) ?: ($kategoriStr ?: 'Perangkat IT'),
                 'cabang'    => $cabangStr ?: ('Cabang #' . $idCab),
                 'status'    => 'Berhasil'
             ];

@@ -39,13 +39,6 @@ if ($format === 'csv' || !class_exists('ZipArchive')) {
     ];
     fputcsv($out, $headers, ';');
 
-    fputcsv($out, ['INV-KPO-001', 'PC Desktop', 'Lenovo', 'ThinkCentre M70q Gen 3', 'SN-LNV-992140', 'Kantor Pusat Operasional', 'Operasional', 'Teller 1', '192.168.1.101', 'Epson L3211', 'Aktif (Digunakan)', 'PC Teller Layanan Utama'], ';');
-    fputcsv($out, ['INV-KPO-002', 'Laptop', 'MSI', 'Thin 15 B12UCX', 'SN-MSI-883192', 'Kantor Pusat Operasional', 'IT / MIS', 'Staff IT', '192.168.1.55', 'Network Printer', 'Aktif (Digunakan)', 'Laptop Operasional IT'], ';');
-    fputcsv($out, ['INV-BLC-001', 'Printer', 'Epson', 'EcoTank L3211', 'SN-EPS-771920', 'Cabang Batulicin', 'Operasional', 'Kasir Kas Batulicin', '192.168.2.20', '-', 'Aktif (Digunakan)', 'Printer Kas Kantor Kas Batulicin'], ';');
-    fputcsv($out, ['INV-MTP-001', 'PC Desktop', 'Dell', 'OptiPlex 3090 Micro', 'SN-DLL-551029', 'Cabang Martapura', 'Operasional', 'CS 1 Martapura', '192.168.3.15', 'HP LaserJet Pro', 'Aktif (Digunakan)', 'PC Layanan Nasabah'], ';');
-    fputcsv($out, ['INV-TJG-001', 'PC Desktop', 'HP', 'ProDesk 400 G6', 'SN-HP-339182', 'Cabang Tanjung', 'Operasional', 'Staff Operasional', '192.168.4.12', 'Canon G2010', 'Aktif (Digunakan)', 'PC Operasional Tanjung'], ';');
-    fputcsv($out, ['INV-HND-001', 'PC Desktop', 'Lenovo', 'ThinkCentre Neo 50s', 'SN-LNV-449102', 'Cabang Handil', 'Operasional', 'Staff Kas Handil', '192.168.5.10', '-', 'Aktif (Digunakan)', 'PC Kantor Kas Handil'], ';');
-
     fclose($out);
     exit;
 }
@@ -143,15 +136,6 @@ $headers = [
     'Keterangan'
 ];
 
-$rowsData = [
-    ['INV-KPO-001', 'PC Desktop', 'Lenovo', 'ThinkCentre M70q Gen 3', 'SN-LNV-992140', 'Kantor Pusat Operasional', 'Operasional', 'Teller 1', '192.168.1.101', 'Epson L3211', 'Aktif (Digunakan)', 'PC Teller Layanan Utama'],
-    ['INV-KPO-002', 'Laptop', 'MSI', 'Thin 15 B12UCX', 'SN-MSI-883192', 'Kantor Pusat Operasional', 'IT / MIS', 'Staff IT', '192.168.1.55', 'Network Printer', 'Aktif (Digunakan)', 'Laptop Operasional IT'],
-    ['INV-BLC-001', 'Printer', 'Epson', 'EcoTank L3211', 'SN-EPS-771920', 'Cabang Batulicin', 'Operasional', 'Kasir Kas Batulicin', '192.168.2.20', '-', 'Aktif (Digunakan)', 'Printer Kas Kantor Kas Batulicin'],
-    ['INV-MTP-001', 'PC Desktop', 'Dell', 'OptiPlex 3090 Micro', 'SN-DLL-551029', 'Cabang Martapura', 'Operasional', 'CS 1 Martapura', '192.168.3.15', 'HP LaserJet Pro', 'Aktif (Digunakan)', 'PC Layanan Nasabah'],
-    ['INV-TJG-001', 'PC Desktop', 'HP', 'ProDesk 400 G6', 'SN-HP-339182', 'Cabang Tanjung', 'Operasional', 'Staff Operasional', '192.168.4.12', 'Canon G2010', 'Aktif (Digunakan)', 'PC Operasional Tanjung'],
-    ['INV-HND-001', 'PC Desktop', 'Lenovo', 'ThinkCentre Neo 50s', 'SN-LNV-449102', 'Cabang Handil', 'Operasional', 'Staff Kas Handil', '192.168.5.10', '-', 'Aktif (Digunakan)', 'PC Kantor Kas Handil']
-];
-
 $colsXml = '<cols>
   <col min="1" max="1" width="18" customWidth="1"/>
   <col min="2" max="2" width="18" customWidth="1"/>
@@ -177,18 +161,6 @@ foreach ($headers as $cIdx => $hText) {
     $sheetDataXml .= '<c r="' . $cRef . '" s="1" t="inlineStr"><is><t>' . htmlspecialchars($hText, ENT_XML1, 'UTF-8') . '</t></is></c>';
 }
 $sheetDataXml .= '</row>';
-
-// Sample Rows
-$rNum = 2;
-foreach ($rowsData as $rData) {
-    $sheetDataXml .= '<row r="' . $rNum . '" ht="22" customHeight="1">';
-    foreach ($rData as $cIdx => $val) {
-        $cRef = $colLetters[$cIdx] . $rNum;
-        $sheetDataXml .= '<c r="' . $cRef . '" s="2" t="inlineStr"><is><t>' . htmlspecialchars((string)$val, ENT_XML1, 'UTF-8') . '</t></is></c>';
-    }
-    $sheetDataXml .= '</row>';
-    $rNum++;
-}
 $sheetDataXml .= '</sheetData>';
 
 // DATA VALIDATION (DROPDOWN EXCEL ASLI SESUAI TAMPILAN FORM WEBSITE)
