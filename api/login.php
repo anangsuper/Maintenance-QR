@@ -44,24 +44,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-$errorHtml = $error ? '<div class="alert alert-danger border py-2 px-3 d-flex align-items-center gap-2 mb-3" style="background:#FEF3F2; border-color:#FECDCA; color:#B42318; border-radius:8px;"><i class="bi bi-shield-exclamation fs-5"></i><span class="small">'.e($error).'</span></div>' : '';
+$errorHtml = $error ? '<div class="alert-custom alert-danger-custom"><i class="bi bi-shield-x alert-icon"></i><div><strong>Autentikasi Gagal</strong><div class="alert-text">'.e($error).'</div></div></div>' : '';
 
 $flashLogin = $_SESSION['flash_login'] ?? '';
 unset($_SESSION['flash_login']);
-$successHtml = $flashLogin ? '<div class="alert alert-success border py-2 px-3 d-flex align-items-center gap-2 mb-3" style="background:#ECFDF3; border-color:#A6F4C5; color:#16803C; border-radius:8px;"><i class="bi bi-check-circle-fill fs-5"></i><span class="small">'.e($flashLogin).'</span></div>' : '';
+$successHtml = $flashLogin ? '<div class="alert-custom alert-success-custom"><i class="bi bi-check-circle-fill alert-icon"></i><div><strong>Informasi</strong><div class="alert-text">'.e($flashLogin).'</div></div></div>' : '';
 
 $expiredHtml = (!empty($_GET['expired']) && !$error && !$flashLogin)
-    ? '<div class="alert alert-warning border py-2 px-3 d-flex align-items-center gap-2 mb-3" style="background:#FFFAEB; border-color:#FEDF89; color:#B54708; border-radius:8px;"><i class="bi bi-clock-history fs-5"></i><span class="small">Sesi Anda telah berakhir. Silakan masuk kembali untuk melanjutkan.</span></div>'
+    ? '<div class="alert-custom alert-warning-custom"><i class="bi bi-clock-history alert-icon"></i><div><strong>Sesi Berakhir</strong><div class="alert-text">Sesi Anda telah habis. Silakan masuk kembali untuk melanjutkan pekerjaan.</div></div></div>'
     : '';
 ?>
 <!doctype html>
 <html lang="id">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <title>Masuk ke Sistem · IT Operations Bank Mitra</title>
 <link rel="manifest" href="<?= module_url('manifest.webmanifest') ?>">
-<meta name="theme-color" content="#0D2748">
+<meta name="theme-color" content="#071224">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="QR Maint">
@@ -69,413 +69,811 @@ $expiredHtml = (!empty($_GET['expired']) && !$error && !$flashLogin)
 <link rel="icon" type="image/png" href="<?= app_logo_url() ?>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
 <style>
 :root {
-  --navy-deep: #08182F;
-  --navy-primary: #0D2748;
-  --navy-subtle: #1E3A60;
-  --blue-corporate: #124E96;
-  --blue-accent: #2E7CF6;
-  --bg-app: #F4F7FB;
-  --border-subtle: #E4E9F0;
-  --border-strong: #CBD5E1;
-  --text-primary: #182230;
-  --text-secondary: #667085;
-  --text-muted: #98A2B3;
+  --navy-darkest: #050d1a;
+  --navy-dark: #071529;
+  --navy-card: #0c203c;
+  --navy-surface: #10294d;
+  --blue-primary: #1d68d8;
+  --blue-hover: #1557ba;
+  --blue-light: #3b82f6;
+  --blue-glow: rgba(59, 130, 246, 0.35);
+  --cyan-accent: #06b6d4;
+  --emerald: #10b981;
+  --emerald-glow: rgba(16, 185, 129, 0.3);
+  --text-main: #f8fafc;
+  --text-muted: #94a3b8;
+  --text-subtle: #64748b;
+  --border-glass: rgba(255, 255, 255, 0.08);
+  --border-focus: rgba(59, 130, 246, 0.6);
+  --glass-bg: rgba(13, 31, 56, 0.72);
+  --form-card-bg: #ffffff;
 }
 
-* { box-sizing: border-box; }
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
 
 body {
-  margin: 0;
   min-height: 100vh;
   font-family: "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  background-color: var(--bg-app);
-  color: var(--text-primary);
+  background-color: var(--navy-darkest);
+  color: var(--text-main);
   display: flex;
+  overflow-x: hidden;
+  position: relative;
 }
 
-.login-split-wrapper {
+/* Ambient Animated Glows */
+.ambient-glow {
+  position: fixed;
+  width: 500px;
+  height: 500px;
+  border-radius: 50%;
+  pointer-events: none;
+  filter: blur(120px);
+  z-index: 0;
+  opacity: 0.45;
+  animation: pulseGlow 10s ease-in-out infinite alternate;
+}
+
+.glow-top-left {
+  top: -150px;
+  left: -100px;
+  background: radial-gradient(circle, #1d68d8 0%, rgba(6, 182, 212, 0.4) 60%, transparent 80%);
+}
+
+.glow-bottom-right {
+  bottom: -150px;
+  right: -100px;
+  background: radial-gradient(circle, #0e3f8a 0%, rgba(29, 104, 216, 0.3) 60%, transparent 80%);
+  animation-delay: -5s;
+}
+
+@keyframes pulseGlow {
+  0% { transform: scale(1) translate(0, 0); opacity: 0.35; }
+  50% { transform: scale(1.15) translate(20px, 30px); opacity: 0.55; }
+  100% { transform: scale(1) translate(0, 0); opacity: 0.35; }
+}
+
+/* Subtle Geometric Cyber Grid Background */
+.cyber-grid {
+  position: fixed;
+  inset: 0;
+  background-image: 
+    linear-gradient(to right, rgba(255, 255, 255, 0.025) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.025) 1px, transparent 1px);
+  background-size: 40px 40px;
+  pointer-events: none;
+  z-index: 0;
+  mask-image: radial-gradient(ellipse at center, black 40%, transparent 85%);
+  -webkit-mask-image: radial-gradient(ellipse at center, black 40%, transparent 85%);
+}
+
+.login-container {
   display: flex;
   width: 100%;
   min-height: 100vh;
+  position: relative;
+  z-index: 1;
 }
 
-/* Left Brand Panel */
-.brand-panel {
-  flex: 1;
-  background-color: var(--navy-deep);
-  color: #FFFFFF;
+/* LEFT HERO BRAND PANEL */
+.hero-panel {
+  flex: 1.15;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  padding: 48px 56px;
+  padding: 56px 64px;
   position: relative;
-  overflow: hidden;
-  border-right: 1px solid var(--navy-subtle);
+  border-right: 1px solid rgba(255, 255, 255, 0.07);
+  background: linear-gradient(135deg, rgba(7, 21, 41, 0.85) 0%, rgba(5, 13, 26, 0.95) 100%);
+  backdrop-filter: blur(20px);
 }
 
-/* Subtle Technical Grid Motif (No AI neon glow) */
-.brand-panel::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background-image: 
-    linear-gradient(to right, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
-  background-size: 32px 32px;
-  pointer-events: none;
+.brand-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
 }
 
-.brand-panel-header {
-  position: relative;
-  z-index: 1;
+.logo-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 14px;
 }
 
-.brand-logo-img {
-  image-rendering: auto;
+.logo-badge {
+  background: rgba(255, 255, 255, 0.98);
+  padding: 8px 14px;
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35), 0 0 0 1px rgba(255, 255, 255, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.3s ease;
+}
+
+.logo-badge:hover {
+  transform: translateY(-2px);
+}
+
+.logo-badge img {
+  height: 48px;
+  width: auto;
+  max-width: 190px;
   object-fit: contain;
 }
 
-.brand-badge {
-  width: 44px;
-  height: 44px;
-  background-color: var(--blue-corporate);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: 10px;
+.system-status-pill {
   display: inline-flex;
   align-items: center;
-  justify-content: center;
-  font-size: 1.4rem;
-  color: #FFFFFF;
-  margin-bottom: 16px;
+  gap: 8px;
+  background: rgba(16, 185, 129, 0.12);
+  border: 1px solid rgba(16, 185, 129, 0.35);
+  padding: 6px 14px;
+  border-radius: 999px;
+  font-size: 0.76rem;
+  font-weight: 600;
+  color: #34d399;
+  letter-spacing: 0.02em;
 }
 
-.brand-title {
-  font-size: 1.35rem;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  color: #FFFFFF;
+.status-dot {
+  width: 7px;
+  height: 7px;
+  background-color: #10b981;
+  border-radius: 50%;
+  box-shadow: 0 0 8px #10b981;
+  animation: pulseDot 2s infinite;
 }
 
-.brand-sub {
-  font-size: 0.72rem;
+@keyframes pulseDot {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.4); opacity: 0.5; }
+}
+
+.hero-body {
+  max-width: 580px;
+  margin: 40px 0;
+}
+
+.hero-badge-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: linear-gradient(90deg, rgba(29, 104, 216, 0.25) 0%, rgba(6, 182, 212, 0.15) 100%);
+  border: 1px solid rgba(59, 130, 246, 0.4);
+  padding: 6px 16px;
+  border-radius: 20px;
+  font-size: 0.78rem;
   font-weight: 700;
-  letter-spacing: 0.1em;
-  color: var(--blue-accent);
+  color: #60a5fa;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
+  margin-bottom: 20px;
 }
 
-.brand-panel-content {
-  position: relative;
-  z-index: 1;
-  max-width: 520px;
-}
-
-.brand-tagline {
-  font-size: 2.1rem;
-  font-weight: 700;
-  line-height: 1.25;
-  letter-spacing: -0.02em;
-  color: #FFFFFF;
+.hero-title {
+  font-size: 2.35rem;
+  font-weight: 800;
+  line-height: 1.22;
+  letter-spacing: -0.03em;
+  color: #ffffff;
   margin-bottom: 16px;
 }
 
-.brand-desc {
-  font-size: 0.95rem;
-  color: #98A2B3;
-  line-height: 1.6;
+.hero-title .gradient-text {
+  background: linear-gradient(135deg, #60a5fa 0%, #38bdf8 50%, #818cf8 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
 }
 
-.brand-features {
-  margin-top: 32px;
+.hero-desc {
+  font-size: 0.98rem;
+  color: var(--text-muted);
+  line-height: 1.65;
+  margin-bottom: 34px;
+}
+
+/* Feature Showcase Cards */
+.feature-list {
   display: flex;
   flex-direction: column;
   gap: 14px;
 }
 
-.feature-item {
+.feature-card {
   display: flex;
-  align-items: center;
-  gap: 12px;
-  font-size: 0.88rem;
-  color: #E4E9F0;
+  align-items: flex-start;
+  gap: 16px;
+  padding: 14px 18px;
+  background: rgba(16, 41, 77, 0.45);
+  border: 1px solid var(--border-glass);
+  border-radius: 14px;
+  backdrop-filter: blur(10px);
+  transition: all 0.25s ease;
 }
 
-.feature-icon {
-  width: 28px;
-  height: 28px;
-  border-radius: 6px;
-  background-color: rgba(46, 124, 246, 0.15);
-  border: 1px solid rgba(46, 124, 246, 0.3);
-  color: var(--blue-accent);
+.feature-card:hover {
+  background: rgba(29, 104, 216, 0.15);
+  border-color: rgba(59, 130, 246, 0.35);
+  transform: translateX(4px);
+}
+
+.feature-icon-box {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, rgba(29, 104, 216, 0.4) 0%, rgba(6, 182, 212, 0.2) 100%);
+  border: 1px solid rgba(59, 130, 246, 0.4);
+  color: #93c5fd;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 0.85rem;
+  font-size: 1.15rem;
   flex-shrink: 0;
 }
 
-.brand-panel-footer {
-  position: relative;
-  z-index: 1;
-  font-size: 0.75rem;
-  color: #667085;
+.feature-info h4 {
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: #f1f5f9;
+  margin-bottom: 3px;
 }
 
-/* Right Form Panel */
-.form-panel {
+.feature-info p {
+  font-size: 0.8rem;
+  color: #94a3b8;
+  margin: 0;
+  line-height: 1.4;
+}
+
+/* Hero Footer Badges */
+.hero-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px;
+  padding-top: 24px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.security-badge-group {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+
+.sec-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.sec-pill i {
+  color: #38bdf8;
+  font-size: 0.88rem;
+}
+
+.version-tag {
+  font-size: 0.75rem;
+  color: var(--text-subtle);
+  font-family: monospace;
+}
+
+/* RIGHT AUTH FORM PANEL */
+.auth-panel {
   width: 100%;
-  max-width: 540px;
-  background-color: #FFFFFF;
+  max-width: 520px;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  padding: 48px 44px;
+  padding: 48px 48px;
+  background: #ffffff;
+  position: relative;
+  box-shadow: -20px 0 60px rgba(0, 0, 0, 0.35);
+  color: #1e293b;
 }
 
-.form-panel-content {
+.auth-panel-inner {
   width: 100%;
-  max-width: 400px;
+  max-width: 390px;
   margin: auto;
 }
 
-.form-header {
-  margin-bottom: 32px;
+.mobile-logo-header {
+  display: none;
+  text-align: center;
+  margin-bottom: 28px;
 }
 
-.form-title {
-  font-size: 1.55rem;
+.auth-header {
+  margin-bottom: 28px;
+}
+
+.auth-header-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #eff6ff;
+  color: #1d4ed8;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 0.74rem;
   font-weight: 700;
-  letter-spacing: -0.02em;
-  color: var(--text-primary);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+}
+
+.auth-title {
+  font-size: 1.7rem;
+  font-weight: 800;
+  color: #0f172a;
+  letter-spacing: -0.025em;
   margin-bottom: 6px;
 }
 
-.form-subtitle {
+.auth-subtitle {
   font-size: 0.88rem;
-  color: var(--text-secondary);
+  color: #64748b;
+  line-height: 1.5;
 }
 
-.field-label {
+/* Modern Alerts */
+.alert-custom {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: 10px;
   font-size: 0.82rem;
-  font-weight: 600;
-  color: var(--text-primary);
-  margin-bottom: 6px;
-  display: block;
+  margin-bottom: 20px;
+  animation: slideDown 0.3s ease;
 }
 
-.field-wrapper {
-  position: relative;
+@keyframes slideDown {
+  from { opacity: 0; transform: translateY(-8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.alert-danger-custom {
+  background-color: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #991b1b;
+}
+
+.alert-success-custom {
+  background-color: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  color: #166534;
+}
+
+.alert-warning-custom {
+  background-color: #fffbeb;
+  border: 1px solid #fde68a;
+  color: #92400e;
+}
+
+.alert-icon {
+  font-size: 1.15rem;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.alert-text {
+  font-size: 0.78rem;
+  margin-top: 2px;
+  opacity: 0.9;
+}
+
+/* Modern Input Controls */
+.form-group-custom {
   margin-bottom: 20px;
 }
 
-.field-icon {
+.custom-label {
+  display: block;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #334155;
+  margin-bottom: 7px;
+  letter-spacing: 0.01em;
+}
+
+.input-container {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.input-icon-left {
   position: absolute;
   left: 14px;
-  top: 50%;
-  transform: translateY(-50%);
-  color: var(--text-muted);
-  font-size: 1rem;
-  z-index: 2;
+  color: #94a3b8;
+  font-size: 1.1rem;
   pointer-events: none;
+  transition: color 0.2s ease;
+  z-index: 2;
 }
 
-.form-control-custom {
+.input-field {
   width: 100%;
-  height: 44px;
-  padding: 8px 14px 8px 42px;
-  border: 1px solid var(--border-strong);
-  border-radius: 8px;
+  height: 48px;
+  padding: 10px 14px 10px 44px;
+  background-color: #f8fafc;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 10px;
   font-size: 0.92rem;
-  color: var(--text-primary);
-  background-color: #FFFFFF;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  font-weight: 500;
+  color: #0f172a;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.form-control-custom:focus {
+.input-field:focus {
   outline: none;
-  border-color: var(--blue-corporate);
-  box-shadow: 0 0 0 3px rgba(18, 78, 150, 0.14);
+  background-color: #ffffff;
+  border-color: #2563eb;
+  box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.12);
 }
 
-.toggle-pass-btn {
+.input-field:focus + .input-icon-left,
+.input-container:focus-within .input-icon-left {
+  color: #2563eb;
+}
+
+.input-field::placeholder {
+  color: #94a3b8;
+  font-weight: 400;
+}
+
+.password-toggle-btn {
   position: absolute;
   right: 12px;
-  top: 50%;
-  transform: translateY(-50%);
-  background: none;
+  background: transparent;
   border: none;
-  color: var(--text-muted);
+  color: #94a3b8;
+  padding: 6px;
+  border-radius: 6px;
   cursor: pointer;
-  padding: 4px;
-  font-size: 1rem;
-  z-index: 3;
-}
-
-.toggle-pass-btn:hover {
-  color: var(--text-primary);
-}
-
-.btn-submit-login {
-  width: 100%;
-  height: 44px;
-  background-color: var(--blue-corporate);
-  border: 1px solid var(--blue-corporate);
-  border-radius: 8px;
-  color: #FFFFFF;
-  font-size: 0.92rem;
-  font-weight: 600;
+  font-size: 1.05rem;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
+  transition: color 0.2s, background-color 0.2s;
+  z-index: 3;
+}
+
+.password-toggle-btn:hover {
+  color: #1e293b;
+  background-color: #e2e8f0;
+}
+
+/* Submit Button */
+.btn-login-submit {
+  width: 100%;
+  height: 48px;
+  background: linear-gradient(135deg, #1d4ed8 0%, #2563eb 100%);
+  border: none;
+  border-radius: 10px;
+  color: #ffffff;
+  font-size: 0.95rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
   cursor: pointer;
-  transition: background-color 0.15s ease, border-color 0.15s ease;
+  box-shadow: 0 4px 14px rgba(37, 99, 235, 0.35);
+  transition: all 0.25s ease;
+  margin-top: 10px;
 }
 
-.btn-submit-login:hover {
-  background-color: #0E3E77;
-  border-color: #0E3E77;
+.btn-login-submit:hover {
+  background: linear-gradient(135deg, #1e40af 0%, #1d4ed8 100%);
+  box-shadow: 0 6px 20px rgba(37, 99, 235, 0.45);
+  transform: translateY(-1px);
 }
 
-.security-notice {
-  background-color: #F8FAFC;
-  border: 1px solid var(--border-subtle);
-  border-radius: 8px;
+.btn-login-submit:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.3);
+}
+
+.btn-login-submit:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Security Notice Box */
+.security-card {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
   padding: 12px 14px;
   margin-top: 24px;
-  font-size: 0.78rem;
-  color: var(--text-secondary);
-  line-height: 1.5;
   display: flex;
+  gap: 12px;
   align-items: flex-start;
-  gap: 10px;
 }
 
-.form-panel-footer {
+.security-card i {
+  color: #475569;
+  font-size: 1.1rem;
+  margin-top: 2px;
+  flex-shrink: 0;
+}
+
+.security-card-text {
+  font-size: 0.76rem;
+  color: #64748b;
+  line-height: 1.45;
+}
+
+.security-card-text strong {
+  color: #334155;
+}
+
+/* Auth Panel Footer */
+.auth-footer {
   text-align: center;
-  font-size: 0.78rem;
-  color: var(--text-muted);
   padding-top: 24px;
+  font-size: 0.76rem;
+  color: #94a3b8;
 }
 
-@media (max-width: 991px) {
-  .brand-panel {
+/* RESPONSIVE DESIGN */
+@media (max-width: 1080px) {
+  .hero-panel {
+    padding: 40px 36px;
+  }
+  .auth-panel {
+    max-width: 460px;
+    padding: 40px 32px;
+  }
+}
+
+@media (max-width: 900px) {
+  .login-container {
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 24px 16px;
+  }
+
+  .hero-panel {
     display: none;
   }
-  .form-panel {
-    max-width: 100%;
-    padding: 32px 24px;
+
+  .auth-panel {
+    max-width: 440px;
+    border-radius: 20px;
+    padding: 36px 28px;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.1);
+  }
+
+  .mobile-logo-header {
+    display: block;
+  }
+}
+
+@media (max-width: 480px) {
+  .auth-panel {
+    padding: 28px 20px;
+    border-radius: 16px;
+  }
+  .auth-title {
+    font-size: 1.45rem;
   }
 }
 </style>
 </head>
 <body>
 
-<div class="login-split-wrapper">
-  <!-- Left Side: Corporate Identity & Technical Overview -->
-  <div class="brand-panel">
-    <div class="brand-panel-header">
-      <div class="mb-3">
-        <img src="<?= app_logo_url() ?>" alt="Bank Mitra Logo" class="brand-logo-img" style="height: 86px; width: auto; max-width: 260px; object-fit: contain;">
+<!-- Animated Ambient Glows & Cyber Grid Background -->
+<div class="ambient-glow glow-top-left"></div>
+<div class="ambient-glow glow-bottom-right"></div>
+<div class="cyber-grid"></div>
+
+<div class="login-container">
+  
+  <!-- LEFT HERO BRAND PANEL -->
+  <div class="hero-panel">
+    <!-- Header -->
+    <div class="brand-header">
+      <div class="logo-wrapper">
+        <div class="logo-badge">
+          <img src="<?= app_logo_url() ?>" alt="Bank Mitra Logo">
+        </div>
       </div>
-      <div class="brand-sub">PT. BPR MITRATAMA ARTHABUANA · IT OPERATIONS</div>
+      <div class="system-status-pill">
+        <span class="status-dot"></span>
+        <span>SISTEM OPERASIONAL AKTIF</span>
+      </div>
     </div>
 
-    <div class="brand-panel-content">
-      <h1 class="brand-tagline">IT Asset & Maintenance Operations Center</h1>
-      <p class="brand-desc">
-        Sistem internal pemantauan kepatuhan aset teknologi informasi, inspeksi checklist berkala, kendali QR Code, dan pelaporan audit operasional perbankan.
+    <!-- Body -->
+    <div class="hero-body">
+      <div class="hero-badge-tag">
+        <i class="bi bi-cpu-fill"></i>
+        <span>IT Infrastructure & Asset Control</span>
+      </div>
+      
+      <h1 class="hero-title">
+        Enterprise IT Asset & <br>
+        <span class="gradient-text">Maintenance Operations</span>
+      </h1>
+      
+      <p class="hero-desc">
+        Pusat kendali dan monitoring terintegrasi pemeliharaan perangkat komputer, inspeksi checklist berkala, kendali QR Code fisik, serta audit trail operasional perbankan.
       </p>
 
-      <div class="brand-features">
-        <div class="feature-item">
-          <div class="feature-icon"><i class="bi bi-check2"></i></div>
-          <span>Pemeriksaan 9 poin checklist teknis komputer kantor cabang</span>
+      <!-- Feature Cards -->
+      <div class="feature-list">
+        <div class="feature-card">
+          <div class="feature-icon-box">
+            <i class="bi bi-clipboard2-check-fill"></i>
+          </div>
+          <div class="feature-info">
+            <h4>Checklist Teknis 9 Poin</h4>
+            <p>Standarisasi inspeksi preventif berkala perangkat komputer & jaringan kantor cabang.</p>
+          </div>
         </div>
-        <div class="feature-item">
-          <div class="feature-icon"><i class="bi bi-shield-lock"></i></div>
-          <span>Verifikasi presensi inspeksi dan audit trail terenkripsi</span>
+
+        <div class="feature-card">
+          <div class="feature-icon-box">
+            <i class="bi bi-qr-code-scan"></i>
+          </div>
+          <div class="feature-info">
+            <h4>Presensi & Scan QR Fisik</h4>
+            <p>Verifikasi riwayat pemeliharaan aset secara langsung di lokasi dengan validasi QR.</p>
+          </div>
         </div>
-        <div class="feature-item">
-          <div class="feature-icon"><i class="bi bi-qr-code"></i></div>
-          <span>Pindai QR fisik dan rekam jejak riwayat pemeliharaan perangkat</span>
+
+        <div class="feature-card">
+          <div class="feature-icon-box">
+            <i class="bi bi-shield-lock-fill"></i>
+          </div>
+          <div class="feature-info">
+            <h4>Audit Trail & Keamanan Bank</h4>
+            <p>Rekam jejak setiap tindakan teknisi tercatat real-time dan aman terenkripsi.</p>
+          </div>
         </div>
       </div>
     </div>
 
-    <div class="brand-panel-footer">
-      <div>IT Operations & Infrastructure Division · Versi 2.4 Enterprise</div>
-      <div class="mt-1">Hak Cipta © <?= date('Y') ?> PT. BPR Mitratama Arthabuana. Seluruh hak cipta dilindungi.</div>
+    <!-- Footer -->
+    <div class="hero-footer">
+      <div class="security-badge-group">
+        <div class="sec-pill">
+          <i class="bi bi-shield-check"></i>
+          <span>256-Bit SSL Enkripsi</span>
+        </div>
+        <div class="sec-pill">
+          <i class="bi bi-database-check"></i>
+          <span>Auto Backup Cloud</span>
+        </div>
+      </div>
+      <div class="version-tag">v2.4.0 Enterprise · PT. BPR Mitratama Arthabuana</div>
     </div>
   </div>
 
-  <!-- Right Side: Clean Enterprise Login Form -->
-  <div class="form-panel">
+  <!-- RIGHT AUTH FORM PANEL -->
+  <div class="auth-panel">
     <div></div>
-    <div class="form-panel-content">
-      <div class="form-header">
-        <div class="d-lg-none mb-4 text-center">
-          <img src="<?= app_logo_url() ?>" alt="Bank Mitra Logo" class="brand-logo-img" style="height: 58px; width: auto; max-width: 220px; object-fit: contain; margin-bottom: 6px;">
-          <div class="brand-sub">IT OPERATIONS</div>
+    
+    <div class="auth-panel-inner">
+      <!-- Mobile Logo Header -->
+      <div class="mobile-logo-header">
+        <div class="logo-badge d-inline-flex mb-3">
+          <img src="<?= app_logo_url() ?>" alt="Bank Mitra Logo">
         </div>
-        <h2 class="form-title">Masuk ke Sistem</h2>
-        <div class="form-subtitle">Gunakan kredensial akun petugas untuk melanjutkan.</div>
+        <div>
+          <span class="system-status-pill">
+            <span class="status-dot"></span>
+            <span>SISTEM OPERASIONAL AKTIF</span>
+          </span>
+        </div>
+      </div>
+
+      <div class="auth-header">
+        <div class="auth-header-pill">
+          <i class="bi bi-shield-lock"></i>
+          <span>Portal Petugas</span>
+        </div>
+        <h2 class="auth-title">Masuk ke Akun</h2>
+        <p class="auth-subtitle">Gunakan kredensial akun IT Anda untuk mengakses sistem pemeliharaan aset.</p>
       </div>
 
       <?= $successHtml ?>
       <?= $expiredHtml ?>
       <?= $errorHtml ?>
 
-      <form method="post" autocomplete="off">
-        <div class="field-wrapper">
-          <label class="field-label" for="inputUser">Username</label>
-          <div style="position: relative;">
-            <i class="bi bi-person field-icon"></i>
-            <input type="text" class="form-control-custom" id="inputUser" name="username" placeholder="Masukkan username..." required autofocus>
+      <form method="post" id="loginForm" autocomplete="off">
+        <div class="form-group-custom">
+          <label class="custom-label" for="inputUser">Username / ID Petugas</label>
+          <div class="input-container">
+            <i class="bi bi-person input-icon-left"></i>
+            <input 
+              type="text" 
+              class="input-field" 
+              id="inputUser" 
+              name="username" 
+              placeholder="Contoh: teknisi_it" 
+              required 
+              autofocus 
+              spellcheck="false"
+            >
           </div>
         </div>
 
-        <div class="field-wrapper">
-          <label class="field-label" for="inputPass">Password</label>
-          <div style="position: relative;">
-            <i class="bi bi-lock field-icon"></i>
-            <input type="password" class="form-control-custom" id="inputPass" name="password" placeholder="Masukkan password..." required style="padding-right: 40px;">
-            <button type="button" class="toggle-pass-btn" onclick="togglePassword()" title="Tampilkan / Sembunyikan Password">
+        <div class="form-group-custom">
+          <div class="d-flex justify-content-between align-items-center mb-1">
+            <label class="custom-label mb-0" for="inputPass">Kata Sandi</label>
+          </div>
+          <div class="input-container">
+            <i class="bi bi-key input-icon-left"></i>
+            <input 
+              type="password" 
+              class="input-field" 
+              id="inputPass" 
+              name="password" 
+              placeholder="Masukkan kata sandi..." 
+              required
+              style="padding-right: 46px;"
+            >
+            <button 
+              type="button" 
+              class="password-toggle-btn" 
+              id="togglePassBtn"
+              onclick="togglePassword()" 
+              title="Lihat / Sembunyikan Kata Sandi"
+              aria-label="Toggle Password Visibility"
+            >
               <i class="bi bi-eye" id="eyeIcon"></i>
             </button>
           </div>
         </div>
 
-        <button type="submit" class="btn-submit-login mt-3">
-          <i class="bi bi-box-arrow-in-right"></i>
-          <span>Masuk ke Sistem</span>
+        <button type="submit" class="btn-login-submit" id="submitBtn">
+          <i class="bi bi-box-arrow-in-right" id="submitIcon"></i>
+          <span id="submitText">Masuk Sekarang</span>
         </button>
       </form>
 
-      <div class="security-notice">
-        <i class="bi bi-shield-exclamation text-secondary fs-5 mt-1"></i>
-        <div>
-          <strong>Akses Terbatas:</strong> Sistem internal ini diperuntukkan khusus teknisi IT dan petugas yang berwenang di lingkungan PT. BPR Mitratama Arthabuana.
+      <div class="security-card">
+        <i class="bi bi-shield-exclamation"></i>
+        <div class="security-card-text">
+          <strong>Akses Terbatas:</strong> Sistem internal ini khusus untuk staf IT dan petugas berwenang PT. BPR Mitratama Arthabuana. Segala aktivitas diawasi & dicatat ke log audit.
         </div>
       </div>
     </div>
 
-    <div class="form-panel-footer">
-      <div>Sistem Operasional Pemeliharaan Aset IT</div>
-      <div class="mt-1">Authorized personnel only</div>
+    <!-- Panel Footer -->
+    <div class="auth-footer">
+      <div>© <?= date('Y') ?> PT. BPR Mitratama Arthabuana</div>
+      <div style="font-size: 0.7rem; color: #94a3b8; margin-top: 4px;">Divisi IT Operations & Infrastructure</div>
     </div>
   </div>
+
 </div>
 
 <script>
 function togglePassword() {
-  var inp = document.getElementById("inputPass");
-  var ico = document.getElementById("eyeIcon");
+  const inp = document.getElementById("inputPass");
+  const ico = document.getElementById("eyeIcon");
   if (inp.type === "password") {
     inp.type = "text";
     ico.className = "bi bi-eye-slash";
@@ -485,6 +883,23 @@ function togglePassword() {
   }
 }
 
+// Visual loading indicator on submit
+const loginForm = document.getElementById("loginForm");
+const submitBtn = document.getElementById("submitBtn");
+const submitIcon = document.getElementById("submitIcon");
+const submitText = document.getElementById("submitText");
+
+if (loginForm) {
+  loginForm.addEventListener("submit", function() {
+    if (submitBtn) {
+      submitBtn.disabled = true;
+      submitIcon.className = "spinner-border spinner-border-sm";
+      submitText.textContent = "Memverifikasi Akun...";
+    }
+  });
+}
+
+// Service Worker Registration for PWA
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", function() {
     navigator.serviceWorker.register("<?= module_url('sw.js') ?>")
