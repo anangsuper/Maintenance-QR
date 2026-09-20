@@ -2,7 +2,7 @@
 require __DIR__ . '/bootstrap.php';
 
 // =========================================================================
-// HANDLER AJAX: BIOMETRIC LOGIN (FACE RECOGNITION AI & PASKEY)
+// HANDLER AJAX: BIOMETRIC LOGIN (FACE RECOGNITION AI & PASSKEY)
 // =========================================================================
 $ajaxAction = trim((string)($_GET['action'] ?? $_POST['action'] ?? ''));
 
@@ -12,7 +12,7 @@ if ($ajaxAction !== '') {
     }
     header('Content-Type: application/json; charset=utf-8');
 
-    // 1. Ambil daftar teknisi yang memiliki data wajah terverifikasi untuk matching client-side
+    // 1. Ambil daftar teknisi yang memiliki data wajah terdaftar untuk matching client-side
     if ($ajaxAction === 'get_bio_users') {
         $allUsers = get_user_list(true);
         $enrolled = [];
@@ -22,8 +22,9 @@ if ($ajaxAction !== '') {
 
             $fStat = strtolower(trim((string)($u['face_status'] ?? '')));
             $fDesc = trim((string)($u['face_descriptor'] ?? ''));
-            // Izinkan jika terverifikasi admin atau terdaftar
-            if ($fDesc !== '' && ($fStat === 'verified' || $fStat === 'terverifikasi' || $fStat === '')) {
+
+            // Izinkan semua akun aktif yang memiliki descriptor wajah (kecuali ditolak/rejected)
+            if ($fDesc !== '' && $fStat !== 'rejected' && $fStat !== 'ditolak') {
                 $descArr = json_decode($fDesc, true);
                 if (is_array($descArr) && count($descArr) >= 64) {
                     $enrolled[] = [
@@ -91,8 +92,8 @@ if ($ajaxAction !== '') {
         }
         $distance = sqrt($sum);
 
-        // Ambang batas toleransi Euclidean distance (<= 0.52)
-        if ($distance > 0.52) {
+        // Ambang batas toleransi Euclidean distance (<= 0.55)
+        if ($distance > 0.55) {
             record_audit_log('LOGIN_FAILED_BIOMETRIC', 'KEAMANAN', $userId, (string)$user['username'], 'Gagal login biometrik wajah: deviasi jarak ' . round($distance, 3), [
                 'user_name' => (string)$user['nama'],
                 'user_role' => (string)$user['role']
@@ -298,224 +299,218 @@ body {
   justify-content: space-between;
   padding: 56px 64px;
   position: relative;
-  border-right: 1px solid rgba(255, 255, 255, 0.07);
-  background: linear-gradient(135deg, rgba(7, 21, 41, 0.85) 0%, rgba(5, 13, 26, 0.95) 100%);
-  backdrop-filter: blur(20px);
+  border-right: 1px solid var(--border-glass);
 }
 
 .brand-header {
   display: flex;
   align-items: center;
-  justify-content: space-between;
   gap: 16px;
 }
 
-.logo-wrapper {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-}
-
-.logo-badge {
-  background: rgba(255, 255, 255, 0.98);
-  padding: 8px 14px;
-  border-radius: 12px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35), 0 0 0 1px rgba(255, 255, 255, 0.2);
+.brand-logo-badge {
+  width: 54px;
+  height: 54px;
+  background: linear-gradient(135deg, rgba(29, 104, 216, 0.2), rgba(6, 182, 212, 0.2));
+  border: 1px solid rgba(59, 130, 246, 0.4);
+  border-radius: 14px;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: transform 0.3s ease;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
 }
 
-.logo-badge:hover {
-  transform: translateY(-2px);
-}
-
-.logo-badge img {
-  height: 48px;
-  width: auto;
-  max-width: 190px;
+.brand-logo-badge img {
+  width: 34px;
+  height: 34px;
   object-fit: contain;
 }
 
-.system-status-pill {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  background: rgba(16, 185, 129, 0.12);
-  border: 1px solid rgba(16, 185, 129, 0.35);
-  padding: 6px 14px;
-  border-radius: 999px;
-  font-size: 0.76rem;
+.brand-title-group h1 {
+  font-size: 1.35rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: #ffffff;
+  margin-bottom: 2px;
+}
+
+.brand-title-group p {
+  font-size: 0.8rem;
   font-weight: 600;
-  color: #34d399;
-  letter-spacing: 0.02em;
+  color: var(--cyan-accent);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin: 0;
 }
 
-.status-dot {
-  width: 7px;
-  height: 7px;
-  background-color: #10b981;
-  border-radius: 50%;
-  box-shadow: 0 0 8px #10b981;
-  animation: pulseDot 2s infinite;
-}
-
-@keyframes pulseDot {
-  0%, 100% { transform: scale(1); opacity: 1; }
-  50% { transform: scale(1.4); opacity: 0.5; }
-}
-
-.hero-body {
-  max-width: 580px;
+.hero-content {
+  max-width: 540px;
   margin: 40px 0;
 }
 
-.hero-badge-tag {
+.hero-pill {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  background: linear-gradient(90deg, rgba(29, 104, 216, 0.25) 0%, rgba(6, 182, 212, 0.15) 100%);
-  border: 1px solid rgba(59, 130, 246, 0.4);
-  padding: 6px 16px;
-  border-radius: 20px;
+  padding: 6px 14px;
+  background: rgba(29, 104, 216, 0.15);
+  border: 1px solid rgba(59, 130, 246, 0.3);
+  border-radius: 100px;
   font-size: 0.78rem;
-  font-weight: 700;
-  color: #60a5fa;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  margin-bottom: 20px;
+  font-weight: 600;
+  color: #93c5fd;
+  margin-bottom: 24px;
 }
 
-.hero-title {
-  font-size: 2.35rem;
+.hero-pill i {
+  color: var(--cyan-accent);
+}
+
+.hero-headline {
+  font-size: 2.5rem;
   font-weight: 800;
-  line-height: 1.22;
+  line-height: 1.2;
   letter-spacing: -0.03em;
   color: #ffffff;
-  margin-bottom: 16px;
+  margin-bottom: 18px;
 }
 
-.hero-title .gradient-text {
-  background: linear-gradient(135deg, #60a5fa 0%, #38bdf8 50%, #818cf8 100%);
+.hero-headline span {
+  background: linear-gradient(135deg, #60a5fa 0%, #38bdf8 50%, #2dd4bf 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }
 
 .hero-desc {
-  font-size: 0.98rem;
+  font-size: 1rem;
+  line-height: 1.6;
   color: var(--text-muted);
-  line-height: 1.65;
-  margin-bottom: 34px;
+  margin-bottom: 36px;
 }
 
-/* Feature Showcase Cards */
+/* Feature Grid in Hero */
 .feature-list {
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
 }
 
-.feature-card {
+.feature-item {
   display: flex;
   align-items: flex-start;
-  gap: 16px;
-  padding: 14px 18px;
+  gap: 14px;
   background: rgba(16, 41, 77, 0.45);
   border: 1px solid var(--border-glass);
+  padding: 16px;
   border-radius: 14px;
-  backdrop-filter: blur(10px);
-  transition: all 0.25s ease;
+  backdrop-filter: blur(8px);
+  transition: all 0.3s ease;
 }
 
-.feature-card:hover {
-  background: rgba(29, 104, 216, 0.15);
-  border-color: rgba(59, 130, 246, 0.35);
-  transform: translateX(4px);
+.feature-item:hover {
+  background: rgba(29, 104, 216, 0.12);
+  border-color: rgba(59, 130, 246, 0.4);
+  transform: translateY(-2px);
 }
 
 .feature-icon-box {
-  width: 40px;
-  height: 40px;
+  width: 38px;
+  height: 38px;
   border-radius: 10px;
-  background: linear-gradient(135deg, rgba(29, 104, 216, 0.4) 0%, rgba(6, 182, 212, 0.2) 100%);
-  border: 1px solid rgba(59, 130, 246, 0.4);
-  color: #93c5fd;
+  background: rgba(29, 104, 216, 0.2);
+  color: #60a5fa;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.15rem;
+  font-size: 1.1rem;
   flex-shrink: 0;
 }
 
-.feature-info h4 {
-  font-size: 0.92rem;
+.feature-text h4 {
+  font-size: 0.88rem;
   font-weight: 700;
-  color: #f1f5f9;
+  color: #ffffff;
   margin-bottom: 3px;
 }
 
-.feature-info p {
-  font-size: 0.8rem;
-  color: #94a3b8;
-  margin: 0;
+.feature-text p {
+  font-size: 0.75rem;
+  color: var(--text-muted);
   line-height: 1.4;
+  margin: 0;
 }
 
-/* Hero Footer Badges */
 .hero-footer {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 16px;
+  border-top: 1px solid var(--border-glass);
   padding-top: 24px;
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
 }
 
-.security-badge-group {
+.security-badge {
   display: flex;
   align-items: center;
-  gap: 18px;
-}
-
-.sec-pill {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 0.75rem;
+  gap: 10px;
+  font-size: 0.8rem;
   color: var(--text-muted);
 }
 
-.sec-pill i {
-  color: #38bdf8;
-  font-size: 0.88rem;
+.security-badge i {
+  color: var(--emerald);
+  font-size: 1.1rem;
 }
 
-.version-tag {
+.system-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   font-size: 0.75rem;
-  color: var(--text-subtle);
-  font-family: monospace;
+  font-weight: 600;
+  color: #34d399;
+  background: rgba(16, 185, 129, 0.1);
+  padding: 4px 12px;
+  border-radius: 100px;
+  border: 1px solid rgba(16, 185, 129, 0.25);
 }
 
-/* RIGHT AUTH FORM PANEL */
+.status-dot {
+  width: 7px;
+  height: 7px;
+  background-color: var(--emerald);
+  border-radius: 50%;
+  box-shadow: 0 0 10px var(--emerald);
+  animation: pulseDot 2s infinite ease-in-out;
+}
+
+@keyframes pulseDot {
+  0% { transform: scale(0.95); opacity: 0.8; }
+  50% { transform: scale(1.3); opacity: 1; }
+  100% { transform: scale(0.95); opacity: 0.8; }
+}
+
+/* RIGHT AUTH PANEL */
 .auth-panel {
-  width: 100%;
-  max-width: 520px;
+  flex: 0.95;
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
-  padding: 42px 46px;
-  background: #ffffff;
+  justify-content: center;
+  align-items: center;
+  padding: 48px;
+  background: radial-gradient(circle at top right, rgba(16, 41, 77, 0.5) 0%, rgba(5, 13, 26, 0.9) 100%);
   position: relative;
-  box-shadow: -20px 0 60px rgba(0, 0, 0, 0.35);
-  color: #1e293b;
 }
 
-.auth-panel-inner {
+.auth-card {
   width: 100%;
-  max-width: 400px;
-  margin: auto;
+  max-width: 440px;
+  background: #ffffff;
+  border-radius: 24px;
+  padding: 40px;
+  box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.1);
+  color: #1e293b;
+  position: relative;
 }
 
 .mobile-logo-header {
@@ -524,98 +519,112 @@ body {
   margin-bottom: 24px;
 }
 
+.mobile-logo-header img {
+  width: 48px;
+  height: 48px;
+  object-fit: contain;
+  margin-bottom: 8px;
+}
+
+.mobile-brand-title {
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: #0f172a;
+}
+
 .auth-header {
-  margin-bottom: 24px;
+  margin-bottom: 28px;
 }
 
 .auth-header-pill {
   display: inline-flex;
   align-items: center;
   gap: 6px;
+  padding: 4px 10px;
   background: #eff6ff;
-  color: #1d4ed8;
-  padding: 4px 12px;
-  border-radius: 20px;
-  font-size: 0.74rem;
+  border: 1px solid #dbeafe;
+  border-radius: 6px;
+  font-size: 0.72rem;
   font-weight: 700;
-  letter-spacing: 0.04em;
+  color: #2563eb;
   text-transform: uppercase;
-  margin-bottom: 10px;
+  letter-spacing: 0.05em;
+  margin-bottom: 12px;
 }
 
 .auth-title {
-  font-size: 1.65rem;
+  font-size: 1.75rem;
   font-weight: 800;
+  letter-spacing: -0.03em;
   color: #0f172a;
-  letter-spacing: -0.025em;
-  margin-bottom: 4px;
+  margin-bottom: 6px;
 }
 
 .auth-subtitle {
-  font-size: 0.86rem;
+  font-size: 0.88rem;
   color: #64748b;
-  line-height: 1.45;
+  line-height: 1.5;
+  margin: 0;
 }
 
-/* Modern Alerts */
+/* Custom Alerts */
 .alert-custom {
   display: flex;
   align-items: flex-start;
   gap: 12px;
-  padding: 12px 14px;
-  border-radius: 10px;
-  font-size: 0.82rem;
-  margin-bottom: 18px;
-  animation: slideDown 0.3s ease;
-}
-
-@keyframes slideDown {
-  from { opacity: 0; transform: translateY(-8px); }
-  to { opacity: 1; transform: translateY(0); }
+  padding: 12px 16px;
+  border-radius: 12px;
+  font-size: 0.83rem;
+  line-height: 1.45;
+  margin-bottom: 20px;
+  animation: fadeInDown 0.3s ease;
 }
 
 .alert-danger-custom {
   background-color: #fef2f2;
-  border: 1px solid #fecaca;
+  border: 1px solid #fee2e2;
   color: #991b1b;
 }
 
 .alert-success-custom {
   background-color: #f0fdf4;
-  border: 1px solid #bbf7d0;
+  border: 1px solid #dcfce7;
   color: #166534;
 }
 
 .alert-warning-custom {
   background-color: #fffbeb;
-  border: 1px solid #fde68a;
+  border: 1px solid #fef3c7;
   color: #92400e;
 }
 
 .alert-icon {
-  font-size: 1.15rem;
+  font-size: 1.1rem;
   flex-shrink: 0;
   margin-top: 1px;
 }
 
 .alert-text {
-  font-size: 0.78rem;
-  margin-top: 2px;
-  opacity: 0.9;
+  font-weight: 500;
 }
 
-/* Modern Input Controls */
+@keyframes fadeInDown {
+  from { opacity: 0; transform: translateY(-8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Form Styling */
 .form-group-custom {
-  margin-bottom: 16px;
+  margin-bottom: 20px;
 }
 
 .custom-label {
   display: block;
-  font-size: 0.82rem;
+  font-size: 0.8rem;
   font-weight: 700;
   color: #334155;
-  margin-bottom: 6px;
-  letter-spacing: 0.01em;
+  margin-bottom: 8px;
+  letter-spacing: -0.01em;
 }
 
 .input-container {
@@ -626,29 +635,29 @@ body {
 
 .input-icon-left {
   position: absolute;
-  left: 14px;
+  left: 16px;
   color: #94a3b8;
   font-size: 1.1rem;
   pointer-events: none;
   transition: color 0.2s ease;
-  z-index: 2;
 }
 
 .input-field {
   width: 100%;
-  height: 46px;
-  padding: 10px 14px 10px 44px;
+  height: 48px;
   background-color: #f8fafc;
   border: 1.5px solid #e2e8f0;
-  border-radius: 10px;
+  border-radius: 12px;
+  padding: 0 16px 0 46px;
+  font-family: inherit;
   font-size: 0.92rem;
-  font-weight: 500;
   color: #0f172a;
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  font-weight: 500;
+  transition: all 0.2s ease;
+  outline: none;
 }
 
 .input-field:focus {
-  outline: none;
   background-color: #ffffff;
   border-color: #2563eb;
   box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.12);
@@ -667,55 +676,55 @@ body {
 .password-toggle-btn {
   position: absolute;
   right: 12px;
-  background: transparent;
+  background: none;
   border: none;
   color: #94a3b8;
+  font-size: 1.15rem;
   padding: 6px;
-  border-radius: 6px;
+  border-radius: 8px;
   cursor: pointer;
-  font-size: 1.05rem;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: color 0.2s, background-color 0.2s;
-  z-index: 3;
+  transition: all 0.2s ease;
 }
 
 .password-toggle-btn:hover {
-  color: #1e293b;
-  background-color: #e2e8f0;
+  color: #334155;
+  background-color: #f1f5f9;
 }
 
 /* Submit Button */
 .btn-login-submit {
   width: 100%;
-  height: 46px;
-  background: linear-gradient(135deg, #1d4ed8 0%, #2563eb 100%);
-  border: none;
-  border-radius: 10px;
+  height: 50px;
+  background: linear-gradient(135deg, #1d68d8 0%, #1e40af 100%);
   color: #ffffff;
-  font-size: 0.94rem;
+  border: none;
+  border-radius: 12px;
+  font-family: inherit;
+  font-size: 0.95rem;
   font-weight: 700;
+  letter-spacing: -0.01em;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 10px;
   cursor: pointer;
-  box-shadow: 0 4px 14px rgba(37, 99, 235, 0.35);
+  box-shadow: 0 8px 20px -4px rgba(29, 104, 216, 0.45);
   transition: all 0.25s ease;
-  margin-top: 8px;
+  margin-top: 24px;
 }
 
 .btn-login-submit:hover {
-  background: linear-gradient(135deg, #1e40af 0%, #1d4ed8 100%);
-  box-shadow: 0 6px 20px rgba(37, 99, 235, 0.45);
+  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+  box-shadow: 0 12px 24px -4px rgba(29, 104, 216, 0.55);
   transform: translateY(-1px);
 }
 
-.btn-login-submit:disabled {
-  opacity: 0.7;
-  cursor: not-allowed;
-  transform: none;
+.btn-login-submit:active {
+  transform: translateY(1px);
+  box-shadow: 0 4px 12px -2px rgba(29, 104, 216, 0.4);
 }
 
 /* Biometric Divider */
@@ -723,17 +732,17 @@ body {
   display: flex;
   align-items: center;
   text-align: center;
-  margin: 20px 0 16px 0;
+  margin: 22px 0 16px 0;
   color: #94a3b8;
-  font-size: 0.74rem;
+  font-size: 0.76rem;
   font-weight: 700;
-  letter-spacing: 0.06em;
   text-transform: uppercase;
+  letter-spacing: 0.06em;
 }
 
 .bio-auth-divider::before,
 .bio-auth-divider::after {
-  content: "";
+  content: '';
   flex: 1;
   border-bottom: 1px solid #e2e8f0;
 }
@@ -742,61 +751,54 @@ body {
   padding: 0 12px;
 }
 
-/* Biometric Buttons */
+/* Biometric Buttons Grid */
 .bio-buttons-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 10px;
-  margin-bottom: 18px;
+  margin-bottom: 22px;
 }
 
 .btn-bio-card {
   display: flex;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 6px;
-  padding: 12px 10px;
-  background: #f8fafc;
+  gap: 8px;
+  padding: 10px 12px;
+  background-color: #f8fafc;
   border: 1.5px solid #e2e8f0;
   border-radius: 12px;
   color: #1e293b;
-  text-decoration: none;
+  font-family: inherit;
+  font-size: 0.82rem;
+  font-weight: 700;
   cursor: pointer;
   transition: all 0.2s ease;
-  font-size: 0.8rem;
-  font-weight: 700;
 }
 
 .btn-bio-card i {
-  font-size: 1.35rem;
-  color: #2563eb;
-  transition: transform 0.2s ease;
+  font-size: 1.15rem;
 }
 
 .btn-bio-card:hover {
-  background: #eff6ff;
-  border-color: #3b82f6;
+  background-color: #eff6ff;
+  border-color: #bfdbfe;
   color: #1d4ed8;
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.12);
-}
-
-.btn-bio-card:hover i {
-  transform: scale(1.15);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.08);
 }
 
 .btn-bio-card:active {
   transform: translateY(0);
 }
 
-/* Security Notice Box */
+/* Security Notice Card */
 .security-card {
-  background: #f8fafc;
+  margin-top: 10px;
+  padding: 12px 14px;
+  background-color: #f8fafc;
   border: 1px solid #e2e8f0;
   border-radius: 10px;
-  padding: 12px 14px;
-  margin-top: 14px;
   display: flex;
   gap: 12px;
   align-items: flex-start;
@@ -954,99 +956,98 @@ body {
 
 <div class="login-container">
   
-  <!-- LEFT HERO BRAND PANEL -->
+  <!-- LEFT HERO PANEL (Desktop Enterprise Branding) -->
   <div class="hero-panel">
-    <!-- Header -->
     <div class="brand-header">
-      <div class="logo-wrapper">
-        <div class="logo-badge">
-          <img src="<?= app_logo_url() ?>" alt="Bank Mitra Logo">
-        </div>
+      <div class="brand-logo-badge">
+        <img src="<?= app_logo_url() ?>" alt="Logo Bank" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 24 24\' fill=\'%2338bdf8\'><path d=\'M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 10.99h7c-.53 4.12-3.28 7.79-7 8.94V12H5V6.3l7-3.11v8.8z\'/></svg>'">
       </div>
-      <div class="system-status-pill">
-        <span class="status-dot"></span>
-        <span>SISTEM OPERASIONAL AKTIF</span>
+      <div class="brand-title-group">
+        <h1>PT. BPR MITRATAMA ARTHABUANA</h1>
+        <p>Divisi Teknologi Informasi & Operasional</p>
       </div>
     </div>
 
-    <!-- Body -->
-    <div class="hero-body">
-      <div class="hero-badge-tag">
-        <i class="bi bi-cpu-fill"></i>
-        <span>IT Infrastructure & Asset Control</span>
+    <div class="hero-content">
+      <div class="hero-pill">
+        <i class="bi bi-shield-check"></i>
+        <span>Enterprise Maintenance Management System</span>
       </div>
       
-      <h1 class="hero-title">
-        Enterprise IT Asset & <br>
-        <span class="gradient-text">Maintenance Operations</span>
-      </h1>
-      
+      <h2 class="hero-headline">
+        Sistem Manajemen &amp; Pemeliharaan <span>Aset IT Berbasis QR</span>
+      </h2>
+
       <p class="hero-desc">
-        Pusat kendali dan monitoring terintegrasi pemeliharaan perangkat komputer, inspeksi checklist berkala, kendali QR Code fisik, serta audit trail operasional perbankan.
+        Platform operasional terintegrasi untuk pemantauan berkala, pemeliharaan preventif, logbook perbaikan, dan manajemen inventaris perangkat perbankan.
       </p>
 
-      <!-- Feature Cards -->
       <div class="feature-list">
-        <div class="feature-card">
+        <div class="feature-item">
+          <div class="feature-icon-box">
+            <i class="bi bi-qr-code-scan"></i>
+          </div>
+          <div class="feature-text">
+            <h4>Fast QR Scanner</h4>
+            <p>Akses riwayat & catat pemeliharaan aset instan lewat barcode.</p>
+          </div>
+        </div>
+
+        <div class="feature-item">
           <div class="feature-icon-box">
             <i class="bi bi-person-bounding-box"></i>
           </div>
-          <div class="feature-info">
-            <h4>Login Biometrik Wajah AI</h4>
-            <p>Autentikasi cepat dan presisi menggunakan kamera pemindai wajah & sensor biometrik.</p>
+          <div class="feature-text">
+            <h4>AI Biometrics</h4>
+            <p>Verifikasi wajah & passkey untuk keamanan presensi dan audit.</p>
           </div>
         </div>
 
-        <div class="feature-card">
+        <div class="feature-item">
           <div class="feature-icon-box">
-            <i class="bi bi-clipboard2-check-fill"></i>
+            <i class="bi bi-database-check"></i>
           </div>
-          <div class="feature-info">
-            <h4>Checklist Teknis 9 Poin</h4>
-            <p>Standarisasi inspeksi preventif berkala perangkat komputer & jaringan kantor cabang.</p>
+          <div class="feature-text">
+            <h4>Sync Google Sheets</h4>
+            <p>Penyimpanan cloud ganda otomatis real-time & backup aman.</p>
           </div>
         </div>
 
-        <div class="feature-card">
+        <div class="feature-item">
           <div class="feature-icon-box">
-            <i class="bi bi-shield-lock-fill"></i>
+            <i class="bi bi-graph-up-arrow"></i>
           </div>
-          <div class="feature-info">
-            <h4>Audit Trail & Keamanan Bank</h4>
-            <p>Rekam jejak setiap tindakan teknisi tercatat real-time dan aman terenkripsi.</p>
+          <div class="feature-text">
+            <h4>Live Analytics</h4>
+            <p>Pemantauan KPI performa perangkat & jadwal service berkala.</p>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- Footer -->
     <div class="hero-footer">
-      <div class="security-badge-group">
-        <div class="sec-pill">
-          <i class="bi bi-shield-check"></i>
-          <span>256-Bit SSL Enkripsi</span>
-        </div>
-        <div class="sec-pill">
-          <i class="bi bi-fingerprint"></i>
-          <span>Biometric Passkey</span>
-        </div>
+      <div class="security-badge">
+        <i class="bi bi-lock-fill"></i>
+        <span>Bank-Grade 256-Bit SSL Encryption</span>
       </div>
-      <div class="version-tag">v2.4.0 Enterprise · PT. BPR Mitratama Arthabuana</div>
+      <div class="system-status">
+        <span class="status-dot"></span>
+        <span>Operational Ready</span>
+      </div>
     </div>
   </div>
 
-  <!-- RIGHT AUTH FORM PANEL -->
+  <!-- RIGHT AUTH PANEL (Login Card) -->
   <div class="auth-panel">
-    <div></div>
-    
-    <div class="auth-panel-inner">
+    <div class="auth-card">
+      
       <!-- Mobile Logo Header -->
       <div class="mobile-logo-header">
-        <div class="logo-badge d-inline-flex mb-3">
-          <img src="<?= app_logo_url() ?>" alt="Bank Mitra Logo">
-        </div>
-        <div>
-          <span class="system-status-pill">
+        <img src="<?= app_logo_url() ?>" alt="Logo Bank" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 24 24\' fill=\'%231d68d8\'><path d=\'M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 10.99h7c-.53 4.12-3.28 7.79-7 8.94V12H5V6.3l7-3.11v8.8z\'/></svg>'">
+        <div class="mobile-brand-title">BPR MITRATAMA ARTHABUANA</div>
+        <div class="text-muted small">Sistem Operasional Pemeliharaan IT</div>
+        <div class="mt-2">
+          <span class="system-status d-inline-flex">
             <span class="status-dot"></span>
             <span>SISTEM OPERASIONAL AKTIF</span>
           </span>
@@ -1219,6 +1220,9 @@ body {
   </div>
 </div>
 
+<!-- Bootstrap 5 Bundle JS (Modal & Interactive Controls) -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
 <!-- Load face-api.js dari CDN -->
 <script src="https://cdn.jsdelivr.net/npm/@vladmandic/face-api/dist/face-api.min.js"></script>
 
@@ -1357,31 +1361,77 @@ let bioLoginCompleted = false;
 let bioLoginModalInstance = null;
 let bioLoginFaceHoldFrames = 0;
 let bioLoginEnrolledUsers = [];
-const BIO_HOLD_REQUIRED = 12;
-const MODEL_URL = "https://cdn.jsdelivr.net/npm/@vladmandic/face-api/model/";
+const BIO_HOLD_REQUIRED = 8; // ~0.4-0.6 detik tahan posisi wajah
+const MODEL_URLS = [
+  "https://cdn.jsdelivr.net/npm/@vladmandic/face-api/model/",
+  "https://unpkg.com/@vladmandic/face-api@1.7.12/model/",
+  "https://raw.githubusercontent.com/vladmandic/face-api/master/model/"
+];
 
 async function loadBioLoginModels() {
   if (bioLoginModelsLoaded) return true;
   if (bioLoginModelsLoading) return true;
   bioLoginModelsLoading = true;
   const statusBox = document.getElementById("bioLoginStatusBox");
+
+  // Tunggu pustaka face-api.js jika masih diunduh browser
+  let retries = 0;
+  while (typeof faceapi === "undefined" && retries < 25) {
+    await new Promise(r => setTimeout(r, 200));
+    retries++;
+  }
+
+  if (typeof faceapi === "undefined") {
+    bioLoginModelsLoading = false;
+    if (statusBox) {
+      statusBox.className = "alert alert-danger py-2 px-3 small mb-2";
+      statusBox.innerHTML = '<i class="bi bi-x-circle me-1"></i> Library AI gagal dimuat. Periksa koneksi internet.';
+    }
+    return false;
+  }
+
   try {
-    if (typeof faceapi !== "undefined" && faceapi.tf) {
+    if (faceapi.tf) {
       try {
         await faceapi.tf.setBackend("webgl");
         await faceapi.tf.ready();
-      } catch (e) {}
+      } catch (e) {
+        try {
+          await faceapi.tf.setBackend("cpu");
+          await faceapi.tf.ready();
+        } catch(e2) {}
+      }
     }
-    await Promise.all([
-      faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL),
-      faceapi.nets.faceLandmark68TinyNet.loadFromUri(MODEL_URL).catch(() => faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL)),
-      faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL)
-    ]);
+
+    let loaded = false;
+    for (const url of MODEL_URLS) {
+      try {
+        await Promise.all([
+          faceapi.nets.tinyFaceDetector.loadFromUri(url),
+          faceapi.nets.faceLandmark68TinyNet.loadFromUri(url).catch(() => faceapi.nets.faceLandmark68Net.loadFromUri(url)),
+          faceapi.nets.faceRecognitionNet.loadFromUri(url)
+        ]);
+        loaded = true;
+        break;
+      } catch(mErr) {
+        console.warn("Mencoba CDN model berikutnya...", mErr);
+      }
+    }
+
+    if (!loaded) {
+      throw new Error("Tidak dapat mengunduh model face-api dari CDN.");
+    }
+
     bioLoginModelsLoaded = true;
     bioLoginModelsLoading = false;
     if (statusBox && !bioLoginCompleted) {
-      statusBox.className = "alert alert-success py-2 px-3 small fw-semibold mb-2";
-      statusBox.innerHTML = '<i class="bi bi-check-circle me-1"></i> Modul AI Siap. Posisikan wajah di oval.';
+      if (bioLoginEnrolledUsers.length > 0) {
+        statusBox.className = "alert alert-success py-2 px-3 small fw-semibold mb-2";
+        statusBox.innerHTML = '<i class="bi bi-check-circle me-1"></i> Modul AI Siap. Posisikan wajah di oval.';
+      } else {
+        statusBox.className = "alert alert-warning py-2 px-3 small fw-semibold mb-2";
+        statusBox.innerHTML = '<i class="bi bi-exclamation-triangle me-1"></i> Belum ada data wajah terdaftar. Silakan login manual dahulu.';
+      }
     }
     return true;
   } catch (err) {
@@ -1396,6 +1446,7 @@ async function loadBioLoginModels() {
 }
 
 async function fetchBioUsers() {
+  const statusBox = document.getElementById("bioLoginStatusBox");
   try {
     const res = await fetch("<?= module_url('login.php', ['action' => 'get_bio_users']) ?>");
     const data = await res.json();
@@ -1407,6 +1458,11 @@ async function fetchBioUsers() {
         role: u.role,
         descriptor: new Float32Array(u.descriptor)
       }));
+
+      if (bioLoginEnrolledUsers.length === 0 && statusBox) {
+        statusBox.className = "alert alert-warning py-2 px-3 small fw-semibold mb-2";
+        statusBox.innerHTML = '<i class="bi bi-info-circle me-1"></i> Belum ada akun teknisi dengan biometrik wajah terdaftar. Silakan masuk via password.';
+      }
     }
   } catch (e) {
     console.warn("Fetch bio users error:", e);
@@ -1452,8 +1508,25 @@ function openBioFaceLoginModal() {
   const holdProgress = document.getElementById("bioLoginHoldProgress");
   if (holdProgress) holdProgress.classList.add("d-none");
 
-  bioLoginModalInstance = new bootstrap.Modal(modalEl);
-  bioLoginModalInstance.show();
+  const statusBox = document.getElementById("bioLoginStatusBox");
+  if (statusBox) {
+    statusBox.className = "alert alert-info py-2 px-3 small fw-semibold mb-2";
+    statusBox.innerHTML = '<span class="spinner-border spinner-border-sm me-2 text-primary"></span> Menyiapkan kamera & modul AI...';
+  }
+
+  // Tampilkan modal (Bootstrap 5 atau Fallback CSS)
+  try {
+    if (typeof bootstrap !== "undefined" && bootstrap.Modal) {
+      bioLoginModalInstance = bootstrap.Modal.getOrCreateInstance(modalEl);
+      bioLoginModalInstance.show();
+    } else {
+      modalEl.classList.add("show");
+      modalEl.style.display = "block";
+    }
+  } catch(e) {
+    modalEl.classList.add("show");
+    modalEl.style.display = "block";
+  }
 
   loadBioLoginModels();
   fetchBioUsers();
@@ -1472,8 +1545,12 @@ function closeBioFaceLoginModal() {
     } catch (e) {}
     bioLoginVideoStream = null;
   }
+  const modalEl = document.getElementById("modalBioFaceLogin");
   if (bioLoginModalInstance) {
     bioLoginModalInstance.hide();
+  } else if (modalEl) {
+    modalEl.classList.remove("show");
+    modalEl.style.display = "none";
   }
 }
 
@@ -1482,28 +1559,40 @@ async function startBioLoginCamera() {
   const statusBox = document.getElementById("bioLoginStatusBox");
 
   try {
-    if (statusBox) {
+    if (statusBox && !bioLoginModelsLoaded) {
       statusBox.className = "alert alert-info py-2 px-3 small fw-semibold mb-2";
       statusBox.innerHTML = '<span class="spinner-border spinner-border-sm me-2 text-info"></span> Mengaktifkan kamera depan...';
+    }
+
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      throw new Error("Akses kamera memerlukan koneksi aman (HTTPS atau localhost) pada browser ini.");
     }
 
     video.setAttribute("playsinline", "");
     video.setAttribute("webkit-playsinline", "");
 
-    bioLoginVideoStream = await navigator.mediaDevices.getUserMedia({
-      video: {
-        facingMode: "user",
-        width: { ideal: 1280, min: 640 },
-        height: { ideal: 720, min: 480 },
-        frameRate: { ideal: 30, max: 30 }
-      },
-      audio: false
-    });
+    try {
+      bioLoginVideoStream = await navigator.mediaDevices.getUserMedia({
+        video: {
+          facingMode: "user",
+          width: { ideal: 1280, min: 480 },
+          height: { ideal: 720, min: 360 }
+        },
+        audio: false
+      });
+    } catch(eMin) {
+      // Fallback untuk webcam beresolusi standar
+      bioLoginVideoStream = await navigator.mediaDevices.getUserMedia({
+        video: true,
+        audio: false
+      });
+    }
+
     video.srcObject = bioLoginVideoStream;
     await video.play();
 
     document.getElementById("bioLoginScanline").classList.remove("d-none");
-    if (statusBox) {
+    if (statusBox && bioLoginModelsLoaded) {
       statusBox.className = "alert alert-primary py-2 px-3 small fw-semibold mb-2";
       statusBox.innerHTML = '<i class="bi bi-person-bounding-box me-1"></i> Arahkan wajah ke lingkaran oval (Tahan 1 detik).';
     }
@@ -1581,8 +1670,8 @@ function startBioLoginTracking() {
   const holdProgress = document.getElementById("bioLoginHoldProgress");
   const holdProgressBar = document.getElementById("bioLoginHoldProgressBar");
 
-  const useTinyLandmarks = faceapi.nets.faceLandmark68TinyNet && faceapi.nets.faceLandmark68TinyNet.isLoaded;
-  const detectorOptions = new faceapi.TinyFaceDetectorOptions({ inputSize: 224, scoreThreshold: 0.30 });
+  const useTinyLandmarks = !!(faceapi.nets.faceLandmark68TinyNet && faceapi.nets.faceLandmark68TinyNet.isLoaded);
+  const detectorOptions = new faceapi.TinyFaceDetectorOptions({ inputSize: 224, scoreThreshold: 0.28 });
 
   async function trackingLoop() {
     if (bioLoginCompleted || !video || !video.videoWidth || video.paused || video.ended) {
@@ -1592,7 +1681,12 @@ function startBioLoginTracking() {
       return;
     }
 
-    if (!bioLoginModelsLoaded || bioLoginEnrolledUsers.length === 0) {
+    if (!bioLoginModelsLoaded || typeof faceapi === "undefined") {
+      bioLoginTrackingTimer = requestAnimationFrame(trackingLoop);
+      return;
+    }
+
+    if (bioLoginEnrolledUsers.length === 0) {
       bioLoginTrackingTimer = requestAnimationFrame(trackingLoop);
       return;
     }
@@ -1612,7 +1706,7 @@ function startBioLoginTracking() {
         if (oval) oval.classList.add("active");
 
         const match = findBestMatchedUser(detection.descriptor);
-        if (match.user && match.dist <= 0.50) {
+        if (match.user && match.dist <= 0.55) {
           bioLoginFaceHoldFrames++;
           if (holdProgress) holdProgress.classList.remove("d-none");
           const pct = Math.min(100, Math.round((bioLoginFaceHoldFrames / BIO_HOLD_REQUIRED) * 100));
@@ -1629,7 +1723,7 @@ function startBioLoginTracking() {
             return;
           }
         } else {
-          bioLoginFaceHoldFrames = Math.max(0, bioLoginFaceHoldFrames - 2);
+          bioLoginFaceHoldFrames = Math.max(0, bioLoginFaceHoldFrames - 1);
           if (holdProgressBar) holdProgressBar.style.width = "0%";
           if (statusBox) {
             statusBox.className = "alert alert-warning py-2 px-3 small fw-semibold mb-2";
@@ -1638,7 +1732,7 @@ function startBioLoginTracking() {
         }
       } else {
         if (oval) oval.classList.remove("active");
-        bioLoginFaceHoldFrames = Math.max(0, bioLoginFaceHoldFrames - 2);
+        bioLoginFaceHoldFrames = Math.max(0, bioLoginFaceHoldFrames - 1);
         if (holdProgressBar) holdProgressBar.style.width = "0%";
       }
     } catch (err) {
