@@ -1,6 +1,132 @@
 <?php
 require __DIR__ . '/bootstrap.php';
 
+// =========================================================================
+// HANDLER AJAX: BIOMETRIC LOGIN (FACE RECOGNITION AI & PASKEY)
+// =========================================================================
+$ajaxAction = trim((string)($_GET['action'] ?? $_POST['action'] ?? ''));
+
+if ($ajaxAction !== '') {
+    while (ob_get_level()) {
+        ob_end_clean();
+    }
+    header('Content-Type: application/json; charset=utf-8');
+
+    // 1. Ambil daftar teknisi yang memiliki data wajah terverifikasi untuk matching client-side
+    if ($ajaxAction === 'get_bio_users') {
+        $allUsers = get_user_list(true);
+        $enrolled = [];
+        foreach ($allUsers as $u) {
+            $status = strtolower(trim((string)($u['status'] ?? 'Aktif')));
+            if ($status === 'nonaktif') continue;
+
+            $fStat = strtolower(trim((string)($u['face_status'] ?? '')));
+            $fDesc = trim((string)($u['face_descriptor'] ?? ''));
+            // Izinkan jika terverifikasi admin atau terdaftar
+            if ($fDesc !== '' && ($fStat === 'verified' || $fStat === 'terverifikasi' || $fStat === '')) {
+                $descArr = json_decode($fDesc, true);
+                if (is_array($descArr) && count($descArr) >= 64) {
+                    $enrolled[] = [
+                        'id' => (int)$u['id'],
+                        'nama' => (string)$u['nama'],
+                        'username' => (string)$u['username'],
+                        'role' => (string)$u['role'],
+                        'descriptor' => $descArr
+                    ];
+                }
+            }
+        }
+        echo json_encode(['success' => true, 'users' => $enrolled], JSON_UNESCAPED_UNICODE);
+        exit;
+    }
+
+    // 2. Verifikasi dan Login menggunakan Biometrik Wajah
+    if ($ajaxAction === 'biometric_face_login') {
+        $raw = file_get_contents('php://input');
+        $body = json_decode($raw, true);
+        if (!is_array($body)) {
+            $body = $_POST;
+        }
+
+        $userId = (int)($body['user_id'] ?? 0);
+        $submittedDesc = $body['descriptor'] ?? null;
+        if (is_string($submittedDesc)) {
+            $submittedDesc = json_decode($submittedDesc, true);
+        }
+
+        if ($userId <= 0 || !is_array($submittedDesc) || count($submittedDesc) < 64) {
+            echo json_encode(['success' => false, 'error' => 'Data biometrik wajah tidak valid atau tidak lengkap.']);
+            exit;
+        }
+
+        $user = get_user_by_id($userId, true);
+        if (!$user) {
+            echo json_encode(['success' => false, 'error' => 'Akun pengguna tidak ditemukan.']);
+            exit;
+        }
+
+        if (strcasecmp((string)($user['status'] ?? 'Aktif'), 'Nonaktif') === 0) {
+            echo json_encode(['success' => false, 'error' => 'Akun Anda dinonaktifkan. Silakan hubungi Administrator.']);
+            exit;
+        }
+
+        $storedDesc = trim((string)($user['face_descriptor'] ?? ''));
+        if ($storedDesc === '') {
+            echo json_encode(['success' => false, 'error' => 'Biometrik wajah belum terdaftar untuk akun ini.']);
+            exit;
+        }
+
+        // Validasi jarak Euclidean di sisi server (mencegah manipulasi client-side)
+        $storedArr = json_decode($storedDesc, true);
+        if (!is_array($storedArr) || count($storedArr) < 64) {
+            echo json_encode(['success' => false, 'error' => 'Format sampel wajah server tidak valid.']);
+            exit;
+        }
+
+        $sum = 0.0;
+        $cnt = min(count($storedArr), count($submittedDesc));
+        for ($i = 0; $i < $cnt; $i++) {
+            $d = (float)$storedArr[$i] - (float)$submittedDesc[$i];
+            $sum += $d * $d;
+        }
+        $distance = sqrt($sum);
+
+        // Ambang batas toleransi Euclidean distance (<= 0.52)
+        if ($distance > 0.52) {
+            record_audit_log('LOGIN_FAILED_BIOMETRIC', 'KEAMANAN', $userId, (string)$user['username'], 'Gagal login biometrik wajah: deviasi jarak ' . round($distance, 3), [
+                'user_name' => (string)$user['nama'],
+                'user_role' => (string)$user['role']
+            ]);
+            echo json_encode(['success' => false, 'error' => 'Verifikasi biometrik tidak cocok (tingkat kesamaan kurang).']);
+            exit;
+        }
+
+        // Login Berhasil!
+        login_user_session($user);
+        record_audit_log('LOGIN_SUCCESS_BIOMETRIC', 'KEAMANAN', $userId, (string)$user['username'], 'Login berhasil via Biometrik Wajah AI (Jarak: ' . round($distance, 3) . ')', [
+            'user_name' => (string)$user['nama'],
+            'user_role' => (string)$user['role'],
+            'user_id' => $userId
+        ]);
+
+        $redirect = safe_redirect_url($_SESSION['after_login'] ?? null, module_url('dashboard.php'));
+        unset($_SESSION['after_login']);
+
+        echo json_encode([
+            'success' => true,
+            'message' => 'Autentikasi wajah berhasil! Selamat datang, ' . $user['nama'],
+            'user' => [
+                'id' => $userId,
+                'nama' => (string)$user['nama'],
+                'username' => (string)$user['username'],
+                'role' => (string)$user['role']
+            ],
+            'redirect' => $redirect
+        ]);
+        exit;
+    }
+}
+
 // Simpan redirect URL jika dikirim via GET (Wajib divalidasi mencegah Open Redirect CWE-601)
 if (!empty($_GET['redirect'])) {
     $_SESSION['after_login'] = safe_redirect_url((string)$_GET['redirect']);
@@ -26,10 +152,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $result = authenticate_user($username, $password);
 
     if (!empty($result['success'])) {
-        record_audit_log('LOGIN_SUCCESS', 'KEAMANAN', (int)($_SESSION['user']['id'] ?? 0), $username, 'Login berhasil ke sistem', [
-            'user_name' => (string)($_SESSION['user']['nama'] ?? $username),
-            'user_role' => (string)($_SESSION['user']['role'] ?? 'teknisi'),
-            'user_id' => (int)($_SESSION['user']['id'] ?? 0)
+        record_audit_log('LOGIN_SUCCESS', 'KEAMANAN', (int)($_SESSION['user_id'] ?? 0), $username, 'Login berhasil ke sistem', [
+            'user_name' => (string)($_SESSION['nama'] ?? $username),
+            'user_role' => (string)($_SESSION['role'] ?? 'teknisi'),
+            'user_id' => (int)($_SESSION['user_id'] ?? 0)
         ]);
         $redirect = safe_redirect_url($_SESSION['after_login'] ?? null, module_url('dashboard.php'));
         unset($_SESSION['after_login']);
@@ -379,7 +505,7 @@ body {
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  padding: 48px 48px;
+  padding: 42px 46px;
   background: #ffffff;
   position: relative;
   box-shadow: -20px 0 60px rgba(0, 0, 0, 0.35);
@@ -388,18 +514,18 @@ body {
 
 .auth-panel-inner {
   width: 100%;
-  max-width: 390px;
+  max-width: 400px;
   margin: auto;
 }
 
 .mobile-logo-header {
   display: none;
   text-align: center;
-  margin-bottom: 28px;
+  margin-bottom: 24px;
 }
 
 .auth-header {
-  margin-bottom: 28px;
+  margin-bottom: 24px;
 }
 
 .auth-header-pill {
@@ -414,21 +540,21 @@ body {
   font-weight: 700;
   letter-spacing: 0.04em;
   text-transform: uppercase;
-  margin-bottom: 12px;
+  margin-bottom: 10px;
 }
 
 .auth-title {
-  font-size: 1.7rem;
+  font-size: 1.65rem;
   font-weight: 800;
   color: #0f172a;
   letter-spacing: -0.025em;
-  margin-bottom: 6px;
+  margin-bottom: 4px;
 }
 
 .auth-subtitle {
-  font-size: 0.88rem;
+  font-size: 0.86rem;
   color: #64748b;
-  line-height: 1.5;
+  line-height: 1.45;
 }
 
 /* Modern Alerts */
@@ -439,7 +565,7 @@ body {
   padding: 12px 14px;
   border-radius: 10px;
   font-size: 0.82rem;
-  margin-bottom: 20px;
+  margin-bottom: 18px;
   animation: slideDown 0.3s ease;
 }
 
@@ -480,7 +606,7 @@ body {
 
 /* Modern Input Controls */
 .form-group-custom {
-  margin-bottom: 20px;
+  margin-bottom: 16px;
 }
 
 .custom-label {
@@ -488,7 +614,7 @@ body {
   font-size: 0.82rem;
   font-weight: 700;
   color: #334155;
-  margin-bottom: 7px;
+  margin-bottom: 6px;
   letter-spacing: 0.01em;
 }
 
@@ -510,7 +636,7 @@ body {
 
 .input-field {
   width: 100%;
-  height: 48px;
+  height: 46px;
   padding: 10px 14px 10px 44px;
   background-color: #f8fafc;
   border: 1.5px solid #e2e8f0;
@@ -563,12 +689,12 @@ body {
 /* Submit Button */
 .btn-login-submit {
   width: 100%;
-  height: 48px;
+  height: 46px;
   background: linear-gradient(135deg, #1d4ed8 0%, #2563eb 100%);
   border: none;
   border-radius: 10px;
   color: #ffffff;
-  font-size: 0.95rem;
+  font-size: 0.94rem;
   font-weight: 700;
   display: flex;
   align-items: center;
@@ -577,7 +703,7 @@ body {
   cursor: pointer;
   box-shadow: 0 4px 14px rgba(37, 99, 235, 0.35);
   transition: all 0.25s ease;
-  margin-top: 10px;
+  margin-top: 8px;
 }
 
 .btn-login-submit:hover {
@@ -586,15 +712,82 @@ body {
   transform: translateY(-1px);
 }
 
-.btn-login-submit:active {
-  transform: translateY(0);
-  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.3);
-}
-
 .btn-login-submit:disabled {
   opacity: 0.7;
   cursor: not-allowed;
   transform: none;
+}
+
+/* Biometric Divider */
+.bio-auth-divider {
+  display: flex;
+  align-items: center;
+  text-align: center;
+  margin: 20px 0 16px 0;
+  color: #94a3b8;
+  font-size: 0.74rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.bio-auth-divider::before,
+.bio-auth-divider::after {
+  content: "";
+  flex: 1;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.bio-auth-divider span {
+  padding: 0 12px;
+}
+
+/* Biometric Buttons */
+.bio-buttons-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 18px;
+}
+
+.btn-bio-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 12px 10px;
+  background: #f8fafc;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 12px;
+  color: #1e293b;
+  text-decoration: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.btn-bio-card i {
+  font-size: 1.35rem;
+  color: #2563eb;
+  transition: transform 0.2s ease;
+}
+
+.btn-bio-card:hover {
+  background: #eff6ff;
+  border-color: #3b82f6;
+  color: #1d4ed8;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.12);
+}
+
+.btn-bio-card:hover i {
+  transform: scale(1.15);
+}
+
+.btn-bio-card:active {
+  transform: translateY(0);
 }
 
 /* Security Notice Box */
@@ -603,7 +796,7 @@ body {
   border: 1px solid #e2e8f0;
   border-radius: 10px;
   padding: 12px 14px;
-  margin-top: 24px;
+  margin-top: 14px;
   display: flex;
   gap: 12px;
   align-items: flex-start;
@@ -629,9 +822,78 @@ body {
 /* Auth Panel Footer */
 .auth-footer {
   text-align: center;
-  padding-top: 24px;
-  font-size: 0.76rem;
+  padding-top: 20px;
+  font-size: 0.75rem;
   color: #94a3b8;
+}
+
+/* BIOMETRIC SCANNER MODAL */
+.bio-login-modal-wrapper {
+  position: relative;
+  width: 320px;
+  height: 380px;
+  max-width: 100%;
+  border-radius: 20px;
+  overflow: hidden;
+  background: #0f172a;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+  margin: 0 auto;
+}
+
+.bio-login-video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transform: scaleX(-1);
+}
+
+.bio-login-oval {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 190px;
+  height: 240px;
+  border: 3px dashed #38bdf8;
+  border-radius: 50%;
+  box-shadow: 0 0 0 9999px rgba(15, 23, 42, 0.65);
+  pointer-events: none;
+  transition: all 0.3s ease;
+}
+
+.bio-login-oval.active {
+  border-color: #22c55e;
+  border-style: solid;
+  box-shadow: 0 0 0 9999px rgba(15, 23, 42, 0.4), 0 0 25px rgba(34, 197, 94, 0.6);
+}
+
+.bio-login-scanline {
+  position: absolute;
+  top: 25%;
+  left: calc(50% - 95px);
+  width: 190px;
+  height: 3px;
+  background: linear-gradient(90deg, transparent, #38bdf8, transparent);
+  animation: bioLoginScan 2s infinite ease-in-out;
+  pointer-events: none;
+}
+
+@keyframes bioLoginScan {
+  0% { top: 20%; opacity: 0; }
+  50% { opacity: 1; }
+  100% { top: 80%; opacity: 0; }
+}
+
+.bio-login-success {
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(15, 23, 42, 0.94);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+  text-align: center;
+  padding: 20px;
 }
 
 /* RESPONSIVE DESIGN */
@@ -641,7 +903,7 @@ body {
   }
   .auth-panel {
     max-width: 460px;
-    padding: 40px 32px;
+    padding: 36px 32px;
   }
 }
 
@@ -650,7 +912,7 @@ body {
     flex-direction: column;
     justify-content: center;
     align-items: center;
-    padding: 24px 16px;
+    padding: 20px 16px;
   }
 
   .hero-panel {
@@ -660,7 +922,7 @@ body {
   .auth-panel {
     max-width: 440px;
     border-radius: 20px;
-    padding: 36px 28px;
+    padding: 32px 24px;
     box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.1);
   }
 
@@ -671,11 +933,14 @@ body {
 
 @media (max-width: 480px) {
   .auth-panel {
-    padding: 28px 20px;
+    padding: 26px 18px;
     border-radius: 16px;
   }
   .auth-title {
     font-size: 1.45rem;
+  }
+  .bio-buttons-grid {
+    grid-template-columns: 1fr;
   }
 }
 </style>
@@ -724,21 +989,21 @@ body {
       <div class="feature-list">
         <div class="feature-card">
           <div class="feature-icon-box">
-            <i class="bi bi-clipboard2-check-fill"></i>
+            <i class="bi bi-person-bounding-box"></i>
           </div>
           <div class="feature-info">
-            <h4>Checklist Teknis 9 Poin</h4>
-            <p>Standarisasi inspeksi preventif berkala perangkat komputer & jaringan kantor cabang.</p>
+            <h4>Login Biometrik Wajah AI</h4>
+            <p>Autentikasi cepat dan presisi menggunakan kamera pemindai wajah & sensor biometrik.</p>
           </div>
         </div>
 
         <div class="feature-card">
           <div class="feature-icon-box">
-            <i class="bi bi-qr-code-scan"></i>
+            <i class="bi bi-clipboard2-check-fill"></i>
           </div>
           <div class="feature-info">
-            <h4>Presensi & Scan QR Fisik</h4>
-            <p>Verifikasi riwayat pemeliharaan aset secara langsung di lokasi dengan validasi QR.</p>
+            <h4>Checklist Teknis 9 Poin</h4>
+            <p>Standarisasi inspeksi preventif berkala perangkat komputer & jaringan kantor cabang.</p>
           </div>
         </div>
 
@@ -762,8 +1027,8 @@ body {
           <span>256-Bit SSL Enkripsi</span>
         </div>
         <div class="sec-pill">
-          <i class="bi bi-database-check"></i>
-          <span>Auto Backup Cloud</span>
+          <i class="bi bi-fingerprint"></i>
+          <span>Biometric Passkey</span>
         </div>
       </div>
       <div class="version-tag">v2.4.0 Enterprise · PT. BPR Mitratama Arthabuana</div>
@@ -794,13 +1059,16 @@ body {
           <span>Portal Petugas</span>
         </div>
         <h2 class="auth-title">Masuk ke Akun</h2>
-        <p class="auth-subtitle">Gunakan kredensial akun IT Anda untuk mengakses sistem pemeliharaan aset.</p>
+        <p class="auth-subtitle">Gunakan kredensial akun IT atau autentikasi biometrik Anda.</p>
       </div>
 
       <?= $successHtml ?>
       <?= $expiredHtml ?>
       <?= $errorHtml ?>
 
+      <div id="bioAlertPlaceholder"></div>
+
+      <!-- FORM LOGIN PASSWORD -->
       <form method="post" id="loginForm" autocomplete="off">
         <div class="form-group-custom">
           <label class="custom-label" for="inputUser">Username / ID Petugas</label>
@@ -853,6 +1121,24 @@ body {
         </button>
       </form>
 
+      <!-- BIOMETRIC OPTIONS DIVIDER -->
+      <div class="bio-auth-divider">
+        <span>Atau Masuk dengan Biometrik</span>
+      </div>
+
+      <!-- BIOMETRIC BUTTONS GRID -->
+      <div class="bio-buttons-grid">
+        <button type="button" class="btn-bio-card" onclick="openBioFaceLoginModal()">
+          <i class="bi bi-camera-video-fill text-primary"></i>
+          <span>Wajah (Kamera AI)</span>
+        </button>
+
+        <button type="button" class="btn-bio-card" onclick="startPasskeyLogin()">
+          <i class="bi bi-fingerprint text-success"></i>
+          <span>Face ID / Touch ID</span>
+        </button>
+      </div>
+
       <div class="security-card">
         <i class="bi bi-shield-exclamation"></i>
         <div class="security-card-text">
@@ -870,6 +1156,72 @@ body {
 
 </div>
 
+<!-- ========================================================================= -->
+<!-- MODAL SCANNER BIOMETRIC FACE LOGIN -->
+<!-- ========================================================================= -->
+<div class="modal fade" id="modalBioFaceLogin" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
+      <div class="modal-header bg-dark text-white border-0 py-3">
+        <div class="d-flex align-items-center gap-2">
+          <div class="p-2 bg-primary bg-opacity-25 rounded-circle text-primary fs-5">
+            <i class="bi bi-person-bounding-box"></i>
+          </div>
+          <div>
+            <h6 class="modal-title fw-bold mb-0">Login Biometrik Wajah AI</h6>
+            <div class="text-white-50 small" style="font-size: 0.72rem;">Arahkan wajah Anda ke kamera depan HP / Webcam</div>
+          </div>
+        </div>
+        <button type="button" class="btn-close btn-close-white" onclick="closeBioFaceLoginModal()"></button>
+      </div>
+
+      <div class="modal-body p-3 p-md-4 text-center bg-light">
+        <!-- Scanner Box -->
+        <div class="bio-login-modal-wrapper mb-3">
+          <video id="bioLoginVideo" class="bio-login-video" autoplay playsinline webkit-playsinline muted></video>
+          <div id="bioLoginOval" class="bio-login-oval"></div>
+          <div id="bioLoginScanline" class="bio-login-scanline d-none"></div>
+
+          <!-- Success Overlay -->
+          <div id="bioLoginSuccessOverlay" class="bio-login-success d-none">
+            <div class="text-center p-3 text-white">
+              <div class="display-4 text-success mb-2">
+                <i class="bi bi-check-circle-fill"></i>
+              </div>
+              <h5 class="fw-bold mb-1" id="bioLoginSuccessName">Nama Teknisi</h5>
+              <div class="badge bg-success bg-opacity-75 fs-6 mb-2" id="bioLoginSuccessConf">98% Cocok</div>
+              <div class="text-white-50 small">Autentikasi Berhasil! Mengalihkan ke dashboard...</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Status Box -->
+        <div id="bioLoginStatusBox" class="alert alert-info py-2 px-3 small fw-semibold mb-2">
+          <span class="spinner-border spinner-border-sm me-2 text-primary"></span>
+          Menyiapkan modul AI & kamera...
+        </div>
+
+        <!-- Steady Hold Progress Bar -->
+        <div class="progress mb-3 d-none" id="bioLoginHoldProgress" style="height: 6px;">
+          <div class="progress-bar bg-success progress-bar-striped progress-bar-animated" id="bioLoginHoldProgressBar" style="width: 0%"></div>
+        </div>
+
+        <div class="d-flex justify-content-between align-items-center mt-2">
+          <button type="button" class="btn btn-outline-secondary btn-sm rounded-pill px-3" onclick="closeBioFaceLoginModal()">
+            <i class="bi bi-arrow-left me-1"></i> Kembali ke Password
+          </button>
+          <button type="button" class="btn btn-link btn-sm text-primary text-decoration-none" onclick="startPasskeyLogin()">
+            <i class="bi bi-fingerprint me-1"></i> Coba Sensor HP
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Load face-api.js dari CDN -->
+<script src="https://cdn.jsdelivr.net/npm/@vladmandic/face-api/dist/face-api.min.js"></script>
+
 <script>
 function togglePassword() {
   const inp = document.getElementById("inputPass");
@@ -883,7 +1235,7 @@ function togglePassword() {
   }
 }
 
-// Visual loading indicator on submit
+// Visual loading indicator on submit password
 const loginForm = document.getElementById("loginForm");
 const submitBtn = document.getElementById("submitBtn");
 const submitIcon = document.getElementById("submitIcon");
@@ -897,6 +1249,408 @@ if (loginForm) {
       submitText.textContent = "Memverifikasi Akun...";
     }
   });
+}
+
+function showBioAlert(msg, type = "danger") {
+  const pl = document.getElementById("bioAlertPlaceholder");
+  if (!pl) return;
+  const icon = (type === "success") ? "bi-check-circle-fill" : "bi-shield-x";
+  pl.innerHTML = `<div class="alert-custom alert-${type}-custom"><i class="bi ${icon} alert-icon"></i><div><strong>${type === 'success' ? 'Informasi' : 'Autentikasi Biometrik'}</strong><div class="alert-text">${msg}</div></div></div>`;
+}
+
+// =========================================================================
+// 1. WEBAUTHN / PASSKEY / FINGERPRINT / FACE ID NATIVE SENSOR LOGIN
+// =========================================================================
+function base64urlToUint8Array(base64url) {
+  const padding = "=".repeat((4 - (base64url.length % 4)) % 4);
+  const base64 = (base64url + padding).replace(/\-/g, "+").replace(/_/g, "/");
+  const rawData = atob(base64);
+  const outputArray = new Uint8Array(rawData.length);
+  for (let i = 0; i < rawData.length; ++i) {
+    outputArray[i] = rawData.charCodeAt(i);
+  }
+  return outputArray;
+}
+
+function arrayBufferToBase64Url(buffer) {
+  const bytes = new Uint8Array(buffer);
+  let binary = "";
+  for (let i = 0; i < bytes.byteLength; i++) {
+    binary += String.fromCharCode(bytes[i]);
+  }
+  return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=/g, "");
+}
+
+async function startPasskeyLogin() {
+  closeBioFaceLoginModal();
+  if (!window.PublicKeyCredential) {
+    showBioAlert("Perangkat atau browser Anda belum mendukung autentikasi sensor biometrik WebAuthn.");
+    return;
+  }
+
+  showBioAlert("Menghubungkan ke sensor biometrik perangkat...", "warning");
+
+  try {
+    const optRes = await fetch("<?= module_url('webauthn_handler.php', ['action' => 'auth_options']) ?>");
+    const optData = await optRes.json();
+    if (!optData.success || !optData.options) {
+      throw new Error(optData.error || "Gagal menyiapkan tantangan biometrik.");
+    }
+
+    const options = optData.options;
+    options.challenge = base64urlToUint8Array(options.challenge);
+    if (options.allowCredentials && options.allowCredentials.length > 0) {
+      options.allowCredentials = options.allowCredentials.map(c => ({
+        type: c.type,
+        id: base64urlToUint8Array(c.id)
+      }));
+    }
+
+    // Panggil dialog sensor bawaan HP / Windows Hello
+    const assertion = await navigator.credentials.get({ publicKey: options });
+    if (!assertion) {
+      throw new Error("Autentikasi biometrik dibatalkan.");
+    }
+
+    const credentialData = {
+      id: assertion.id,
+      rawId: arrayBufferToBase64Url(assertion.rawId),
+      response: {
+        authenticatorData: arrayBufferToBase64Url(assertion.response.authenticatorData),
+        clientDataJSON: arrayBufferToBase64Url(assertion.response.clientDataJSON),
+        signature: arrayBufferToBase64Url(assertion.response.signature),
+        userHandle: assertion.response.userHandle ? arrayBufferToBase64Url(assertion.response.userHandle) : null
+      }
+    };
+
+    const verifyRes = await fetch("<?= module_url('webauthn_handler.php', ['action' => 'auth_verify']) ?>", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(credentialData)
+    });
+
+    const verifyData = await verifyRes.json();
+    if (verifyData.success) {
+      showBioAlert("Login Berhasil via Sensor Biometrik! Mengalihkan...", "success");
+      setTimeout(() => {
+        window.location.href = verifyData.redirect || "<?= module_url('dashboard.php') ?>";
+      }, 500);
+    } else {
+      showBioAlert(verifyData.error || "Verifikasi sensor biometrik gagal.");
+    }
+  } catch (err) {
+    console.warn("Passkey error:", err);
+    if (err.name !== "NotAllowedError") {
+      showBioAlert(err.message || "Gagal memproses autentikasi biometrik.");
+    }
+  }
+}
+
+// =========================================================================
+// 2. FACE RECOGNITION AI CAMERA LOGIN
+// =========================================================================
+let bioLoginModelsLoaded = false;
+let bioLoginModelsLoading = false;
+let bioLoginVideoStream = null;
+let bioLoginTrackingTimer = null;
+let bioLoginCompleted = false;
+let bioLoginModalInstance = null;
+let bioLoginFaceHoldFrames = 0;
+let bioLoginEnrolledUsers = [];
+const BIO_HOLD_REQUIRED = 12;
+const MODEL_URL = "https://cdn.jsdelivr.net/npm/@vladmandic/face-api/model/";
+
+async function loadBioLoginModels() {
+  if (bioLoginModelsLoaded) return true;
+  if (bioLoginModelsLoading) return true;
+  bioLoginModelsLoading = true;
+  const statusBox = document.getElementById("bioLoginStatusBox");
+  try {
+    if (typeof faceapi !== "undefined" && faceapi.tf) {
+      try {
+        await faceapi.tf.setBackend("webgl");
+        await faceapi.tf.ready();
+      } catch (e) {}
+    }
+    await Promise.all([
+      faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL),
+      faceapi.nets.faceLandmark68TinyNet.loadFromUri(MODEL_URL).catch(() => faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL)),
+      faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL)
+    ]);
+    bioLoginModelsLoaded = true;
+    bioLoginModelsLoading = false;
+    if (statusBox && !bioLoginCompleted) {
+      statusBox.className = "alert alert-success py-2 px-3 small fw-semibold mb-2";
+      statusBox.innerHTML = '<i class="bi bi-check-circle me-1"></i> Modul AI Siap. Posisikan wajah di oval.';
+    }
+    return true;
+  } catch (err) {
+    console.error("Gagal muat model face-api:", err);
+    bioLoginModelsLoading = false;
+    if (statusBox) {
+      statusBox.className = "alert alert-danger py-2 px-3 small mb-2";
+      statusBox.innerHTML = '<i class="bi bi-x-circle me-1"></i> Gagal memuat modul AI. Periksa koneksi internet.';
+    }
+    return false;
+  }
+}
+
+async function fetchBioUsers() {
+  try {
+    const res = await fetch("<?= module_url('login.php', ['action' => 'get_bio_users']) ?>");
+    const data = await res.json();
+    if (data.success && Array.isArray(data.users)) {
+      bioLoginEnrolledUsers = data.users.map(u => ({
+        id: u.id,
+        nama: u.nama,
+        username: u.username,
+        role: u.role,
+        descriptor: new Float32Array(u.descriptor)
+      }));
+    }
+  } catch (e) {
+    console.warn("Fetch bio users error:", e);
+  }
+}
+
+function calcEuclideanDist(a, b) {
+  if (!a || !b || a.length !== b.length) return 999;
+  let sum = 0;
+  for (let i = 0; i < a.length; i++) {
+    const d = a[i] - b[i];
+    sum += d * d;
+  }
+  return Math.sqrt(sum);
+}
+
+function findBestMatchedUser(queryVec) {
+  let bestDist = 999;
+  let bestUser = null;
+  for (let i = 0; i < bioLoginEnrolledUsers.length; i++) {
+    const u = bioLoginEnrolledUsers[i];
+    const dist = calcEuclideanDist(queryVec, u.descriptor);
+    if (dist < bestDist) {
+      bestDist = dist;
+      bestUser = u;
+    }
+  }
+  return { user: bestUser, dist: bestDist };
+}
+
+function openBioFaceLoginModal() {
+  const modalEl = document.getElementById("modalBioFaceLogin");
+  if (!modalEl) return;
+
+  bioLoginCompleted = false;
+  bioLoginFaceHoldFrames = 0;
+
+  document.getElementById("bioLoginSuccessOverlay").classList.add("d-none");
+  document.getElementById("bioLoginScanline").classList.add("d-none");
+  document.getElementById("bioLoginOval").classList.remove("active");
+  const holdBar = document.getElementById("bioLoginHoldProgressBar");
+  if (holdBar) holdBar.style.width = "0%";
+  const holdProgress = document.getElementById("bioLoginHoldProgress");
+  if (holdProgress) holdProgress.classList.add("d-none");
+
+  bioLoginModalInstance = new bootstrap.Modal(modalEl);
+  bioLoginModalInstance.show();
+
+  loadBioLoginModels();
+  fetchBioUsers();
+  startBioLoginCamera();
+}
+
+function closeBioFaceLoginModal() {
+  bioLoginCompleted = true;
+  if (bioLoginTrackingTimer) {
+    cancelAnimationFrame(bioLoginTrackingTimer);
+    bioLoginTrackingTimer = null;
+  }
+  if (bioLoginVideoStream) {
+    try {
+      bioLoginVideoStream.getTracks().forEach(t => t.stop());
+    } catch (e) {}
+    bioLoginVideoStream = null;
+  }
+  if (bioLoginModalInstance) {
+    bioLoginModalInstance.hide();
+  }
+}
+
+async function startBioLoginCamera() {
+  const video = document.getElementById("bioLoginVideo");
+  const statusBox = document.getElementById("bioLoginStatusBox");
+
+  try {
+    if (statusBox) {
+      statusBox.className = "alert alert-info py-2 px-3 small fw-semibold mb-2";
+      statusBox.innerHTML = '<span class="spinner-border spinner-border-sm me-2 text-info"></span> Mengaktifkan kamera depan...';
+    }
+
+    video.setAttribute("playsinline", "");
+    video.setAttribute("webkit-playsinline", "");
+
+    bioLoginVideoStream = await navigator.mediaDevices.getUserMedia({
+      video: {
+        facingMode: "user",
+        width: { ideal: 1280, min: 640 },
+        height: { ideal: 720, min: 480 },
+        frameRate: { ideal: 30, max: 30 }
+      },
+      audio: false
+    });
+    video.srcObject = bioLoginVideoStream;
+    await video.play();
+
+    document.getElementById("bioLoginScanline").classList.remove("d-none");
+    if (statusBox) {
+      statusBox.className = "alert alert-primary py-2 px-3 small fw-semibold mb-2";
+      statusBox.innerHTML = '<i class="bi bi-person-bounding-box me-1"></i> Arahkan wajah ke lingkaran oval (Tahan 1 detik).';
+    }
+
+    startBioLoginTracking();
+  } catch (err) {
+    console.error("Akses kamera gagal:", err);
+    if (statusBox) {
+      statusBox.className = "alert alert-danger py-2 px-3 small mb-2";
+      statusBox.innerHTML = '<i class="bi bi-camera-video-off me-1"></i> Kamera tidak dapat diakses: ' + (err.message || "Periksa izin browser.");
+    }
+  }
+}
+
+async function processFaceLoginSubmit(user, dist, descriptor) {
+  bioLoginCompleted = true;
+  const statusBox = document.getElementById("bioLoginStatusBox");
+  if (statusBox) {
+    statusBox.className = "alert alert-warning py-2 px-3 small fw-bold mb-2";
+    statusBox.innerHTML = '<span class="spinner-border spinner-border-sm me-2 text-warning"></span> Wajah cocok (' + user.nama + '). Mengautentikasi akun...';
+  }
+
+  try {
+    const res = await fetch("<?= module_url('login.php', ['action' => 'biometric_face_login']) ?>", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        user_id: user.id,
+        descriptor: Array.from(descriptor)
+      })
+    });
+
+    const data = await res.json();
+    if (data.success) {
+      let conf = Math.round((1.0 - (dist / 0.60)) * 100);
+      if (conf > 99) conf = 99;
+      if (conf < 75) conf = 75;
+
+      const nameEl = document.getElementById("bioLoginSuccessName");
+      if (nameEl) nameEl.textContent = user.nama;
+      const confEl = document.getElementById("bioLoginSuccessConf");
+      if (confEl) confEl.textContent = conf + "% Cocok (Terverifikasi)";
+      const overlay = document.getElementById("bioLoginSuccessOverlay");
+      if (overlay) overlay.classList.remove("d-none");
+
+      if (bioLoginVideoStream) {
+        try { bioLoginVideoStream.getTracks().forEach(t => t.stop()); } catch (e) {}
+      }
+
+      setTimeout(() => {
+        window.location.href = data.redirect || "<?= module_url('dashboard.php') ?>";
+      }, 700);
+    } else {
+      bioLoginCompleted = false;
+      if (statusBox) {
+        statusBox.className = "alert alert-danger py-2 px-3 small fw-bold mb-2";
+        statusBox.innerHTML = '<i class="bi bi-x-circle me-1"></i> ' + (data.error || "Verifikasi biometrik gagal.");
+      }
+    }
+  } catch (err) {
+    bioLoginCompleted = false;
+    if (statusBox) {
+      statusBox.className = "alert alert-danger py-2 px-3 small mb-2";
+      statusBox.innerHTML = '<i class="bi bi-x-circle me-1"></i> Gagal terhubung ke server autentikasi.';
+    }
+  }
+}
+
+let isBioTrackingBusy = false;
+function startBioLoginTracking() {
+  if (bioLoginTrackingTimer) cancelAnimationFrame(bioLoginTrackingTimer);
+  const video = document.getElementById("bioLoginVideo");
+  const oval = document.getElementById("bioLoginOval");
+  const statusBox = document.getElementById("bioLoginStatusBox");
+  const holdProgress = document.getElementById("bioLoginHoldProgress");
+  const holdProgressBar = document.getElementById("bioLoginHoldProgressBar");
+
+  const useTinyLandmarks = faceapi.nets.faceLandmark68TinyNet && faceapi.nets.faceLandmark68TinyNet.isLoaded;
+  const detectorOptions = new faceapi.TinyFaceDetectorOptions({ inputSize: 224, scoreThreshold: 0.30 });
+
+  async function trackingLoop() {
+    if (bioLoginCompleted || !video || !video.videoWidth || video.paused || video.ended) {
+      if (!bioLoginCompleted) {
+        bioLoginTrackingTimer = requestAnimationFrame(trackingLoop);
+      }
+      return;
+    }
+
+    if (!bioLoginModelsLoaded || bioLoginEnrolledUsers.length === 0) {
+      bioLoginTrackingTimer = requestAnimationFrame(trackingLoop);
+      return;
+    }
+
+    if (isBioTrackingBusy) {
+      bioLoginTrackingTimer = requestAnimationFrame(trackingLoop);
+      return;
+    }
+    isBioTrackingBusy = true;
+
+    try {
+      const detection = await faceapi.detectSingleFace(video, detectorOptions)
+        .withFaceLandmarks(useTinyLandmarks)
+        .withFaceDescriptor();
+
+      if (detection && detection.descriptor) {
+        if (oval) oval.classList.add("active");
+
+        const match = findBestMatchedUser(detection.descriptor);
+        if (match.user && match.dist <= 0.50) {
+          bioLoginFaceHoldFrames++;
+          if (holdProgress) holdProgress.classList.remove("d-none");
+          const pct = Math.min(100, Math.round((bioLoginFaceHoldFrames / BIO_HOLD_REQUIRED) * 100));
+          if (holdProgressBar) holdProgressBar.style.width = pct + "%";
+
+          if (statusBox) {
+            statusBox.className = "alert alert-info py-2 px-3 small fw-bold mb-2";
+            statusBox.innerHTML = '<i class="bi bi-person-check-fill me-1"></i> Wajah dikenali (' + match.user.nama + ')! Tahan (' + pct + '%)...';
+          }
+
+          if (bioLoginFaceHoldFrames >= BIO_HOLD_REQUIRED) {
+            await processFaceLoginSubmit(match.user, match.dist, detection.descriptor);
+            isBioTrackingBusy = false;
+            return;
+          }
+        } else {
+          bioLoginFaceHoldFrames = Math.max(0, bioLoginFaceHoldFrames - 2);
+          if (holdProgressBar) holdProgressBar.style.width = "0%";
+          if (statusBox) {
+            statusBox.className = "alert alert-warning py-2 px-3 small fw-semibold mb-2";
+            statusBox.innerHTML = '<i class="bi bi-person-exclamation me-1"></i> Wajah belum cocok dengan akun teknisi. Posisikan wajah tegak.';
+          }
+        }
+      } else {
+        if (oval) oval.classList.remove("active");
+        bioLoginFaceHoldFrames = Math.max(0, bioLoginFaceHoldFrames - 2);
+        if (holdProgressBar) holdProgressBar.style.width = "0%";
+      }
+    } catch (err) {
+      console.warn("Bio login tracking error:", err);
+    } finally {
+      isBioTrackingBusy = false;
+    }
+
+    bioLoginTrackingTimer = requestAnimationFrame(trackingLoop);
+  }
+
+  bioLoginTrackingTimer = requestAnimationFrame(trackingLoop);
 }
 
 // Service Worker Registration for PWA
