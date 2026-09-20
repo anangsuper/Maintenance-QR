@@ -592,8 +592,8 @@ async function startCamera() {
     videoStream = await navigator.mediaDevices.getUserMedia({
       video: {
         facingMode: "user",
-        width: { ideal: 640 },
-        height: { ideal: 480 },
+        width: { ideal: 1280, min: 640 },
+        height: { ideal: 720, min: 480 },
         frameRate: { ideal: 30, max: 30 }
       },
       audio: false
@@ -649,7 +649,7 @@ async function forceCaptureBiometric() {
   statusMsg.innerHTML = '<span class="spinner-border spinner-border-sm me-2 text-primary"></span> Memproses foto...';
 
   const useTinyLandmarks = faceapi.nets.faceLandmark68TinyNet && faceapi.nets.faceLandmark68TinyNet.isLoaded;
-  const fastDetectorOptions = new faceapi.TinyFaceDetectorOptions({ inputSize: 160, scoreThreshold: 0.3 });
+  const fastDetectorOptions = new faceapi.TinyFaceDetectorOptions({ inputSize: 224, scoreThreshold: 0.3 });
 
   try {
     const fullDetection = await faceapi.detectSingleFace(video, fastDetectorOptions)
@@ -674,7 +674,7 @@ function startFaceTracking() {
   enrollHoldFrames = 0;
 
   const useTinyLandmarks = faceapi.nets.faceLandmark68TinyNet && faceapi.nets.faceLandmark68TinyNet.isLoaded;
-  const fastDetectorOptions = new faceapi.TinyFaceDetectorOptions({ inputSize: 160, scoreThreshold: 0.30 });
+  const fastDetectorOptions = new faceapi.TinyFaceDetectorOptions({ inputSize: 224, scoreThreshold: 0.30 });
 
   async function trackingLoop() {
     if (enrollCompleted || !video || !video.videoWidth || video.paused || video.ended) {
@@ -767,15 +767,18 @@ function startFaceTracking() {
 function captureSnapshot() {
   const canvas = document.getElementById("snapshotCanvas");
   const ctx = canvas.getContext("2d");
+  const outSize = 480; // High Resolution HD 480x480 pixel
+  canvas.width = outSize;
+  canvas.height = outSize;
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = "high";
   const s = Math.min(video.videoWidth, video.videoHeight);
   const sx = (video.videoWidth - s) / 2;
   const sy = (video.videoHeight - s) / 2;
-  canvas.width = 160;
-  canvas.height = 160;
-  ctx.translate(canvas.width, 0);
+  ctx.translate(outSize, 0);
   ctx.scale(-1, 1);
-  ctx.drawImage(video, sx, sy, s, s, 0, 0, canvas.width, canvas.height);
-  capturedPhotoBase64 = canvas.toDataURL("image/jpeg", 0.65);
+  ctx.drawImage(video, sx, sy, s, s, 0, 0, outSize, outSize);
+  capturedPhotoBase64 = canvas.toDataURL("image/jpeg", 0.90);
 }
 
 // Preload modul di awal agar siap saat kamera aktif

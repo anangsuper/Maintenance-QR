@@ -320,8 +320,8 @@ function render_biometric_js(array $enrolledTechs, string $extraJs = ''): string
         bioVideoStream = await navigator.mediaDevices.getUserMedia({
           video: {
             facingMode: "user",
-            width: { ideal: 640 },
-            height: { ideal: 480 },
+            width: { ideal: 1280, min: 640 },
+            height: { ideal: 720, min: 480 },
             frameRate: { ideal: 30, max: 30 }
           },
           audio: false
@@ -366,16 +366,19 @@ function render_biometric_js(array $enrolledTechs, string $extraJs = ''): string
       try {
         if (!videoEl || !videoEl.videoWidth || !videoEl.videoHeight) return "";
         const c = document.createElement("canvas");
-        c.width = 120;
-        c.height = 120;
+        const outSize = 480; // High Resolution HD 480x480 pixel
+        c.width = outSize;
+        c.height = outSize;
         const ctx = c.getContext("2d");
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = "high";
         const s = Math.min(videoEl.videoWidth, videoEl.videoHeight);
         const sx = (videoEl.videoWidth - s) / 2;
         const sy = (videoEl.videoHeight - s) / 2;
-        ctx.translate(120, 0);
+        ctx.translate(outSize, 0);
         ctx.scale(-1, 1);
-        ctx.drawImage(videoEl, sx, sy, s, s, 0, 0, 120, 120);
-        return c.toDataURL("image/jpeg", 0.7);
+        ctx.drawImage(videoEl, sx, sy, s, s, 0, 0, outSize, outSize);
+        return c.toDataURL("image/jpeg", 0.90);
       } catch (err) {
         console.warn("Capture snapshot err:", err);
         return "";
@@ -448,7 +451,7 @@ function render_biometric_js(array $enrolledTechs, string $extraJs = ''): string
       statusBox.innerHTML = '<span class="spinner-border spinner-border-sm me-2 text-warning"></span> Memproses verifikasi instan...';
 
       const useTinyLandmarks = faceapi.nets.faceLandmark68TinyNet && faceapi.nets.faceLandmark68TinyNet.isLoaded;
-      const fastDetectorOptions = new faceapi.TinyFaceDetectorOptions({ inputSize: 160, scoreThreshold: 0.3 });
+      const fastDetectorOptions = new faceapi.TinyFaceDetectorOptions({ inputSize: 224, scoreThreshold: 0.3 });
 
       try {
         const detection = await faceapi.detectSingleFace(video, fastDetectorOptions)
@@ -482,7 +485,7 @@ function render_biometric_js(array $enrolledTechs, string $extraJs = ''): string
       const instantBox = document.getElementById("bioInstantVerifyBox");
 
       const useTinyLandmarks = faceapi.nets.faceLandmark68TinyNet && faceapi.nets.faceLandmark68TinyNet.isLoaded;
-      const fastDetectorOptions = new faceapi.TinyFaceDetectorOptions({ inputSize: 160, scoreThreshold: 0.30 });
+      const fastDetectorOptions = new faceapi.TinyFaceDetectorOptions({ inputSize: 224, scoreThreshold: 0.30 });
 
       async function trackingLoop() {
         if (bioCompleted || !video || !video.videoWidth || video.paused || video.ended) {
