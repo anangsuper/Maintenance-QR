@@ -391,20 +391,19 @@ if ($exportMode === 'doc') {
         
         // 3. Bottom Section: Disclaimer di Kiri, QR Code di Kanan
         echo '<tr height="62">';
-        echo '<td width="238" valign="bottom" style="padding: 2px 6px 4px 6px;">';
+        echo '<td width="232" valign="middle" style="padding: 2px 6px 4px 6px;">';
         echo '<table width="100%" border="0" cellspacing="0" cellpadding="0" style="border-collapse: collapse;">';
         echo '<tr><td style="padding-bottom: 3px;">';
         echo '<table width="100%" border="0" cellspacing="0" cellpadding="0"><tr><td height="2" bgcolor="#7AC142" style="background-color: #7AC142; font-size: 1px; line-height: 1px;">&nbsp;</td></tr></table>';
         echo '</td></tr>';
-        echo '<tr><td style="border: 0.75pt solid #003B73; background-color: #F8FAFC; padding: 3px 5px;">';
-        echo '<font face="Arial" size="1" color="#D92D20" style="font-size: 5.5pt; font-weight: bold;"><b>PERHATIAN: </b></font>';
-        echo '<font face="Arial" size="1" color="#334155" style="font-size: 5.2pt;">Perhatian Dilarang memindahkan barang inventaris ini tanpa seizin Human Resource Departement (HRD) Bank Mitra</font>';
+        echo '<tr><td style="border: 0.75pt solid #003B73; background-color: #F8FAFC; padding: 4px 6px;">';
+        echo '<font face="Arial" size="1" color="#B91C1C" style="font-size: 6.0pt; font-weight: bold;"><b>PERHATIAN: </b></font>';
+        echo '<font face="Arial" size="1" color="#0F172A" style="font-size: 5.8pt; font-weight: bold;">Dilarang memindahkan barang inventaris ini tanpa seizin Departemen HRD / IT Bank Mitra</font>';
         echo '</td></tr></table>';
         echo '</td>';
         
-        echo '<td width="86" align="center" valign="middle" style="padding: 2px 4px 4px 2px;">';
-        echo '<img src="' . e($qrImgUrl) . '" width="50" height="50" border="1" style="border: 1pt solid #003B73; display: block; margin: auto;" alt="QR Code">';
-        echo '<div style="font-family: Arial; font-size: 4.8pt; color: #003B73; font-weight: bold; margin-top: 2px; text-align: center;">SCAN UNTUK INFO</div>';
+        echo '<td width="92" align="center" valign="middle" style="padding: 2px 4px 4px 2px;">';
+        echo '<img src="' . e($qrImgUrl) . '" width="58" height="58" border="1" style="border: 1pt solid #CBD5E1; display: block; margin: auto;" alt="QR Code">';
         echo '</td>';
         echo '</tr>';
         
@@ -779,22 +778,23 @@ unset($_SESSION['flash'], $_SESSION['flash_error']);
       pointer-events: none !important;
     }
     .bottom-left-attention {
-      width: 66% !important;
+      width: 68% !important;
       height: 100% !important;
       display: flex !important;
       align-items: center !important;
-      padding: 1.0mm 1.5mm 1.0mm 3.0mm !important;
+      padding: 1.0mm 2.0mm 1.0mm 3.0mm !important;
       box-sizing: border-box !important;
       z-index: 2 !important;
     }
     .attention-icon {
-      margin-right: 2.0mm !important;
+      margin-right: 2.2mm !important;
       display: flex !important;
       align-items: center !important;
+      flex-shrink: 0 !important;
     }
     .attention-svg-icon {
-      width: 7.0mm !important;
-      height: 7.0mm !important;
+      width: 7.2mm !important;
+      height: 7.2mm !important;
       color: #003b73 !important;
     }
     .attention-text-box {
@@ -803,82 +803,60 @@ unset($_SESSION['flash'], $_SESSION['flash_error']);
     }
     .attention-title {
       font-weight: 800 !important;
-      font-size: 6.8pt !important;
-      color: #dc2626 !important;
-      margin-bottom: 0.3mm !important;
+      font-size: 7.2pt !important;
+      color: #b91c1c !important;
+      margin-bottom: 0.4mm !important;
       text-transform: uppercase !important;
-      letter-spacing: 0.3px !important;
+      letter-spacing: 0.4px !important;
     }
     .attention-desc {
-      font-size: 4.6pt !important;
-      line-height: 1.25 !important;
-      color: #475569 !important;
-      font-weight: 600 !important;
+      font-size: 5.2pt !important;
+      line-height: 1.35 !important;
+      color: #0f172a !important;
+      font-weight: 700 !important;
+      letter-spacing: -0.05px !important;
     }
     .attention-qr-separator {
       width: 1px !important;
-      height: 13.0mm !important;
+      height: 14.0mm !important;
       background-color: #e2e8f0 !important;
       align-self: center !important;
       z-index: 2 !important;
     }
     .bottom-right-qr {
-      width: 34% !important;
+      width: 32% !important;
       height: 100% !important;
       display: flex !important;
       flex-direction: column !important;
       align-items: center !important;
       justify-content: center !important;
       box-sizing: border-box !important;
-      padding: 0.8mm 1.0mm !important;
+      padding: 0.5mm !important;
       z-index: 2 !important;
     }
     .qr-border-box {
-      border: 1px solid #e2e8f0 !important;
-      border-radius: 5px !important;
-      padding: 0.5mm !important;
+      border: 1px solid #cbd5e1 !important;
+      border-radius: 4px !important;
+      padding: 0.6mm !important;
       background: #ffffff !important;
       display: flex !important;
       align-items: center !important;
       justify-content: center !important;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.02) !important;
-      margin-bottom: 0.6mm !important;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.04) !important;
+      margin-bottom: 0 !important;
     }
     .card-qr-img {
-      width: 10.5mm !important;
-      height: 10.5mm !important;
+      width: 13.5mm !important;
+      height: 13.5mm !important;
     }
     .card-qr-img canvas, .card-qr-img img {
-      width: 10.5mm !important;
-      height: 10.5mm !important;
+      width: 13.5mm !important;
+      height: 13.5mm !important;
       margin: 0 auto !important;
       display: block;
     }
     .scan-info-capsule {
-      background-color: #008744 !important;
-      color: #ffffff !important;
-      border-radius: 12px !important;
-      padding: 0.4mm 1.6mm !important;
-      display: flex !important;
-      align-items: center !important;
-      justify-content: center !important;
-      gap: 0.5mm !important;
-      height: 2.8mm !important;
-      width: 19.0mm !important;
-      box-sizing: border-box !important;
-      -webkit-print-color-adjust: exact !important;
-      print-color-adjust: exact !important;
-    }
-    .scan-icon {
-      width: 1.8mm !important;
-      height: 1.8mm !important;
-      color: #ffffff !important;
-    }
-    .scan-info-capsule span {
-      font-size: 3.5pt !important;
-      font-weight: 800 !important;
-      white-space: nowrap !important;
-      letter-spacing: 0.1px !important;
+      display: none !important;
     }
 
     @media print {
@@ -1152,22 +1130,15 @@ unset($_SESSION['flash'], $_SESSION['flash_error']);
                       </div>
                       <div class="attention-text-box">
                         <div class="attention-title">Perhatian</div>
-                        <div class="attention-desc card-disclaimer-val">Perhatian Dilarang memindahkan barang inventaris ini tanpa seizin Human Resource Departement (HRD) Bank Mitra</div>
+                        <div class="attention-desc card-disclaimer-val">Dilarang memindahkan barang inventaris ini tanpa seizin Departemen HRD / IT Bank Mitra</div>
                       </div>
                     </div>
                     <!-- Separator Line -->
                     <div class="attention-qr-separator"></div>
-                    <!-- Right: QR Code & Scan Capsule -->
+                    <!-- Right: QR Code -->
                     <div class="bottom-right-qr">
                       <div class="qr-border-box">
                         <div id="qr-box-<?= $cIdx ?>" class="card-qr-img qr-box-inner" data-qr="<?= e($card['qr_url']) ?>"></div>
-                      </div>
-                      <div class="scan-info-capsule">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="scan-icon">
-                          <rect x="5" y="2" width="14" height="20" rx="2" ry="2"/>
-                          <line x1="12" y1="18" x2="12.01" y2="18"/>
-                        </svg>
-                        <span>SCAN UNTUK INFO</span>
                       </div>
                     </div>
                   </div>
@@ -1434,8 +1405,8 @@ function doPost(e) {
         if (qrUrl) {
           new QRCode(box, {
             text: qrUrl,
-            width: 58,
-            height: 58,
+            width: 70,
+            height: 70,
             colorDark: "#000000",
             colorLight: "#ffffff",
             correctLevel: QRCode.CorrectLevel.M

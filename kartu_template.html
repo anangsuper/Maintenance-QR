@@ -257,22 +257,23 @@
       pointer-events: none !important;
     }
     .bottom-left-attention {
-      width: 66% !important;
+      width: 68% !important;
       height: 100% !important;
       display: flex !important;
       align-items: center !important;
-      padding: 1.0mm 1.5mm 1.0mm 3.0mm !important;
+      padding: 1.0mm 2.0mm 1.0mm 3.0mm !important;
       box-sizing: border-box !important;
       z-index: 2 !important;
     }
     .attention-icon {
-      margin-right: 2.0mm !important;
+      margin-right: 2.2mm !important;
       display: flex !important;
       align-items: center !important;
+      flex-shrink: 0 !important;
     }
     .attention-svg-icon {
-      width: 7.0mm !important;
-      height: 7.0mm !important;
+      width: 7.2mm !important;
+      height: 7.2mm !important;
       color: #003b73 !important;
     }
     .attention-text-box {
@@ -281,82 +282,60 @@
     }
     .attention-title {
       font-weight: 800 !important;
-      font-size: 6.8pt !important;
-      color: #dc2626 !important;
-      margin-bottom: 0.3mm !important;
+      font-size: 7.2pt !important;
+      color: #b91c1c !important;
+      margin-bottom: 0.4mm !important;
       text-transform: uppercase !important;
-      letter-spacing: 0.3px !important;
+      letter-spacing: 0.4px !important;
     }
     .attention-desc {
-      font-size: 4.6pt !important;
-      line-height: 1.25 !important;
-      color: #475569 !important;
-      font-weight: 600 !important;
+      font-size: 5.2pt !important;
+      line-height: 1.35 !important;
+      color: #0f172a !important;
+      font-weight: 700 !important;
+      letter-spacing: -0.05px !important;
     }
     .attention-qr-separator {
       width: 1px !important;
-      height: 13.0mm !important;
+      height: 14.0mm !important;
       background-color: #e2e8f0 !important;
       align-self: center !important;
       z-index: 2 !important;
     }
     .bottom-right-qr {
-      width: 34% !important;
+      width: 32% !important;
       height: 100% !important;
       display: flex !important;
       flex-direction: column !important;
       align-items: center !important;
       justify-content: center !important;
       box-sizing: border-box !important;
-      padding: 0.8mm 1.0mm !important;
+      padding: 0.5mm !important;
       z-index: 2 !important;
     }
     .qr-border-box {
-      border: 1px solid #e2e8f0 !important;
-      border-radius: 5px !important;
-      padding: 0.5mm !important;
+      border: 1px solid #cbd5e1 !important;
+      border-radius: 4px !important;
+      padding: 0.6mm !important;
       background: #ffffff !important;
       display: flex !important;
       align-items: center !important;
       justify-content: center !important;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.02) !important;
-      margin-bottom: 0.6mm !important;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.04) !important;
+      margin-bottom: 0 !important;
     }
     .card-qr-img {
-      width: 10.5mm !important;
-      height: 10.5mm !important;
+      width: 13.5mm !important;
+      height: 13.5mm !important;
     }
     .card-qr-img canvas, .card-qr-img img {
-      width: 10.5mm !important;
-      height: 10.5mm !important;
+      width: 13.5mm !important;
+      height: 13.5mm !important;
       margin: 0 auto !important;
       display: block;
     }
     .scan-info-capsule {
-      background-color: #008744 !important;
-      color: #ffffff !important;
-      border-radius: 12px !important;
-      padding: 0.4mm 1.6mm !important;
-      display: flex !important;
-      align-items: center !important;
-      justify-content: center !important;
-      gap: 0.5mm !important;
-      height: 2.8mm !important;
-      width: 19.0mm !important;
-      box-sizing: border-box !important;
-      -webkit-print-color-adjust: exact !important;
-      print-color-adjust: exact !important;
-    }
-    .scan-icon {
-      width: 1.8mm !important;
-      height: 1.8mm !important;
-      color: #ffffff !important;
-    }
-    .scan-info-capsule span {
-      font-size: 3.5pt !important;
-      font-weight: 800 !important;
-      white-space: nowrap !important;
-      letter-spacing: 0.1px !important;
+      display: none !important;
     }
 
     /* CSS Saat Dicetak (Print) */
@@ -369,35 +348,27 @@
         padding: 0;
         background: transparent;
       }
-      .atm-card {
-        outline: none !important;
-        box-shadow: none !important;
+      .card-wrap {
+        box-shadow: none;
+        outline: none;
       }
     }
   </style>
 </head>
 <body>
 
-  <!-- Kartu Fisik CR80 Standar ATM -->
-  <div class="atm-card">
-    <!-- Top Header -->
+  <div class="card-wrap atm-card">
+    
+    <!-- 1. Header Section -->
     <div class="card-header-sec">
       <div class="header-logo-box">
-        <!-- Path logo instansi -->
-        <img src="logo.png" alt="Logo" onerror="this.src='https://via.placeholder.com/80x30?text=LOGO'">
+        <img src="https://bankmitra.co.id/wp-content/uploads/2023/10/logo-bank-mitra-ok.png" alt="Logo Bank Mitra" onerror="this.onerror=null; this.src='https://placehold.co/120x60/ffffff/003b73?text=BANK+MITRA';">
       </div>
       <div class="header-title-box">
-        <div class="header-main-title">PT BPR MITRATAMA ARTHABUANA</div>
+        <div class="header-main-title">KARTU INVENTARIS</div>
         <div class="header-sub-sec">
           <div class="green-banner-wrapper">
             <div class="teal-stripe"></div>
-            <div class="green-banner">ASSET TETAP</div>
-          </div>
-          <div class="header-dots-container">
-            <div class="header-dots">
-              <span></span><span></span><span></span>
-              <span></span><span></span><span></span>
-            </div>
           </div>
         </div>
       </div>
@@ -476,17 +447,10 @@
       </div>
       <!-- Separator Line -->
       <div class="attention-qr-separator"></div>
-      <!-- Right: QR Code & Scan Capsule -->
+      <!-- Right: QR Code -->
       <div class="bottom-right-qr">
         <div class="qr-border-box">
           <div id="qrcode_container" class="card-qr-img"></div>
-        </div>
-        <div class="scan-info-capsule">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="scan-icon">
-            <rect x="5" y="2" width="14" height="20" rx="2" ry="2"/>
-            <line x1="12" y1="18" x2="12.01" y2="18"/>
-          </svg>
-          <span>SCAN UNTUK INFO</span>
         </div>
       </div>
     </div>
