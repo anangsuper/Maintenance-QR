@@ -183,6 +183,7 @@ $todayDateDmy = date('d/m/Y');
 $todayDateDmY = date('d-m-Y');
 
 $filterHariIni = isset($_GET['hari_ini']) && (string)$_GET['hari_ini'] === '1';
+$filterHasQr = isset($_GET['has_qr']) && (string)$_GET['has_qr'] === '1';
 
 $todayCardsCount = 0;
 $withQrCardsCount = 0;
@@ -271,8 +272,12 @@ foreach ($cardYears as $cy) {
     $optTahunKartuHtml .= '<option value="' . e($cy) . '"' . ($tahunCard === (string)$cy ? ' selected' : '') . '>' . e($cy) . '</option>';
 }
 
-// Filter Kartu Inventaris (Mendukung Pencarian, Cabang 01-05, Tahun, dan Hari Ini)
-$filteredCards = array_filter($allCards, function($r) use ($searchCard, $cabangCard, $tahunCard, $filterHariIni, $todayDateStr, $todayDateDmy, $todayDateDmY) {
+// Filter Kartu Inventaris (Mendukung Pencarian, Cabang 01-05, Tahun, Hari Ini, dan Label QR)
+$filteredCards = array_filter($allCards, function($r) use ($searchCard, $cabangCard, $tahunCard, $filterHariIni, $filterHasQr, $todayDateStr, $todayDateDmy, $todayDateDmY) {
+    if ($filterHasQr) {
+        $bc = trim((string)($r['barcode_data'] ?? ''));
+        if ($bc === '') return false;
+    }
     if ($filterHariIni) {
         $tgl = trim((string)($r['tanggal_perolehan'] ?? ''));
         $created = trim((string)($r['created_at'] ?? ''));
@@ -1166,42 +1171,48 @@ if ($activeTab === 'kartu') {
     <!-- 4 Kotak Metrik Ringkasan Tab Kartu Termasuk Baru Diperoleh Hari Ini -->
     <div class="row g-3 mb-4">
       <div class="col-6 col-md-3">
-        <div class="card card-metric h-100" style="border-left-color: #2E7CF6;">
-          <div class="metric-value text-primary">'.$totalCardsCount.'</div>
-          <div class="metric-label">Total Kartu Inventaris</div>
-          <div class="small text-secondary mt-2" style="font-size: 0.72rem;">Seluruh unit terdaftar</div>
-        </div>
+        <a href="'.e(module_url('dashboard.php', ['tab'=>'kartu'])).'" class="text-decoration-none">
+          <div class="card card-metric h-100" style="border-left-color: #2E7CF6; cursor: pointer;">
+            <div class="metric-value text-primary">'.$totalCardsCount.'</div>
+            <div class="metric-label text-dark">Total Kartu Inventaris</div>
+            <div class="small text-primary mt-2" style="font-size: 0.72rem;"><i class="bi bi-arrow-repeat me-1"></i>Semua unit &raquo;</div>
+          </div>
+        </a>
       </div>
       <div class="col-6 col-md-3">
-        <a href="'.e(module_url('dashboard.php', ['tab'=>'kartu', 'hari_ini'=>1])).'" class="text-decoration-none">
-          <div class="card card-metric h-100 '.($filterHariIni ? 'bg-success-subtle border-success' : '').'" style="border-left-color: #16803C; cursor: pointer;">
+        <a href="'.e(module_url('dashboard.php', ['tab'=>'kartu', 'hari_ini'=>($filterHariIni ? null : 1)])).'" class="text-decoration-none">
+          <div class="card card-metric h-100 '.($filterHariIni ? 'bg-success-subtle border-success shadow-sm' : '').'" style="border-left-color: #16803C; cursor: pointer;">
             <div class="metric-value text-success d-flex align-items-center justify-content-between">
               <span>'.$todayCardsCount.'</span>
               '.($todayCardsCount > 0 ? '<span class="badge bg-success text-white" style="font-size: 0.72rem; font-weight: 700;"><i class="bi bi-stars me-1"></i>Baru</span>' : '').'
             </div>
             <div class="metric-label text-dark">Baru Diperoleh Hari Ini</div>
-            <div class="small text-success mt-2" style="font-size: 0.72rem;"><i class="bi bi-arrow-right-circle me-1"></i>Filter aset hari ini ('.date('d/m/Y').') &raquo;</div>
+            <div class="small text-success mt-2" style="font-size: 0.72rem;"><i class="bi bi-funnel me-1"></i>'.($filterHariIni ? 'Tampilkan semua &raquo;' : 'Filter hari ini ('.date('d/m/Y').') &raquo;').'</div>
           </div>
         </a>
       </div>
       <div class="col-6 col-md-3">
-        <div class="card card-metric h-100" style="border-left-color: #0284C7;">
-          <div class="metric-value" style="color: #0284C7;">'.$withQrCardsCount.'</div>
-          <div class="metric-label">Kartu Ber-Label QR</div>
-          <div class="small text-secondary mt-2" style="font-size: 0.72rem;">Siap scan & tracking</div>
-        </div>
+        <a href="'.e(module_url('dashboard.php', ['tab'=>'kartu', 'has_qr'=>($filterHasQr ? null : 1)])).'" class="text-decoration-none">
+          <div class="card card-metric h-100 '.($filterHasQr ? 'bg-info-subtle border-info shadow-sm' : '').'" style="border-left-color: #0284C7; cursor: pointer;">
+            <div class="metric-value" style="color: #0284C7;">'.$withQrCardsCount.'</div>
+            <div class="metric-label text-dark">Kartu Ber-Label QR</div>
+            <div class="small text-info mt-2" style="font-size: 0.72rem;"><i class="bi bi-qr-code me-1"></i>'.($filterHasQr ? 'Tampilkan semua &raquo;' : 'Filter ber-QR ('.$withQrCardsCount.') &raquo;').'</div>
+          </div>
+        </a>
       </div>
       <div class="col-6 col-md-3">
-        <div class="card card-metric h-100" style="border-left-color: #7C3AED;">
-          <div class="metric-value" style="color: #7C3AED;">5</div>
-          <div class="metric-label">Sebaran Kantor Cabang</div>
-          <div class="small text-secondary mt-2" style="font-size: 0.72rem;">01 Pusat s/d 05 Handil Bakti</div>
-        </div>
+        <a href="#branchDistributionGrid" class="text-decoration-none" onclick="document.getElementById(\'branchDistributionGrid\')?.scrollIntoView({behavior:\'smooth\'})">
+          <div class="card card-metric h-100" style="border-left-color: #7C3AED; cursor: pointer;">
+            <div class="metric-value" style="color: #7C3AED;">5</div>
+            <div class="metric-label text-dark">Sebaran Kantor Cabang</div>
+            <div class="small mt-2" style="color: #7C3AED; font-size: 0.72rem;"><i class="bi bi-buildings me-1"></i>01 Pusat s/d 05 Handil Bakti &raquo;</div>
+          </div>
+        </a>
       </div>
     </div>
 
     <!-- Ringkasan Jumlah Kartu Inventaris Per Cabang (01 - 05) -->
-    <div class="card p-3 mb-4 border shadow-sm bg-white" style="border-radius: 8px; border-color: var(--app-border) !important;">
+    <div id="branchDistributionGrid" class="card p-3 mb-4 border shadow-sm bg-white" style="border-radius: 8px; border-color: var(--app-border) !important;">
       <div class="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-2">
         <div>
           <div class="tech-label" style="font-size: 0.68rem;">DISTRIBUSI UNIT CABANG</div>
