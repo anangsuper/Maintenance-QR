@@ -101,7 +101,7 @@ $head = '<style id="stickerStyle">
 
 body {
   background: #F5F8FB;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-family: "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   color: #1F2A37;
   -webkit-print-color-adjust: exact !important;
   print-color-adjust: exact !important;

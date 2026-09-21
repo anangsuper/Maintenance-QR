@@ -153,7 +153,7 @@ $head = '<style>
 /* Base Screen Styling */
 body {
   background: #f4f6fa;
-  font-family: "Segoe UI", Tahoma, Arial, sans-serif;
+  font-family: "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   color: #212529;
 }
 
