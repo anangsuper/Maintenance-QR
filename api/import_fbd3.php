@@ -307,6 +307,36 @@ ob_start();
     </div>
   </div>
 
+  <!-- Sebaran Kantor Cabang Badge Bar -->
+  <div class="card border-0 shadow-sm rounded-4 p-3 bg-white mb-4">
+    <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-2">
+      <div class="small fw-bold text-secondary text-uppercase" style="letter-spacing: 0.05em; font-size: 0.72rem;">
+        <i class="bi bi-buildings-fill text-primary me-1"></i> Sebaran Data Berdasarkan 5 Kantor Cabang di File fbd3.xls:
+      </div>
+      <small class="text-muted">Total: 531 Unit Terdaftar</small>
+    </div>
+    <div class="d-flex flex-wrap gap-2">
+      <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-3 fw-semibold branch-pill active" onclick="filterPreviewBranch('all', this)">
+        <i class="bi bi-layers me-1"></i> Semua Cabang <span class="badge bg-secondary text-white rounded-pill ms-1">531</span>
+      </button>
+      <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-3 fw-semibold branch-pill" onclick="filterPreviewBranch('01', this)">
+        <i class="bi bi-building me-1"></i> 01 Pusat <span class="badge bg-primary text-white rounded-pill ms-1">279</span>
+      </button>
+      <button type="button" class="btn btn-sm btn-outline-success rounded-pill px-3 fw-semibold branch-pill" onclick="filterPreviewBranch('02', this)">
+        <i class="bi bi-geo-alt me-1"></i> 02 Batulicin <span class="badge bg-success text-white rounded-pill ms-1">73</span>
+      </button>
+      <button type="button" class="btn btn-sm btn-outline-warning rounded-pill px-3 fw-semibold branch-pill" onclick="filterPreviewBranch('03', this)">
+        <i class="bi bi-geo-alt me-1"></i> 03 Martapura <span class="badge bg-warning text-dark rounded-pill ms-1">33</span>
+      </button>
+      <button type="button" class="btn btn-sm rounded-pill px-3 fw-semibold branch-pill" style="border-color: #8B5CF6; color: #8B5CF6;" onclick="filterPreviewBranch('04', this)">
+        <i class="bi bi-geo-alt me-1"></i> 04 Tanjung <span class="badge rounded-pill ms-1" style="background-color: #8B5CF6; color: white;">75</span>
+      </button>
+      <button type="button" class="btn btn-sm rounded-pill px-3 fw-bold branch-pill" style="border-color: #EC4899; color: #EC4899;" onclick="filterPreviewBranch('05', this)">
+        <i class="bi bi-star-fill me-1" style="color: #EC4899;"></i> 05 Handil Bakti <span class="badge rounded-pill ms-1" style="background-color: #EC4899; color: white;">71</span>
+      </button>
+    </div>
+  </div>
+
   <!-- Form Import & Filter Box -->
   <div class="row g-4 mb-4">
     <div class="col-lg-4">
@@ -319,7 +349,7 @@ ob_start();
 
           <div class="mb-3">
             <label class="form-label small fw-bold text-secondary">Filter Kategori Barang</label>
-            <select name="filter_category" class="form-select form-select-sm rounded-3">
+            <select name="filter_category" id="selectCategory" class="form-select form-select-sm rounded-3">
               <option value="all" selected>Semua Barang (531 Item)</option>
               <option value="hrd_only">Khusus HRD / Fasilitas Kantor (Furniture, AC, dll)</option>
               <option value="it_only">Khusus IT & Komputer (Laptop, PC, Printer)</option>
@@ -327,26 +357,30 @@ ob_start();
           </div>
 
           <div class="mb-3">
-            <label class="form-label small fw-bold text-secondary">Filter Cabang / Unit</label>
-            <select name="filter_cabang" class="form-select form-select-sm rounded-3">
-              <option value="all" selected>Semua Cabang (Konsolidasi)</option>
-              <option value="01">01 - Kantor Pusat (KPO)</option>
-              <option value="02">02 - Cabang Batulicin</option>
-              <option value="03">03 - Kantor Kas Martapura</option>
-              <option value="04">04 - Cabang Tanjung</option>
-              <option value="05">05 - Cabang Handil Bakti</option>
+            <label class="form-label small fw-bold text-secondary">Pilih Cabang Target</label>
+            <select name="filter_cabang" id="selectCabang" class="form-select form-select-sm rounded-3" onchange="syncBranchSelection(this.value)">
+              <option value="all" selected>Semua Cabang (Konsolidasi 531 Item)</option>
+              <option value="01">01 - Kantor Pusat (279 Item)</option>
+              <option value="02">02 - Cabang Batulicin (73 Item)</option>
+              <option value="03">03 - Kantor Kas Martapura (33 Item)</option>
+              <option value="04">04 - Cabang Tanjung (75 Item)</option>
+              <option value="05">05 - Cabang Handil Bakti (71 Item)</option>
             </select>
           </div>
 
-          <div class="alert alert-info py-2 px-3 small border-0 rounded-3 mb-4">
-            <i class="bi bi-info-circle me-1"></i> Data diimpor dengan format tanggal baku, nama lengkap aktiva, nomor rekening, dan sebaran lokasi cabang.
+          <div class="alert alert-info py-2 px-3 small border-0 rounded-3 mb-3">
+            <i class="bi bi-info-circle me-1"></i> Data diimpor lengkap dengan format tanggal baku, nama aktiva, kode rekening, dan lokasi cabang.
           </div>
 
           <button type="submit" id="btnSubmitImport" class="btn btn-primary w-100 py-2 rounded-pill fw-bold shadow-sm mb-2">
             <i class="bi bi-cloud-arrow-down-fill me-1"></i> Tambahkan Data ke Sistem
           </button>
 
-          <button type="button" onclick="submitReplace()" class="btn btn-outline-danger w-100 py-2 rounded-pill small fw-semibold">
+          <button type="button" onclick="submitQuickBranch('05')" class="btn btn-sm w-100 py-2 rounded-pill fw-bold mb-2 shadow-sm" style="background-color: #FDF2F8; border: 1px solid #F472B6; color: #DB2777;">
+            <i class="bi bi-box-arrow-in-down me-1"></i> Impor Khusus 05 - Handil Bakti (71 Item)
+          </button>
+
+          <button type="button" onclick="submitReplace()" class="btn btn-outline-danger w-100 py-2 rounded-pill small fw-semibold mt-1">
             <i class="bi bi-arrow-repeat me-1"></i> Timpa & Muat Ulang Semua (531 Item)
           </button>
         </form>
@@ -359,13 +393,22 @@ ob_start();
         <div class="d-flex align-items-center justify-content-between mb-3 flex-wrap gap-2">
           <div>
             <h5 class="fw-bold text-dark mb-0"><i class="bi bi-table text-primary me-2"></i>Pratinjau Data Aktiva (fbd3.xls)</h5>
-            <small class="text-muted">Menampilkan sampel daftar barang yang siap diimpor</small>
+            <small class="text-muted" id="previewSubtitle">Menampilkan seluruh 531 unit aktiva & inventaris</small>
           </div>
-          <span class="badge bg-light text-dark border px-3 py-2 rounded-pill">Total: <?= count($items) ?> Barang</span>
+          <span class="badge bg-primary text-white border px-3 py-2 rounded-pill" id="previewCountBadge">Total: <?= count($items) ?> Barang</span>
+        </div>
+
+        <!-- Live Search Box -->
+        <div class="mb-3">
+          <div class="input-group input-group-sm">
+            <span class="input-group-text bg-light border-end-0"><i class="bi bi-search text-muted"></i></span>
+            <input type="text" id="tableSearchInput" class="form-control border-start-0" placeholder="Ketik untuk mencari nama barang, kode rekening, atau Handil Bakti..." onkeyup="filterPreviewTable()">
+            <button type="button" class="btn btn-outline-secondary btn-sm" onclick="clearPreviewSearch()">Reset</button>
+          </div>
         </div>
 
         <div class="table-responsive" style="max-height: 480px; overflow-y: auto;">
-          <table class="table table-hover align-middle table-sm small mb-0">
+          <table class="table table-hover align-middle table-sm small mb-0" id="previewTable">
             <thead class="table-light sticky-top">
               <tr>
                 <th style="width: 40px;">No</th>
@@ -377,13 +420,27 @@ ob_start();
               </tr>
             </thead>
             <tbody>
-              <?php foreach ($items as $it): ?>
-                <tr>
+              <?php foreach ($items as $it): 
+                $pfx = $it['Prefix'] ?? '01';
+                $isHandil = ($pfx === '05' || stripos($it['Lokasi'] ?? '', 'Handil') !== false);
+              ?>
+                <tr data-prefix="<?= htmlspecialchars($pfx) ?>" data-haystack="<?= strtolower(htmlspecialchars(($it['Kode'] ?? '') . ' ' . ($it['Nama'] ?? '') . ' ' . ($it['Lokasi'] ?? ''))) ?>" class="<?= $isHandil ? 'table-warning-subtle' : '' ?>">
                   <td class="text-muted"><?= htmlspecialchars($it['No'] ?? '') ?></td>
                   <td><span class="badge bg-light text-dark font-monospace border"><?= htmlspecialchars($it['Kode'] ?? '') ?></span></td>
-                  <td class="fw-semibold text-dark"><?= htmlspecialchars($it['Nama'] ?? '') ?></td>
+                  <td class="fw-semibold text-dark">
+                    <?= htmlspecialchars($it['Nama'] ?? '') ?>
+                    <?php if ($isHandil): ?>
+                      <span class="badge rounded-pill ms-1" style="background-color: #FCE7F3; color: #DB2777; font-size: 0.65rem;">Handil</span>
+                    <?php endif; ?>
+                  </td>
                   <td class="text-muted"><?= htmlspecialchars($it['TglPerolehanOri'] ?? $it['TglPerolehan'] ?? '') ?></td>
-                  <td><span class="badge bg-secondary-subtle text-secondary"><?= htmlspecialchars($it['Lokasi'] ?? '') ?></span></td>
+                  <td>
+                    <?php if ($pfx === '05'): ?>
+                      <span class="badge rounded-pill fw-semibold" style="background-color: #FCE7F3; color: #DB2777; border: 1px solid #F472B6;"><?= htmlspecialchars($it['Lokasi'] ?? '') ?></span>
+                    <?php else: ?>
+                      <span class="badge bg-secondary-subtle text-secondary"><?= htmlspecialchars($it['Lokasi'] ?? '') ?></span>
+                    <?php endif; ?>
+                  </td>
                   <td>
                     <?php if (!empty($it['IsIT'])): ?>
                       <span class="badge bg-info-subtle text-info border border-info-subtle">IT</span>
@@ -399,7 +456,7 @@ ob_start();
           </table>
         </div>
         <div class="text-center text-muted small mt-2">
-          <em>* Menampilkan seluruh <?= count($items) ?> unit aktiva & inventaris.</em>
+          <em>* Total <span id="visibleRowCount"><?= count($items) ?></span> barang tampil dalam pratinjau.</em>
         </div>
       </div>
     </div>
@@ -407,6 +464,72 @@ ob_start();
 </div>
 
 <script>
+var currentBranchFilter = 'all';
+
+function filterPreviewBranch(branchCode, btnElem) {
+  currentBranchFilter = branchCode;
+  document.querySelectorAll('.branch-pill').forEach(function(el) {
+    el.classList.remove('active', 'shadow-sm');
+  });
+  if (btnElem) {
+    btnElem.classList.add('active', 'shadow-sm');
+  }
+  
+  // Sinkronkan select dropdown
+  var sel = document.getElementById('selectCabang');
+  if (sel) {
+    sel.value = branchCode;
+  }
+  filterPreviewTable();
+}
+
+function syncBranchSelection(branchCode) {
+  currentBranchFilter = branchCode;
+  filterPreviewTable();
+}
+
+function filterPreviewTable() {
+  var q = (document.getElementById('tableSearchInput')?.value || '').toLowerCase().trim();
+  var rows = document.querySelectorAll('#previewTable tbody tr');
+  var visibleCount = 0;
+
+  rows.forEach(function(r) {
+    var pfx = r.getAttribute('data-prefix') || '';
+    var haystack = r.getAttribute('data-haystack') || '';
+    var matchBranch = (currentBranchFilter === 'all' || pfx === currentBranchFilter);
+    var matchSearch = (q === '' || haystack.indexOf(q) !== -1);
+
+    if (matchBranch && matchSearch) {
+      r.style.display = '';
+      visibleCount++;
+    } else {
+      r.style.display = 'none';
+    }
+  });
+
+  var badge = document.getElementById('previewCountBadge');
+  if (badge) {
+    badge.innerText = 'Tampil: ' + visibleCount + ' Barang';
+  }
+  var rowCount = document.getElementById('visibleRowCount');
+  if (rowCount) {
+    rowCount.innerText = visibleCount;
+  }
+}
+
+function clearPreviewSearch() {
+  var input = document.getElementById('tableSearchInput');
+  if (input) input.value = '';
+  filterPreviewBranch('all', document.querySelector('.branch-pill'));
+}
+
+function submitQuickBranch(branchCode) {
+  var sel = document.getElementById('selectCabang');
+  if (sel) sel.value = branchCode;
+  document.getElementById('formAction').value = 'import';
+  document.getElementById('importForm').submit();
+}
+
 function handleFormSubmit(e) {
   var btn = document.getElementById('btnSubmitImport');
   btn.disabled = true;
@@ -415,7 +538,7 @@ function handleFormSubmit(e) {
 }
 
 function submitReplace() {
-  if (confirm('PERINGATAN: Opsi ini akan mengosongkan kartu inventaris lama dan mengisi ulang 531 aset dari FBD3. Lanjutkan?')) {
+  if (confirm('PERINGATAN: Opsi ini akan mengosongkan kartu inventaris lama dan mengisi ulang 531 aset dari FBD3 (termasuk 71 unit Handil Bakti). Lanjutkan?')) {
     document.getElementById('formAction').value = 'replace';
     document.getElementById('importForm').submit();
   }
