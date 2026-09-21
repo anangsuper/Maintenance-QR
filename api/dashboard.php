@@ -1747,7 +1747,7 @@ $body .= '
                 </div>
                 <div class="attention-text-box">
                   <div class="attention-title">Perhatian</div>
-                  <div class="attention-desc">Dilarang memindahkan barang inventaris ini tanpa seizin Departemen HRD / IT Bank Mitra</div>
+                  <div class="attention-desc">Dilarang memindahkan barang inventaris ini tanpa seizin Human Resource Departement (HRD) Bank Mitra</div>
                 </div>
               </div>
               <!-- Separator Line -->

@@ -398,7 +398,7 @@ if ($exportMode === 'doc') {
         echo '</td></tr>';
         echo '<tr><td style="border: 0.75pt solid #003B73; background-color: #F8FAFC; padding: 4px 6px;">';
         echo '<font face="Arial" size="1" color="#B91C1C" style="font-size: 6.0pt; font-weight: bold;"><b>PERHATIAN: </b></font>';
-        echo '<font face="Arial" size="1" color="#0F172A" style="font-size: 5.8pt; font-weight: bold;">Dilarang memindahkan barang inventaris ini tanpa seizin Departemen HRD / IT Bank Mitra</font>';
+        echo '<font face="Arial" size="1" color="#0F172A" style="font-size: 5.8pt; font-weight: bold;">Dilarang memindahkan barang inventaris ini tanpa seizin Human Resource Departement (HRD) Bank Mitra</font>';
         echo '</td></tr></table>';
         echo '</td>';
         
@@ -1130,7 +1130,7 @@ unset($_SESSION['flash'], $_SESSION['flash_error']);
                       </div>
                       <div class="attention-text-box">
                         <div class="attention-title">Perhatian</div>
-                        <div class="attention-desc card-disclaimer-val">Dilarang memindahkan barang inventaris ini tanpa seizin Departemen HRD / IT Bank Mitra</div>
+                        <div class="attention-desc card-disclaimer-val">Dilarang memindahkan barang inventaris ini tanpa seizin Human Resource Departement (HRD) Bank Mitra</div>
                       </div>
                     </div>
                     <!-- Separator Line -->
@@ -1256,7 +1256,7 @@ unset($_SESSION['flash'], $_SESSION['flash_error']);
           </div>
           <div class="mb-2">
             <label class="form-label small fw-bold text-dark">Teks Catatan Perhatian (Footer Kartu)</label>
-            <textarea id="bulkDisclaimerInput" class="form-control form-control-sm" rows="2">Perhatian: Dilarang memindahkan barang inventaris ini tanpa seizin Departemen IT & Sarana Prasarana.</textarea>
+            <textarea id="bulkDisclaimerInput" class="form-control form-control-sm" rows="2">Dilarang memindahkan barang inventaris ini tanpa seizin Human Resource Departement (HRD) Bank Mitra</textarea>
             <button class="btn btn-sm btn-outline-secondary w-100 mt-2 fw-semibold" type="button" onclick="applyBulkDisclaimer()">
               Terapkan Perhatian ke Semua Kartu
             </button>
