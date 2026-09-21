@@ -272,7 +272,7 @@ foreach ($cardYears as $cy) {
     $optTahunKartuHtml .= '<option value="' . e($cy) . '"' . ($tahunCard === (string)$cy ? ' selected' : '') . '>' . e($cy) . '</option>';
 }
 
-// Filter Kartu Inventaris (Mendukung Pencarian, Cabang 01-05, Tahun, Hari Ini, dan Label QR)
+// Filter Kartu Inventaris (Mendukung Pencarian Fleksibel dengan/tanpa Titik, Cabang 01-05, Tahun, Hari Ini, dan Label QR)
 $filteredCards = array_filter($allCards, function($r) use ($searchCard, $cabangCard, $tahunCard, $filterHariIni, $filterHasQr, $todayDateStr, $todayDateDmy, $todayDateDmY) {
     if ($filterHasQr) {
         $bc = trim((string)($r['barcode_data'] ?? ''));
@@ -300,17 +300,43 @@ $filteredCards = array_filter($allCards, function($r) use ($searchCard, $cabangC
         if (!$isToday) return false;
     }
     if ($searchCard !== '') {
-        $q = strtolower($searchCard);
-        $haystack = strtolower(($r['nomor_rekening'] ?? '') . ' ' . ($r['nama_barang'] ?? '') . ' ' . ($r['barcode_data'] ?? '') . ' ' . ($r['lokasi'] ?? ''));
-        if (strpos($haystack, $q) === false) return false;
+        $q = strtolower(trim($searchCard));
+        $cleanQ = preg_replace('/[^a-z0-9]/', '', $q);
+        
+        $rekRaw = strtolower(trim((string)($r['nomor_rekening'] ?? '')));
+        $cleanRek = preg_replace('/[^a-z0-9]/', '', $rekRaw);
+        
+        $namaRaw = strtolower(trim((string)($r['nama_barang'] ?? '')));
+        $barcodeRaw = strtolower(trim((string)($r['barcode_data'] ?? '')));
+        $lokasiRaw = strtolower(trim((string)($r['lokasi'] ?? '')));
+        $tglRaw = trim((string)($r['tanggal_perolehan'] ?? ''));
+        $nomorGabungan = strtolower(get_nomor_asset_gabungan($rekRaw, $tglRaw));
+        $cleanGabungan = preg_replace('/[^a-z0-9]/', '', $nomorGabungan);
+
+        $haystack = $rekRaw . ' ' . $namaRaw . ' ' . $barcodeRaw . ' ' . $lokasiRaw . ' ' . $nomorGabungan;
+        $cleanHaystack = preg_replace('/[^a-z0-9]/', '', $haystack);
+
+        $matched = false;
+        if (strpos($haystack, $q) !== false) {
+            $matched = true;
+        } elseif ($cleanQ !== '') {
+            if (strpos($cleanRek, $cleanQ) !== false || 
+                strpos($cleanGabungan, $cleanQ) !== false || 
+                strpos($cleanHaystack, $cleanQ) !== false) {
+                $matched = true;
+            }
+        }
+        if (!$matched) return false;
     }
     if ($cabangCard !== '' && $cabangCard !== 'Semua Cabang' && $cabangCard !== 'all') {
         $rek = trim((string)($r['nomor_rekening'] ?? ''));
         $lokasi = strtolower(trim((string)($r['lokasi'] ?? '')));
+        $cleanRek = preg_replace('/[^a-z0-9]/', '', strtolower($rek));
+        $cleanCabang = preg_replace('/[^a-z0-9]/', '', strtolower($cabangCard));
         
         $matchFound = false;
-        // Cek prefix nomor rekening (01., 02., 03., 04., 05.)
-        if (preg_match('/^' . preg_quote($cabangCard, '/') . '[\.\-]/', $rek)) {
+        // Cek prefix nomor rekening (01., 02., 03., 04., 05. atau 01, 02, 03, 04, 05)
+        if (preg_match('/^' . preg_quote($cabangCard, '/') . '[\.\-]/', $rek) || str_starts_with($cleanRek, $cleanCabang)) {
             $matchFound = true;
         } else {
             $branchMap = [
@@ -1237,7 +1263,7 @@ if ($activeTab === 'kartu') {
           <label class="form-label text-secondary small fw-semibold mb-1">Cari Nomor Rekening / Perangkat / PIC</label>
           <div class="input-group input-group-sm">
             <span class="input-group-text bg-white border-end-0"><i class="bi bi-search text-muted"></i></span>
-            <input type="text" class="form-control form-control-sm border-start-0" name="q_kartu" value="'.e($searchCard).'" placeholder="Ketik nomor rekening, nama barang, kode QR, lokasi...">
+            <input type="text" class="form-control form-control-sm border-start-0" name="q_kartu" value="'.e($searchCard).'" placeholder="Cari 05500032 atau 05.5.00032, nama barang, lokasi...">
           </div>
         </div>
         <div class="col-lg-3 col-md-3 col-sm-6">

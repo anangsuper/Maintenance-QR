@@ -102,6 +102,8 @@ if (!in_array($layout, ['8', '10', '12'], true)) {
 $showCutGuides = isset($_GET['cut_guides']) ? (int)$_GET['cut_guides'] : 1;
 $exportMode = trim((string)($_GET['export'] ?? ''));
 
+$searchQuery = trim((string)($_GET['q'] ?? $_GET['search'] ?? $_GET['q_kartu'] ?? ''));
+
 // Parsing daftar ID terpilih
 $idList = [];
 if ($rawIds !== '') {
@@ -125,6 +127,27 @@ if ($source === 'inventaris_kartu') {
     } elseif ($singleId > 0) {
         $invRows = array_values(array_filter($invRows, function($r) use ($singleId) {
             return (int)$r['id'] === $singleId;
+        }));
+    } elseif ($searchQuery !== '') {
+        $q = strtolower($searchQuery);
+        $cleanQ = preg_replace('/[^a-z0-9]/', '', $q);
+        $invRows = array_values(array_filter($invRows, function($r) use ($q, $cleanQ) {
+            $rek = strtolower(trim((string)($r['nomor_rekening'] ?? '')));
+            $nama = strtolower(trim((string)($r['nama_barang'] ?? '')));
+            $lokasi = strtolower(trim((string)($r['lokasi'] ?? '')));
+            $barcode = strtolower(trim((string)($r['barcode_data'] ?? '')));
+            $tgl = trim((string)($r['tanggal_perolehan'] ?? ''));
+            $gabungan = strtolower(get_nomor_asset_gabungan($rek, $tgl));
+            $cleanRek = preg_replace('/[^a-z0-9]/', '', $rek);
+            $cleanHaystack = preg_replace('/[^a-z0-9]/', '', $rek . ' ' . $nama . ' ' . $lokasi . ' ' . $barcode . ' ' . $gabungan);
+            
+            if (strpos($rek . ' ' . $nama . ' ' . $lokasi . ' ' . $barcode, $q) !== false) {
+                return true;
+            }
+            if ($cleanQ !== '' && (strpos($cleanRek, $cleanQ) !== false || strpos($cleanHaystack, $cleanQ) !== false)) {
+                return true;
+            }
+            return false;
         }));
     }
 
