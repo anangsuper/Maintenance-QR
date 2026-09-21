@@ -198,6 +198,10 @@ function csrf_token(): string {
     return $_SESSION['_csrf'];
 }
 
+function csrf_field(): string {
+    return '<input type="hidden" name="_csrf" value="' . e(csrf_token()) . '">';
+}
+
 function verify_csrf(): void {
     $sent = (string)($_POST['_csrf'] ?? '');
     $expected = (string)($_SESSION['_csrf'] ?? $_COOKIE['_csrf_token'] ?? '');

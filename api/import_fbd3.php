@@ -4,12 +4,14 @@ require_login();
 
 $pageTitle = 'Auto Import FBD3 (Excel Inventaris)';
 
-// Muat data JSON hasil ekstraksi dari fbd3.xls
-$jsonFile = __DIR__ . '/fbd3_data.json';
-$items = [];
-if (file_exists($jsonFile)) {
-    $rawJson = file_get_contents($jsonFile);
-    $items = json_decode($rawJson, true) ?: [];
+// Muat data 531 item FBD3 yang sudah ter-compile dalam native PHP
+$items = get_fbd3_static_items();
+if (empty($items)) {
+    $jsonFile = __DIR__ . '/fbd3_data.json';
+    if (file_exists($jsonFile)) {
+        $rawJson = @file_get_contents($jsonFile);
+        $items = json_decode((string)$rawJson, true) ?: [];
+    }
 }
 
 $action = $_POST['action'] ?? '';
