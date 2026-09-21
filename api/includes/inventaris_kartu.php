@@ -203,10 +203,15 @@ function get_inventaris_kartu_rows(bool $refresh = false): array {
 
             $normalized = [];
             foreach ($rows as $r) {
-                $id = (int)($r['id'] ?? 0);
+                $id = (int)($r['id'] ?? $r['col_0'] ?? 0);
                 if ($id <= 0) continue;
-                $rek = trim((string)($r['nomor_rekening'] ?? ''));
-                $lokasi = trim((string)($r['lokasi'] ?? ''));
+                $rek = trim((string)($r['nomor_rekening'] ?? $r['col_1'] ?? ''));
+                $nama = trim((string)($r['nama_barang'] ?? $r['col_2'] ?? ''));
+                $tgl = trim((string)($r['tanggal_perolehan'] ?? $r['col_3'] ?? ''));
+                $barcode = trim((string)($r['barcode_data'] ?? $r['col_4'] ?? ''));
+                $lokasi = trim((string)($r['lokasi'] ?? $r['col_5'] ?? ''));
+                $created = trim((string)($r['created_at'] ?? $r['col_6'] ?? ''));
+
                 if ($lokasi === '' || $lokasi === 'KPO' || $lokasi === 'KPO / Operasional') {
                     $cBranch = get_cabang_from_nomor_rekening($rek);
                     $lokasi = $cBranch ? $cBranch['lokasi'] : 'Kantor Pusat (KPO)';
@@ -215,11 +220,11 @@ function get_inventaris_kartu_rows(bool $refresh = false): array {
                 $normalized[] = [
                     'id'                => $id,
                     'nomor_rekening'   => $rek,
-                    'nama_barang'      => trim((string)($r['nama_barang'] ?? '')),
-                    'tanggal_perolehan'=> trim((string)($r['tanggal_perolehan'] ?? '')),
-                    'barcode_data'     => trim((string)($r['barcode_data'] ?? '')),
+                    'nama_barang'      => $nama,
+                    'tanggal_perolehan'=> $tgl,
+                    'barcode_data'     => $barcode,
                     'lokasi'           => $lokasi,
-                    'created_at'       => trim((string)($r['created_at'] ?? ''))
+                    'created_at'       => $created
                 ];
             }
             if (!empty($normalized)) {

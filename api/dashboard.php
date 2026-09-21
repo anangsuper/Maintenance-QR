@@ -169,7 +169,7 @@ foreach ($cabangs as $c) {
 }
 
 // Ambil Seluruh Data Kartu Inventaris
-$allCards = get_inventaris_kartu_rows();
+$allCards = get_inventaris_kartu_rows(!empty($_GET['refresh']));
 $totalCardsCount = count($allCards);
 
 $standardCabangs = get_standard_cabang_list();

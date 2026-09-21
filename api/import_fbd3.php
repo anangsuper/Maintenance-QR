@@ -15,10 +15,13 @@ if (file_exists($jsonFile)) {
 $action = $_POST['action'] ?? '';
 $importResult = null;
 
-if ($action === 'import' && !empty($items)) {
-    $targetTable = $_POST['target_table'] ?? 'both'; // 'kartu', 'assets', or 'both'
+if (($action === 'import' || $action === 'replace') && !empty($items)) {
+    verify_csrf();
+    
+    $targetTable = $_POST['target_table'] ?? 'kartu'; // 'kartu', 'both'
     $filterCategory = $_POST['filter_category'] ?? 'all'; // 'all', 'it_only', 'hrd_only'
     $selectedCabang = $_POST['filter_cabang'] ?? 'all';
+    $isReplace = ($action === 'replace');
 
     $filteredItems = array_filter($items, function($item) use ($filterCategory, $selectedCabang) {
         if ($filterCategory === 'it_only' && empty($item['IsIT'])) return false;
@@ -28,106 +31,139 @@ if ($action === 'import' && !empty($items)) {
     });
 
     $countKartuInserted = 0;
-    $countKartuUpdated = 0;
-    $countAssetsInserted = 0;
+    $countKartuSkipped = 0;
     $errors = [];
 
     // 1. IMPORT KE INVENTARIS_KARTU
-    if ($targetTable === 'kartu' || $targetTable === 'both') {
-        if (is_google_cloud_mode()) {
-            $client = google_sheets_v4_client();
-            if ($client) {
-                $client->createSheetIfNotExists('inventaris_kartu');
-                $existing = $client->getSheetData('inventaris_kartu', true);
-                $existingMap = [];
-                $maxId = 0;
-                foreach ($existing as $r) {
-                    $id = (int)($r['id'] ?? 0);
-                    if ($id > $maxId) $maxId = $id;
-                    $rek = trim((string)($r['nomor_rekening'] ?? ''));
-                    if ($rek !== '') $existingMap[$rek] = $id;
-                }
-
-                $newRows = [];
-                $nowStr = date('Y-m-d H:i:s');
-                foreach ($filteredItems as $item) {
-                    $rek = trim((string)($item['Kode'] ?? ''));
-                    if ($rek === '') continue;
-                    $nama = trim((string)($item['Nama'] ?? ''));
-                    $tgl = trim((string)($item['TglPerolehan'] ?? date('Y-m-d')));
-                    $lokasi = trim((string)($item['Lokasi'] ?? 'Kantor Pusat (KPO)'));
-                    $barcode = '';
-
-                    if (isset($existingMap[$rek])) {
-                        // Sudah ada di sheets
-                        $countKartuUpdated++;
-                    } else {
-                        $maxId++;
-                        $newRows[] = [
-                            $maxId,
-                            sheet_cell_text($rek),
-                            $nama,
-                            $tgl,
-                            $barcode,
-                            $lokasi,
-                            $nowStr
-                        ];
-                        $countKartuInserted++;
-                    }
-                }
-                if (!empty($newRows)) {
-                    $client->appendValues('inventaris_kartu!A:G', $newRows);
-                }
-            }
+    if (is_google_cloud_mode()) {
+        $client = google_sheets_v4_client();
+        if (!$client) {
+            $errors[] = 'Gagal menghubungkan ke Google Sheets API client.';
         } else {
-            // Mode MySQL
-            try {
-                $pdo = db();
-                $pdo->exec("
-                    CREATE TABLE IF NOT EXISTS inventaris_kartu (
-                        id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-                        nomor_rekening VARCHAR(100) NOT NULL,
-                        nama_barang VARCHAR(255) NOT NULL,
-                        tanggal_perolehan DATE NOT NULL,
-                        barcode_data TEXT NOT NULL,
-                        lokasi VARCHAR(150) NULL DEFAULT 'Kantor Pusat (KPO)',
-                        pengguna VARCHAR(150) NULL DEFAULT 'Umum / Pool',
-                        created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-                        PRIMARY KEY (id),
-                        KEY idx_nomor_rekening (nomor_rekening)
-                    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-                ");
+            $client->createSheetIfNotExists('inventaris_kartu');
+            $existing = $isReplace ? [] : $client->getSheetData('inventaris_kartu', true);
+            $existingMap = [];
+            $maxId = 0;
+            foreach ($existing as $r) {
+                $id = (int)($r['id'] ?? $r['col_0'] ?? 0);
+                if ($id > $maxId) $maxId = $id;
+                $rek = trim((string)($r['nomor_rekening'] ?? $r['col_1'] ?? ''));
+                if ($rek !== '') $existingMap[$rek] = $id;
+            }
 
-                $stmt = $pdo->prepare("
-                    INSERT INTO inventaris_kartu (nomor_rekening, nama_barang, tanggal_perolehan, barcode_data, lokasi, pengguna, created_at)
-                    VALUES (?, ?, ?, ?, ?, ?, NOW())
-                ");
+            $headers = ['id', 'nomor_rekening', 'nama_barang', 'tanggal_perolehan', 'barcode_data', 'lokasi', 'created_at'];
+            $newRows = [];
+            $nowStr = date('Y-m-d H:i:s');
 
-                foreach ($filteredItems as $item) {
-                    $rek = trim((string)($item['Kode'] ?? ''));
-                    if ($rek === '') continue;
-                    $nama = trim((string)($item['Nama'] ?? ''));
-                    $tgl = trim((string)($item['TglPerolehan'] ?? date('Y-m-d')));
-                    $lokasi = trim((string)($item['Lokasi'] ?? 'Kantor Pusat (KPO)'));
-                    
-                    try {
-                        $stmt->execute([$rek, $nama, $tgl, '', $lokasi, 'Umum / Pool']);
-                        $countKartuInserted++;
-                    } catch (Throwable $e) {
-                        $errors[] = "Gagal simpan {$rek}: " . $e->getMessage();
+            if ($isReplace || empty($existing)) {
+                // Tulis header di baris 1
+                $newRows[] = $headers;
+            }
+
+            foreach ($filteredItems as $item) {
+                $rek = trim((string)($item['Kode'] ?? ''));
+                if ($rek === '') continue;
+                $nama = trim((string)($item['Nama'] ?? ''));
+                $tgl = trim((string)($item['TglPerolehan'] ?? date('Y-m-d')));
+                $lokasi = trim((string)($item['Lokasi'] ?? 'Kantor Pusat (KPO)'));
+                $barcode = '';
+
+                if (!$isReplace && isset($existingMap[$rek])) {
+                    $countKartuSkipped++;
+                } else {
+                    $maxId++;
+                    $newRows[] = [
+                        $maxId,
+                        sheet_cell_text($rek),
+                        $nama,
+                        $tgl,
+                        $barcode,
+                        $lokasi,
+                        $nowStr
+                    ];
+                    $countKartuInserted++;
+                }
+            }
+
+            if (!empty($newRows)) {
+                if ($isReplace) {
+                    $client->clearValues('inventaris_kartu!A:Z');
+                }
+                
+                // Tulis per batch chunk (100 baris) agar cepat dan aman
+                $chunks = array_chunk($newRows, 100);
+                $writeSuccess = true;
+                foreach ($chunks as $chunk) {
+                    $ok = $client->appendValues('inventaris_kartu!A:G', $chunk);
+                    if (!$ok) {
+                        $writeSuccess = false;
+                        $err = $client->getLastError() ?: 'Gagal menulis batch baris ke Google Sheets.';
+                        $errors[] = $err;
+                        break;
                     }
                 }
-            } catch (Throwable $e) {
-                $errors[] = "Koneksi DB Error: " . $e->getMessage();
+
+                if ($writeSuccess) {
+                    $client->clearCache('inventaris_kartu');
+                    if (session_status() === PHP_SESSION_ACTIVE) {
+                        unset($_SESSION['_gs_cache_inventaris_kartu'], $_SESSION['_gs_time_inventaris_kartu']);
+                    }
+                }
             }
+        }
+    } else {
+        // Mode MySQL Database
+        try {
+            $pdo = db();
+            $pdo->exec("
+                CREATE TABLE IF NOT EXISTS inventaris_kartu (
+                    id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+                    nomor_rekening VARCHAR(100) NOT NULL,
+                    nama_barang VARCHAR(255) NOT NULL,
+                    tanggal_perolehan DATE NOT NULL,
+                    barcode_data TEXT NOT NULL,
+                    lokasi VARCHAR(150) NULL DEFAULT 'Kantor Pusat (KPO)',
+                    pengguna VARCHAR(150) NULL DEFAULT 'Umum / Pool',
+                    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                    PRIMARY KEY (id),
+                    KEY idx_nomor_rekening (nomor_rekening)
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+            ");
+
+            if ($isReplace) {
+                $pdo->exec("TRUNCATE TABLE inventaris_kartu");
+            }
+
+            $stmt = $pdo->prepare("
+                INSERT INTO inventaris_kartu (nomor_rekening, nama_barang, tanggal_perolehan, barcode_data, lokasi, pengguna, created_at)
+                VALUES (?, ?, ?, ?, ?, ?, NOW())
+            ");
+
+            foreach ($filteredItems as $item) {
+                $rek = trim((string)($item['Kode'] ?? ''));
+                if ($rek === '') continue;
+                $nama = trim((string)($item['Nama'] ?? ''));
+                $tgl = trim((string)($item['TglPerolehan'] ?? date('Y-m-d')));
+                $lokasi = trim((string)($item['Lokasi'] ?? 'Kantor Pusat (KPO)'));
+                
+                try {
+                    $stmt->execute([$rek, $nama, $tgl, '', $lokasi, 'Umum / Pool']);
+                    $countKartuInserted++;
+                } catch (Throwable $e) {
+                    $errors[] = "Gagal simpan {$rek}: " . $e->getMessage();
+                }
+            }
+        } catch (Throwable $e) {
+            $errors[] = "Koneksi Database Error: " . $e->getMessage();
         }
     }
 
     $importResult = [
         'total_filtered' => count($filteredItems),
         'kartu_inserted' => $countKartuInserted,
-        'kartu_updated'  => $countKartuUpdated,
-        'errors'         => $errors
+        'kartu_skipped'  => $countKartuSkipped,
+        'errors'         => $errors,
+        'is_replace'     => $isReplace
     ];
 }
 
@@ -160,49 +196,68 @@ ob_start();
       <p class="text-muted small mb-0">Impor data <strong>Rincian Nominatif Aktiva & Inventaris Bank Mitra</strong> langsung ke Database & Kartu Cetak.</p>
     </div>
     <div class="d-flex gap-2">
-      <a href="<?= module_url('print_inventory_card.php') ?>" class="btn btn-sm btn-primary rounded-pill px-3 shadow-sm">
-        <i class="bi bi-printer me-1"></i> Cetak Kartu Inventaris
+      <a href="<?= module_url('print_inventory_card.php', ['source' => 'inventaris_kartu']) ?>" class="btn btn-sm btn-primary rounded-pill px-3 shadow-sm">
+        <i class="bi bi-printer me-1"></i> Buka Cetak Kartu Inventaris
       </a>
     </div>
   </div>
 
   <?php if ($importResult): ?>
-    <div class="alert alert-success border-0 shadow-sm rounded-4 p-4 mb-4">
-      <div class="d-flex align-items-start gap-3">
-        <div class="rounded-circle bg-success text-white p-2 d-flex align-items-center justify-content-center" style="width: 44px; height: 44px;">
-          <i class="bi bi-check-lg fs-4"></i>
-        </div>
-        <div class="flex-grow-1">
-          <h5 class="fw-bold text-success mb-1">Proses Impor Berhasil!</h5>
-          <p class="text-muted small mb-2">Sebanyak <strong><?= number_format($importResult['total_filtered']) ?></strong> data telah diproses:</p>
-          <div class="d-flex flex-wrap gap-2">
-            <span class="badge bg-success-subtle text-success border border-success-subtle px-3 py-2 fs-6">
-              <i class="bi bi-card-checklist me-1"></i> <?= $importResult['kartu_inserted'] ?> Kartu Inventaris Ditambahkan
-            </span>
-            <?php if ($importResult['kartu_updated'] > 0): ?>
-            <span class="badge bg-info-subtle text-info border border-info-subtle px-3 py-2 fs-6">
-              <i class="bi bi-arrow-repeat me-1"></i> <?= $importResult['kartu_updated'] ?> Sudah Ada
-            </span>
-            <?php endif; ?>
+    <?php if (empty($importResult['errors']) && $importResult['kartu_inserted'] > 0): ?>
+      <div class="alert alert-success border-0 shadow-sm rounded-4 p-4 mb-4">
+        <div class="d-flex align-items-start gap-3">
+          <div class="rounded-circle bg-success text-white p-2 d-flex align-items-center justify-content-center" style="width: 44px; height: 44px; flex-shrink: 0;">
+            <i class="bi bi-check-lg fs-4"></i>
           </div>
-          <?php if (!empty($importResult['errors'])): ?>
-            <div class="mt-3 alert alert-danger small mb-0">
-              <strong>Catatan:</strong>
-              <ul class="mb-0">
-                <?php foreach (array_slice($importResult['errors'], 0, 5) as $err): ?>
-                  <li><?= htmlspecialchars($err) ?></li>
-                <?php endforeach; ?>
-              </ul>
+          <div class="flex-grow-1">
+            <h5 class="fw-bold text-success mb-1">Proses Impor Berhasil!</h5>
+            <p class="text-muted small mb-2">Sebanyak <strong><?= number_format($importResult['kartu_inserted']) ?></strong> data barang berhasil dimasukkan ke tabel <code>inventaris_kartu</code>.</p>
+            <div class="d-flex flex-wrap gap-2">
+              <span class="badge bg-success-subtle text-success border border-success-subtle px-3 py-2 fs-6">
+                <i class="bi bi-card-checklist me-1"></i> <?= $importResult['kartu_inserted'] ?> Kartu Inventaris Siap Cetak
+              </span>
+              <?php if ($importResult['kartu_skipped'] > 0): ?>
+              <span class="badge bg-secondary-subtle text-secondary border px-3 py-2 fs-6">
+                <i class="bi bi-info-circle me-1"></i> <?= $importResult['kartu_skipped'] ?> Dilewati (Sudah Ada)
+              </span>
+              <?php endif; ?>
             </div>
-          <?php endif; ?>
-          <div class="mt-3">
-            <a href="<?= module_url('print_inventory_card.php') ?>" class="btn btn-sm btn-success rounded-pill px-4 fw-bold">
-              Lihat di Halaman Cetak Kartu &rarr;
-            </a>
+            <div class="mt-3">
+              <a href="<?= module_url('print_inventory_card.php', ['source' => 'inventaris_kartu']) ?>" class="btn btn-success rounded-pill px-4 fw-bold shadow-sm">
+                <i class="bi bi-printer-fill me-1"></i> Cetak Kartu Sekarang &rarr;
+              </a>
+              <a href="<?= module_url('dashboard.php', ['tab' => 'kartu']) ?>" class="btn btn-outline-success rounded-pill px-3 ms-2 fw-semibold">
+                Lihat di Dashboard
+              </a>
+            </div>
           </div>
         </div>
       </div>
-    </div>
+    <?php else: ?>
+      <div class="alert alert-warning border-0 shadow-sm rounded-4 p-4 mb-4">
+        <div class="d-flex align-items-start gap-3">
+          <div class="rounded-circle bg-warning text-dark p-2 d-flex align-items-center justify-content-center" style="width: 44px; height: 44px; flex-shrink: 0;">
+            <i class="bi bi-exclamation-triangle-fill fs-4"></i>
+          </div>
+          <div class="flex-grow-1">
+            <h5 class="fw-bold text-dark mb-1">Hasil Proses Impor</h5>
+            <p class="text-muted small mb-2">
+              Inserted: <strong><?= $importResult['kartu_inserted'] ?></strong> · Skipped: <strong><?= $importResult['kartu_skipped'] ?></strong>
+            </p>
+            <?php if (!empty($importResult['errors'])): ?>
+              <div class="alert alert-danger small mb-0 mt-2">
+                <strong>Catatan Error:</strong>
+                <ul class="mb-0 ps-3">
+                  <?php foreach (array_slice($importResult['errors'], 0, 5) as $err): ?>
+                    <li><?= htmlspecialchars($err) ?></li>
+                  <?php endforeach; ?>
+                </ul>
+              </div>
+            <?php endif; ?>
+          </div>
+        </div>
+      </div>
+    <?php endif; ?>
   <?php endif; ?>
 
   <!-- Summary Cards -->
@@ -255,16 +310,9 @@ ob_start();
       <div class="card border-0 shadow-sm rounded-4 p-4 bg-white h-100">
         <h5 class="fw-bold text-dark mb-3"><i class="bi bi-box-arrow-in-down text-primary me-2"></i>Pengaturan Impor</h5>
         
-        <form method="POST" onsubmit="return confirm('Apakah Anda yakin ingin mengimpor data inventaris yang dipilih ke database?')">
-          <input type="hidden" name="action" value="import">
-
-          <div class="mb-3">
-            <label class="form-label small fw-bold text-secondary">Target Tujuan Impor</label>
-            <select name="target_table" class="form-select form-select-sm rounded-3">
-              <option value="kartu" selected>Kartu Inventaris (inventaris_kartu - Cetak & QR)</option>
-              <option value="both">Kartu Inventaris + Modul Maintenance</option>
-            </select>
-          </div>
+        <form method="POST" id="importForm" onsubmit="return handleFormSubmit(event)">
+          <?= csrf_field() ?>
+          <input type="hidden" name="action" id="formAction" value="import">
 
           <div class="mb-3">
             <label class="form-label small fw-bold text-secondary">Filter Kategori Barang</label>
@@ -288,11 +336,15 @@ ob_start();
           </div>
 
           <div class="alert alert-info py-2 px-3 small border-0 rounded-3 mb-4">
-            <i class="bi bi-info-circle me-1"></i> Data diimpor dengan format tanggal baku, nama lengkap aktiva, dan nomor rekening perolehan.
+            <i class="bi bi-info-circle me-1"></i> Data diimpor dengan format tanggal baku, nama lengkap aktiva, nomor rekening, dan sebaran lokasi cabang.
           </div>
 
-          <button type="submit" class="btn btn-primary w-100 py-2 rounded-pill fw-bold shadow-sm">
-            <i class="bi bi-cloud-arrow-down-fill me-1"></i> Mulai Auto-Import Sekarang
+          <button type="submit" id="btnSubmitImport" class="btn btn-primary w-100 py-2 rounded-pill fw-bold shadow-sm mb-2">
+            <i class="bi bi-cloud-arrow-down-fill me-1"></i> Tambahkan Data ke Sistem
+          </button>
+
+          <button type="button" onclick="submitReplace()" class="btn btn-outline-danger w-100 py-2 rounded-pill small fw-semibold">
+            <i class="bi bi-arrow-repeat me-1"></i> Timpa & Muat Ulang Semua (531 Item)
           </button>
         </form>
       </div>
@@ -350,6 +402,22 @@ ob_start();
     </div>
   </div>
 </div>
+
+<script>
+function handleFormSubmit(e) {
+  var btn = document.getElementById('btnSubmitImport');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Memproses Impor...';
+  return true;
+}
+
+function submitReplace() {
+  if (confirm('PERINGATAN: Opsi ini akan mengosongkan kartu inventaris lama dan mengisi ulang 531 aset dari FBD3. Lanjutkan?')) {
+    document.getElementById('formAction').value = 'replace';
+    document.getElementById('importForm').submit();
+  }
+}
+</script>
 <?php
 $content = ob_get_clean();
 render_page($pageTitle, $content);

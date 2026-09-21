@@ -117,7 +117,7 @@ $index = 0;
 
 if ($source === 'inventaris_kartu') {
     // Mode Default: Tabel Terpisah inventaris_kartu
-    $invRows = get_inventaris_kartu_rows();
+    $invRows = get_inventaris_kartu_rows(!empty($_GET['refresh']));
     if (!empty($idList)) {
         $invRows = array_values(array_filter($invRows, function($r) use ($idList) {
             return in_array((int)$r['id'], $idList, true);
