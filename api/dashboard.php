@@ -1134,6 +1134,9 @@ if ($activeTab === 'kartu') {
         <button type="button" class="btn btn-primary d-inline-flex align-items-center gap-1 fw-semibold px-3" data-bs-toggle="modal" data-bs-target="#addCardModal">
           <i class="bi bi-plus-lg"></i> Tambah Data Kartu
         </button>
+        <a href="'.e(module_url('import_fbd3.php')).'" class="btn btn-outline-success d-inline-flex align-items-center gap-1 fw-semibold">
+          <i class="bi bi-file-earmark-excel"></i> Import FBD3
+        </a>
         <button type="button" class="btn btn-light border d-inline-flex align-items-center gap-1" data-bs-toggle="modal" data-bs-target="#importAssetModal">
           <i class="bi bi-box-seam"></i> Pilih dari Aset IT
         </button>
@@ -1363,6 +1366,9 @@ if ($activeTab === 'kartu') {
               </h2>
             </div>
             <div class="d-flex gap-2">
+              <a href="'.e(module_url('import_fbd3.php')).'" class="btn btn-sm btn-outline-success fw-semibold">
+                <i class="bi bi-file-earmark-excel me-1"></i> Import FBD3
+              </a>
               <a href="'.e(module_url('print_inventory_card.php', ['source'=>'inventaris_kartu'])).'" target="_blank" class="btn btn-sm btn-primary fw-semibold">
                 <i class="bi bi-printer-fill me-1"></i> Cetak Massal (A4)
               </a>

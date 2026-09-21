@@ -963,6 +963,10 @@ unset($_SESSION['flash'], $_SESSION['flash_error']);
           <i class="bi bi-plus-lg"></i> Tambah Data
         </button>
 
+        <a href="<?= e(module_url('import_fbd3.php')) ?>" class="btn btn-sm btn-outline-success fw-semibold d-inline-flex align-items-center gap-1">
+          <i class="bi bi-file-earmark-excel"></i> Import FBD3
+        </a>
+
         <button type="button" class="btn btn-sm btn-light border d-inline-flex align-items-center gap-1" onclick="openLivePreviewModal()">
           <i class="bi bi-eye"></i> Pratinjau
         </button>
