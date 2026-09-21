@@ -352,5 +352,4 @@ ob_start();
 </div>
 <?php
 $content = ob_get_clean();
-require __DIR__ . '/includes/view.php';
-render_view($pageTitle, $content);
+render_page($pageTitle, $content);

@@ -1,4 +1,5 @@
 <?php
+if (!function_exists('render_page')) {
 function render_page(string $title, string $content, string $extraHead = '', string $extraScript = '', bool $showNav = true): void {
     $currentPage = basename($_SERVER['SCRIPT_NAME'] ?? '');
     $role = current_user_role();
@@ -1220,3 +1221,11 @@ if ("serviceWorker" in navigator) {
 </body>
 </html>';
 }
+}
+
+if (!function_exists('render_view')) {
+    function render_view(string $title, string $content, string $extraHead = '', string $extraScript = '', bool $showNav = true): void {
+        render_page($title, $content, $extraHead, $extraScript, $showNav);
+    }
+}
+
