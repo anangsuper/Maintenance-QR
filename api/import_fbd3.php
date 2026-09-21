@@ -88,20 +88,21 @@ if (($action === 'import' || $action === 'replace') && !empty($items)) {
             }
 
             if (!empty($newRows)) {
+                $writeSuccess = false;
                 if ($isReplace) {
                     $client->clearValues('inventaris_kartu!A:Z');
-                }
-                
-                // Tulis per batch chunk (100 baris) agar cepat dan aman
-                $chunks = array_chunk($newRows, 100);
-                $writeSuccess = true;
-                foreach ($chunks as $chunk) {
-                    $ok = $client->appendValues('inventaris_kartu!A:G', $chunk);
-                    if (!$ok) {
-                        $writeSuccess = false;
-                        $err = $client->getLastError() ?: 'Gagal menulis batch baris ke Google Sheets.';
-                        $errors[] = $err;
-                        break;
+                    $ok = $client->updateValues('inventaris_kartu!A1:G' . count($newRows), $newRows);
+                    if ($ok) {
+                        $writeSuccess = true;
+                    } else {
+                        $errors[] = $client->getLastError() ?: 'Gagal menyimpan seluruh data ke Google Sheets.';
+                    }
+                } else {
+                    $ok = $client->appendValues('inventaris_kartu!A:G', $newRows);
+                    if ($ok) {
+                        $writeSuccess = true;
+                    } else {
+                        $errors[] = $client->getLastError() ?: 'Gagal menambahkan baris ke Google Sheets.';
                     }
                 }
 
@@ -376,7 +377,7 @@ ob_start();
               </tr>
             </thead>
             <tbody>
-              <?php foreach (array_slice($items, 0, 100) as $it): ?>
+              <?php foreach ($items as $it): ?>
                 <tr>
                   <td class="text-muted"><?= htmlspecialchars($it['No'] ?? '') ?></td>
                   <td><span class="badge bg-light text-dark font-monospace border"><?= htmlspecialchars($it['Kode'] ?? '') ?></span></td>
@@ -398,7 +399,7 @@ ob_start();
           </table>
         </div>
         <div class="text-center text-muted small mt-2">
-          <em>* Menampilkan 100 dari <?= count($items) ?> data barang.</em>
+          <em>* Menampilkan seluruh <?= count($items) ?> unit aktiva & inventaris.</em>
         </div>
       </div>
     </div>
