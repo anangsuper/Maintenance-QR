@@ -2,16 +2,30 @@
 require __DIR__ . '/bootstrap.php';
 require_once __DIR__ . '/views/scan/biometric_modal.php';
 
-$token = trim((string)($_GET['t'] ?? $_POST['t'] ?? ''));
-if ($token === '' || !preg_match('/^[a-zA-Z0-9\-_]{1,128}$/', $token)) {
-    render_page('QR Tidak Valid', '<div class="alert alert-danger border-0 shadow-sm"><i class="bi bi-exclamation-octagon-fill me-2"></i><strong>QR tidak valid.</strong> Token QR tidak dikenali.</div>', '', '', false);
+$rawToken = (string)($_GET['t'] ?? $_POST['t'] ?? $_GET['token'] ?? $_POST['token'] ?? '');
+if (stripos($rawToken, 'scan.php') !== false || stripos($rawToken, '?t=') !== false) {
+    $parsedQuery = parse_url($rawToken, PHP_URL_QUERY);
+    if ($parsedQuery) {
+        parse_str($parsedQuery, $qp);
+        if (!empty($qp['t'])) {
+            $rawToken = $qp['t'];
+        } elseif (!empty($qp['token'])) {
+            $rawToken = $qp['token'];
+        }
+    }
+}
+$token = trim(urldecode($rawToken));
+$token = trim($token, " '\t\n\r\0\x0B");
+
+if ($token === '' || !preg_match('/^[a-zA-Z0-9\-_\.\/\:\+\s%]{1,128}$/', $token)) {
+    render_page('QR Tidak Valid', '<div class="alert alert-danger border-0 shadow-sm"><i class="bi bi-exclamation-octagon-fill me-2"></i><strong>QR tidak valid.</strong> Token QR tidak dikenali atau kosong.</div>', '', '', false);
     exit;
 }
 
 $asset = get_asset_by_token($token);
 
 if (!$asset) {
-    render_page('QR Tidak Ditemukan', '<div class="alert alert-danger border-0 shadow-sm"><i class="bi bi-exclamation-triangle-fill me-2"></i><strong>QR tidak ditemukan atau belum terdaftar di sistem.</strong> Pastikan kode QR sudah di-generate di menu admin QR Aset.</div>', '', '', false);
+    render_page('QR Tidak Ditemukan', '<div class="alert alert-danger border-0 shadow-sm"><i class="bi bi-exclamation-triangle-fill me-2"></i><strong>QR tidak ditemukan atau belum terdaftar di sistem.</strong> Pastikan kode QR sudah di-generate di menu admin QR Aset atau periksa nomor inventaris perangkat.</div>', '', '', false);
     exit;
 }
 

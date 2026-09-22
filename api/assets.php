@@ -246,6 +246,66 @@ foreach ($cabangs as $c) {
     $optCab .= '<option value="'.$cid.'"'.($cid === $cabangId ? ' selected' : '').'>'.e($cnama).'</option>';
 }
 
+// Render Branch Navigation Pills
+$branchPillsHtml = '<div class="branch-nav-bar custom-scrollbar mb-3">';
+$allActive = ($cabangId === 0);
+$branchPillsHtml .= '<a class="branch-nav-pill '.($allActive ? 'active' : '').'" href="'.e(filter_query(['cabang' => 0, 'page' => 1])).'">
+  <i class="bi bi-buildings"></i> Semua Cabang
+  <span class="badge bg-light text-dark rounded-pill">'.$statTotal.'</span>
+</a>';
+foreach ($cabangs as $c) {
+    $cid = (int)($c['id'] ?? 0);
+    $cnama = $c['nama'] ?? $c['nama_cabang'] ?? ('Cabang #' . $cid);
+    $isActive = ($cid === $cabangId);
+    $branchPillsHtml .= '<a class="branch-nav-pill '.($isActive ? 'active' : '').'" href="'.e(filter_query(['cabang' => $cid, 'page' => 1])).'">
+      <i class="bi bi-geo-alt'.($isActive ? '-fill' : '').'"></i> '.e($cnama).'
+    </a>';
+}
+$branchPillsHtml .= '</div>';
+
+$extraHead = '
+<style>
+.branch-nav-bar {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  padding-bottom: 6px;
+  margin-bottom: 18px;
+  -webkit-overflow-scrolling: touch;
+}
+.branch-nav-pill {
+  white-space: nowrap;
+  padding: 7px 14px;
+  font-size: 0.82rem;
+  font-weight: 500;
+  border-radius: 6px;
+  background: #FFFFFF;
+  border: 1px solid #CBD5E1;
+  color: #475569;
+  text-decoration: none;
+  transition: all 0.15s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+.branch-nav-pill:hover {
+  background: #F8FAFC;
+  color: #0F172A;
+  border-color: #94A3B8;
+}
+.branch-nav-pill.active {
+  background: var(--blue-corporate, #003B73);
+  border-color: var(--blue-corporate, #003B73);
+  color: #FFFFFF;
+  font-weight: 600;
+}
+.branch-nav-pill.active .badge {
+  background: rgba(255, 255, 255, 0.25) !important;
+  color: #FFFFFF !important;
+}
+</style>';
+
 // Render Opsi Dropdown Divisi
 $optDiv = '<option value="0">Semua Divisi ('.count($divisis).')</option>';
 foreach ($divisis as $d) {
@@ -533,6 +593,9 @@ $body = '
     <a class="btn btn-light border d-inline-flex align-items-center gap-1" href="'.e(module_url('export_csv.php')).'"><i class="bi bi-download"></i> Export CSV</a>
   </div>
 </div>
+
+<!-- Interactive Branch Switcher Navigation Bar -->
+'.$branchPillsHtml.'
 
 <!-- Stat Cards -->
 <div class="row g-3 mb-4">

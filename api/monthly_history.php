@@ -34,6 +34,21 @@ foreach ($cabangs as $c) {
     $cabangOpts .= '<option value="'.$cid.'"'.($cid === $cabangId ? ' selected' : '').'>'.e($cn).'</option>';
 }
 
+$branchPills = '';
+$allActive = ($cabangId === 0);
+$branchPills .= '<a class="branch-nav-pill '.($allActive ? 'active' : '').'" href="'.e(module_url('monthly_history.php', ['tahun'=>$year,'cabang'=>0])).'">
+  <i class="bi bi-buildings"></i> Semua Cabang
+</a>';
+
+foreach ($cabangs as $c) {
+    $cid = (int)($c['id'] ?? 0);
+    $cn = $c['nama_cabang'] ?? $c['nama'] ?? ('Cabang #' . $cid);
+    $isActive = ($cid === $cabangId);
+    $branchPills .= '<a class="branch-nav-pill '.($isActive ? 'active' : '').'" href="'.e(module_url('monthly_history.php', ['tahun'=>$year,'cabang'=>$cid])).'">
+      <i class="bi bi-geo-alt'.($isActive ? '-fill' : '').'"></i> '.e($cn).'
+    </a>';
+}
+
 $monthCardsHtml = '';
 foreach ($overview as $mNum => $m) {
     $isCurrent = $m['is_current'];
@@ -102,8 +117,47 @@ foreach ($overview as $mNum => $m) {
     </div>';
 }
 
+$headStyle = '
+<style>
+.branch-nav-bar {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  padding-bottom: 6px;
+  margin-bottom: 18px;
+  -webkit-overflow-scrolling: touch;
+}
+.branch-nav-pill {
+  white-space: nowrap;
+  padding: 7px 14px;
+  font-size: 0.82rem;
+  font-weight: 500;
+  border-radius: 6px;
+  background: #FFFFFF;
+  border: 1px solid #CBD5E1;
+  color: #475569;
+  text-decoration: none;
+  transition: all 0.15s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+.branch-nav-pill:hover {
+  background: #F8FAFC;
+  color: #0F172A;
+  border-color: #94A3B8;
+}
+.branch-nav-pill.active {
+  background: var(--blue-corporate, #003B73);
+  border-color: var(--blue-corporate, #003B73);
+  color: #FFFFFF;
+  font-weight: 600;
+}
+</style>';
+
 $body = '
-<div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3 mb-4">
+<div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3 mb-3">
   <div>
     <div class="tech-label mb-1">MONITORING</div>
     <h1 class="h3 mb-1">Riwayat Maintenance Bulanan</h1>
@@ -115,8 +169,13 @@ $body = '
   </form>
 </div>
 
+<!-- Interactive Branch Switcher Navigation Bar -->
+<div class="branch-nav-bar custom-scrollbar">
+  '.$branchPills.'
+</div>
+
 <div class="row g-3">
   '.$monthCardsHtml.'
 </div>';
 
-render_page('Riwayat Bulanan · ' . $year, $body);
+render_page('Riwayat Bulanan · ' . $year, $body, $headStyle);

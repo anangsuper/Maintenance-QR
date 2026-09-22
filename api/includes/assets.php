@@ -334,7 +334,13 @@ function get_asset_by_id(int $id): ?array {
                 $row['kode_inventaris'] = normalize_kode_inventaris((string)$row['kode_inventaris']);
             }
             if (empty($row['qr_token'])) {
-                $row['qr_token'] = get_static_qr_token($id);
+                $staticTok = get_static_qr_token($id);
+                $row['qr_token'] = $staticTok;
+                // Auto-sync into asset_qr_tokens so token is immediately indexed
+                try {
+                    $ins = db()->prepare("INSERT INTO asset_qr_tokens (asset_id, token, is_active) VALUES (?, ?, 1) ON DUPLICATE KEY UPDATE is_active = 1");
+                    $ins->execute([$id, $staticTok]);
+                } catch (Throwable $e) {}
             }
         }
         return $row ?: null;
@@ -641,7 +647,9 @@ function delete_asset(int $id): array {
 function get_asset_by_token(string $token): ?array {
     $token = trim($token);
     if ($token === '') return null;
+    $token = trim($token, " '\t\n\r\0\x0B");
     $normToken = normalize_kode_inventaris($token);
+    $unpaddedToken = ltrim($token, '0');
 
     if (is_google_cloud_mode()) {
         $assets = map_sheets_assets();
@@ -650,12 +658,14 @@ function get_asset_by_token(string $token): ?array {
             $staticTok = get_static_qr_token($aid);
             $qrToken = (string)($a['qr_token'] ?? '');
             $kode = (string)($a['kode_inventaris'] ?? '');
+            $sn = (string)($a['serial_number'] ?? '');
 
             if (
                 strcasecmp($qrToken, $token) === 0 ||
                 strcasecmp($staticTok, $token) === 0 ||
                 (is_numeric($token) && (int)$token === $aid) ||
-                ($kode !== '' && (strcasecmp($kode, $token) === 0 || strcasecmp($kode, $normToken) === 0))
+                ($kode !== '' && (strcasecmp($kode, $token) === 0 || strcasecmp($kode, $normToken) === 0 || ($unpaddedToken !== '' && strcasecmp(ltrim($kode, '0'), $unpaddedToken) === 0))) ||
+                ($sn !== '' && strcasecmp($sn, $token) === 0)
             ) {
                 return $a;
             }
@@ -663,11 +673,11 @@ function get_asset_by_token(string $token): ?array {
         // Direct fallback check on Asset_QR_Tokens tab
         $client = google_sheets_v4_client();
         if ($client) {
-            $qrRows = $client->getSheetData('Asset_QR_Tokens');
+            $qrRows = $client->getSheetData('Asset_QR_Tokens', true);
             foreach ($qrRows as $q) {
-                $qToken = trim((string)($q['token'] ?? ''));
+                $qToken = trim((string)($q['token'] ?? $q['col_2'] ?? ''));
                 if ($qToken !== '' && strcasecmp($qToken, $token) === 0) {
-                    $targetAssetId = (int)($q['asset_id'] ?? 0);
+                    $targetAssetId = (int)($q['asset_id'] ?? $q['col_1'] ?? 0);
                     foreach ($assets as $a) {
                         if ((int)$a['id'] === $targetAssetId) {
                             return $a;
@@ -684,12 +694,14 @@ function get_asset_by_token(string $token): ?array {
                 $staticTok = get_static_qr_token($aid);
                 $qrToken = (string)($a['qr_token'] ?? '');
                 $kode = (string)($a['kode_inventaris'] ?? '');
+                $sn = (string)($a['serial_number'] ?? '');
 
                 if (
                     strcasecmp($qrToken, $token) === 0 ||
                     strcasecmp($staticTok, $token) === 0 ||
                     (is_numeric($token) && (int)$token === $aid) ||
-                    ($kode !== '' && (strcasecmp($kode, $token) === 0 || strcasecmp($kode, $normToken) === 0))
+                    ($kode !== '' && (strcasecmp($kode, $token) === 0 || strcasecmp($kode, $normToken) === 0 || ($unpaddedToken !== '' && strcasecmp(ltrim($kode, '0'), $unpaddedToken) === 0))) ||
+                    ($sn !== '' && strcasecmp($sn, $token) === 0)
                 ) {
                     return $a;
                 }
@@ -698,15 +710,46 @@ function get_asset_by_token(string $token): ?array {
         return null;
     }
 
-    $sql = asset_query_base() . " WHERE (q.token = ? OR a.kode_inventaris = ? OR a.kode_inventaris = ? " . (is_numeric($token) ? " OR a.id = ? " : "") . ") LIMIT 1";
-    $st = db()->prepare($sql);
-    $params = is_numeric($token) ? [$token, $token, $normToken, (int)$token] : [$token, $token, $normToken];
-    $st->execute($params);
-    $asset = $st->fetch();
-    if ($asset && isset($asset['kode_inventaris'])) {
-        $asset['kode_inventaris'] = normalize_kode_inventaris((string)$asset['kode_inventaris']);
-    }
-    return $asset ?: null;
+    // MySQL Mode
+    try {
+        // 1. Direct search by token, kode_inventaris, serial_number, or numeric ID
+        $sql = asset_query_base() . " WHERE (q.token = ? OR a.kode_inventaris = ? OR a.kode_inventaris = ? OR a.serial_number = ?" . (is_numeric($token) ? " OR a.id = ? " : "") . ") LIMIT 1";
+        $st = db()->prepare($sql);
+        $params = is_numeric($token) ? [$token, $token, $normToken, $token, (int)$token] : [$token, $token, $normToken, $token];
+        $st->execute($params);
+        $asset = $st->fetch();
+        if ($asset) {
+            if (isset($asset['kode_inventaris'])) {
+                $asset['kode_inventaris'] = normalize_kode_inventaris((string)$asset['kode_inventaris']);
+            }
+            return $asset;
+        }
+
+        // 2. Static QR Token Fallback for MySQL: check if token matches get_static_qr_token($id)
+        $stAll = db()->query("SELECT id, kode_inventaris, serial_number FROM assets");
+        $allA = $stAll ? $stAll->fetchAll() : [];
+        foreach ($allA as $row) {
+            $aid = (int)$row['id'];
+            $stToken = get_static_qr_token($aid);
+            $rowKode = (string)($row['kode_inventaris'] ?? '');
+            $rowSn = (string)($row['serial_number'] ?? '');
+            if (
+                strcasecmp($stToken, $token) === 0 ||
+                ($unpaddedToken !== '' && strcasecmp(ltrim($rowKode, '0'), $unpaddedToken) === 0) ||
+                ($rowSn !== '' && strcasecmp($rowSn, $token) === 0)
+            ) {
+                // Ensure token is persisted into asset_qr_tokens
+                try {
+                    $insQr = db()->prepare("INSERT INTO asset_qr_tokens (asset_id, token, is_active) VALUES (?, ?, 1) ON DUPLICATE KEY UPDATE is_active = 1");
+                    $insQr->execute([$aid, $stToken]);
+                } catch (Throwable $e) {}
+
+                return get_asset_by_id($aid);
+            }
+        }
+    } catch (Throwable $e) {}
+
+    return null;
 }
 
 
@@ -715,20 +758,30 @@ function get_qr_admin_rows(int $cabangId): array {
         $assets = map_sheets_assets();
         if ($cabangId > 0) {
             $assets = array_filter($assets, function($a) use ($cabangId) {
-                return $a['id_cabang'] === $cabangId;
+                return (int)($a['id_cabang'] ?? 0) === $cabangId;
             });
         }
         return array_values($assets);
     }
-    $where = " WHERE (a.status = 'Aktif' OR a.status = 'aktif' OR a.status IS NULL OR a.status = '') ";
+    $where = " WHERE 1=1 ";
     $params = [];
-    if ($cabangId) {
+    if ($cabangId > 0) {
         $where .= " AND a.id_cabang = ? ";
         $params[] = $cabangId;
     }
     $st = db()->prepare(asset_query_base() . $where . " ORDER BY cabang_nama, karyawan_nama, a.kode_inventaris LIMIT 1000");
     $st->execute($params);
-    return $st->fetchAll();
+    $rows = $st->fetchAll();
+    foreach ($rows as &$r) {
+        $aid = (int)($r['id'] ?? 0);
+        if (empty($r['qr_token']) && $aid > 0) {
+            $r['qr_token'] = get_static_qr_token($aid);
+        }
+        if (isset($r['kode_inventaris'])) {
+            $r['kode_inventaris'] = normalize_kode_inventaris((string)$r['kode_inventaris']);
+        }
+    }
+    return $rows;
 }
 
 function generate_missing_qr_tokens(int $cabangId): int {

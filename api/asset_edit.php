@@ -172,6 +172,7 @@ if ($successData) {
 
           <div class="d-flex flex-column flex-sm-row gap-2 justify-content-center">
             <a class="btn btn-primary btn-lg px-4 fw-semibold" href="'.e(module_url('assets.php')).'"><i class="bi bi-arrow-left me-1"></i> Kembali ke Daftar Aset</a>
+            <a class="btn btn-success btn-lg px-4 fw-semibold" target="_blank" href="'.e(module_url('scan.php', ['t' => $successData['qr_token']])).'"><i class="bi bi-qr-code-scan me-1"></i> Buka Tampilan Scan QR</a>
             <a class="btn btn-outline-secondary btn-lg" target="_blank" href="'.e($printUrl).'"><i class="bi bi-printer me-1"></i> Cetak Ulang Label (Opsional)</a>
             <a class="btn btn-light border btn-lg" href="'.e(module_url('asset_edit.php', ['id' => $id])).'"><i class="bi bi-pencil me-1"></i> Edit Lagi</a>
           </div>

@@ -39,6 +39,11 @@ if (is_google_cloud_mode()) {
 $cabangs = get_cabang_list();
 $divisis = get_divisi_list();
 $kategoris = get_kategori_list();
+$branchSummaries = get_branch_maintenance_summary($month, $year);
+$branchSummaryMap = [];
+foreach ($branchSummaries as $bs) {
+    $branchSummaryMap[(int)$bs['id']] = $bs;
+}
 
 // Jalankan audit query
 $audit = get_audit_maintenance_data([
@@ -54,6 +59,29 @@ $audit = get_audit_maintenance_data([
 
 $stats = $audit['stats'];
 $rows = $audit['rows'];
+
+// Branch Nav Pills HTML
+$branchPills = '';
+$allActive = ($cabangId === 0);
+$branchPills .= '<a class="branch-nav-pill '.($allActive ? 'active' : '').'" href="'.e(module_url('audit.php', ['bulan'=>$month,'tahun'=>$year,'cabang'=>0,'divisi'=>$divisiId,'kategori'=>$kategoriId,'teknisi'=>$techFilter,'status'=>$statusFilter])).'">
+  <i class="bi bi-buildings"></i> Semua Cabang
+  <span class="badge bg-light text-dark rounded-pill">'.$stats['total'].'</span>
+</a>';
+
+foreach ($cabangs as $c) {
+    $cid = (int)($c['id'] ?? 0);
+    $cn = $c['nama_cabang'] ?? $c['nama'] ?? ('Cabang #' . $cid);
+    $isActive = ($cid === $cabangId);
+    $bs = $branchSummaryMap[$cid] ?? null;
+    $countBadge = '';
+    if ($bs) {
+        $countBadge = '<span class="badge '.($isActive ? 'bg-white text-dark' : 'bg-light text-secondary').' rounded-pill">'.$bs['done'].'/'.$bs['total'].'</span>';
+    }
+    $branchPills .= '<a class="branch-nav-pill '.($isActive ? 'active' : '').'" href="'.e(module_url('audit.php', ['bulan'=>$month,'tahun'=>$year,'cabang'=>$cid,'divisi'=>$divisiId,'kategori'=>$kategoriId,'teknisi'=>$techFilter,'status'=>$statusFilter])).'">
+      <i class="bi bi-geo-alt'.($isActive ? '-fill' : '').'"></i> '.e($cn).'
+      '.$countBadge.'
+    </a>';
+}
 
 // Filter options HTML
 $cabangOpts = '<option value="0">Semua Cabang</option>';
@@ -123,9 +151,52 @@ if (!$tableRows) {
     $tableRows = '<tr><td colspan="10" class="text-center py-5 text-secondary"><i class="bi bi-search fs-1 d-block mb-2 opacity-50"></i>Tidak ada data perangkat yang cocok dengan kriteria filter.</td></tr>';
 }
 
+$headStyle = '
+<style>
+.branch-nav-bar {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  padding-bottom: 6px;
+  margin-bottom: 18px;
+  -webkit-overflow-scrolling: touch;
+}
+.branch-nav-pill {
+  white-space: nowrap;
+  padding: 7px 14px;
+  font-size: 0.82rem;
+  font-weight: 500;
+  border-radius: 6px;
+  background: #FFFFFF;
+  border: 1px solid #CBD5E1;
+  color: #475569;
+  text-decoration: none;
+  transition: all 0.15s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+.branch-nav-pill:hover {
+  background: #F8FAFC;
+  color: #0F172A;
+  border-color: #94A3B8;
+}
+.branch-nav-pill.active {
+  background: var(--blue-corporate, #003B73);
+  border-color: var(--blue-corporate, #003B73);
+  color: #FFFFFF;
+  font-weight: 600;
+}
+.branch-nav-pill.active .badge {
+  background: rgba(255, 255, 255, 0.25) !important;
+  color: #FFFFFF !important;
+}
+</style>';
+
 $body = '
 <!-- Header & Action Bar -->
-<div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3 mb-4">
+<div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3 mb-3">
   <div>
     <div class="tech-label mb-1">MONITORING & AUDIT</div>
     <h1 class="h3 mb-1">Reports & Audit Trail</h1>
@@ -144,6 +215,11 @@ $body = '
       </ul>
     </div>
   </div>
+</div>
+
+<!-- Interactive Branch Switcher Navigation Bar -->
+<div class="branch-nav-bar custom-scrollbar">
+  '.$branchPills.'
 </div>
 
 <!-- Statistik Cards -->
@@ -246,4 +322,4 @@ $body .= '
   </div>
 </div>';
 
-render_page('Reports & Audit Trail · ' . $monthName . ' ' . $year, $body);
+render_page('Reports & Audit Trail · ' . $monthName . ' ' . $year, $body, $headStyle);
