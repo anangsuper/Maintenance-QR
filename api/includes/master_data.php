@@ -9,56 +9,12 @@ function get_default_master_cabangs(): array {
     ];
 }
 
-function get_cabang_list(): array {
+function get_cabang_list(bool $forceRefresh = false): array {
     if (is_google_cloud_mode()) {
         $client = google_sheets_v4_client();
-        $rows = $client ? $client->getSheetData('Cabang') : [];
+        $rows = $client ? $client->getSheetData('Cabang', $forceRefresh) : [];
         if (empty($rows)) {
-            $defaults = get_default_master_cabangs();
-            if ($client) {
-                $client->createSheetIfNotExists('Cabang');
-                $appendRows = [['id', 'nama_cabang', 'alamat', 'telepon', 'penanggung_jawab']];
-                foreach ($defaults as $d) {
-                    $appendRows[] = [$d['id'], $d['nama_cabang'], $d['alamat'], $d['telepon'], $d['penanggung_jawab']];
-                }
-                $client->appendValues('Cabang!A:E', $appendRows);
-            }
-            return $defaults;
-        }
-
-        // Pastikan cabang 05 Handil Bakti & cabang standar lainnya ada jika sheet Cabang lama belum lengkap
-        $existingNames = [];
-        $maxId = 0;
-        foreach ($rows as $r) {
-            $id = (int)($r['id'] ?? $r['col_0'] ?? 0);
-            if ($id > $maxId) $maxId = $id;
-            $cn = strtolower(trim((string)($r['nama_cabang'] ?? $r['nama'] ?? $r['col_1'] ?? '')));
-            if ($cn !== '') $existingNames[] = $cn;
-        }
-
-        $defaults = get_default_master_cabangs();
-        $missingDefaults = [];
-        foreach ($defaults as $d) {
-            $checkName = strtolower($d['nama']);
-            $found = false;
-            foreach ($existingNames as $en) {
-                if (str_contains($en, $checkName) || str_contains($checkName, $en)) {
-                    $found = true;
-                    break;
-                }
-            }
-            if (!$found) {
-                $maxId++;
-                $d['id'] = $maxId;
-                $missingDefaults[] = $d;
-                if ($client) {
-                    $client->appendValues('Cabang!A:E', [[$d['id'], $d['nama_cabang'], $d['alamat'], $d['telepon'], $d['penanggung_jawab']]]);
-                }
-            }
-        }
-
-        if (!empty($missingDefaults)) {
-            $rows = array_merge($rows, $missingDefaults);
+            return get_default_master_cabangs();
         }
 
         return array_map(function($c) {
@@ -68,18 +24,24 @@ function get_cabang_list(): array {
             if (empty($c['nama'])) {
                 $c['nama'] = $c['nama_cabang'] ?? ('Cabang #' . ($c['id'] ?? ''));
             }
+            if (empty($c['nama_cabang'])) {
+                $c['nama_cabang'] = $c['nama'];
+            }
             return $c;
         }, $rows);
     }
     try {
         $cName = name_column('cabang') ?: 'id';
-        $rows = db()->query("SELECT id, `{$cName}` AS nama, `{$cName}` AS nama_cabang FROM cabang ORDER BY `{$cName}`")->fetchAll();
+        $rows = db()->query("SELECT id, `{$cName}` AS nama, `{$cName}` AS nama_cabang FROM cabang ORDER BY id ASC")->fetchAll();
         if (empty($rows)) {
             return get_default_master_cabangs();
         }
         return array_map(function($c) {
             if (isset($c['telepon'])) {
                 $c['telepon'] = format_phone_number((string)$c['telepon']);
+            }
+            if (empty($c['nama'])) {
+                $c['nama'] = $c['nama_cabang'] ?? ('Cabang #' . ($c['id'] ?? ''));
             }
             return $c;
         }, $rows);
