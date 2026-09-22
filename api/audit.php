@@ -322,4 +322,75 @@ $body .= '
   </div>
 </div>';
 
+// Lampiran Temuan & Solusi Pemeliharaan
+$findingsList = get_findings_report($month, $year, $cabangId);
+$findingsTableRows = '';
+$fNo = 0;
+foreach ($findingsList as $fl) {
+    $fNo++;
+    $flSt = strtolower(trim((string)($fl['repair_status'] ?? '')));
+    $isDoneFl = in_array($flSt, ['resolved', 'selesai', 'closed', 'ok'], true);
+    $flBadge = $isDoneFl
+        ? '<span class="badge-chip chip-success"><i class="bi bi-check-circle-fill"></i> Terselesaikan</span>'
+        : '<span class="badge-chip chip-warning"><i class="bi bi-hourglass-split"></i> Dalam Proses</span>';
+    
+    $loc = !empty($fl['divisi_nama']) && $fl['divisi_nama'] !== '-'
+        ? e($fl['cabang_nama']).' / '.e($fl['divisi_nama'])
+        : e($fl['cabang_nama']);
+
+    $findingsTableRows .= '<tr>
+      <td class="text-center text-muted small">'.$fNo.'</td>
+      <td>
+        <span class="fw-bold text-primary">'.e($fl['kode_inventaris']).'</span>
+        <div class="small text-muted">'.e($fl['merk_model']).'</div>
+      </td>
+      <td>
+        <div class="fw-semibold text-dark">'.e($fl['karyawan_nama']).'</div>
+        <div class="small text-secondary">'.$loc.'</div>
+      </td>
+      <td class="text-danger fw-semibold">
+        <i class="bi bi-exclamation-circle-fill me-1 small"></i>'.e($fl['finding']).'
+      </td>
+      <td class="text-dark">
+        <div class="text-success fw-bold small mb-1"><i class="bi bi-tools me-1"></i>Tindakan Solusi:</div>
+        <div>'.e($fl['action_taken']).'</div>
+      </td>
+      <td class="text-center">'.$flBadge.'</td>
+    </tr>';
+}
+
+if (!$findingsTableRows) {
+    $findingsTableRows = '<tr><td colspan="6" class="text-center py-4 text-secondary"><i class="bi bi-check-circle-fill text-success fs-4 d-block mb-1"></i>Tidak ditemukan kendala maupun kerusakan pada periode pemeliharaan ini (Kondisi 100% Normal).</td></tr>';
+}
+
+// Append Lampiran Card to $body
+$body .= '
+<!-- Lampiran: Rekapitulasi Temuan & Solusi -->
+<div class="card overflow-hidden mb-4 border-top border-3 border-danger shadow-sm">
+  <div class="card-header bg-white py-3 px-4 d-flex justify-content-between align-items-center">
+    <div>
+      <h2 class="h6 mb-0 fw-bold text-dark"><i class="bi bi-paperclip text-danger me-2"></i>Lampiran: Rekapitulasi Temuan Kendala & Rekomendasi Solusi</h2>
+      <div class="text-secondary small">Daftar temuan masalah perangkat dan tindakan perbaikan pada periode '.$monthName.' '.$year.'</div>
+    </div>
+    <span class="badge '.(count($findingsList) > 0 ? 'bg-danger' : 'bg-success').' rounded-pill px-3 py-2">
+      '.count($findingsList).' Temuan
+    </span>
+  </div>
+  <div class="table-responsive">
+    <table class="table table-hover align-middle mb-0">
+      <thead class="table-light">
+        <tr>
+          <th style="width:35px" class="text-center">No</th>
+          <th style="width:180px">Kode & Perangkat</th>
+          <th style="width:160px">Pengguna & Lokasi</th>
+          <th>Uraian Temuan / Kendala</th>
+          <th>Tindakan Solusi / Rekomendasi</th>
+          <th style="width:130px" class="text-center">Status Solusi</th>
+        </tr>
+      </thead>
+      <tbody>'.$findingsTableRows.'</tbody>
+    </table>
+  </div>
+</div>';
+
 render_page('Reports & Audit Trail · ' . $monthName . ' ' . $year, $body, $headStyle);

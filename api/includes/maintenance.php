@@ -1619,50 +1619,123 @@ function get_findings_report(int $month, int $year, int $cabangId): array {
         if (!$client) return [];
         $findings = $client->getSheetData('Maintenance_Findings');
         $scans = $client->getSheetData('Maintenance_Scan');
-        $scanMap = []; foreach ($scans as $s) $scanMap[$s['id'] ?? 0] = $s;
+        $scanMap = []; foreach ($scans as $s) $scanMap[(int)($s['id'] ?? $s['col_0'] ?? 0)] = $s;
         $assets = map_sheets_assets();
-        $assetMap = []; foreach ($assets as $a) $assetMap[$a['id'] ?? 0] = $a;
+        $assetMap = []; foreach ($assets as $a) $assetMap[(int)($a['id'] ?? 0)] = $a;
 
         $results = [];
-        foreach ($findings as $f) {
-            $scanId = (int)($f['maintenance_scan_id'] ?? 0);
-            $scan = $scanMap[$scanId] ?? [];
-            if ($month > 0 && (int)($scan['maintenance_month'] ?? 0) !== $month) continue;
-            if ($year > 0 && (int)($scan['maintenance_year'] ?? 0) !== $year) continue;
+        $processedAssetKeys = [];
 
-            $aid = (int)($f['asset_id'] ?? $scan['asset_id'] ?? 0);
+        foreach ($findings as $f) {
+            $scanId = (int)($f['maintenance_scan_id'] ?? $f['maintenance_id'] ?? $f['col_1'] ?? 0);
+            $scan = $scanMap[$scanId] ?? [];
+            
+            $fMonth = (int)($scan['maintenance_month'] ?? $scan['month'] ?? (int)date('n', strtotime((string)($f['created_at'] ?? $f['reported_at'] ?? ''))));
+            $fYear = (int)($scan['maintenance_year'] ?? $scan['year'] ?? (int)date('Y', strtotime((string)($f['created_at'] ?? $f['reported_at'] ?? ''))));
+
+            if ($month > 0 && $fMonth !== $month) continue;
+            if ($year > 0 && $fYear !== $year) continue;
+
+            $aid = (int)($f['asset_id'] ?? $scan['asset_id'] ?? $f['col_2'] ?? 0);
             $a = $assetMap[$aid] ?? [];
             if ($cabangId > 0 && (int)($a['id_cabang'] ?? 0) !== $cabangId) continue;
 
+            $fText = trim((string)($f['finding'] ?? $f['deskripsi_temuan'] ?? $f['col_4'] ?? ''));
+            $actText = trim((string)($f['action_taken'] ?? $f['tindakan_diperlukan'] ?? $f['solusi'] ?? $f['col_5'] ?? ''));
+            if ($actText === '' || $actText === '-') {
+                $actText = trim((string)($scan['recommendation'] ?? 'Tindakan perbaikan oleh teknisi IT'));
+            }
+
+            $st = trim((string)($f['repair_status'] ?? $f['status'] ?? $f['col_6'] ?? 'Open'));
+
+            $key = "{$aid}_{$fMonth}_{$fYear}";
+            $processedAssetKeys[$key] = true;
+
             $results[] = [
-                'id' => $f['id'] ?? 0,
+                'id' => (int)($f['id'] ?? $f['col_0'] ?? 0),
+                'asset_id' => $aid,
                 'kode_inventaris' => $a['kode_inventaris'] ?? '-',
                 'merk_model' => trim(($a['merk'] ?? '').' '.($a['model'] ?? '')),
                 'karyawan_nama' => $a['karyawan_nama'] ?? '-',
                 'cabang_nama' => $a['cabang_nama'] ?? '-',
-                'finding' => $f['finding'] ?? $f['deskripsi_temuan'] ?? '-',
-                'action_taken' => $f['action_taken'] ?? $f['tindakan_diperlukan'] ?? '-',
+                'divisi_nama' => $a['divisi_nama'] ?? '-',
+                'finding' => $fText !== '' ? $fText : 'Ditemukan kendala teknis saat pemeriksaan',
+                'action_taken' => $actText !== '' ? $actText : 'Telah dilakukan pengecekan dan tindakan oleh teknisi',
                 'severity' => $f['severity'] ?? $f['kategori_temuan'] ?? 'Ringan',
-                'repair_status' => $f['repair_status'] ?? $f['status'] ?? 'Open',
-                'created_at' => substr((string)($f['created_at'] ?? $f['reported_at'] ?? ''), 0, 10),
+                'repair_status' => $st !== '' ? $st : 'Dalam Proses',
+                'teknisi' => $f['resolved_by'] ?? $scan['technician_name'] ?? 'Teknisi',
+                'created_at' => substr((string)($f['created_at'] ?? $f['reported_at'] ?? $scan['maintenance_date'] ?? ''), 0, 10),
             ];
         }
+
+        // Cek juga scan berkala yang berstatus 'Temuan' atau memiliki findings terisi
+        foreach ($scans as $s) {
+            $sId = (int)($s['id'] ?? $s['col_0'] ?? 0);
+            $aid = (int)($s['asset_id'] ?? $s['id_asset'] ?? $s['col_1'] ?? 0);
+            if ($aid <= 0) continue;
+
+            $sM = (int)($s['maintenance_month'] ?? $s['month'] ?? (int)date('n', strtotime((string)($s['maintenance_date'] ?? ''))));
+            $sY = (int)($s['maintenance_year'] ?? $s['year'] ?? (int)date('Y', strtotime((string)($s['maintenance_date'] ?? ''))));
+            if ($month > 0 && $sM !== $month) continue;
+            if ($year > 0 && $sY !== $year) continue;
+
+            $a = $assetMap[$aid] ?? [];
+            if ($cabangId > 0 && (int)($a['id_cabang'] ?? 0) !== $cabangId) continue;
+
+            $key = "{$aid}_{$sM}_{$sY}";
+            if (isset($processedAssetKeys[$key])) continue;
+
+            $st = trim((string)($s['status'] ?? $s['col_8'] ?? ''));
+            $fText = trim((string)($s['findings'] ?? ''));
+            $recText = trim((string)($s['recommendation'] ?? ''));
+
+            if ($st === 'Temuan' || ($fText !== '' && $fText !== '-')) {
+                $processedAssetKeys[$key] = true;
+                $results[] = [
+                    'id' => $sId,
+                    'asset_id' => $aid,
+                    'kode_inventaris' => $a['kode_inventaris'] ?? '-',
+                    'merk_model' => trim(($a['merk'] ?? '').' '.($a['model'] ?? '')),
+                    'karyawan_nama' => $a['karyawan_nama'] ?? '-',
+                    'cabang_nama' => $a['cabang_nama'] ?? '-',
+                    'divisi_nama' => $a['divisi_nama'] ?? '-',
+                    'finding' => $fText !== '' ? $fText : 'Ditemukan kendala teknis saat pemeriksaan rutin',
+                    'action_taken' => $recText !== '' ? $recText : 'Dilakukan perbaikan / konfigurasi ulang oleh teknisi',
+                    'severity' => 'Sedang',
+                    'repair_status' => ($st === 'Selesai') ? 'Resolved' : 'Dalam Proses',
+                    'teknisi' => $s['technician_name'] ?? 'Teknisi',
+                    'created_at' => substr((string)($s['maintenance_date'] ?? ''), 0, 10),
+                ];
+            }
+        }
+
         return $results;
     }
 
     // MySQL Mode
     try {
         $cName = name_column('cabang') ?: 'id';
+        $dName = name_column('divisi') ?: 'id';
         $kName = name_column('karyawan') ?: 'id';
+        $uName = name_column('users') ?: 'id';
+
+        // 1. Ambil dari maintenance_findings
         $sql = "
             SELECT mf.*, a.kode_inventaris, a.merk, a.model,
                    c.`{$cName}` AS cabang_nama,
-                   k.`{$kName}` AS karyawan_nama
+                   d.`{$dName}` AS divisi_nama,
+                   k.`{$kName}` AS karyawan_nama,
+                   COALESCE(ms.technician_name, u.`{$uName}`, 'Teknisi') AS teknisi,
+                   ms.findings AS scan_findings,
+                   ms.recommendation AS scan_recommendation,
+                   ms.maintenance_date AS scan_date
             FROM maintenance_findings mf
             JOIN maintenance_scan ms ON ms.id = mf.maintenance_scan_id
             JOIN assets a ON a.id = mf.asset_id
             LEFT JOIN cabang c ON c.id = a.id_cabang
+            LEFT JOIN divisi d ON d.id = a.id_divisi
             LEFT JOIN karyawan k ON k.id = a.id_karyawan
+            LEFT JOIN users u ON u.id = ms.technician_user_id
             WHERE ms.maintenance_month = ? AND ms.maintenance_year = ?
         ";
         $params = [$month, $year];
@@ -1674,20 +1747,86 @@ function get_findings_report(int $month, int $year, int $cabangId): array {
         $st = db()->prepare($sql);
         $st->execute($params);
         $rows = $st->fetchAll();
-        return array_map(function($r) {
-            return [
+        $results = [];
+        $assetIdsProcessed = [];
+
+        foreach ($rows as $r) {
+            $aid = (int)($r['asset_id'] ?? 0);
+            $assetIdsProcessed[$aid] = true;
+            $f = trim((string)($r['finding'] ?? ''));
+            if ($f === '' || $f === '-') {
+                $f = trim((string)($r['scan_findings'] ?? 'Ditemukan kendala saat pemeliharaan'));
+            }
+            $act = trim((string)($r['action_taken'] ?? ''));
+            if ($act === '' || $act === '-') {
+                $act = trim((string)($r['scan_recommendation'] ?? 'Tindakan penanganan teknisi IT'));
+            }
+
+            $results[] = [
                 'id' => $r['id'],
+                'asset_id' => $aid,
                 'kode_inventaris' => $r['kode_inventaris'] ?? '-',
                 'merk_model' => trim(($r['merk'] ?? '').' '.($r['model'] ?? '')),
                 'karyawan_nama' => $r['karyawan_nama'] ?? '-',
                 'cabang_nama' => $r['cabang_nama'] ?? '-',
-                'finding' => $r['finding'] ?? '-',
-                'action_taken' => $r['action_taken'] ?? '-',
+                'divisi_nama' => $r['divisi_nama'] ?? '-',
+                'finding' => $f,
+                'action_taken' => $act,
                 'severity' => $r['severity'] ?? 'Ringan',
                 'repair_status' => $r['repair_status'] ?? 'Perlu Tindak Lanjut',
-                'created_at' => substr((string)($r['created_at'] ?? ''), 0, 10),
+                'teknisi' => $r['teknisi'] ?? 'Teknisi',
+                'created_at' => substr((string)($r['created_at'] ?? $r['scan_date'] ?? ''), 0, 10),
             ];
-        }, $rows);
+        }
+
+        // 2. Cek scan logs langsung yang punya findings
+        $sqlScan = "
+            SELECT ms.*, a.kode_inventaris, a.merk, a.model,
+                   c.`{$cName}` AS cabang_nama,
+                   d.`{$dName}` AS divisi_nama,
+                   k.`{$kName}` AS karyawan_nama,
+                   COALESCE(ms.technician_name, u.`{$uName}`, 'Teknisi') AS teknisi
+            FROM maintenance_scan ms
+            JOIN assets a ON a.id = ms.asset_id
+            LEFT JOIN cabang c ON c.id = a.id_cabang
+            LEFT JOIN divisi d ON d.id = a.id_divisi
+            LEFT JOIN karyawan k ON k.id = a.id_karyawan
+            LEFT JOIN users u ON u.id = ms.technician_user_id
+            WHERE ms.maintenance_month = ? AND ms.maintenance_year = ?
+              AND (ms.status = 'Temuan' OR (ms.findings IS NOT NULL AND ms.findings != '' AND ms.findings != '-'))
+        ";
+        $pScan = [$month, $year];
+        if ($cabangId > 0) {
+            $sqlScan .= " AND a.id_cabang = ? ";
+            $pScan[] = $cabangId;
+        }
+        $stScan = db()->prepare($sqlScan);
+        $stScan->execute($pScan);
+        $scanRows = $stScan->fetchAll();
+
+        foreach ($scanRows as $s) {
+            $aid = (int)($s['asset_id'] ?? 0);
+            if (isset($assetIdsProcessed[$aid])) continue;
+            $assetIdsProcessed[$aid] = true;
+
+            $results[] = [
+                'id' => $s['id'],
+                'asset_id' => $aid,
+                'kode_inventaris' => $s['kode_inventaris'] ?? '-',
+                'merk_model' => trim(($s['merk'] ?? '').' '.($s['model'] ?? '')),
+                'karyawan_nama' => $s['karyawan_nama'] ?? '-',
+                'cabang_nama' => $s['cabang_nama'] ?? '-',
+                'divisi_nama' => $s['divisi_nama'] ?? '-',
+                'finding' => trim((string)($s['findings'] ?: 'Ditemukan kendala teknis saat pemeriksaan rutin')),
+                'action_taken' => trim((string)($s['recommendation'] ?: 'Dilakukan tindakan penanganan oleh teknisi')),
+                'severity' => 'Sedang',
+                'repair_status' => ($s['status'] === 'Selesai') ? 'Resolved' : 'Dalam Proses',
+                'teknisi' => $s['teknisi'] ?? 'Teknisi',
+                'created_at' => substr((string)($s['maintenance_date'] ?? ''), 0, 10),
+            ];
+        }
+
+        return $results;
     } catch (Throwable $e) {
         return [];
     }

@@ -128,11 +128,6 @@ foreach ($allRows as $r) {
         default => '<span class="badge text-bg-warning badge-compact">Belum</span>'
     };
 
-    $noteHtml = '';
-    if (!empty($r['finding_note'])) {
-        $noteHtml = '<div class="small text-danger mt-1" style="line-height: 1.2;"><strong>Temuan:</strong> '.e($r['finding_note']).'</div>';
-    }
-
     $trs .= '<tr>
       <td class="col-num col-center">'.$num.'</td>
       <td class="col-kode fw-bold text-primary">'.e($r['kode']).'</td>
@@ -141,12 +136,105 @@ foreach ($allRows as $r) {
       <td class="col-cabang">'.e($r['cabang_divisi']).'</td>
       <td class="col-waktu col-center">'.e($r['waktu']).'</td>
       <td class="col-teknisi">'.e($r['teknisi']).(!empty($r['is_bio']) ? ' <span style="color:#16a34a;font-weight:bold;font-size:7.5pt;" title="Terverifikasi Biometrik AI">✓ AI</span>' : '').'</td>
-      <td class="col-status col-center">'.$badge.$noteHtml.'</td>
+      <td class="col-status col-center">'.$badge.'</td>
     </tr>';
 }
 
 if (!$trs) {
     $trs = '<tr><td colspan="8" class="text-center py-4 text-muted">Tidak ada data untuk filter yang dipilih.</td></tr>';
+}
+
+// Build Appendix Rows for Findings & Solutions
+$appendixTrs = '';
+$fNum = 0;
+foreach ($findingsRows as $f) {
+    $fNum++;
+    $fStatus = strtolower(trim((string)($f['repair_status'] ?? '')));
+    $isResolved = in_array($fStatus, ['resolved', 'selesai', 'closed', 'ok', 'done', 'normal'], true);
+    $statusBadge = $isResolved
+        ? '<span class="badge text-bg-success badge-compact"><i class="bi bi-check2"></i> Selesai</span>'
+        : '<span class="badge text-bg-warning badge-compact"><i class="bi bi-hourglass-split"></i> Dalam Proses</span>';
+    
+    $urgencyBadge = match(strtolower($f['severity'] ?? 'ringan')) {
+        'tinggi', 'berat', 'kritis', 'high', 'critical' => '<span class="badge text-bg-danger badge-compact">Kritis</span>',
+        'sedang', 'medium' => '<span class="badge text-bg-warning badge-compact">Sedang</span>',
+        default => '<span class="badge text-bg-info text-white badge-compact">Ringan</span>'
+    };
+
+    $loc = !empty($f['divisi_nama']) && $f['divisi_nama'] !== '-'
+        ? e($f['cabang_nama']).' / '.e($f['divisi_nama'])
+        : e($f['cabang_nama']);
+
+    $appendixTrs .= '<tr>
+      <td class="col-num col-center">'.$fNum.'</td>
+      <td class="col-kode">
+        <div class="fw-bold text-primary">'.e($f['kode_inventaris']).'</div>
+        <div class="small text-muted" style="font-size: 7.2pt;">'.e($f['merk_model']).'</div>
+      </td>
+      <td class="col-pemilik">
+        <div class="fw-semibold text-dark">'.e($f['karyawan_nama']).'</div>
+        <div class="small text-secondary" style="font-size: 7.2pt;">'.$loc.'</div>
+      </td>
+      <td class="col-temuan text-danger fw-semibold">
+        <div style="line-height: 1.25;">'.e($f['finding']).'</div>
+      </td>
+      <td class="col-solusi text-dark">
+        <div class="text-success fw-bold mb-1" style="font-size: 7.5pt;"><i class="bi bi-tools me-1"></i>Tindakan / Solusi:</div>
+        <div style="line-height: 1.25;">'.e($f['action_taken']).'</div>
+      </td>
+      <td class="col-urgensi col-center">
+        '.$urgencyBadge.'
+        <div class="mt-1">'.$statusBadge.'</div>
+        '.(!empty($f['created_at']) ? '<div class="small text-muted mt-1" style="font-size: 6.5pt;">'.e($f['created_at']).'</div>' : '').'
+      </td>
+    </tr>';
+}
+
+$appendixHtml = '';
+if (!empty($findingsRows)) {
+    $appendixHtml = '
+    <div class="report-appendix mt-4">
+      <div class="appendix-title-box d-flex justify-content-between align-items-center mb-2 pb-1 border-bottom border-2 border-dark">
+        <div class="fw-bold text-uppercase" style="font-size: 9.2pt; letter-spacing: 0.04em;">
+          <i class="bi bi-paperclip me-1 text-primary"></i> LAMPIRAN: DAFTAR TEMUAN KENDALA & REKOMENDASI SOLUSI PENANGANAN
+        </div>
+        <div class="small fw-semibold text-danger" style="font-size: 8pt;">
+          Total Temuan: '.count($findingsRows).' Perangkat
+        </div>
+      </div>
+      <div class="table-responsive report-table-wrapper">
+        <table class="table-report table-appendix">
+          <thead>
+            <tr>
+              <th class="col-num col-center" style="width: 4%;">No</th>
+              <th class="col-kode" style="width: 17%;">Kode & Perangkat</th>
+              <th class="col-pemilik" style="width: 16%;">Pengguna & Lokasi</th>
+              <th class="col-temuan" style="width: 27%;">Uraian Temuan Kendala / Kerusakan</th>
+              <th class="col-solusi" style="width: 26%;">Tindakan Solusi / Rekomendasi Teknis</th>
+              <th class="col-urgensi col-center" style="width: 10%;">Status Tindakan</th>
+            </tr>
+          </thead>
+          <tbody>
+            '.$appendixTrs.'
+          </tbody>
+        </table>
+      </div>
+    </div>';
+} else {
+    $appendixHtml = '
+    <div class="report-appendix mt-4">
+      <div class="appendix-title-box d-flex justify-content-between align-items-center mb-2 pb-1 border-bottom border-2 border-dark">
+        <div class="fw-bold text-uppercase" style="font-size: 9.2pt; letter-spacing: 0.04em;">
+          <i class="bi bi-paperclip me-1 text-primary"></i> LAMPIRAN: DAFTAR TEMUAN KENDALA & REKOMENDASI SOLUSI PENANGANAN
+        </div>
+        <div class="small fw-semibold text-success" style="font-size: 8pt;">
+          Nihil Temuan Kerusakan
+        </div>
+      </div>
+      <div class="p-2 px-3 bg-light border border-secondary border-opacity-25 rounded text-center small text-secondary" style="font-size: 7.8pt;">
+        <i class="bi bi-check-circle-fill text-success me-1"></i> Tidak ditemukan adanya kendala teknis atau kerusakan pada seluruh perangkat yang telah diperiksa pada periode ini (Kondisi 100% Normal & Beroperasi Baik).
+      </div>
+    </div>';
 }
 
 $head = '<style>
@@ -375,6 +463,18 @@ body {
   .col-teknisi   { width: 8% !important; font-size: 6.8pt !important; }
   .col-status    { width: 8% !important; text-align: center !important; }
 
+  /* Appendix Column widths in Print */
+  .table-appendix .col-temuan { width: 27% !important; }
+  .table-appendix .col-solusi { width: 26% !important; }
+  .table-appendix .col-urgensi { width: 10% !important; text-align: center !important; }
+  .table-appendix th { background: #dedede !important; }
+
+  .report-appendix {
+    page-break-inside: avoid !important;
+    margin-top: 10px !important;
+    margin-bottom: 8px !important;
+  }
+
   .badge-compact {
     padding: 1px 3px !important;
     font-size: 6.5pt !important;
@@ -499,7 +599,7 @@ $body .= '</select>
       <div><span>Temuan Kerusakan:</span> <span class="val text-danger">'.$findingsCount.'</span></div>
     </div>
 
-    <!-- Tabel Rekapitulasi -->
+    <!-- Tabel Rekapitulasi Utama -->
     <div class="table-responsive report-table-wrapper">
       <table class="table-report">
         <thead>
@@ -519,6 +619,9 @@ $body .= '</select>
         </tbody>
       </table>
     </div>
+
+    <!-- LAMPIRAN DAFTAR TEMUAN & SOLUSI DI BAWAH TABEL -->
+    '.$appendixHtml.'
 
     <!-- Bagian Tanda Tangan -->
     <div class="signature-section">
