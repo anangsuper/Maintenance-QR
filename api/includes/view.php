@@ -802,6 +802,62 @@ h1, h2, h3, h4, h5, h6,
 .status-dot.repair      { background-color: var(--blue-accent); }
 .status-dot.offline     { background-color: var(--text-muted); }
 
+/* Branch Navigation Pills (Global Switcher) */
+.branch-nav-bar {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding-bottom: 8px;
+  margin-bottom: 20px;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+}
+.branch-nav-bar::-webkit-scrollbar {
+  height: 4px;
+}
+.branch-nav-bar::-webkit-scrollbar-thumb {
+  background: rgba(0, 59, 115, 0.2);
+  border-radius: 4px;
+}
+.branch-nav-pill {
+  white-space: nowrap;
+  padding: 8px 16px;
+  font-size: 0.83rem;
+  font-weight: 500;
+  border-radius: 8px;
+  background: #FFFFFF;
+  border: 1px solid #CBD5E1;
+  color: #334155;
+  text-decoration: none !important;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.03);
+}
+.branch-nav-pill:hover {
+  background: #F1F5F9;
+  color: #0F172A;
+  border-color: #94A3B8;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 5px rgba(0,0,0,0.06);
+}
+.branch-nav-pill.active {
+  background: var(--blue-corporate, #003B73) !important;
+  border-color: var(--blue-corporate, #003B73) !important;
+  color: #FFFFFF !important;
+  font-weight: 600;
+  box-shadow: 0 3px 8px rgba(0, 59, 115, 0.25);
+}
+.branch-nav-pill.active i {
+  color: #93C5FD !important;
+}
+.branch-nav-pill.active .badge {
+  background: rgba(255, 255, 255, 0.25) !important;
+  color: #FFFFFF !important;
+}
+
 /* Progress Bar Minimalist */
 .progress {
   background-color: #E2E8F0;
