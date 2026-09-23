@@ -14,9 +14,31 @@ if ($path === '' || $path === 'index.php') {
     }
 }
 
+// Blokir akses langsung ke direktori terlarang atau dotfiles
+if (
+    str_starts_with($path, '.') ||
+    str_contains($path, '/.') ||
+    str_starts_with($path, 'sql/') ||
+    str_starts_with($path, 'api/includes/') ||
+    str_starts_with($path, 'api/helpers/') ||
+    str_starts_with($path, 'includes/') ||
+    str_starts_with($path, 'helpers/')
+) {
+    http_response_code(403);
+    exit('Akses Ditolak');
+}
+
+// Blokir ekstensi file sensitif (CWE-552 Information Exposure)
+$blockedExts = ['env', 'sql', 'rar', 'zip', 'tar', 'gz', '7z', 'xlsx', 'xls', 'csv', 'bak', 'log', 'md', 'example'];
+$requestExt = strtolower(pathinfo($path, PATHINFO_EXTENSION));
+if (in_array($requestExt, $blockedExts, true)) {
+    http_response_code(403);
+    exit('Akses Ditolak');
+}
+
 // Support serving static images/assets and PWA files directly on Vercel
-$staticExtensions = ['png', 'jpg', 'jpeg', 'svg', 'gif', 'webp', 'ico', 'css', 'js', 'json', 'webmanifest', 'html'];
-$ext = strtolower(pathinfo($path, PATHINFO_EXTENSION));
+$staticExtensions = ['png', 'jpg', 'jpeg', 'svg', 'gif', 'webp', 'ico', 'css', 'js', 'json', 'webmanifest'];
+$ext = $requestExt;
 if (in_array($ext, $staticExtensions, true)) {
     // Mencegah Directory Traversal (CWE-22)
     if (str_contains($path, '..') || str_contains($path, '\\')) {
@@ -25,9 +47,13 @@ if (in_array($ext, $staticExtensions, true)) {
     }
 
     $fileName = basename($path);
-    // Larang akses ke file konfigurasi atau dotfile tersembunyi
-    $blockedFiles = ['vercel.json', 'composer.json', 'package.json', 'package-lock.json', 'tsconfig.json'];
-    if (in_array(strtolower($fileName), $blockedFiles, true) || str_starts_with($fileName, '.')) {
+    // Larang akses ke file konfigurasi, template internal, data JSON selain manifest, atau dotfile tersembunyi
+    $blockedFiles = ['vercel.json', 'composer.json', 'package.json', 'package-lock.json', 'tsconfig.json', 'fbd3_data.json', 'kartu_template.html'];
+    if (
+        in_array(strtolower($fileName), $blockedFiles, true) ||
+        str_starts_with($fileName, '.') ||
+        ($ext === 'json' && !in_array($fileName, ['manifest.json', 'manifest.webmanifest'], true))
+    ) {
         http_response_code(403);
         exit('Akses Ditolak');
     }
@@ -71,6 +97,12 @@ if (in_array($ext, $staticExtensions, true)) {
 $page = basename($path);
 if (!str_ends_with($page, '.php')) {
     $page .= '.php';
+}
+
+$forbiddenPages = ['config.local.php', 'config.local.example.php', 'bootstrap.php'];
+if (in_array(strtolower($page), $forbiddenPages, true) || str_starts_with($page, 'config.')) {
+    http_response_code(403);
+    exit('Akses Ditolak');
 }
 
 $targetFile = __DIR__ . '/' . $page;

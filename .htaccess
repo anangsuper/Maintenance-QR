@@ -1,0 +1,47 @@
+# ==============================================================================
+# QR Maintenance - Web Server Hardening & Cyber Protection (.htaccess)
+# ==============================================================================
+
+# 1. Matikan Directory Browsing (Mencegah peretas melihat daftar isi folder)
+Options -Indexes -MultiViews
+
+# 2. Blokir Akses ke Direktori & File Tersembunyi (.git, .env, .github, dll.)
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteRule "(^|/)\.(?!well-known)" - [F,L]
+</IfModule>
+
+# 3. Blokir Akses Langsung ke File Sensitif (Database, Backup, Dokumen, Konfigurasi)
+<FilesMatch "\.(env|json|sql|rar|zip|tar|gz|7z|xlsx|xls|csv|bak|log|md|example\.php)$">
+    # Izinkan file manifest PWA agar tetap dapat diakses browser
+    <If "%{REQUEST_URI} =~ /manifest(\.webmanifest|\.json)$/">
+        Require all granted
+    </If>
+    <Else>
+        Require all denied
+    </Else>
+</FilesMatch>
+
+# 4. Blokir Akses Khusus ke File Konfigurasi Lokal
+<Files "config.local.php">
+    Require all denied
+</Files>
+<Files "config.local.example.php">
+    Require all denied
+</Files>
+
+# 5. Blokir Akses Langsung ke Folder Internal PHP
+<IfModule mod_rewrite.c>
+    RewriteRule ^api/includes/ - [F,L]
+    RewriteRule ^api/helpers/ - [F,L]
+    RewriteRule ^sql/ - [F,L]
+</IfModule>
+
+# 6. HTTP Security Headers (Perlindungan Clickjacking, XSS, MIME-sniffing)
+<IfModule mod_headers.c>
+    Header always set X-Frame-Options "SAMEORIGIN"
+    Header always set X-Content-Type-Options "nosniff"
+    Header always set X-XSS-Protection "1; mode=block"
+    Header always set Referrer-Policy "strict-origin-when-cross-origin"
+    Header always set Permissions-Policy "camera=(self)"
+</IfModule>

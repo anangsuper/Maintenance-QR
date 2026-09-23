@@ -19,6 +19,14 @@ if (!ob_get_level() && !headers_sent()) {
     }
 }
 
+// HTTP Security Headers (Proteksi Clickjacking, MIME-sniffing, XSS)
+if (!headers_sent()) {
+    header('X-Frame-Options: SAMEORIGIN');
+    header('X-Content-Type-Options: nosniff');
+    header('X-XSS-Protection: 1; mode=block');
+    header('Referrer-Policy: strict-origin-when-cross-origin');
+}
+
 if (session_status() !== PHP_SESSION_ACTIVE) {
     $idleTimeout = (int)cfg('session_timeout', envv('SESSION_TIMEOUT', '7200')); // Idle timeout 2 jam
     ini_set('session.gc_maxlifetime', (string)$idleTimeout);
