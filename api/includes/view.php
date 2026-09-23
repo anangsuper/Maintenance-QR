@@ -39,6 +39,7 @@ function render_page(string $title, string $content, string $extraHead = '', str
     $systemItems = [];
     if ($isAdminUser) {
         $systemItems[] = ['title' => 'QR Aset Label', 'url' => module_url('qr_admin.php'), 'icon' => 'bi-qr-code', 'active' => ($currentPage === 'qr_admin.php')];
+        $systemItems[] = ['title' => 'Migrasi Database', 'url' => module_url('migrate_sheets_to_db.php'), 'icon' => 'bi-cloud-arrow-down', 'active' => ($currentPage === 'migrate_sheets_to_db.php')];
         $systemItems[] = ['title' => 'Dokumen Desain', 'url' => module_url('system_design.php'), 'icon' => 'bi-file-earmark-pdf', 'active' => ($currentPage === 'system_design.php')];
     }
 
