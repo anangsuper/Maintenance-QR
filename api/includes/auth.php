@@ -821,4 +821,32 @@ function reset_login_throttle(string $username, string $ip): void {
     }
 }
 
+function clear_all_login_lockouts(): void {
+    // 1. Bersihkan dari MySQL jika mode database
+    if (!is_google_cloud_mode()) {
+        try {
+            $pdo = db();
+            $pdo->exec("DELETE FROM login_lockouts");
+        } catch (Throwable $e) {}
+    }
+
+    // 2. Bersihkan seluruh file cache di /tmp
+    $tmpDir = sys_get_temp_dir();
+    $files = @glob($tmpDir . DIRECTORY_SEPARATOR . 'ojk_lock_*.json');
+    if (is_array($files)) {
+        foreach ($files as $f) {
+            @unlink($f);
+        }
+    }
+
+    // 3. Bersihkan dari Sesi PHP aktif
+    if (session_status() === PHP_SESSION_ACTIVE) {
+        foreach ($_SESSION as $k => $v) {
+            if (str_starts_with($k, '_ojk_lock_')) {
+                unset($_SESSION[$k]);
+            }
+        }
+    }
+}
+
 
