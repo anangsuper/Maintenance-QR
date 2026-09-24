@@ -108,3 +108,22 @@ CREATE TABLE IF NOT EXISTS login_lockouts (
     KEY idx_identifier (identifier),
     KEY idx_locked_until (locked_until)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Catatan & Keluhan Karyawan / Pengguna via QR Code
+CREATE TABLE IF NOT EXISTS employee_complaints (
+    id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    asset_id INT NOT NULL,
+    reporter_name VARCHAR(150) NOT NULL,
+    kategori VARCHAR(50) NOT NULL DEFAULT 'Lain-lain',
+    complaint TEXT NOT NULL,
+    contact VARCHAR(50) NULL,
+    status VARCHAR(50) NOT NULL DEFAULT 'Menunggu Teknisi',
+    technician_response TEXT NULL,
+    resolved_by VARCHAR(150) NULL,
+    resolved_at DATETIME NULL,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    KEY idx_asset (asset_id),
+    KEY idx_status (status)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+

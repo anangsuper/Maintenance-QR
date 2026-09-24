@@ -1905,3 +1905,213 @@ function get_history_rows(int $month, int $year, int $cabangId, string $status =
     return $st->fetchAll();
 }
 
+/**
+ * =========================================================================
+ * MODUL CATATAN & KELUHAN KARYAWAN (EMPLOYEE COMPLAINTS & FEEDBACK)
+ * Memungkinkan karyawan mencatat keluhan/catatan kendala langsung saat scan QR
+ * =========================================================================
+ */
+
+function get_asset_complaints(int $assetId): array {
+    if ($assetId <= 0) return [];
+
+    if (is_google_cloud_mode()) {
+        $client = google_sheets_v4_client();
+        if (!$client) return [];
+        $rows = $client->getSheetData('Employee_Complaints');
+        $results = [];
+        foreach ($rows as $r) {
+            $aid = (int)($r['asset_id'] ?? $r['col_1'] ?? 0);
+            if ($aid === $assetId) {
+                $results[] = [
+                    'id' => (int)($r['id'] ?? $r['col_0'] ?? 0),
+                    'asset_id' => $aid,
+                    'reporter_name' => (string)($r['reporter_name'] ?? $r['col_2'] ?? 'Pengguna'),
+                    'kategori' => (string)($r['kategori'] ?? $r['col_3'] ?? 'Umum'),
+                    'complaint' => (string)($r['complaint'] ?? $r['col_4'] ?? ''),
+                    'contact' => (string)($r['contact'] ?? $r['col_5'] ?? '-'),
+                    'status' => (string)($r['status'] ?? $r['col_6'] ?? 'Menunggu Teknisi'),
+                    'technician_response' => (string)($r['technician_response'] ?? $r['col_7'] ?? ''),
+                    'resolved_by' => (string)($r['resolved_by'] ?? $r['col_8'] ?? ''),
+                    'resolved_at' => (string)($r['resolved_at'] ?? $r['col_9'] ?? ''),
+                    'created_at' => (string)($r['created_at'] ?? $r['col_10'] ?? ''),
+                    '_row_num' => (int)($r['_row_num'] ?? 0)
+                ];
+            }
+        }
+        usort($results, fn($a, $b) => strcmp((string)$b['created_at'], (string)$a['created_at']));
+        return $results;
+    }
+
+    // MySQL Mode
+    try {
+        $pdo = db();
+        $pdo->exec("CREATE TABLE IF NOT EXISTS employee_complaints (
+            id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+            asset_id INT NOT NULL,
+            reporter_name VARCHAR(150) NOT NULL,
+            kategori VARCHAR(50) NOT NULL DEFAULT 'Lain-lain',
+            complaint TEXT NOT NULL,
+            contact VARCHAR(50) NULL,
+            status VARCHAR(50) NOT NULL DEFAULT 'Menunggu Teknisi',
+            technician_response TEXT NULL,
+            resolved_by VARCHAR(150) NULL,
+            resolved_at DATETIME NULL,
+            created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            KEY idx_asset (asset_id),
+            KEY idx_status (status)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;");
+
+        $st = $pdo->prepare("SELECT * FROM employee_complaints WHERE asset_id = ? ORDER BY id DESC");
+        $st->execute([$assetId]);
+        return $st->fetchAll();
+    } catch (Throwable $e) {
+        return [];
+    }
+}
+
+function save_employee_complaint(int $assetId, array $data): array {
+    if ($assetId <= 0) return ['success' => false, 'error' => 'Aset tidak valid.'];
+
+    $reporter = trim((string)($data['reporter_name'] ?? 'Pengguna'));
+    $kategori = trim((string)($data['kategori'] ?? 'Lain-lain'));
+    $complaint = trim((string)($data['complaint'] ?? ''));
+    $contact = trim((string)($data['contact'] ?? ''));
+
+    if ($complaint === '') {
+        return ['success' => false, 'error' => 'Catatan atau keluhan tidak boleh kosong.'];
+    }
+
+    $now = date('Y-m-d H:i:s');
+
+    if (is_google_cloud_mode()) {
+        $client = google_sheets_v4_client();
+        if (!$client) return ['success' => false, 'error' => 'Koneksi cloud tidak tersedia.'];
+
+        $client->createSheetIfNotExists('Employee_Complaints');
+        $existing = $client->getValues('Employee_Complaints!A1:K1');
+        if (empty($existing)) {
+            $client->appendValues('Employee_Complaints!A:K', [[
+                'id', 'asset_id', 'reporter_name', 'kategori', 'complaint',
+                'contact', 'status', 'technician_response', 'resolved_by', 'resolved_at', 'created_at'
+            ]]);
+        }
+
+        $allRows = $client->getSheetData('Employee_Complaints');
+        $newId = count($allRows) + 1;
+        $row = [
+            $newId,
+            $assetId,
+            $reporter,
+            $kategori,
+            $complaint,
+            $contact,
+            'Menunggu Teknisi',
+            '',
+            '',
+            '',
+            $now
+        ];
+        $client->appendValues('Employee_Complaints!A:K', [$row]);
+        $client->clearCache('Employee_Complaints');
+
+        if (function_exists('record_audit_log')) {
+            record_audit_log('COMPLAINT_CREATED', 'MAINTENANCE', $assetId, "Asset #{$assetId}", "Keluhan diajukan oleh {$reporter} ({$kategori}): {$complaint}");
+        }
+
+        return ['success' => true, 'id' => $newId];
+    }
+
+    // MySQL Mode
+    try {
+        $pdo = db();
+        $pdo->exec("CREATE TABLE IF NOT EXISTS employee_complaints (
+            id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+            asset_id INT NOT NULL,
+            reporter_name VARCHAR(150) NOT NULL,
+            kategori VARCHAR(50) NOT NULL DEFAULT 'Lain-lain',
+            complaint TEXT NOT NULL,
+            contact VARCHAR(50) NULL,
+            status VARCHAR(50) NOT NULL DEFAULT 'Menunggu Teknisi',
+            technician_response TEXT NULL,
+            resolved_by VARCHAR(150) NULL,
+            resolved_at DATETIME NULL,
+            created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            KEY idx_asset (asset_id),
+            KEY idx_status (status)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;");
+
+        $st = $pdo->prepare("INSERT INTO employee_complaints 
+            (asset_id, reporter_name, kategori, complaint, contact, status, created_at)
+            VALUES (?, ?, ?, ?, ?, 'Menunggu Teknisi', ?)");
+        $st->execute([$assetId, $reporter, $kategori, $complaint, $contact, $now]);
+        $id = (int)$pdo->lastInsertId();
+
+        if (function_exists('record_audit_log')) {
+            record_audit_log('COMPLAINT_CREATED', 'MAINTENANCE', $assetId, "Asset #{$assetId}", "Keluhan diajukan oleh {$reporter} ({$kategori}): {$complaint}");
+        }
+
+        return ['success' => true, 'id' => $id];
+    } catch (Throwable $e) {
+        return ['success' => false, 'error' => $e->getMessage()];
+    }
+}
+
+function resolve_employee_complaint(int $complaintId, array $data): array {
+    if ($complaintId <= 0) return ['success' => false, 'error' => 'ID keluhan tidak valid.'];
+
+    $resp = trim((string)($data['technician_response'] ?? ''));
+    $resolver = trim((string)($data['resolved_by'] ?? current_user_name()));
+    $now = date('Y-m-d H:i:s');
+    $status = trim((string)($data['status'] ?? 'Selesai'));
+
+    if (is_google_cloud_mode()) {
+        $client = google_sheets_v4_client();
+        if (!$client) return ['success' => false, 'error' => 'Koneksi cloud tidak tersedia.'];
+
+        $rows = $client->getSheetData('Employee_Complaints');
+        $targetRow = null;
+        foreach ($rows as $r) {
+            if ((int)($r['id'] ?? 0) === $complaintId) {
+                $targetRow = $r;
+                break;
+            }
+        }
+        if (!$targetRow) return ['success' => false, 'error' => 'Data keluhan tidak ditemukan.'];
+        $rowNum = (int)($targetRow['_row_num'] ?? 0);
+        if ($rowNum <= 1) return ['success' => false, 'error' => 'Baris data tidak valid.'];
+
+        // Kolom G: status, H: technician_response, I: resolved_by, J: resolved_at
+        $client->updateValues("Employee_Complaints!G{$rowNum}:J{$rowNum}", [[
+            $status,
+            $resp,
+            $resolver,
+            $now
+        ]]);
+        $client->clearCache('Employee_Complaints');
+
+        if (function_exists('record_audit_log')) {
+            record_audit_log('COMPLAINT_RESOLVED', 'MAINTENANCE', $complaintId, "Complaint #{$complaintId}", "Keluhan ditindaklanjuti oleh {$resolver}: {$resp}");
+        }
+
+        return ['success' => true];
+    }
+
+    // MySQL Mode
+    try {
+        $pdo = db();
+        $st = $pdo->prepare("UPDATE employee_complaints SET 
+            status = ?, technician_response = ?, resolved_by = ?, resolved_at = ?
+            WHERE id = ?");
+        $st->execute([$status, $resp, $resolver, $now, $complaintId]);
+
+        if (function_exists('record_audit_log')) {
+            record_audit_log('COMPLAINT_RESOLVED', 'MAINTENANCE', $complaintId, "Complaint #{$complaintId}", "Keluhan ditindaklanjuti oleh {$resolver}: {$resp}");
+        }
+
+        return ['success' => true];
+    } catch (Throwable $e) {
+        return ['success' => false, 'error' => $e->getMessage()];
+    }
+}
+

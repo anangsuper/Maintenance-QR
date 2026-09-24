@@ -41,6 +41,51 @@ $monthNames = [
 $monthName = $monthNames[$month] ?? date('F');
 
 // =========================================================================
+// 0. PROSES FORM CATATAN & KELUHAN KARYAWAN (POST)
+// =========================================================================
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && (($_POST['action'] ?? '') === 'submit_complaint')) {
+    $reporterName = trim((string)($_POST['reporter_name'] ?? ''));
+    $kategori = trim((string)($_POST['kategori'] ?? 'Lain-lain'));
+    $complaintText = trim((string)($_POST['complaint'] ?? ''));
+    $contact = trim((string)($_POST['contact'] ?? ''));
+
+    if ($reporterName === '') {
+        $reporterName = !empty($asset['karyawan_nama']) && $asset['karyawan_nama'] !== '-' ? $asset['karyawan_nama'] : 'Pengguna Komputer';
+    }
+
+    $cRes = save_employee_complaint($assetId, [
+        'reporter_name' => $reporterName,
+        'kategori' => $kategori,
+        'complaint' => $complaintText,
+        'contact' => $contact
+    ]);
+
+    if (!empty($cRes['success'])) {
+        $_SESSION['flash_scan'] = '✓ Catatan keluhan Anda berhasil dikirim ke Tim IT. Teknisi akan segera memeriksa dan menindaklanjuti.';
+        header('Location: ' . module_url('scan.php', ['t' => $token, 'complaint_saved' => 1]));
+        exit;
+    } else {
+        $error = $cRes['error'] ?? 'Gagal menyimpan catatan keluhan.';
+    }
+}
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && (($_POST['action'] ?? '') === 'resolve_complaint')) {
+    require_login();
+    $cId = (int)($_POST['complaint_id'] ?? 0);
+    $cResp = trim((string)($_POST['technician_response'] ?? ''));
+    if ($cId > 0) {
+        resolve_employee_complaint($cId, [
+            'technician_response' => $cResp ?: 'Telah dilakukan pengecekan dan perbaikan oleh teknisi IT.',
+            'resolved_by' => current_user_name(),
+            'status' => 'Selesai'
+        ]);
+        $_SESSION['flash_scan'] = '✓ Catatan keluhan karyawan berhasil ditandai selesai ditindaklanjuti.';
+        header('Location: ' . module_url('scan.php', ['t' => $token]));
+        exit;
+    }
+}
+
+// =========================================================================
 // 1. PROSES SIMPAN FORM MAINTENANCE & TINDAK LANJUT (POST)
 // =========================================================================
 $successData = null;
