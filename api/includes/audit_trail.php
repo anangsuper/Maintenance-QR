@@ -73,23 +73,25 @@ function ensure_audit_log_storage(): void {
 /**
  * Dapatkan IP address klien secara aman
  */
-function get_client_ip(): string {
-    $candidates = [
-        'HTTP_CF_CONNECTING_IP',
-        'HTTP_X_FORWARDED_FOR',
-        'HTTP_CLIENT_IP',
-        'REMOTE_ADDR'
-    ];
-    foreach ($candidates as $key) {
-        if (!empty($_SERVER[$key])) {
-            $ipList = explode(',', (string)$_SERVER[$key]);
-            $ip = trim($ipList[0]);
-            if (filter_var($ip, FILTER_VALIDATE_IP)) {
-                return $ip;
+if (!function_exists('get_client_ip')) {
+    function get_client_ip(): string {
+        $candidates = [
+            'HTTP_CF_CONNECTING_IP',
+            'HTTP_X_FORWARDED_FOR',
+            'HTTP_CLIENT_IP',
+            'REMOTE_ADDR'
+        ];
+        foreach ($candidates as $key) {
+            if (!empty($_SERVER[$key])) {
+                $ipList = explode(',', (string)$_SERVER[$key]);
+                $ip = trim($ipList[0]);
+                if (filter_var($ip, FILTER_VALIDATE_IP)) {
+                    return $ip;
+                }
             }
         }
+        return (string)($_SERVER['REMOTE_ADDR'] ?? '127.0.0.1');
     }
-    return (string)($_SERVER['REMOTE_ADDR'] ?? '127.0.0.1');
 }
 
 /**

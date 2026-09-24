@@ -18,33 +18,64 @@ if (!empty($_GET['expired'])) {
 }
 
 $error = '';
+$clientIp = get_client_ip();
+$initialCheck = check_login_throttle('', $clientIp);
+$isLocked = $initialCheck['locked'];
+$lockRemainingSeconds = $initialCheck['remaining_seconds'];
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $username = trim((string)($_POST['username'] ?? ''));
     $password = trim((string)($_POST['password'] ?? ''));
 
-    $result = authenticate_user($username, $password);
+    // 1. Cek Throttle / Lockout sebelum memproses login
+    $throttleCheck = check_login_throttle($username, $clientIp);
 
-    if (!empty($result['success'])) {
-        record_audit_log('LOGIN_SUCCESS', 'KEAMANAN', (int)($_SESSION['user_id'] ?? 0), $username, 'Login berhasil ke sistem', [
-            'user_name' => (string)($_SESSION['nama'] ?? $username),
-            'user_role' => (string)($_SESSION['role'] ?? 'teknisi'),
-            'user_id' => (int)($_SESSION['user_id'] ?? 0)
+    if ($throttleCheck['locked']) {
+        $error = $throttleCheck['message'];
+        $isLocked = true;
+        $lockRemainingSeconds = $throttleCheck['remaining_seconds'];
+        record_audit_log('LOGIN_BLOCKED', 'KEAMANAN', null, $username ?: 'unknown', 'Percobaan login diblokir karena akun/IP sedang dalam status terkunci sementara (Standar OJK).', [
+            'ip' => $clientIp,
+            'remaining_seconds' => $throttleCheck['remaining_seconds'],
+            'standard' => 'POJK No. 75/POJK.03/2016'
         ]);
-        $redirect = safe_redirect_url($_SESSION['after_login'] ?? null, module_url('dashboard.php'));
-        unset($_SESSION['after_login']);
-        header('Location: ' . $redirect);
-        exit;
     } else {
-        $error = $result['error'] ?? 'Username atau password salah.';
-        record_audit_log('LOGIN_FAILED', 'KEAMANAN', null, $username, 'Percobaan login gagal: ' . $error, [
-            'user_name' => $username,
-            'user_role' => 'tamu'
-        ]);
+        $result = authenticate_user($username, $password);
+
+        if (!empty($result['success'])) {
+            reset_login_throttle($username, $clientIp);
+            record_audit_log('LOGIN_SUCCESS', 'KEAMANAN', (int)($_SESSION['user_id'] ?? 0), $username, 'Login berhasil ke sistem', [
+                'user_name' => (string)($_SESSION['nama'] ?? $username),
+                'user_role' => (string)($_SESSION['role'] ?? 'teknisi'),
+                'user_id' => (int)($_SESSION['user_id'] ?? 0),
+                'ip' => $clientIp
+            ]);
+            $redirect = safe_redirect_url($_SESSION['after_login'] ?? null, module_url('dashboard.php'));
+            unset($_SESSION['after_login']);
+            header('Location: ' . $redirect);
+            exit;
+        } else {
+            $failInfo = record_login_failure($username, $clientIp);
+            if ($failInfo['locked']) {
+                $error = $failInfo['message'];
+                $isLocked = true;
+                $lockRemainingSeconds = $failInfo['remaining_seconds'];
+            } else {
+                $baseErr = $result['error'] ?? 'Username atau password salah.';
+                $attempts = $failInfo['attempts'];
+                $error = $baseErr . ' (Percobaan ke-' . $attempts . ' dari 5. Akun akan dikunci 15 menit jika 5 kali gagal sesuai standar OJK).';
+            }
+            record_audit_log('LOGIN_FAILED', 'KEAMANAN', null, $username, 'Percobaan login gagal: ' . $error, [
+                'user_name' => $username,
+                'user_role' => 'tamu',
+                'ip' => $clientIp,
+                'attempts' => $failInfo['attempts'] ?? 1
+            ]);
+        }
     }
 }
 
-$errorHtml = $error ? '<div class="alert-custom alert-danger-custom"><i class="bi bi-shield-x alert-icon"></i><div><strong>Autentikasi Gagal</strong><div class="alert-text">'.e($error).'</div></div></div>' : '';
+$errorHtml = $error ? '<div class="alert-custom alert-danger-custom" id="lockoutAlertBox"><i class="bi ' . ($isLocked ? 'bi-shield-lock-fill' : 'bi-shield-x') . ' alert-icon" style="font-size: 1.25rem;"></i><div style="flex:1;"><strong>' . ($isLocked ? 'Akun / IP Terkunci Sementara (Standar OJK)' : 'Autentikasi Gagal') . '</strong><div class="alert-text mt-1">'.e($error).'</div>' . ($isLocked ? '<div class="mt-2 fw-bold text-danger d-flex align-items-center gap-1" id="timerBox"><i class="bi bi-hourglass-split"></i> Sisa waktu penguncian: <span id="lockTimer">Menghitung...</span></div>' : '') . '</div></div>' : '';
 
 $flashLogin = $_SESSION['flash_login'] ?? '';
 unset($_SESSION['flash_login']);
@@ -815,9 +846,11 @@ body {
               id="inputUser" 
               name="username" 
               placeholder="Contoh: teknisi_it" 
+              value="<?= e($username ?? '') ?>"
               required 
               autofocus 
               spellcheck="false"
+              <?= $isLocked ? 'disabled' : '' ?>
             >
           </div>
         </div>
@@ -836,6 +869,7 @@ body {
               placeholder="Masukkan kata sandi..." 
               required
               style="padding-right: 46px;"
+              <?= $isLocked ? 'disabled' : '' ?>
             >
             <button 
               type="button" 
@@ -844,22 +878,23 @@ body {
               onclick="togglePassword()" 
               title="Lihat / Sembunyikan Kata Sandi"
               aria-label="Toggle Password Visibility"
+              <?= $isLocked ? 'disabled' : '' ?>
             >
               <i class="bi bi-eye" id="eyeIcon"></i>
             </button>
           </div>
         </div>
 
-        <button type="submit" class="btn-login-submit" id="submitBtn">
-          <i class="bi bi-box-arrow-in-right" id="submitIcon"></i>
-          <span id="submitText">Masuk Sekarang</span>
+        <button type="submit" class="btn-login-submit" id="submitBtn" <?= $isLocked ? 'disabled style="opacity: 0.6; cursor: not-allowed;"' : '' ?>>
+          <i class="bi <?= $isLocked ? 'bi-lock-fill' : 'bi-box-arrow-in-right' ?>" id="submitIcon"></i>
+          <span id="submitText"><?= $isLocked ? 'Akses Terkunci Sementara' : 'Masuk Sekarang' ?></span>
         </button>
       </form>
 
       <div class="security-card">
         <i class="bi bi-shield-exclamation"></i>
         <div class="security-card-text">
-          <strong>Akses Terbatas:</strong> Sistem internal ini khusus untuk staf IT dan petugas berwenang PT. BPR Mitratama Arthabuana. Segala aktivitas diawasi & dicatat ke log audit.
+          <strong>Akses Terbatas:</strong> Sistem internal ini khusus untuk staf IT dan petugas berwenang PT. BPR Mitratama Arthabuana. Segala aktivitas diawasi &amp; dicatat ke log audit sesuai standar POJK No. 75/POJK.03/2016.
         </div>
       </div>
     </div>
@@ -867,7 +902,7 @@ body {
     <!-- Panel Footer -->
     <div class="auth-footer">
       <div>© <?= date('Y') ?> PT. BPR Mitratama Arthabuana</div>
-      <div style="font-size: 0.7rem; color: #94a3b8; margin-top: 4px;">Divisi IT Operations & Infrastructure</div>
+      <div style="font-size: 0.7rem; color: #94a3b8; margin-top: 4px;">Divisi IT Operations &amp; Infrastructure</div>
     </div>
   </div>
 
@@ -897,12 +932,47 @@ const submitText = document.getElementById("submitText");
 
 if (loginForm) {
   loginForm.addEventListener("submit", function() {
-    if (submitBtn) {
+    if (submitBtn && !submitBtn.disabled) {
       submitBtn.disabled = true;
       submitIcon.className = "spinner-border spinner-border-sm";
       submitText.textContent = "Memverifikasi Akun...";
     }
   });
+}
+
+// Countdown Timer jika akun/IP terkunci (Standar OJK 15 Menit)
+const lockRemainingSecs = <?= (int)$lockRemainingSeconds ?>;
+if (lockRemainingSecs > 0) {
+  let remaining = lockRemainingSecs;
+  const timerSpan = document.getElementById("lockTimer");
+  const inpUser = document.getElementById("inputUser");
+  const inpPass = document.getElementById("inputPass");
+  const toggleBtn = document.getElementById("togglePassBtn");
+
+  function updateLockCountdown() {
+    if (remaining <= 0) {
+      if (timerSpan) timerSpan.innerText = "Waktu habis. Silakan muat ulang halaman.";
+      if (submitBtn) {
+        submitBtn.removeAttribute("disabled");
+        submitBtn.style.opacity = "1";
+        submitBtn.style.cursor = "pointer";
+      }
+      if (submitText) submitText.innerText = "Masuk Sekarang";
+      if (submitIcon) submitIcon.className = "bi bi-box-arrow-in-right";
+      if (inpUser) inpUser.removeAttribute("disabled");
+      if (inpPass) inpPass.removeAttribute("disabled");
+      if (toggleBtn) toggleBtn.removeAttribute("disabled");
+      return;
+    }
+    const mins = Math.floor(remaining / 60);
+    const secs = remaining % 60;
+    if (timerSpan) {
+      timerSpan.innerText = mins + " menit " + (secs < 10 ? "0" : "") + secs + " detik";
+    }
+    remaining--;
+    setTimeout(updateLockCountdown, 1000);
+  }
+  updateLockCountdown();
 }
 
 // Service Worker Registration for PWA

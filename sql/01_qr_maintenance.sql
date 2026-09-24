@@ -95,3 +95,16 @@ CREATE TABLE IF NOT EXISTS system_audit_logs (
     KEY idx_audit_action (action),
     KEY idx_audit_user (user_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Proteksi Anti Brute-Force & Account Lockout (Standar POJK No. 75/POJK.03/2016)
+CREATE TABLE IF NOT EXISTS login_lockouts (
+    id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    identifier VARCHAR(150) NOT NULL UNIQUE,
+    type VARCHAR(20) NOT NULL,
+    attempts INT NOT NULL DEFAULT 0,
+    locked_until INT NOT NULL DEFAULT 0,
+    last_attempt INT NOT NULL DEFAULT 0,
+    PRIMARY KEY (id),
+    KEY idx_identifier (identifier),
+    KEY idx_locked_until (locked_until)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

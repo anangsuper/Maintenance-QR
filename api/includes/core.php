@@ -11,6 +11,27 @@ function is_https(): bool {
     return false;
 }
 
+if (!function_exists('get_client_ip')) {
+    function get_client_ip(): string {
+        $candidates = [
+            'HTTP_CF_CONNECTING_IP',
+            'HTTP_X_FORWARDED_FOR',
+            'HTTP_CLIENT_IP',
+            'REMOTE_ADDR'
+        ];
+        foreach ($candidates as $key) {
+            if (!empty($_SERVER[$key])) {
+                $ipList = explode(',', (string)$_SERVER[$key]);
+                $ip = trim($ipList[0]);
+                if (filter_var($ip, FILTER_VALIDATE_IP)) {
+                    return $ip;
+                }
+            }
+        }
+        return (string)($_SERVER['REMOTE_ADDR'] ?? '127.0.0.1');
+    }
+}
+
 // Enable GZIP Output Compression for ultra-lightweight and faster payload transfer
 if (!ob_get_level() && !headers_sent()) {
     if (extension_loaded('zlib') && !ini_get('zlib.output_compression')) {

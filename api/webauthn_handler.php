@@ -261,6 +261,9 @@ if ($action === 'auth_verify') {
 
     // Autentikasi sesi login pengguna
     login_user_session($user);
+    if (function_exists('reset_login_throttle')) {
+        reset_login_throttle((string)($user['username'] ?? ''), get_client_ip());
+    }
 
     $purpose = trim((string)($body['purpose'] ?? 'login'));
     $redirectUrl = safe_redirect_url($_SESSION['after_login'] ?? null, module_url('dashboard.php'));

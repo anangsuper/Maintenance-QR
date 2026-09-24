@@ -571,4 +571,254 @@ function verify_current_user_password(string $password): array {
     return ['success' => false, 'error' => 'Kata sandi tidak sesuai. Silakan coba lagi.'];
 }
 
+/**
+ * =========================================================================
+ * PROTEKSI ANTI BRUTE-FORCE & ACCOUNT LOCKOUT (STANDAR KETAHANAN SIBER OJK)
+ * Sesuai regulasi:
+ * - POJK No. 75/POJK.03/2016 (Standar Penyelenggaraan TI BPR/BPRS)
+ * - POJK No. 11/POJK.03/2022 (Ketahanan Siber & Penyelenggaraan TI Bank)
+ * 
+ * Aturan:
+ * 1. Maksimal percobaan gagal: 5 kali berturut-turut.
+ * 2. Durasi penguncian akun/IP: 15 menit (900 detik).
+ * 3. Pemulihan otomatis setelah masa penguncian berakhir atau reset saat login berhasil.
+ * =========================================================================
+ */
+const OJK_MAX_LOGIN_ATTEMPTS = 5;
+const OJK_LOCKOUT_DURATION_SECONDS = 900; // 15 menit
+
+function get_lockout_storage_record(string $identifier, string $type): array {
+    // 1. Coba dari MySQL jika bukan Google Cloud Mode
+    if (!is_google_cloud_mode()) {
+        try {
+            $pdo = db();
+            $pdo->exec("CREATE TABLE IF NOT EXISTS login_lockouts (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                identifier VARCHAR(150) NOT NULL UNIQUE,
+                type VARCHAR(20) NOT NULL,
+                attempts INT NOT NULL DEFAULT 0,
+                locked_until INT NOT NULL DEFAULT 0,
+                last_attempt INT NOT NULL DEFAULT 0,
+                INDEX idx_identifier (identifier),
+                INDEX idx_locked_until (locked_until)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;");
+
+            $st = $pdo->prepare("SELECT attempts, locked_until, last_attempt FROM login_lockouts WHERE identifier = ? LIMIT 1");
+            $st->execute([$identifier]);
+            $row = $st->fetch();
+            if ($row) {
+                return [
+                    'attempts' => (int)$row['attempts'],
+                    'locked_until' => (int)$row['locked_until'],
+                    'last_attempt' => (int)$row['last_attempt'],
+                ];
+            }
+        } catch (Throwable $e) {}
+    }
+
+    // 2. Fallback File Cache di /tmp (bertahan antar request serverless di container yang sama)
+    $tmpFile = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'ojk_lock_' . md5($identifier) . '.json';
+    if (file_exists($tmpFile)) {
+        $raw = @file_get_contents($tmpFile);
+        if ($raw) {
+            $data = @json_decode($raw, true);
+            if (is_array($data)) {
+                return [
+                    'attempts' => (int)($data['attempts'] ?? 0),
+                    'locked_until' => (int)($data['locked_until'] ?? 0),
+                    'last_attempt' => (int)($data['last_attempt'] ?? 0),
+                ];
+            }
+        }
+    }
+
+    // 3. Fallback Sesi PHP
+    $sessKey = '_ojk_lock_' . md5($identifier);
+    if (!empty($_SESSION[$sessKey]) && is_array($_SESSION[$sessKey])) {
+        return [
+            'attempts' => (int)($_SESSION[$sessKey]['attempts'] ?? 0),
+            'locked_until' => (int)($_SESSION[$sessKey]['locked_until'] ?? 0),
+            'last_attempt' => (int)($_SESSION[$sessKey]['last_attempt'] ?? 0),
+        ];
+    }
+
+    return ['attempts' => 0, 'locked_until' => 0, 'last_attempt' => 0];
+}
+
+function save_lockout_storage_record(string $identifier, string $type, int $attempts, int $lockedUntil, int $lastAttempt): void {
+    // 1. Simpan ke MySQL
+    if (!is_google_cloud_mode()) {
+        try {
+            $pdo = db();
+            $st = $pdo->prepare("INSERT INTO login_lockouts (identifier, type, attempts, locked_until, last_attempt)
+                VALUES (?, ?, ?, ?, ?)
+                ON DUPLICATE KEY UPDATE 
+                attempts = VALUES(attempts),
+                locked_until = VALUES(locked_until),
+                last_attempt = VALUES(last_attempt)");
+            $st->execute([$identifier, $type, $attempts, $lockedUntil, $lastAttempt]);
+        } catch (Throwable $e) {}
+    }
+
+    // 2. Simpan ke File Cache di /tmp
+    $tmpFile = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'ojk_lock_' . md5($identifier) . '.json';
+    $data = [
+        'identifier' => $identifier,
+        'type' => $type,
+        'attempts' => $attempts,
+        'locked_until' => $lockedUntil,
+        'last_attempt' => $lastAttempt,
+    ];
+    @file_put_contents($tmpFile, json_encode($data));
+
+    // 3. Simpan ke Sesi PHP
+    $sessKey = '_ojk_lock_' . md5($identifier);
+    $_SESSION[$sessKey] = $data;
+}
+
+function clear_lockout_storage_record(string $identifier): void {
+    if (!is_google_cloud_mode()) {
+        try {
+            $pdo = db();
+            $st = $pdo->prepare("DELETE FROM login_lockouts WHERE identifier = ?");
+            $st->execute([$identifier]);
+        } catch (Throwable $e) {}
+    }
+
+    $tmpFile = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'ojk_lock_' . md5($identifier) . '.json';
+    if (file_exists($tmpFile)) {
+        @unlink($tmpFile);
+    }
+
+    $sessKey = '_ojk_lock_' . md5($identifier);
+    unset($_SESSION[$sessKey]);
+}
+
+function check_login_throttle(string $username, string $ip): array {
+    $now = time();
+
+    // Periksa throttle berdasarkan Username (jika diisi) dan IP Address
+    $targets = [];
+    if ($username !== '') {
+        $targets[] = ['id' => 'user:' . strtolower($username), 'type' => 'username', 'label' => "Akun '{$username}'"];
+    }
+    if ($ip !== '') {
+        $targets[] = ['id' => 'ip:' . $ip, 'type' => 'ip', 'label' => "Alamat IP ({$ip})"];
+    }
+
+    foreach ($targets as $t) {
+        $rec = get_lockout_storage_record($t['id'], $t['type']);
+        if ($rec['locked_until'] > $now) {
+            $remSeconds = $rec['locked_until'] - $now;
+            $remMinutes = (int)ceil($remSeconds / 60);
+            return [
+                'locked' => true,
+                'remaining_seconds' => $remSeconds,
+                'attempts' => $rec['attempts'],
+                'message' => "Akses {$t['label']} terkunci sementara selama 15 menit sesuai standar OJK akibat 5 kali salah kata sandi berturut-turut. Silakan tunggu {$remMinutes} menit lagi sebelum mencoba kembali."
+            ];
+        }
+
+        // Jika masa lockout sudah lewat, bersihkan otomatis
+        if ($rec['locked_until'] > 0 && $rec['locked_until'] <= $now) {
+            clear_lockout_storage_record($t['id']);
+        }
+    }
+
+    // Ambil data attempt tertinggi saat ini
+    $maxAttempts = 0;
+    foreach ($targets as $t) {
+        $rec = get_lockout_storage_record($t['id'], $t['type']);
+        // Jika jeda dari percobaan terakhir > 15 menit, reset hitungan
+        if ($rec['last_attempt'] > 0 && ($now - $rec['last_attempt'] > OJK_LOCKOUT_DURATION_SECONDS)) {
+            clear_lockout_storage_record($t['id']);
+            continue;
+        }
+        if ($rec['attempts'] > $maxAttempts) {
+            $maxAttempts = $rec['attempts'];
+        }
+    }
+
+    return [
+        'locked' => false,
+        'remaining_seconds' => 0,
+        'attempts' => $maxAttempts,
+        'remaining_attempts' => max(0, OJK_MAX_LOGIN_ATTEMPTS - $maxAttempts),
+        'message' => ''
+    ];
+}
+
+function record_login_failure(string $username, string $ip): array {
+    $now = time();
+    $targets = [];
+    if ($username !== '') {
+        $targets[] = ['id' => 'user:' . strtolower($username), 'type' => 'username', 'label' => "Akun '{$username}'"];
+    }
+    if ($ip !== '') {
+        $targets[] = ['id' => 'ip:' . $ip, 'type' => 'ip', 'label' => "Alamat IP ({$ip})"];
+    }
+
+    $isLockedNow = false;
+    $maxAttempts = 0;
+    $lockedLabel = '';
+
+    foreach ($targets as $t) {
+        $rec = get_lockout_storage_record($t['id'], $t['type']);
+        // Jika jeda dari percobaan sebelumnya > 15 menit, mulai dari 1
+        if ($rec['last_attempt'] > 0 && ($now - $rec['last_attempt'] > OJK_LOCKOUT_DURATION_SECONDS)) {
+            $currentAttempts = 1;
+        } else {
+            $currentAttempts = $rec['attempts'] + 1;
+        }
+
+        $lockedUntil = 0;
+        if ($currentAttempts >= OJK_MAX_LOGIN_ATTEMPTS) {
+            $lockedUntil = $now + OJK_LOCKOUT_DURATION_SECONDS;
+            $isLockedNow = true;
+            $lockedLabel = $t['label'];
+        }
+
+        save_lockout_storage_record($t['id'], $t['type'], $currentAttempts, $lockedUntil, $now);
+
+        if ($currentAttempts > $maxAttempts) {
+            $maxAttempts = $currentAttempts;
+        }
+    }
+
+    if ($isLockedNow) {
+        if (function_exists('record_audit_log')) {
+            record_audit_log('ACCOUNT_LOCKED', 'KEAMANAN', null, $username ?: 'unknown', "{$lockedLabel} terkunci otomatis selama 15 menit sesuai aturan OJK setelah 5 kali gagal login berturut-turut.", [
+                'ip' => $ip,
+                'duration_seconds' => OJK_LOCKOUT_DURATION_SECONDS,
+                'standard' => 'POJK No. 75/POJK.03/2016 & POJK No. 11/POJK.03/2022'
+            ]);
+        }
+
+        return [
+            'locked' => true,
+            'attempts' => $maxAttempts,
+            'remaining_attempts' => 0,
+            'remaining_seconds' => OJK_LOCKOUT_DURATION_SECONDS,
+            'message' => "Akses {$lockedLabel} terkunci sementara selama 15 menit sesuai standar OJK akibat 5 kali salah kata sandi. Silakan tunggu 15 menit lagi sebelum mencoba kembali."
+        ];
+    }
+
+    return [
+        'locked' => false,
+        'attempts' => $maxAttempts,
+        'remaining_attempts' => max(0, OJK_MAX_LOGIN_ATTEMPTS - $maxAttempts),
+        'remaining_seconds' => 0,
+        'message' => ''
+    ];
+}
+
+function reset_login_throttle(string $username, string $ip): void {
+    if ($username !== '') {
+        clear_lockout_storage_record('user:' . strtolower($username));
+    }
+    if ($ip !== '') {
+        clear_lockout_storage_record('ip:' . $ip);
+    }
+}
+
 
