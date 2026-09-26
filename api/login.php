@@ -17,17 +17,6 @@ if (!empty($_GET['expired'])) {
     exit;
 }
 
-// Penanganan Buka Kunci Akses Darurat (?unlock=1 atau ?reset_lock=1)
-if (isset($_GET['unlock']) || isset($_GET['reset_lock'])) {
-    clear_all_login_lockouts();
-    if (function_exists('record_audit_log')) {
-        record_audit_log('LOCKOUT_RESET', 'KEAMANAN', null, 'system', 'Kunci akses IP dan akun berhasil dibuka melalui reset manual.');
-    }
-    $_SESSION['flash_login'] = 'Kunci akses IP & akun berhasil dibuka! Silakan masukkan username dan password Anda.';
-    header('Location: ' . module_url('login.php'));
-    exit;
-}
-
 $error = '';
 $clientIp = get_client_ip();
 $initialCheck = check_login_throttle('', $clientIp);
@@ -86,7 +75,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-$errorHtml = $error ? '<div class="alert-custom alert-danger-custom" id="lockoutAlertBox"><i class="bi ' . ($isLocked ? 'bi-shield-lock-fill' : 'bi-shield-x') . ' alert-icon" style="font-size: 1.25rem;"></i><div style="flex:1;"><strong>' . ($isLocked ? 'Akun / IP Terkunci Sementara (Standar OJK)' : 'Autentikasi Gagal') . '</strong><div class="alert-text mt-1">'.e($error).'</div>' . ($isLocked ? '<div class="mt-2 fw-bold text-danger d-flex align-items-center gap-1" id="timerBox"><i class="bi bi-hourglass-split"></i> Sisa waktu penguncian: <span id="lockTimer">Menghitung...</span></div><div class="mt-2 pt-2 border-top border-danger border-opacity-25 small"><a href="' . module_url('login.php', ['unlock' => 1]) . '" class="btn btn-sm btn-outline-danger mt-1"><i class="bi bi-unlock-fill me-1"></i>Buka Kunci Akses Sekarang</a></div>' : '') . '</div></div>' : '';
+$errorHtml = $error ? '<div class="alert-custom alert-danger-custom" id="lockoutAlertBox"><i class="bi ' . ($isLocked ? 'bi-shield-lock-fill' : 'bi-shield-x') . ' alert-icon" style="font-size: 1.25rem;"></i><div style="flex:1;"><strong>' . ($isLocked ? 'Akun / IP Terkunci Sementara (Standar OJK)' : 'Autentikasi Gagal') . '</strong><div class="alert-text mt-1">'.e($error).'</div>' . ($isLocked ? '<div class="mt-2 fw-bold text-danger d-flex align-items-center gap-1" id="timerBox"><i class="bi bi-hourglass-split"></i> Sisa waktu penguncian: <span id="lockTimer">Menghitung...</span></div><div class="mt-2 pt-2 border-top border-danger border-opacity-25 small text-light opacity-75"><i class="bi bi-info-circle me-1"></i>Untuk pembukaan kunci darurat, hubungi Administrator IT.</div>' : '') . '</div></div>' : '';
 
 $flashLogin = $_SESSION['flash_login'] ?? '';
 unset($_SESSION['flash_login']);

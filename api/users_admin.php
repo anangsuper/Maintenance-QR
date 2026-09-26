@@ -435,6 +435,7 @@ $body = '
   </div>
   <div class="d-flex align-items-center gap-2">
     '.$modeBadge.'
+    <a class="btn btn-outline-warning fw-semibold btn-sm text-dark" href="'.e(module_url('unlock_login.php')).'"><i class="bi bi-shield-lock me-1"></i> Buka Kunci Login</a>
     <a class="btn btn-outline-secondary fw-semibold btn-sm" href="'.e(module_url('dashboard.php')).'"><i class="bi bi-arrow-left me-1"></i> Dashboard</a>
     <a class="btn btn-primary fw-semibold btn-sm" href="'.e(module_url('users_admin.php')).'"><i class="bi bi-person-plus me-1"></i> Pengguna Baru</a>
   </div>

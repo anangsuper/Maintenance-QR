@@ -52,6 +52,17 @@ gs_exist_*.json
 *.bak
 *.backup
 *.dump
+backup.xlsx
+backups/
+storage/
+
+# Data and Master Spreadsheet Files
+*.xlsx
+*.xls
+*.csv
+fbd3.xls
+fbd3_data.json
+api/fbd3_data.json
 
 # Compressed Archives
 *.zip
@@ -61,6 +72,7 @@ gs_exist_*.json
 *.tar.gz
 *.tgz
 *.iso
+Maintenance-QR-main*.rar
 
 # IDE & Editor Settings
 .vscode/

@@ -246,14 +246,6 @@ function verify_csrf(): void {
         return;
     }
 
-    // Jika pengguna adalah admin terverifikasi lewat signed auth session, izinkan aksi form admin
-    if (is_admin()) {
-        if ($sent !== '') {
-            $_SESSION['_csrf'] = $sent;
-        }
-        return;
-    }
-
     http_response_code(419);
     render_page('Sesi Tidak Valid', '<div class="alert alert-danger">Token keamanan tidak valid. Muat ulang halaman lalu coba lagi.</div>');
     exit;

@@ -14,4 +14,8 @@ return [
     'app_url' => '',
     // URL login project utama. Bisa relatif atau absolut.
     'login_url' => '/login.php',
+    // Kunci enkripsi & signature sesi cookie (Wajib unik minimal 32 karakter di server produksi).
+    // Generate nilai acak via PHP: bin2hex(random_bytes(32))
+    'app_key' => '',
 ];
+
