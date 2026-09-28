@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 /**
  * Master Data FBD3 (Rincian Nominatif Aktiva & Inventaris Bank Mitra)
  * Total: 531 Unit Aktiva & Inventaris
