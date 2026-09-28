@@ -325,7 +325,7 @@ if ($maintStatus === 'pending') {
       <div class="d-flex align-items-center gap-3">
         <div class="fs-2 text-danger"><i class="bi bi-clipboard2-x-fill"></i></div>
         <div>
-          <h6 class="fw-bold text-danger mb-0">ðŸŽ¯ TO-DO LIST: Komputer Jatuh Tempo (Belum Diperiksa Bulan Ini)</h6>
+          <h6 class="fw-bold text-danger mb-0"><i class="bi bi-bullseye me-1"></i> TO-DO LIST: Komputer Jatuh Tempo (Belum Diperiksa Bulan Ini)</h6>
           <div class="small text-muted">Ditemukan <strong>'.$totalFiltered.' unit</strong> komputer yang belum dilakukan pemeliharaan pada periode '.$currentMonthName.' '.$year.'. Klik tombol hijau <strong>"Periksa"</strong> di kolom aksi untuk langsung mengisi checklist.</div>
         </div>
       </div>
@@ -339,7 +339,7 @@ if ($maintStatus === 'pending') {
       <div class="d-flex align-items-center gap-3">
         <div class="fs-2 text-warning"><i class="bi bi-exclamation-triangle-fill"></i></div>
         <div>
-          <h6 class="fw-bold text-warning-emphasis mb-0">âš ï¸ DAFTAR TEMUAN MASALAH / PERBAIKAN (Pending Issues)</h6>
+          <h6 class="fw-bold text-warning-emphasis mb-0"><i class="bi bi-tools me-1"></i> DAFTAR TEMUAN MASALAH / PERBAIKAN (Pending Issues)</h6>
           <div class="small text-muted">Ditemukan <strong>'.$totalFiltered.' unit</strong> komputer yang mengalami kendala hardware/software. Klik tombol merah <strong>"Perbaiki"</strong> untuk mencatat tindakan perbaikan.</div>
         </div>
       </div>
@@ -353,7 +353,7 @@ if ($maintStatus === 'pending') {
       <div class="d-flex align-items-center gap-3">
         <div class="fs-2 text-success"><i class="bi bi-patch-check-fill"></i></div>
         <div>
-          <h6 class="fw-bold text-success mb-0">âœ… DAFTAR KOMPUTER SELESAI MAINTENANCE</h6>
+          <h6 class="fw-bold text-success mb-0"><i class="bi bi-check-circle-fill me-1"></i> DAFTAR KOMPUTER SELESAI MAINTENANCE</h6>
           <div class="small text-muted">Sebanyak <strong>'.$totalFiltered.' unit</strong> komputer telah selesai diperiksa dan tercatat normal di periode '.$currentMonthName.' '.$year.'.</div>
         </div>
       </div>
@@ -396,19 +396,19 @@ $todoTabsHtml = '
     <!-- 2. Belum Diperiksa (To-Do Utama) -->
     <a href="'.e(filter_query(['maint' => 'pending', 'page' => 1])).'" 
        class="btn btn-sm rounded-pill px-3 fw-bold '.($maintStatus === 'pending' ? 'btn-danger text-white shadow' : 'btn-outline-danger').'" style="'.($maintStatus !== 'pending' ? 'background-color: #FEF2F2; border-color: #FCA5A5;' : '').'">
-      <i class="bi bi-exclamation-circle-fill me-1"></i> ðŸ”´ Belum Diperiksa Bulan Ini ('.$statPendingMaint.')
+      <i class="bi bi-exclamation-circle-fill me-1"></i> Belum Diperiksa Bulan Ini ('.$statPendingMaint.')
     </a>
 
     <!-- 3. Ada Temuan Masalah -->
     <a href="'.e(filter_query(['maint' => 'repair', 'page' => 1])).'" 
        class="btn btn-sm rounded-pill px-3 fw-bold '.($maintStatus === 'repair' ? 'btn-warning text-dark shadow' : 'btn-outline-warning text-dark').'" style="'.($maintStatus !== 'repair' ? 'background-color: #FFFBEB; border-color: #FCD34D;' : '').'">
-      <i class="bi bi-tools me-1"></i> ðŸŸ¡ Ada Temuan Masalah ('.$statRepair.')
+      <i class="bi bi-tools me-1"></i> Ada Temuan Masalah ('.$statRepair.')
     </a>
 
     <!-- 4. Sudah Selesai -->
     <a href="'.e(filter_query(['maint' => 'done', 'page' => 1])).'" 
        class="btn btn-sm rounded-pill px-3 fw-bold '.($maintStatus === 'done' ? 'btn-success text-white shadow' : 'btn-outline-success').'" style="'.($maintStatus !== 'done' ? 'background-color: #F0FDF4; border-color: #86EFAC;' : '').'">
-      <i class="bi bi-check-circle-fill me-1"></i> ðŸŸ¢ Selesai ('.$statDoneMaint.')
+      <i class="bi bi-check-circle-fill me-1"></i> Selesai ('.$statDoneMaint.')
     </a>
   </div>
 </div>';
@@ -582,21 +582,51 @@ $body = '
 '.$flashHtml.'
 
 <!-- Header & Quick Actions -->
-<div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3 mb-4">
+<div class="d-flex flex-column flex-xl-row align-items-xl-center justify-content-between gap-3 mb-4">
   <div>
     <div class="tech-label mb-1">ASSET MANAGEMENT</div>
     <h1 class="h3 mb-1">Asset Registry</h1>
     <p class="text-secondary small mb-0">Katalog dan inventaris lengkap perangkat IT, komputer kantor cabang, dan status pemeliharaan.</p>
   </div>
-  <div class="d-flex gap-2 flex-wrap">
-    <a class="btn btn-primary d-inline-flex align-items-center gap-1 fw-semibold px-3" href="'.e(module_url('asset_add.php')).'"><i class="bi bi-plus-lg"></i> Tambah Aset</a>
+  <div class="d-flex align-items-center gap-2 flex-wrap justify-content-start justify-content-xl-end">
+    <a class="btn btn-primary d-inline-flex align-items-center gap-1 fw-semibold px-3 shadow-sm" href="'.e(module_url('asset_add.php')).'">
+      <i class="bi bi-plus-lg"></i> Tambah Aset
+    </a>
     <button type="button" class="btn btn-warning text-dark d-inline-flex align-items-center gap-1 fw-semibold shadow-sm" onclick="openBulkEditModal()">
-      <i class="bi bi-pencil-square"></i> Edit Massal <span class="badge bg-dark text-white rounded-pill ms-1 selectedCountNum">0</span>
+      <i class="bi bi-pencil-square"></i> Edit Massal <span class="badge bg-dark text-white rounded-pill ms-1"><span class="selectedCountNum">0</span></span>
     </button>
-    <a class="btn btn-outline-primary d-inline-flex align-items-center gap-1 fw-semibold" href="'.e(module_url('asset_import.php')).'"><i class="bi bi-file-earmark-arrow-up"></i> Import Excel / CSV</a>
-    <a class="btn btn-light border d-inline-flex align-items-center gap-1" target="_blank" href="'.e(module_url('print_card.php', ['cabang' => $cabangId, 'tahun' => $year])).'"><i class="bi bi-printer"></i> Cetak Kartu Kontrol</a>
-    <a class="btn btn-light border d-inline-flex align-items-center gap-1" target="_blank" href="'.e(module_url('print_inventory_card.php', ['cabang' => $cabangId])).'"><i class="bi bi-credit-card-2-front text-primary"></i> Cetak Kartu Inventaris</a>
-    <a class="btn btn-light border d-inline-flex align-items-center gap-1" href="'.e(module_url('export_csv.php')).'"><i class="bi bi-download"></i> Export CSV</a>
+    <a class="btn btn-outline-primary d-inline-flex align-items-center gap-1 fw-semibold" href="'.e(module_url('asset_import.php')).'">
+      <i class="bi bi-file-earmark-arrow-up"></i> Import Excel / CSV
+    </a>
+    <div class="btn-group">
+      <button type="button" class="btn btn-light border dropdown-toggle d-inline-flex align-items-center gap-1" data-bs-toggle="dropdown" aria-expanded="false">
+        <i class="bi bi-printer"></i> Cetak Kartu
+      </button>
+      <ul class="dropdown-menu dropdown-menu-end shadow border-0" style="border-radius: 12px; min-width: 260px;">
+        <li>
+          <a class="dropdown-item py-2 d-flex align-items-center gap-2" target="_blank" href="'.e(module_url('print_card.php', ['cabang' => $cabangId, 'tahun' => $year])).'">
+            <i class="bi bi-printer text-primary fs-5"></i>
+            <div>
+              <div class="fw-semibold">Cetak Kartu Kontrol</div>
+              <small class="text-muted">Lembar checklist perawatan rutin</small>
+            </div>
+          </a>
+        </li>
+        <li><hr class="dropdown-divider my-1"></li>
+        <li>
+          <a class="dropdown-item py-2 d-flex align-items-center gap-2" target="_blank" href="'.e(module_url('print_inventory_card.php', ['cabang' => $cabangId])).'">
+            <i class="bi bi-credit-card-2-front text-info fs-5"></i>
+            <div>
+              <div class="fw-semibold">Cetak Kartu Inventaris</div>
+              <small class="text-muted">Format CR80 standar ID Card fisik</small>
+            </div>
+          </a>
+        </li>
+      </ul>
+    </div>
+    <a class="btn btn-light border d-inline-flex align-items-center gap-1" href="'.e(module_url('export_csv.php')).'">
+      <i class="bi bi-download"></i> Export CSV
+    </a>
   </div>
 </div>
 
