@@ -802,13 +802,13 @@ function save_maintenance_record(array $data): array {
         $client->ensureMinColumns('Maintenance_Scan', 26);
         $client->ensureMinColumns('Maintenance_Checklists', 26);
 
-        $fullScanHeaders = ['id', 'asset_id', 'technician_user_id', 'technician_name', 'maintenance_date', 'maintenance_time', 'maintenance_month', 'maintenance_year', 'status', 'source', 'created_at', 'findings', 'recommendation', 'biometric_verified', 'biometric_confidence', 'biometric_photo', 'latitude', 'longitude'];
+        $fullScanHeaders = ['id', 'asset_id', 'technician_user_id', 'technician_name', 'maintenance_date', 'maintenance_time', 'maintenance_month', 'maintenance_year', 'status', 'source', 'created_at', 'findings', 'recommendation', 'biometric_verified', 'biometric_confidence', 'biometric_photo', 'latitude', 'longitude', 'nama_perangkat', 'kode_inventaris'];
 
         // Cek header tabel Maintenance_Scan
-        $scanHead = $client->getValues('Maintenance_Scan!A1:R1');
+        $scanHead = $client->getValues('Maintenance_Scan!A1:T1');
         if (empty($scanHead) || empty($scanHead[0]) || count($scanHead[0]) < count($fullScanHeaders)) {
             $client->createSheetIfNotExists('Maintenance_Scan');
-            $client->updateValues('Maintenance_Scan!A1:R1', [$fullScanHeaders]);
+            $client->updateValues('Maintenance_Scan!A1:T1', [$fullScanHeaders]);
         }
 
         // Cek apakah scan untuk asset ini di bulan & tahun yang sama sudah pernah tersimpan sebelumnya
@@ -849,6 +849,21 @@ function save_maintenance_record(array $data): array {
             $targetScanRowIdx = max(1, count($rawScanCol)) + 1;
         }
 
+        // Ambil nama perangkat dan kode inventaris untuk dicatat ke spreadsheet
+        $assetInfo = get_asset_by_id($assetId);
+        $namaPerangkat = '';
+        $kodeInventaris = '';
+        if ($assetInfo) {
+            $namaPerangkat = trim(($assetInfo['merk'] ?? '') . ' ' . ($assetInfo['model'] ?? ''));
+            if ($namaPerangkat === '') {
+                $namaPerangkat = $assetInfo['nama_perangkat'] ?? $assetInfo['device'] ?? '';
+            }
+            if (!empty($assetInfo['karyawan_nama']) && $assetInfo['karyawan_nama'] !== '-') {
+                $namaPerangkat .= ' (' . $assetInfo['karyawan_nama'] . ')';
+            }
+            $kodeInventaris = $assetInfo['kode_inventaris'] ?? ('INV-IT-' . sprintf('%03d', $assetId));
+        }
+
         $newScanRow = [
             $activeScanId,
             $assetId,
@@ -867,17 +882,19 @@ function save_maintenance_record(array $data): array {
             $bioConfidence,
             $bioPhoto,
             $latitude,
-            $longitude
+            $longitude,
+            $namaPerangkat,
+            $kodeInventaris
         ];
 
-        // Tulis tepat pada baris target dan kolom A..R (mencegah kolom bergeser ke kanan)
-        $scanOk = $client->updateValues("Maintenance_Scan!A{$targetScanRowIdx}:R{$targetScanRowIdx}", [$newScanRow]);
+        // Tulis tepat pada baris target dan kolom A..T (mencegah kolom bergeser ke kanan)
+        $scanOk = $client->updateValues("Maintenance_Scan!A{$targetScanRowIdx}:T{$targetScanRowIdx}", [$newScanRow]);
         if (!$scanOk) {
             $client->ensureMinColumns('Maintenance_Scan', 26);
-            $scanOk = $client->updateValues("Maintenance_Scan!A{$targetScanRowIdx}:R{$targetScanRowIdx}", [$newScanRow]);
+            $scanOk = $client->updateValues("Maintenance_Scan!A{$targetScanRowIdx}:T{$targetScanRowIdx}", [$newScanRow]);
         }
         if (!$scanOk) {
-            $scanOk = $client->appendValues('Maintenance_Scan!A:R', [$newScanRow]);
+            $scanOk = $client->appendValues('Maintenance_Scan!A:T', [$newScanRow]);
         }
         if (!$scanOk) {
             error_log("save_maintenance_record: updateValues Maintenance_Scan failed!");
@@ -1308,7 +1325,21 @@ function update_maintenance_detail(int $logId, array $data): array {
         $latitude = !empty($data['latitude']) ? (string)$data['latitude'] : (string)($targetScan['latitude'] ?? '');
         $longitude = !empty($data['longitude']) ? (string)$data['longitude'] : (string)($targetScan['longitude'] ?? '');
 
-        $client->updateValues("Maintenance_Scan!A{$scanRowNum}:R{$scanRowNum}", [[
+        $assetInfo = get_asset_by_id($assetId);
+        $namaPerangkat = '';
+        $kodeInventaris = '';
+        if ($assetInfo) {
+            $namaPerangkat = trim(($assetInfo['merk'] ?? '') . ' ' . ($assetInfo['model'] ?? ''));
+            if ($namaPerangkat === '') {
+                $namaPerangkat = $assetInfo['nama_perangkat'] ?? $assetInfo['device'] ?? '';
+            }
+            if (!empty($assetInfo['karyawan_nama']) && $assetInfo['karyawan_nama'] !== '-') {
+                $namaPerangkat .= ' (' . $assetInfo['karyawan_nama'] . ')';
+            }
+            $kodeInventaris = $assetInfo['kode_inventaris'] ?? ('INV-IT-' . sprintf('%03d', $assetId));
+        }
+
+        $client->updateValues("Maintenance_Scan!A{$scanRowNum}:T{$scanRowNum}", [[
             $logId,
             $assetId,
             $userId,
@@ -1326,7 +1357,9 @@ function update_maintenance_detail(int $logId, array $data): array {
             $bioConfidence,
             $bioPhoto,
             $latitude,
-            $longitude
+            $longitude,
+            $namaPerangkat,
+            $kodeInventaris
         ]]);
 
         // 2. Update atau Tambah Checklist di Maintenance_Checklists
@@ -2114,4 +2147,76 @@ function resolve_employee_complaint(int $complaintId, array $data): array {
         return ['success' => false, 'error' => $e->getMessage()];
     }
 }
+
+/**
+ * Otomatis mengisi kolom 'nama_perangkat' dan 'kode_inventaris' untuk seluruh baris yang ada di tab Maintenance_Scan
+ */
+function sync_maintenance_scan_device_names(bool $force = false): int {
+    if (!is_google_cloud_mode()) return 0;
+    $client = google_sheets_v4_client();
+    if (!$client) return 0;
+
+    $fullScanHeaders = ['id', 'asset_id', 'technician_user_id', 'technician_name', 'maintenance_date', 'maintenance_time', 'maintenance_month', 'maintenance_year', 'status', 'source', 'created_at', 'findings', 'recommendation', 'biometric_verified', 'biometric_confidence', 'biometric_photo', 'latitude', 'longitude', 'nama_perangkat', 'kode_inventaris'];
+
+    $client->ensureMinColumns('Maintenance_Scan', 26);
+
+    // Cek header baris 1
+    $scanHead = $client->getValues('Maintenance_Scan!A1:T1');
+    if (empty($scanHead) || empty($scanHead[0]) || count($scanHead[0]) < count($fullScanHeaders)) {
+        $client->updateValues('Maintenance_Scan!A1:T1', [$fullScanHeaders]);
+    }
+
+    $scans = $client->getSheetData('Maintenance_Scan', true);
+    if (empty($scans)) return 0;
+
+    $assets = map_sheets_assets(false);
+    $assetMap = [];
+    foreach ($assets as $a) {
+        $aid = (int)($a['id'] ?? 0);
+        if ($aid > 0) $assetMap[$aid] = $a;
+    }
+
+    $updates = [];
+    $updatedCount = 0;
+
+    foreach ($scans as $s) {
+        $rowNum = (int)($s['_row_num'] ?? 0);
+        if ($rowNum <= 1) continue;
+
+        $existingNama = trim((string)($s['nama_perangkat'] ?? $s['col_18'] ?? ''));
+        if (!$force && $existingNama !== '') {
+            continue;
+        }
+
+        $aid = (int)($s['asset_id'] ?? $s['id_asset'] ?? $s['col_1'] ?? 0);
+        $asset = $assetMap[$aid] ?? null;
+
+        $namaPerangkat = '-';
+        $kodeInventaris = '-';
+        if ($asset) {
+            $namaPerangkat = trim(($asset['merk'] ?? '') . ' ' . ($asset['model'] ?? ''));
+            if ($namaPerangkat === '') {
+                $namaPerangkat = $asset['nama_perangkat'] ?? $asset['device'] ?? '-';
+            }
+            if (!empty($asset['karyawan_nama']) && $asset['karyawan_nama'] !== '-') {
+                $namaPerangkat .= ' (' . $asset['karyawan_nama'] . ')';
+            }
+            $kodeInventaris = $asset['kode_inventaris'] ?? ('INV-IT-' . sprintf('%03d', $aid));
+        }
+
+        $updates[] = [
+            'range' => "Maintenance_Scan!S{$rowNum}:T{$rowNum}",
+            'values' => [[$namaPerangkat, $kodeInventaris]]
+        ];
+        $updatedCount++;
+    }
+
+    if (!empty($updates)) {
+        $client->batchUpdateValues($updates);
+        $client->clearCache('Maintenance_Scan');
+    }
+
+    return $updatedCount;
+}
+
 

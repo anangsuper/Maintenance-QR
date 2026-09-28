@@ -27,11 +27,22 @@ $kategoris = get_kategori_list();
 $karyawans = get_karyawan_list();
 
 // 2. Query data aset dasar
+if (!empty($_GET['sync_device_names']) && is_admin()) {
+    $syncCount = sync_maintenance_scan_device_names(true);
+    $_SESSION['flash'] = "Berhasil menyinkronkan nama perangkat pada {$syncCount} baris di sheet Maintenance_Scan.";
+    header('Location: ' . module_url('assets.php'));
+    exit;
+}
+
 $rawAssets = [];
 if (is_google_cloud_mode()) {
     $client = google_sheets_v4_client();
     if ($client) {
         $client->preloadSheets(['Assets', 'Cabang', 'Divisi', 'Karyawan', 'Kategori_Aset', 'Asset_QR_Tokens', 'Maintenance_Scan']);
+        if (empty($_SESSION['_maint_scan_synced_v1'])) {
+            $_SESSION['_maint_scan_synced_v1'] = 1;
+            sync_maintenance_scan_device_names(false);
+        }
     }
     $rawAssets = map_sheets_assets();
 } else {
