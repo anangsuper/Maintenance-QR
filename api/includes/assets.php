@@ -24,7 +24,10 @@ function asset_query_base(): string {
     ";
 }
 
-function asset_title(array $a): string {
+function asset_title(?array $a): string {
+    if (empty($a)) {
+        return 'Perangkat Tidak Ditemukan / Telah Dihapus';
+    }
     $parts = [];
     if (!empty($a['kategori_nama'])) $parts[] = $a['kategori_nama'];
     if (!empty($a['merk'])) $parts[] = $a['merk'];

@@ -65,6 +65,27 @@ $scan = $detail['scan'];
 $asset = $detail['asset'];
 $checklists = $detail['checklists'];
 
+if (empty($asset) || !is_array($asset)) {
+    $assetAid = (int)($scan['asset_id'] ?? 0);
+    $scanNama = trim((string)($scan['nama_perangkat'] ?? ''));
+    $scanKode = trim((string)($scan['kode_inventaris'] ?? ''));
+    $asset = [
+        'id' => $assetAid,
+        'kode_inventaris' => $scanKode !== '' ? $scanKode : ('INV-IT-' . sprintf('%03d', $assetAid)),
+        'merk' => $scanNama !== '' ? $scanNama : 'Perangkat Terhapus / Tidak Ditemukan',
+        'model' => '',
+        'serial_number' => '-',
+        'kategori_nama' => 'Komputer',
+        'cabang_nama' => '-',
+        'divisi_nama' => '-',
+        'karyawan_nama' => '-',
+        'status' => 'Nonaktif',
+        'ip_address' => '-',
+        'printer' => '-',
+        'qr_token' => ''
+    ];
+}
+
 $status = $scan['status'] ?? 'Selesai';
 $statusBadge = ($status === 'Temuan' || $status === 'Perlu Perbaikan')
     ? '<span class="badge-chip chip-danger fs-6 px-3 py-2"><i class="bi bi-exclamation-triangle-fill me-1"></i> Perlu Perbaikan</span>'
