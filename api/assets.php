@@ -449,7 +449,7 @@ foreach ($pageAssets as $a) {
     $tableRows .= '
     <tr id="row-asset-'.$aid.'">
       <td class="text-center">
-        <input class="form-check-input asset-checkbox" type="checkbox" value="'.$aid.'" data-id="'.$aid.'" style="cursor: pointer; width: 1.15rem; height: 1.15rem;" title="Pilih unit '.e($kode).'">
+        <input class="form-check-input asset-checkbox" type="checkbox" value="'.$aid.'" data-id="'.$aid.'" data-kode="'.e($kode).'" data-device="'.e($device).'" data-user="'.e($user).'" data-cabang="'.e($cabang).'" data-sn="'.e($sn).'" style="cursor: pointer; width: 1.15rem; height: 1.15rem;" title="Pilih unit '.e($kode).'">
       </td>
       <td class="text-center text-muted small">'.$startNum.'</td>
       <td>
@@ -677,9 +677,14 @@ $body = '
 
   <!-- Selection Action Bar (Appears when items are selected) -->
   <div id="selectionActionBar" class="border-bottom px-4 py-2 d-none align-items-center justify-content-between flex-wrap gap-2" style="background-color: #EFF6FF !important;">
-    <div class="d-flex align-items-center gap-2">
+    <div class="d-flex align-items-center gap-2 flex-wrap">
       <span class="badge bg-primary fs-6 px-2 py-1"><i class="bi bi-check-square me-1"></i> <span id="selectedCountText">0</span> Dipilih</span>
-      <span class="text-secondary small fw-semibold">Aksi untuk aset terpilih:</span>
+      <span class="badge bg-primary-subtle text-primary border border-primary-subtle small fw-normal d-none d-md-inline-flex align-items-center">
+        <i class="bi bi-pin-angle-fill me-1"></i> Tersimpan otomatis lintas pencarian &amp; filter
+      </span>
+      <button type="button" class="btn btn-sm btn-outline-primary fw-semibold py-1 px-2" data-bs-toggle="modal" data-bs-target="#selectedAssetsModal" onclick="renderSelectedModalList()">
+        <i class="bi bi-list-check me-1"></i> Lihat Daftar (<span class="selectedCountNum">0</span>)
+      </button>
     </div>
     <div class="d-flex align-items-center gap-2 flex-wrap">
       <button type="button" class="btn btn-sm btn-primary fw-semibold shadow-sm" onclick="batchPrintCards()">
@@ -730,6 +735,9 @@ $body = '
     <span class="badge bg-primary rounded-pill px-2 py-1"><span class="selectedCountNum">0</span></span>
     <span class="small fw-semibold">Dipilih</span>
   </div>
+  <button type="button" class="btn btn-sm btn-outline-light rounded-pill px-2 py-1 small" data-bs-toggle="modal" data-bs-target="#selectedAssetsModal" onclick="renderSelectedModalList()" title="Lihat rincian aset terpilih">
+    <i class="bi bi-list-check me-1"></i> Rincian
+  </button>
   <div class="vr bg-secondary opacity-50"></div>
   <div class="d-flex gap-2">
     <button type="button" class="btn btn-sm btn-primary rounded-pill px-3 fw-semibold" onclick="batchPrintCards()">
@@ -741,6 +749,61 @@ $body = '
     <button type="button" class="btn btn-sm btn-link text-white-50 text-decoration-none p-0 ms-1" onclick="deselectAllAssets()" title="Batalkan Pilihan">
       <i class="bi bi-x-lg"></i>
     </button>
+  </div>
+</div>
+
+<!-- Modal Daftar Aset Terpilih -->
+<div class="modal fade" id="selectedAssetsModal" tabindex="-1" aria-labelledby="selectedAssetsModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-content shadow-lg border-0" style="border-radius: 16px;">
+      <div class="modal-header border-bottom py-3 px-4">
+        <div>
+          <h5 class="modal-title fw-bold text-dark d-flex align-items-center gap-2" id="selectedAssetsModalLabel">
+            <i class="bi bi-check2-square text-primary"></i> Daftar Komputer Terpilih
+            <span class="badge bg-primary rounded-pill fs-6 px-2 py-1"><span class="selectedCountNum">0</span> Unit</span>
+          </h5>
+          <div class="text-secondary small mt-1">Daftar unit yang Anda pilih tetap tersimpan meskipun Anda mencari atau mengganti filter.</div>
+        </div>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body p-0">
+        <div class="table-responsive" style="max-height: 380px; overflow-y: auto;">
+          <table class="table table-hover align-middle mb-0">
+            <thead class="table-light sticky-top">
+              <tr>
+                <th style="width: 45px;" class="text-center">No</th>
+                <th>Kode Inventaris</th>
+                <th>Perangkat / Model</th>
+                <th>Pengguna / Divisi</th>
+                <th>Cabang</th>
+                <th style="width: 60px;" class="text-center">Hapus</th>
+              </tr>
+            </thead>
+            <tbody id="selectedAssetsTableBody">
+              <!-- Rendered via JS -->
+            </tbody>
+          </table>
+        </div>
+        <div id="selectedAssetsEmptyState" class="p-4 text-center text-muted d-none">
+          <i class="bi bi-inbox fs-2 d-block mb-2 text-secondary"></i>
+          Tidak ada aset yang sedang dipilih.
+        </div>
+      </div>
+      <div class="modal-footer border-top bg-light py-2 px-4 d-flex justify-content-between align-items-center">
+        <button type="button" class="btn btn-sm btn-outline-danger" onclick="deselectAllAssets()">
+          <i class="bi bi-trash3 me-1"></i> Batalkan Semua Pilihan
+        </button>
+        <div class="d-flex gap-2">
+          <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Tutup</button>
+          <button type="button" class="btn btn-sm btn-primary fw-semibold" onclick="batchPrintCards()">
+            <i class="bi bi-printer me-1"></i> Cetak Kartu (<span class="selectedCountNum">0</span>)
+          </button>
+          <button type="button" class="btn btn-sm btn-dark fw-semibold" onclick="batchPrintQR()">
+            <i class="bi bi-qr-code me-1"></i> Cetak QR (<span class="selectedCountNum">0</span>)
+          </button>
+        </div>
+      </div>
+    </div>
   </div>
 </div>
 ';
@@ -769,6 +832,7 @@ $extraHead = '
 $extraScript = '
 <script>
 document.addEventListener("DOMContentLoaded", function() {
+  const STORAGE_KEY = "asset_registry_selected_assets_v1";
   const checkAll = document.getElementById("checkAllAssets");
   const rowChecks = document.querySelectorAll(".asset-checkbox");
   const topBar = document.getElementById("selectionActionBar");
@@ -776,16 +840,41 @@ document.addEventListener("DOMContentLoaded", function() {
   const countLabels = document.querySelectorAll(".selectedCountNum");
   const countText = document.getElementById("selectedCountText");
 
+  function getStoredSelection() {
+    try {
+      const raw = sessionStorage.getItem(STORAGE_KEY);
+      return raw ? JSON.parse(raw) : {};
+    } catch (e) {
+      return {};
+    }
+  }
+
+  function saveStoredSelection(data) {
+    try {
+      sessionStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    } catch (e) {
+      console.error("Gagal menyimpan pilihan aset ke sessionStorage", e);
+    }
+  }
+
   function getSelectedIds() {
-    const ids = [];
-    document.querySelectorAll(".asset-checkbox:checked").forEach(function(cb) {
-      ids.push(cb.value);
-    });
-    return ids;
+    const map = getStoredSelection();
+    return Object.keys(map);
+  }
+
+  function escapeHtml(str) {
+    if (!str) return "";
+    return String(str)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/\'/g, "&#039;");
   }
 
   function updateSelectionUI() {
-    const ids = getSelectedIds();
+    const selectedMap = getStoredSelection();
+    const ids = Object.keys(selectedMap);
     const count = ids.length;
 
     countLabels.forEach(function(el) { el.textContent = count; });
@@ -811,55 +900,189 @@ document.addEventListener("DOMContentLoaded", function() {
       }
     }
 
-    if (checkAll) {
-      if (count === 0) {
-        checkAll.checked = false;
-        checkAll.indeterminate = false;
-      } else if (count === rowChecks.length) {
-        checkAll.checked = true;
-        checkAll.indeterminate = false;
-      } else {
-        checkAll.checked = false;
-        checkAll.indeterminate = true;
-      }
-    }
-
+    // Perbarui status checkbox di tabel halaman saat ini
+    let checkedOnThisPage = 0;
     rowChecks.forEach(function(cb) {
+      const isSelected = Boolean(selectedMap[cb.value]);
+      cb.checked = isSelected;
+      if (isSelected) {
+        checkedOnThisPage++;
+      }
       const row = cb.closest("tr");
       if (row) {
-        if (cb.checked) {
+        if (isSelected) {
           row.classList.add("table-row-selected");
         } else {
           row.classList.remove("table-row-selected");
         }
       }
     });
+
+    if (checkAll) {
+      if (rowChecks.length === 0) {
+        checkAll.checked = false;
+        checkAll.indeterminate = false;
+      } else if (checkedOnThisPage === rowChecks.length) {
+        checkAll.checked = true;
+        checkAll.indeterminate = false;
+      } else if (checkedOnThisPage > 0) {
+        checkAll.checked = false;
+        checkAll.indeterminate = true;
+      } else {
+        checkAll.checked = false;
+        checkAll.indeterminate = false;
+      }
+    }
   }
 
-  if (checkAll) {
-    checkAll.addEventListener("change", function() {
-      const isChecked = this.checked;
-      rowChecks.forEach(function(cb) {
-        cb.checked = isChecked;
-      });
-      updateSelectionUI();
+  // Inisialisasi: sinkronkan data unit di halaman ini ke storage jika belum lengkap
+  (function initSync() {
+    const selectedMap = getStoredSelection();
+    let updated = false;
+    rowChecks.forEach(function(cb) {
+      const id = cb.value;
+      if (selectedMap[id]) {
+        cb.checked = true;
+        if (!selectedMap[id].kode && cb.dataset.kode) {
+          selectedMap[id].kode = cb.dataset.kode;
+          selectedMap[id].device = cb.dataset.device || "";
+          selectedMap[id].user = cb.dataset.user || "";
+          selectedMap[id].cabang = cb.dataset.cabang || "";
+          updated = true;
+        }
+      }
     });
-  }
+    if (updated) {
+      saveStoredSelection(selectedMap);
+    }
+    updateSelectionUI();
+  })();
 
+  // Listener checkbox per baris
   rowChecks.forEach(function(cb) {
     cb.addEventListener("change", function() {
+      const selectedMap = getStoredSelection();
+      const id = this.value;
+      if (this.checked) {
+        selectedMap[id] = {
+          id: id,
+          kode: this.dataset.kode || ("#" + id),
+          device: this.dataset.device || "",
+          user: this.dataset.user || "",
+          cabang: this.dataset.cabang || ""
+        };
+      } else {
+        delete selectedMap[id];
+      }
+      saveStoredSelection(selectedMap);
       updateSelectionUI();
     });
   });
 
+  // Listener Check All di halaman aktif
+  if (checkAll) {
+    checkAll.addEventListener("change", function() {
+      const isChecked = this.checked;
+      const selectedMap = getStoredSelection();
+      rowChecks.forEach(function(cb) {
+        cb.checked = isChecked;
+        const id = cb.value;
+        if (isChecked) {
+          selectedMap[id] = {
+            id: id,
+            kode: cb.dataset.kode || ("#" + id),
+            device: cb.dataset.device || "",
+            user: cb.dataset.user || "",
+            cabang: cb.dataset.cabang || ""
+          };
+        } else {
+          delete selectedMap[id];
+        }
+      });
+      saveStoredSelection(selectedMap);
+      updateSelectionUI();
+    });
+  }
+
+  // Batalkan / Kosongkan semua pilihan
   window.deselectAllAssets = function() {
+    sessionStorage.removeItem(STORAGE_KEY);
     if (checkAll) {
       checkAll.checked = false;
       checkAll.indeterminate = false;
     }
-    rowChecks.forEach(function(cb) { cb.checked = false; });
+    rowChecks.forEach(function(cb) {
+      cb.checked = false;
+    });
     updateSelectionUI();
+    if (typeof window.renderSelectedModalList === "function") {
+      window.renderSelectedModalList();
+    }
   };
+
+  // Hapus satu item dari pilihan (misalnya dari modal daftar)
+  window.removeSelectedItem = function(id) {
+    const selectedMap = getStoredSelection();
+    delete selectedMap[id];
+    saveStoredSelection(selectedMap);
+
+    const targetCb = document.querySelector(\'.asset-checkbox[value="\' + id + \'"]\');
+    if (targetCb) {
+      targetCb.checked = false;
+    }
+
+    updateSelectionUI();
+    window.renderSelectedModalList();
+  };
+
+  // Render modal rincian aset terpilih
+  window.renderSelectedModalList = function() {
+    const tbody = document.getElementById("selectedAssetsTableBody");
+    const emptyState = document.getElementById("selectedAssetsEmptyState");
+    if (!tbody) return;
+
+    const selectedMap = getStoredSelection();
+    const items = Object.values(selectedMap);
+
+    if (items.length === 0) {
+      tbody.innerHTML = "";
+      if (emptyState) emptyState.classList.remove("d-none");
+      return;
+    }
+
+    if (emptyState) emptyState.classList.add("d-none");
+
+    let html = "";
+    items.forEach(function(item, idx) {
+      html += \'<tr>\' +
+        \'<td class="text-center text-muted small">\' + (idx + 1) + \'</td>\' +
+        \'<td class="fw-bold font-monospace">\' + escapeHtml(item.kode || ("#" + item.id)) + \'</td>\' +
+        \'<td><div class="fw-semibold small">\' + escapeHtml(item.device || "-") + \'</div></td>\' +
+        \'<td class="small">\' + escapeHtml(item.user || "-") + \'</td>\' +
+        \'<td class="small text-secondary">\' + escapeHtml(item.cabang || "-") + \'</td>\' +
+        \'<td class="text-center">\' +
+          \'<button type="button" class="btn btn-sm btn-outline-danger border-0 p-1 btn-remove-selected" data-remove-id="\' + escapeHtml(item.id) + \'" title="Hapus dari daftar pilihan">\' +
+            \'<i class="bi bi-trash"></i>\' +
+          \'</button>\' +
+        \'</td>\' +
+      \'</tr>\';
+    });
+    tbody.innerHTML = html;
+  };
+
+  // Event delegation untuk tombol hapus di dalam modal
+  const modalTbody = document.getElementById("selectedAssetsTableBody");
+  if (modalTbody) {
+    modalTbody.addEventListener("click", function(e) {
+      const btn = e.target.closest(".btn-remove-selected");
+      if (btn) {
+        const id = btn.getAttribute("data-remove-id");
+        if (id) {
+          window.removeSelectedItem(id);
+        }
+      }
+    });
+  }
 
   window.batchPrintCards = function() {
     const ids = getSelectedIds();

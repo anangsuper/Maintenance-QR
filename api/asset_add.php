@@ -55,6 +55,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $idKat = (int)($_POST['id_kategori'] ?? 0);
     $idCab = (int)($_POST['id_cabang'] ?? 0);
     $idDiv = (int)($_POST['id_divisi'] ?? 0);
+
+    // Cek jika ada penambahan divisi baru secara langsung
+    $namaDivBaru = trim((string)($_POST['nama_divisi_baru'] ?? ''));
+    if ($namaDivBaru !== '') {
+        $resDiv = create_new_divisi(['nama_divisi' => $namaDivBaru]);
+        if (!empty($resDiv['success'])) {
+            $idDiv = (int)$resDiv['id'];
+        }
+    }
     $namaKar = trim((string)($_POST['nama_karyawan'] ?? ''));
     $placement = trim((string)($_POST['placement_label'] ?? 'Bodi Casing'));
     $status = trim((string)($_POST['status'] ?? 'Aktif'));
@@ -291,10 +300,23 @@ $body = '
           </div>
 
           <div class="col-md-6">
-            <label class="form-label text-secondary small fw-semibold">Divisi / Unit Kerja <span class="text-danger">*</span></label>
-            <select class="form-select" name="id_divisi" required>
-              '.$optDiv.'
-            </select>
+            <div class="d-flex justify-content-between align-items-center mb-1">
+              <label class="form-label text-secondary small fw-semibold mb-0">Divisi / Unit Kerja <span class="text-danger">*</span></label>
+              <button type="button" class="btn btn-sm btn-link p-0 text-decoration-none fw-semibold text-primary" data-bs-toggle="modal" data-bs-target="#modalQuickAddDivisi" style="font-size: 0.8rem;">
+                <i class="bi bi-plus-circle me-1"></i>+ Tambah Divisi
+              </button>
+            </div>
+            <div class="input-group">
+              <select class="form-select" name="id_divisi" id="selectDivisi" required>
+                <option value="">-- Pilih Divisi / Unit Kerja --</option>
+                '.$optDiv.'
+                <option value="__add_new__" class="fw-bold text-primary bg-light">+ Tambah Divisi Baru...</option>
+              </select>
+              <button type="button" class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#modalQuickAddDivisi" title="Tambah Divisi Baru">
+                <i class="bi bi-plus-lg text-primary"></i>
+              </button>
+            </div>
+            <div id="divisiAddedFeedback" class="small text-success mt-1 d-none"><i class="bi bi-check-circle-fill me-1"></i><span id="divisiAddedText">Divisi baru berhasil dipilih.</span></div>
           </div>
 
           <div class="col-md-6">
@@ -355,6 +377,39 @@ $body = '
       </form>
     </div>
   </div>
+</div>
+
+<!-- Modal Quick Add Divisi -->
+<div class="modal fade" id="modalQuickAddDivisi" tabindex="-1" aria-labelledby="modalQuickAddDivisiLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content shadow border-0" style="border-radius: 16px;">
+      <div class="modal-header border-bottom py-3 px-4">
+        <h5 class="modal-title fw-bold text-dark d-flex align-items-center gap-2" id="modalQuickAddDivisiLabel">
+          <i class="bi bi-diagram-3 text-primary"></i> Tambah Divisi / Unit Kerja
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body p-4">
+        <div id="quickDivisiAlert" class="alert alert-danger d-none py-2 small mb-3"></div>
+        <div class="mb-3">
+          <label class="form-label text-secondary small fw-semibold">Nama Divisi / Bagian <span class="text-danger">*</span></label>
+          <input type="text" class="form-control" id="inputQuickNamaDivisi" placeholder="Contoh: Digital Banking, Logistik, Legal...">
+          <div class="form-text small text-muted">Nama divisi yang akan muncul pada daftar unit kerja komputer.</div>
+        </div>
+        <div class="mb-2">
+          <label class="form-label text-secondary small fw-semibold">Keterangan (Opsional)</label>
+          <input type="text" class="form-control" id="inputQuickKetDivisi" placeholder="Keterangan singkat fungsi / lokasi divisi">
+        </div>
+      </div>
+      <div class="modal-footer border-top bg-light py-2 px-4 d-flex justify-content-between">
+        <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Batal</button>
+        <button type="button" class="btn btn-sm btn-primary fw-semibold" id="btnQuickSubmitDivisi">
+          <span id="quickDivisiSpinner" class="spinner-border spinner-border-sm me-1 d-none" role="status" aria-hidden="true"></span>
+          <i class="bi bi-check2 me-1" id="quickDivisiBtnIcon"></i> Simpan Divisi
+        </button>
+      </div>
+    </div>
+  </div>
 </div>';
 
 $script = '
@@ -369,6 +424,156 @@ function setKaryawan(name) {
   inp.value = name;
   inp.focus();
 }
+
+// Quick Add Divisi Logic
+document.addEventListener("DOMContentLoaded", function() {
+  const selectDiv = document.getElementById("selectDivisi");
+  const modalEl = document.getElementById("modalQuickAddDivisi");
+  const inputNama = document.getElementById("inputQuickNamaDivisi");
+  const inputKet = document.getElementById("inputQuickKetDivisi");
+  const btnSubmit = document.getElementById("btnQuickSubmitDivisi");
+  const alertEl = document.getElementById("quickDivisiAlert");
+  const spinner = document.getElementById("quickDivisiSpinner");
+  const btnIcon = document.getElementById("quickDivisiBtnIcon");
+  const feedbackEl = document.getElementById("divisiAddedFeedback");
+  const feedbackText = document.getElementById("divisiAddedText");
+
+  let previousValue = selectDiv ? selectDiv.value : "";
+
+  if (selectDiv) {
+    selectDiv.addEventListener("change", function() {
+      if (this.value === "__add_new__") {
+        this.value = previousValue;
+        if (modalEl) {
+          const bsModal = bootstrap.Modal.getOrCreateInstance(modalEl);
+          bsModal.show();
+        }
+      } else {
+        previousValue = this.value;
+      }
+    });
+  }
+
+  if (modalEl) {
+    modalEl.addEventListener("shown.bs.modal", function() {
+      if (inputNama) {
+        inputNama.value = "";
+        inputNama.focus();
+      }
+      if (inputKet) inputKet.value = "";
+      if (alertEl) {
+        alertEl.classList.add("d-none");
+        alertEl.textContent = "";
+      }
+    });
+  }
+
+  if (btnSubmit) {
+    btnSubmit.addEventListener("click", function() {
+      submitQuickDivisi();
+    });
+  }
+
+  if (inputNama) {
+    inputNama.addEventListener("keydown", function(e) {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        submitQuickDivisi();
+      }
+    });
+  }
+
+  function submitQuickDivisi() {
+    const nama = inputNama ? inputNama.value.trim() : "";
+    const ket = inputKet ? inputKet.value.trim() : "";
+
+    if (!nama) {
+      if (alertEl) {
+        alertEl.textContent = "Nama divisi tidak boleh kosong.";
+        alertEl.classList.remove("d-none");
+      }
+      if (inputNama) inputNama.focus();
+      return;
+    }
+
+    if (alertEl) alertEl.classList.add("d-none");
+    if (spinner) spinner.classList.remove("d-none");
+    if (btnIcon) btnIcon.classList.add("d-none");
+    if (btnSubmit) btnSubmit.disabled = true;
+
+    const csrfInput = document.querySelector(\'input[name="_csrf"]\');
+    const csrfToken = csrfInput ? csrfInput.value : "";
+
+    const formData = new FormData();
+    formData.append("_csrf", csrfToken);
+    formData.append("nama_divisi", nama);
+    formData.append("keterangan", ket);
+
+    fetch("divisi_ajax_add.php", {
+      method: "POST",
+      body: formData
+    })
+    .then(function(res) { return res.json(); })
+    .then(function(data) {
+      if (spinner) spinner.classList.add("d-none");
+      if (btnIcon) btnIcon.classList.remove("d-none");
+      if (btnSubmit) btnSubmit.disabled = false;
+
+      if (!data.success) {
+        if (alertEl) {
+          alertEl.textContent = data.error || "Gagal menambahkan divisi baru.";
+          alertEl.classList.remove("d-none");
+        }
+        return;
+      }
+
+      // Berhasil: masukkan opsi baru ke dalam selectDivisi
+      const newId = String(data.id);
+      const newNama = data.nama;
+
+      if (selectDiv) {
+        let optExists = selectDiv.querySelector(\'option[value="\' + newId + \'"]\');
+        if (!optExists) {
+          const newOpt = document.createElement("option");
+          newOpt.value = newId;
+          newOpt.textContent = newNama;
+          const addNewOpt = selectDiv.querySelector(\'option[value="__add_new__"]\');
+          if (addNewOpt) {
+            selectDiv.insertBefore(newOpt, addNewOpt);
+          } else {
+            selectDiv.appendChild(newOpt);
+          }
+        }
+        selectDiv.value = newId;
+        previousValue = newId;
+      }
+
+      // Tampilkan feedback sukses
+      if (feedbackEl && feedbackText) {
+        feedbackText.textContent = "Divisi \"" + newNama + "\" berhasil ditambahkan dan dipilih!";
+        feedbackEl.classList.remove("d-none");
+        setTimeout(function() {
+          feedbackEl.classList.add("d-none");
+        }, 5000);
+      }
+
+      // Tutup modal
+      if (modalEl) {
+        const bsModal = bootstrap.Modal.getInstance(modalEl);
+        if (bsModal) bsModal.hide();
+      }
+    })
+    .catch(function(err) {
+      if (spinner) spinner.classList.add("d-none");
+      if (btnIcon) btnIcon.classList.remove("d-none");
+      if (btnSubmit) btnSubmit.disabled = false;
+      if (alertEl) {
+        alertEl.textContent = "Terjadi kesalahan jaringan atau server.";
+        alertEl.classList.remove("d-none");
+      }
+    });
+  }
+});
 </script>';
 
 render_page('Tambah Komputer / Aset Baru', $body, '', $script);
