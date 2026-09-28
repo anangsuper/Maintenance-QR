@@ -875,3 +875,92 @@ function regenerate_qr_token(int $assetId): bool {
     return false;
 }
 
+function bulk_update_assets(array $ids, array $updates): array {
+    $updatedCount = 0;
+    $errors = [];
+
+    // Pre-sanitize IDs
+    $validIds = [];
+    foreach ($ids as $rawId) {
+        $cleanId = (int)$rawId;
+        if ($cleanId > 0) {
+            $validIds[] = $cleanId;
+        }
+    }
+    $validIds = array_values(array_unique($validIds));
+
+    if (empty($validIds)) {
+        return ['success' => false, 'error' => 'Tidak ada aset yang dipilih untuk diubah', 'updated_count' => 0];
+    }
+
+    foreach ($validIds as $aid) {
+        $old = get_asset_by_id($aid);
+        if (!$old) {
+            $errors[] = "Aset ID #{$aid} tidak ditemukan.";
+            continue;
+        }
+
+        $idCab = (!empty($updates['id_cabang']) && (int)$updates['id_cabang'] > 0) 
+            ? (int)$updates['id_cabang'] 
+            : (int)($old['id_cabang'] ?? 0);
+
+        $idDiv = (!empty($updates['id_divisi']) && (int)$updates['id_divisi'] > 0) 
+            ? (int)$updates['id_divisi'] 
+            : (int)($old['id_divisi'] ?? 0);
+
+        $idKat = (!empty($updates['id_kategori']) && (int)$updates['id_kategori'] > 0) 
+            ? (int)$updates['id_kategori'] 
+            : (int)($old['id_kategori'] ?? 0);
+
+        $status = (!empty($updates['status']) && $updates['status'] !== 'keep') 
+            ? trim((string)$updates['status']) 
+            : trim((string)($old['status'] ?? 'Aktif'));
+
+        $placement = (!empty($updates['placement_label']) && $updates['placement_label'] !== 'keep') 
+            ? trim((string)$updates['placement_label']) 
+            : trim((string)($old['placement_label'] ?? 'Bodi Casing'));
+
+        $printer = (!empty($updates['change_printer'])) 
+            ? trim((string)($updates['printer'] ?? '')) 
+            : trim((string)($old['printer'] ?? ''));
+
+        $namaKar = (!empty($updates['change_karyawan'])) 
+            ? trim((string)($updates['nama_karyawan'] ?? '')) 
+            : trim((string)($old['karyawan_nama'] ?? $old['nama_karyawan'] ?? ''));
+
+        $payload = [
+            'kode_inventaris' => trim((string)($old['kode_inventaris'] ?? '')),
+            'merk' => trim((string)($old['merk'] ?? '')),
+            'model' => trim((string)($old['model'] ?? '')),
+            'serial_number' => trim((string)($old['serial_number'] ?? '')),
+            'id_kategori' => $idKat,
+            'id_cabang' => $idCab,
+            'id_divisi' => $idDiv,
+            'status' => $status,
+            'placement_label' => $placement,
+            'keterangan' => trim((string)($old['keterangan'] ?? '')),
+            'ip_address' => trim((string)($old['ip_address'] ?? $old['ip'] ?? '')),
+            'printer' => $printer,
+            'nama_karyawan' => $namaKar
+        ];
+
+        $res = update_asset($aid, $payload);
+        if (!empty($res['success'])) {
+            $updatedCount++;
+        } else {
+            $errors[] = "Aset #{$aid}: " . ($res['error'] ?? 'Gagal diperbarui');
+        }
+    }
+
+    if (is_google_cloud_mode()) {
+        map_sheets_assets(true);
+    }
+
+    return [
+        'success' => $updatedCount > 0,
+        'total_requested' => count($validIds),
+        'updated_count' => $updatedCount,
+        'errors' => $errors
+    ];
+}
+
