@@ -377,6 +377,50 @@ class GoogleSheetsV4Client {
         return false;
     }
 
+    /**
+     * Update multiple ranges in a single API call (values:batchUpdate)
+     * @param array $valueRanges Array of ['range' => 'Sheet!A1:B2', 'values' => [...]]
+     */
+    public function batchUpdateValues(array $valueRanges, string $valueInputOption = 'USER_ENTERED'): bool {
+        if (empty($valueRanges)) return true;
+        $token = $this->getAccessToken();
+        if (!$token) return false;
+
+        $url = sprintf(
+            'https://sheets.googleapis.com/v4/spreadsheets/%s/values:batchUpdate',
+            urlencode($this->spreadsheetId)
+        );
+
+        $payload = [
+            'valueInputOption' => $valueInputOption,
+            'data' => array_values($valueRanges)
+        ];
+
+        $response = $this->curlExec($url, [
+            CURLOPT_POST => true,
+            CURLOPT_POSTFIELDS => json_encode($payload),
+            CURLOPT_HTTPHEADER => [
+                'Authorization: Bearer ' . $token,
+                'Content-Type: application/json',
+            ],
+        ]);
+
+        $data = json_decode($response, true);
+        foreach ($valueRanges as $vr) {
+            $sheetName = explode('!', $vr['range'] ?? '')[0];
+            if ($sheetName) $this->clearCache($sheetName);
+        }
+
+        if (isset($data['totalUpdatedRows']) || isset($data['responses'])) {
+            return true;
+        }
+
+        $errMsg = (string)($data['error']['message'] ?? $response);
+        $this->lastError = $errMsg;
+        error_log("Google Sheets batchUpdateValues failed: " . substr($response, 0, 500));
+        return false;
+    }
+
     public function clearValues(string $range): bool {
         $token = $this->getAccessToken();
         if (!$token) return false;

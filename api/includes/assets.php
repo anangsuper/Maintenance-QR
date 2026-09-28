@@ -309,10 +309,10 @@ function create_new_asset(array $data): array {
     }
 }
 
-function get_asset_by_id(int $id): ?array {
+function get_asset_by_id(int $id, bool $refresh = false): ?array {
     if ($id <= 0) return null;
     if (is_google_cloud_mode()) {
-        $assets = map_sheets_assets(true);
+        $assets = map_sheets_assets($refresh);
         foreach ($assets as $a) {
             if ((int)($a['id'] ?? 0) === $id) {
                 if (empty($a['qr_token'])) {
@@ -346,6 +346,64 @@ function get_asset_by_id(int $id): ?array {
         return $row ?: null;
     } catch (Throwable $e) {
         return null;
+    }
+}
+
+/**
+ * Mengambil banyak aset sekaligus dengan 1 batch query / 1 sheet request (Anti-Timeout)
+ */
+function get_assets_by_ids(array $ids, bool $refresh = false): array {
+    $ids = array_values(array_filter(array_map('intval', $ids), function($v) { return $v > 0; }));
+    if (empty($ids)) return [];
+
+    if (is_google_cloud_mode()) {
+        $assets = map_sheets_assets($refresh);
+        $idLookup = array_flip($ids);
+        $result = [];
+        foreach ($assets as $a) {
+            $aid = (int)($a['id'] ?? 0);
+            if (isset($idLookup[$aid])) {
+                if (empty($a['qr_token'])) {
+                    $a['qr_token'] = get_static_qr_token($aid);
+                }
+                $result[$aid] = $a;
+            }
+        }
+        $ordered = [];
+        foreach ($ids as $aid) {
+            if (isset($result[$aid])) {
+                $ordered[] = $result[$aid];
+            }
+        }
+        return $ordered;
+    }
+
+    try {
+        $placeholders = implode(',', array_fill(0, count($ids), '?'));
+        $base = asset_query_base();
+        $st = db()->prepare($base . " WHERE a.id IN ($placeholders)");
+        $st->execute($ids);
+        $rows = $st->fetchAll();
+        $map = [];
+        foreach ($rows as $row) {
+            $aid = (int)($row['id'] ?? 0);
+            if (isset($row['kode_inventaris'])) {
+                $row['kode_inventaris'] = normalize_kode_inventaris((string)$row['kode_inventaris']);
+            }
+            if (empty($row['qr_token'])) {
+                $row['qr_token'] = get_static_qr_token($aid);
+            }
+            $map[$aid] = $row;
+        }
+        $ordered = [];
+        foreach ($ids as $aid) {
+            if (isset($map[$aid])) {
+                $ordered[] = $map[$aid];
+            }
+        }
+        return $ordered;
+    } catch (Throwable $e) {
+        return [];
     }
 }
 
@@ -963,4 +1021,180 @@ function bulk_update_assets(array $ids, array $updates): array {
         'errors' => $errors
     ];
 }
+
+/**
+ * Menyimpan perubahan edit massal multi-row spreadsheet dalam 1 single batch request (Super Cepat & Anti-Timeout)
+ */
+function bulk_update_assets_spreadsheet(array $assetsData): array {
+    if (empty($assetsData)) {
+        return ['success' => false, 'error' => 'Data aset kosong', 'updated' => 0];
+    }
+
+    if (is_google_cloud_mode()) {
+        $client = google_sheets_v4_client();
+        if (!$client) {
+            return ['success' => false, 'error' => 'Google Sheets client tidak tersedia', 'updated' => 0];
+        }
+
+        // Preload seluruh sheet yang dibutuhkan dalam 1 batch
+        $client->preloadSheets(['Assets', 'Cabang', 'Divisi', 'Karyawan', 'Asset_QR_Tokens'], false);
+
+        $karRows = $client->getSheetData('Karyawan');
+        $karNameToId = [];
+        foreach ($karRows as $kr) {
+            $kName = strtolower(trim((string)($kr['nama_karyawan'] ?? $kr['nama'] ?? '')));
+            if ($kName !== '') {
+                $karNameToId[$kName] = (int)($kr['id'] ?? 0);
+            }
+        }
+
+        $allAssets = $client->getSheetData('Assets');
+        $assetRowMap = [];
+        foreach ($allAssets as $a) {
+            $aid = (int)($a['id'] ?? 0);
+            if ($aid > 0) {
+                $assetRowMap[$aid] = $a;
+            }
+        }
+
+        $qrRows = $client->getSheetData('Asset_QR_Tokens');
+        $qrRowMap = [];
+        foreach ($qrRows as $q) {
+            $aid = (int)($q['asset_id'] ?? 0);
+            if ($aid > 0) {
+                $qrRowMap[$aid] = $q;
+            }
+        }
+
+        $valueRanges = [];
+        $newKaryawanRows = [];
+        $nextKarId = count($karRows) + 1;
+        $updatedCount = 0;
+
+        foreach ($assetsData as $aid => $row) {
+            $aid = (int)$aid;
+            if ($aid <= 0 || !isset($assetRowMap[$aid])) continue;
+
+            $old = $assetRowMap[$aid];
+            $rowNum = (int)($old['_row_num'] ?? 0);
+            if ($rowNum <= 1) continue;
+
+            $merk = trim((string)($row['merk'] ?? $old['merk'] ?? ''));
+            $model = trim((string)($row['model'] ?? $old['model'] ?? ''));
+            $sn = trim((string)($row['serial_number'] ?? $old['serial_number'] ?? ''));
+            $idKat = (int)($row['id_kategori'] ?? $old['id_kategori'] ?? 0);
+            $idCab = (int)($row['id_cabang'] ?? $old['id_cabang'] ?? 0);
+            $idDiv = (int)($row['id_divisi'] ?? $old['id_divisi'] ?? 0);
+            $status = trim((string)($row['status'] ?? $old['status'] ?? 'Aktif')) ?: 'Aktif';
+            $ip = trim((string)($row['ip_address'] ?? $old['ip_address'] ?? $old['ip'] ?? ''));
+            $printer = trim((string)($row['printer'] ?? $old['printer'] ?? ''));
+            $placement = trim((string)($row['placement_label'] ?? 'Bodi Casing')) ?: 'Bodi Casing';
+            $namaKar = trim((string)($row['nama_karyawan'] ?? ''));
+            $ket = trim((string)($row['keterangan'] ?? $old['keterangan'] ?? ''));
+
+            $idKar = (int)($old['id_karyawan'] ?? 0);
+            if ($namaKar !== '') {
+                $lowerKar = strtolower($namaKar);
+                if (isset($karNameToId[$lowerKar])) {
+                    $idKar = $karNameToId[$lowerKar];
+                } else {
+                    $idKar = $nextKarId++;
+                    $karNameToId[$lowerKar] = $idKar;
+                    $newKaryawanRows[] = [$idKar, $namaKar, $idCab, $idDiv];
+                }
+            }
+
+            $kode = trim((string)($old['kode_inventaris'] ?? ''));
+            if ($kode === '') {
+                $kode = sprintf('INV-IT-%03d', $aid);
+            }
+
+            $assetRow = [
+                $aid,
+                sheet_cell_text($kode),
+                $merk,
+                $model,
+                $sn,
+                $idKat,
+                $idCab,
+                $idDiv,
+                $idKar,
+                $status,
+                $ket,
+                $ip,
+                $printer
+            ];
+
+            $valueRanges[] = [
+                'range' => "Assets!A{$rowNum}:M{$rowNum}",
+                'values' => [$assetRow]
+            ];
+
+            if (isset($qrRowMap[$aid])) {
+                $qrRowNum = (int)($qrRowMap[$aid]['_row_num'] ?? 0);
+                if ($qrRowNum > 1) {
+                    $valueRanges[] = [
+                        'range' => "Asset_QR_Tokens!D{$qrRowNum}",
+                        'values' => [[$placement]]
+                    ];
+                }
+            }
+
+            $updatedCount++;
+        }
+
+        // Tambah karyawan baru jika ada
+        if (!empty($newKaryawanRows)) {
+            $client->appendValues('Karyawan!A:D', $newKaryawanRows);
+        }
+
+        // Eksekusi seluruh baris dalam 1 kali HTTP request batchUpdate
+        if (!empty($valueRanges)) {
+            $batchOk = $client->batchUpdateValues($valueRanges);
+            if (!$batchOk) {
+                return ['success' => false, 'error' => $client->getLastError() ?: 'Gagal menyimpan ke Google Sheets', 'updated' => 0];
+            }
+        }
+
+        map_sheets_assets(true);
+        return ['success' => true, 'updated' => $updatedCount];
+    }
+
+    // MySQL Mode
+    $pdo = db();
+    try {
+        $pdo->beginTransaction();
+        $updatedCount = 0;
+        $updSt = $pdo->prepare("UPDATE assets SET merk = ?, model = ?, serial_number = ?, id_kategori = ?, id_cabang = ?, id_divisi = ?, status = ?, ip_address = ?, printer = ?, keterangan = ?, updated_at = NOW() WHERE id = ?");
+        $updPlacement = $pdo->prepare("UPDATE asset_qr_tokens SET placement_label = ? WHERE asset_id = ?");
+
+        foreach ($assetsData as $aid => $row) {
+            $aid = (int)$aid;
+            if ($aid <= 0) continue;
+
+            $merk = trim((string)($row['merk'] ?? ''));
+            $model = trim((string)($row['model'] ?? ''));
+            $sn = trim((string)($row['serial_number'] ?? ''));
+            $idKat = (int)($row['id_kategori'] ?? 0);
+            $idCab = (int)($row['id_cabang'] ?? 0);
+            $idDiv = (int)($row['id_divisi'] ?? 0);
+            $status = trim((string)($row['status'] ?? 'Aktif')) ?: 'Aktif';
+            $ip = trim((string)($row['ip_address'] ?? ''));
+            $printer = trim((string)($row['printer'] ?? ''));
+            $placement = trim((string)($row['placement_label'] ?? 'Bodi Casing')) ?: 'Bodi Casing';
+            $ket = trim((string)($row['keterangan'] ?? ''));
+
+            $updSt->execute([$merk, $model, $sn, $idKat, $idCab, $idDiv, $status, $ip, $printer, $ket, $aid]);
+            $updPlacement->execute([$placement, $aid]);
+            $updatedCount++;
+        }
+
+        $pdo->commit();
+        return ['success' => true, 'updated' => $updatedCount];
+    } catch (Throwable $e) {
+        if ($pdo->inTransaction()) $pdo->rollBack();
+        return ['success' => false, 'error' => $e->getMessage(), 'updated' => 0];
+    }
+}
+
 

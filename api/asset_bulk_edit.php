@@ -2,7 +2,7 @@
 require __DIR__ . '/bootstrap.php';
 require_login();
 
-// Handle Form POST (Simpan Semua Perubahan Multi-Row)
+// Handle Form POST (Simpan Semua Perubahan Multi-Row Super Cepat & Anti-Timeout)
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'save_bulk') {
     verify_csrf();
 
@@ -13,54 +13,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'save_
         exit;
     }
 
-    $updatedCount = 0;
-    foreach ($assetsData as $aid => $row) {
-        $aid = (int)$aid;
-        if ($aid <= 0) continue;
-
-        $old = get_asset_by_id($aid);
-        if (!$old) continue;
-
-        $merk = trim((string)($row['merk'] ?? $old['merk'] ?? ''));
-        $model = trim((string)($row['model'] ?? $old['model'] ?? ''));
-        $sn = trim((string)($row['serial_number'] ?? $old['serial_number'] ?? ''));
-        $idKat = (int)($row['id_kategori'] ?? $old['id_kategori'] ?? 0);
-        $idCab = (int)($row['id_cabang'] ?? $old['id_cabang'] ?? 0);
-        $idDiv = (int)($row['id_divisi'] ?? $old['id_divisi'] ?? 0);
-        $status = trim((string)($row['status'] ?? $old['status'] ?? 'Aktif'));
-        $ip = trim((string)($row['ip_address'] ?? $old['ip_address'] ?? $old['ip'] ?? ''));
-        $printer = trim((string)($row['printer'] ?? $old['printer'] ?? ''));
-        $placement = trim((string)($row['placement_label'] ?? $old['placement_label'] ?? 'Bodi Casing'));
-        $namaKar = trim((string)($row['nama_karyawan'] ?? $old['karyawan_nama'] ?? $old['nama_karyawan'] ?? ''));
-        $ket = trim((string)($row['keterangan'] ?? $old['keterangan'] ?? ''));
-
-        $payload = [
-            'kode_inventaris' => trim((string)($old['kode_inventaris'] ?? '')),
-            'merk' => $merk,
-            'model' => $model,
-            'serial_number' => $sn,
-            'id_kategori' => $idKat,
-            'id_cabang' => $idCab,
-            'id_divisi' => $idDiv,
-            'status' => $status,
-            'placement_label' => $placement,
-            'ip_address' => $ip,
-            'printer' => $printer,
-            'nama_karyawan' => $namaKar,
-            'keterangan' => $ket
-        ];
-
-        $res = update_asset($aid, $payload);
-        if (!empty($res['success'])) {
-            $updatedCount++;
-        }
+    $res = bulk_update_assets_spreadsheet($assetsData);
+    if (!empty($res['success'])) {
+        $cnt = (int)($res['updated'] ?? count($assetsData));
+        $_SESSION['flash'] = "Berhasil memperbarui data {$cnt} unit komputer sekaligus.";
+    } else {
+        $_SESSION['flash_error'] = "Gagal memperbarui data: " . ($res['error'] ?? 'Terjadi kesalahan sistem.');
     }
 
-    if (is_google_cloud_mode()) {
-        map_sheets_assets(true);
-    }
-
-    $_SESSION['flash'] = "Berhasil memperbarui data {$updatedCount} unit komputer sekaligus.";
     header('Location: ' . module_url('assets.php'));
     exit;
 }
@@ -92,14 +52,8 @@ if (empty($idList)) {
     exit;
 }
 
-// Ambil data aset yang akan diedit
-$assetsToEdit = [];
-foreach ($idList as $aid) {
-    $a = get_asset_by_id($aid);
-    if ($a) {
-        $assetsToEdit[] = $a;
-    }
-}
+// Ambil data aset yang akan diedit secara batch (1 request anti-timeout)
+$assetsToEdit = get_assets_by_ids($idList);
 
 if (empty($assetsToEdit)) {
     $body = '

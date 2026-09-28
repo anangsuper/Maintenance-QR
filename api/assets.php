@@ -590,6 +590,9 @@ $body = '
   </div>
   <div class="d-flex gap-2 flex-wrap">
     <a class="btn btn-primary d-inline-flex align-items-center gap-1 fw-semibold px-3" href="'.e(module_url('asset_add.php')).'"><i class="bi bi-plus-lg"></i> Tambah Aset</a>
+    <button type="button" class="btn btn-warning text-dark d-inline-flex align-items-center gap-1 fw-semibold shadow-sm" onclick="openBulkEditModal()">
+      <i class="bi bi-pencil-square"></i> Edit Massal <span class="badge bg-dark text-white rounded-pill ms-1 selectedCountNum">0</span>
+    </button>
     <a class="btn btn-outline-primary d-inline-flex align-items-center gap-1 fw-semibold" href="'.e(module_url('asset_import.php')).'"><i class="bi bi-file-earmark-arrow-up"></i> Import Excel / CSV</a>
     <a class="btn btn-light border d-inline-flex align-items-center gap-1" target="_blank" href="'.e(module_url('print_card.php', ['cabang' => $cabangId, 'tahun' => $year])).'"><i class="bi bi-printer"></i> Cetak Kartu Kontrol</a>
     <a class="btn btn-light border d-inline-flex align-items-center gap-1" target="_blank" href="'.e(module_url('print_inventory_card.php', ['cabang' => $cabangId])).'"><i class="bi bi-credit-card-2-front text-primary"></i> Cetak Kartu Inventaris</a>
@@ -902,7 +905,13 @@ document.addEventListener("DOMContentLoaded", function() {
 
   function getSelectedIds() {
     const map = getStoredSelection();
-    return Object.keys(map);
+    let ids = Object.keys(map);
+    if (!ids.length) {
+      document.querySelectorAll(".asset-checkbox:checked").forEach(function(cb) {
+        if (cb.value && !ids.includes(cb.value)) ids.push(cb.value);
+      });
+    }
+    return ids;
   }
 
   function escapeHtml(str) {
@@ -1159,14 +1168,26 @@ document.addEventListener("DOMContentLoaded", function() {
 
   // --- Fitur Edit Massal (Multi-Row Spreadsheet Editor) ---
   window.openBulkEditModal = function() {
-    const selectedMap = getStoredSelection();
-    const ids = Object.keys(selectedMap);
+    let ids = getSelectedIds();
     if (!ids.length) {
-      alert("Silakan checklist minimal 1 komputer untuk diedit secara massal.");
-      return;
+      const visibleCheckboxes = document.querySelectorAll(".asset-checkbox");
+      if (visibleCheckboxes.length > 0) {
+        const confirmAll = confirm("Belum ada komputer yang dicentang.\\n\\nApakah Anda ingin mengedit massal seluruh komputer di halaman ini (" + visibleCheckboxes.length + " unit)?");
+        if (confirmAll) {
+          visibleCheckboxes.forEach(function(cb) {
+            cb.checked = true;
+            ids.push(cb.value);
+          });
+        } else {
+          return;
+        }
+      } else {
+        alert("Silakan checklist minimal 1 komputer untuk diedit secara massal.");
+        return;
+      }
     }
-    // Langsung buka editor massal dalam satu halaman (multi-row spreadsheet)
-    window.location.href = "asset_bulk_edit.php?ids=" + encodeURIComponent(ids.join(","));
+    const targetUrl = '.json_encode(module_url('asset_bulk_edit.php')).';
+    window.location.href = targetUrl + "?ids=" + encodeURIComponent(ids.join(","));
   };
 });
 </script>
