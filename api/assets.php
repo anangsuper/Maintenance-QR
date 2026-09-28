@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 require __DIR__ . '/bootstrap.php';
 require_login();
 
@@ -325,7 +325,7 @@ if ($maintStatus === 'pending') {
       <div class="d-flex align-items-center gap-3">
         <div class="fs-2 text-danger"><i class="bi bi-clipboard2-x-fill"></i></div>
         <div>
-          <h6 class="fw-bold text-danger mb-0">🎯 TO-DO LIST: Komputer Jatuh Tempo (Belum Diperiksa Bulan Ini)</h6>
+          <h6 class="fw-bold text-danger mb-0">ðŸŽ¯ TO-DO LIST: Komputer Jatuh Tempo (Belum Diperiksa Bulan Ini)</h6>
           <div class="small text-muted">Ditemukan <strong>'.$totalFiltered.' unit</strong> komputer yang belum dilakukan pemeliharaan pada periode '.$currentMonthName.' '.$year.'. Klik tombol hijau <strong>"Periksa"</strong> di kolom aksi untuk langsung mengisi checklist.</div>
         </div>
       </div>
@@ -339,7 +339,7 @@ if ($maintStatus === 'pending') {
       <div class="d-flex align-items-center gap-3">
         <div class="fs-2 text-warning"><i class="bi bi-exclamation-triangle-fill"></i></div>
         <div>
-          <h6 class="fw-bold text-warning-emphasis mb-0">⚠️ DAFTAR TEMUAN MASALAH / PERBAIKAN (Pending Issues)</h6>
+          <h6 class="fw-bold text-warning-emphasis mb-0">âš ï¸ DAFTAR TEMUAN MASALAH / PERBAIKAN (Pending Issues)</h6>
           <div class="small text-muted">Ditemukan <strong>'.$totalFiltered.' unit</strong> komputer yang mengalami kendala hardware/software. Klik tombol merah <strong>"Perbaiki"</strong> untuk mencatat tindakan perbaikan.</div>
         </div>
       </div>
@@ -353,7 +353,7 @@ if ($maintStatus === 'pending') {
       <div class="d-flex align-items-center gap-3">
         <div class="fs-2 text-success"><i class="bi bi-patch-check-fill"></i></div>
         <div>
-          <h6 class="fw-bold text-success mb-0">✅ DAFTAR KOMPUTER SELESAI MAINTENANCE</h6>
+          <h6 class="fw-bold text-success mb-0">âœ… DAFTAR KOMPUTER SELESAI MAINTENANCE</h6>
           <div class="small text-muted">Sebanyak <strong>'.$totalFiltered.' unit</strong> komputer telah selesai diperiksa dan tercatat normal di periode '.$currentMonthName.' '.$year.'.</div>
         </div>
       </div>
@@ -396,19 +396,19 @@ $todoTabsHtml = '
     <!-- 2. Belum Diperiksa (To-Do Utama) -->
     <a href="'.e(filter_query(['maint' => 'pending', 'page' => 1])).'" 
        class="btn btn-sm rounded-pill px-3 fw-bold '.($maintStatus === 'pending' ? 'btn-danger text-white shadow' : 'btn-outline-danger').'" style="'.($maintStatus !== 'pending' ? 'background-color: #FEF2F2; border-color: #FCA5A5;' : '').'">
-      <i class="bi bi-exclamation-circle-fill me-1"></i> 🔴 Belum Diperiksa Bulan Ini ('.$statPendingMaint.')
+      <i class="bi bi-exclamation-circle-fill me-1"></i> ðŸ”´ Belum Diperiksa Bulan Ini ('.$statPendingMaint.')
     </a>
 
     <!-- 3. Ada Temuan Masalah -->
     <a href="'.e(filter_query(['maint' => 'repair', 'page' => 1])).'" 
        class="btn btn-sm rounded-pill px-3 fw-bold '.($maintStatus === 'repair' ? 'btn-warning text-dark shadow' : 'btn-outline-warning text-dark').'" style="'.($maintStatus !== 'repair' ? 'background-color: #FFFBEB; border-color: #FCD34D;' : '').'">
-      <i class="bi bi-tools me-1"></i> 🟡 Ada Temuan Masalah ('.$statRepair.')
+      <i class="bi bi-tools me-1"></i> ðŸŸ¡ Ada Temuan Masalah ('.$statRepair.')
     </a>
 
     <!-- 4. Sudah Selesai -->
     <a href="'.e(filter_query(['maint' => 'done', 'page' => 1])).'" 
        class="btn btn-sm rounded-pill px-3 fw-bold '.($maintStatus === 'done' ? 'btn-success text-white shadow' : 'btn-outline-success').'" style="'.($maintStatus !== 'done' ? 'background-color: #F0FDF4; border-color: #86EFAC;' : '').'">
-      <i class="bi bi-check-circle-fill me-1"></i> 🟢 Selesai ('.$statDoneMaint.')
+      <i class="bi bi-check-circle-fill me-1"></i> ðŸŸ¢ Selesai ('.$statDoneMaint.')
     </a>
   </div>
 </div>';
@@ -849,161 +849,6 @@ $body = '
     </div>
   </div>
 </div>
-
-<!-- Modal Edit Massal -->
-<div class="modal fade" id="bulkEditModal" tabindex="-1" aria-labelledby="bulkEditModalLabel" aria-hidden="true">
-  <div class="modal-dialog modal-dialog-centered modal-lg">
-    <div class="modal-content shadow-lg border-0" style="border-radius: 16px;">
-      <div class="modal-header border-bottom py-3 px-4 bg-warning bg-opacity-10">
-        <div>
-          <h5 class="modal-title fw-bold text-dark d-flex align-items-center gap-2" id="bulkEditModalLabel">
-            <i class="bi bi-pencil-square text-warning"></i> Edit Massal Aset Komputer
-            <span class="badge bg-dark rounded-pill fs-6 px-2 py-1"><span class="selectedCountNum">0</span> Unit Dipilih</span>
-          </h5>
-          <div class="text-secondary small mt-1">Ubah data untuk seluruh komputer terpilih sekaligus. Kolom yang dibiarkan <em>"Jangan Ubah (Tetap)"</em> tidak akan mengubah data aslinya.</div>
-        </div>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-      </div>
-      <div class="modal-body p-4">
-        <div id="bulkEditAlert" class="alert alert-danger d-none py-2 small mb-3"></div>
-
-        <!-- Preview Aset Terpilih -->
-        <div class="mb-3">
-          <label class="form-label text-secondary small fw-semibold mb-1">Aset yang akan diperbarui:</label>
-          <div id="bulkEditAssetChips" class="d-flex flex-wrap gap-1 p-2 bg-light rounded border" style="max-height: 85px; overflow-y: auto;">
-            <!-- Rendered via JS -->
-          </div>
-        </div>
-
-        <div class="row g-3">
-          <!-- 1. Cabang -->
-          <div class="col-md-6">
-            <label class="form-label text-secondary small fw-semibold">Kantor Cabang / Lokasi</label>
-            <select class="form-select form-select-sm" id="bulkCabang">
-              '.$bulkOptCab.'
-            </select>
-            <div class="form-text small text-muted">Pilih cabang baru atau biarkan tetap.</div>
-          </div>
-
-          <!-- 2. Divisi -->
-          <div class="col-md-6">
-            <div class="d-flex justify-content-between align-items-center mb-1">
-              <label class="form-label text-secondary small fw-semibold mb-0">Divisi / Unit Kerja</label>
-              <button type="button" class="btn btn-sm btn-link p-0 text-decoration-none fw-semibold text-primary" data-bs-toggle="modal" data-bs-target="#modalQuickAddDivisi" style="font-size: 0.75rem;">
-                <i class="bi bi-plus-circle me-1"></i>+ Tambah Divisi
-              </button>
-            </div>
-            <select class="form-select form-select-sm" id="bulkDivisi">
-              '.$bulkOptDiv.'
-              <option value="__add_new__" class="fw-bold text-primary bg-light">+ Tambah Divisi Baru...</option>
-            </select>
-            <div class="form-text small text-muted">Pilih divisi baru atau biarkan tetap.</div>
-          </div>
-
-          <!-- 3. Status Aset -->
-          <div class="col-md-6">
-            <label class="form-label text-secondary small fw-semibold">Status Unit</label>
-            <select class="form-select form-select-sm" id="bulkStatus">
-              <option value="">-- Jangan Ubah (Tetap) --</option>
-              <option value="Aktif">Aktif (Digunakan)</option>
-              <option value="Backup">Backup / Cadangan</option>
-              <option value="Perbaikan">Sedang Dalam Perbaikan</option>
-              <option value="Nonaktif">Nonaktif</option>
-            </select>
-          </div>
-
-          <!-- 4. Kategori Aset -->
-          <div class="col-md-6">
-            <label class="form-label text-secondary small fw-semibold">Kategori Perangkat</label>
-            <select class="form-select form-select-sm" id="bulkKategori">
-              '.$bulkOptKat.'
-            </select>
-          </div>
-
-          <!-- 5. Posisi Stiker QR -->
-          <div class="col-md-6">
-            <label class="form-label text-secondary small fw-semibold">Rencana Posisi Stiker QR</label>
-            <select class="form-select form-select-sm" id="bulkPlacement">
-              <option value="">-- Jangan Ubah (Tetap) --</option>
-              <option value="Bodi Casing">Bodi Casing</option>
-              <option value="Cover Atas Laptop">Cover Atas Laptop</option>
-              <option value="Samping CPU">Samping CPU</option>
-              <option value="Belakang Monitor">Belakang Monitor</option>
-              <option value="Meja Kerja">Meja Kerja</option>
-              <option value="Badan Printer">Badan Printer</option>
-            </select>
-          </div>
-
-          <!-- 6. Printer Terhubung -->
-          <div class="col-md-6">
-            <div class="form-check form-switch mb-1">
-              <input class="form-check-input" type="checkbox" id="bulkChangePrinterCheck">
-              <label class="form-check-label text-secondary small fw-semibold" for="bulkChangePrinterCheck">Ubah Printer Terhubung</label>
-            </div>
-            <input type="text" class="form-control form-control-sm" id="bulkPrinterInput" placeholder="Contoh: Epson L3110 (atau kosongkan)" disabled>
-            <div class="form-text small text-muted">Centang switch di atas jika ingin mengganti data printer.</div>
-          </div>
-
-          <!-- 7. Pengguna / PIC -->
-          <div class="col-12">
-            <div class="form-check form-switch mb-1">
-              <input class="form-check-input" type="checkbox" id="bulkChangeKaryawanCheck">
-              <label class="form-check-label text-secondary small fw-semibold" for="bulkChangeKaryawanCheck">Ubah Pengguna / PIC Bersama</label>
-            </div>
-            <input type="text" class="form-control form-control-sm" id="bulkKaryawanInput" list="bulkListKaryawan" placeholder="Ketik nama staf / pengguna baru..." disabled>
-            <datalist id="bulkListKaryawan">
-              '.$datalistKaryawan.'
-            </datalist>
-            <div class="form-text small text-muted">Centang switch jika ingin menyeragamkan PIC untuk semua komputer ini.</div>
-          </div>
-        </div>
-
-        <div class="alert alert-info bg-info bg-opacity-10 border-info border-opacity-25 py-2 px-3 small rounded-3 mt-3 mb-0">
-          <i class="bi bi-shield-check me-1"></i> Data unik seperti <strong>Kode Inventaris, Merk/Model, Serial Number, Alamat IP, dan Token QR Fisik</strong> akan tetap aman dan tidak berubah.
-        </div>
-      </div>
-      <div class="modal-footer border-top bg-light py-2 px-4 d-flex justify-content-between align-items-center">
-        <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Batal</button>
-        <button type="button" class="btn btn-sm btn-warning text-dark fw-bold px-4" id="btnSubmitBulkEdit">
-          <span id="bulkEditSpinner" class="spinner-border spinner-border-sm me-1 d-none" role="status" aria-hidden="true"></span>
-          <i class="bi bi-check2-circle me-1" id="bulkEditBtnIcon"></i> Terapkan Perubahan Massal
-        </button>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- Modal Quick Add Divisi -->
-<div class="modal fade" id="modalQuickAddDivisi" tabindex="-1" aria-labelledby="modalQuickAddDivisiLabel" aria-hidden="true">
-  <div class="modal-dialog modal-dialog-centered">
-    <div class="modal-content shadow border-0" style="border-radius: 16px;">
-      <div class="modal-header border-bottom py-3 px-4">
-        <h5 class="modal-title fw-bold text-dark d-flex align-items-center gap-2" id="modalQuickAddDivisiLabel">
-          <i class="bi bi-diagram-3 text-primary"></i> Tambah Divisi / Unit Kerja
-        </h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-      </div>
-      <div class="modal-body p-4">
-        <div id="quickDivisiAlert" class="alert alert-danger d-none py-2 small mb-3"></div>
-        <div class="mb-3">
-          <label class="form-label text-secondary small fw-semibold">Nama Divisi / Bagian <span class="text-danger">*</span></label>
-          <input type="text" class="form-control" id="inputQuickNamaDivisi" placeholder="Contoh: Digital Banking, Logistik, Legal...">
-        </div>
-        <div class="mb-2">
-          <label class="form-label text-secondary small fw-semibold">Keterangan (Opsional)</label>
-          <input type="text" class="form-control" id="inputQuickKetDivisi" placeholder="Keterangan singkat fungsi / lokasi divisi">
-        </div>
-      </div>
-      <div class="modal-footer border-top bg-light py-2 px-4 d-flex justify-content-between">
-        <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Batal</button>
-        <button type="button" class="btn btn-sm btn-primary fw-semibold" id="btnQuickSubmitDivisi">
-          <span id="quickDivisiSpinner" class="spinner-border spinner-border-sm me-1 d-none" role="status" aria-hidden="true"></span>
-          <i class="bi bi-check2 me-1" id="quickDivisiBtnIcon"></i> Simpan Divisi
-        </button>
-      </div>
-    </div>
-  </div>
-</div>
 ';
 
 $extraHead = '
@@ -1312,315 +1157,17 @@ document.addEventListener("DOMContentLoaded", function() {
     window.open(url, "_blank");
   };
 
-  // --- Fitur Edit Massal ---
+  // --- Fitur Edit Massal (Multi-Row Spreadsheet Editor) ---
   window.openBulkEditModal = function() {
     const selectedMap = getStoredSelection();
-    const items = Object.values(selectedMap);
-    if (items.length === 0) {
+    const ids = Object.keys(selectedMap);
+    if (!ids.length) {
       alert("Silakan checklist minimal 1 komputer untuk diedit secara massal.");
       return;
     }
-
-    const countEls = document.querySelectorAll(".selectedCountNum");
-    countEls.forEach(function(el) { el.textContent = items.length; });
-
-    const chipsContainer = document.getElementById("bulkEditAssetChips");
-    if (chipsContainer) {
-      let chipsHtml = "";
-      items.forEach(function(item) {
-        chipsHtml += \'<span class="badge bg-white text-dark border font-monospace py-1 px-2">\' +
-          \'<i class="bi bi-pc me-1 text-primary"></i>\' + escapeHtml(item.kode || ("#" + item.id)) +
-          (item.user ? \' <span class="text-secondary fw-normal">(\' + escapeHtml(item.user) + \')</span>\' : \'\') +
-          \'</span>\';
-      });
-      chipsContainer.innerHTML = chipsHtml;
-    }
-
-    // Reset switches
-    const chkPrint = document.getElementById("bulkChangePrinterCheck");
-    const inpPrint = document.getElementById("bulkPrinterInput");
-    if (chkPrint && inpPrint) {
-      chkPrint.checked = false;
-      inpPrint.disabled = true;
-      inpPrint.value = "";
-    }
-
-    const chkKar = document.getElementById("bulkChangeKaryawanCheck");
-    const inpKar = document.getElementById("bulkKaryawanInput");
-    if (chkKar && inpKar) {
-      chkKar.checked = false;
-      inpKar.disabled = true;
-      inpKar.value = "";
-    }
-
-    // Reset selects
-    const bulkCab = document.getElementById("bulkCabang");
-    if (bulkCab) bulkCab.value = "";
-    const bulkDiv = document.getElementById("bulkDivisi");
-    if (bulkDiv) bulkDiv.value = "";
-    const bulkStat = document.getElementById("bulkStatus");
-    if (bulkStat) bulkStat.value = "";
-    const bulkKat = document.getElementById("bulkKategori");
-    if (bulkKat) bulkKat.value = "";
-    const bulkPlace = document.getElementById("bulkPlacement");
-    if (bulkPlace) bulkPlace.value = "";
-
-    const alertEl = document.getElementById("bulkEditAlert");
-    if (alertEl) alertEl.classList.add("d-none");
-
-    // Tutup modal rincian jika sedang terbuka
-    const selModal = document.getElementById("selectedAssetsModal");
-    if (selModal) {
-      const bsSelModal = bootstrap.Modal.getInstance(selModal);
-      if (bsSelModal) bsSelModal.hide();
-    }
-
-    const modalEl = document.getElementById("bulkEditModal");
-    if (modalEl) {
-      const bsModal = bootstrap.Modal.getOrCreateInstance(modalEl);
-      bsModal.show();
-    }
+    // Langsung buka editor massal dalam satu halaman (multi-row spreadsheet)
+    window.location.href = "asset_bulk_edit.php?ids=" + encodeURIComponent(ids.join(","));
   };
-
-  // Switch Printer & Karyawan
-  const chkPrint = document.getElementById("bulkChangePrinterCheck");
-  const inpPrint = document.getElementById("bulkPrinterInput");
-  if (chkPrint && inpPrint) {
-    chkPrint.addEventListener("change", function() {
-      inpPrint.disabled = !this.checked;
-      if (this.checked) inpPrint.focus();
-    });
-  }
-
-  const chkKar = document.getElementById("bulkChangeKaryawanCheck");
-  const inpKar = document.getElementById("bulkKaryawanInput");
-  if (chkKar && inpKar) {
-    chkKar.addEventListener("change", function() {
-      inpKar.disabled = !this.checked;
-      if (this.checked) inpKar.focus();
-    });
-  }
-
-  // Submit Bulk Edit
-  const btnSubmitBulk = document.getElementById("btnSubmitBulkEdit");
-  if (btnSubmitBulk) {
-    btnSubmitBulk.addEventListener("click", function() {
-      const selectedMap = getStoredSelection();
-      const ids = Object.keys(selectedMap);
-      if (ids.length === 0) {
-        alert("Tidak ada aset yang dipilih.");
-        return;
-      }
-
-      const alertEl = document.getElementById("bulkEditAlert");
-      const idCabang = document.getElementById("bulkCabang") ? document.getElementById("bulkCabang").value : "";
-      const idDivisi = document.getElementById("bulkDivisi") ? document.getElementById("bulkDivisi").value : "";
-      const status = document.getElementById("bulkStatus") ? document.getElementById("bulkStatus").value : "";
-      const idKategori = document.getElementById("bulkKategori") ? document.getElementById("bulkKategori").value : "";
-      const placement = document.getElementById("bulkPlacement") ? document.getElementById("bulkPlacement").value : "";
-      const changePrinter = (chkPrint && chkPrint.checked) ? 1 : 0;
-      const printer = inpPrint ? inpPrint.value.trim() : "";
-      const changeKaryawan = (chkKar && chkKar.checked) ? 1 : 0;
-      const namaKaryawan = inpKar ? inpKar.value.trim() : "";
-
-      if (!idCabang && !idDivisi && !status && !idKategori && !placement && !changePrinter && !changeKaryawan) {
-        if (alertEl) {
-          alertEl.textContent = "Silakan tentukan minimal 1 kolom data yang ingin diubah.";
-          alertEl.classList.remove("d-none");
-        }
-        return;
-      }
-
-      if (!confirm("Apakah Anda yakin ingin menerapkan perubahan data ini ke " + ids.length + " unit aset terpilih?")) {
-        return;
-      }
-
-      const spinner = document.getElementById("bulkEditSpinner");
-      const btnIcon = document.getElementById("bulkEditBtnIcon");
-      if (spinner) spinner.classList.remove("d-none");
-      if (btnIcon) btnIcon.classList.add("d-none");
-      btnSubmitBulk.disabled = true;
-      if (alertEl) alertEl.classList.add("d-none");
-
-      const csrfToken = "'.csrf_token().'";
-      const formData = new FormData();
-      formData.append("_csrf", csrfToken);
-      formData.append("ids", JSON.stringify(ids));
-      if (idCabang) formData.append("id_cabang", idCabang);
-      if (idDivisi && idDivisi !== "__add_new__") formData.append("id_divisi", idDivisi);
-      if (status) formData.append("status", status);
-      if (idKategori) formData.append("id_kategori", idKategori);
-      if (placement) formData.append("placement_label", placement);
-      if (changePrinter) {
-        formData.append("change_printer", "1");
-        formData.append("printer", printer);
-      }
-      if (changeKaryawan) {
-        formData.append("change_karyawan", "1");
-        formData.append("nama_karyawan", namaKaryawan);
-      }
-
-      fetch("asset_bulk_edit_ajax.php", {
-        method: "POST",
-        body: formData
-      })
-      .then(function(res) { return res.json(); })
-      .then(function(data) {
-        if (spinner) spinner.classList.add("d-none");
-        if (btnIcon) btnIcon.classList.remove("d-none");
-        btnSubmitBulk.disabled = false;
-
-        if (!data.success) {
-          if (alertEl) {
-            alertEl.textContent = data.error || "Gagal menerapkan perubahan massal.";
-            alertEl.classList.remove("d-none");
-          }
-          return;
-        }
-
-        alert(data.message || "Berhasil memperbarui data massal.");
-        window.location.reload();
-      })
-      .catch(function(err) {
-        if (spinner) spinner.classList.add("d-none");
-        if (btnIcon) btnIcon.classList.remove("d-none");
-        btnSubmitBulk.disabled = false;
-        if (alertEl) {
-          alertEl.textContent = "Terjadi kesalahan jaringan atau server.";
-          alertEl.classList.remove("d-none");
-        }
-      });
-    });
-  }
-
-  // Quick Add Divisi dari dalam Bulk Edit Modal
-  const bulkDivSelect = document.getElementById("bulkDivisi");
-  const modalDivisiEl = document.getElementById("modalQuickAddDivisi");
-  const inputQuickNama = document.getElementById("inputQuickNamaDivisi");
-  const inputQuickKet = document.getElementById("inputQuickKetDivisi");
-  const btnQuickDiv = document.getElementById("btnQuickSubmitDivisi");
-  const alertQuickDiv = document.getElementById("quickDivisiAlert");
-  const spinnerQuickDiv = document.getElementById("quickDivisiSpinner");
-  const iconQuickDiv = document.getElementById("quickDivisiBtnIcon");
-
-  let prevBulkDivVal = "";
-  if (bulkDivSelect) {
-    bulkDivSelect.addEventListener("change", function() {
-      if (this.value === "__add_new__") {
-        this.value = prevBulkDivVal;
-        if (modalDivisiEl) {
-          const bsModal = bootstrap.Modal.getOrCreateInstance(modalDivisiEl);
-          bsModal.show();
-        }
-      } else {
-        prevBulkDivVal = this.value;
-      }
-    });
-  }
-
-  if (modalDivisiEl) {
-    modalDivisiEl.addEventListener("shown.bs.modal", function() {
-      if (inputQuickNama) {
-        inputQuickNama.value = "";
-        inputQuickNama.focus();
-      }
-      if (inputQuickKet) inputQuickKet.value = "";
-      if (alertQuickDiv) alertQuickDiv.classList.add("d-none");
-    });
-  }
-
-  if (btnQuickDiv) {
-    btnQuickDiv.addEventListener("click", function() {
-      submitQuickDivisiAssets();
-    });
-  }
-
-  if (inputQuickNama) {
-    inputQuickNama.addEventListener("keydown", function(e) {
-      if (e.key === "Enter") {
-        e.preventDefault();
-        submitQuickDivisiAssets();
-      }
-    });
-  }
-
-  function submitQuickDivisiAssets() {
-    const nama = inputQuickNama ? inputQuickNama.value.trim() : "";
-    const ket = inputQuickKet ? inputQuickKet.value.trim() : "";
-
-    if (!nama) {
-      if (alertQuickDiv) {
-        alertQuickDiv.textContent = "Nama divisi tidak boleh kosong.";
-        alertQuickDiv.classList.remove("d-none");
-      }
-      if (inputQuickNama) inputQuickNama.focus();
-      return;
-    }
-
-    if (alertQuickDiv) alertQuickDiv.classList.add("d-none");
-    if (spinnerQuickDiv) spinnerQuickDiv.classList.remove("d-none");
-    if (iconQuickDiv) iconQuickDiv.classList.add("d-none");
-    if (btnQuickDiv) btnQuickDiv.disabled = true;
-
-    const csrfToken = "'.csrf_token().'";
-    const formData = new FormData();
-    formData.append("_csrf", csrfToken);
-    formData.append("nama_divisi", nama);
-    formData.append("keterangan", ket);
-
-    fetch("divisi_ajax_add.php", {
-      method: "POST",
-      body: formData
-    })
-    .then(function(res) { return res.json(); })
-    .then(function(data) {
-      if (spinnerQuickDiv) spinnerQuickDiv.classList.add("d-none");
-      if (iconQuickDiv) iconQuickDiv.classList.remove("d-none");
-      if (btnQuickDiv) btnQuickDiv.disabled = false;
-
-      if (!data.success) {
-        if (alertQuickDiv) {
-          alertQuickDiv.textContent = data.error || "Gagal menambahkan divisi baru.";
-          alertQuickDiv.classList.remove("d-none");
-        }
-        return;
-      }
-
-      const newId = String(data.id);
-      const newNama = data.nama;
-
-      if (bulkDivSelect) {
-        let optExists = bulkDivSelect.querySelector(\'option[value="\' + newId + \'"]\');
-        if (!optExists) {
-          const newOpt = document.createElement("option");
-          newOpt.value = newId;
-          newOpt.textContent = newNama;
-          const addNewOpt = bulkDivSelect.querySelector(\'option[value="__add_new__"]\');
-          if (addNewOpt) {
-            bulkDivSelect.insertBefore(newOpt, addNewOpt);
-          } else {
-            bulkDivSelect.appendChild(newOpt);
-          }
-        }
-        bulkDivSelect.value = newId;
-        prevBulkDivVal = newId;
-      }
-
-      if (modalDivisiEl) {
-        const bsModal = bootstrap.Modal.getInstance(modalDivisiEl);
-        if (bsModal) bsModal.hide();
-      }
-    })
-    .catch(function(err) {
-      if (spinnerQuickDiv) spinnerQuickDiv.classList.add("d-none");
-      if (iconQuickDiv) iconQuickDiv.classList.remove("d-none");
-      if (btnQuickDiv) btnQuickDiv.disabled = false;
-      if (alertQuickDiv) {
-        alertQuickDiv.textContent = "Terjadi kesalahan jaringan atau server.";
-        alertQuickDiv.classList.remove("d-none");
-      }
-    });
-  }
 });
 </script>
 ';
