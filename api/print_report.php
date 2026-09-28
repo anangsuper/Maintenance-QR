@@ -151,9 +151,14 @@ foreach ($findingsRows as $f) {
     $fNum++;
     $fStatus = strtolower(trim((string)($f['repair_status'] ?? '')));
     $isResolved = in_array($fStatus, ['resolved', 'selesai', 'closed', 'ok', 'done', 'normal'], true);
-    $statusBadge = $isResolved
-        ? '<span class="badge text-bg-success badge-compact"><i class="bi bi-check2"></i> Selesai</span>'
-        : '<span class="badge text-bg-warning badge-compact"><i class="bi bi-hourglass-split"></i> Dalam Proses</span>';
+    $isProgress = in_array($fStatus, ['proses', 'in progress', 'sedang perbaikan', 'dalam proses'], true);
+    if ($isResolved) {
+        $statusBadge = '<span class="badge text-bg-success badge-compact"><i class="bi bi-check2"></i> Selesai</span>';
+    } elseif ($isProgress) {
+        $statusBadge = '<span class="badge text-bg-warning badge-compact"><i class="bi bi-hourglass-split"></i> Dalam Proses</span>';
+    } else {
+        $statusBadge = '<span class="badge text-bg-danger badge-compact"><i class="bi bi-exclamation-triangle"></i> Perlu Perbaikan</span>';
+    }
     
     $urgencyBadge = match(strtolower($f['severity'] ?? 'ringan')) {
         'tinggi', 'berat', 'kritis', 'high', 'critical' => '<span class="badge text-bg-danger badge-compact">Kritis</span>',
@@ -181,6 +186,7 @@ foreach ($findingsRows as $f) {
       <td class="col-solusi text-dark">
         <div class="text-success fw-bold mb-1" style="font-size: 7.5pt;"><i class="bi bi-tools me-1"></i>Tindakan / Solusi:</div>
         <div style="line-height: 1.25;">'.e($f['action_taken']).'</div>
+        '.(!empty($f['proses_perbaikan']) ? '<div class="mt-1 p-1 bg-light border small" style="font-size: 7pt; line-height: 1.2;"><strong class="text-primary">Proses:</strong> '.e($f['proses_perbaikan']).'</div>' : '').'
       </td>
       <td class="col-urgensi col-center">
         '.$urgencyBadge.'

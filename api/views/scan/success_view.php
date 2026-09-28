@@ -61,7 +61,7 @@ if ($successData) {
             <a class="btn btn-primary fw-bold py-3 shadow-sm" href="scan.php?t='.urlencode($token).'">
               <i class="bi bi-card-checklist me-1"></i> Lihat Kartu Kontrol Perangkat
             </a>
-            <a class="btn btn-outline-secondary py-2" href="maintenance_detail.php?id='.((int)$successData['log_id']).'">
+            <a class="btn btn-outline-secondary py-2" href="maintenance_detail.php?id='.((int)$successData['log_id']).'&t='.urlencode($token).'">
               <i class="bi bi-file-earmark-text me-1"></i> Rincian Audit Lengkap
             </a>
           </div>
@@ -137,7 +137,7 @@ if ($successTindakLanjut) {
               <i class="bi bi-card-checklist me-1"></i> Buka Kartu Kontrol Perangkat
             </a>
             '.(!empty($successTindakLanjut['log_id']) ? '
-            <a class="btn btn-outline-secondary py-2" href="maintenance_detail.php?id='.((int)$successTindakLanjut['log_id']).'">
+            <a class="btn btn-outline-secondary py-2" href="maintenance_detail.php?id='.((int)$successTindakLanjut['log_id']).'&t='.urlencode($token).'">
               <i class="bi bi-file-earmark-text me-1"></i> Lihat Rincian Log Audit
             </a>' : '').'
           </div>

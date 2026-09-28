@@ -545,6 +545,147 @@ function resolve_asset_finding(int $assetId, array $data): array {
     return ['success' => true, 'log_id' => $logId, 'status' => $status];
 }
 
+/**
+ * Memperbarui catatan dan status proses perbaikan temuan kendala (Proses Perbaikan).
+ */
+function update_finding_progress(int $findingId, int $scanId, int $assetId, string $status, string $notes, string $technician): array {
+    if ($findingId <= 0 && $scanId <= 0 && $assetId <= 0) {
+        return ['success' => false, 'error' => 'Data temuan atau log tidak valid.'];
+    }
+
+    $lowSt = strtolower(trim($status));
+    if (in_array($lowSt, ['resolved', 'selesai', 'closed', 'ok', 'normal'], true)) {
+        $finalStatus = 'Resolved';
+        $scanStatus = 'Selesai';
+    } elseif (in_array($lowSt, ['in progress', 'proses', 'sedang perbaikan', 'dalam proses'], true)) {
+        $finalStatus = 'In Progress';
+        $scanStatus = 'Proses';
+    } else {
+        $finalStatus = 'Perlu Perbaikan';
+        $scanStatus = 'Temuan';
+    }
+
+    $techName = trim($technician);
+    if ($techName === '') {
+        $techName = is_logged_in() ? current_user_name() : 'Teknisi IT';
+    }
+    $notes = trim($notes);
+    $now = date('Y-m-d H:i:s');
+    $formattedLog = "[Proses Perbaikan " . date('d/m/Y') . " oleh {$techName}]: " . $notes;
+
+    if (is_google_cloud_mode()) {
+        $client = google_sheets_v4_client();
+        if (!$client) return ['success' => false, 'error' => 'Gagal terhubung ke Google Sheets'];
+
+        try {
+            $fRows = $client->getSheetData('Maintenance_Findings', true);
+            $matchedRow = null;
+            foreach ($fRows as $fr) {
+                $frId = (int)($fr['id'] ?? $fr['col_0'] ?? 0);
+                $frMid = (int)($fr['maintenance_scan_id'] ?? $fr['maintenance_id'] ?? $fr['col_1'] ?? 0);
+                $frAid = (int)($fr['asset_id'] ?? $fr['col_2'] ?? 0);
+
+                if (($findingId > 0 && $frId === $findingId) || ($scanId > 0 && $frMid === $scanId) || ($assetId > 0 && $frAid === $assetId)) {
+                    $matchedRow = $fr;
+                    break;
+                }
+            }
+
+            if ($matchedRow) {
+                $rowNum = (int)($matchedRow['_row_num'] ?? 0);
+                if ($rowNum > 1) {
+                    $client->updateValues("Maintenance_Findings!G{$rowNum}:L{$rowNum}", [[
+                        $finalStatus,
+                        $matchedRow['reported_by'] ?? $techName,
+                        $matchedRow['reported_at'] ?? $now,
+                        $techName,
+                        $now,
+                        $notes
+                    ]]);
+                }
+            } else {
+                $rawFindCol = $client->getValues('Maintenance_Findings!A:A');
+                $newFindId = max(1, count($rawFindCol) + 1);
+                $client->createSheetIfNotExists('Maintenance_Findings');
+
+                $fDeskripsi = 'Temuan kendala perangkat';
+                $tindakanAwal = 'Tindakan teknisi IT';
+                if ($scanId > 0) {
+                    $detail = get_maintenance_detail($scanId);
+                    if (!empty($detail['scan']['findings'])) {
+                        $fDeskripsi = (string)$detail['scan']['findings'];
+                    }
+                    if (!empty($detail['scan']['recommendation'])) {
+                        $tindakanAwal = (string)$detail['scan']['recommendation'];
+                    }
+                }
+
+                $client->appendValues('Maintenance_Findings', [[
+                    $newFindId,
+                    $scanId,
+                    $assetId,
+                    'Maintenance Temuan',
+                    $fDeskripsi,
+                    $tindakanAwal,
+                    $finalStatus,
+                    $techName,
+                    $now,
+                    $techName,
+                    $now,
+                    $notes
+                ]]);
+            }
+
+            // Sinkronkan ke sheet Maintenance_Scan jika ada scan terkait
+            if ($scanId > 0) {
+                $scans = $client->getSheetData('Maintenance_Scan', true);
+                foreach ($scans as $sc) {
+                    if ((int)($sc['id'] ?? 0) === $scanId) {
+                        $sRowNum = (int)($sc['_row_num'] ?? 0);
+                        if ($sRowNum > 1) {
+                            $oldRec = trim((string)($sc['recommendation'] ?? ''));
+                            $newRec = ($oldRec !== '' && $oldRec !== '-') ? $oldRec . "\n" . $formattedLog : $formattedLog;
+                            $client->updateValues("Maintenance_Scan!I{$sRowNum}", [[$scanStatus]]);
+                            $client->updateValues("Maintenance_Scan!L{$sRowNum}", [[$newRec]]);
+                        }
+                        break;
+                    }
+                }
+            }
+
+            $client->clearCache('Maintenance_Findings');
+            $client->clearCache('Maintenance_Scan');
+            $client->clearCache();
+
+            return ['success' => true];
+        } catch (Throwable $e) {
+            return ['success' => false, 'error' => $e->getMessage()];
+        }
+    } else {
+        // MySQL Mode
+        try {
+            $st = db()->prepare("
+                UPDATE maintenance_findings 
+                SET repair_status = ?, resolved_by = ?, resolved_at = NOW(), catatan_penyelesaian = ?
+                WHERE (id = ? AND ? > 0) OR (maintenance_scan_id = ? AND ? > 0) OR (asset_id = ? AND ? > 0)
+            ");
+            $st->execute([$finalStatus, $techName, $notes, $findingId, $findingId, $scanId, $scanId, $assetId, $assetId]);
+
+            if ($scanId > 0) {
+                $stScan = db()->prepare("
+                    UPDATE maintenance_scan 
+                    SET status = ?, recommendation = CONCAT(COALESCE(recommendation, ''), '\n', ?)
+                    WHERE id = ?
+                ");
+                $stScan->execute([$scanStatus, $formattedLog, $scanId]);
+            }
+            return ['success' => true];
+        } catch (Throwable $e) {
+            return ['success' => false, 'error' => $e->getMessage()];
+        }
+    }
+}
+
 function get_asset_yearly_maintenance_grid(int $assetId, int $year): array {
     $monthNames = [
         1 => 'Januari', 2 => 'Februari', 3 => 'Maret', 4 => 'April',
@@ -949,8 +1090,8 @@ function save_maintenance_record(array $data): array {
             }
         }
 
-        // 3. Jika status Selesai, selesaikan temuan terbuka untuk aset ini di Maintenance_Findings
-        if ($status === 'Selesai') {
+        // 3. Jika status Selesai dan scan ini tidak melaporkan temuan baru, selesaikan temuan terbuka untuk aset ini di Maintenance_Findings
+        if ($status === 'Selesai' && $findings === '') {
             try {
                 $fRows = $client->getSheetData('Maintenance_Findings', true);
                 foreach ($fRows as $fr) {
@@ -966,7 +1107,7 @@ function save_maintenance_record(array $data): array {
                                     $fr['reported_at'] ?? date('Y-m-d H:i:s'),
                                     $techName,
                                     date('Y-m-d H:i:s'),
-                                    'Diselesaikan melalui maintenance rutin'
+                                    'Diselesaikan melalui maintenance berkala'
                                 ]]);
                             }
                         }
@@ -975,13 +1116,14 @@ function save_maintenance_record(array $data): array {
             } catch (Throwable $e) {}
         }
 
-        // 4. Jika ada temuan / kerusakan, catat di Maintenance_Findings
+        // 4. Jika ada temuan / kerusakan, catat di Maintenance_Findings dengan status yang sesuai (tidak langsung Terselesaikan)
         if ($findings !== '' || $status === 'Perlu Perbaikan' || $status === 'Proses' || $status === 'Temuan') {
             $rawFindCol = $client->getValues('Maintenance_Findings!A:A');
             $newFindId = max(1, count($rawFindCol) + 1);
             if (empty($rawFindCol)) {
                 $client->createSheetIfNotExists('Maintenance_Findings');
             }
+            $findingInitialStatus = ($status === 'Proses') ? 'In Progress' : 'Perlu Perbaikan';
             $client->appendValues('Maintenance_Findings', [[
                 $newFindId,
                 $activeScanId,
@@ -989,7 +1131,7 @@ function save_maintenance_record(array $data): array {
                 'Maintenance Temuan',
                 $findings,
                 $recommendation,
-                $status,
+                $findingInitialStatus,
                 $techName,
                 date('Y-m-d H:i:s'),
                 '', '', ''
@@ -1126,14 +1268,25 @@ function save_maintenance_record(array $data): array {
             $chkSt->execute([$logId, $assetId, $num, $name, $checked, $notes]);
         }
 
-        if ($status === 'Selesai') {
+        if ($status === 'Selesai' && $findings === '') {
             try {
                 $stFind = db()->prepare("
                     UPDATE maintenance_findings 
-                    SET repair_status = 'Resolved', resolved_by = ?, resolved_at = NOW(), action_taken = 'Diselesaikan melalui maintenance rutin'
+                    SET repair_status = 'Resolved', resolved_by = ?, resolved_at = NOW(), action_taken = 'Diselesaikan melalui maintenance berkala'
                     WHERE asset_id = ? AND LOWER(COALESCE(repair_status, 'open')) NOT IN ('resolved', 'closed', 'selesai', 'done')
                 ");
                 $stFind->execute([$techName, $assetId]);
+            } catch (Throwable $e) {}
+        }
+
+        if ($findings !== '' || $status === 'Perlu Perbaikan' || $status === 'Proses' || $status === 'Temuan') {
+            try {
+                $fStatus = ($status === 'Proses') ? 'In Progress' : 'Perlu Perbaikan';
+                $stIns = db()->prepare("
+                    INSERT INTO maintenance_findings (maintenance_scan_id, asset_id, finding, action_taken, severity, repair_status, reported_by, reported_at)
+                    VALUES (?, ?, ?, ?, 'Sedang', ?, ?, NOW())
+                ");
+                $stIns->execute([$logId, $assetId, $findings, $recommendation, $fStatus, $techName]);
             } catch (Throwable $e) {}
         }
 
@@ -1679,14 +1832,31 @@ function get_findings_report(int $month, int $year, int $cabangId): array {
                 $actText = trim((string)($scan['recommendation'] ?? 'Tindakan perbaikan oleh teknisi IT'));
             }
 
-            $st = trim((string)($f['repair_status'] ?? $f['status'] ?? $f['col_6'] ?? 'Open'));
+            $rawSt = trim((string)($f['repair_status'] ?? $f['status'] ?? $f['col_6'] ?? 'Open'));
+            $resolvedBy = trim((string)($f['resolved_by'] ?? $f['col_9'] ?? ''));
+            $resolvedAt = trim((string)($f['resolved_at'] ?? $f['col_10'] ?? ''));
+            $catatanPerbaikan = trim((string)($f['catatan_penyelesaian'] ?? $f['col_11'] ?? ''));
+
+            $lowSt = strtolower($rawSt);
+            if (in_array($lowSt, ['resolved', 'selesai', 'closed', 'ok', 'done'], true) && ($resolvedAt !== '' || $catatanPerbaikan !== '')) {
+                $repairStatus = 'Resolved';
+            } elseif (in_array($lowSt, ['proses', 'in progress', 'sedang perbaikan', 'dalam proses'], true) || $catatanPerbaikan !== '') {
+                $repairStatus = 'In Progress';
+            } else {
+                $repairStatus = 'Perlu Perbaikan';
+            }
 
             $key = "{$aid}_{$fMonth}_{$fYear}";
             $processedAssetKeys[$key] = true;
 
+            $fId = (int)($f['id'] ?? $f['col_0'] ?? 0);
+
             $results[] = [
-                'id' => (int)($f['id'] ?? $f['col_0'] ?? 0),
+                'id' => $fId,
+                'finding_id' => $fId,
+                'scan_id' => $scanId,
                 'asset_id' => $aid,
+                'token' => $a['token'] ?? '',
                 'kode_inventaris' => $a['kode_inventaris'] ?? '-',
                 'merk_model' => trim(($a['merk'] ?? '').' '.($a['model'] ?? '')),
                 'karyawan_nama' => $a['karyawan_nama'] ?? '-',
@@ -1694,14 +1864,20 @@ function get_findings_report(int $month, int $year, int $cabangId): array {
                 'divisi_nama' => $a['divisi_nama'] ?? '-',
                 'finding' => $fText !== '' ? $fText : 'Ditemukan kendala teknis saat pemeriksaan',
                 'action_taken' => $actText !== '' ? $actText : 'Telah dilakukan pengecekan dan tindakan oleh teknisi',
-                'severity' => $f['severity'] ?? $f['kategori_temuan'] ?? 'Ringan',
-                'repair_status' => $st !== '' ? $st : 'Dalam Proses',
-                'teknisi' => $f['resolved_by'] ?? $scan['technician_name'] ?? 'Teknisi',
+                'proses_perbaikan' => $catatanPerbaikan,
+                'catatan_penyelesaian' => $catatanPerbaikan,
+                'severity' => $f['severity'] ?? $f['kategori_temuan'] ?? 'Sedang',
+                'repair_status' => $repairStatus,
+                'teknisi' => $resolvedBy !== '' ? $resolvedBy : ($scan['technician_name'] ?? 'Teknisi'),
+                'reported_by' => $f['reported_by'] ?? ($scan['technician_name'] ?? 'Teknisi'),
+                'reported_at' => $f['reported_at'] ?? ($scan['maintenance_date'] ?? ''),
+                'resolved_by' => $resolvedBy,
+                'resolved_at' => $resolvedAt,
                 'created_at' => substr((string)($f['created_at'] ?? $f['reported_at'] ?? $scan['maintenance_date'] ?? ''), 0, 10),
             ];
         }
 
-        // Cek juga scan berkala yang berstatus 'Temuan' atau memiliki findings terisi
+        // Cek juga scan berkala yang berstatus 'Temuan' / 'Perlu Perbaikan' / 'Proses' atau memiliki findings terisi
         foreach ($scans as $s) {
             $sId = (int)($s['id'] ?? $s['col_0'] ?? 0);
             $aid = (int)($s['asset_id'] ?? $s['id_asset'] ?? $s['col_1'] ?? 0);
@@ -1722,11 +1898,20 @@ function get_findings_report(int $month, int $year, int $cabangId): array {
             $fText = trim((string)($s['findings'] ?? ''));
             $recText = trim((string)($s['recommendation'] ?? ''));
 
-            if ($st === 'Temuan' || ($fText !== '' && $fText !== '-')) {
+            if ($st === 'Temuan' || $st === 'Perlu Perbaikan' || $st === 'Proses' || ($fText !== '' && $fText !== '-')) {
                 $processedAssetKeys[$key] = true;
+                
+                $rStatus = 'Perlu Perbaikan';
+                if ($st === 'Proses' || stripos($recText, 'proses') !== false) {
+                    $rStatus = 'In Progress';
+                }
+
                 $results[] = [
                     'id' => $sId,
+                    'finding_id' => 0,
+                    'scan_id' => $sId,
                     'asset_id' => $aid,
+                    'token' => $a['token'] ?? '',
                     'kode_inventaris' => $a['kode_inventaris'] ?? '-',
                     'merk_model' => trim(($a['merk'] ?? '').' '.($a['model'] ?? '')),
                     'karyawan_nama' => $a['karyawan_nama'] ?? '-',
@@ -1734,9 +1919,15 @@ function get_findings_report(int $month, int $year, int $cabangId): array {
                     'divisi_nama' => $a['divisi_nama'] ?? '-',
                     'finding' => $fText !== '' ? $fText : 'Ditemukan kendala teknis saat pemeriksaan rutin',
                     'action_taken' => $recText !== '' ? $recText : 'Dilakukan perbaikan / konfigurasi ulang oleh teknisi',
+                    'proses_perbaikan' => '',
+                    'catatan_penyelesaian' => '',
                     'severity' => 'Sedang',
-                    'repair_status' => ($st === 'Selesai') ? 'Resolved' : 'Dalam Proses',
+                    'repair_status' => $rStatus,
                     'teknisi' => $s['technician_name'] ?? 'Teknisi',
+                    'reported_by' => $s['technician_name'] ?? 'Teknisi',
+                    'reported_at' => substr((string)($s['maintenance_date'] ?? ''), 0, 10),
+                    'resolved_by' => '',
+                    'resolved_at' => '',
                     'created_at' => substr((string)($s['maintenance_date'] ?? ''), 0, 10),
                 ];
             }
@@ -1754,7 +1945,7 @@ function get_findings_report(int $month, int $year, int $cabangId): array {
 
         // 1. Ambil dari maintenance_findings
         $sql = "
-            SELECT mf.*, a.kode_inventaris, a.merk, a.model,
+            SELECT mf.*, a.kode_inventaris, a.merk, a.model, a.token,
                    c.`{$cName}` AS cabang_nama,
                    d.`{$dName}` AS divisi_nama,
                    k.`{$kName}` AS karyawan_nama,
@@ -1795,9 +1986,23 @@ function get_findings_report(int $month, int $year, int $cabangId): array {
                 $act = trim((string)($r['scan_recommendation'] ?? 'Tindakan penanganan teknisi IT'));
             }
 
+            $rawSt = strtolower(trim((string)($r['repair_status'] ?? 'Open')));
+            $resAt = trim((string)($r['resolved_at'] ?? ''));
+            $catatan = trim((string)($r['catatan_penyelesaian'] ?? ''));
+            if (in_array($rawSt, ['resolved', 'selesai', 'closed', 'ok'], true) && ($resAt !== '' || $catatan !== '')) {
+                $repSt = 'Resolved';
+            } elseif (in_array($rawSt, ['proses', 'in progress', 'sedang perbaikan', 'dalam proses'], true) || $catatan !== '') {
+                $repSt = 'In Progress';
+            } else {
+                $repSt = 'Perlu Perbaikan';
+            }
+
             $results[] = [
                 'id' => $r['id'],
+                'finding_id' => $r['id'],
+                'scan_id' => (int)($r['maintenance_scan_id'] ?? 0),
                 'asset_id' => $aid,
+                'token' => $r['token'] ?? '',
                 'kode_inventaris' => $r['kode_inventaris'] ?? '-',
                 'merk_model' => trim(($r['merk'] ?? '').' '.($r['model'] ?? '')),
                 'karyawan_nama' => $r['karyawan_nama'] ?? '-',
@@ -1805,16 +2010,22 @@ function get_findings_report(int $month, int $year, int $cabangId): array {
                 'divisi_nama' => $r['divisi_nama'] ?? '-',
                 'finding' => $f,
                 'action_taken' => $act,
-                'severity' => $r['severity'] ?? 'Ringan',
-                'repair_status' => $r['repair_status'] ?? 'Perlu Tindak Lanjut',
-                'teknisi' => $r['teknisi'] ?? 'Teknisi',
+                'proses_perbaikan' => $catatan,
+                'catatan_penyelesaian' => $catatan,
+                'severity' => $r['severity'] ?? 'Sedang',
+                'repair_status' => $repSt,
+                'teknisi' => $r['resolved_by'] ?: ($r['teknisi'] ?? 'Teknisi'),
+                'reported_by' => $r['reported_by'] ?? ($r['teknisi'] ?? 'Teknisi'),
+                'reported_at' => $r['reported_at'] ?? ($r['scan_date'] ?? ''),
+                'resolved_by' => $r['resolved_by'] ?? '',
+                'resolved_at' => $r['resolved_at'] ?? '',
                 'created_at' => substr((string)($r['created_at'] ?? $r['scan_date'] ?? ''), 0, 10),
             ];
         }
 
         // 2. Cek scan logs langsung yang punya findings
         $sqlScan = "
-            SELECT ms.*, a.kode_inventaris, a.merk, a.model,
+            SELECT ms.*, a.kode_inventaris, a.merk, a.model, a.token,
                    c.`{$cName}` AS cabang_nama,
                    d.`{$dName}` AS divisi_nama,
                    k.`{$kName}` AS karyawan_nama,
@@ -1826,7 +2037,7 @@ function get_findings_report(int $month, int $year, int $cabangId): array {
             LEFT JOIN karyawan k ON k.id = a.id_karyawan
             LEFT JOIN users u ON u.id = ms.technician_user_id
             WHERE ms.maintenance_month = ? AND ms.maintenance_year = ?
-              AND (ms.status = 'Temuan' OR (ms.findings IS NOT NULL AND ms.findings != '' AND ms.findings != '-'))
+              AND (ms.status IN ('Temuan', 'Perlu Perbaikan', 'Proses') OR (ms.findings IS NOT NULL AND ms.findings != '' AND ms.findings != '-'))
         ";
         $pScan = [$month, $year];
         if ($cabangId > 0) {
@@ -1842,9 +2053,15 @@ function get_findings_report(int $month, int $year, int $cabangId): array {
             if (isset($assetIdsProcessed[$aid])) continue;
             $assetIdsProcessed[$aid] = true;
 
+            $sSt = trim((string)($s['status'] ?? ''));
+            $rSt = ($sSt === 'Proses') ? 'In Progress' : 'Perlu Perbaikan';
+
             $results[] = [
                 'id' => $s['id'],
+                'finding_id' => 0,
+                'scan_id' => $s['id'],
                 'asset_id' => $aid,
+                'token' => $s['token'] ?? '',
                 'kode_inventaris' => $s['kode_inventaris'] ?? '-',
                 'merk_model' => trim(($s['merk'] ?? '').' '.($s['model'] ?? '')),
                 'karyawan_nama' => $s['karyawan_nama'] ?? '-',
@@ -1852,9 +2069,15 @@ function get_findings_report(int $month, int $year, int $cabangId): array {
                 'divisi_nama' => $s['divisi_nama'] ?? '-',
                 'finding' => trim((string)($s['findings'] ?: 'Ditemukan kendala teknis saat pemeriksaan rutin')),
                 'action_taken' => trim((string)($s['recommendation'] ?: 'Dilakukan tindakan penanganan oleh teknisi')),
+                'proses_perbaikan' => '',
+                'catatan_penyelesaian' => '',
                 'severity' => 'Sedang',
-                'repair_status' => ($s['status'] === 'Selesai') ? 'Resolved' : 'Dalam Proses',
+                'repair_status' => $rSt,
                 'teknisi' => $s['teknisi'] ?? 'Teknisi',
+                'reported_by' => $s['teknisi'] ?? 'Teknisi',
+                'reported_at' => substr((string)($s['maintenance_date'] ?? ''), 0, 10),
+                'resolved_by' => '',
+                'resolved_at' => '',
                 'created_at' => substr((string)($s['maintenance_date'] ?? ''), 0, 10),
             ];
         }

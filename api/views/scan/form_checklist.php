@@ -479,6 +479,18 @@ if ($action === 'start' || $action === 'form' || $action === 'ulang') {
         }
       }
     }
+
+    document.addEventListener("DOMContentLoaded", function() {
+      const findingsTa = document.querySelector('textarea[name="findings"]');
+      const selectStatus = document.getElementById("selectStatus");
+      if (findingsTa && selectStatus) {
+        findingsTa.addEventListener("input", function() {
+          if (this.value.trim().length > 0 && selectStatus.value === "Selesai") {
+            selectStatus.value = "Perlu Perbaikan";
+          }
+        });
+      }
+    });
     JS;
 
     $formHeadStyle .= render_biometric_css();

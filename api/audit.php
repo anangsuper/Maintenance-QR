@@ -32,9 +32,40 @@ $monthName = $monthNames[$month] ?? date('F');
 if (is_google_cloud_mode()) {
     $client = google_sheets_v4_client();
     if ($client) {
-        $client->preloadSheets(['Assets', 'Cabang', 'Divisi', 'Karyawan', 'Kategori_Aset', 'Asset_QR_Tokens', 'Maintenance_Scan', 'Maintenance_Checklists']);
+        $client->preloadSheets(['Assets', 'Cabang', 'Divisi', 'Karyawan', 'Kategori_Aset', 'Asset_QR_Tokens', 'Maintenance_Scan', 'Maintenance_Checklists', 'Maintenance_Findings']);
     }
 }
+
+// Handle POST Update Proses Perbaikan
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && (($_POST['action'] ?? '') === 'save_proses_perbaikan')) {
+    verify_csrf();
+    $pFindingId = (int)($_POST['finding_id'] ?? 0);
+    $pScanId = (int)($_POST['scan_id'] ?? 0);
+    $pAssetId = (int)($_POST['asset_id'] ?? 0);
+    $pStatus = trim((string)($_POST['status'] ?? 'In Progress'));
+    $pNotes = trim((string)($_POST['proses_perbaikan'] ?? ''));
+    $pTech = trim((string)($_POST['technician_name'] ?? current_user_name()));
+
+    $res = update_finding_progress($pFindingId, $pScanId, $pAssetId, $pStatus, $pNotes, $pTech);
+    if (!empty($res['success'])) {
+        $_SESSION['flash'] = 'Proses perbaikan perangkat berhasil disimpan.';
+    } else {
+        $_SESSION['flash_error'] = $res['error'] ?? 'Gagal menyimpan proses perbaikan.';
+    }
+    header('Location: ' . module_url('audit.php', [
+        'bulan' => $month,
+        'tahun' => $year,
+        'cabang' => $cabangId,
+        'divisi' => $divisiId,
+        'kategori' => $kategoriId,
+        'status' => $statusFilter
+    ]));
+    exit;
+}
+
+$flash = $_SESSION['flash'] ?? '';
+$flashError = $_SESSION['flash_error'] ?? '';
+unset($_SESSION['flash'], $_SESSION['flash_error']);
 
 $cabangs = get_cabang_list();
 $divisis = get_divisi_list();
@@ -194,7 +225,16 @@ $headStyle = '
 }
 </style>';
 
+$flashAlert = '';
+if ($flash !== '') {
+    $flashAlert .= '<div class="alert alert-success alert-dismissible fade show border-0 shadow-sm mb-3" role="alert"><i class="bi bi-check-circle-fill me-2"></i><strong>Berhasil!</strong> '.e($flash).'<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>';
+}
+if ($flashError !== '') {
+    $flashAlert .= '<div class="alert alert-danger alert-dismissible fade show border-0 shadow-sm mb-3" role="alert"><i class="bi bi-exclamation-triangle-fill me-2"></i><strong>Gagal:</strong> '.e($flashError).'<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>';
+}
+
 $body = '
+'.$flashAlert.'
 <!-- Header & Action Bar -->
 <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3 mb-3">
   <div>
@@ -329,14 +369,49 @@ $fNo = 0;
 foreach ($findingsList as $fl) {
     $fNo++;
     $flSt = strtolower(trim((string)($fl['repair_status'] ?? '')));
-    $isDoneFl = in_array($flSt, ['resolved', 'selesai', 'closed', 'ok'], true);
-    $flBadge = $isDoneFl
-        ? '<span class="badge-chip chip-success"><i class="bi bi-check-circle-fill"></i> Terselesaikan</span>'
-        : '<span class="badge-chip chip-warning"><i class="bi bi-hourglass-split"></i> Dalam Proses</span>';
-    
+    $isDoneFl = in_array($flSt, ['resolved', 'selesai', 'closed', 'ok', 'normal'], true);
+    $isProgFl = in_array($flSt, ['proses', 'in progress', 'sedang perbaikan', 'dalam proses'], true);
+
+    if ($isDoneFl) {
+        $flBadge = '<span class="badge-chip chip-success"><i class="bi bi-check-circle-fill"></i> Terselesaikan</span>';
+    } elseif ($isProgFl) {
+        $flBadge = '<span class="badge-chip chip-warning"><i class="bi bi-hourglass-split"></i> Dalam Proses</span>';
+    } else {
+        $flBadge = '<span class="badge-chip chip-danger"><i class="bi bi-exclamation-triangle-fill"></i> Perlu Perbaikan</span>';
+    }
+
     $loc = !empty($fl['divisi_nama']) && $fl['divisi_nama'] !== '-'
         ? e($fl['cabang_nama']).' / '.e($fl['divisi_nama'])
         : e($fl['cabang_nama']);
+
+    $prosesNotes = trim((string)($fl['proses_perbaikan'] ?? $fl['catatan_penyelesaian'] ?? ''));
+    if ($prosesNotes !== '' && $prosesNotes !== '-') {
+        $prosesHtml = '
+        <div class="p-2 bg-light rounded border small">
+          <div class="fw-semibold text-primary mb-1"><i class="bi bi-gear-wide-connected me-1"></i>Progres Terkini:</div>
+          <div class="text-dark" style="line-height: 1.35;">'.nl2br(e($prosesNotes)).'</div>
+          '.(!empty($fl['resolved_by']) ? '<div class="text-muted mt-1" style="font-size: 0.72rem;"><i class="bi bi-person-check me-1"></i>'.e($fl['resolved_by']).(!empty($fl['resolved_at']) ? ' · '.e(substr($fl['resolved_at'], 0, 16)) : '').'</div>' : '').'
+        </div>';
+    } else {
+        $prosesHtml = '<span class="badge bg-light text-muted border fw-normal py-1 px-2"><i class="bi bi-clock me-1"></i>Belum ada catatan progres</span>';
+    }
+
+    $fDataJson = htmlspecialchars(json_encode([
+        'finding_id' => (int)($fl['finding_id'] ?? $fl['id'] ?? 0),
+        'scan_id' => (int)($fl['scan_id'] ?? 0),
+        'asset_id' => (int)($fl['asset_id'] ?? 0),
+        'kode' => (string)($fl['kode_inventaris'] ?? '-'),
+        'perangkat' => (string)($fl['merk_model'] ?? '-'),
+        'pengguna' => (string)($fl['karyawan_nama'] ?? '-'),
+        'lokasi' => (string)$loc,
+        'finding' => (string)($fl['finding'] ?? ''),
+        'recommendation' => (string)($fl['action_taken'] ?? ''),
+        'status' => $fl['repair_status'] ?? 'Perlu Perbaikan',
+        'proses_perbaikan' => $prosesNotes,
+        'teknisi' => (string)($fl['teknisi'] ?? current_user_name()),
+    ], JSON_UNESCAPED_UNICODE), ENT_QUOTES, 'UTF-8');
+
+    $detailUrl = !empty($fl['scan_id']) ? module_url('maintenance_detail.php', ['id' => (int)$fl['scan_id']]) : '';
 
     $findingsTableRows .= '<tr>
       <td class="text-center text-muted small">'.$fNo.'</td>
@@ -350,17 +425,27 @@ foreach ($findingsList as $fl) {
       </td>
       <td class="text-danger fw-semibold">
         <i class="bi bi-exclamation-circle-fill me-1 small"></i>'.e($fl['finding']).'
+        '.(!empty($fl['reported_by']) ? '<div class="small text-muted fw-normal mt-1" style="font-size: 0.72rem;"><i class="bi bi-person me-1"></i>Dilaporkan: '.e($fl['reported_by']).(!empty($fl['reported_at']) ? ' ('.e(substr($fl['reported_at'], 0, 10)).')' : '').'</div>' : '').'
       </td>
       <td class="text-dark">
         <div class="text-success fw-bold small mb-1"><i class="bi bi-tools me-1"></i>Tindakan Solusi:</div>
         <div>'.e($fl['action_taken']).'</div>
       </td>
+      <td>'.$prosesHtml.'</td>
       <td class="text-center">'.$flBadge.'</td>
+      <td class="text-center">
+        <div class="d-flex justify-content-center gap-1">
+          <button type="button" class="btn btn-sm btn-primary py-1 px-2 fw-semibold" onclick="openProsesPerbaikanModal('.$fDataJson.')" title="Update Proses Perbaikan">
+            <i class="bi bi-tools me-1"></i> Update
+          </button>
+          '.($detailUrl ? '<a href="'.e($detailUrl).'" class="btn btn-sm btn-light border py-1 px-2" title="Lihat Rincian Maintenance"><i class="bi bi-eye"></i></a>' : '').'
+        </div>
+      </td>
     </tr>';
 }
 
 if (!$findingsTableRows) {
-    $findingsTableRows = '<tr><td colspan="6" class="text-center py-4 text-secondary"><i class="bi bi-check-circle-fill text-success fs-4 d-block mb-1"></i>Tidak ditemukan kendala maupun kerusakan pada periode pemeliharaan ini (Kondisi 100% Normal).</td></tr>';
+    $findingsTableRows = '<tr><td colspan="8" class="text-center py-4 text-secondary"><i class="bi bi-check-circle-fill text-success fs-4 d-block mb-1"></i>Tidak ditemukan kendala maupun kerusakan pada periode pemeliharaan ini (Kondisi 100% Normal).</td></tr>';
 }
 
 // Append Lampiran Card to $body
@@ -381,16 +466,129 @@ $body .= '
       <thead class="table-light">
         <tr>
           <th style="width:35px" class="text-center">No</th>
-          <th style="width:180px">Kode & Perangkat</th>
+          <th style="width:170px">Kode & Perangkat</th>
           <th style="width:160px">Pengguna & Lokasi</th>
           <th>Uraian Temuan / Kendala</th>
           <th>Tindakan Solusi / Rekomendasi</th>
-          <th style="width:130px" class="text-center">Status Solusi</th>
+          <th style="width:230px">Proses Perbaikan</th>
+          <th style="width:135px" class="text-center">Status Solusi</th>
+          <th style="width:115px" class="text-center">Aksi</th>
         </tr>
       </thead>
       <tbody>'.$findingsTableRows.'</tbody>
     </table>
   </div>
+</div>
+
+<!-- Modal Update Proses Perbaikan -->
+<div class="modal fade" id="modalProsesPerbaikan" tabindex="-1" aria-labelledby="modalProsesPerbaikanLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0 shadow">
+      <form method="post">
+        <input type="hidden" name="_csrf" value="'.e(csrf_token()).'">
+        <input type="hidden" name="action" value="save_proses_perbaikan">
+        <input type="hidden" name="finding_id" id="modalFindingId" value="0">
+        <input type="hidden" name="scan_id" id="modalScanId" value="0">
+        <input type="hidden" name="asset_id" id="modalAssetId" value="0">
+        
+        <div class="modal-header bg-primary text-white py-3">
+          <h5 class="modal-title fw-bold fs-6 mb-0" id="modalProsesPerbaikanLabel"><i class="bi bi-tools me-2"></i>Update Proses Perbaikan Perangkat</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body p-4">
+          <!-- Info Perangkat & Kendala -->
+          <div class="p-3 bg-light rounded-3 mb-3 border">
+            <div class="fw-bold text-primary font-monospace" id="modalKodePerangkat">-</div>
+            <div class="small fw-semibold text-dark mb-2" id="modalNamaPerangkat">-</div>
+            <div class="alert alert-danger py-2 px-3 small mb-0">
+              <strong><i class="bi bi-exclamation-triangle-fill me-1"></i>Temuan:</strong>
+              <span id="modalDeskripsiTemuan">-</span>
+            </div>
+          </div>
+
+          <!-- Status Hasil Perbaikan -->
+          <div class="mb-3">
+            <label class="form-label small fw-bold text-dark">Status Proses Perbaikan <span class="text-danger">*</span></label>
+            <select class="form-select fw-semibold" name="status" id="modalStatusSelect" required>
+              <option value="In Progress" class="text-warning fw-bold">⏳ Dalam Proses Perbaikan (Sedang Dikerjakan / Tunggu Sparepart)</option>
+              <option value="Resolved" class="text-success fw-bold">✓ Terselesaikan (Perbaikan Berhasil & Komputer Normal)</option>
+              <option value="Perlu Perbaikan" class="text-danger fw-bold">⚠️ Perlu Perbaikan (Belum Ditangani)</option>
+            </select>
+          </div>
+
+          <!-- Catatan / Progres Perbaikan -->
+          <div class="mb-3">
+            <label class="form-label small fw-bold text-dark">Catatan / Uraian Proses Perbaikan <span class="text-danger">*</span></label>
+            <textarea class="form-control" name="proses_perbaikan" id="modalProsesTextarea" rows="3" placeholder="Contoh: Telah diajukan pengadaan SSD 256GB ke bagian pengadaan / Sedang proses backup data pengguna..." required></textarea>
+            
+            <div class="mt-2">
+              <div class="small text-muted mb-1"><i class="bi bi-tag me-1"></i> Klik untuk isi cepat tindakan:</div>
+              <div class="d-flex flex-wrap gap-1">
+                <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2" style="font-size: 0.72rem;" onclick="appendModalAction('Sedang diajukan pengadaan sparepart (SSD/RAM)')">📦 Tunggu Sparepart</button>
+                <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2" style="font-size: 0.72rem;" onclick="appendModalAction('Sedang proses backup data & instalasi ulang OS Windows')">💻 Backup & Reinstall OS</button>
+                <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2" style="font-size: 0.72rem;" onclick="appendModalAction('Telah diganti sparepart baru dan berfungsi normal kembali')">✓ Ganti Sparepart Selesai</button>
+                <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2" style="font-size: 0.72rem;" onclick="appendModalAction('Pembersihan debu hardware & pergantian thermal paste')">💨 Bersih Hardware</button>
+                <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2" style="font-size: 0.72rem;" onclick="appendModalAction('Perbaikan driver & konfigurasi jaringan/LAN selesai')">🌐 Driver & LAN Normal</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Teknisi -->
+          <div class="mb-2">
+            <label class="form-label small fw-bold text-secondary">Teknisi Penanggung Jawab</label>
+            <input type="text" class="form-control" name="technician_name" id="modalTeknisiInput" value="'.e(current_user_name()).'" placeholder="Nama teknisi...">
+          </div>
+        </div>
+        <div class="modal-footer bg-light py-2 px-4">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Batal</button>
+          <button type="submit" class="btn btn-primary fw-bold"><i class="bi bi-save-fill me-1"></i> Simpan Proses Perbaikan</button>
+        </div>
+      </form>
+    </div>
+  </div>
 </div>';
 
-render_page('Reports & Audit Trail · ' . $monthName . ' ' . $year, $body, $headStyle);
+$auditScript = '
+<script>
+function openProsesPerbaikanModal(data) {
+  document.getElementById("modalFindingId").value = data.finding_id || 0;
+  document.getElementById("modalScanId").value = data.scan_id || 0;
+  document.getElementById("modalAssetId").value = data.asset_id || 0;
+  document.getElementById("modalKodePerangkat").textContent = data.kode || "-";
+  document.getElementById("modalNamaPerangkat").textContent = (data.perangkat || "-") + " (" + (data.pengguna || "-") + ")";
+  document.getElementById("modalDeskripsiTemuan").textContent = data.finding || "-";
+  
+  var statusSel = document.getElementById("modalStatusSelect");
+  var st = (data.status || "").toLowerCase();
+  if (st === "resolved" || st === "selesai") {
+    statusSel.value = "Resolved";
+  } else if (st === "in progress" || st === "proses" || st === "dalam proses") {
+    statusSel.value = "In Progress";
+  } else {
+    statusSel.value = "In Progress";
+  }
+
+  document.getElementById("modalProsesTextarea").value = data.proses_perbaikan || "";
+  if (data.teknisi) {
+    document.getElementById("modalTeknisiInput").value = data.teknisi;
+  }
+
+  var modalEl = document.getElementById("modalProsesPerbaikan");
+  if (modalEl) {
+    var modal = new bootstrap.Modal(modalEl);
+    modal.show();
+  }
+}
+
+function appendModalAction(text) {
+  var ta = document.getElementById("modalProsesTextarea");
+  if (!ta) return;
+  if (ta.value.trim() !== "") {
+    ta.value += "\n" + text;
+  } else {
+    ta.value = text;
+  }
+}
+</script>';
+
+render_page('Reports & Audit Trail · ' . $monthName . ' ' . $year, $body, $headStyle, $auditScript);

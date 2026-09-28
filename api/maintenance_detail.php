@@ -1,7 +1,7 @@
 <?php
 require __DIR__ . '/bootstrap.php';
-require_login();
-$isLoggedIn = true;
+// Akses rincian pemeliharaan bersifat publik saat diakses via scan QR, login hanya diwajibkan saat edit data
+$isLoggedIn = is_logged_in();
 
 $id = max(0, (int)($_GET['id'] ?? 0));
 if ($id <= 0) {
@@ -84,6 +84,17 @@ if (empty($asset) || !is_array($asset)) {
         'printer' => '-',
         'qr_token' => ''
     ];
+}
+
+$token = trim((string)($_GET['t'] ?? ''));
+if ($token === '' && !empty($asset['token'])) {
+    $token = (string)$asset['token'];
+}
+if ($token === '' && !empty($asset['qr_token'])) {
+    $token = (string)$asset['qr_token'];
+}
+if ($token === '' && !empty($asset['id'])) {
+    $token = get_static_qr_token((int)$asset['id']);
 }
 
 $status = $scan['status'] ?? 'Selesai';
@@ -299,12 +310,12 @@ $editBtnTop = $isLoggedIn
 
 $backBtnTop = $isLoggedIn
     ? '<a class="btn btn-outline-secondary btn-sm fw-semibold" href="'.e(module_url('audit.php')).'"><i class="bi bi-arrow-left me-1"></i> Riwayat Audit</a>'
-    : (!empty($asset['token'])
-        ? '<a class="btn btn-outline-secondary btn-sm fw-semibold" href="'.e(module_url('scan.php', ['t' => $asset['token']])).'"><i class="bi bi-card-checklist me-1"></i> Kartu Perangkat</a>'
+    : (!empty($token)
+        ? '<a class="btn btn-outline-primary btn-sm fw-bold" href="'.e(module_url('scan.php', ['t' => $token])).'"><i class="bi bi-arrow-left me-1"></i> Kembali ke Kartu QR</a>'
         : '<a class="btn btn-outline-secondary btn-sm fw-semibold" href="javascript:history.back()"><i class="bi bi-arrow-left me-1"></i> Kembali</a>');
 
-$tindakBtnTop = (!empty($asset['token']) && ($status === 'Temuan' || $status === 'Perlu Perbaikan' || $status === 'Proses'))
-    ? '<a class="btn btn-danger btn-sm fw-bold" href="'.e(module_url('scan.php', ['t' => $asset['token'], 'action' => 'tindak_lanjut'])).'"><i class="bi bi-tools me-1"></i> Form Tindak Lanjut</a>'
+$tindakBtnTop = (!empty($token) && ($status === 'Temuan' || $status === 'Perlu Perbaikan' || $status === 'Proses'))
+    ? '<a class="btn btn-danger btn-sm fw-bold" href="'.e(module_url('scan.php', ['t' => $token, 'action' => 'tindak_lanjut'])).'"><i class="bi bi-tools me-1"></i> Form Tindak Lanjut</a>'
     : '';
 
 // Pills dan Dropdown Filter Per Bulan
@@ -428,7 +439,14 @@ if (empty($allSessions)) {
     }
 }
 
+$publicBanner = !$isLoggedIn ? '
+<div class="alert alert-info py-2 px-3 small d-flex justify-content-between align-items-center mb-3 border-0 shadow-sm rounded-3">
+  <span><i class="bi bi-qr-code-scan me-1.5 text-primary"></i> <strong>Rincian Pemeliharaan</strong> · Mode Publik (Hasil Scan QR Perangkat)</span>
+  '.(!empty($token) ? '<a href="'.e(module_url('scan.php', ['t' => $token])).'" class="btn btn-sm btn-primary fw-bold py-1 px-2.5"><i class="bi bi-arrow-left me-1"></i> Kembali ke Kartu QR</a>' : '').'
+</div>' : '';
+
 $body = '
+'.$publicBanner.'
 '.$flashHtml.'
 '.$errorHtml.'
 

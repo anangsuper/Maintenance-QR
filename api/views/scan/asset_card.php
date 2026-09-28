@@ -34,7 +34,7 @@ if ($currentMonthLog) {
     $badgeIcon = ($cStatus === 'Temuan' || $cStatus === 'Perlu Perbaikan') ? 'bi-exclamation-triangle-fill' : ($cStatus === 'Proses' ? 'bi-hourglass-split' : 'bi-check-circle-fill');
 
     $btnDetail = $cLogId > 0
-        ? '<a class="btn btn-primary fw-semibold" href="'.e(module_url('maintenance_detail.php', ['id' => $cLogId])).'"><i class="bi bi-file-earmark-text me-1"></i> Rincian Pemeliharaan</a>'
+        ? '<a class="btn btn-primary fw-semibold" href="'.e(module_url('maintenance_detail.php', ['id' => $cLogId, 't' => $token])).'"><i class="bi bi-file-earmark-text me-1"></i> Rincian Pemeliharaan</a>'
         : '';
 
     $btnUlang = '<a class="btn btn-outline-secondary fw-semibold" href="'.e(module_url('scan.php', ['t' => $token, 'action' => 'ulang'])).'"><i class="bi bi-arrow-repeat me-1"></i> Pemeliharaan Ulang</a>';
@@ -91,7 +91,7 @@ if ($pendingFinding) {
         <a class="btn btn-danger fw-semibold py-2 px-4 shadow-sm" href="'.e(module_url('scan.php', ['t' => $token, 'action' => 'tindak_lanjut'])).'">
           <i class="bi bi-tools me-2"></i> Tindak Lanjuti / Selesaikan Temuan
         </a>
-        '.(!empty($pendingFinding['log_id']) ? '<a class="btn btn-outline-secondary py-2" href="'.e(module_url('maintenance_detail.php', ['id' => (int)$pendingFinding['log_id']])).'"><i class="bi bi-file-earmark-text me-1"></i> Rincian Audit</a>' : '').'
+        '.(!empty($pendingFinding['log_id']) ? '<a class="btn btn-outline-secondary py-2" href="'.e(module_url('maintenance_detail.php', ['id' => (int)$pendingFinding['log_id'], 't' => $token])).'"><i class="bi bi-file-earmark-text me-1"></i> Rincian Audit</a>' : '').'
       </div>
     </div>';
 }
