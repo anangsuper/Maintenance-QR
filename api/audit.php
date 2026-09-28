@@ -524,11 +524,11 @@ $body .= '
             <div class="mt-2">
               <div class="small text-muted mb-1"><i class="bi bi-tag me-1"></i> Klik untuk isi cepat tindakan:</div>
               <div class="d-flex flex-wrap gap-1">
-                <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2" style="font-size: 0.72rem;" onclick="appendModalAction('Sedang diajukan pengadaan sparepart (SSD/RAM)')">📦 Tunggu Sparepart</button>
-                <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2" style="font-size: 0.72rem;" onclick="appendModalAction('Sedang proses backup data & instalasi ulang OS Windows')">💻 Backup & Reinstall OS</button>
-                <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2" style="font-size: 0.72rem;" onclick="appendModalAction('Telah diganti sparepart baru dan berfungsi normal kembali')">✓ Ganti Sparepart Selesai</button>
-                <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2" style="font-size: 0.72rem;" onclick="appendModalAction('Pembersihan debu hardware & pergantian thermal paste')">💨 Bersih Hardware</button>
-                <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2" style="font-size: 0.72rem;" onclick="appendModalAction('Perbaikan driver & konfigurasi jaringan/LAN selesai')">🌐 Driver & LAN Normal</button>
+                <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2" style="font-size: 0.72rem;" onclick="appendModalAction(\'Sedang diajukan pengadaan sparepart (SSD/RAM)\')">📦 Tunggu Sparepart</button>
+                <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2" style="font-size: 0.72rem;" onclick="appendModalAction(\'Sedang proses backup data & instalasi ulang OS Windows\')">💻 Backup & Reinstall OS</button>
+                <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2" style="font-size: 0.72rem;" onclick="appendModalAction(\'Telah diganti sparepart baru dan berfungsi normal kembali\')">✓ Ganti Sparepart Selesai</button>
+                <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2" style="font-size: 0.72rem;" onclick="appendModalAction(\'Pembersihan debu hardware & pergantian thermal paste\')">💨 Bersih Hardware</button>
+                <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2" style="font-size: 0.72rem;" onclick="appendModalAction(\'Perbaikan driver & konfigurasi jaringan/LAN selesai\')">🌐 Driver & LAN Normal</button>
               </div>
             </div>
           </div>
