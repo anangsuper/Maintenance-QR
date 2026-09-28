@@ -613,15 +613,10 @@ class GoogleSheetsV4Client {
 
             $obj = ['_row_num' => $i + 1];
 
-            // Deteksi offset kolom jika baris bergeser ke kanan pada sheet manapun
+            // Deteksi offset kolom khusus Maintenance_Checklists jika data berada di kolom H..O (index 7)
             $colOffset = 0;
-            if (empty($row[0])) {
-                foreach ($row as $ci => $cv) {
-                    if ($cv !== '' && $cv !== null) {
-                        $colOffset = $ci;
-                        break;
-                    }
-                }
+            if ($sheetName === 'Maintenance_Checklists' && empty($row[0]) && !empty($row[7])) {
+                $colOffset = 7;
             }
 
             // Simpan indeks kolom numerik (col_0, col_1, ...) dinormalisasi terhadap offset
@@ -648,6 +643,39 @@ class GoogleSheetsV4Client {
                     $obj[$normKey] = $val;
                 }
             }
+
+            // Filter baris kosong/terhapus yang tersisa di spreadsheet
+            if ($sheetName === 'Maintenance_Scan') {
+                $aid = (int)($obj['asset_id'] ?? $obj['col_1'] ?? 0);
+                $dateVal = trim((string)($obj['maintenance_date'] ?? $obj['col_4'] ?? ''));
+                $techVal = trim((string)($obj['technician_name'] ?? $obj['col_3'] ?? ''));
+                // Baris scan wajib memiliki asset_id > 0 dan memiliki tanggal atau teknisi
+                if ($aid <= 0 || ($dateVal === '' && $techVal === '')) {
+                    continue;
+                }
+            } elseif ($sheetName === 'Assets') {
+                $kode = trim((string)($obj['kode_inventaris'] ?? $obj['col_1'] ?? ''));
+                $merk = trim((string)($obj['merk'] ?? $obj['col_2'] ?? ''));
+                $model = trim((string)($obj['model'] ?? $obj['col_3'] ?? ''));
+                if ($kode === '' && $merk === '' && $model === '') {
+                    continue;
+                }
+            } elseif ($sheetName === 'Maintenance_Findings') {
+                $scanId = (int)($obj['maintenance_scan_id'] ?? $obj['col_1'] ?? 0);
+                $fAid = (int)($obj['asset_id'] ?? $obj['col_2'] ?? 0);
+                $desc = trim((string)($obj['deskripsi_temuan'] ?? $obj['col_4'] ?? ''));
+                if ($scanId <= 0 && $fAid <= 0 && $desc === '') {
+                    continue;
+                }
+            } elseif ($sheetName === 'Maintenance_Checklists') {
+                $mId = (int)($obj['maintenance_id'] ?? $obj['col_1'] ?? 0);
+                $cAid = (int)($obj['asset_id'] ?? $obj['col_2'] ?? 0);
+                $cNum = (int)($obj['checklist_number'] ?? $obj['col_3'] ?? 0);
+                if ($mId <= 0 && $cAid <= 0 && $cNum <= 0) {
+                    continue;
+                }
+            }
+
             $result[] = $obj;
         }
 
@@ -668,8 +696,8 @@ class GoogleSheetsV4Client {
                 continue;
             }
 
-            // Tiered cache TTL: 120s scan/checklist, 300s assets, 900s master data
-            $ttl = in_array($sheetName, ['Maintenance_Scan', 'Maintenance_Checklists'], true) ? 120 : (in_array($sheetName, ['Assets'], true) ? 300 : 900);
+            // Tiered cache TTL: 30s scan/checklist/findings, 180s assets, 600s master data
+            $ttl = in_array($sheetName, ['Maintenance_Scan', 'Maintenance_Checklists', 'Maintenance_Findings'], true) ? 30 : (in_array($sheetName, ['Assets', 'Asset_QR_Tokens'], true) ? 180 : 600);
 
             // 2. Cek warm disk cache di /tmp
             if (!$forceRefresh) {
@@ -713,8 +741,8 @@ class GoogleSheetsV4Client {
                 }
 
                 $parsed = $this->parseSheetRows($name, $rows);
-                // Jika API gagal (rate limit), fallback ke disk cache yang ada jika tersedia
-                if (empty($parsed)) {
+                // Jika API gagal (rate limit / network timeout), fallback ke disk cache hanya jika bukan forceRefresh
+                if (!$forceRefresh && empty($rows)) {
                     $filePath = $this->getCacheFilePath($name);
                     if (file_exists($filePath)) {
                         $cached = json_decode((string)@file_get_contents($filePath), true);

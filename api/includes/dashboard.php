@@ -1000,8 +1000,9 @@ function get_audit_maintenance_data(array $filters): array {
             return true;
         });
 
-        $scans = $client ? $client->getSheetData('Maintenance_Scan', false) : [];
-        $chkRows = $client ? $client->getSheetData('Maintenance_Checklists', false) : [];
+        $forceRefresh = !empty($filters['force_refresh']);
+        $scans = $client ? $client->getSheetData('Maintenance_Scan', $forceRefresh) : [];
+        $chkRows = $client ? $client->getSheetData('Maintenance_Checklists', $forceRefresh) : [];
         
         // Buat map checklist per maintenance_id
         $chkMap = [];
@@ -1265,7 +1266,7 @@ function get_audit_maintenance_data(array $filters): array {
     ];
 }
 
-function get_monthly_overview(int $year, int $cabangId = 0): array {
+function get_monthly_overview(int $year, int $cabangId = 0, bool $forceRefresh = false): array {
     $monthNames = [
         1 => 'Januari', 2 => 'Februari', 3 => 'Maret', 4 => 'April',
         5 => 'Mei', 6 => 'Juni', 7 => 'Juli', 8 => 'Agustus',
@@ -1277,7 +1278,7 @@ function get_monthly_overview(int $year, int $cabangId = 0): array {
     if (is_google_cloud_mode()) {
         $client = google_sheets_v4_client();
         if ($client) {
-            $client->preloadSheets(['Assets', 'Cabang', 'Divisi', 'Karyawan', 'Kategori_Aset', 'Asset_QR_Tokens', 'Maintenance_Scan']);
+            $client->preloadSheets(['Assets', 'Cabang', 'Divisi', 'Karyawan', 'Kategori_Aset', 'Asset_QR_Tokens', 'Maintenance_Scan'], $forceRefresh);
         }
         $allAssets = array_filter(map_sheets_assets(), function($a) use ($cabangId) {
             $st = strtolower($a['status']);
@@ -1286,13 +1287,24 @@ function get_monthly_overview(int $year, int $cabangId = 0): array {
             return true;
         });
 
-        $scans = $client ? $client->getSheetData('Maintenance_Scan', false) : [];
-        $totalAssets = count($allAssets);
+        $scans = $client ? $client->getSheetData('Maintenance_Scan', $forceRefresh) : [];
+
+        // Build active asset ID lookup map to ensure ONLY scans for active assets of the selected cabang are counted
+        $validAssetMap = [];
+        foreach ($allAssets as $a) {
+            $aid = (int)($a['id'] ?? 0);
+            if ($aid > 0) {
+                $validAssetMap[$aid] = $a;
+            }
+        }
 
         // Pre-group scans by month for target year
         $scannedPerMonth = [];
         $repairPerMonth = [];
         foreach ($scans as $s) {
+            $aid = (int)($s['asset_id'] ?? $s['id_asset'] ?? $s['col_1'] ?? 0);
+            if ($aid <= 0 || !isset($validAssetMap[$aid])) continue;
+
             $sY = (int)($s['maintenance_year'] ?? $s['year'] ?? $s['col_7'] ?? 0);
             $sDate = (string)($s['maintenance_date'] ?? $s['col_4'] ?? '');
             if ($sY <= 0 && $sDate !== '') $sY = (int)date('Y', strtotime($sDate));
@@ -1302,13 +1314,29 @@ function get_monthly_overview(int $year, int $cabangId = 0): array {
             if ($sM <= 0 && $sDate !== '') $sM = (int)date('n', strtotime($sDate));
             if ($sM < 1 || $sM > 12) continue;
 
-            $aid = (int)($s['asset_id'] ?? $s['id_asset'] ?? $s['col_1'] ?? 0);
-            if ($aid <= 0) continue;
-
             $scannedPerMonth[$sM][$aid] = true;
             $st = strtolower(trim((string)($s['status'] ?? $s['col_8'] ?? '')));
             if (in_array($st, ['temuan', 'perlu perbaikan', 'proses'], true)) {
                 $repairPerMonth[$sM][$aid] = true;
+            }
+        }
+
+        // Cek session cache jika scan baru saja disimpan di sesi saat ini
+        if (session_status() === PHP_SESSION_ACTIVE) {
+            foreach ($allAssets as $a) {
+                $aid = (int)$a['id'];
+                if (!empty($_SESSION['_recent_scan_' . $aid])) {
+                    $rec = $_SESSION['_recent_scan_' . $aid];
+                    $rM = (int)($rec['maintenance_month'] ?? (int)date('n', strtotime((string)($rec['maintenance_date'] ?? ''))));
+                    $rY = (int)($rec['maintenance_year'] ?? (int)date('Y', strtotime((string)($rec['maintenance_date'] ?? ''))));
+                    if ($rY === $year && $rM >= 1 && $rM <= 12) {
+                        $scannedPerMonth[$rM][$aid] = true;
+                        $st = strtolower(trim((string)($rec['status'] ?? '')));
+                        if (in_array($st, ['temuan', 'perlu perbaikan', 'proses'], true)) {
+                            $repairPerMonth[$rM][$aid] = true;
+                        }
+                    }
+                }
             }
         }
 
@@ -1317,16 +1345,36 @@ function get_monthly_overview(int $year, int $cabangId = 0): array {
             $isFuture = ($year > $currentYear) || ($year === $currentYear && $m > $currentMonth);
             $isCurrent = ($year === $currentYear && $m === $currentMonth);
 
-            $done = isset($scannedPerMonth[$m]) ? count($scannedPerMonth[$m]) : 0;
-            $done = min($done, $totalAssets);
-            $pending = max(0, $totalAssets - $done);
+            $lastDay = (int)date('t', strtotime(sprintf('%04d-%02d-01', $year, $m)));
+            $periodCutoffTime = strtotime(sprintf('%04d-%02d-%02d 23:59:59', $year, $m, $lastDay));
+
+            $monthScannedAids = $scannedPerMonth[$m] ?? [];
+            $done = count($monthScannedAids);
+
+            // Hitung target total bulan bersangkutan dengan cut-off
+            $monthTotal = 0;
+            foreach ($allAssets as $a) {
+                $aid = (int)($a['id'] ?? 0);
+                $isDone = isset($monthScannedAids[$aid]);
+                $aCreatedAt = trim((string)($a['created_at'] ?? ''));
+                if (!$isDone && $aCreatedAt !== '' && $periodCutoffTime > 0 && !$isFuture && !$isCurrent) {
+                    $cTime = strtotime($aCreatedAt);
+                    if ($cTime && $cTime > $periodCutoffTime) {
+                        continue;
+                    }
+                }
+                $monthTotal++;
+            }
+
+            $done = min($done, $monthTotal);
+            $pending = max(0, $monthTotal - $done);
             $repair = isset($repairPerMonth[$m]) ? count($repairPerMonth[$m]) : 0;
-            $percent = $totalAssets > 0 ? round(($done / $totalAssets) * 100) : 0;
+            $percent = $monthTotal > 0 ? round(($done / $monthTotal) * 100) : 0;
 
             $overview[$m] = [
                 'month' => $m,
                 'month_name' => $monthNames[$m],
-                'total' => $totalAssets,
+                'total' => $monthTotal,
                 'done' => $done,
                 'pending' => $pending,
                 'repair' => $repair,
@@ -1343,7 +1391,8 @@ function get_monthly_overview(int $year, int $cabangId = 0): array {
         $audit = get_audit_maintenance_data([
             'bulan' => $m,
             'tahun' => $year,
-            'cabang' => $cabangId
+            'cabang' => $cabangId,
+            'force_refresh' => $forceRefresh
         ]);
         $stats = $audit['stats'];
         $isFuture = ($year > $currentYear) || ($year === $currentYear && $m > $currentMonth);

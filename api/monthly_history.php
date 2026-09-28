@@ -17,15 +17,24 @@ if ($year < $startYear || $year > $endYear) {
     $yearOpts .= '<option value="'.$year.'" selected>'.$year.'</option>';
 }
 
+$isRefresh = !empty($_GET['refresh']);
+
 if (is_google_cloud_mode()) {
     $client = google_sheets_v4_client();
     if ($client) {
-        $client->preloadSheets(['Assets', 'Cabang', 'Divisi', 'Karyawan', 'Kategori_Aset', 'Asset_QR_Tokens', 'Maintenance_Scan']);
+        if ($isRefresh) {
+            $client->clearCache('Maintenance_Scan');
+            $client->clearCache('Maintenance_Checklists');
+            $client->clearCache('Maintenance_Findings');
+            $client->clearCache('Assets');
+            $client->clearCache();
+        }
+        $client->preloadSheets(['Assets', 'Cabang', 'Divisi', 'Karyawan', 'Kategori_Aset', 'Asset_QR_Tokens', 'Maintenance_Scan'], $isRefresh);
     }
 }
 
 $cabangs = get_cabang_list();
-$overview = get_monthly_overview($year, $cabangId);
+$overview = get_monthly_overview($year, $cabangId, $isRefresh);
 
 $cabangOpts = '<option value="0">Semua Cabang</option>';
 foreach ($cabangs as $c) {
@@ -156,6 +165,13 @@ $headStyle = '
 }
 </style>';
 
+$refreshAlert = $isRefresh ? '
+<div class="alert alert-success alert-dismissible fade show d-flex align-items-center gap-2 py-2 px-3 mb-3 shadow-sm border-0" role="alert">
+  <i class="bi bi-check-circle-fill text-success fs-5"></i>
+  <div>Data riwayat maintenance berhasil disegarkan langsung dari Google Spreadsheet!</div>
+  <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+</div>' : '';
+
 $body = '
 <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3 mb-3">
   <div>
@@ -163,11 +179,20 @@ $body = '
     <h1 class="h3 mb-1">Riwayat Maintenance Bulanan</h1>
     <div class="text-secondary small">Ringkasan progress pemeliharaan komputer 12 bulan tahun <strong>'.$year.'</strong>. Target unit terkunci otomatis per cut-off akhir bulan sesuai inventaris aktif pada periode bersangkutan.</div>
   </div>
-  <form method="get" class="d-flex flex-wrap gap-2 align-items-center">
-    <select class="form-select form-select-sm" name="cabang" style="min-width: 160px;" onchange="this.form.submit()">'.$cabangOpts.'</select>
-    <select class="form-select form-select-sm font-monospace fw-bold text-dark" name="tahun" style="width: 95px;" title="Pilih Tahun" onchange="this.form.submit()">'.$yearOpts.'</select>
-  </form>
+  <div class="d-flex flex-wrap gap-2 align-items-center">
+    <a href="'.e(module_url('monthly_history.php', ['tahun' => $year, 'cabang' => $cabangId, 'refresh' => 1])).'" 
+       class="btn btn-sm btn-outline-secondary d-inline-flex align-items-center gap-1 shadow-sm" 
+       title="Segarkan data langsung dari Google Spreadsheet">
+      <i class="bi bi-arrow-clockwise"></i>
+      <span>Segarkan Data</span>
+    </a>
+    <form method="get" class="d-flex flex-wrap gap-2 align-items-center m-0">
+      <select class="form-select form-select-sm" name="cabang" style="min-width: 160px;" onchange="this.form.submit()">'.$cabangOpts.'</select>
+      <select class="form-select form-select-sm font-monospace fw-bold text-dark" name="tahun" style="width: 95px;" title="Pilih Tahun" onchange="this.form.submit()">'.$yearOpts.'</select>
+    </form>
+  </div>
 </div>
+'.$refreshAlert.'
 
 <!-- Interactive Branch Switcher Navigation Bar -->
 <div class="branch-nav-bar custom-scrollbar">

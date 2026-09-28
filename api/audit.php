@@ -29,10 +29,19 @@ $monthNames = [
 ];
 $monthName = $monthNames[$month] ?? date('F');
 
+$isRefresh = !empty($_GET['refresh']);
+
 if (is_google_cloud_mode()) {
     $client = google_sheets_v4_client();
     if ($client) {
-        $client->preloadSheets(['Assets', 'Cabang', 'Divisi', 'Karyawan', 'Kategori_Aset', 'Asset_QR_Tokens', 'Maintenance_Scan', 'Maintenance_Checklists', 'Maintenance_Findings']);
+        if ($isRefresh) {
+            $client->clearCache('Maintenance_Scan');
+            $client->clearCache('Maintenance_Checklists');
+            $client->clearCache('Maintenance_Findings');
+            $client->clearCache('Assets');
+            $client->clearCache();
+        }
+        $client->preloadSheets(['Assets', 'Cabang', 'Divisi', 'Karyawan', 'Kategori_Aset', 'Asset_QR_Tokens', 'Maintenance_Scan', 'Maintenance_Checklists', 'Maintenance_Findings'], $isRefresh);
     }
 }
 
@@ -66,6 +75,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (($_POST['action'] ?? '') === 'save
 $flash = $_SESSION['flash'] ?? '';
 $flashError = $_SESSION['flash_error'] ?? '';
 unset($_SESSION['flash'], $_SESSION['flash_error']);
+
+if ($isRefresh && empty($flash)) {
+    $flash = 'Data audit dan rincian pemeliharaan berhasil disegarkan langsung dari Google Spreadsheet.';
+}
 
 $cabangs = get_cabang_list();
 $divisis = get_divisi_list();
