@@ -99,7 +99,8 @@ function render_biometric_css(): string {
       position: relative;
       width: 100%;
       max-width: 320px;
-      height: 380px;
+      aspect-ratio: 3 / 4;
+      max-height: 400px;
       border-radius: 20px;
       overflow: hidden;
       background: #0f172a;
@@ -108,13 +109,14 @@ function render_biometric_css(): string {
     }
     @media (max-width: 576px) {
       .bio-scanner-wrapper {
-        max-width: 280px;
-        height: 330px;
-        border-radius: 14px;
+        max-width: 270px;
+        aspect-ratio: 3 / 4;
+        max-height: 350px;
+        border-radius: 16px;
       }
       .bio-face-oval {
-        width: 160px !important;
-        height: 210px !important;
+        width: 155px !important;
+        height: 205px !important;
       }
     }
     .bio-video-el {
@@ -331,14 +333,26 @@ function render_biometric_js(array $enrolledTechs, string $extraJs = ''): string
         bioVideoStream = await navigator.mediaDevices.getUserMedia({
           video: {
             facingMode: "user",
-            width: { ideal: 1280, min: 640 },
-            height: { ideal: 720, min: 480 },
+            width: { ideal: 720 },
+            height: { ideal: 960 },
             frameRate: { ideal: 30, max: 30 }
           },
           audio: false
         });
         video.srcObject = bioVideoStream;
         await video.play();
+
+        // Terapkan reset zoom kamera ke minimum 1.0x (hindari kamera HP ter-zoom otomatis)
+        try {
+          const vTracks = bioVideoStream.getVideoTracks();
+          if (vTracks && vTracks.length > 0) {
+            const trk = vTracks[0];
+            const caps = (typeof trk.getCapabilities === "function") ? trk.getCapabilities() : {};
+            if (caps.zoom) {
+              trk.applyConstraints({ advanced: [{ zoom: caps.zoom.min || 1.0 }] }).catch(function() {});
+            }
+          }
+        } catch(e) {}
 
         document.getElementById("bioScanLine").classList.remove("d-none");
         if (statusBox) {
@@ -377,19 +391,19 @@ function render_biometric_js(array $enrolledTechs, string $extraJs = ''): string
       try {
         if (!videoEl || !videoEl.videoWidth || !videoEl.videoHeight) return "";
         const c = document.createElement("canvas");
-        const outSize = 480; // High Resolution HD 480x480 pixel
+        const outSize = 180; // Optimal 180x180 px (~4KB base64, aman dari limit Google Sheets & DB)
         c.width = outSize;
         c.height = outSize;
         const ctx = c.getContext("2d");
         ctx.imageSmoothingEnabled = true;
-        ctx.imageSmoothingQuality = "high";
+        ctx.imageSmoothingQuality = "medium";
         const s = Math.min(videoEl.videoWidth, videoEl.videoHeight);
         const sx = (videoEl.videoWidth - s) / 2;
         const sy = (videoEl.videoHeight - s) / 2;
         ctx.translate(outSize, 0);
         ctx.scale(-1, 1);
         ctx.drawImage(videoEl, sx, sy, s, s, 0, 0, outSize, outSize);
-        return c.toDataURL("image/jpeg", 0.90);
+        return c.toDataURL("image/jpeg", 0.65);
       } catch (err) {
         console.warn("Capture snapshot err:", err);
         return "";

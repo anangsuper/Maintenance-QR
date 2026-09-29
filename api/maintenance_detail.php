@@ -190,20 +190,44 @@ $bioPhoto = trim((string)($scan['biometric_photo'] ?? ''));
 $lat = trim((string)($scan['latitude'] ?? ''));
 $lng = trim((string)($scan['longitude'] ?? ''));
 
-if ($isBioVerified) {
-    if ($bioPhoto === '' && $techName !== '') {
-        $enrolled = get_enrolled_technicians(false);
-        foreach ($enrolled as $en) {
-            if (strcasecmp((string)$en['nama'], $techName) === 0 && !empty($en['photo'])) {
-                $bioPhoto = (string)$en['photo'];
+// Helper validasi format data gambar agar tidak error/terpotong
+$isValidPhotoString = function(string $str): bool {
+    if ($str === '') return false;
+    if (str_starts_with($str, 'data:image/')) {
+        $pos = strpos($str, ';base64,');
+        if ($pos === false) return false;
+        $b64 = substr($str, $pos + 8);
+        if (strlen($b64) < 150) return false; // String terlalu pendek / kosong
+        $head = substr($b64, 0, 256);
+        return base64_decode($head, true) !== false;
+    }
+    return filter_var($str, FILTER_VALIDATE_URL) || (strlen($str) < 500 && file_exists(__DIR__ . '/' . ltrim($str, '/')));
+};
+
+$isValidPhoto = $isValidPhotoString($bioPhoto);
+
+// Jika foto di sesi scan tidak valid atau terpotong, ambil dari master foto teknisi terdaftar
+if (!$isValidPhoto && $techName !== '') {
+    $enrolled = get_enrolled_technicians(false);
+    foreach ($enrolled as $en) {
+        if (strcasecmp(trim((string)($en['nama'] ?? '')), trim($techName)) === 0 && !empty($en['photo'])) {
+            $candidatePhoto = trim((string)$en['photo']);
+            if ($isValidPhotoString($candidatePhoto)) {
+                $bioPhoto = $candidatePhoto;
+                $isValidPhoto = true;
                 break;
             }
         }
     }
+}
 
-    $photoThumb = $bioPhoto !== ''
-        ? '<img src="'.e($bioPhoto).'" class="rounded border shadow-sm" style="width: 52px; height: 52px; object-fit: cover; border-color: var(--app-border) !important;" alt="Foto Petugas">'
-        : '<div class="bg-light text-secondary rounded d-flex align-items-center justify-content-center border" style="width: 52px; height: 52px;"><i class="bi bi-person fs-3"></i></div>';
+// Fallback avatar SVG jika gambar gagal dimuat (mencegah ikon tanda tanya (?) di safari/chrome)
+$fallbackSvg = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='52' height='52' fill='%2364748b' viewBox='0 0 16 16'><rect width='16' height='16' fill='%23f1f5f9'/><path d='M11 6a3 3 0 1 1-6 0 3 3 0 0 1 6 0z'/><path fill-rule='evenodd' d='M0 8a8 8 0 1 1 16 0A8 8 0 0 1 0 8zm8-7a7 7 0 0 0-5.468 11.37C3.242 11.226 4.805 10 8 10s4.757 1.225 5.468 2.37A7 7 0 0 0 8 1z'/></svg>";
+
+if ($isBioVerified) {
+    $photoThumb = $isValidPhoto
+        ? '<img src="'.e($bioPhoto).'" class="rounded border shadow-sm" style="width: 52px; height: 52px; object-fit: cover; border-color: var(--app-border) !important;" alt="Foto Petugas" onerror="this.onerror=null; this.src=\''.$fallbackSvg.'\';">'
+        : '<div class="bg-light text-secondary rounded d-flex align-items-center justify-content-center border" style="width: 52px; height: 52px;"><i class="bi bi-person-fill fs-3"></i></div>';
 
     $gpsLink = ($lat !== '' && $lng !== '')
         ? '<a href="https://maps.google.com/?q='.e($lat).','.e($lng).'" target="_blank" class="btn btn-outline-danger btn-sm text-decoration-none py-1 px-2"><i class="bi bi-geo-alt-fill me-1"></i> GPS: '.e(round((float)$lat, 4)).', '.e(round((float)$lng, 4)).'</a>'
@@ -230,10 +254,30 @@ if ($isBioVerified) {
       </div>
     </div>';
 } else {
+    $techPhoto = '';
+    if ($techName !== '') {
+        $enrolled = get_enrolled_technicians(false);
+        foreach ($enrolled as $en) {
+            if (strcasecmp(trim((string)($en['nama'] ?? '')), trim($techName)) === 0 && !empty($en['photo'])) {
+                $c = trim((string)$en['photo']);
+                if ($isValidPhotoString($c)) {
+                    $techPhoto = $c;
+                    break;
+                }
+            }
+        }
+    }
+    $regThumb = $techPhoto !== ''
+        ? '<img src="'.e($techPhoto).'" class="rounded-circle border shadow-sm me-2" style="width: 38px; height: 38px; object-fit: cover;" alt="Foto Petugas" onerror="this.onerror=null; this.style.display=\'none\';">'
+        : '<div class="bg-light text-secondary rounded-circle d-inline-flex align-items-center justify-content-center border me-2" style="width: 38px; height: 38px;"><i class="bi bi-person-fill fs-5"></i></div>';
+
     $bioAuditHtml = '
     <div class="card border mb-4 shadow-sm" style="border-radius: 8px; border-color: var(--app-border) !important; background: #FAFBFD;">
       <div class="card-body py-2 px-3 d-flex align-items-center justify-content-between flex-wrap gap-2 small">
-        <div class="text-secondary"><i class="bi bi-person-badge me-1"></i> Konfirmasi Petugas: <strong class="text-dark">'.e($techName).'</strong> (Pencatatan Reguler)</div>
+        <div class="d-flex align-items-center">
+          '.$regThumb.'
+          <div class="text-secondary"><i class="bi bi-person-badge me-1"></i> Konfirmasi Petugas: <strong class="text-dark">'.e($techName).'</strong> (Pencatatan Reguler)</div>
+        </div>
         <span class="badge-chip chip-secondary font-monospace" style="font-size: 0.72rem;">Tanpa Sampel Biometrik</span>
       </div>
     </div>';
@@ -739,6 +783,17 @@ $body = '
             </div>
           </div>
         </div>
+        '.(($status === 'Temuan' || $status === 'Perlu Perbaikan' || $status === 'Proses') ? '
+        <div class="alert alert-danger border-0 shadow-sm d-flex flex-column flex-md-row align-items-start align-items-md-center justify-content-between gap-3 mt-3 mb-0" style="border-radius: 8px; border-left: 4px solid #DC2626 !important; background-color: #FEF2F2;">
+          <div>
+            <div class="fw-bold fs-6 text-danger"><i class="bi bi-tools me-2"></i>Status Perangkat: Perlu Perbaikan (Temuan Masalah Aktif)</div>
+            <div class="small text-danger-emphasis">Perangkat ini terdaftar dalam daftar kendala aktif dashboard. Anda dapat langsung mencatat hasil perbaikan (tindak lanjut) atau mengubah status menjadi Selesai.</div>
+          </div>
+          <div class="d-flex gap-2 flex-wrap flex-shrink-0">
+            '.(!empty($token) ? '<a href="'.e(module_url('scan.php', ['t' => $token, 'action' => 'tindak_lanjut'])).'" class="btn btn-danger btn-sm fw-bold shadow-sm"><i class="bi bi-wrench-adjustable me-1"></i> Form Tindak Lanjut</a>' : '').'
+            '.($isLoggedIn ? '<button type="button" class="btn btn-outline-danger btn-sm fw-bold" data-bs-toggle="modal" data-bs-target="#editChecklistModal"><i class="bi bi-pencil-square me-1"></i> Selesaikan / Edit Status</button>' : '').'
+          </div>
+        </div>' : '').'
       </div>
     </div>
 

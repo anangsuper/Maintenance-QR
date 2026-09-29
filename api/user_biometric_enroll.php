@@ -269,8 +269,9 @@ $head = '
   .scanner-container {
     position: relative;
     width: 100%;
-    max-width: 440px;
-    height: 380px;
+    max-width: 360px;
+    aspect-ratio: 3 / 4;
+    max-height: 420px;
     margin: 0 auto;
     background: #0f172a;
     border-radius: 16px;
@@ -592,14 +593,26 @@ async function startCamera() {
     videoStream = await navigator.mediaDevices.getUserMedia({
       video: {
         facingMode: "user",
-        width: { ideal: 1280, min: 640 },
-        height: { ideal: 720, min: 480 },
+        width: { ideal: 720 },
+        height: { ideal: 960 },
         frameRate: { ideal: 30, max: 30 }
       },
       audio: false
     });
     video.srcObject = videoStream;
     await video.play();
+
+    // Reset zoom ke minimum (hindari kamera HP ter-zoom otomatis)
+    try {
+      const vTracks = videoStream.getVideoTracks();
+      if (vTracks && vTracks.length > 0) {
+        const trk = vTracks[0];
+        const caps = (typeof trk.getCapabilities === "function") ? trk.getCapabilities() : {};
+        if (caps.zoom) {
+          trk.applyConstraints({ advanced: [{ zoom: caps.zoom.min || 1.0 }] }).catch(function() {});
+        }
+      }
+    } catch(e) {}
 
     btnStart.classList.add("d-none");
     statusMsg.className = "alert alert-primary py-2 px-3 text-center mb-3 small fw-semibold";
@@ -767,18 +780,18 @@ function startFaceTracking() {
 function captureSnapshot() {
   const canvas = document.getElementById("snapshotCanvas");
   const ctx = canvas.getContext("2d");
-  const outSize = 480; // High Resolution HD 480x480 pixel
+  const outSize = 220; // 220x220 pixel (~6KB base64, aman dari batas sel Google Sheets & DB)
   canvas.width = outSize;
   canvas.height = outSize;
   ctx.imageSmoothingEnabled = true;
-  ctx.imageSmoothingQuality = "high";
+  ctx.imageSmoothingQuality = "medium";
   const s = Math.min(video.videoWidth, video.videoHeight);
   const sx = (video.videoWidth - s) / 2;
   const sy = (video.videoHeight - s) / 2;
   ctx.translate(outSize, 0);
   ctx.scale(-1, 1);
   ctx.drawImage(video, sx, sy, s, s, 0, 0, outSize, outSize);
-  capturedPhotoBase64 = canvas.toDataURL("image/jpeg", 0.90);
+  capturedPhotoBase64 = canvas.toDataURL("image/jpeg", 0.70);
 }
 
 // Preload modul di awal agar siap saat kamera aktif

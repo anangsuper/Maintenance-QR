@@ -9,7 +9,7 @@ if ($successData) {
     $bioSuccessHtml = '';
     if (!empty($successData['biometric_verified'])) {
         $photoThumb = !empty($successData['biometric_photo'])
-            ? '<img src="'.e($successData['biometric_photo']).'" class="rounded-circle border border-2 border-success me-2" style="width: 52px; height: 52px; object-fit: cover;">'
+            ? '<img src="'.e($successData['biometric_photo']).'" class="rounded-circle border border-2 border-success me-2" style="width: 52px; height: 52px; object-fit: cover;" alt="Foto Teknisi" onerror="this.onerror=null; this.style.display=\'none\';">'
             : '';
         $bioSuccessHtml = '
         <div class="alert alert-success py-3 px-3 d-flex align-items-center mb-3 text-start border-0 bg-success bg-opacity-10 shadow-sm">
@@ -103,7 +103,7 @@ if ($successTindakLanjut) {
     $bioSuccessHtml = '';
     if (!empty($successTindakLanjut['biometric_verified'])) {
         $photoThumb = !empty($successTindakLanjut['biometric_photo'])
-            ? '<img src="'.e($successTindakLanjut['biometric_photo']).'" class="rounded-circle border border-2 border-success me-2" style="width: 52px; height: 52px; object-fit: cover;">'
+            ? '<img src="'.e($successTindakLanjut['biometric_photo']).'" class="rounded-circle border border-2 border-success me-2" style="width: 52px; height: 52px; object-fit: cover;" alt="Foto Teknisi" onerror="this.onerror=null; this.style.display=\'none\';">'
             : '';
         $bioSuccessHtml = '
         <div class="alert alert-success py-3 px-3 d-flex align-items-center mb-3 text-start border-0 bg-success bg-opacity-10 shadow-sm">

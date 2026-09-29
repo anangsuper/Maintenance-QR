@@ -35,12 +35,15 @@ $head = '<style>
   object-fit: contain !important;
   width: 100% !important;
   height: auto !important;
-  max-height: 480px;
+  max-height: 55vh !important;
   background: #000;
 }
 
 #reader__scan_region {
   background: transparent !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
 }
 
 #reader button {
@@ -54,15 +57,16 @@ $head = '<style>
   cursor: pointer;
 }
 
-#reader select {
+#reader select, #reader__camera_selection {
   background-color: #0D2748 !important;
   color: #FFFFFF !important;
-  border: 1px solid var(--navy-subtle) !important;
-  border-radius: 6px !important;
+  border: 1px solid var(--blue-accent) !important;
+  border-radius: 8px !important;
   padding: 6px 10px !important;
   font-size: 0.82rem !important;
   max-width: 90% !important;
-  margin-bottom: 8px;
+  margin: 6px auto 10px auto !important;
+  display: block !important;
 }
 
 /* Corner Scan Frame Overlay */
@@ -177,6 +181,9 @@ $body = '
 
       <div id="scannerStatus" class="scanner-status-text">
         <span class="spinner-border spinner-border-sm me-1 text-primary"></span> Menyiapkan kamera scanner...
+      </div>
+      <div class="text-center mt-2 px-2" style="font-size: 0.72rem; color: #94A3B8;">
+        <i class="bi bi-info-circle me-1"></i> Jika tampilan kamera terlalu dekat/ter-zoom, gunakan tombol zoom atau ubah pilihan kamera di atas.
       </div>
 
       <div class="text-center my-3">
@@ -364,10 +371,9 @@ document.addEventListener("DOMContentLoaded", () => {
         fps: 20,
         qrbox: function(viewfinderWidth, viewfinderHeight) {
           const minEdge = Math.min(viewfinderWidth, viewfinderHeight);
-          const size = Math.max(Math.floor(minEdge * 0.72), 180);
+          const size = Math.max(Math.floor(minEdge * 0.75), 180);
           return { width: size, height: size };
         },
-        aspectRatio: 1.333333, // 4:3 rasio alami sensor kamera ponsel (bukan 1.0 yang memotong & meng-crop sensor)
         showTorchButtonIfSupported: true,
         videoConstraints: {
           facingMode: { ideal: "environment" },
