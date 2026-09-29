@@ -1,9 +1,44 @@
 <?php
-if ($action === 'start' || $action === 'form' || $action === 'ulang') {
+if ($action === 'start' || $action === 'form' || $action === 'ulang' || $action === 'susulan') {
     $fixedItems = get_fixed_checklists();
-    $isUlang = ($action === 'ulang' || ($currentMonthLog && $action === 'start'));
+    $isSusulan = ($action === 'susulan' || !empty($_GET['susulan']) || !empty($_GET['month']) || !empty($_GET['target_month']));
+    $isUlang = (!$isSusulan && ($action === 'ulang' || ($currentMonthLog && $action === 'start')));
     $enrolledTechs = get_enrolled_technicians(true);
     $hasEnrolledTechs = !empty($enrolledTechs);
+
+    // Ambil matriks kartu kontrol tahun ini untuk mendeteksi bulan yang belum dilakukan maintenance
+    $cardMatrix = get_asset_yearly_card_matrix($assetId, $year);
+    $targetMonthParam = max(0, min(12, (int)($_GET['month'] ?? $_GET['target_month'] ?? 0)));
+
+    $unmaintainedMonths = [];
+    for ($mIdx = 1; $mIdx <= 12; $mIdx++) {
+        if (empty($cardMatrix[$mIdx]['is_done'])) {
+            $unmaintainedMonths[$mIdx] = $monthNames[$mIdx] ?? ('Bulan ' . $mIdx);
+        }
+    }
+
+    // Rekomendasi bulan susulan: bulan terlewat pertama yang belum selesai (<= bulan berjalan)
+    $recommendedSusulanMonth = $targetMonthParam > 0 ? $targetMonthParam : 0;
+    if ($recommendedSusulanMonth <= 0) {
+        foreach ($unmaintainedMonths as $mIdx => $mNm) {
+            if ($mIdx < $month) {
+                $recommendedSusulanMonth = $mIdx;
+                break;
+            }
+        }
+        if ($recommendedSusulanMonth <= 0) {
+            $recommendedSusulanMonth = !empty($unmaintainedMonths) ? array_key_first($unmaintainedMonths) : $month;
+        }
+    }
+
+    $susulanMonthOptionsHtml = '';
+    for ($mIdx = 1; $mIdx <= 12; $mIdx++) {
+        $mLabel = $monthNames[$mIdx] ?? ('Bulan ' . $mIdx);
+        $isDoneMonth = !empty($cardMatrix[$mIdx]['is_done']);
+        $isSel = ($mIdx === $recommendedSusulanMonth);
+        $statusNote = $isDoneMonth ? 'Sudah Selesai (Bisa Disusulkan Ulang)' : '⏳ Belum Pemeliharaan (Rekomendasi Susulan)';
+        $susulanMonthOptionsHtml .= '<option value="'.$mIdx.'" '.($isSel ? 'selected' : '').'>Bulan '.sprintf('%02d', $mIdx).' - '.$mLabel.' ('.$statusNote.')</option>';
+    }
 
     $itemIcons = [
         1 => 'bi-shield-check',
@@ -108,8 +143,16 @@ if ($action === 'start' || $action === 'form' || $action === 'ulang') {
         }
     }
 
-    $formTitle = $isUlang ? 'Form Maintenance Ulang' : 'Form Checklist Maintenance';
-    $mTypeVal = $isUlang ? 'Maintenance Ulang' : 'Maintenance';
+    if ($isSusulan) {
+        $formTitle = 'Form Maintenance Susulan';
+        $mTypeVal = 'Maintenance Susulan';
+    } elseif ($isUlang) {
+        $formTitle = 'Form Maintenance Ulang';
+        $mTypeVal = 'Maintenance Ulang';
+    } else {
+        $formTitle = 'Form Checklist Maintenance';
+        $mTypeVal = 'Maintenance';
+    }
 
     $formHeadStyle = '
     <style>
@@ -264,7 +307,62 @@ if ($action === 'start' || $action === 'form' || $action === 'ulang') {
             <input type="hidden" name="action" value="save_maintenance">
             <input type="hidden" name="action_type" value="'.e($action).'">
             <input type="hidden" name="t" value="'.e($token).'">
-            <input type="hidden" name="maintenance_type" value="'.e($mTypeVal).'">
+            <input type="hidden" name="maintenance_type" id="inputMaintenanceType" value="'.e($mTypeVal).'">
+            <input type="hidden" name="is_susulan" id="inputIsSusulan" value="'.($isSusulan ? '1' : '0').'">
+            <input type="hidden" name="target_year" value="'.(int)$year.'">
+
+            <!-- Pilihan Mode Maintenance: Reguler vs Susulan -->
+            <div class="card p-3 mb-3 border-primary border-opacity-50 bg-light rounded-3 shadow-sm" id="boxMaintType">
+              <div class="d-flex align-items-center justify-content-between mb-2">
+                <span class="fw-bold text-dark small"><i class="bi bi-clock-history text-primary me-1"></i> Mode Pemeliharaan</span>
+                <span class="badge '.($isSusulan ? 'bg-warning text-dark' : 'bg-primary text-white').' fw-bold" id="badgeModeCurrent">'.($isSusulan ? 'Maintenance Susulan' : 'Pemeliharaan Rutin').'</span>
+              </div>
+              <div class="row g-2">
+                <div class="col-6">
+                  <div class="form-check p-2 border rounded bg-white h-100 d-flex align-items-center gap-2" style="cursor: pointer;" onclick="document.getElementById(\'modeReguler\').click()">
+                    <input class="form-check-input ms-1 my-0" type="radio" name="radio_maint_mode" id="modeReguler" value="reguler" '.(!$isSusulan ? 'checked' : '').' onchange="toggleSusulanMode(\'reguler\')">
+                    <label class="form-check-label small fw-semibold text-dark mb-0 cursor-pointer" for="modeReguler">
+                      Pemeliharaan Rutin<br><span class="text-muted fw-normal" style="font-size: 0.75rem;">Periode '.$monthName.' '.$year.'</span>
+                    </label>
+                  </div>
+                </div>
+                <div class="col-6">
+                  <div class="form-check p-2 border rounded bg-white h-100 d-flex align-items-center gap-2" style="cursor: pointer;" onclick="document.getElementById(\'modeSusulan\').click()">
+                    <input class="form-check-input ms-1 my-0" type="radio" name="radio_maint_mode" id="modeSusulan" value="susulan" '.($isSusulan ? 'checked' : '').' onchange="toggleSusulanMode(\'susulan\')">
+                    <label class="form-check-label small fw-semibold text-primary mb-0 cursor-pointer" for="modeSusulan">
+                      Maintenance Susulan<br><span class="text-muted fw-normal" style="font-size: 0.75rem;">Cuti / Terlewat</span>
+                    </label>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Panel Detail Susulan -->
+              <div id="panelSusulanDetails" class="mt-3 pt-3 border-top" style="'.($isSusulan ? '' : 'display: none;').'">
+                <div class="alert alert-warning py-2 px-3 small mb-3 d-flex align-items-center gap-2">
+                  <i class="bi bi-info-circle-fill text-warning fs-5 flex-shrink-0"></i>
+                  <div><strong>Maintenance Susulan:</strong> Digunakan bila pemilik perangkat cuti/tidak di tempat pada bulan jadwal. Hasil akan dicatat mengisi kartu kontrol bulan yang dipilih, dengan tanggal eksekusi aktual hari ini.</div>
+                </div>
+                <div class="row g-2">
+                  <div class="col-md-6">
+                    <label class="form-label small fw-bold text-dark mb-1">Target Bulan yang Disusulkan <span class="text-danger">*</span></label>
+                    <select class="form-select form-select-sm fw-bold border-primary" name="target_month" id="selectTargetMonth">
+                      '.$susulanMonthOptionsHtml.'
+                    </select>
+                  </div>
+                  <div class="col-md-6">
+                    <label class="form-label small fw-bold text-dark mb-1">Alasan Susulan <span class="text-danger">*</span></label>
+                    <select class="form-select form-select-sm mb-1" id="selectSusulanReasonPreset" onchange="applySusulanReason(this.value)">
+                      <option value="Pengguna Cuti / Tidak Ada di Tempat">Pengguna Cuti / Tidak Ada di Tempat</option>
+                      <option value="Perangkat Sedang Dibawa Dinas Luar">Perangkat Sedang Dibawa Dinas Luar</option>
+                      <option value="Jadwal Padat / Antrean Teknisi Tertunda">Jadwal Padat / Antrean Teknisi Tertunda</option>
+                      <option value="Perangkat Sedang Dipakai Rapat/Audit">Perangkat Sedang Dipakai Rapat/Audit</option>
+                      <option value="custom">Alasan Lainnya (Ketik Manual)...</option>
+                    </select>
+                    <input type="text" class="form-control form-control-sm" name="susulan_reason" id="inputSusulanReason" value="Pengguna Cuti / Tidak Ada di Tempat" placeholder="Ketik alasan susulan...">
+                  </div>
+                </div>
+              </div>
+            </div>
 
             <!-- Hidden Inputs Biometrik & Lokasi -->
             <input type="hidden" name="biometric_verified" id="bioVerified" value="0">
@@ -477,6 +575,42 @@ if ($action === 'start' || $action === 'form' || $action === 'ulang') {
           chk.checked = val;
           toggleItem(i);
         }
+      }
+    }
+
+    function toggleSusulanMode(mode) {
+      const panel = document.getElementById("panelSusulanDetails");
+      const badge = document.getElementById("badgeModeCurrent");
+      const inputType = document.getElementById("inputMaintenanceType");
+      const inputIsSusulan = document.getElementById("inputIsSusulan");
+      if (mode === "susulan") {
+        if (panel) panel.style.display = "block";
+        if (badge) {
+          badge.className = "badge bg-warning text-dark fw-bold";
+          badge.textContent = "Maintenance Susulan";
+        }
+        if (inputType) inputType.value = "Maintenance Susulan";
+        if (inputIsSusulan) inputIsSusulan.value = "1";
+      } else {
+        if (panel) panel.style.display = "none";
+        if (badge) {
+          badge.className = "badge bg-primary text-white fw-bold";
+          badge.textContent = "Pemeliharaan Rutin";
+        }
+        if (inputType) inputType.value = "Maintenance";
+        if (inputIsSusulan) inputIsSusulan.value = "0";
+      }
+    }
+
+    function applySusulanReason(val) {
+      const input = document.getElementById("inputSusulanReason");
+      if (!input) return;
+      if (val === "custom") {
+        input.value = "";
+        input.placeholder = "Tuliskan alasan mengapa maintenance disusulkan...";
+        input.focus();
+      } else {
+        input.value = val;
       }
     }
 

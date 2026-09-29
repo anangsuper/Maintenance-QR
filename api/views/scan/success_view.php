@@ -23,6 +23,11 @@ if ($successData) {
 
     $ipStr = $asset['ip_address'] ?? $asset['ip'] ?? '-';
     $prtStr = $asset['printer'] ?? '-';
+    $isSusulan = (($successData['type'] ?? '') === 'Maintenance Susulan');
+    $successTitle = $isSusulan ? 'Maintenance Susulan Berhasil Disimpan!' : 'Maintenance Berhasil Disimpan!';
+    $successSubtitle = $isSusulan 
+        ? 'Hasil checklist telah dicatat untuk mengisi Kartu Kontrol periode <strong>'.e($successData['target_month_name'] ?? '').' '.e($successData['target_year'] ?? '').'</strong>.' 
+        : 'Hasil checklist pemeliharaan telah dicatat ke dalam Kartu Kontrol & Database.';
 
     $body = '
     <div class="row justify-content-center">
@@ -33,8 +38,13 @@ if ($successData) {
               <i class="bi bi-check2-circle"></i>
             </span>
           </div>
-          <h3 class="fw-bold text-success mb-1">Maintenance Berhasil Disimpan!</h3>
-          <p class="text-secondary small mb-3">Hasil checklist pemeliharaan telah dicatat ke dalam Kartu Kontrol & Database.</p>
+          <h3 class="fw-bold text-success mb-1">'.$successTitle.'</h3>
+          <p class="text-secondary small mb-3">'.$successSubtitle.'</p>
+
+          '.($isSusulan ? '
+          <div class="badge bg-warning text-dark px-3 py-2 mb-3 shadow-xs">
+            <i class="bi bi-clock-history me-1"></i> Maintenance Susulan Periode: <strong>'.e($successData['target_month_name'] ?? '').' '.e($successData['target_year'] ?? '').'</strong>
+          </div>' : '').'
 
           '.$bioSuccessHtml.'
 
@@ -48,7 +58,11 @@ if ($successData) {
               <div class="col-7 fw-bold text-success font-monospace">'.e($ipStr).'</div>
               <div class="col-5 text-muted">Printer:</div>
               <div class="col-7 fw-semibold text-dark">'.e($prtStr).'</div>
-              <div class="col-5 text-muted">Tanggal:</div>
+              '.($isSusulan ? '
+              <div class="col-5 text-muted">Target Periode:</div>
+              <div class="col-7 fw-bold text-primary">'.e($successData['target_month_name'] ?? '').' '.e($successData['target_year'] ?? '').' (Susulan)</div>
+              ' : '').'
+              <div class="col-5 text-muted">Tanggal Pelaksanaan:</div>
               <div class="col-7 fw-semibold">'.e(format_id_date($successData['date'])).'</div>
               <div class="col-5 text-muted">Petugas/Teknisi:</div>
               <div class="col-7 fw-bold text-dark">'.e($successData['technician']).'</div>

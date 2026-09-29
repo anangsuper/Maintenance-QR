@@ -806,6 +806,8 @@ function get_asset_yearly_card_matrix(int $assetId, int $year): array {
                     $matrix[$sMonth]['is_done'] = true;
                     $matrix[$sMonth]['log_id'] = $logId;
                     $matrix[$sMonth]['date_str'] = $dateFormatted;
+                    $matrix[$sMonth]['maintenance_date'] = $d;
+                    $matrix[$sMonth]['maintenance_type'] = $s['source'] ?? $s['maintenance_type'] ?? 'Maintenance';
                     $techRaw = (string)($s['technician_name'] ?? $s['col_3'] ?? 'Teknisi');
                     $matrix[$sMonth]['paraf'] = get_technician_nickname($techRaw);
                     $matrix[$sMonth]['status'] = $s['status'] ?? $s['col_8'] ?? 'Selesai';
@@ -855,6 +857,8 @@ function get_asset_yearly_card_matrix(int $assetId, int $year): array {
             $matrix[$sMonth]['is_done'] = true;
             $matrix[$sMonth]['log_id'] = $logId;
             $matrix[$sMonth]['date_str'] = $dateFormatted;
+            $matrix[$sMonth]['maintenance_date'] = $d;
+            $matrix[$sMonth]['maintenance_type'] = $s['source'] ?? $s['maintenance_type'] ?? 'Maintenance';
             $techRaw = (string)($s['technician_name'] ?: 'Teknisi');
             $matrix[$sMonth]['paraf'] = get_technician_nickname($techRaw);
             $matrix[$sMonth]['status'] = $s['status'] ?: 'Selesai';
@@ -892,8 +896,14 @@ function save_maintenance_record(array $data): array {
 
     $date = !empty($data['maintenance_date']) ? substr((string)$data['maintenance_date'], 0, 10) : date('Y-m-d');
     $time = !empty($data['maintenance_time']) ? substr((string)$data['maintenance_time'], 0, 8) : date('H:i:s');
-    $month = (int)date('n', strtotime($date));
-    $year = (int)date('Y', strtotime($date));
+    $month = !empty($data['maintenance_month']) ? (int)$data['maintenance_month'] : (int)date('n', strtotime($date));
+    $year = !empty($data['maintenance_year']) ? (int)$data['maintenance_year'] : (int)date('Y', strtotime($date));
+    if ($month < 1 || $month > 12) {
+        $month = (int)date('n', strtotime($date));
+    }
+    if ($year < 2000) {
+        $year = (int)date('Y', strtotime($date));
+    }
     $userId = (int)($data['technician_user_id'] ?? current_user_id());
     $techName = trim((string)($data['technician_name'] ?? ''));
     if ($techName === '') {
@@ -1154,6 +1164,7 @@ function save_maintenance_record(array $data): array {
                 'maintenance_month' => $month,
                 'maintenance_year' => $year,
                 'status' => $status,
+                'maintenance_type' => $mType,
                 'checklists' => $checklists
             ];
         }

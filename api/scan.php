@@ -113,6 +113,38 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (($_POST['action'] ?? '') === 'save
     $findings = trim((string)($_POST['findings'] ?? ''));
     $recommendation = trim((string)($_POST['recommendation'] ?? ''));
 
+    // Penanganan Maintenance Susulan (misal pengguna cuti/tidak ada saat jadwal reguler)
+    $isSusulan = ($mType === 'Maintenance Susulan' || ($_POST['maint_mode_radio'] ?? '') === 'susulan' || !empty($_POST['is_susulan']));
+    if ($isSusulan) {
+        $mType = 'Maintenance Susulan';
+        $targetMonth = max(1, min(12, (int)($_POST['target_month'] ?? 0)));
+        $targetYear = max(2020, (int)($_POST['target_year'] ?? date('Y', strtotime($mDate))));
+        if ($targetMonth < 1 || $targetMonth > 12) {
+            $targetMonth = (int)date('n', strtotime($mDate));
+        }
+
+        $susulanReason = trim((string)($_POST['susulan_reason'] ?? ''));
+        if ($susulanReason === '' && !empty($_POST['susulan_reason_custom'])) {
+            $susulanReason = trim((string)$_POST['susulan_reason_custom']);
+        }
+        if ($susulanReason === '' && !empty($_POST['susulan_reason_select']) && $_POST['susulan_reason_select'] !== 'custom') {
+            $susulanReason = trim((string)$_POST['susulan_reason_select']);
+        }
+        if ($susulanReason === '') {
+            $susulanReason = 'Pengguna / PIC tidak di tempat saat jadwal reguler';
+        }
+
+        $susulanTag = "[Maintenance Susulan Periode: " . ($monthNames[$targetMonth] ?? ('Bulan ' . $targetMonth)) . " {$targetYear} | Alasan: {$susulanReason}]";
+        if ($recommendation === '') {
+            $recommendation = $susulanTag;
+        } else {
+            $recommendation = $susulanTag . "\n" . $recommendation;
+        }
+    } else {
+        $targetMonth = (int)date('n', strtotime($mDate));
+        $targetYear = (int)date('Y', strtotime($mDate));
+    }
+
     // Biometric audit fields
     $bioVerified = !empty($_POST['biometric_verified']) ? 1 : 0;
     $bioConfidence = (float)($_POST['biometric_confidence'] ?? 0);
@@ -175,8 +207,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (($_POST['action'] ?? '') === 'save
         'technician_name' => $techName,
         'maintenance_date' => $mDate,
         'maintenance_time' => date('H:i:s'),
-        'maintenance_month' => (int)date('n', strtotime($mDate)),
-        'maintenance_year' => (int)date('Y', strtotime($mDate)),
+        'maintenance_month' => $targetMonth,
+        'maintenance_year' => $targetYear,
         'status' => $mStatus,
         'maintenance_type' => $mType,
         'findings' => $findings,
@@ -197,6 +229,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (($_POST['action'] ?? '') === 'save
             'technician' => $techName,
             'status' => $mStatus,
             'type' => $mType,
+            'target_month' => $targetMonth,
+            'target_year' => $targetYear,
+            'target_month_name' => $monthNames[$targetMonth] ?? ('Bulan ' . $targetMonth),
             'findings' => $findings,
             'recommendation' => $recommendation,
             'biometric_verified' => $bioVerified,
@@ -310,7 +345,7 @@ if ($action === 'tindak_lanjut') {
     exit;
 }
 
-if ($action === 'start' || $action === 'form' || $action === 'ulang') {
+if ($action === 'start' || $action === 'form' || $action === 'ulang' || $action === 'susulan') {
     require __DIR__ . '/views/scan/form_checklist.php';
     exit;
 }

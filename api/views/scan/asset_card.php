@@ -38,6 +38,7 @@ if ($currentMonthLog) {
         : '';
 
     $btnUlang = '<a class="btn btn-outline-secondary fw-semibold" href="'.e(module_url('scan.php', ['t' => $token, 'action' => 'ulang'])).'"><i class="bi bi-arrow-repeat me-1"></i> Pemeliharaan Ulang</a>';
+    $btnSusulan = '<a class="btn btn-outline-warning text-dark fw-semibold" href="'.e(module_url('scan.php', ['t' => $token, 'action' => 'susulan'])).'"><i class="bi bi-clock-history me-1"></i> Maintenance Susulan</a>';
 
     $statusCardHtml = '
     <div class="card shadow-sm mb-4 p-3 p-md-4 rounded-3" style="'.$cardBgStyle.'">
@@ -54,13 +55,20 @@ if ($currentMonthLog) {
       <div class="d-flex flex-wrap gap-2 mt-3 pt-2">
         '.$btnTindakLanjut.'
         '.$btnUlang.'
+        '.$btnSusulan.'
         '.$btnDetail.'
       </div>
     </div>';
 } else {
-    $btnStartAction = '<a class="btn btn-success btn-lg fw-semibold py-3 px-4 shadow-sm w-100" href="'.e(module_url('scan.php', ['t' => $token, 'action' => 'start'])).'">
-      <i class="bi bi-play-circle-fill me-2"></i> Mulai Pemeriksaan Checklist
-    </a>
+    $btnStartAction = '
+    <div class="d-flex flex-column flex-sm-row gap-2">
+      <a class="btn btn-success btn-lg fw-semibold py-3 px-4 shadow-sm flex-fill" href="'.e(module_url('scan.php', ['t' => $token, 'action' => 'start'])).'">
+        <i class="bi bi-play-circle-fill me-2"></i> Mulai Checklist (Bulan Ini)
+      </a>
+      <a class="btn btn-outline-warning text-dark fw-semibold py-3 px-3 shadow-sm d-flex align-items-center justify-content-center" href="'.e(module_url('scan.php', ['t' => $token, 'action' => 'susulan'])).'" title="Isi pemeliharaan susulan untuk bulan lain">
+        <i class="bi bi-clock-history me-1"></i> Susulan
+      </a>
+    </div>
     <div class="text-center mt-2"><small class="text-muted"><i class="bi bi-check2-circle text-success me-1"></i>Cukup pilih/masukkan nama petugas saat mengisi checklist (tidak wajib login).</small></div>';
 
     $statusCardHtml = '
@@ -73,6 +81,32 @@ if ($currentMonthLog) {
       <p class="small mb-3" style="color: #334155 !important;">Perangkat ini belum dilakukan pemeliharaan hardware & OS untuk bulan ini.</p>
       
       '.$btnStartAction.'
+    </div>';
+}
+
+// Deteksi bulan-bulan lampau yang belum dilakukan pemeliharaan (missed months)
+$missedPastMonths = [];
+for ($mIdx = 1; $mIdx < $month; $mIdx++) {
+    if (empty($cardMatrix[$mIdx]['is_done'])) {
+        $missedPastMonths[$mIdx] = $monthNames[$mIdx] ?? ('Bulan ' . $mIdx);
+    }
+}
+$missedBannerHtml = '';
+if (!empty($missedPastMonths)) {
+    $missedNames = implode(', ', $missedPastMonths);
+    $firstMissedMonth = array_key_first($missedPastMonths);
+    $missedBannerHtml = '
+    <div class="alert alert-warning border-warning border-start border-4 shadow-sm rounded-3 py-3 px-3 mb-4 d-flex align-items-center justify-content-between flex-wrap gap-2">
+      <div class="d-flex align-items-center gap-2">
+        <i class="bi bi-clock-history text-warning fs-3 flex-shrink-0"></i>
+        <div>
+          <div class="fw-bold text-dark">Bulan Pemeliharaan Belum Terisi: '.e($missedNames).'</div>
+          <div class="small text-muted">Pengguna cuti, dinas luar, atau terlewat saat jadwal? Anda dapat melakukan <strong>Maintenance Susulan</strong>.</div>
+        </div>
+      </div>
+      <a href="'.e(module_url('scan.php', ['t' => $token, 'action' => 'susulan', 'month' => $firstMissedMonth])).'" class="btn btn-warning btn-sm text-dark fw-bold px-3 py-2 shadow-xs">
+        <i class="bi bi-calendar-plus me-1"></i> Isi Maintenance Susulan
+      </a>
     </div>';
 }
 
@@ -112,7 +146,25 @@ for ($m = 1; $m <= 12; $m++) {
     $row = $cardMatrix[$m];
     $dateLabel = $row['date_str'];
     $isDone = $row['is_done'];
-    $paraf = $isDone ? e($row['paraf']) : '&nbsp;';
+    $logId = (int)($row['log_id'] ?? 0);
+
+    if ($isDone) {
+        $parafText = e($row['paraf']);
+        if ($logId > 0) {
+            $paraf = '<a href="'.e(module_url('maintenance_detail.php', ['id' => $logId, 't' => $token])).'" class="text-decoration-none text-dark fw-bold" title="Lihat Rincian Audit">'.$parafText.'</a>';
+        } else {
+            $paraf = $parafText;
+        }
+    } else {
+        if ($m < $month) {
+            $paraf = '<a href="'.e(module_url('scan.php', ['t' => $token, 'action' => 'susulan', 'month' => $m])).'" class="badge bg-warning text-dark text-decoration-none py-1 px-1" style="font-size: 0.65rem;" title="Input Maintenance Susulan Bulan '.e($monthNames[$m] ?? ('Bulan ' . $m)).'">+ Susulan</a>';
+        } elseif ($m === $month) {
+            $paraf = '<a href="'.e(module_url('scan.php', ['t' => $token, 'action' => 'start'])).'" class="badge bg-primary text-white text-decoration-none py-1 px-1" style="font-size: 0.65rem;" title="Mulai Checklist Bulan Ini">+ Isi</a>';
+        } else {
+            $paraf = '<span class="text-muted" style="font-size: 0.65rem;">-</span>';
+        }
+    }
+
     $rowClass = ($m % 2 === 0) ? 'even-row' : 'odd-row';
     if ($isDone) $rowClass .= ' done-row';
 
@@ -517,6 +569,9 @@ $body = '
 
     <!-- Alert Temuan Kerusakan / Tindak Lanjut -->
     '.$pendingAlertHtml.'
+
+    <!-- Banner Bulan Pemeliharaan Belum Terisi (Susulan) -->
+    '.$missedBannerHtml.'
 
     <!-- Card Status Maintenance Bulan Berjalan -->
     '.$statusCardHtml.'
