@@ -101,19 +101,19 @@ if ($action === 'start' || $action === 'form' || $action === 'ulang' || $action 
         }
 
         $checklistCardsHtml .= '
-        <div class="card p-3 mb-2 rounded-3 checklist-card border-success border-opacity-50" id="card_item_'.$num.'">
-          <div class="d-flex align-items-center justify-content-between mb-2">
-            <div class="d-flex align-items-center gap-2">
-              <span class="tech-label text-primary font-monospace fw-bold px-2 py-1 bg-light border rounded" style="font-size: 0.8rem;">'.sprintf('%02d', $num).'</span>
-              <div>
-                <div class="d-flex align-items-center gap-2">
-                  <i class="bi '.$icon.' text-primary fs-5"></i>
-                  <strong class="text-dark fs-6">'.e($name).'</strong>
+        <div class="card p-2.5 p-sm-3 mb-2 rounded-3 checklist-card border-success border-opacity-50" id="card_item_'.$num.'">
+          <div class="d-flex align-items-center justify-content-between mb-2 gap-2">
+            <div class="d-flex align-items-center gap-2 flex-grow-1 min-w-0">
+              <span class="tech-label text-primary font-monospace fw-bold px-2 py-1 bg-light border rounded flex-shrink-0" style="font-size: 0.78rem;">'.sprintf('%02d', $num).'</span>
+              <div class="min-w-0">
+                <div class="d-flex align-items-center gap-1.5 flex-wrap">
+                  <i class="bi '.$icon.' text-primary fs-5 flex-shrink-0"></i>
+                  <strong class="text-dark fs-6 text-break">'.e($name).'</strong>
                 </div>
-                <small class="text-secondary" style="font-size: 0.78rem;">'.e($catLabel).'</small>
+                <small class="text-secondary text-truncate d-block" style="font-size: 0.75rem;">'.e($catLabel).'</small>
               </div>
             </div>
-            <div class="d-flex align-items-center gap-2">
+            <div class="d-flex align-items-center gap-2 flex-shrink-0">
               <span class="badge bg-success bg-opacity-10 text-success fw-bold status-pill d-none d-sm-inline-block" id="pill_'.$num.'">✓ OK</span>
               <div class="form-check form-switch mb-0">
                 <input class="form-check-input chk-box" type="checkbox" role="switch" id="chk_'.$num.'" name="chk_'.$num.'" value="1" checked onchange="toggleItem('.$num.')">
@@ -195,6 +195,27 @@ if ($action === 'start' || $action === 'form' || $action === 'ulang' || $action 
     .form-check-input:checked {
       background-color: #10b981;
       border-color: #10b981;
+    }
+    @media (max-width: 576px) {
+      .checklist-card {
+        padding: 9px 10px !important;
+      }
+      .form-switch .form-check-input {
+        width: 2.4em;
+        height: 1.3em;
+      }
+      .btn-tag-chip {
+        font-size: 0.70rem;
+        padding: 2px 7px;
+      }
+      .quick-action-box {
+        padding: 10px 12px !important;
+      }
+      .bio-scanner-wrapper {
+        width: 100% !important;
+        max-width: 290px !important;
+        height: 340px !important;
+      }
     }
     .quick-action-box {
       background: #f8fafc;
@@ -318,17 +339,17 @@ if ($action === 'start' || $action === 'form' || $action === 'ulang' || $action 
                 <span class="badge '.($isSusulan ? 'bg-warning text-dark' : 'bg-primary text-white').' fw-bold" id="badgeModeCurrent">'.($isSusulan ? 'Maintenance Susulan' : 'Pemeliharaan Rutin').'</span>
               </div>
               <div class="row g-2">
-                <div class="col-6">
-                  <div class="form-check p-2 border rounded bg-white h-100 d-flex align-items-center gap-2" style="cursor: pointer;" onclick="document.getElementById(\'modeReguler\').click()">
-                    <input class="form-check-input ms-1 my-0" type="radio" name="radio_maint_mode" id="modeReguler" value="reguler" '.(!$isSusulan ? 'checked' : '').' onchange="toggleSusulanMode(\'reguler\')">
+                <div class="col-12 col-sm-6">
+                  <div class="form-check p-2.5 border rounded bg-white h-100 d-flex align-items-center gap-2" style="cursor: pointer;" onclick="document.getElementById(\'modeReguler\').click()">
+                    <input class="form-check-input ms-1 my-0 flex-shrink-0" type="radio" name="radio_maint_mode" id="modeReguler" value="reguler" '.(!$isSusulan ? 'checked' : '').' onchange="toggleSusulanMode(\'reguler\')">
                     <label class="form-check-label small fw-semibold text-dark mb-0 cursor-pointer" for="modeReguler">
                       Pemeliharaan Rutin<br><span class="text-muted fw-normal" style="font-size: 0.75rem;">Periode '.$monthName.' '.$year.'</span>
                     </label>
                   </div>
                 </div>
-                <div class="col-6">
-                  <div class="form-check p-2 border rounded bg-white h-100 d-flex align-items-center gap-2" style="cursor: pointer;" onclick="document.getElementById(\'modeSusulan\').click()">
-                    <input class="form-check-input ms-1 my-0" type="radio" name="radio_maint_mode" id="modeSusulan" value="susulan" '.($isSusulan ? 'checked' : '').' onchange="toggleSusulanMode(\'susulan\')">
+                <div class="col-12 col-sm-6">
+                  <div class="form-check p-2.5 border rounded bg-white h-100 d-flex align-items-center gap-2" style="cursor: pointer;" onclick="document.getElementById(\'modeSusulan\').click()">
+                    <input class="form-check-input ms-1 my-0 flex-shrink-0" type="radio" name="radio_maint_mode" id="modeSusulan" value="susulan" '.($isSusulan ? 'checked' : '').' onchange="toggleSusulanMode(\'susulan\')">
                     <label class="form-check-label small fw-semibold text-primary mb-0 cursor-pointer" for="modeSusulan">
                       Maintenance Susulan<br><span class="text-muted fw-normal" style="font-size: 0.75rem;">Cuti / Terlewat</span>
                     </label>
@@ -461,17 +482,17 @@ if ($action === 'start' || $action === 'form' || $action === 'ulang' || $action 
             <!-- Submit Button Area -->
             <div class="d-grid gap-2 pt-2">
               '.($hasEnrolledTechs ? '
-              <button type="button" class="btn btn-primary btn-lg fw-bold py-3 shadow" id="btnSelesaiBio" onclick="openBiometricModal()">
-                <i class="bi bi-person-bounding-box me-2"></i> SELESAI MAINTENANCE (SCAN WAJAH KAMERA)
+              <button type="button" class="btn btn-primary btn-lg fw-bold py-2.5 py-sm-3 shadow" id="btnSelesaiBio" onclick="openBiometricModal()" style="font-size: clamp(0.84rem, 3.6vw, 1.05rem);">
+                <i class="bi bi-person-bounding-box me-1 me-sm-2"></i> SELESAI MAINTENANCE (SCAN WAJAH)
               </button>
-              <div class="d-flex justify-content-between align-items-center px-1">
+              <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 px-1 pt-1">
                 <button type="submit" class="btn btn-link btn-sm text-decoration-none text-muted p-0" onclick="return confirm(\'Simpan hasil checklist tanpa verifikasi biometrik wajah?\')">
-                  <i class="bi bi-shield-slash me-1"></i> Simpan Manual (Bypass Biometrik)
+                  <i class="bi bi-shield-slash me-1"></i> Simpan Manual (Bypass)
                 </button>
                 <a class="btn btn-link btn-sm text-decoration-none text-secondary p-0" href="'.e(module_url('scan.php', ['t' => $token])).'">Batal</a>
               </div>
               ' : '
-              <button type="submit" class="btn btn-success btn-lg fw-bold py-3 shadow" onclick="return confirm(\'Simpan hasil checklist maintenance sekarang?\')">
+              <button type="submit" class="btn btn-success btn-lg fw-bold py-2.5 py-sm-3 shadow" onclick="return confirm(\'Simpan hasil checklist maintenance sekarang?\')" style="font-size: clamp(0.88rem, 3.8vw, 1.05rem);">
                 <i class="bi bi-save-fill me-2"></i> SIMPAN MAINTENANCE
               </button>
               <div class="alert alert-light border py-2 px-3 small mb-0 d-flex align-items-center justify-content-between flex-wrap gap-2 text-muted">

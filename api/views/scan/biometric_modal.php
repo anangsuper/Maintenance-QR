@@ -97,14 +97,25 @@ function render_biometric_css(): string {
     <style>
     .bio-scanner-wrapper {
       position: relative;
-      width: 320px;
+      width: 100%;
+      max-width: 320px;
       height: 380px;
-      max-width: 100%;
       border-radius: 20px;
       overflow: hidden;
       background: #0f172a;
       box-shadow: 0 10px 25px rgba(0,0,0,0.25);
       margin: 0 auto;
+    }
+    @media (max-width: 576px) {
+      .bio-scanner-wrapper {
+        max-width: 280px;
+        height: 330px;
+        border-radius: 14px;
+      }
+      .bio-face-oval {
+        width: 160px !important;
+        height: 210px !important;
+      }
     }
     .bio-video-el {
       width: 100%;

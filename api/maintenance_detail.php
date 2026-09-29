@@ -1023,6 +1023,19 @@ $extraHead = '
     padding: 2px 6px;
     font-size: 0.7rem;
   }
+  .card-header {
+    padding: 10px 12px !important;
+  }
+  .card-body {
+    padding: 12px 10px !important;
+  }
+  .checklist-mobile-item {
+    padding: 8px 10px !important;
+    margin-bottom: 6px !important;
+  }
+  .asset-history-card {
+    padding: 10px 10px !important;
+  }
 }
 </style>';
 

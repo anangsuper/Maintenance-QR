@@ -52,7 +52,7 @@ if ($currentMonthLog) {
       '.($cFindings !== '' ? '<div class="alert alert-danger py-2 px-3 small my-2"><strong><i class="bi bi-exclamation-triangle-fill me-1"></i>Temuan:</strong> '.e($cFindings).'</div>' : '').'
       '.($cRecom !== '' ? '<div class="alert alert-info py-2 px-3 small my-2"><strong><i class="bi bi-lightbulb-fill me-1"></i>Rekomendasi:</strong> '.e($cRecom).'</div>' : '').'
 
-      <div class="d-flex flex-wrap gap-2 mt-3 pt-2">
+      <div class="d-flex flex-wrap gap-2 mt-3 pt-2 mobile-btn-stack">
         '.$btnTindakLanjut.'
         '.$btnUlang.'
         '.$btnSusulan.'
@@ -204,8 +204,86 @@ $headStyle = '<style>
 }
 @media (max-width: 576px) {
   .mobile-card-wrapper {
-    padding: 10px 8px;
-    border-radius: 12px;
+    padding: 8px 6px;
+    border-radius: 10px;
+  }
+  .grid6-top-banner {
+    padding: 5px 8px;
+    font-size: 0.82rem;
+  }
+  .grid6-branch-pill {
+    font-size: 0.65rem;
+    padding: 2px 6px;
+  }
+  .grid6-info-table {
+    font-size: 0.76rem;
+  }
+  .grid6-info-table td {
+    padding: 2px 2px;
+  }
+  .badge-lbl {
+    font-size: 0.65rem;
+    padding: 1px 4px;
+  }
+  .grid6-matrix-wrapper {
+    margin-bottom: 6px;
+    border-radius: 6px;
+    border: 1px solid #cbd5e1;
+    -webkit-overflow-scrolling: touch;
+  }
+  .grid6-matrix-table {
+    font-size: 0.72rem;
+    min-width: 305px;
+  }
+  .grid6-matrix-table th {
+    padding: 4px 1px;
+    font-size: 0.70rem;
+  }
+  .grid6-matrix-table td {
+    padding: 2px 1px;
+    height: 23px;
+  }
+  .grid6-matrix-table .tgl-col {
+    width: 65px;
+    font-size: 0.70rem;
+    letter-spacing: -0.3px;
+    padding: 0 2px;
+  }
+  .grid6-matrix-table .chk-col {
+    width: 20px;
+    font-size: 0.78rem;
+    padding: 0;
+  }
+  .grid6-matrix-table .paraf-col {
+    min-width: 62px;
+    font-size: 0.68rem;
+    padding: 1px 2px;
+  }
+  .grid6-matrix-table .paraf-col a.badge {
+    font-size: 0.60rem !important;
+    padding: 2px 3px !important;
+  }
+  .grid6-ket-box {
+    padding: 6px 8px;
+  }
+  .grid6-ket-title {
+    font-size: 0.68rem;
+    margin-bottom: 4px;
+  }
+  .grid6-ket-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 3px 4px;
+  }
+  .leg-tag {
+    font-size: 0.65rem;
+    padding: 1px 4px;
+  }
+  .mobile-btn-stack .btn {
+    flex: 1 1 calc(50% - 6px);
+    text-align: center;
+    justify-content: center;
+    font-size: 0.8rem;
+    padding: 8px 6px;
   }
 }
 .grid6-top-banner {
@@ -523,46 +601,46 @@ $body = '
     '.($error ? '<div class="alert alert-danger py-2 px-3 mb-3 shadow-sm"><i class="bi bi-exclamation-triangle-fill me-1"></i><strong>Gagal Menyimpan:</strong> '.e($error).'</div>' : '').'
 
     <!-- Card Detail Perangkat Utama -->
-    <div class="card p-3 p-md-4 border-0 shadow-sm mb-4">
-      <div class="d-flex flex-wrap align-items-center justify-content-between border-bottom pb-3 mb-3 gap-2">
-        <div>
-          <span class="badge bg-primary px-3 py-1 mb-1">'.e($asset['kategori_nama'] ?? 'Perangkat IT').'</span>
-          <h3 class="fw-bold text-dark mb-0">'.e(asset_title($asset)).'</h3>
+    <div class="card p-3 p-md-4 border-0 shadow-sm mb-3 mb-md-4">
+      <div class="d-flex flex-wrap align-items-center justify-content-between border-bottom pb-2 pb-md-3 mb-3 gap-2">
+        <div class="flex-grow-1 min-w-0">
+          <span class="badge bg-primary px-2.5 py-1 mb-1 font-monospace" style="font-size: 0.72rem;">'.e($asset['kategori_nama'] ?? 'Perangkat IT').'</span>
+          <h4 class="fw-bold text-dark mb-0 fs-5 fs-md-4 text-break">'.e(asset_title($asset)).'</h4>
         </div>
-        <span class="badge bg-success bg-opacity-10 text-success fw-bold px-3 py-2 border border-success">
+        <span class="badge bg-success bg-opacity-10 text-success fw-bold px-2.5 py-1.5 border border-success flex-shrink-0" style="font-size: 0.75rem;">
           <i class="bi bi-check-circle-fill me-1"></i> '.e($asset['status'] ?? 'Aktif').'
         </span>
       </div>
 
       <!-- Detail Spesifikasi & Kepemilikan -->
-      <div class="row g-3 small mb-2">
+      <div class="row g-2 g-md-3 small mb-1">
         <div class="col-6 col-md-4">
-          <div class="text-secondary">Kode Inventaris:</div>
-          <div class="fw-bold text-primary fs-6">'.e($asset['kode_inventaris'] ?? '-').'</div>
+          <div class="text-secondary" style="font-size: 0.72rem;">Kode Inventaris:</div>
+          <div class="fw-bold text-primary fs-6 font-monospace text-truncate">'.e($asset['kode_inventaris'] ?? '-').'</div>
         </div>
         <div class="col-6 col-md-4">
-          <div class="text-secondary">Serial Number:</div>
-          <div class="fw-semibold text-dark">'.e($asset['serial_number'] ?? '-').'</div>
+          <div class="text-secondary" style="font-size: 0.72rem;">Serial Number:</div>
+          <div class="fw-semibold text-dark text-truncate">'.e($asset['serial_number'] ?? '-').'</div>
         </div>
         <div class="col-6 col-md-4">
-          <div class="text-secondary">Merk / Model:</div>
-          <div class="fw-semibold text-dark">'.e($asset['merk'] ?? '-').' / '.e($asset['model'] ?? '-').'</div>
+          <div class="text-secondary" style="font-size: 0.72rem;">Merk / Model:</div>
+          <div class="fw-semibold text-dark text-truncate">'.e($asset['merk'] ?? '-').' / '.e($asset['model'] ?? '-').'</div>
         </div>
         <div class="col-6 col-md-4">
-          <div class="text-secondary">Pengguna / Pemilik:</div>
-          <div class="fw-bold text-dark"><i class="bi bi-person-circle text-primary me-1"></i>'.e($asset['karyawan_nama'] ?? '-').'</div>
+          <div class="text-secondary" style="font-size: 0.72rem;">Pengguna / Pemilik:</div>
+          <div class="fw-bold text-dark text-truncate"><i class="bi bi-person-circle text-primary me-1"></i>'.e($asset['karyawan_nama'] ?? '-').'</div>
         </div>
         <div class="col-6 col-md-4">
-          <div class="text-secondary">Divisi:</div>
-          <div class="fw-semibold text-dark">'.e($asset['divisi_nama'] ?? '-').'</div>
+          <div class="text-secondary" style="font-size: 0.72rem;">Divisi:</div>
+          <div class="fw-semibold text-dark text-truncate">'.e($asset['divisi_nama'] ?? '-').'</div>
         </div>
         <div class="col-6 col-md-4">
-          <div class="text-secondary">Cabang / Lokasi:</div>
-          <div class="fw-semibold text-dark">'.e($asset['cabang_nama'] ?? '-').'</div>
+          <div class="text-secondary" style="font-size: 0.72rem;">Cabang / Lokasi:</div>
+          <div class="fw-semibold text-dark text-truncate">'.e($asset['cabang_nama'] ?? '-').'</div>
         </div>
-        <div class="col-12">
-          <div class="text-secondary">Maintenance Terakhir:</div>
-          <div class="fw-semibold text-dark"><i class="bi bi-clock-history me-1 text-secondary"></i>'.e($lastMaintStr).'</div>
+        <div class="col-12 pt-1 border-top mt-2">
+          <div class="text-secondary" style="font-size: 0.72rem;">Maintenance Terakhir:</div>
+          <div class="fw-semibold text-dark"><i class="bi bi-clock-history me-1 text-primary"></i>'.e($lastMaintStr).'</div>
         </div>
       </div>
     </div>

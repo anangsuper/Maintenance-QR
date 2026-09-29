@@ -32,13 +32,13 @@ if ($successData) {
     $body = '
     <div class="row justify-content-center">
       <div class="col-md-8 col-lg-6">
-        <div class="card p-4 p-md-5 border-0 shadow-sm text-center">
+        <div class="card p-3 p-sm-4 p-md-5 border-0 shadow-sm text-center">
           <div class="mb-3">
             <span class="d-inline-flex p-3 rounded-circle bg-success bg-opacity-10 text-success fs-1">
               <i class="bi bi-check2-circle"></i>
             </span>
           </div>
-          <h3 class="fw-bold text-success mb-1">'.$successTitle.'</h3>
+          <h3 class="fw-bold text-success mb-1 fs-4 fs-md-3">'.$successTitle.'</h3>
           <p class="text-secondary small mb-3">'.$successSubtitle.'</p>
 
           '.($isSusulan ? '
@@ -72,7 +72,7 @@ if ($successData) {
           </div>
 
           <div class="d-grid gap-2">
-            <a class="btn btn-primary fw-bold py-3 shadow-sm" href="scan.php?t='.urlencode($token).'">
+            <a class="btn btn-primary fw-bold py-2.5 py-sm-3 shadow-sm" href="scan.php?t='.urlencode($token).'">
               <i class="bi bi-card-checklist me-1"></i> Lihat Kartu Kontrol Perangkat
             </a>
             <a class="btn btn-outline-secondary py-2" href="maintenance_detail.php?id='.((int)$successData['log_id']).'&t='.urlencode($token).'">
@@ -118,13 +118,13 @@ if ($successTindakLanjut) {
     $body = '
     <div class="row justify-content-center">
       <div class="col-md-8 col-lg-6">
-        <div class="card p-4 p-md-5 border-0 shadow-sm text-center">
+        <div class="card p-3 p-sm-4 p-md-5 border-0 shadow-sm text-center">
           <div class="mb-3">
             <span class="d-inline-flex p-3 rounded-circle bg-success bg-opacity-10 text-success fs-1">
               <i class="bi bi-tools"></i>
             </span>
           </div>
-          <h3 class="fw-bold text-success mb-1">Tindak Lanjut Berhasil Disimpan!</h3>
+          <h3 class="fw-bold text-success mb-1 fs-4 fs-md-3">Tindak Lanjut Berhasil Disimpan!</h3>
           <p class="text-secondary small mb-3">Tindakan perbaikan telah dicatat. Status temuan di Dashboard telah diperbarui.</p>
 
           '.$bioSuccessHtml.'

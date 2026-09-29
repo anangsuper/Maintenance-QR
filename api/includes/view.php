@@ -647,6 +647,23 @@ h1, h2, h3, h4, h5, h6,
   }
 }
 
+@media (max-width: 576px) {
+  html, body {
+    overflow-x: clip;
+    max-width: 100%;
+  }
+  .app-content-container {
+    padding: 12px 8px 36px;
+  }
+  .app-topbar, .public-topbar {
+    padding-left: 12px !important;
+    padding-right: 12px !important;
+  }
+  .card {
+    border-radius: var(--radius-md) !important;
+  }
+}
+
 /* Design Tokens & Overrides */
 .tech-label {
   font-size: 0.68rem;
