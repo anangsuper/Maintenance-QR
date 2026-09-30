@@ -477,19 +477,109 @@ if (!empty($recentLogs)) {
 $findingsListHtml = '';
 if (!empty($unresolvedFindings)) {
     foreach (array_slice($unresolvedFindings, 0, 5) as $uf) {
+        // 1. Normalisasi nama perangkat & bersihkan kata berulang (mis: "HP HP All-in-One..." -> "HP All-in-One...", "PC Custom PC DESKTOP" -> "PC Custom Desktop")
+        $rawDevName = !empty($uf['perangkat']) 
+            ? $uf['perangkat'] 
+            : (!empty($uf['nama_perangkat']) 
+                ? $uf['nama_perangkat'] 
+                : trim(($uf['merk'] ?? '') . ' ' . ($uf['model'] ?? '')));
+
+        if ($rawDevName === '') {
+            $rawDevName = 'Perangkat IT';
+        } else {
+            $rawDevName = preg_replace('/\b(PC\s+Custom)\s+PC\s+DESKTOP\b/i', 'PC Custom Desktop', $rawDevName);
+            $rawDevName = preg_replace('/\b(\w+)\s+\1\b/i', '$1', $rawDevName);
+        }
+
+        // 2. Deskripsi Temuan
+        $findingText = '';
+        foreach (['finding', 'findings', 'deskripsi', 'catatan', 'keterangan'] as $fk) {
+            if (!empty($uf[$fk]) && trim((string)$uf[$fk]) !== '' && trim((string)$uf[$fk]) !== '-') {
+                $findingText = trim((string)$uf[$fk]);
+                break;
+            }
+        }
+        if ($findingText === '') {
+            $findingText = 'Kendala perangkat dilaporkan';
+        }
+
+        // 3. Format Tanggal
+        $rawDate = '';
+        foreach (['date', 'created_at', 'maintenance_date', 'reported_at', 'tanggal'] as $dk) {
+            if (!empty($uf[$dk]) && trim((string)$uf[$dk]) !== '' && trim((string)$uf[$dk]) !== '-' && trim((string)$uf[$dk]) !== '0000-00-00') {
+                $rawDate = trim((string)$uf[$dk]);
+                break;
+            }
+        }
+        $dateFormatted = '';
+        if ($rawDate !== '') {
+            $datePart = substr($rawDate, 0, 10);
+            $formatted = format_id_date($datePart);
+            if ($formatted !== '-' && $formatted !== '') {
+                $dateFormatted = $formatted;
+            }
+        }
+
+        // 4. Cabang & Badge Severity
+        $branchName = trim((string)($uf['cabang_nama'] ?? ''));
+        if ($branchName === '' || $branchName === '-') {
+            $branchName = 'Cabang Operasional';
+        }
+
+        $sev = trim((string)($uf['severity'] ?? ''));
+        $sevBadge = '';
+        if (strcasecmp($sev, 'Berat') === 0 || strcasecmp($sev, 'Tinggi') === 0 || strcasecmp($sev, 'Critical') === 0) {
+            $sevBadge = '<span class="badge bg-danger-subtle text-danger border border-danger-subtle rounded-pill px-2 py-0.5" style="font-size: 0.65rem;">Tinggi</span>';
+        } elseif (strcasecmp($sev, 'Sedang') === 0 || strcasecmp($sev, 'Medium') === 0) {
+            $sevBadge = '<span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle rounded-pill px-2 py-0.5" style="font-size: 0.65rem;">Sedang</span>';
+        } elseif (strcasecmp($sev, 'Ringan') === 0 || strcasecmp($sev, 'Low') === 0) {
+            $sevBadge = '<span class="badge bg-info-subtle text-info-emphasis border border-info-subtle rounded-pill px-2 py-0.5" style="font-size: 0.65rem;">Ringan</span>';
+        }
+
+        $detailUrl = !empty($uf['log_id']) 
+            ? module_url('maintenance_detail.php', ['id' => $uf['log_id']]) 
+            : module_url('maintenance_detail.php', ['asset_id' => $uf['asset_id'] ?? 0]);
+
         $findingsListHtml .= '
-        <div class="p-2 mb-2 rounded border border-danger-subtle bg-danger-subtle d-flex align-items-start gap-2">
-          <i class="bi bi-exclamation-triangle-fill text-danger mt-1"></i>
-          <div class="flex-grow-1 min-w-0">
-            <div class="fw-semibold text-danger small text-truncate">'.e($uf['kode_inventaris'] ?? 'Aset').' · '.e(!empty($uf['perangkat']) ? $uf['perangkat'] : (!empty($uf['nama_perangkat']) ? $uf['nama_perangkat'] : 'Perangkat')).'</div>
-            <div class="small text-dark text-truncate">'.e($uf['findings'] ?? 'Kendala perangkat').'</div>
-            <div class="text-muted" style="font-size: 0.7rem;">'.e($uf['cabang_nama'] ?? '-').' · '.e(format_id_date($uf['date'] ?? '')).'</div>
+        <div class="finding-card-item p-3 mb-2.5 rounded-3 bg-white position-relative" style="box-shadow: 0 1px 3px rgba(0,0,0,0.03);">
+          <div class="d-flex align-items-start justify-content-between gap-2 mb-1">
+            <div class="min-w-0">
+              <div class="d-flex align-items-center gap-1.5 flex-wrap">
+                <span class="font-monospace fw-bold text-dark small">'.e($uf['kode_inventaris'] ?? 'Aset').'</span>
+                '.$sevBadge.'
+              </div>
+              <div class="text-secondary small fw-medium text-truncate mt-0.5" title="'.e($rawDevName).'">
+                '.e($rawDevName).'
+              </div>
+            </div>
+            <a href="'.e($detailUrl).'" class="btn btn-sm btn-outline-danger d-inline-flex align-items-center gap-1 py-1 px-2.5 rounded-pill fw-semibold flex-shrink-0" style="font-size: 0.72rem;">
+              <span>Periksa</span>
+              <i class="bi bi-chevron-right" style="font-size: 0.65rem;"></i>
+            </a>
           </div>
-          <a href="'.e(module_url('maintenance_detail.php', ['id' => $uf['log_id'] ?? 0])).'" class="btn btn-sm btn-danger py-0 px-2 fw-semibold" style="font-size: 0.75rem;">Periksa</a>
+
+          <div class="p-2 my-2 rounded bg-danger-subtle bg-opacity-25 border border-danger-subtle text-dark small" style="font-size: 0.8rem; line-height: 1.35;">
+            <div class="d-flex align-items-start gap-1.5">
+              <i class="bi bi-exclamation-triangle-fill text-danger mt-0.5 flex-shrink-0" style="font-size: 0.82rem;"></i>
+              <span class="fw-medium">'.e($findingText).'</span>
+            </div>
+          </div>
+
+          <div class="d-flex align-items-center justify-content-between text-muted flex-wrap gap-1 pt-1" style="font-size: 0.72rem;">
+            <span class="d-inline-flex align-items-center gap-1 text-truncate">
+              <i class="bi bi-geo-alt text-secondary"></i>
+              <span>'.e($branchName).'</span>
+            </span>
+            '.($dateFormatted !== '' ? '
+            <span class="d-inline-flex align-items-center gap-1">
+              <i class="bi bi-calendar3 text-secondary"></i>
+              <span>'.e($dateFormatted).'</span>
+            </span>' : '').'
+          </div>
         </div>';
     }
 } else {
-    $findingsListHtml = '<div class="text-center py-3 text-muted small"><i class="bi bi-check-circle text-success fs-5 d-block mb-1"></i>Tidak ada temuan kendala aktif. Seluruh perangkat beroperasi normal.</div>';
+    $findingsListHtml = '<div class="text-center py-4 text-muted small"><i class="bi bi-check-circle-fill text-success fs-3 d-block mb-2"></i>Tidak ada temuan kendala aktif.<br><span class="text-secondary opacity-75">Seluruh perangkat beroperasi normal.</span></div>';
 }
 
 // =========================================================================
@@ -668,6 +758,17 @@ $head = '
 .activity-time {
   min-width: 45px;
   font-size: 0.72rem;
+}
+.finding-card-item {
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  border: 1px solid #fecaca !important;
+  border-left: 4px solid #dc2626 !important;
+  background: #ffffff;
+}
+.finding-card-item:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 14px rgba(220, 38, 38, 0.08) !important;
+  border-color: #fca5a5 !important;
 }
 .dashboard-main-nav {
   display: flex;
@@ -1526,13 +1627,14 @@ if ($activeTab === 'kartu') {
         <div class="card border shadow-sm bg-white" style="border-radius: 8px;">
           <div class="card-header bg-white border-bottom py-3 px-4 d-flex align-items-center justify-content-between">
             <div>
-              <div class="tech-label">REPAIR & FINDINGS</div>
+              <div class="tech-label text-danger">REPAIR &amp; FINDINGS</div>
               <h2 class="h6 mb-0 fw-semibold text-dark">Temuan Masalah Aktif</h2>
             </div>
-            <span class="badge bg-danger rounded-pill">'.$totalUnresolvedFindings.'</span>
+            <span class="badge bg-danger rounded-pill px-2.5 py-1 fw-bold" style="font-size: 0.75rem;">'.$totalUnresolvedFindings.'</span>
           </div>
           <div class="card-body p-3">
             '.$findingsListHtml.'
+            '.($totalUnresolvedFindings > 5 ? '<div class="pt-2 text-center border-top mt-2"><a href="'.e(module_url('audit.php', ['status'=>'Temuan'])).'" class="btn btn-sm btn-light border w-100 text-secondary fw-semibold" style="font-size: 0.75rem;">Lihat Semua Temuan ('.$totalUnresolvedFindings.') &raquo;</a></div>' : '').'
           </div>
         </div>
       </div>
