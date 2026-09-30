@@ -57,6 +57,50 @@ if ($cabangId > 0 && is_array($cabangs)) {
 $pending = max(0, $total - $done);
 $percent = $total > 0 ? round(($done / $total) * 100) : 0;
 
+// Hitung rincian tipe unit (Komputer / PC vs Laptop)
+$countLaptop = 0;
+$countPC = 0;
+$countOther = 0;
+$countedAssets = [];
+
+foreach (array_merge($historyRows, $pendingRows) as $r) {
+    $assetKey = !empty($r['asset_id']) ? 'id_'.$r['asset_id'] : (!empty($r['id']) ? 'id_'.$r['id'] : (!empty($r['kode_inventaris']) ? 'kode_'.$r['kode_inventaris'] : null));
+    if ($assetKey && isset($countedAssets[$assetKey])) {
+        continue;
+    }
+    if ($assetKey) {
+        $countedAssets[$assetKey] = true;
+    }
+
+    $haystack = strtolower(
+        ($r['kategori_nama'] ?? '') . ' ' .
+        ($r['merk'] ?? '') . ' ' .
+        ($r['model'] ?? '') . ' ' .
+        ($r['perangkat'] ?? '') . ' ' .
+        ($r['kode_inventaris'] ?? '')
+    );
+
+    if (str_contains($haystack, 'laptop') || str_contains($haystack, 'notebook') || str_contains($haystack, 'vivobook') || str_contains($haystack, 'ideapad') || str_contains($haystack, 'thinkpad')) {
+        $countLaptop++;
+    } elseif (str_contains($haystack, 'printer')) {
+        $countOther++;
+    } else {
+        $countPC++;
+    }
+}
+
+$deviceBreakdownParts = [];
+if ($countPC > 0) $deviceBreakdownParts[] = 'PC: ' . $countPC;
+if ($countLaptop > 0) $deviceBreakdownParts[] = 'Laptop: ' . $countLaptop;
+if ($countOther > 0) $deviceBreakdownParts[] = 'Lainnya: ' . $countOther;
+
+$breakdownHtml = '';
+$breakdownPrint = '';
+if (!empty($deviceBreakdownParts) && ($countLaptop > 0 || $countPC > 0)) {
+    $breakdownHtml = '<div class="small text-muted mt-1" style="font-size: 0.72rem;">' . implode(' &bull; ', $deviceBreakdownParts) . '</div>';
+    $breakdownPrint = ' (' . implode(', ', $deviceBreakdownParts) . ')';
+}
+
 // Mapping Map Temuan per Asset ID
 $findingMap = [];
 foreach ($findingsRows as $f) {
@@ -573,8 +617,9 @@ $body .= '</select>
     <div class="row g-3 mb-4 screen-only">
       <div class="col-6 col-md-3">
         <div class="card p-3 border-0 bg-light">
-          <div class="small text-muted fw-bold">TOTAL KOMPUTER / ASET</div>
+          <div class="small text-muted fw-bold">TOTAL KOMPUTER &amp; LAPTOP</div>
           <div class="fs-2 fw-bold text-dark mt-1">'.$total.'</div>
+          '.$breakdownHtml.'
         </div>
       </div>
       <div class="col-6 col-md-3">
@@ -599,7 +644,7 @@ $body .= '</select>
 
     <!-- TAMPILAN CETAK: 1 Baris Ringkasan Kompak (Print Only) -->
     <div class="summary-strip print-only">
-      <div><span>Total Komputer:</span> <span class="val">'.$total.'</span></div>
+      <div><span>Total Komputer &amp; Laptop:</span> <span class="val">'.$total.$breakdownPrint.'</span></div>
       <div><span>Sudah Maintenance:</span> <span class="val text-success">'.$done.' ('.$percent.'%)</span></div>
       <div><span>Belum Maintenance:</span> <span class="val text-warning">'.$pending.'</span></div>
       <div><span>Temuan Kerusakan:</span> <span class="val text-danger">'.$findingsCount.'</span></div>

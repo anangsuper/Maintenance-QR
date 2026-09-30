@@ -177,7 +177,7 @@ $body = '
   <div>
     <div class="tech-label mb-1">MONITORING</div>
     <h1 class="h3 mb-1">Riwayat Maintenance Bulanan</h1>
-    <div class="text-secondary small">Ringkasan progress pemeliharaan komputer 12 bulan tahun <strong>'.$year.'</strong>. Target unit terkunci otomatis per cut-off akhir bulan sesuai inventaris aktif pada periode bersangkutan.</div>
+    <div class="text-secondary small">Ringkasan progress pemeliharaan komputer &amp; laptop 12 bulan tahun <strong>'.$year.'</strong>. Target unit terkunci otomatis per cut-off akhir bulan sesuai inventaris aktif pada periode bersangkutan.</div>
   </div>
   <div class="d-flex flex-wrap gap-2 align-items-center">
     <a href="'.e(module_url('monthly_history.php', ['tahun' => $year, 'cabang' => $cabangId, 'refresh' => 1])).'" 

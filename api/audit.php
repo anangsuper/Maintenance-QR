@@ -351,7 +351,7 @@ $body .= '
   <div class="card-header bg-white py-3 px-4 d-flex justify-content-between align-items-center">
     <div>
       <h2 class="h6 mb-0 fw-semibold text-dark"><i class="bi bi-list-check text-primary me-2"></i>Daftar Pemeriksaan Perangkat</h2>
-      <div class="text-secondary small">Total '.count($rows).' unit komputer tercatat dalam log audit</div>
+      <div class="text-secondary small">Total '.count($rows).' unit komputer &amp; laptop tercatat dalam log audit</div>
     </div>
   </div>
   <div class="table-responsive">

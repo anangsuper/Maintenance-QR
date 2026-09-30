@@ -1084,7 +1084,7 @@ $body .= '
   <div class="col-6 col-md-4 col-xl-2">
     <div class="card card-metric h-100" style="border-left-color: var(--blue-corporate);">
       <div class="metric-value">'.$totalAll.'</div>
-      <div class="metric-label">Aset Komputer</div>
+      <div class="metric-label">Komputer &amp; Laptop</div>
       <div class="small text-muted mt-2" style="font-size: 0.72rem;">Unit terdaftar</div>
     </div>
   </div>
