@@ -411,16 +411,16 @@ foreach ($branchSummaries as $bs) {
             : '<span class="badge-chip chip-warning">'.$bPercent.'%</span>');
 
     $branchRowsHtml .= '
-    <tr class="'.($isCurrent ? 'table-active' : '').'">
+    <tr class="'.($isCurrent ? 'table-active' : '').'" id="branchRow_'.$bId.'" data-branch-id="'.$bId.'">
       <td>
         <div class="fw-semibold text-dark">'.e($bName).'</div>
         <div class="small text-muted">ID: #'.$bId.'</div>
       </td>
-      <td class="text-center fw-semibold">'.$bTotal.'</td>
-      <td class="text-center text-success fw-semibold">'.$bDone.'</td>
-      <td class="text-center text-secondary">'.$bPending.'</td>
-      <td class="text-center">'.($bFindings > 0 ? '<span class="text-danger fw-bold">'.$bFindings.'</span>' : '<span class="text-muted">0</span>').'</td>
-      <td class="text-center">'.$complianceBadge.'</td>
+      <td class="text-center fw-semibold" id="branchTotal_'.$bId.'">'.$bTotal.'</td>
+      <td class="text-center text-success fw-semibold" id="branchDone_'.$bId.'">'.$bDone.'</td>
+      <td class="text-center text-secondary" id="branchPending_'.$bId.'">'.$bPending.'</td>
+      <td class="text-center" id="branchFindings_'.$bId.'">'.($bFindings > 0 ? '<span class="text-danger fw-bold">'.$bFindings.'</span>' : '<span class="text-muted">0</span>').'</td>
+      <td class="text-center" id="branchCompliance_'.$bId.'">'.$complianceBadge.'</td>
       <td class="text-end text-nowrap">
         <div class="btn-group btn-group-sm">
           <a class="btn btn-sm btn-light border" href="'.e(module_url('dashboard.php', ['bulan'=>$month,'tahun'=>$year,'cabang'=>$bId])).'" title="Filter Dashboard Cabang Ini"><i class="bi bi-funnel"></i></a>
@@ -1059,6 +1059,10 @@ $body = '
       <span class="status-dot operational"></span>
       <span>Operasional Normal</span>
     </div>
+    <div id="wsStatusBadge" class="ops-header-badge" style="background:#ECFDF3; border:1px solid #A6F4C5; color:#16803C; cursor: pointer;" title="Status Koneksi Real-Time WebSocket">
+      <span id="wsStatusDot" class="status-dot operational"></span>
+      <span id="wsStatusText"><i class="bi bi-broadcast me-1"></i>WebSocket Live</span>
+    </div>
     <form method="get" class="d-flex align-items-center gap-2">
       <select name="bulan" class="form-select form-select-sm" style="width: 120px;" onchange="this.form.submit()">';
 for ($m = 1; $m <= 12; $m++) {
@@ -1083,7 +1087,7 @@ $body .= '
 <div class="row g-3 mb-4">
   <div class="col-6 col-md-4 col-xl-2">
     <div class="card card-metric h-100" style="border-left-color: var(--blue-corporate);">
-      <div class="metric-value">'.$totalAll.'</div>
+      <div class="metric-value" id="kpiTotalAll">'.$totalAll.'</div>
       <div class="metric-label">Komputer &amp; Laptop</div>
       <div class="small text-muted mt-2" style="font-size: 0.72rem;">Unit terdaftar</div>
     </div>
@@ -1091,15 +1095,15 @@ $body .= '
 
   <div class="col-6 col-md-4 col-xl-2">
     <div class="card card-metric h-100" style="border-left-color: #16803C;">
-      <div class="metric-value text-success">'.$totalDone.'</div>
+      <div class="metric-value text-success" id="kpiTotalDone">'.$totalDone.'</div>
       <div class="metric-label">Selesai Diperiksa</div>
-      <div class="small text-success mt-2" style="font-size: 0.72rem;"><i class="bi bi-check-circle me-1"></i>'.$percentDone.'% kepatuhan</div>
+      <div class="small text-success mt-2" style="font-size: 0.72rem;"><i class="bi bi-check-circle me-1"></i><span id="kpiPercentDoneText">'.$percentDone.'%</span> kepatuhan</div>
     </div>
   </div>
 
   <div class="col-6 col-md-4 col-xl-2">
     <div class="card card-metric h-100" style="border-left-color: #B54708;">
-      <div class="metric-value text-warning">'.$totalDue.'</div>
+      <div class="metric-value text-warning" id="kpiTotalDue">'.$totalDue.'</div>
       <div class="metric-label">Belum Maintenance</div>
       <div class="small text-secondary mt-2" style="font-size: 0.72rem;">Menunggu giliran</div>
     </div>
@@ -1107,7 +1111,7 @@ $body .= '
 
   <div class="col-6 col-md-4 col-xl-2">
     <div class="card card-metric h-100" style="border-left-color: #B42318;">
-      <div class="metric-value text-danger">'.$totalUnresolvedFindings.'</div>
+      <div class="metric-value text-danger" id="kpiTotalFindings">'.$totalUnresolvedFindings.'</div>
       <div class="metric-label">Temuan Kendala</div>
       <div class="small text-danger mt-2" style="font-size: 0.72rem;">Perlu perbaikan</div>
     </div>
@@ -1115,7 +1119,7 @@ $body .= '
 
   <div class="col-6 col-md-4 col-xl-2">
     <div class="card card-metric h-100" style="border-left-color: #2E7CF6;">
-      <div class="metric-value text-primary">'.($totalAll - $totalBroken).'</div>
+      <div class="metric-value text-primary" id="kpiTotalActive">'.($totalAll - $totalBroken).'</div>
       <div class="metric-label">Perangkat Aktif</div>
       <div class="small text-secondary mt-2" style="font-size: 0.72rem;">Siap pakai</div>
     </div>
@@ -1447,7 +1451,7 @@ if ($activeTab === 'kartu') {
             <a href="'.e(module_url('audit.php')).'" class="btn btn-sm btn-light border">Lihat Semua Log</a>
           </div>
           <div class="card-body p-3 p-md-4">
-            <div class="activity-stream">
+            <div class="activity-stream" id="liveActivityStream">
               '.$activityStreamHtml.'
             </div>
           </div>
@@ -1464,16 +1468,16 @@ if ($activeTab === 'kartu') {
           </div>
           <div class="card-body p-4">
             <div class="d-flex align-items-baseline justify-content-between mb-2">
-              <span class="display-6 fw-bold text-dark">'.$percentDone.'%</span>
-              <span class="small text-secondary fw-semibold">'.$totalDone.' dari '.$totalActive.' unit</span>
+              <span class="display-6 fw-bold text-dark" id="panelPercentDone">'.$percentDone.'%</span>
+              <span class="small text-secondary fw-semibold"><span id="panelTotalDoneSide">'.$totalDone.'</span> dari <span id="panelTotalActiveSide">'.$totalActive.'</span> unit</span>
             </div>
             <div class="progress mb-3" style="height: 8px;">
-              <div class="progress-bar '.($percentDone >= 80 ? 'bg-success' : ($percentDone >= 50 ? 'bg-primary' : 'bg-warning')).'" style="width: '.$percentDone.'%;"></div>
+              <div id="panelProgressBar" class="progress-bar '.($percentDone >= 80 ? 'bg-success' : ($percentDone >= 50 ? 'bg-primary' : 'bg-warning')).'" style="width: '.$percentDone.'%;"></div>
             </div>
             <div class="d-flex justify-content-between small text-secondary pt-1 border-top">
-              <span><span class="status-dot operational me-1"></span> Selesai: <strong>'.$totalDone.'</strong></span>
-              <span><span class="status-dot warning me-1"></span> Belum: <strong>'.$totalDue.'</strong></span>
-              <span><span class="status-dot critical me-1"></span> Temuan: <strong>'.$totalUnresolvedFindings.'</strong></span>
+              <span><span class="status-dot operational me-1"></span> Selesai: <strong id="panelTotalDoneFoot">'.$totalDone.'</strong></span>
+              <span><span class="status-dot warning me-1"></span> Belum: <strong id="panelTotalDueFoot">'.$totalDue.'</strong></span>
+              <span><span class="status-dot critical me-1"></span> Temuan: <strong id="panelTotalFindingsFoot">'.$totalUnresolvedFindings.'</strong></span>
             </div>
           </div>
         </div>
@@ -2086,6 +2090,16 @@ function openCardPreviewModal(card) {
   const modal = new bootstrap.Modal(document.getElementById("previewCardModal"));
   modal.show();
 }
-</script>';
+</script>
+<script>
+window.REALTIME_CONFIG = {
+  month: ' . (int)$month . ',
+  year: ' . (int)$year . ',
+  cabang: ' . (int)$cabangId . ',
+  wsPort: ' . (int)(getenv('WS_PORT') ?: 8080) . ',
+  initialEventId: ' . (int)(microtime(true) * 1000) . '
+};
+</script>
+<script src="realtime_dashboard.js"></script>';
 
 render_page('Dashboard IT Operations', $body, $head, $extraScript);

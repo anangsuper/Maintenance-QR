@@ -1,4 +1,6 @@
 <?php
+require_once __DIR__ . '/../helpers/websocket_broadcaster.php';
+
 function get_fixed_checklists(): array {
     return [
         1 => 'Scan Virus',
@@ -542,6 +544,23 @@ function resolve_asset_finding(int $assetId, array $data): array {
         }
     }
 
+    $assetData = get_asset_by_id($assetId);
+    broadcast_dashboard_change('finding_resolved', [
+        'action' => 'finding_resolved',
+        'log_id' => $logId,
+        'finding_id' => $findingId,
+        'asset_id' => $assetId,
+        'kode_inventaris' => $assetData['kode_inventaris'] ?? ('INV-IT-' . $assetId),
+        'perangkat' => trim(($assetData['merk'] ?? '') . ' ' . ($assetData['model'] ?? '')),
+        'cabang_id' => (int)($assetData['id_cabang'] ?? 0),
+        'cabang_nama' => $assetData['cabang_nama'] ?? 'Cabang',
+        'status' => $status,
+        'technician_name' => $techName,
+        'action_taken' => $actionTaken,
+        'date' => $date,
+        'time' => $time
+    ]);
+
     return ['success' => true, 'log_id' => $logId, 'status' => $status];
 }
 
@@ -657,6 +676,21 @@ function update_finding_progress(int $findingId, int $scanId, int $assetId, stri
             $client->clearCache('Maintenance_Scan');
             $client->clearCache();
 
+            $assetData = get_asset_by_id($assetId);
+            broadcast_dashboard_change('finding_updated', [
+                'action' => 'finding_updated',
+                'finding_id' => $findingId,
+                'scan_id' => $scanId,
+                'asset_id' => $assetId,
+                'kode_inventaris' => $assetData['kode_inventaris'] ?? ('INV-IT-' . $assetId),
+                'perangkat' => trim(($assetData['merk'] ?? '') . ' ' . ($assetData['model'] ?? '')),
+                'cabang_id' => (int)($assetData['id_cabang'] ?? 0),
+                'cabang_nama' => $assetData['cabang_nama'] ?? 'Cabang',
+                'status' => $finalStatus,
+                'technician_name' => $techName,
+                'notes' => $notes
+            ]);
+
             return ['success' => true];
         } catch (Throwable $e) {
             return ['success' => false, 'error' => $e->getMessage()];
@@ -679,6 +713,22 @@ function update_finding_progress(int $findingId, int $scanId, int $assetId, stri
                 ");
                 $stScan->execute([$scanStatus, $formattedLog, $scanId]);
             }
+
+            $assetData = get_asset_by_id($assetId);
+            broadcast_dashboard_change('finding_updated', [
+                'action' => 'finding_updated',
+                'finding_id' => $findingId,
+                'scan_id' => $scanId,
+                'asset_id' => $assetId,
+                'kode_inventaris' => $assetData['kode_inventaris'] ?? ('INV-IT-' . $assetId),
+                'perangkat' => trim(($assetData['merk'] ?? '') . ' ' . ($assetData['model'] ?? '')),
+                'cabang_id' => (int)($assetData['id_cabang'] ?? 0),
+                'cabang_nama' => $assetData['cabang_nama'] ?? 'Cabang',
+                'status' => $finalStatus,
+                'technician_name' => $techName,
+                'notes' => $notes
+            ]);
+
             return ['success' => true];
         } catch (Throwable $e) {
             return ['success' => false, 'error' => $e->getMessage()];
@@ -1169,6 +1219,25 @@ function save_maintenance_record(array $data): array {
             ];
         }
 
+        $assetData = get_asset_by_id($assetId);
+        broadcast_dashboard_change('status_change', [
+            'action' => 'scan_saved',
+            'log_id' => $activeScanId,
+            'asset_id' => $assetId,
+            'kode_inventaris' => $assetData['kode_inventaris'] ?? ('INV-IT-' . $assetId),
+            'perangkat' => trim(($assetData['merk'] ?? '') . ' ' . ($assetData['model'] ?? '')),
+            'cabang_id' => (int)($assetData['id_cabang'] ?? 0),
+            'cabang_nama' => $assetData['cabang_nama'] ?? 'Cabang',
+            'status' => $status,
+            'technician_name' => $techName,
+            'maintenance_date' => $date,
+            'maintenance_time' => $time,
+            'maintenance_month' => $month,
+            'maintenance_year' => $year,
+            'findings' => $findings,
+            'recommendation' => $recommendation
+        ]);
+
         return ['success' => true, 'log_id' => $activeScanId];
     }
 
@@ -1300,6 +1369,25 @@ function save_maintenance_record(array $data): array {
                 $stIns->execute([$logId, $assetId, $findings, $recommendation, $fStatus, $techName]);
             } catch (Throwable $e) {}
         }
+
+        $assetData = get_asset_by_id($assetId);
+        broadcast_dashboard_change('status_change', [
+            'action' => 'scan_saved',
+            'log_id' => $logId,
+            'asset_id' => $assetId,
+            'kode_inventaris' => $assetData['kode_inventaris'] ?? ('INV-IT-' . $assetId),
+            'perangkat' => trim(($assetData['merk'] ?? '') . ' ' . ($assetData['model'] ?? '')),
+            'cabang_id' => (int)($assetData['id_cabang'] ?? 0),
+            'cabang_nama' => $assetData['cabang_nama'] ?? 'Cabang',
+            'status' => $status,
+            'technician_name' => $techName,
+            'maintenance_date' => $date,
+            'maintenance_time' => $time,
+            'maintenance_month' => $month,
+            'maintenance_year' => $year,
+            'findings' => $findings,
+            'recommendation' => $recommendation
+        ]);
 
         return ['success' => true, 'log_id' => $logId];
     } catch (Throwable $e) {
@@ -1617,6 +1705,24 @@ function update_maintenance_detail(int $logId, array $data): array {
         }
 
         $client->clearCache();
+        $assetData = get_asset_by_id($assetId);
+        broadcast_dashboard_change('status_change', [
+            'action' => 'scan_updated',
+            'log_id' => $logId,
+            'asset_id' => $assetId,
+            'kode_inventaris' => $assetData['kode_inventaris'] ?? ('INV-IT-' . $assetId),
+            'perangkat' => trim(($assetData['merk'] ?? '') . ' ' . ($assetData['model'] ?? '')),
+            'cabang_id' => (int)($assetData['id_cabang'] ?? 0),
+            'cabang_nama' => $assetData['cabang_nama'] ?? 'Cabang',
+            'status' => $status,
+            'technician_name' => $newTechName ?: ($targetScan['technician_name'] ?? 'Teknisi'),
+            'maintenance_date' => $newDate ?: date('Y-m-d'),
+            'maintenance_time' => $newTime ?: date('H:i:s'),
+            'maintenance_month' => (int)date('n', strtotime($newDate ?: date('Y-m-d'))),
+            'maintenance_year' => (int)date('Y', strtotime($newDate ?: date('Y-m-d'))),
+            'findings' => $findings,
+            'recommendation' => $recommendation
+        ]);
         return ['success' => true];
     }
 
@@ -1712,6 +1818,25 @@ function update_maintenance_detail(int $logId, array $data): array {
             } catch (Throwable $e) {}
         }
 
+        $assetData = get_asset_by_id($assetId);
+        broadcast_dashboard_change('status_change', [
+            'action' => 'scan_updated',
+            'log_id' => $logId,
+            'asset_id' => $assetId,
+            'kode_inventaris' => $assetData['kode_inventaris'] ?? ('INV-IT-' . $assetId),
+            'perangkat' => trim(($assetData['merk'] ?? '') . ' ' . ($assetData['model'] ?? '')),
+            'cabang_id' => (int)($assetData['id_cabang'] ?? 0),
+            'cabang_nama' => $assetData['cabang_nama'] ?? 'Cabang',
+            'status' => $status,
+            'technician_name' => $newTechName ?: 'Teknisi',
+            'maintenance_date' => $newDate ?: date('Y-m-d'),
+            'maintenance_time' => $newTime ?: date('H:i:s'),
+            'maintenance_month' => (int)date('n', strtotime($newDate ?: date('Y-m-d'))),
+            'maintenance_year' => (int)date('Y', strtotime($newDate ?: date('Y-m-d'))),
+            'findings' => $findings,
+            'recommendation' => $recommendation
+        ]);
+
         return ['success' => true];
     } catch (Throwable $e) {
         $msg = $e->getMessage();
@@ -1788,6 +1913,27 @@ function record_finding_issue(int $logId, int $assetId, string $finding, string 
                 break;
             }
         }
+        $assetData = get_asset_by_id($assetId);
+        broadcast_dashboard_change('finding_reported', [
+            'action' => 'finding_reported',
+            'log_id' => $logId,
+            'finding_id' => $newId,
+            'asset_id' => $assetId,
+            'kode_inventaris' => $assetData['kode_inventaris'] ?? ('INV-IT-' . $assetId),
+            'perangkat' => trim(($assetData['merk'] ?? '') . ' ' . ($assetData['model'] ?? '')),
+            'cabang_id' => (int)($assetData['id_cabang'] ?? 0),
+            'cabang_nama' => $assetData['cabang_nama'] ?? 'Cabang',
+            'status' => 'Temuan',
+            'technician_name' => $reporter,
+            'findings' => $finding,
+            'action_taken' => $action,
+            'severity' => $severity,
+            'maintenance_date' => date('Y-m-d'),
+            'maintenance_time' => date('H:i:s'),
+            'maintenance_month' => (int)date('n'),
+            'maintenance_year' => (int)date('Y')
+        ]);
+
         return ['success' => true, 'finding_id' => $newId];
     }
     db()->beginTransaction();
@@ -1803,6 +1949,27 @@ function record_finding_issue(int $logId, int $assetId, string $finding, string 
         $up->execute([$logId]);
 
         db()->commit();
+
+        $assetData = get_asset_by_id($assetId);
+        broadcast_dashboard_change('finding_reported', [
+            'action' => 'finding_reported',
+            'log_id' => $logId,
+            'asset_id' => $assetId,
+            'kode_inventaris' => $assetData['kode_inventaris'] ?? ('INV-IT-' . $assetId),
+            'perangkat' => trim(($assetData['merk'] ?? '') . ' ' . ($assetData['model'] ?? '')),
+            'cabang_id' => (int)($assetData['id_cabang'] ?? 0),
+            'cabang_nama' => $assetData['cabang_nama'] ?? 'Cabang',
+            'status' => 'Temuan',
+            'technician_name' => $reporter,
+            'findings' => $finding,
+            'action_taken' => $action,
+            'severity' => $severity,
+            'maintenance_date' => date('Y-m-d'),
+            'maintenance_time' => date('H:i:s'),
+            'maintenance_month' => (int)date('n'),
+            'maintenance_year' => (int)date('Y')
+        ]);
+
         return ['success' => true];
     } catch (Throwable $e) {
         db()->rollBack();

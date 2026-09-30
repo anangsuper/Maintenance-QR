@@ -284,6 +284,15 @@ Aplikasi dapat dijalankan secara *serverless* tanpa database MySQL menggunakan G
    ```
 4. Buka di browser: `http://localhost/Maintenance-QR/api/`.
 
+5. **Menjalankan WebSocket Server Real-Time (Opsional tapi Direkomendasikan)**:
+   Aplikasi dilengkapi WebSocket Server Native (RFC 6455) tanpa dependensi eksternal, memungkinkan dashboard memperbarui status secara instan tanpa perlu reload:
+   - **Di Windows**: Cukup double-click file `run_websocket_server.bat` di root direktori proyek.
+   - **Atau via Terminal**:
+     ```bash
+     php websocket_server.php 8080
+     ```
+   *Catatan:* Jika server WebSocket tidak dijalankan, dashboard akan otomatis beralih ke mode **Auto-Sync Fallback** secara transparan.
+
 ---
 
 ## 🔑 Akun Default Awal
