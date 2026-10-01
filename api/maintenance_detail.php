@@ -957,20 +957,19 @@ if ($isLoggedIn) {
 <!-- Modal Edit Checklist & Data Maintenance -->
 <div class="modal fade" id="editChecklistModal" tabindex="-1" aria-labelledby="editChecklistModalLabel" aria-hidden="true">
   <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
-    <div class="modal-content border-0 shadow">
-      <form method="post">
-        <input type="hidden" name="_csrf" value="'.e(csrf_token()).'">
-        <input type="hidden" name="action" value="update_detail">
+    <form method="post" class="modal-content border-0 shadow">
+      <input type="hidden" name="_csrf" value="'.e(csrf_token()).'">
+      <input type="hidden" name="action" value="update_detail">
 
-        <div class="modal-header bg-white py-3 px-3 px-md-4" style="border-bottom: 1px solid var(--app-border);">
-          <div>
-            <div class="text-uppercase small fw-bold text-warning" style="font-size: 0.72rem; letter-spacing: 0.06em;">MODIFIKASI HASIL AUDIT</div>
-            <h5 class="modal-title fw-bold text-dark mb-0 fs-6 fs-md-5" id="editChecklistModalLabel"><i class="bi bi-pencil-square text-warning me-2"></i>Perbarui Data Maintenance & Checklist #'.$id.'</h5>
-          </div>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      <div class="modal-header bg-white py-3 px-3 px-md-4" style="border-bottom: 1px solid var(--app-border);">
+        <div>
+          <div class="text-uppercase small fw-bold text-warning" style="font-size: 0.72rem; letter-spacing: 0.06em;">MODIFIKASI HASIL AUDIT</div>
+          <h5 class="modal-title fw-bold text-dark mb-0 fs-6 fs-md-5" id="editChecklistModalLabel"><i class="bi bi-pencil-square text-warning me-2"></i>Perbarui Data Maintenance & Checklist #'.$id.'</h5>
         </div>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
 
-        <div class="modal-body p-3 p-md-4">
+      <div class="modal-body p-3 p-md-4" style="overflow-y: auto; -webkit-overflow-scrolling: touch;">
           <!-- 1. Edit Tanggal & Petugas Pelaksana -->
           <div class="p-3 bg-light rounded-3 border mb-3 mb-md-4" style="border-color: var(--app-border) !important;">
             <div class="fw-bold text-dark text-uppercase small mb-2" style="font-size: 0.75rem; letter-spacing: 0.04em;">
@@ -1028,7 +1027,6 @@ if ($isLoggedIn) {
           <button type="submit" class="btn btn-primary fw-bold px-4 w-100 w-sm-auto"><i class="bi bi-save me-1"></i> Simpan Perubahan</button>
         </div>
       </form>
-    </div>
   </div>
 </div>';
 }
