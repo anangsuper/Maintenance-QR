@@ -2138,14 +2138,22 @@ function get_findings_report(int $month, int $year, int $cabangId): array {
             LEFT JOIN divisi d ON d.id = a.id_divisi
             LEFT JOIN karyawan k ON k.id = a.id_karyawan
             LEFT JOIN users u ON u.id = ms.technician_user_id
-            WHERE ms.maintenance_month = ? AND ms.maintenance_year = ?
         ";
-        $params = [$month, $year];
+        $whereMf = ["1=1"];
+        $params = [];
+        if ($month > 0) {
+            $whereMf[] = "ms.maintenance_month = ?";
+            $params[] = $month;
+        }
+        if ($year > 0) {
+            $whereMf[] = "ms.maintenance_year = ?";
+            $params[] = $year;
+        }
         if ($cabangId > 0) {
-            $sql .= " AND a.id_cabang = ? ";
+            $whereMf[] = "a.id_cabang = ?";
             $params[] = $cabangId;
         }
-        $sql .= " ORDER BY mf.id DESC";
+        $sql .= " WHERE " . implode(" AND ", $whereMf) . " ORDER BY mf.id DESC";
         $st = db()->prepare($sql);
         $st->execute($params);
         $rows = $st->fetchAll();
@@ -2214,14 +2222,24 @@ function get_findings_report(int $month, int $year, int $cabangId): array {
             LEFT JOIN divisi d ON d.id = a.id_divisi
             LEFT JOIN karyawan k ON k.id = a.id_karyawan
             LEFT JOIN users u ON u.id = ms.technician_user_id
-            WHERE ms.maintenance_month = ? AND ms.maintenance_year = ?
-              AND (ms.status IN ('Temuan', 'Perlu Perbaikan', 'Proses') OR (ms.findings IS NOT NULL AND ms.findings != '' AND ms.findings != '-'))
         ";
-        $pScan = [$month, $year];
+        $whereScan = [
+            "(ms.status IN ('Temuan', 'Perlu Perbaikan', 'Proses') OR (ms.findings IS NOT NULL AND ms.findings != '' AND ms.findings != '-'))"
+        ];
+        $pScan = [];
+        if ($month > 0) {
+            $whereScan[] = "ms.maintenance_month = ?";
+            $pScan[] = $month;
+        }
+        if ($year > 0) {
+            $whereScan[] = "ms.maintenance_year = ?";
+            $pScan[] = $year;
+        }
         if ($cabangId > 0) {
-            $sqlScan .= " AND a.id_cabang = ? ";
+            $whereScan[] = "a.id_cabang = ?";
             $pScan[] = $cabangId;
         }
+        $sqlScan .= " WHERE " . implode(" AND ", $whereScan) . " ORDER BY ms.id DESC";
         $stScan = db()->prepare($sqlScan);
         $stScan->execute($pScan);
         $scanRows = $stScan->fetchAll();

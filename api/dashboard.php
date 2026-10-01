@@ -1490,9 +1490,88 @@ if ($activeTab === 'kartu') {
     $statusTemuanFilter = trim((string)($_GET['status_temuan'] ?? 'all'));
     $tingkatTemuanFilter = trim((string)($_GET['tingkat_temuan'] ?? 'all'));
     $qTemuan = trim((string)($_GET['q_temuan'] ?? ''));
+    $bulanTemuan = isset($_GET['bulan_temuan']) ? (int)$_GET['bulan_temuan'] : 0;
+    $tahunTemuan = isset($_GET['tahun_temuan']) ? (int)$_GET['tahun_temuan'] : 0;
 
-    // Ambil seluruh data temuan
-    $allFindingsRaw = get_findings_report($month, $year, $cabangId);
+    // Ambil data temuan dari tabel/sheet Maintenance_Findings & Maintenance_Scan
+    $allFindingsRaw = get_findings_report($bulanTemuan, $tahunTemuan, $cabangId);
+
+    // KONSOLIDASI DENGAN ACTIVE FINDINGS DARI DASHBOARD
+    // Menjamin bahwa temuan kendala aktif yang dihitung pada kartu KPI Dashboard pasti tampil di sini
+    $existingKeys = [];
+    foreach ($allFindingsRaw as $item) {
+        $aid = (int)($item['asset_id'] ?? 0);
+        $sid = (int)($item['scan_id'] ?? 0);
+        if ($aid > 0 && $sid > 0) {
+            $existingKeys["{$aid}_{$sid}"] = true;
+        }
+        if ($aid > 0) {
+            $existingKeys["asset_{$aid}"] = true;
+        }
+    }
+
+    if (!empty($unresolvedFindings)) {
+        foreach ($unresolvedFindings as $uf) {
+            $aid = (int)($uf['asset_id'] ?? 0);
+            $sid = (int)($uf['log_id'] ?? $uf['id'] ?? 0);
+            if ($aid > 0 && isset($existingKeys["{$aid}_{$sid}"])) {
+                continue;
+            }
+
+            $devName = !empty($uf['perangkat']) 
+                ? $uf['perangkat'] 
+                : (!empty($uf['nama_perangkat']) 
+                    ? $uf['nama_perangkat'] 
+                    : trim(($uf['merk'] ?? '') . ' ' . ($uf['model'] ?? '')));
+            if ($devName === '') $devName = 'Perangkat IT';
+
+            $fText = '';
+            foreach (['finding', 'findings', 'deskripsi', 'catatan', 'keterangan'] as $fk) {
+                if (!empty($uf[$fk]) && trim((string)$uf[$fk]) !== '' && trim((string)$uf[$fk]) !== '-') {
+                    $fText = trim((string)$uf[$fk]);
+                    break;
+                }
+            }
+            if ($fText === '') $fText = 'Kendala perangkat dilaporkan';
+
+            $fDate = '';
+            foreach (['date', 'created_at', 'maintenance_date', 'reported_at', 'tanggal'] as $dk) {
+                if (!empty($uf[$dk]) && trim((string)$uf[$dk]) !== '' && trim((string)$uf[$dk]) !== '-') {
+                    $fDate = trim((string)$uf[$dk]);
+                    break;
+                }
+            }
+
+            $rawStUf = strtolower(trim((string)($uf['status'] ?? '')));
+            $ufRepSt = (in_array($rawStUf, ['proses', 'in progress', 'sedang perbaikan', 'dalam proses'], true)) ? 'In Progress' : 'Perlu Perbaikan';
+
+            $allFindingsRaw[] = [
+                'id' => $sid,
+                'finding_id' => 0,
+                'scan_id' => $sid,
+                'asset_id' => $aid,
+                'token' => (string)($uf['token'] ?? ''),
+                'kode_inventaris' => (string)($uf['kode_inventaris'] ?? '-'),
+                'merk_model' => $devName,
+                'karyawan_nama' => (string)($uf['karyawan_nama'] ?? $uf['pengguna'] ?? '-'),
+                'cabang_nama' => (string)($uf['cabang_nama'] ?? '-'),
+                'divisi_nama' => (string)($uf['divisi_nama'] ?? '-'),
+                'finding' => $fText,
+                'action_taken' => (string)($uf['action_taken'] ?? $uf['recommendation'] ?? '-'),
+                'proses_perbaikan' => (string)($uf['proses_perbaikan'] ?? ''),
+                'catatan_penyelesaian' => (string)($uf['catatan_penyelesaian'] ?? ''),
+                'severity' => (string)($uf['severity'] ?? 'Sedang'),
+                'repair_status' => $ufRepSt,
+                'teknisi' => (string)($uf['reporter'] ?? $uf['technician_name'] ?? 'Teknisi'),
+                'reported_by' => (string)($uf['reporter'] ?? $uf['technician_name'] ?? 'Teknisi'),
+                'reported_at' => $fDate,
+                'resolved_by' => '',
+                'resolved_at' => '',
+                'created_at' => $fDate
+            ];
+            $existingKeys["{$aid}_{$sid}"] = true;
+        }
+    }
 
     // Hitung statistik
     $countTotalTemuan = count($allFindingsRaw);
@@ -1512,7 +1591,15 @@ if ($activeTab === 'kartu') {
     }
 
     // Filter daftar temuan sesuai pencarian dan filter
-    $filteredFindings = array_filter($allFindingsRaw, function($f) use ($statusTemuanFilter, $tingkatTemuanFilter, $qTemuan) {
+    $filteredFindings = array_filter($allFindingsRaw, function($f) use ($statusTemuanFilter, $tingkatTemuanFilter, $qTemuan, $bulanTemuan) {
+        if ($bulanTemuan > 0) {
+            $rawD = $f['created_at'] ?? $f['reported_at'] ?? '';
+            if ($rawD !== '') {
+                $m = (int)date('n', strtotime(substr($rawD, 0, 10)));
+                if ($m > 0 && $m !== $bulanTemuan) return false;
+            }
+        }
+
         $st = strtolower(trim((string)($f['repair_status'] ?? '')));
         if ($statusTemuanFilter === 'perlu_perbaikan') {
             if (in_array($st, ['resolved', 'selesai', 'closed', 'ok', 'in progress', 'proses', 'sedang perbaikan'], true)) return false;
@@ -1700,7 +1787,7 @@ if ($activeTab === 'kartu') {
         <h2 class="h4 fw-bold text-dark mb-1 d-flex align-items-center gap-2">
           <i class="bi bi-tools text-danger"></i> Daftar Temuan Kendala &amp; Status Perbaikan
         </h2>
-        <div class="text-muted small">Monitoring seluruh temuan kendala dari scan pemeliharaan, tingkat keparahan, teknisi penanggung jawab, dan progres tindak lanjut periode <strong>'.$monthName.' '.$year.'</strong>.</div>
+        <div class="text-muted small">Monitoring seluruh temuan kendala dari scan pemeliharaan, tingkat keparahan, teknisi penanggung jawab, dan progres tindak lanjut (<strong>'.($bulanTemuan > 0 ? ($monthNames[$bulanTemuan].' '.$year) : 'Semua Periode / Riwayat Temuan').'</strong>).</div>
       </div>
       <div class="d-flex align-items-center gap-2 flex-wrap">
         <a href="'.e(module_url('audit.php', ['bulan'=>$month,'tahun'=>$year,'cabang'=>$cabangId])).'" class="btn btn-sm btn-outline-primary fw-semibold"><i class="bi bi-file-earmark-bar-graph me-1"></i> Rekapitulasi Audit Bulanan</a>
@@ -1711,9 +1798,9 @@ if ($activeTab === 'kartu') {
     <div class="row g-2 g-md-3 mb-3 mb-md-4">
       <div class="col-6 col-md-3">
         <div class="p-3 bg-white rounded-3 border shadow-xs h-100" style="border-left: 4px solid var(--blue-corporate) !important; border-color: var(--app-border) !important;">
-          <div class="text-muted small fw-bold text-uppercase" style="font-size: 0.68rem; letter-spacing: 0.04em;">Total Temuan Periode Ini</div>
+          <div class="text-muted small fw-bold text-uppercase" style="font-size: 0.68rem; letter-spacing: 0.04em;">Total Temuan Terdata</div>
           <div class="h3 fw-bold text-dark mb-0 mt-1">'.$countTotalTemuan.' <span class="fs-6 fw-normal text-muted">Kasus</span></div>
-          <div class="text-muted small mt-1" style="font-size: 0.72rem;">Periode '.$monthName.' '.$year.'</div>
+          <div class="text-muted small mt-1" style="font-size: 0.72rem;">'.($bulanTemuan > 0 ? ($monthNames[$bulanTemuan].' '.$year) : 'Semua Periode').'</div>
         </div>
       </div>
       <div class="col-6 col-md-3">
@@ -1743,15 +1830,23 @@ if ($activeTab === 'kartu') {
     <div class="card p-3 mb-3 border shadow-xs" style="border-radius: 8px; border-color: var(--app-border) !important; background: #FAFBFD;">
       <form method="get" class="row g-2 align-items-center">
         <input type="hidden" name="tab" value="temuan">
-        <input type="hidden" name="bulan" value="'.$month.'">
         <input type="hidden" name="tahun" value="'.$year.'">
         <input type="hidden" name="cabang" value="'.$cabangId.'">
 
-        <div class="col-12 col-md-4">
+        <div class="col-12 col-md-3">
           <div class="input-group input-group-sm">
             <span class="input-group-text bg-white"><i class="bi bi-search text-muted"></i></span>
             <input type="text" name="q_temuan" class="form-control" placeholder="Cari kode inventaris, merk, user, temuan..." value="'.e($qTemuan).'">
           </div>
+        </div>
+        <div class="col-6 col-md-2">
+          <select name="bulan_temuan" class="form-select form-select-sm" onchange="this.form.submit()">
+            <option value="0" '.($bulanTemuan === 0 ? 'selected' : '').'>Semua Periode (Bulan)</option>';
+    for ($bm = 1; $bm <= 12; $bm++) {
+        $body .= '<option value="'.$bm.'" '.($bulanTemuan === $bm ? 'selected' : '').'>'.$monthNames[$bm].'</option>';
+    }
+    $body .= '
+          </select>
         </div>
         <div class="col-6 col-md-3">
           <select name="status_temuan" class="form-select form-select-sm" onchange="this.form.submit()">
@@ -1761,17 +1856,17 @@ if ($activeTab === 'kartu') {
             <option value="selesai" '.($statusTemuanFilter === 'selesai' ? 'selected' : '').'>✅ Terselesaikan ('.$countResolved.')</option>
           </select>
         </div>
-        <div class="col-6 col-md-3">
+        <div class="col-6 col-md-2">
           <select name="tingkat_temuan" class="form-select form-select-sm" onchange="this.form.submit()">
-            <option value="all" '.($tingkatTemuanFilter === 'all' ? 'selected' : '').'>Semua Tingkat Kerusakan</option>
+            <option value="all" '.($tingkatTemuanFilter === 'all' ? 'selected' : '').'>Semua Tingkat</option>
             <option value="Berat" '.($tingkatTemuanFilter === 'Berat' ? 'selected' : '').'>Tingkat Berat</option>
             <option value="Sedang" '.($tingkatTemuanFilter === 'Sedang' ? 'selected' : '').'>Tingkat Sedang</option>
             <option value="Ringan" '.($tingkatTemuanFilter === 'Ringan' ? 'selected' : '').'>Tingkat Ringan</option>
           </select>
         </div>
-        <div class="col-12 col-md-2 d-flex gap-1.5">
+        <div class="col-6 col-md-2 d-flex gap-1.5">
           <button type="submit" class="btn btn-sm btn-primary fw-semibold flex-fill"><i class="bi bi-funnel me-1"></i> Filter</button>
-          '.(($qTemuan !== '' || $statusTemuanFilter !== 'all' || $tingkatTemuanFilter !== 'all') ? '<a href="'.e(module_url('dashboard.php', ['tab'=>'temuan', 'bulan'=>$month, 'tahun'=>$year, 'cabang'=>$cabangId])).'" class="btn btn-sm btn-outline-secondary" title="Reset Filter"><i class="bi bi-x-lg"></i></a>' : '').'
+          '.(($qTemuan !== '' || $statusTemuanFilter !== 'all' || $tingkatTemuanFilter !== 'all' || $bulanTemuan !== 0) ? '<a href="'.e(module_url('dashboard.php', ['tab'=>'temuan', 'cabang'=>$cabangId])).'" class="btn btn-sm btn-outline-secondary" title="Reset Filter"><i class="bi bi-x-lg"></i></a>' : '').'
         </div>
       </form>
     </div>
