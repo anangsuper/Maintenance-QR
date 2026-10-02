@@ -9,6 +9,36 @@ $year = ($yearParam >= 2020 && $yearParam <= 2035) ? $yearParam : $currentYear;
 $cabangId = max(0, (int)($_GET['cabang'] ?? 0));
 $filterStatus = trim((string)($_GET['status'] ?? 'all'));
 
+// Parameter Tanda Tangan Kustom
+$mengetahuiJabatan = trim((string)($_GET['mengetahui_jabatan'] ?? ''));
+if ($mengetahuiJabatan === '') {
+    $mengetahuiJabatan = 'Kepala Cabang / IT Manager';
+}
+$mengetahuiNama = trim((string)($_GET['mengetahui_nama'] ?? ''));
+
+$dibuatJabatan = trim((string)($_GET['dibuat_jabatan'] ?? ''));
+if ($dibuatJabatan === '') {
+    $dibuatJabatan = 'Teknisi Pelaksana IT';
+}
+$dibuatNama = trim((string)($_GET['dibuat_nama'] ?? ''));
+if ($dibuatNama === '') {
+    $dibuatNama = current_user_name();
+}
+
+$useKurung = !isset($_GET['use_kurung']) || $_GET['use_kurung'] === '1' || $_GET['use_kurung'] === 'on';
+
+if ($mengetahuiNama === '') {
+    $renderedMengetahuiNama = '( .................................................. )';
+} else {
+    $cleanMengetahuiNama = $mengetahuiNama;
+    if ($useKurung) {
+        if (!str_starts_with($cleanMengetahuiNama, '(') || !str_ends_with($cleanMengetahuiNama, ')')) {
+            $cleanMengetahuiNama = '( ' . $cleanMengetahuiNama . ' )';
+        }
+    }
+    $renderedMengetahuiNama = e($cleanMengetahuiNama);
+}
+
 $yearOpts = '';
 $startYear = max(2023, $currentYear - 2);
 $endYear = $currentYear + 2;
@@ -393,6 +423,27 @@ body {
   border-bottom: 1px solid #333;
 }
 
+.editable-sig {
+  display: inline-block;
+  min-width: 80px;
+  padding: 1px 6px;
+  border-radius: 4px;
+  border: 1px dashed #cbd5e1;
+  background-color: #f8fafc;
+  transition: all 0.15s ease-in-out;
+  cursor: text;
+}
+.editable-sig:hover {
+  border-color: #0d6efd;
+  background-color: #eef6ff;
+}
+.editable-sig:focus {
+  border-color: #0d6efd;
+  background-color: #ffffff;
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(13, 110, 253, 0.25);
+}
+
 /* =========================================================
    PRINT VIEW (KHUSUS SAAT DICETAK / PDF: PORTRAIT A4)
    Ultra-Compact, High-Density, Paper-Saving
@@ -536,10 +587,24 @@ body {
     page-break-inside: avoid !important;
   }
 
+  .signature-section .text-muted {
+    color: #222 !important;
+  }
+
   .sig-line {
     width: 150px !important;
     margin: 25px auto 2px auto !important;
     border-bottom: 1px solid #000 !important;
+  }
+
+  .editable-sig {
+    border: none !important;
+    background: transparent !important;
+    padding: 0 !important;
+    box-shadow: none !important;
+    outline: none !important;
+    display: inline !important;
+    min-width: 0 !important;
   }
 
   tr {
@@ -591,6 +656,58 @@ $body .= '</select>
       </div>
       <div class="col-md-2">
         <button type="submit" class="btn btn-outline-primary btn-sm w-100"><i class="bi bi-filter me-1"></i> Tampilkan</button>
+      </div>
+
+      <!-- Kustomisasi Tanda Tangan Sebelum Dicetak -->
+      <div class="col-12 mt-3 pt-3 border-top">
+        <div class="d-flex flex-wrap justify-content-between align-items-center mb-2 gap-2">
+          <div class="d-flex align-items-center gap-2">
+            <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-2 py-1"><i class="bi bi-pen-fill me-1"></i> Format Tanda Tangan</span>
+            <span class="small fw-bold text-dark">Kustomisasi Jabatan &amp; Nama Sebelum Dicetak</span>
+          </div>
+          <button type="button" class="btn btn-outline-secondary btn-sm py-0 px-2" id="btnResetSig" style="font-size: 0.78rem;" title="Kembalikan ke format default">
+            <i class="bi bi-arrow-counterclockwise me-1"></i> Reset Default
+          </button>
+        </div>
+        
+        <div class="row g-2">
+          <div class="col-12 col-md-3">
+            <label class="form-label small fw-semibold text-secondary mb-1">
+              <i class="bi bi-briefcase text-primary me-1"></i>Jabatan (Mengetahui)
+            </label>
+            <input type="text" class="form-control form-control-sm" id="inputMengetahuiJabatan" name="mengetahui_jabatan" value="'.e($mengetahuiJabatan).'" placeholder="Misal: Kepala Cabang / IT Manager">
+          </div>
+          <div class="col-12 col-md-3">
+            <label class="form-label small fw-semibold text-secondary mb-1">
+              <i class="bi bi-person-check text-success me-1"></i>Nama Pejabat (Mengetahui)
+            </label>
+            <input type="text" class="form-control form-control-sm" id="inputMengetahuiNama" name="mengetahui_nama" value="'.e($mengetahuiNama).'" placeholder="Ketik nama pejabat (opsional)">
+          </div>
+          <div class="col-12 col-md-3">
+            <label class="form-label small fw-semibold text-secondary mb-1">
+              <i class="bi bi-person-badge text-secondary me-1"></i>Jabatan (Dibuat Oleh)
+            </label>
+            <input type="text" class="form-control form-control-sm" id="inputDibuatJabatan" name="dibuat_jabatan" value="'.e($dibuatJabatan).'" placeholder="Teknisi Pelaksana IT">
+          </div>
+          <div class="col-12 col-md-3">
+            <label class="form-label small fw-semibold text-secondary mb-1">
+              <i class="bi bi-person-circle text-secondary me-1"></i>Nama Teknisi (Dibuat Oleh)
+            </label>
+            <input type="text" class="form-control form-control-sm" id="inputDibuatNama" name="dibuat_nama" value="'.e($dibuatNama).'" placeholder="Nama teknisi / admin">
+          </div>
+        </div>
+
+        <div class="d-flex flex-wrap align-items-center justify-content-between mt-2 pt-1 gap-2">
+          <div class="form-check form-check-inline mb-0">
+            <input class="form-check-input" type="checkbox" id="checkKurung" name="use_kurung" value="1"'.($useKurung ? ' checked' : '').'>
+            <label class="form-check-label small text-muted" for="checkKurung" style="font-size: 0.8rem; cursor: pointer;">
+              Gunakan tanda kurung <code>( ... )</code> pada nama Mengetahui
+            </label>
+          </div>
+          <div class="small text-muted" style="font-size: 0.78rem;">
+            <i class="bi bi-cursor-fill text-primary me-1"></i> <em>Bisa diketik di form ini atau langsung klik &amp; edit teks di kolom tanda tangan di bawah!</em>
+          </div>
+        </div>
       </div>
     </form>
   </div>
@@ -679,19 +796,208 @@ $body .= '</select>
       <div class="row">
         <div class="col-6 sig-box">
           <div>Dibuat Oleh,</div>
-          <div class="small text-muted">Teknisi Pelaksana IT</div>
+          <div class="small text-muted"><span class="editable-sig" id="sigDibuatJabatanText" contenteditable="true" title="Klik untuk edit jabatan">'.e($dibuatJabatan).'</span></div>
           <div class="sig-line"></div>
-          <div><strong>'.e(current_user_name()).'</strong></div>
+          <div><strong><span class="editable-sig" id="sigDibuatNamaText" contenteditable="true" title="Klik untuk edit nama">'.e($dibuatNama).'</span></strong></div>
         </div>
         <div class="col-6 sig-box">
           <div>Mengetahui / Menyetujui,</div>
-          <div class="small text-muted">Kepala Cabang / IT Manager</div>
+          <div class="small text-muted"><span class="editable-sig" id="sigMengetahuiJabatanText" contenteditable="true" title="Klik untuk edit jabatan">'.e($mengetahuiJabatan).'</span></div>
           <div class="sig-line"></div>
-          <div><strong>( .................................................. )</strong></div>
+          <div><strong><span class="editable-sig" id="sigMengetahuiNamaText" contenteditable="true" title="Klik untuk edit nama">'.$renderedMengetahuiNama.'</span></strong></div>
         </div>
       </div>
     </div>
   </div>
 </div>';
 
-render_page('Laporan Maintenance Bulanan', $body, $head);
+$script = '<script>
+(function() {
+  var inputMengetahuiJabatan = document.getElementById("inputMengetahuiJabatan");
+  var inputMengetahuiNama    = document.getElementById("inputMengetahuiNama");
+  var inputDibuatJabatan     = document.getElementById("inputDibuatJabatan");
+  var inputDibuatNama        = document.getElementById("inputDibuatNama");
+  var checkKurung            = document.getElementById("checkKurung");
+  var btnResetSig            = document.getElementById("btnResetSig");
+
+  var sigMengetahuiJabatanText = document.getElementById("sigMengetahuiJabatanText");
+  var sigMengetahuiNamaText    = document.getElementById("sigMengetahuiNamaText");
+  var sigDibuatJabatanText     = document.getElementById("sigDibuatJabatanText");
+  var sigDibuatNamaText        = document.getElementById("sigDibuatNamaText");
+
+  var DOTS = "( .................................................. )";
+  var defaultMengetahuiJabatan = "Kepala Cabang / IT Manager";
+  var defaultMengetahuiNama = "";
+  var defaultDibuatJabatan = "Teknisi Pelaksana IT";
+  var defaultDibuatNama = ' . json_encode($dibuatNama, JSON_UNESCAPED_UNICODE) . ';
+
+  function formatMengetahuiNama(rawNama, useKurung) {
+    var nama = (rawNama || "").trim();
+    if (!nama || nama === DOTS) {
+      return DOTS;
+    }
+    if (nama.startsWith("(") && nama.endsWith(")")) {
+      nama = nama.slice(1, -1).trim();
+    }
+    if (!nama) return DOTS;
+    return useKurung ? "( " + nama + " )" : nama;
+  }
+
+  function getCleanNama(formattedNama) {
+    var s = (formattedNama || "").trim();
+    if (!s || s === DOTS) return "";
+    if (s.startsWith("(") && s.endsWith(")")) {
+      s = s.slice(1, -1).trim();
+    }
+    return (s === DOTS) ? "" : s;
+  }
+
+  // Restore from localStorage if URL didn\'t specify
+  var urlParams = new URLSearchParams(window.location.search);
+  var hasUrlMengetahui = urlParams.has("mengetahui_jabatan") || urlParams.has("mengetahui_nama");
+
+  if (!hasUrlMengetahui) {
+    var savedMJ = localStorage.getItem("qr_report_sig_mengetahui_jabatan");
+    var savedMN = localStorage.getItem("qr_report_sig_mengetahui_nama");
+    var savedDJ = localStorage.getItem("qr_report_sig_dibuat_jabatan");
+    var savedDN = localStorage.getItem("qr_report_sig_dibuat_nama");
+    var savedK  = localStorage.getItem("qr_report_sig_kurung");
+
+    if (savedMJ !== null && savedMJ !== "") {
+      inputMengetahuiJabatan.value = savedMJ;
+      sigMengetahuiJabatanText.textContent = savedMJ;
+    }
+    if (savedMN !== null && savedMN !== "") {
+      inputMengetahuiNama.value = savedMN;
+    }
+    if (savedDJ !== null && savedDJ !== "") {
+      inputDibuatJabatan.value = savedDJ;
+      sigDibuatJabatanText.textContent = savedDJ;
+    }
+    if (savedDN !== null && savedDN !== "") {
+      inputDibuatNama.value = savedDN;
+      sigDibuatNamaText.textContent = savedDN;
+    }
+    if (savedK !== null) {
+      checkKurung.checked = (savedK === "1");
+    }
+
+    sigMengetahuiNamaText.textContent = formatMengetahuiNama(inputMengetahuiNama.value, checkKurung.checked);
+  }
+
+  function saveState() {
+    localStorage.setItem("qr_report_sig_mengetahui_jabatan", inputMengetahuiJabatan.value.trim());
+    localStorage.setItem("qr_report_sig_mengetahui_nama", inputMengetahuiNama.value.trim());
+    localStorage.setItem("qr_report_sig_dibuat_jabatan", inputDibuatJabatan.value.trim());
+    localStorage.setItem("qr_report_sig_dibuat_nama", inputDibuatNama.value.trim());
+    localStorage.setItem("qr_report_sig_kurung", checkKurung.checked ? "1" : "0");
+  }
+
+  // Input -> Signature sync
+  inputMengetahuiJabatan.addEventListener("input", function() {
+    sigMengetahuiJabatanText.textContent = this.value.trim() || defaultMengetahuiJabatan;
+    saveState();
+  });
+
+  inputMengetahuiNama.addEventListener("input", function() {
+    sigMengetahuiNamaText.textContent = formatMengetahuiNama(this.value, checkKurung.checked);
+    saveState();
+  });
+
+  inputDibuatJabatan.addEventListener("input", function() {
+    sigDibuatJabatanText.textContent = this.value.trim() || defaultDibuatJabatan;
+    saveState();
+  });
+
+  inputDibuatNama.addEventListener("input", function() {
+    sigDibuatNamaText.textContent = this.value.trim() || defaultDibuatNama;
+    saveState();
+  });
+
+  checkKurung.addEventListener("change", function() {
+    sigMengetahuiNamaText.textContent = formatMengetahuiNama(inputMengetahuiNama.value, this.checked);
+    saveState();
+  });
+
+  // Inline Signature -> Input sync
+  sigMengetahuiJabatanText.addEventListener("input", function() {
+    inputMengetahuiJabatan.value = this.textContent.trim();
+    saveState();
+  });
+
+  sigMengetahuiNamaText.addEventListener("focus", function() {
+    var cur = this.textContent.trim();
+    if (cur === DOTS) {
+      this.textContent = "";
+    } else {
+      var range = document.createRange();
+      range.selectNodeContents(this);
+      var sel = window.getSelection();
+      sel.removeAllRanges();
+      sel.addRange(range);
+    }
+  });
+
+  sigMengetahuiNamaText.addEventListener("input", function() {
+    var raw = this.textContent;
+    inputMengetahuiNama.value = getCleanNama(raw);
+    saveState();
+  });
+
+  sigMengetahuiNamaText.addEventListener("blur", function() {
+    var raw = this.textContent.trim();
+    var clean = getCleanNama(raw);
+    inputMengetahuiNama.value = clean;
+    this.textContent = formatMengetahuiNama(clean, checkKurung.checked);
+    saveState();
+  });
+
+  sigDibuatJabatanText.addEventListener("input", function() {
+    inputDibuatJabatan.value = this.textContent.trim();
+    saveState();
+  });
+
+  sigDibuatNamaText.addEventListener("input", function() {
+    inputDibuatNama.value = this.textContent.trim();
+    saveState();
+  });
+
+  // Prevent Enter newline in single-line editable signatures
+  document.querySelectorAll(".editable-sig").forEach(function(el) {
+    el.addEventListener("keydown", function(e) {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        this.blur();
+      }
+    });
+  });
+
+  // Reset Button
+  btnResetSig.addEventListener("click", function() {
+    inputMengetahuiJabatan.value = defaultMengetahuiJabatan;
+    inputMengetahuiNama.value    = defaultMengetahuiNama;
+    inputDibuatJabatan.value     = defaultDibuatJabatan;
+    inputDibuatNama.value        = defaultDibuatNama;
+    checkKurung.checked          = true;
+
+    sigMengetahuiJabatanText.textContent = defaultMengetahuiJabatan;
+    sigMengetahuiNamaText.textContent    = DOTS;
+    sigDibuatJabatanText.textContent     = defaultDibuatJabatan;
+    sigDibuatNamaText.textContent        = defaultDibuatNama;
+
+    localStorage.removeItem("qr_report_sig_mengetahui_jabatan");
+    localStorage.removeItem("qr_report_sig_mengetahui_nama");
+    localStorage.removeItem("qr_report_sig_dibuat_jabatan");
+    localStorage.removeItem("qr_report_sig_dibuat_nama");
+    localStorage.removeItem("qr_report_sig_kurung");
+  });
+
+  window.addEventListener("beforeprint", function() {
+    if (document.activeElement && document.activeElement.blur) {
+      document.activeElement.blur();
+    }
+  });
+})();
+</script>';
+
+render_page('Laporan Maintenance Bulanan', $body, $head, $script);
