@@ -19,17 +19,18 @@ function render_page(string $title, string $content, string $extraHead = '', str
     }
 
     $isAdminUser = is_admin();
+    $isHrdUser = is_admin_or_hrd();
 
     $monitoringItems = [
         ['title' => 'Reports & Audit', 'url' => module_url('audit.php'), 'icon' => 'bi-file-earmark-bar-graph', 'active' => ($currentPage === 'audit.php')],
         ['title' => 'Riwayat Bulanan', 'url' => module_url('monthly_history.php'), 'icon' => 'bi-calendar3', 'active' => ($currentPage === 'monthly_history.php')],
     ];
-    if ($isAdminUser) {
+    if ($isAdminUser || in_array($role, ['auditor', 'skai'], true)) {
         $monitoringItems[] = ['title' => 'Log Aktivitas (Audit)', 'url' => module_url('audit_trail.php'), 'icon' => 'bi-shield-check', 'active' => ($currentPage === 'audit_trail.php')];
     }
 
     $managementItems = [];
-    if ($isAdminUser) {
+    if ($isHrdUser) {
         $managementItems[] = ['title' => 'Kantor Cabang', 'url' => module_url('cabang_admin.php'), 'icon' => 'bi-buildings', 'active' => ($currentPage === 'cabang_admin.php')];
         $managementItems[] = ['title' => 'Divisi / Unit Kerja', 'url' => module_url('divisi_admin.php'), 'icon' => 'bi-diagram-3', 'active' => ($currentPage === 'divisi_admin.php')];
         $managementItems[] = ['title' => 'Akun Pengguna', 'url' => module_url('users_admin.php'), 'icon' => 'bi-people', 'active' => ($currentPage === 'users_admin.php')];
@@ -37,8 +38,10 @@ function render_page(string $title, string $content, string $extraHead = '', str
     $managementItems[] = ['title' => 'Wajah Teknisi (HP)', 'url' => module_url('user_biometric_enroll.php'), 'icon' => 'bi-person-bounding-box', 'active' => ($currentPage === 'user_biometric_enroll.php')];
 
     $systemItems = [];
-    if ($isAdminUser) {
+    if ($isHrdUser) {
         $systemItems[] = ['title' => 'QR Aset Label', 'url' => module_url('qr_admin.php'), 'icon' => 'bi-qr-code', 'active' => ($currentPage === 'qr_admin.php')];
+    }
+    if ($isAdminUser) {
         $systemItems[] = ['title' => 'Dokumen Desain', 'url' => module_url('system_design.php'), 'icon' => 'bi-file-earmark-pdf', 'active' => ($currentPage === 'system_design.php')];
     }
 
@@ -77,12 +80,16 @@ function render_page(string $title, string $content, string $extraHead = '', str
         $sidebarMenuHtml .= '</ul>';
     }
 
+    $isHrdRole = in_array(strtolower($role), ['hrd', 'umum', 'hrd_umum', 'sdm', 'sdm_umum'], true);
+    $brandTag = $isHrdRole ? 'HRD & UMUM' : 'IT OPS';
+    $displayRole = $isHrdRole ? 'HRD / Umum' : (($role === 'admin') ? 'Administrator' : ucfirst($role));
+
     $sidebarHtml = '
     <aside class="app-sidebar d-none d-lg-flex flex-column" id="appDesktopSidebar">
       <div class="sidebar-brand py-2 px-3">
         <a href="'.e(module_url('dashboard.php')).'" class="d-flex align-items-center justify-content-between text-decoration-none">
           <img src="'.app_logo_url().'" alt="Bank Mitra Logo" class="sidebar-brand-img" style="height: 54px; width: auto; max-width: 175px; object-fit: contain;">
-          <span class="badge bg-primary bg-opacity-25 text-white border border-primary border-opacity-50" style="font-size: 0.62rem; letter-spacing: 0.05em; font-weight: 600;">IT OPS</span>
+          <span class="badge '.($isHrdRole ? 'bg-warning text-dark border-warning' : 'bg-primary bg-opacity-25 text-white border-primary border-opacity-50').' border" style="font-size: 0.62rem; letter-spacing: 0.05em; font-weight: 700;">'.$brandTag.'</span>
         </a>
       </div>
 
@@ -93,10 +100,10 @@ function render_page(string $title, string $content, string $extraHead = '', str
       <div class="sidebar-footer">
         <div class="sidebar-user-card d-flex align-items-center justify-content-between">
           <div class="d-flex align-items-center gap-2 overflow-hidden">
-            <div class="sidebar-user-avatar">'.$userInitial.'</div>
+            <div class="sidebar-user-avatar '.($isHrdRole ? 'bg-warning text-dark' : '').'">'.$userInitial.'</div>
             <div class="overflow-hidden">
               <div class="sidebar-user-name text-truncate">'.e($userName).'</div>
-              <div class="sidebar-user-role text-capitalize">'.e($role).'</div>
+              <div class="sidebar-user-role text-capitalize">'.e($displayRole).'</div>
             </div>
           </div>
           <a href="'.e(module_url('logout.php')).'" class="sidebar-logout-btn" title="Keluar / Logout">
@@ -120,10 +127,10 @@ function render_page(string $title, string $content, string $extraHead = '', str
       <div class="p-3 border-top border-navy-subtle">
         <div class="d-flex align-items-center justify-content-between">
           <div class="d-flex align-items-center gap-2">
-            <div class="sidebar-user-avatar">'.$userInitial.'</div>
+            <div class="sidebar-user-avatar '.($isHrdRole ? 'bg-warning text-dark' : '').'">'.$userInitial.'</div>
             <div>
               <div class="text-white small fw-bold">'.e($userName).'</div>
-              <div class="text-muted small text-capitalize">'.e($role).'</div>
+              <div class="text-muted small text-capitalize">'.e($displayRole).'</div>
             </div>
           </div>
           <a href="'.e(module_url('logout.php')).'" class="btn btn-sm btn-outline-danger" title="Logout"><i class="bi bi-box-arrow-right"></i></a>
@@ -200,7 +207,7 @@ function render_page(string $title, string $content, string $extraHead = '', str
       <a href="'.e(module_url('dashboard.php')).'" class="d-flex align-items-center gap-3 text-decoration-none">
         <img src="'.app_logo_url().'" alt="Bank Mitra Logo" class="sidebar-brand-img" style="height: 48px; width: auto; object-fit: contain;">
         <div class="border-start ps-3 d-none d-sm-block">
-          <div class="tech-label" style="font-size: 0.68rem; color: #667085;">IT OPERATIONS · INSPECTION PORTAL</div>
+          <div class="tech-label" style="font-size: 0.68rem; color: #667085;">IT OPERATIONS & INVENTARIS UMUM</div>
         </div>
       </a>
       <div class="d-flex align-items-center gap-2">

@@ -288,6 +288,27 @@ function is_admin(): bool {
     return in_array($role, ['admin', 'administrator'], true);
 }
 
+function is_hrd(): bool {
+    if (!is_logged_in()) {
+        return false;
+    }
+    $role = current_user_role();
+    return in_array($role, ['hrd', 'umum', 'hrd_umum', 'sdm', 'sdm_umum'], true);
+}
+
+function is_admin_or_hrd(): bool {
+    return is_admin() || is_hrd();
+}
+
+function require_admin_or_hrd(): void {
+    require_login();
+    if (!is_admin_or_hrd()) {
+        http_response_code(403);
+        render_page('Akses Ditolak', '<div class="alert alert-danger border-0 shadow-sm"><i class="bi bi-shield-exclamation me-2"></i>Menu ini hanya untuk Administrator dan Bagian HRD / Umum.</div>');
+        exit;
+    }
+}
+
 
 function login_user_session(array $user): void {
     $_SESSION['user_id'] = (int)($user['id'] ?? 1);
@@ -523,15 +544,16 @@ function authenticate_user(string $username, string $password): array {
             }
         }
 
-        // 4. Fallback Default admin & teknisi untuk inisialisasi awal instalasi
+        // 4. Fallback Default admin, hrd, & teknisi untuk inisialisasi awal instalasi
         $defaultUsers = [
             ['username' => 'admin', 'password' => 'admin123', 'name' => 'Administrator', 'role' => 'admin'],
+            ['username' => 'hrd', 'password' => 'hrd123', 'name' => 'HRD & Bagian Umum', 'role' => 'hrd'],
             ['username' => 'teknisi', 'password' => 'teknisi123', 'name' => 'Teknisi IT', 'role' => 'teknisi'],
         ];
 
         foreach ($defaultUsers as $du) {
             if (strcasecmp($username, $du['username']) === 0 && $password === $du['password']) {
-                $uid = ($du['role'] === 'admin') ? 1 : 2;
+                $uid = ($du['role'] === 'admin') ? 1 : (($du['role'] === 'hrd') ? 3 : 2);
                 $_SESSION['user_id'] = $uid;
                 $_SESSION['nama'] = $du['name'];
                 $_SESSION['username'] = $du['username'];

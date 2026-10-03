@@ -1,6 +1,6 @@
 <?php
 require __DIR__ . '/bootstrap.php';
-require_admin();
+require_admin_or_hrd();
 
 $cabangId = max(0, (int)($_GET['cabang'] ?? 0));
 $cabangs = get_cabang_list();

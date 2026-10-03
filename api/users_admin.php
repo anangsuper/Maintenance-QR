@@ -1,6 +1,6 @@
 <?php
 require __DIR__ . '/bootstrap.php';
-require_admin();
+require_admin_or_hrd();
 
 $error = '';
 $flash = $_SESSION['flash'] ?? '';
@@ -193,9 +193,11 @@ foreach ($users as $u) {
 
     $roleBadge = ($uRole === 'admin')
         ? '<span class="badge-chip chip-primary"><i class="bi bi-shield-lock-fill"></i> Admin</span>'
-        : (($uRole === 'auditor')
-            ? '<span class="badge-chip chip-secondary"><i class="bi bi-eye-fill"></i> Auditor</span>'
-            : '<span class="badge-chip chip-info"><i class="bi bi-tools"></i> Teknisi IT</span>');
+        : (($uRole === 'hrd' || $uRole === 'umum' || $uRole === 'hrd_umum' || $uRole === 'sdm')
+            ? '<span class="badge-chip chip-warning text-dark"><i class="bi bi-briefcase-fill"></i> HRD / Umum</span>'
+            : (($uRole === 'auditor')
+                ? '<span class="badge-chip chip-secondary"><i class="bi bi-eye-fill"></i> Auditor</span>'
+                : '<span class="badge-chip chip-info"><i class="bi bi-tools"></i> Teknisi IT</span>'));
 
     $statusBadge = (strcasecmp($uStatus, 'Nonaktif') === 0)
         ? '<span class="badge-chip chip-danger"><i class="bi bi-x-circle-fill"></i> Nonaktif</span>'
@@ -329,8 +331,9 @@ if ($editUser) {
         <label class="form-label text-uppercase fw-bold text-muted" style="font-size: 0.75rem; letter-spacing: 0.04em;">Hak Akses / Peran <span class="text-danger">*</span></label>
         <select class="form-select" name="role">
           <option value="teknisi" '.($editRole==='teknisi'?'selected':'').'>Teknisi IT (Inspeksi & Checklist)</option>
-          <option value="admin" '.($editRole==='admin'?'selected':'').'>Administrator (Akses Penuh Sistem)</option>
+          <option value="hrd" '.($editRole==='hrd'||$editRole==='umum'||$editRole==='hrd_umum'||$editRole==='sdm'?'selected':'').'>HRD / Bagian Umum (Inventaris, Cabang, Divisi & Karyawan)</option>
           <option value="auditor" '.($editRole==='auditor'?'selected':'').'>Auditor / SKAI (Read-Only Audit Trail)</option>
+          <option value="admin" '.($editRole==='admin'?'selected':'').'>Administrator (Akses Penuh Sistem)</option>
         </select>
       </div>
 
@@ -397,8 +400,9 @@ if ($editUser) {
         <label class="form-label text-uppercase fw-bold text-muted" style="font-size: 0.75rem; letter-spacing: 0.04em;">Hak Akses / Peran <span class="text-danger">*</span></label>
         <select class="form-select" name="role">
           <option value="teknisi" selected>Teknisi IT (Inspeksi & Checklist)</option>
-          <option value="admin">Administrator (Akses Penuh Sistem)</option>
+          <option value="hrd">HRD / Bagian Umum (Inventaris, Cabang, Divisi & Karyawan)</option>
           <option value="auditor">Auditor / SKAI (Read-Only Audit Trail)</option>
+          <option value="admin">Administrator (Akses Penuh Sistem)</option>
         </select>
       </div>
 
