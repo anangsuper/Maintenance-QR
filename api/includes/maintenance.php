@@ -987,8 +987,8 @@ function save_maintenance_record(array $data): array {
         }
     }
 
-    if (strlen($bioPhoto) > 18000) {
-        $bioPhoto = substr($bioPhoto, 0, 18000);
+    if (strlen($bioPhoto) > 48000 && is_google_cloud_mode()) {
+        $bioPhoto = substr($bioPhoto, 0, 48000);
     }
     // Prevent Google Sheets formula interpretation if starting with special characters
     if ($bioPhoto !== '' && in_array($bioPhoto[0], ['=', '+', '-', '@'], true)) {

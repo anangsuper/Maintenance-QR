@@ -186,20 +186,33 @@ if ($isSusulan) {
 
 // Biometric & Location Audit Data
 $isBioVerified = !empty($scan['biometric_verified']) && ((string)$scan['biometric_verified'] === '1' || strtolower((string)$scan['biometric_verified']) === 'true');
-$bioPhoto = trim((string)($scan['biometric_photo'] ?? ''));
+$bioPhoto = ltrim(trim((string)($scan['biometric_photo'] ?? '')), "'");
 $lat = trim((string)($scan['latitude'] ?? ''));
 $lng = trim((string)($scan['longitude'] ?? ''));
 
 // Helper validasi format data gambar agar tidak error/terpotong
 $isValidPhotoString = function(string $str): bool {
+    $str = ltrim(trim($str), "'");
     if ($str === '') return false;
     if (str_starts_with($str, 'data:image/')) {
         $pos = strpos($str, ';base64,');
         if ($pos === false) return false;
         $b64 = substr($str, $pos + 8);
-        if (strlen($b64) < 150) return false; // String terlalu pendek / kosong
-        $head = substr($b64, 0, 256);
-        return base64_decode($head, true) !== false;
+        if (strlen($b64) < 150) return false;
+        $bin = base64_decode($b64, true);
+        if ($bin === false) return false;
+        if (strlen($bin) < 60) return false;
+        // Validasi JPEG: wajib memiliki marker SOI \xFF\xD8
+        if (str_contains($str, 'image/jpeg') || str_contains($str, 'image/jpg')) {
+            if (substr($bin, 0, 2) !== "\xFF\xD8") return false;
+            // Harus memiliki penanda akhir \xFF\xD9 (mencegah base64 terpotong)
+            if (!str_contains(substr($bin, -80), "\xFF\xD9")) return false;
+        }
+        if (function_exists('getimagesizefromstring')) {
+            $sz = @getimagesizefromstring($bin);
+            if ($sz === false || empty($sz[0]) || empty($sz[1])) return false;
+        }
+        return true;
     }
     return filter_var($str, FILTER_VALIDATE_URL) || (strlen($str) < 500 && file_exists(__DIR__ . '/' . ltrim($str, '/')));
 };
@@ -208,12 +221,23 @@ $isValidPhoto = $isValidPhotoString($bioPhoto);
 
 // Jika foto di sesi scan tidak valid atau terpotong, ambil dari master foto teknisi terdaftar
 if (!$isValidPhoto && $techName !== '') {
-    $enrolled = get_enrolled_technicians(false);
-    foreach ($enrolled as $en) {
-        if (strcasecmp(trim((string)($en['nama'] ?? '')), trim($techName)) === 0 && !empty($en['photo'])) {
-            $candidatePhoto = trim((string)$en['photo']);
-            if ($isValidPhotoString($candidatePhoto)) {
-                $bioPhoto = $candidatePhoto;
+    $allUsers = get_user_list(false);
+    $targetUid = (int)($scan['technician_user_id'] ?? 0);
+    foreach ($allUsers as $u) {
+        $uName = trim((string)($u['nama'] ?? ''));
+        $uNick = trim((string)($u['nama_panggilan'] ?? ''));
+        $uId = (int)($u['id'] ?? 0);
+        
+        $isMatch = ($targetUid > 0 && $uId === $targetUid)
+            || (strcasecmp($uName, $techName) === 0)
+            || (strcasecmp($uNick, $techName) === 0)
+            || (strlen($uNick) >= 3 && stripos($techName, $uNick) !== false)
+            || (strlen($uName) >= 4 && (stripos($techName, $uName) !== false || stripos($uName, $techName) !== false));
+
+        if ($isMatch && !empty($u['face_photo'])) {
+            $cand = ltrim(trim((string)$u['face_photo']), "'");
+            if ($isValidPhotoString($cand)) {
+                $bioPhoto = $cand;
                 $isValidPhoto = true;
                 break;
             }
@@ -221,13 +245,23 @@ if (!$isValidPhoto && $techName !== '') {
     }
 }
 
-// Fallback avatar SVG jika gambar gagal dimuat (mencegah ikon tanda tanya (?) di safari/chrome)
-$fallbackSvg = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='52' height='52' fill='%2364748b' viewBox='0 0 16 16'><rect width='16' height='16' fill='%23f1f5f9'/><path d='M11 6a3 3 0 1 1-6 0 3 3 0 0 1 6 0z'/><path fill-rule='evenodd' d='M0 8a8 8 0 1 1 16 0A8 8 0 0 1 0 8zm8-7a7 7 0 0 0-5.468 11.37C3.242 11.226 4.805 10 8 10s4.757 1.225 5.468 2.37A7 7 0 0 0 8 1z'/></svg>";
+$techInitial = strtoupper(substr(trim($techName), 0, 1) ?: 'T');
 
 if ($isBioVerified) {
-    $photoThumb = $isValidPhoto
-        ? '<img src="'.e($bioPhoto).'" class="rounded border shadow-sm" style="width: 52px; height: 52px; object-fit: cover; border-color: var(--app-border) !important;" alt="Foto Petugas" onerror="this.onerror=null; this.src=\''.$fallbackSvg.'\';">'
-        : '<div class="bg-light text-secondary rounded d-flex align-items-center justify-content-center border" style="width: 52px; height: 52px;"><i class="bi bi-person-fill fs-3"></i></div>';
+    if ($isValidPhoto) {
+        $photoThumb = '
+        <div class="position-relative flex-shrink-0" style="width: 52px; height: 52px;">
+          <img src="'.e($bioPhoto).'" class="rounded border shadow-sm" style="width: 52px; height: 52px; object-fit: cover; border-color: var(--app-border) !important;" alt="Foto Petugas" onerror="this.style.display=\'none\'; if(this.nextElementSibling) this.nextElementSibling.style.display=\'flex\';">
+          <div class="rounded align-items-center justify-content-center border shadow-xs" style="width: 52px; height: 52px; background: #e0f2fe; color: #0284c7; font-weight: 800; font-size: 1.25rem; display: none;">
+            '.e($techInitial).'
+          </div>
+        </div>';
+    } else {
+        $photoThumb = '
+        <div class="rounded d-flex align-items-center justify-content-center border shadow-xs flex-shrink-0" style="width: 52px; height: 52px; background: #e0f2fe; color: #0284c7; font-weight: 800; font-size: 1.25rem;">
+          '.e($techInitial).'
+        </div>';
+    }
 
     $gpsLink = ($lat !== '' && $lng !== '')
         ? '<a href="https://maps.google.com/?q='.e($lat).','.e($lng).'" target="_blank" class="btn btn-outline-danger btn-sm text-decoration-none py-1 px-2"><i class="bi bi-geo-alt-fill me-1"></i> GPS: '.e(round((float)$lat, 4)).', '.e(round((float)$lng, 4)).'</a>'
@@ -256,20 +290,30 @@ if ($isBioVerified) {
 } else {
     $techPhoto = '';
     if ($techName !== '') {
-        $enrolled = get_enrolled_technicians(false);
-        foreach ($enrolled as $en) {
-            if (strcasecmp(trim((string)($en['nama'] ?? '')), trim($techName)) === 0 && !empty($en['photo'])) {
-                $c = trim((string)$en['photo']);
-                if ($isValidPhotoString($c)) {
-                    $techPhoto = $c;
+        $allUsers = get_user_list(false);
+        $targetUid = (int)($scan['technician_user_id'] ?? 0);
+        foreach ($allUsers as $u) {
+            $uName = trim((string)($u['nama'] ?? ''));
+            $uNick = trim((string)($u['nama_panggilan'] ?? ''));
+            $uId = (int)($u['id'] ?? 0);
+            
+            $isMatch = ($targetUid > 0 && $uId === $targetUid)
+                || (strcasecmp($uName, $techName) === 0)
+                || (strcasecmp($uNick, $techName) === 0)
+                || (strlen($uNick) >= 3 && stripos($techName, $uNick) !== false);
+
+            if ($isMatch && !empty($u['face_photo'])) {
+                $cand = ltrim(trim((string)$u['face_photo']), "'");
+                if ($isValidPhotoString($cand)) {
+                    $techPhoto = $cand;
                     break;
                 }
             }
         }
     }
     $regThumb = $techPhoto !== ''
-        ? '<img src="'.e($techPhoto).'" class="rounded-circle border shadow-sm me-2" style="width: 38px; height: 38px; object-fit: cover;" alt="Foto Petugas" onerror="this.onerror=null; this.style.display=\'none\';">'
-        : '<div class="bg-light text-secondary rounded-circle d-inline-flex align-items-center justify-content-center border me-2" style="width: 38px; height: 38px;"><i class="bi bi-person-fill fs-5"></i></div>';
+        ? '<div class="position-relative d-inline-block me-2 align-middle" style="width: 38px; height: 38px;"><img src="'.e($techPhoto).'" class="rounded-circle border shadow-sm" style="width: 38px; height: 38px; object-fit: cover;" alt="Foto Petugas" onerror="this.style.display=\'none\'; if(this.nextElementSibling) this.nextElementSibling.style.display=\'inline-flex\';"><div class="rounded-circle align-items-center justify-content-center border" style="width: 38px; height: 38px; background: #e0f2fe; color: #0284c7; font-weight: 700; font-size: 0.95rem; display: none;">'.e($techInitial).'</div></div>'
+        : '<div class="rounded-circle d-inline-flex align-items-center justify-content-center border me-2 align-middle" style="width: 38px; height: 38px; background: #e0f2fe; color: #0284c7; font-weight: 700; font-size: 0.95rem;">'.e($techInitial).'</div>';
 
     $bioAuditHtml = '
     <div class="card border mb-4 shadow-sm" style="border-radius: 8px; border-color: var(--app-border) !important; background: #FAFBFD;">
@@ -393,10 +437,10 @@ $editBtnTop = $isLoggedIn
     ? '<button type="button" class="btn btn-warning text-dark fw-bold btn-sm flex-fill flex-sm-grow-0" data-bs-toggle="modal" data-bs-target="#editChecklistModal"><i class="bi bi-pencil-square me-1"></i> Edit Data</button>'
     : '<a class="btn btn-outline-primary btn-sm fw-semibold flex-fill flex-sm-grow-0" href="'.e(module_url('login.php')).'"><i class="bi bi-box-arrow-in-right me-1"></i> Login Edit</a>';
 
-$backBtnTop = $isLoggedIn
-    ? '<a class="btn btn-outline-secondary btn-sm fw-semibold flex-fill flex-sm-grow-0" href="'.e(module_url('audit.php')).'"><i class="bi bi-arrow-left me-1"></i> Riwayat Audit</a>'
-    : (!empty($token)
-        ? '<a class="btn btn-outline-primary btn-sm fw-bold flex-fill flex-sm-grow-0" href="'.e(module_url('scan.php', ['t' => $token])).'"><i class="bi bi-arrow-left me-1"></i> Kembali ke Kartu QR</a>'
+$backBtnTop = !empty($token)
+    ? '<a class="btn btn-outline-primary btn-sm fw-bold flex-fill flex-sm-grow-0" href="'.e(module_url('scan.php', ['t' => $token])).'"><i class="bi bi-arrow-left me-1"></i> Kembali ke Kartu QR</a>'
+    : ($isLoggedIn
+        ? '<a class="btn btn-outline-secondary btn-sm fw-semibold flex-fill flex-sm-grow-0" href="'.e(module_url('audit.php')).'"><i class="bi bi-arrow-left me-1"></i> Riwayat Audit</a>'
         : '<a class="btn btn-outline-secondary btn-sm fw-semibold flex-fill flex-sm-grow-0" href="javascript:history.back()"><i class="bi bi-arrow-left me-1"></i> Kembali</a>');
 
 $tindakBtnTop = (!empty($token) && ($status === 'Temuan' || $status === 'Perlu Perbaikan' || $status === 'Proses'))
@@ -596,11 +640,14 @@ if (empty($allSessions)) {
     }
 }
 
-$publicBanner = !$isLoggedIn ? '
+$publicBanner = !empty($token) ? '
 <div class="alert alert-info py-2.5 px-3 small d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center gap-2 mb-3 border-0 shadow-sm rounded-3">
-  <span><i class="bi bi-qr-code-scan me-1.5 text-primary"></i> <strong>Rincian Pemeliharaan</strong> · Mode Publik (Hasil Scan QR Perangkat)</span>
-  '.(!empty($token) ? '<a href="'.e(module_url('scan.php', ['t' => $token])).'" class="btn btn-sm btn-primary fw-bold py-1 px-3 w-100 w-sm-auto text-center"><i class="bi bi-arrow-left me-1"></i> Kembali ke Kartu QR</a>' : '').'
-</div>' : '';
+  <span><i class="bi bi-qr-code-scan me-1.5 text-primary"></i> <strong>Rincian Pemeliharaan</strong> · Terhubung dengan Kartu QR Perangkat ('.e($asset['kode_inventaris'] ?? 'Aset').')</span>
+  <a href="'.e(module_url('scan.php', ['t' => $token])).'" class="btn btn-sm btn-primary fw-bold py-1 px-3 w-100 w-sm-auto text-center"><i class="bi bi-arrow-left me-1"></i> Kembali ke Kartu QR & Riwayat</a>
+</div>' : (!$isLoggedIn ? '
+<div class="alert alert-info py-2.5 px-3 small d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center gap-2 mb-3 border-0 shadow-sm rounded-3">
+  <span><i class="bi bi-qr-code-scan me-1.5 text-primary"></i> <strong>Rincian Pemeliharaan</strong> · Mode Publik</span>
+</div>' : '');
 
 $body = '
 '.$publicBanner.'

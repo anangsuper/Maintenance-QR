@@ -661,6 +661,87 @@ $complaintCardHtml = '
   </div>
 </div>';
 
+// Build Komponen Riwayat Sesi Pemeliharaan Komputer Ini
+$historyCount = count($historyList);
+$historyItemsHtml = '';
+if (empty($historyList)) {
+    $historyItemsHtml = '
+    <div class="text-center py-4 text-muted bg-light rounded-3 border border-dashed">
+      <i class="bi bi-calendar-x text-secondary fs-3 d-block mb-1"></i>
+      <span class="small">Belum ada riwayat pelaksanaan pemeliharaan yang tercatat untuk perangkat ini.</span>
+    </div>';
+} else {
+    foreach ($historyList as $idx => $h) {
+        $hId = (int)($h['id'] ?? 0);
+        $hDate = !empty($h['maintenance_date']) ? format_id_date($h['maintenance_date']) : '-';
+        $hTime = !empty($h['maintenance_time']) ? substr($h['maintenance_time'], 0, 5) . ' WITA' : '';
+        $hTech = !empty($h['technician_name']) ? $h['technician_name'] : 'Teknisi';
+        $hStatus = $h['status'] ?? 'Selesai';
+        $hType = $h['maintenance_type'] ?? 'Maintenance';
+        $isSusulanItem = (stripos($hType, 'susulan') !== false);
+
+        $hBadgeColor = ($hStatus === 'Temuan' || $hStatus === 'Perlu Perbaikan') ? 'danger' : ($hStatus === 'Proses' ? 'warning text-dark' : 'success');
+        $hBadgeIcon = ($hStatus === 'Temuan' || $hStatus === 'Perlu Perbaikan') ? 'bi-exclamation-triangle-fill' : ($hStatus === 'Proses' ? 'bi-hourglass-split' : 'bi-check-circle-fill');
+
+        $hDetailUrl = ($hId > 0) ? module_url('maintenance_detail.php', ['id' => $hId, 't' => $token]) : '#';
+        $hFindings = trim((string)($h['findings'] ?? ''));
+        $hRecom = trim((string)($h['recommendation'] ?? ''));
+
+        $historyItemsHtml .= '
+        <div class="p-3 mb-2 rounded-3 border bg-white shadow-xs">
+          <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2">
+            <div class="d-flex align-items-center gap-2 flex-wrap">
+              <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 font-monospace small px-2 py-1">
+                <i class="bi bi-calendar-event me-1"></i>'.e($hDate).($hTime ? ' · '.e($hTime) : '').'
+              </span>
+              '.($isSusulanItem ? '<span class="badge bg-warning text-dark small px-2 py-1"><i class="bi bi-clock-history me-1"></i>Susulan</span>' : '<span class="badge bg-light text-secondary border small px-2 py-1">Reguler</span>').'
+            </div>
+            <span class="badge bg-'.$hBadgeColor.' px-2.5 py-1 small">
+              <i class="bi '.$hBadgeIcon.' me-1"></i>'.e($hStatus).'
+            </span>
+          </div>
+
+          <div class="d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center gap-2 pt-2 border-top">
+            <div class="small text-secondary">
+              <i class="bi bi-person-badge text-primary me-1"></i>Petugas: <strong class="text-dark">'.e($hTech).'</strong>
+            </div>
+            '.($hId > 0 ? '
+            <a href="'.e($hDetailUrl).'" class="btn btn-sm btn-outline-primary fw-semibold py-1 px-3 w-100 w-sm-auto text-center" style="font-size: 0.78rem;">
+              <i class="bi bi-file-earmark-medical me-1"></i> Rincian Audit #'.$hId.' &rarr;
+            </a>' : '').'
+          </div>
+
+          '.($hFindings !== '' && $hFindings !== '-' ? '
+          <div class="alert alert-danger py-1.5 px-2.5 small my-2 mb-0" style="font-size: 0.78rem;">
+            <strong><i class="bi bi-exclamation-triangle-fill me-1"></i>Temuan:</strong> '.e($hFindings).'
+          </div>' : '').'
+          '.($hRecom !== '' && $hRecom !== '-' ? '
+          <div class="alert alert-info py-1.5 px-2.5 small mt-1.5 mb-0" style="font-size: 0.78rem;">
+            <strong><i class="bi bi-lightbulb-fill me-1"></i>Tindakan/Solusi:</strong> '.e($hRecom).'
+          </div>' : '').'
+        </div>';
+    }
+}
+
+$historyCardHtml = '
+<div class="card p-3 p-md-4 border-0 shadow-sm mb-4" id="riwayat-pemeliharaan">
+  <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+    <div>
+      <h5 class="fw-bold text-dark mb-0 fs-6 fs-md-5">
+        <i class="bi bi-clock-history text-primary me-2"></i>Riwayat Pemeliharaan Komputer Ini
+      </h5>
+      <p class="small text-secondary mb-0">Catatan log pelaksanaan pemeliharaan fisik & software pada perangkat ini.</p>
+    </div>
+    <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 px-2.5 py-1.5 fw-bold" style="font-size: 0.75rem;">
+      <i class="bi bi-journal-check me-1"></i> '.$historyCount.' Sesi Tercatat
+    </span>
+  </div>
+
+  <div class="history-list-box">
+    '.$historyItemsHtml.'
+  </div>
+</div>';
+
 $body = '
 <div class="row justify-content-center">
   <div class="col-md-11 col-lg-10">
@@ -820,7 +901,18 @@ $body = '
       </div>
     </div>
 
+    <!-- Riwayat Seluruh Sesi Pemeliharaan Komputer Ini -->
+    '.$historyCardHtml.'
+
   </div>
-</div>';
+</div>
+<script>
+// Pastikan jika pengguna kembali dari halaman rincian via tombol Back browser, halaman otomatis memuat data terbaru
+window.addEventListener("pageshow", function(event) {
+  if (event.persisted) {
+    window.location.reload();
+  }
+});
+</script>';
 render_page('Detail Perangkat · ' . ($asset['kode_inventaris'] ?? 'QR'), $body, $headStyle, '', false);
 
