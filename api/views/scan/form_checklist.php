@@ -3,7 +3,7 @@ if ($action === 'start' || $action === 'form' || $action === 'ulang' || $action 
     $fixedItems = get_fixed_checklists();
     $isSusulan = ($action === 'susulan' || !empty($_GET['susulan']) || !empty($_GET['month']) || !empty($_GET['target_month']));
     $isUlang = (!$isSusulan && ($action === 'ulang' || ($currentMonthLog && $action === 'start')));
-    $enrolledTechs = get_enrolled_technicians(true);
+    $enrolledTechs = get_enrolled_technicians(false);
     $hasEnrolledTechs = !empty($enrolledTechs);
 
     // Ambil matriks kartu kontrol tahun ini untuk mendeteksi bulan yang belum dilakukan maintenance

@@ -863,7 +863,7 @@ function get_divisi_maintenance_summary(int $month = 0, int $year = 0): array {
             return ($st === 'aktif' || $st === '');
         });
 
-        $scans = $client ? $client->getSheetData('Maintenance_Scan', true) : [];
+        $scans = $client ? $client->getSheetData('Maintenance_Scan', false) : [];
         $scannedAssetIds = [];
         $findingAssetIds = [];
 

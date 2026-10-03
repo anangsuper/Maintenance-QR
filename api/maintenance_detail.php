@@ -55,6 +55,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (($_POST['action'] ?? '') === 'upda
     }
 }
 
+if (is_google_cloud_mode()) {
+    $gsClient = google_sheets_v4_client();
+    if ($gsClient) {
+        $gsClient->preloadSheets(['Maintenance_Scan', 'Maintenance_Checklists', 'Assets', 'Cabang', 'Divisi', 'Karyawan', 'Kategori_Aset', 'Asset_QR_Tokens', 'Users']);
+    }
+}
+
 $detail = get_maintenance_detail($id);
 if (!$detail) {
     render_page('Data Tidak Ditemukan', '<div class="alert alert-warning">Data rincian maintenance dengan ID #'.$id.' tidak ditemukan.</div>');

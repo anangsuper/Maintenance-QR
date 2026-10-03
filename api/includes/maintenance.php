@@ -79,7 +79,7 @@ function get_asset_maintenance_status_month(int $assetId, int $month, int $year)
     }
 }
 
-function get_asset_maintenance_history(int $assetId): array {
+function get_asset_maintenance_history(int $assetId, bool $forceRefresh = false): array {
     if ($assetId <= 0) return [];
     $asset = get_asset_by_id($assetId);
     $assetKode = trim((string)($asset['kode_inventaris'] ?? ''));
@@ -87,7 +87,7 @@ function get_asset_maintenance_history(int $assetId): array {
     if (is_google_cloud_mode()) {
         $client = google_sheets_v4_client();
         if (!$client) return [];
-        $scans = $client->getSheetData('Maintenance_Scan', true);
+        $scans = $client->getSheetData('Maintenance_Scan', $forceRefresh);
         $history = [];
         $seenIds = [];
 

@@ -402,35 +402,17 @@ function authenticate_user(string $username, string $password): array {
         return ['success' => false, 'error' => 'Username dan password wajib diisi.'];
     }
 
-    // 1. Cek kredensial built-in dari environment / config (untuk deployment cepat)
-    $envUser = cfg('admin_username', envv('ADMIN_USERNAME', ''));
-    $envPass = cfg('admin_password', envv('ADMIN_PASSWORD', ''));
+    $accountFoundInSystem = false;
 
-    if ($envUser !== '' && $envPass !== '') {
-        if ($username === $envUser && $password === $envPass) {
-            $_SESSION['user_id'] = 1;
-            $_SESSION['nama'] = $envUser;
-            $_SESSION['username'] = $envUser;
-            $_SESSION['role'] = 'admin';
-            $_SESSION['last_activity'] = time();
-            set_auth_cookie([
-                'id' => 1,
-                'nama' => $envUser,
-                'username' => $envUser,
-                'role' => 'admin'
-            ]);
-            return ['success' => true, 'name' => $envUser];
-        }
-    }
-
-    // 2. Cek dari tab Users di Google Sheets (jika Google Cloud Mode)
+    // 1. Cek dari tab Users di Google Sheets (jika Google Cloud Mode)
     if (is_google_cloud_mode()) {
         $client = google_sheets_v4_client();
         if ($client) {
-            $users = $client->getSheetData('Users');
+            $users = $client->getSheetData('Users', true);
             foreach ($users as $u) {
                 $uName = trim((string)($u['username'] ?? ''));
                 if (strcasecmp($uName, $username) === 0) {
+                    $accountFoundInSystem = true;
                     $uStatus = trim((string)($u['status'] ?? 'Aktif'));
                     if (strcasecmp($uStatus, 'Nonaktif') === 0) {
                         return ['success' => false, 'error' => 'Akun Anda dinonaktifkan. Silakan hubungi Administrator.'];
@@ -462,14 +444,14 @@ function authenticate_user(string $username, string $password): array {
                         return ['success' => true, 'name' => $uRealName];
                     }
 
-                    // Akun ditemukan di Google Sheets namun password salah: JANGAN lanjut ke fallback default
+                    // Akun ditemukan di Google Sheets namun password salah: JANGAN izinkan login dengan password lama / fallback
                     return ['success' => false, 'error' => 'Username atau password salah.'];
                 }
             }
         }
     }
 
-    // 3. Cek dari tabel users MySQL (jika mode MySQL)
+    // 2. Cek dari tabel users MySQL (jika mode MySQL)
     if (!is_google_cloud_mode()) {
         try {
             $cols = table_columns('users');
@@ -479,6 +461,7 @@ function authenticate_user(string $username, string $password): array {
             $user = $st->fetch();
 
             if ($user) {
+                $accountFoundInSystem = true;
                 if (!empty($user['status']) && strcasecmp($user['status'], 'Nonaktif') === 0) {
                     return ['success' => false, 'error' => 'Akun Anda dinonaktifkan. Silakan hubungi Administrator.'];
                 }
@@ -510,35 +493,58 @@ function authenticate_user(string $username, string $password): array {
                     return ['success' => true, 'name' => $uRealName];
                 }
 
-                // Akun ditemukan di database MySQL namun password salah: JANGAN lanjut ke fallback default
+                // Akun ditemukan di database MySQL namun password salah: JANGAN izinkan login dengan password lama / fallback
                 return ['success' => false, 'error' => 'Username atau password salah.'];
             }
         } catch (Throwable $e) {
-            // Lanjut ke default jika tabel users belum ada / error koneksi
+            // Lanjut ke fallback bootstrap jika database belum diinisialisasi
         }
     }
 
-    // 4. Fallback Default admin & teknisi
-    $defaultUsers = [
-        ['username' => 'admin', 'password' => 'admin123', 'name' => 'Administrator', 'role' => 'admin'],
-        ['username' => 'teknisi', 'password' => 'teknisi123', 'name' => 'Teknisi IT', 'role' => 'teknisi'],
-    ];
+    // 3. Fallback Kredensial Environment: HANYA berlaku jika akun belum pernah terdaftar di database / sheet
+    if (!$accountFoundInSystem) {
+        $envUser = cfg('admin_username', envv('ADMIN_USERNAME', ''));
+        $envPass = cfg('admin_password', envv('ADMIN_PASSWORD', ''));
 
-    foreach ($defaultUsers as $du) {
-        if (strcasecmp($username, $du['username']) === 0 && $password === $du['password']) {
-            $uid = ($du['role'] === 'admin') ? 1 : 2;
-            $_SESSION['user_id'] = $uid;
-            $_SESSION['nama'] = $du['name'];
-            $_SESSION['username'] = $du['username'];
-            $_SESSION['role'] = $du['role'];
-            $_SESSION['last_activity'] = time();
-            set_auth_cookie([
-                'id' => $uid,
-                'nama' => $du['name'],
-                'username' => $du['username'],
-                'role' => $du['role']
-            ]);
-            return ['success' => true, 'name' => $du['name']];
+        if ($envUser !== '' && $envPass !== '') {
+            if ($username === $envUser && $password === $envPass) {
+                $_SESSION['user_id'] = 1;
+                $_SESSION['nama'] = $envUser;
+                $_SESSION['username'] = $envUser;
+                $_SESSION['role'] = 'admin';
+                $_SESSION['last_activity'] = time();
+                set_auth_cookie([
+                    'id' => 1,
+                    'nama' => $envUser,
+                    'username' => $envUser,
+                    'role' => 'admin'
+                ]);
+                return ['success' => true, 'name' => $envUser];
+            }
+        }
+
+        // 4. Fallback Default admin & teknisi untuk inisialisasi awal instalasi
+        $defaultUsers = [
+            ['username' => 'admin', 'password' => 'admin123', 'name' => 'Administrator', 'role' => 'admin'],
+            ['username' => 'teknisi', 'password' => 'teknisi123', 'name' => 'Teknisi IT', 'role' => 'teknisi'],
+        ];
+
+        foreach ($defaultUsers as $du) {
+            if (strcasecmp($username, $du['username']) === 0 && $password === $du['password']) {
+                $uid = ($du['role'] === 'admin') ? 1 : 2;
+                $_SESSION['user_id'] = $uid;
+                $_SESSION['nama'] = $du['name'];
+                $_SESSION['username'] = $du['username'];
+                $_SESSION['role'] = $du['role'];
+                $_SESSION['last_activity'] = time();
+                set_auth_cookie([
+                    'id' => $uid,
+                    'nama' => $du['name'],
+                    'username' => $du['username'],
+                    'role' => $du['role']
+                ]);
+                return ['success' => true, 'name' => $du['name']];
+            }
         }
     }
 

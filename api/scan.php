@@ -22,6 +22,14 @@ if ($token === '' || !preg_match('/^[a-zA-Z0-9\-_\.\/\:\+\s%]{1,128}$/', $token)
     exit;
 }
 
+// Preload seluruh data sheet yang dibutuhkan oleh scan dalam 1 batch HTTP request
+if (is_google_cloud_mode()) {
+    $gsClient = google_sheets_v4_client();
+    if ($gsClient) {
+        $gsClient->preloadSheets(['Assets', 'Cabang', 'Divisi', 'Karyawan', 'Kategori_Aset', 'Asset_QR_Tokens', 'Maintenance_Scan', 'Maintenance_Checklists', 'Employee_Complaints', 'Users']);
+    }
+}
+
 $asset = get_asset_by_token($token);
 
 if (!$asset) {
@@ -180,7 +188,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (($_POST['action'] ?? '') === 'save
 
     $techUserId = is_logged_in() ? current_user_id() : 0;
     if ($techUserId <= 0 && $techName !== '' && strcasecmp($techName, 'Teknisi') !== 0) {
-        $allUsers = get_user_list(true);
+        $allUsers = get_user_list(false);
         $foundUser = false;
         foreach ($allUsers as $u) {
             if (strcasecmp((string)($u['nama'] ?? ''), $techName) === 0) {

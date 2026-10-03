@@ -724,16 +724,18 @@ class GoogleSheetsV4Client {
 
             foreach ($needed as $name) {
                 $rows = [];
+                $foundInBatch = false;
                 // Search in batchData case-insensitively
                 foreach ($batchData as $bKey => $bRows) {
                     if (strcasecmp($bKey, $name) === 0) {
                         $rows = $bRows;
+                        $foundInBatch = true;
                         break;
                     }
                 }
 
-                // Fallback jika batch kosong atau pemanggilan tunggal
-                if (empty($rows)) {
+                // Fallback jika bukan dari batchGet atau tab sheet tidak ada sama sekali dalam respons batch
+                if (!$foundInBatch) {
                     $rows = $this->getValues($name);
                     if (empty($rows)) {
                         $rows = $this->getValues($name . '!A1:Z');
