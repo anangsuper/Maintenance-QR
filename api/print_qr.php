@@ -43,12 +43,20 @@ foreach ($rows as $r) {
         $deviceTitle = preg_replace('/\\b' . preg_quote($merkVal, '/') . '\\s+' . preg_quote($merkVal, '/') . '\\b/i', $merkVal, $deviceTitle);
     }
     $kode = $r['kode_inventaris'] ?? ('ASET-' . $r['id']);
+    $searchKeywords = strtolower($kode . ' ' . $deviceTitle . ' ' . $userFull . ' ' . $cabangLabel);
 
     $cards .= '
-    <div class="qr-sticker-wrapper">
+    <div class="qr-sticker-wrapper" id="sticker-item-'.$i.'" data-search="'.e($searchKeywords).'" data-kode="'.e($kode).'" data-id="'.$aid.'">
       <div class="qr-sticker-actions no-print">
+        <div class="form-check form-check-inline m-0 me-auto d-flex align-items-center">
+          <input class="form-check-input sticker-check" type="checkbox" checked id="chk-'.$i.'" onchange="onStickerToggle(this)">
+          <label class="form-check-label ms-1 small fw-semibold user-select-none" for="chk-'.$i.'" style="cursor: pointer; font-size: 0.72rem;">Pilih</label>
+        </div>
+        <button type="button" class="btn btn-sm qr-action-btn" onclick="copyScanLink(\''.e(addslashes($url)).'\', this)" title="Salin URL Scan QR">
+          <i class="bi bi-link-45deg"></i>
+        </button>
         <button type="button" class="btn btn-sm qr-dl-btn" onclick="downloadSticker(this, \''.e(addslashes($kode)).'\')" title="Unduh Stiker Gambar (PNG)">
-          <i class="bi bi-download text-primary me-1"></i><span class="d-none d-sm-inline">Unduh PNG</span>
+          <i class="bi bi-download text-primary me-1"></i><span class="d-none d-sm-inline">Unduh PNG</span><span class="d-sm-none">PNG</span>
         </button>
       </div>
       <div class="qr-sticker">
@@ -82,7 +90,7 @@ foreach ($rows as $r) {
 }
 
 if (!$cards) {
-    $cards = '<div class="alert alert-warning">Belum ada QR yang dapat dicetak. Silakan generate QR terlebih dahulu di halaman QR Aset.</div>';
+    $cards = '<div class="alert alert-warning text-center py-5 shadow-sm rounded-3"><i class="bi bi-exclamation-triangle fs-1 d-block mb-3 text-warning"></i><h5 class="fw-bold">Belum Ada Stiker QR yang Dapat Dicetak</h5><p class="text-secondary small mb-0">Silakan pastikan filter cabang atau pilih aset di menu Manajemen Label QR terlebih dahulu.</p></div>';
 }
 
 $head = '<style id="stickerStyle">
@@ -100,19 +108,34 @@ $head = '<style id="stickerStyle">
 }
 
 body {
-  background: #F5F8FB;
+  background: #F8FAFC;
   font-family: "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   color: #1F2A37;
   -webkit-print-color-adjust: exact !important;
   print-color-adjust: exact !important;
 }
 
+/* Sticky Control Panel Bar */
+.qr-control-bar {
+  position: sticky;
+  top: 12px;
+  z-index: 999;
+  background: rgba(255, 255, 255, 0.96);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid #E2E8F0;
+  border-radius: 14px;
+  padding: 16px 20px;
+  margin-bottom: 22px;
+  box-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.08), 0 4px 6px -2px rgba(15, 23, 42, 0.03);
+}
+
 .qr-container {
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
-  gap: 3.5mm;
-  padding: 12px 0;
+  gap: 4mm;
+  padding: 8px 0 32px 0;
 }
 
 .qr-sticker-wrapper {
@@ -120,12 +143,44 @@ body {
   flex-direction: column;
   box-sizing: border-box;
   page-break-inside: avoid;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.qr-sticker-wrapper.is-unselected {
+  opacity: 0.32;
+  filter: grayscale(85%);
+}
+
+.qr-sticker-wrapper.is-unselected .qr-sticker {
+  border-color: #94A3B8 !important;
+  box-shadow: none !important;
 }
 
 .qr-sticker-actions {
   display: flex;
+  align-items: center;
   justify-content: flex-end;
-  margin-bottom: 4px;
+  gap: 4px;
+  margin-bottom: 5px;
+}
+
+.qr-action-btn {
+  font-size: 0.72rem;
+  padding: 2px 7px;
+  background: #ffffff;
+  border: 1px solid #CBD5E1;
+  color: #1E3A60;
+  border-radius: 5px;
+  font-weight: 600;
+  transition: all 0.15s ease;
+  cursor: pointer;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+}
+
+.qr-action-btn:hover {
+  background: #EFF6FF;
+  border-color: #3B82F6;
+  color: #1D4ED8;
 }
 
 .qr-dl-btn {
@@ -134,7 +189,7 @@ body {
   background: #ffffff;
   border: 1px solid #CBD5E1;
   color: #1E3A60;
-  border-radius: 4px;
+  border-radius: 5px;
   font-weight: 600;
   transition: all 0.15s ease;
   cursor: pointer;
@@ -155,10 +210,16 @@ body {
   flex-direction: column;
   justify-content: space-between;
   overflow: hidden;
-  box-shadow: 0 4px 12px rgba(46, 119, 173, 0.12);
+  box-shadow: 0 4px 14px rgba(46, 119, 173, 0.14);
   position: relative;
+  transition: all 0.2s ease;
   -webkit-print-color-adjust: exact !important;
   print-color-adjust: exact !important;
+}
+
+.qr-sticker:hover {
+  box-shadow: 0 8px 22px rgba(46, 119, 173, 0.22);
+  transform: translateY(-2px);
 }
 
 .qr-top-bar {
@@ -451,7 +512,7 @@ body {
     print-color-adjust: exact !important;
   }
 
-  .no-print, nav, header, footer {
+  .no-print, nav, header, footer, .qr-control-bar, .qr-sticker-actions, .qr-sticker-wrapper.is-unselected, .qr-sticker-wrapper.d-none {
     display: none !important;
   }
 
@@ -496,32 +557,121 @@ $currentBase = module_base_url();
 $singleAsset = ($assetId > 0 && count($rows) === 1);
 $pageHeading = $singleAsset ? 'Cetak Stiker QR Komputer' : 'Cetak Stiker QR Aset';
 
+$branchName = 'Semua Kantor Cabang';
+if ($cabangId > 0) {
+    foreach ($rows as $r) {
+        if (!empty($r['cabang_nama']) && $r['cabang_nama'] !== '-') {
+            $branchName = $r['cabang_nama'];
+            break;
+        }
+    }
+}
+
 $body = '
-<div class="no-print mb-3 p-3 bg-white rounded-3 shadow-sm">
-  <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 border-bottom pb-2 mb-3">
+<div class="no-print qr-control-bar">
+  <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 border-bottom pb-3 mb-3">
     <div>
-      <a class="btn btn-outline-secondary btn-sm mb-1" href="'.e(module_url('qr_admin.php', ['cabang'=>$cabangId])).'"><i class="bi bi-arrow-left"></i> Kembali ke QR Aset</a>
-      <h4 class="mb-0 fw-bold text-dark"><i class="bi bi-qr-code me-2 text-primary"></i>'.$pageHeading.'</h4>
-      <div class="text-secondary small">Desain stiker modern & berwarna — Tajam, jelas, dan mudah di-scan oleh kamera HP.</div>
+      <div class="d-flex align-items-center gap-2 mb-1">
+        <a class="btn btn-outline-secondary btn-sm rounded-pill px-3" href="'.e(module_url('qr_admin.php', ['cabang'=>$cabangId])).'">
+          <i class="bi bi-arrow-left me-1"></i> Kembali ke QR Aset
+        </a>
+        <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 px-2 py-1 rounded-pill small">
+          <i class="bi bi-building me-1"></i>'.e($branchName).'
+        </span>
+      </div>
+      <h4 class="mb-0 fw-bold text-dark d-flex align-items-center gap-2">
+        <i class="bi bi-qr-code text-primary"></i>'.$pageHeading.'
+      </h4>
+      <div class="text-secondary small mt-1">
+        Desain stiker modern tajam & berwarna. Pilih stiker, sesuaikan ukuran kertas, dan cetak atau unduh gambar PNG.
+      </div>
     </div>
-    <div class="d-flex gap-2">
-      <button class="btn btn-primary fw-semibold px-4 py-2" onclick="window.print()"><i class="bi bi-printer-fill me-1"></i> Print / Cetak Stiker</button>
+    
+    <div class="d-flex align-items-center gap-2 flex-wrap">
+      <button class="btn btn-outline-info btn-sm rounded-pill text-dark px-3" type="button" data-bs-toggle="collapse" data-bs-target="#printTipsCollapse">
+        <i class="bi bi-info-circle-fill text-info me-1"></i> Petunjuk Cetak
+      </button>
+      <button class="btn btn-primary fw-bold px-4 py-2 rounded-pill shadow-sm d-flex align-items-center gap-2" onclick="printSelectedStickers()">
+        <i class="bi bi-printer-fill fs-5"></i>
+        <span>Cetak Stiker (<span id="printSelectedCount">'.$i.'</span>)</span>
+      </button>
     </div>
   </div>
 
-  <div class="d-flex flex-wrap align-items-center gap-2">
-    <span class="small fw-semibold text-secondary">Pilihan Ukuran Stiker:</span>
-    <div class="btn-group btn-group-sm" role="group">
-      <button type="button" class="btn btn-outline-primary active" id="btnMedium" onclick="applySize(\'medium\')">Kompak (7.0 x 4.4 cm)</button>
-      <button type="button" class="btn btn-outline-primary" id="btnMini" onclick="applySize(\'mini\')">Mini (6.0 x 3.8 cm)</button>
-      <button type="button" class="btn btn-outline-primary" id="btnAtm" onclick="applySize(\'atm\')">ATM (8.5 x 5.4 cm)</button>
-      <button type="button" class="btn btn-outline-primary" id="btnTj121" onclick="applySize(\'tj121\')" title="Format label Tom & Jerry No. 121 (7.5 x 3.8 cm - 10 label per lembar)">Tom & Jerry 121</button>
-      <button type="button" class="btn btn-outline-primary" id="btnTj108" onclick="applySize(\'tj108\')" title="Format label Tom & Jerry No. 108 (3.8 x 1.8 cm - ultra kompak)">Tom & Jerry 108</button>
+  <!-- Collapsible Petunjuk Cetak -->
+  <div class="collapse mb-3" id="printTipsCollapse">
+    <div class="alert alert-info border-0 shadow-sm p-3 mb-0" style="background-color: #F0F9FF; border-left: 4px solid #0284C7 !important;">
+      <div class="fw-bold text-dark mb-1"><i class="bi bi-printer text-info me-1"></i> Rekomendasi Pengaturan Cetak (Print Dialog Browser):</div>
+      <ul class="mb-0 small text-secondary ps-3">
+        <li><strong>Ukuran Kertas:</strong> A4 (Orientasi Portrait / Tegak).</li>
+        <li><strong>Margin:</strong> Pilih <em>"Minimum"</em> atau <em>"None"</em> agar stiker tercetak maksimal.</li>
+        <li><strong>Wajib Centang:</strong> <em>"Background graphics"</em> (Grafis Latar Belakang) agar warna gradient biru & badge tampil di print.</li>
+        <li><strong>Skala / Scale:</strong> 100% (Default).</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- Filter & Selection Row -->
+  <div class="row g-2 align-items-center mb-3">
+    <div class="col-md-5">
+      <div class="input-group input-group-sm">
+        <span class="input-group-text bg-white border-end-0 text-muted"><i class="bi bi-search"></i></span>
+        <input type="text" id="stickerFilterInput" class="form-control border-start-0" placeholder="Ketik untuk memfilter nama user, kode inventaris, divisi..." oninput="filterStickers(this.value)">
+        <button class="btn btn-outline-secondary border-start-0" type="button" onclick="clearFilter()" title="Reset pencarian"><i class="bi bi-x-lg"></i></button>
+      </div>
+    </div>
+    <div class="col-md-7 d-flex justify-content-md-end align-items-center gap-2 flex-wrap">
+      <div class="btn-group btn-group-sm">
+        <button type="button" class="btn btn-outline-secondary" onclick="toggleSelectAll(true)" title="Centang semua stiker">
+          <i class="bi bi-check-all me-1 text-success"></i> Pilih Semua
+        </button>
+        <button type="button" class="btn btn-outline-secondary" onclick="toggleSelectAll(false)" title="Hapus centang semua">
+          <i class="bi bi-dash me-1 text-danger"></i> Batalkan Semua
+        </button>
+      </div>
+      <span class="badge bg-light text-dark border px-3 py-2 fw-semibold" id="stickerStatusBadge">
+        Menampilkan '.$i.' dari '.$i.' Stiker
+      </span>
+    </div>
+  </div>
+
+  <!-- Size Options Row -->
+  <div class="d-flex flex-wrap align-items-center gap-2 pt-2 border-top">
+    <span class="small fw-bold text-secondary me-1"><i class="bi bi-aspect-ratio me-1"></i>Ukuran Stiker:</span>
+    <div class="btn-group btn-group-sm flex-wrap" role="group">
+      <button type="button" class="btn btn-outline-primary active" id="btnMedium" onclick="applySize(\'medium\')">
+        ⭐ Kompak (7.0 × 4.4 cm) <span class="d-none d-lg-inline text-muted small ms-1">(Casing PC)</span>
+      </button>
+      <button type="button" class="btn btn-outline-primary" id="btnMini" onclick="applySize(\'mini\')">
+        💻 Mini (6.0 × 3.8 cm) <span class="d-none d-lg-inline text-muted small ms-1">(Laptop/AIO)</span>
+      </button>
+      <button type="button" class="btn btn-outline-primary" id="btnAtm" onclick="applySize(\'atm\')">
+        💳 ATM (8.5 × 5.4 cm) <span class="d-none d-lg-inline text-muted small ms-1">(ID Card)</span>
+      </button>
+      <button type="button" class="btn btn-outline-primary" id="btnTj121" onclick="applySize(\'tj121\')" title="Label Tom & Jerry No. 121 (7.5 x 3.8 cm - 10 label per lembar)">
+        🏷️ TJ 121 (7.5 × 3.8 cm)
+      </button>
+      <button type="button" class="btn btn-outline-primary" id="btnTj108" onclick="applySize(\'tj108\')" title="Label Tom & Jerry No. 108 (3.8 x 1.8 cm - hemat ruang)">
+        🏷️ TJ 108 (3.8 × 1.8 cm)
+      </button>
     </div>
   </div>
 </div>
 
-<div class="qr-container size-medium" id="qrContainer">'.$cards.'</div>';
+<div class="qr-container size-medium" id="qrContainer">'.$cards.'</div>
+
+<!-- Floating Copy Toast -->
+<div class="position-fixed bottom-0 end-0 p-3" style="z-index: 1100;">
+  <div id="copyToast" class="toast align-items-center text-white bg-dark border-0 shadow-lg" role="alert" aria-live="assertive" aria-atomic="true">
+    <div class="d-flex">
+      <div class="toast-body d-flex align-items-center gap-2">
+        <i class="bi bi-clipboard-check-fill text-success fs-5"></i>
+        <span>Link scan QR berhasil disalin ke clipboard!</span>
+      </div>
+      <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+    </div>
+  </div>
+</div>';
 
 $logoDataUri = app_logo_url();
 
@@ -566,7 +716,6 @@ function drawLogoOnCanvas(canvas, logoUri, containerEl) {
   var img = new Image();
   img.onload = function() {
     var size = canvas.width;
-    // Logo takes ~22% of QR width (safely within 30% Level H tolerance)
     var logoSize = Math.round(size * 0.22);
     var center = Math.round((size - logoSize) / 2);
     var pad = Math.round(size * 0.025);
@@ -613,7 +762,6 @@ function drawLogoOnCanvas(canvas, logoUri, containerEl) {
 
     ctx.drawImage(img, dx, dy, dw, dh);
 
-    // Update <img> tag created by qrcodejs if present
     var qImg = containerEl.querySelector("img");
     if (qImg) {
       try {
@@ -622,6 +770,113 @@ function drawLogoOnCanvas(canvas, logoUri, containerEl) {
     }
   };
   img.src = logoUri;
+}
+
+function onStickerToggle(chk) {
+  var wrapper = chk.closest(".qr-sticker-wrapper");
+  if (wrapper) {
+    wrapper.classList.toggle("is-unselected", !chk.checked);
+  }
+  updateSelectedCount();
+}
+
+function toggleSelectAll(select) {
+  var wrappers = document.querySelectorAll(".qr-sticker-wrapper");
+  wrappers.forEach(function(w) {
+    if (!w.classList.contains("d-none")) {
+      var chk = w.querySelector(".sticker-check");
+      if (chk) {
+        chk.checked = select;
+        w.classList.toggle("is-unselected", !select);
+      }
+    }
+  });
+  updateSelectedCount();
+}
+
+function updateSelectedCount() {
+  var visibleSelected = document.querySelectorAll(".qr-sticker-wrapper:not(.d-none) .sticker-check:checked").length;
+  var countEl = document.getElementById("printSelectedCount");
+  if (countEl) countEl.textContent = visibleSelected;
+}
+
+function filterStickers(keyword) {
+  keyword = (keyword || "").toLowerCase().trim();
+  var wrappers = document.querySelectorAll(".qr-sticker-wrapper");
+  var visibleCount = 0;
+  var totalCount = wrappers.length;
+
+  wrappers.forEach(function(w) {
+    var text = w.getAttribute("data-search") || "";
+    if (keyword === "" || text.indexOf(keyword) !== -1) {
+      w.classList.remove("d-none");
+      visibleCount++;
+    } else {
+      w.classList.add("d-none");
+    }
+  });
+
+  var badge = document.getElementById("stickerStatusBadge");
+  if (badge) {
+    badge.textContent = "Menampilkan " + visibleCount + " dari " + totalCount + " Stiker";
+  }
+  updateSelectedCount();
+}
+
+function clearFilter() {
+  var input = document.getElementById("stickerFilterInput");
+  if (input) {
+    input.value = "";
+    filterStickers("");
+  }
+}
+
+function printSelectedStickers() {
+  var visibleSelected = document.querySelectorAll(".qr-sticker-wrapper:not(.d-none) .sticker-check:checked").length;
+  if (visibleSelected === 0) {
+    alert("Silakan pilih minimal 1 stiker untuk dicetak.");
+    return;
+  }
+  window.print();
+}
+
+function copyScanLink(url, btn) {
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(url).then(function() {
+      showCopyToast("Link scan QR berhasil disalin!");
+    }).catch(function() {
+      fallbackCopy(url);
+    });
+  } else {
+    fallbackCopy(url);
+  }
+}
+
+function fallbackCopy(text) {
+  var ta = document.createElement("textarea");
+  ta.value = text;
+  document.body.appendChild(ta);
+  ta.select();
+  document.execCommand("copy");
+  document.body.removeChild(ta);
+  showCopyToast("Link scan QR berhasil disalin!");
+}
+
+function showCopyToast(msg) {
+  var toastEl = document.getElementById("copyToast");
+  if (toastEl) {
+    var textSpan = toastEl.querySelector(".toast-body span");
+    if (textSpan) textSpan.textContent = msg;
+    if (typeof bootstrap !== "undefined" && bootstrap.Toast) {
+      var bsToast = new bootstrap.Toast(toastEl, { delay: 2200 });
+      bsToast.show();
+    } else {
+      toastEl.classList.add("show");
+      setTimeout(function() { toastEl.classList.remove("show"); }, 2200);
+    }
+  } else {
+    alert(msg);
+  }
 }
 
 function downloadSticker(btn, kode) {
