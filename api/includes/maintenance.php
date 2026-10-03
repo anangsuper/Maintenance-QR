@@ -776,8 +776,8 @@ function get_asset_yearly_card_matrix(int $assetId, int $year): array {
     for ($m = 1; $m <= 12; $m++) {
         $matrix[$m] = [
             'month' => $m,
-            'month_tag' => sprintf('/%02d/%s', $m, $yrSuffix),
-            'date_str' => sprintf('/%02d/%s', $m, $yrSuffix),
+            'month_tag' => sprintf('%02d/%s', $m, $yrSuffix),
+            'date_str' => sprintf('%02d/%s', $m, $yrSuffix),
             'is_done' => false,
             'log_id' => 0,
             'checklists' => [1=>0, 2=>0, 3=>0, 4=>0, 5=>0, 6=>0, 7=>0, 8=>0, 9=>0],
@@ -851,7 +851,7 @@ function get_asset_yearly_card_matrix(int $assetId, int $year): array {
                     $logId = (int)($s['id'] ?? $s['col_0'] ?? 0);
                     $d = substr((string)($s['maintenance_date'] ?? $s['col_4'] ?? ''), 0, 10);
                     $dDay = $d ? date('d', strtotime($d)) : '';
-                    $dateFormatted = $dDay ? "{$dDay}/" . sprintf('%02d/%s', $sMonth, $yrSuffix) : sprintf('/%02d/%s', $sMonth, $yrSuffix);
+                    $dateFormatted = $dDay ? "{$dDay}/" . sprintf('%02d/%s', $sMonth, $yrSuffix) : sprintf('%02d/%s', $sMonth, $yrSuffix);
 
                     $matrix[$sMonth]['is_done'] = true;
                     $matrix[$sMonth]['log_id'] = $logId;
@@ -902,7 +902,7 @@ function get_asset_yearly_card_matrix(int $assetId, int $year): array {
             $logId = (int)$s['id'];
             $d = substr((string)($s['maintenance_date'] ?? ''), 0, 10);
             $dDay = $d ? date('d', strtotime($d)) : '';
-            $dateFormatted = $dDay ? "{$dDay}/" . sprintf('%02d/%s', $sMonth, $yrSuffix) : sprintf('/%02d/%s', $sMonth, $yrSuffix);
+            $dateFormatted = $dDay ? "{$dDay}/" . sprintf('%02d/%s', $sMonth, $yrSuffix) : sprintf('%02d/%s', $sMonth, $yrSuffix);
 
             $matrix[$sMonth]['is_done'] = true;
             $matrix[$sMonth]['log_id'] = $logId;

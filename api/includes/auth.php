@@ -461,6 +461,9 @@ function authenticate_user(string $username, string $password): array {
                         ]);
                         return ['success' => true, 'name' => $uRealName];
                     }
+
+                    // Akun ditemukan di Google Sheets namun password salah: JANGAN lanjut ke fallback default
+                    return ['success' => false, 'error' => 'Username atau password salah.'];
                 }
             }
         }
@@ -506,9 +509,12 @@ function authenticate_user(string $username, string $password): array {
                     ]);
                     return ['success' => true, 'name' => $uRealName];
                 }
+
+                // Akun ditemukan di database MySQL namun password salah: JANGAN lanjut ke fallback default
+                return ['success' => false, 'error' => 'Username atau password salah.'];
             }
         } catch (Throwable $e) {
-            // Lanjut ke default
+            // Lanjut ke default jika tabel users belum ada / error koneksi
         }
     }
 

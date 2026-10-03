@@ -156,13 +156,7 @@ for ($m = 1; $m <= 12; $m++) {
             $paraf = $parafText;
         }
     } else {
-        if ($m < $month) {
-            $paraf = '<a href="'.e(module_url('scan.php', ['t' => $token, 'action' => 'susulan', 'month' => $m])).'" class="badge bg-warning text-dark text-decoration-none py-1 px-1" style="font-size: 0.65rem;" title="Input Maintenance Susulan Bulan '.e($monthNames[$m] ?? ('Bulan ' . $m)).'">+ Susulan</a>';
-        } elseif ($m === $month) {
-            $paraf = '<a href="'.e(module_url('scan.php', ['t' => $token, 'action' => 'start'])).'" class="badge bg-primary text-white text-decoration-none py-1 px-1" style="font-size: 0.65rem;" title="Mulai Checklist Bulan Ini">+ Isi</a>';
-        } else {
-            $paraf = '<span class="text-muted" style="font-size: 0.65rem;">-</span>';
-        }
+        $paraf = '<span class="text-muted" style="font-size: 0.72rem;">-</span>';
     }
 
     $rowClass = ($m % 2 === 0) ? 'even-row' : 'odd-row';
@@ -244,10 +238,11 @@ $headStyle = '<style>
     height: 23px;
   }
   .grid6-matrix-table .tgl-col {
-    width: 65px;
-    font-size: 0.70rem;
-    letter-spacing: -0.3px;
+    width: 68px;
+    font-size: 0.72rem;
+    letter-spacing: -0.2px;
     padding: 0 2px;
+    white-space: nowrap;
   }
   .grid6-matrix-table .chk-col {
     width: 20px;
