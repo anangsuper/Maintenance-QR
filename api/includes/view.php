@@ -654,7 +654,7 @@ h1, h2, h3, h4, h5, h6,
     max-width: 100%;
   }
   .app-content-container {
-    padding: 12px 8px 36px;
+    padding: 12px 12px 36px;
   }
   .app-topbar, .public-topbar {
     padding-left: 12px !important;

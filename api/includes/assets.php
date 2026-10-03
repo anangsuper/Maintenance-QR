@@ -28,10 +28,22 @@ function asset_title(?array $a): string {
     if (empty($a)) {
         return 'Perangkat Tidak Ditemukan / Telah Dihapus';
     }
+    $kategori = trim((string)($a['kategori_nama'] ?? ''));
+    $merk = trim((string)($a['merk'] ?? ''));
+    $model = trim((string)($a['model'] ?? ''));
+
+    // Bersihkan duplikasi jika model diawali oleh merk (misal merk "Asus", model "Asus VivoBook ...")
+    if ($merk !== '' && $model !== '') {
+        if (stripos($model, $merk) === 0) {
+            $model = trim(preg_replace('/^' . preg_quote($merk, '/') . '\s*/i', '', $model));
+        }
+    }
+
     $parts = [];
-    if (!empty($a['kategori_nama'])) $parts[] = $a['kategori_nama'];
-    if (!empty($a['merk'])) $parts[] = $a['merk'];
-    if (!empty($a['model'])) $parts[] = $a['model'];
+    if ($kategori !== '') $parts[] = $kategori;
+    if ($merk !== '') $parts[] = $merk;
+    if ($model !== '') $parts[] = $model;
+
     $title = trim(implode(' ', $parts));
     if ($title === '') $title = 'Aset #' . ($a['id'] ?? '-');
     return $title;

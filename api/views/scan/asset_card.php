@@ -141,6 +141,15 @@ $deviceTitle = asset_title($asset);
 $printerDisplay = !empty($asset['printer']) && $asset['printer'] !== '-' ? $asset['printer'] : '-';
 $cabangLabel = !empty($asset['cabang_nama']) && $asset['cabang_nama'] !== '-' ? $asset['cabang_nama'] : 'KPO';
 
+$rawMerk = trim((string)($asset['merk'] ?? '-'));
+$rawModel = trim((string)($asset['model'] ?? '-'));
+$cleanModel = $rawModel;
+if ($rawMerk !== '-' && $rawModel !== '-' && stripos($rawModel, $rawMerk) === 0) {
+    $cleanModel = trim(substr($rawModel, strlen($rawMerk)));
+    if ($cleanModel === '') $cleanModel = $rawModel;
+}
+$displayMerkModel = ($rawMerk !== '-' && $cleanModel !== '-') ? ($rawMerk . ' / ' . $cleanModel) : ($rawMerk !== '-' ? $rawMerk : $cleanModel);
+
 $cardMatrixRows = '';
 for ($m = 1; $m <= 12; $m++) {
     $row = $cardMatrix[$m];
@@ -186,92 +195,288 @@ $lastMaintStr = !empty($historyList[0])
     : 'Belum pernah';
 
 $headStyle = '<style>
-/* Modern Kartu Kontrol IT (Exact match to print_card.php grid6 / user screenshot) */
+/* Modern Kartu Kontrol IT Base Styles */
+.scan-card-section {
+  background: #ffffff;
+  border-radius: 12px;
+}
 .mobile-card-wrapper {
   background: #ffffff;
-  border: 2px solid #2E77AD;
-  border-radius: 14px;
-  padding: 14px 16px;
-  box-shadow: 0 8px 24px rgba(46, 119, 173, 0.12);
+  border: 1.5px solid #2563eb;
+  border-radius: 12px;
+  padding: 12px 14px;
+  box-shadow: 0 4px 18px rgba(37, 99, 235, 0.08);
   margin: 0 auto;
+  width: 100%;
   max-width: 100%;
+  box-sizing: border-box;
 }
+
+.grid6-top-banner {
+  background: linear-gradient(135deg, #1e40af 0%, #2563eb 100%);
+  color: #ffffff;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-weight: 700;
+  font-size: 0.90rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+.grid6-top-banner .banner-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.grid6-branch-pill {
+  background: #ffffff;
+  color: #1e3a8a;
+  font-size: 0.72rem;
+  font-weight: 800;
+  padding: 2px 8px;
+  border-radius: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  flex-shrink: 0;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+}
+
+.grid6-info-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.84rem;
+  line-height: 1.4;
+  margin: 8px 0;
+}
+.grid6-info-table td {
+  padding: 3px 2px;
+  vertical-align: middle;
+}
+.grid6-info-table .info-lbl-col {
+  width: 82px;
+}
+.grid6-info-table .info-sep-col {
+  width: 8px;
+  text-align: center;
+}
+.grid6-info-table .info-v {
+  word-break: break-word;
+}
+
+.badge-lbl {
+  font-size: 0.70rem;
+  font-weight: 800;
+  padding: 2px 6px;
+  border-radius: 4px;
+  display: inline-block;
+  text-align: center;
+  white-space: nowrap;
+}
+.badge-blue { background: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd; }
+.badge-green { background: #ecfdf5; color: #047857; border: 1px solid #a7f3d0; }
+.badge-purple { background: #f5f3ff; color: #6d28d9; border: 1px solid #ddd6fe; }
+.badge-kode { background: #f1f5f9; color: #0f172a; padding: 2px 6px; border-radius: 4px; font-weight: bold; border: 1px solid #cbd5e1; }
+
+.grid6-matrix-wrapper {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  margin-bottom: 8px;
+  border-radius: 6px;
+  border: 1px solid #2563eb;
+  background: #ffffff;
+}
+
+.grid6-matrix-table {
+  width: 100%;
+  table-layout: fixed;
+  border-collapse: collapse;
+  font-size: 0.82rem;
+  margin: 0;
+}
+.col-w-tgl { width: 17%; }
+.col-w-chk { width: 6.8%; }
+.col-w-paraf { width: 21.8%; }
+
+.grid6-matrix-table th {
+  background: #2563eb !important;
+  color: #ffffff !important;
+  border: 1px solid #1d4ed8;
+  font-weight: 700;
+  text-align: center;
+  padding: 5px 1px;
+  font-size: 0.74rem;
+  line-height: 1.2;
+}
+.grid6-matrix-table td {
+  border: 1px solid #cbd5e1;
+  text-align: center;
+  padding: 3px 1px;
+  height: 24px;
+  vertical-align: middle;
+}
+.grid6-matrix-table tr.even-row { background-color: #f8fafc; }
+.grid6-matrix-table tr.done-row { background-color: #f0fdf4; }
+.grid6-matrix-table tr.done-row td { border-color: #a7f3d0; }
+
+.grid6-matrix-table .tgl-col {
+  font-weight: 700;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.72rem;
+  color: #1e40af;
+  white-space: nowrap;
+  overflow: hidden;
+  text-align: center;
+  padding: 3px 1px;
+}
+.grid6-matrix-table .chk-col {
+  font-size: 0.84rem;
+  padding: 0;
+  text-align: center;
+  line-height: 1;
+}
+.grid6-matrix-table .chk-yes {
+  color: #059669;
+  font-weight: 900;
+}
+.grid6-matrix-table .chk-no {
+  color: #94a3b8;
+}
+.grid6-matrix-table .paraf-col {
+  font-size: 0.72rem;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  color: #334155;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  padding: 2px 2px;
+  text-align: center;
+}
+
+.grid6-ket-box {
+  background: #f8fafc;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  padding: 8px 10px;
+}
+.grid6-ket-title {
+  font-size: 0.72rem;
+  font-weight: 800;
+  color: #1e40af;
+  margin-bottom: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  display: flex;
+  align-items: center;
+}
+.grid6-ket-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 4px 6px;
+}
+.leg-tag {
+  font-size: 0.70rem;
+  font-weight: 600;
+  padding: 2px 5px;
+  border-radius: 4px;
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  justify-content: flex-start;
+}
+.leg-tag b {
+  font-weight: 800;
+  color: #0f172a;
+}
+.leg-blue { background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; }
+.leg-purple { background: #faf5ff; color: #7e22ce; border: 1px solid #e9d5ff; }
+.leg-teal { background: #f0fdfa; color: #0f766e; border: 1px solid #99f6e4; }
+
+.bg-primary-subtle { background-color: #eff6ff !important; color: #1d4ed8 !important; }
+.border-primary-subtle { border-color: #bfdbfe !important; }
+.bg-success-subtle { background-color: #f0fdf4 !important; color: #15803d !important; }
+.border-success-subtle { border-color: #bbf7d0 !important; }
+.tracking-wide { letter-spacing: 0.05em; }
+.shadow-xs { box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
+
+/* MOBILE RESPONSIVE TWEAKS (PLACED AFTER BASE STYLES SO THEY WIN SPECIFICITY) */
 @media (max-width: 576px) {
+  .scan-card-section {
+    padding: 10px 8px !important;
+  }
   .mobile-card-wrapper {
     padding: 8px 6px;
     border-radius: 10px;
+    border-width: 1.5px;
   }
   .grid6-top-banner {
-    padding: 5px 8px;
-    font-size: 0.82rem;
+    padding: 6px 8px;
+    font-size: 0.80rem;
+    gap: 4px;
   }
   .grid6-branch-pill {
-    font-size: 0.65rem;
+    font-size: 0.64rem;
     padding: 2px 6px;
   }
   .grid6-info-table {
     font-size: 0.76rem;
+    margin: 6px 0;
   }
   .grid6-info-table td {
-    padding: 2px 2px;
+    padding: 2px 1px;
+  }
+  .grid6-info-table .info-lbl-col {
+    width: 68px;
   }
   .badge-lbl {
-    font-size: 0.65rem;
+    font-size: 0.64rem;
     padding: 1px 4px;
   }
   .grid6-matrix-wrapper {
     margin-bottom: 6px;
     border-radius: 6px;
-    border: 1px solid #cbd5e1;
-    -webkit-overflow-scrolling: touch;
   }
   .grid6-matrix-table {
-    font-size: 0.72rem;
-    min-width: 305px;
+    min-width: 285px;
   }
   .grid6-matrix-table th {
     padding: 4px 1px;
-    font-size: 0.70rem;
+    font-size: 0.68rem;
   }
   .grid6-matrix-table td {
-    padding: 2px 1px;
-    height: 23px;
+    padding: 2px 0;
+    height: 22px;
   }
   .grid6-matrix-table .tgl-col {
-    width: 68px;
-    font-size: 0.72rem;
-    letter-spacing: -0.2px;
-    padding: 0 2px;
-    white-space: nowrap;
+    font-size: 0.68rem;
+    padding: 2px 0;
   }
   .grid6-matrix-table .chk-col {
-    width: 20px;
-    font-size: 0.78rem;
-    padding: 0;
+    font-size: 0.76rem;
   }
   .grid6-matrix-table .paraf-col {
-    min-width: 62px;
-    font-size: 0.68rem;
-    padding: 1px 2px;
-  }
-  .grid6-matrix-table .paraf-col a.badge {
-    font-size: 0.60rem !important;
-    padding: 2px 3px !important;
+    font-size: 0.66rem;
+    padding: 2px 1px;
   }
   .grid6-ket-box {
-    padding: 6px 8px;
+    padding: 6px 6px;
   }
   .grid6-ket-title {
-    font-size: 0.68rem;
+    font-size: 0.66rem;
     margin-bottom: 4px;
   }
   .grid6-ket-grid {
-    grid-template-columns: repeat(2, 1fr);
-    gap: 3px 4px;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 3px 3px;
   }
   .leg-tag {
-    font-size: 0.65rem;
-    padding: 1px 4px;
+    font-size: 0.62rem;
+    padding: 1px 3px;
   }
   .mobile-btn-stack .btn {
     flex: 1 1 calc(50% - 6px);
@@ -281,136 +486,6 @@ $headStyle = '<style>
     padding: 8px 6px;
   }
 }
-.grid6-top-banner {
-  background: #1D4ED8;
-  color: #ffffff;
-  padding: 7px 12px;
-  border-radius: 6px;
-  font-weight: 700;
-  font-size: 0.92rem;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-.grid6-branch-pill {
-  background: #ffffff;
-  color: #1A4064;
-  font-size: 0.72rem;
-  font-weight: 800;
-  padding: 3px 10px;
-  border-radius: 4px;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
-}
-.grid6-info-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 0.85rem;
-  line-height: 1.4;
-  margin: 8px 0;
-}
-.grid6-info-table td {
-  padding: 3px 4px;
-  vertical-align: middle;
-}
-.badge-lbl {
-  font-size: 0.72rem;
-  font-weight: 800;
-  padding: 2px 6px;
-  border-radius: 4px;
-  display: inline-block;
-  text-align: center;
-  white-space: nowrap;
-}
-.badge-blue { background: #E6EDF5; color: #2E77AD; border: 1px solid #30B0E0; }
-.badge-green { background: #ECFDF5; color: #065F46; border: 1px solid #A7F3D0; }
-.badge-purple { background: #E6EDF5; color: #50C0C0; border: 1px solid #50C0C0; }
-.badge-kode { background: #f1f5f9; color: #0f172a; padding: 2px 6px; border-radius: 4px; font-weight: bold; border: 1px solid #cbd5e1; }
-
-.grid6-matrix-wrapper {
-  width: 100%;
-  overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
-  margin-bottom: 8px;
-}
-.grid6-matrix-table {
-  width: 100%;
-  min-width: 340px;
-  border-collapse: collapse;
-  border: 1.5px solid #2E77AD;
-  font-size: 0.82rem;
-}
-.grid6-matrix-table th {
-  background: #2E77AD !important;
-  color: #ffffff !important;
-  border: 1px solid #1A4064;
-  font-weight: bold;
-  text-align: center;
-  padding: 6px 2px;
-}
-.grid6-matrix-table td {
-  border: 1px solid #cbd5e1;
-  text-align: center;
-  padding: 4px 2px;
-  height: 25px;
-}
-.grid6-matrix-table tr.even-row { background-color: #f8fafc; }
-.grid6-matrix-table tr.done-row { background-color: #f0fdf4; }
-.grid6-matrix-table tr.done-row td { border-color: #A7F3D0; }
-.grid6-matrix-table .tgl-col { font-weight: bold; font-family: "Courier New", monospace; font-size: 0.84rem; color: #2E77AD; width: 85px; }
-.grid6-matrix-table .chk-col { font-weight: bold; font-size: 0.88rem; width: 28px; }
-.grid6-matrix-table .chk-yes { color: #10B981; font-weight: 900; }
-.grid6-matrix-table .chk-no { color: #94a3b8; }
-.grid6-matrix-table .paraf-col { font-size: 0.78rem; font-family: "Courier New", monospace; color: #334155; min-width: 85px; }
-
-.grid6-ket-box {
-  background: #f8fafc;
-  border: 1px solid #94a3b8;
-  border-radius: 8px;
-  padding: 8px 12px;
-}
-.grid6-ket-title {
-  font-size: 0.74rem;
-  font-weight: 800;
-  color: #2E77AD;
-  margin-bottom: 6px;
-  text-transform: uppercase;
-  letter-spacing: 0.3px;
-}
-.grid6-ket-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 4px 8px;
-}
-@media (max-width: 480px) {
-  .grid6-ket-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
-}
-.leg-tag {
-  font-size: 0.72rem;
-  font-weight: 600;
-  padding: 2px 6px;
-  border-radius: 4px;
-  white-space: nowrap;
-  display: inline-flex;
-  align-items: center;
-  gap: 3px;
-}
-.leg-tag b {
-  font-weight: 800;
-  color: #0f172a;
-}
-.leg-blue { background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; }
-.leg-purple { background: #faf5ff; color: #7e22ce; border: 1px solid #e9d5ff; }
-.leg-teal { background: #f0fdfa; color: #0f766e; border: 1px solid #99f6e4; }
-.bg-primary-subtle { background-color: #eff6ff !important; color: #1d4ed8 !important; }
-.border-primary-subtle { border-color: #bfdbfe !important; }
-.bg-success-subtle { background-color: #f0fdf4 !important; color: #15803d !important; }
-.border-success-subtle { border-color: #bbf7d0 !important; }
-.tracking-wide { letter-spacing: 0.05em; }
-.shadow-xs { box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
 
 @media print {
   body { background: #fff !important; margin: 0 !important; }
@@ -619,7 +694,7 @@ $body = '
         </div>
         <div class="col-6 col-md-4">
           <div class="text-secondary" style="font-size: 0.72rem;">Merk / Model:</div>
-          <div class="fw-semibold text-dark text-truncate">'.e($asset['merk'] ?? '-').' / '.e($asset['model'] ?? '-').'</div>
+          <div class="fw-semibold text-dark text-truncate">'.e($displayMerkModel).'</div>
         </div>
         <div class="col-6 col-md-4">
           <div class="text-secondary" style="font-size: 0.72rem;">Pengguna / Pemilik:</div>
@@ -653,9 +728,9 @@ $body = '
     '.$complaintCardHtml.'
 
     <!-- KARTU KONTROL CHECKLIST 12 BULAN (PERSIS FORMAT GAMBAR / MOBILE & DESKTOP) -->
-    <div class="card p-3 p-md-4 border-0 shadow-sm mb-4">
+    <div class="card p-3 p-md-4 border-0 shadow-sm mb-4 scan-card-section">
       <div class="d-flex justify-content-between align-items-center mb-3">
-        <h5 class="fw-bold text-dark mb-0"><i class="bi bi-card-checklist text-primary me-2"></i>KARTU CHECKLIST MAINTENANCE IT '.$year.'</h5>
+        <h5 class="fw-bold text-dark mb-0 fs-6 fs-md-5"><i class="bi bi-card-checklist text-primary me-2"></i>KARTU CHECKLIST MAINTENANCE IT '.$year.'</h5>
         <div class="d-flex gap-2">
           <a class="btn btn-sm btn-outline-primary fw-semibold" target="_blank" href="'.e(module_url('print_card.php', ['id'=>$assetId, 'tahun'=>$year])).'"><i class="bi bi-printer me-1"></i> Cetak Kartu</a>
         </div>
@@ -666,25 +741,25 @@ $body = '
         
         <!-- Header Banner Berwarna -->
         <div class="grid6-top-banner mb-2">
-          <span><i class="bi bi-card-checklist me-1"></i> KARTU KONTROL IT · '.$year.'</span>
+          <span class="banner-title"><i class="bi bi-card-checklist me-1"></i> KARTU KONTROL IT · '.$year.'</span>
           <span class="grid6-branch-pill">'.e($cabangLabel).'</span>
         </div>
 
         <!-- Header Info -->
         <table class="grid6-info-table mb-2">
           <tr>
-            <td style="width: 75px;"><span class="badge-lbl badge-blue">NAMA</span></td>
-            <td style="width: 8px; text-align: center;">:</td>
+            <td class="info-lbl-col"><span class="badge-lbl badge-blue">NAMA</span></td>
+            <td class="info-sep-col">:</td>
             <td class="info-v"><strong>'.e($userWithDiv).'</strong></td>
           </tr>
           <tr>
-            <td><span class="badge-lbl badge-green">IP / KODE</span></td>
-            <td style="text-align: center;">:</td>
+            <td class="info-lbl-col"><span class="badge-lbl badge-green">IP / KODE</span></td>
+            <td class="info-sep-col">:</td>
             <td class="info-v"><span class="text-success fw-bold font-monospace">'.e($ipDisplay).'</span> · <span class="badge-kode font-monospace">'.e($kodeInv).'</span></td>
           </tr>
           <tr>
-            <td><span class="badge-lbl badge-purple">UNIT/PRT</span></td>
-            <td style="text-align: center;">:</td>
+            <td class="info-lbl-col"><span class="badge-lbl badge-purple">UNIT/PRT</span></td>
+            <td class="info-sep-col">:</td>
             <td class="info-v">'.e($deviceTitle).' · <span class="text-secondary">'.e($printerDisplay).'</span></td>
           </tr>
         </table>
@@ -692,6 +767,19 @@ $body = '
         <!-- 12 Months Matrix Table (Scrollable on small phones) -->
         <div class="grid6-matrix-wrapper">
           <table class="grid6-matrix-table">
+            <colgroup>
+              <col class="col-w-tgl">
+              <col class="col-w-chk">
+              <col class="col-w-chk">
+              <col class="col-w-chk">
+              <col class="col-w-chk">
+              <col class="col-w-chk">
+              <col class="col-w-chk">
+              <col class="col-w-chk">
+              <col class="col-w-chk">
+              <col class="col-w-chk">
+              <col class="col-w-paraf">
+            </colgroup>
             <thead>
               <tr>
                 <th class="tgl-h">TGL</th>
