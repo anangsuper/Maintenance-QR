@@ -364,6 +364,18 @@ h1, h2, h3, h4, h5, h6,
   letter-spacing: -0.025em;
 }
 
+.text-white,
+.text-white h1, .text-white h2, .text-white h3, .text-white h4, .text-white h5, .text-white h6,
+.text-white .modal-title,
+.modal-header.text-white .modal-title,
+.modal-header.bg-primary .modal-title,
+.modal-header.bg-dark .modal-title,
+.modal-header.bg-navy-dark .modal-title,
+.modal-header.bg-danger .modal-title,
+.modal-header.bg-success .modal-title {
+  color: #ffffff !important;
+}
+
 /* Base Layout Framework */
 .app-layout-wrapper {
   display: flex;

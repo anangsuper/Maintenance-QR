@@ -356,8 +356,8 @@ $body = '
     <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
       <div class="modal-header text-white" style="background: linear-gradient(135deg, #1E3A60 0%, #2E77AD 100%);">
         <div>
-          <div class="small text-white-50 text-uppercase fw-bold" style="font-size: 0.7rem; letter-spacing: 0.08em;">PRATINJAU STIKER QR</div>
-          <h5 class="modal-title fw-bold" id="modalAssetKode">INV-IT-001</h5>
+          <div class="small text-uppercase fw-bold" style="font-size: 0.72rem; letter-spacing: 0.08em; color: rgba(255, 255, 255, 0.85) !important;">PRATINJAU STIKER QR</div>
+          <h5 class="modal-title fw-bold text-white mb-0" id="modalAssetKode" style="color: #ffffff !important;">INV-IT-001</h5>
         </div>
         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
