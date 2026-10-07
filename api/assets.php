@@ -483,6 +483,21 @@ foreach ($pageAssets as $a) {
     $editUrl = module_url('asset_edit.php', ['id' => $aid]);
     $deleteUrl = module_url('asset_delete.php', ['id' => $aid, 'redirect' => $_SERVER['REQUEST_URI'] ?? module_url('assets.php')]);
 
+    // Data untuk Modal Pratinjau Stiker QR (Quick QR Preview)
+    $qrModalJson = '';
+    if ($token && $scanUrl) {
+        $qrModalData = [
+            'id' => $aid,
+            'kode' => $kode,
+            'device' => $device,
+            'user' => $user . ($divisi ? " ({$divisi})" : ''),
+            'cabang' => $cabang,
+            'url' => $scanUrl,
+            'token' => $token
+        ];
+        $qrModalJson = htmlspecialchars(json_encode($qrModalData, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES), ENT_QUOTES, 'UTF-8');
+    }
+
     // Quick Action Button for Technicians
     $quickActionBtn = '';
     if ($isRepairIssue && $scanUrl) {
@@ -500,7 +515,7 @@ foreach ($pageAssets as $a) {
       <td>
         <div class="d-flex align-items-center gap-2">
           <div class="fw-bold text-dark fs-6 font-monospace">'.e($kode).'</div>
-          '.($token ? '<a href="'.e($scanUrl).'" class="badge bg-light text-secondary border text-decoration-none" title="Lihat Kartu Kontrol"><i class="bi bi-qr-code"></i></a>' : '').'
+          '.($qrModalJson ? '<button type="button" class="btn btn-sm btn-light border text-primary p-1 rounded" onclick="openQrModal('.$qrModalJson.')" title="Lihat Pratinjau Stiker QR" style="line-height: 1;"><i class="bi bi-qr-code"></i></button>' : ($token ? '<a href="'.e($scanUrl).'" class="badge bg-light text-secondary border text-decoration-none" title="Lihat Kartu Kontrol"><i class="bi bi-qr-code"></i></a>' : '')).'
         </div>
         <small class="text-muted" style="font-size: 0.72rem;">ID: #'.$aid.'</small>
       </td>
@@ -525,6 +540,7 @@ foreach ($pageAssets as $a) {
         <div class="d-inline-flex align-items-center gap-1">
           '.$quickActionBtn.'
           <div class="btn-group btn-group-sm">
+            '.($qrModalJson ? '<button type="button" class="btn btn-sm btn-outline-primary d-inline-flex align-items-center gap-1 fw-semibold" onclick="openQrModal('.$qrModalJson.')" title="Lihat Pratinjau Stiker QR"><i class="bi bi-qr-code"></i><span class="small d-none d-xl-inline" style="font-size: 0.72rem;">QR</span></button>' : '').'
             '.($scanUrl ? '<a class="btn btn-sm btn-light border" href="'.e($scanUrl).'" title="Buka Kartu / Scan"><i class="bi bi-qr-code-scan"></i></a>' : '').'
             <a class="btn btn-sm btn-light border" target="_blank" href="'.e($cardUrl).'" title="Cetak Kartu Kontrol"><i class="bi bi-printer"></i></a>
             <a class="btn btn-sm btn-light border" href="'.e($editUrl).'" title="Edit Perangkat"><i class="bi bi-pencil"></i></a>
@@ -893,6 +909,73 @@ $body = '
     </div>
   </div>
 </div>
+
+<!-- Modal Quick QR Preview (Sesuai Desain Pratinjau Stiker QR) -->
+<div class="modal fade" id="quickQrModal" tabindex="-1" aria-labelledby="quickQrModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
+      <div class="modal-header text-white" style="background: linear-gradient(135deg, #1E3A60 0%, #2E77AD 100%);">
+        <div>
+          <div class="small text-uppercase fw-bold" style="font-size: 0.72rem; letter-spacing: 0.08em; color: rgba(255, 255, 255, 0.85) !important;">PRATINJAU STIKER QR</div>
+          <h5 class="modal-title fw-bold text-white mb-0" id="modalAssetKode" style="color: #ffffff !important;">INV-IT-001</h5>
+        </div>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body p-4 text-center">
+        <!-- QR Code Canvas Container -->
+        <div class="d-inline-block p-3 bg-white border border-2 border-primary border-opacity-25 rounded-3 shadow-sm mb-3 position-relative">
+          <div id="modalQrBox" style="width: 200px; height: 200px; margin: 0 auto; display: flex; align-items: center; justify-content: center;"></div>
+        </div>
+
+        <!-- Detail Perangkat -->
+        <div class="bg-light p-3 rounded-3 text-start mb-3 border">
+          <div class="row g-2 small">
+            <div class="col-4 text-muted">Perangkat:</div>
+            <div class="col-8 fw-bold text-dark text-truncate" id="modalAssetDevice">-</div>
+            <div class="col-4 text-muted">Pengguna:</div>
+            <div class="col-8 fw-semibold text-primary text-truncate" id="modalAssetUser">-</div>
+            <div class="col-4 text-muted">Kantor Cabang:</div>
+            <div class="col-8 text-dark" id="modalAssetCabang">-</div>
+          </div>
+        </div>
+
+        <!-- Input Link Scan & Copy -->
+        <div class="input-group input-group-sm mb-3">
+          <input type="text" id="modalScanUrlInput" class="form-control font-monospace" readonly style="background: #F1F5F9; font-size: 0.75rem;">
+          <button class="btn btn-outline-secondary" type="button" onclick="copyModalScanUrl(this)" title="Salin Link">
+            <i class="bi bi-clipboard"></i> Salin
+          </button>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="d-flex flex-wrap gap-2 justify-content-center pt-2">
+          <a id="modalBtnPrint" href="#" target="_blank" class="btn btn-primary btn-sm px-3 rounded-pill fw-semibold shadow-xs">
+            <i class="bi bi-printer-fill me-1"></i> Cetak Stiker
+          </a>
+          <button type="button" class="btn btn-outline-primary btn-sm px-3 rounded-pill fw-semibold" onclick="downloadModalQrPng()">
+            <i class="bi bi-download me-1"></i> Unduh Gambar QR (PNG)
+          </button>
+          <a id="modalBtnOpenScan" href="#" target="_blank" class="btn btn-outline-secondary btn-sm px-3 rounded-pill">
+            <i class="bi bi-box-arrow-up-right me-1"></i> Buka Halaman Scan
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Floating Copy Toast -->
+<div class="position-fixed bottom-0 end-0 p-3" style="z-index: 1100;">
+  <div id="qrAdminToast" class="toast align-items-center text-white bg-dark border-0 shadow-lg" role="alert" aria-live="assertive" aria-atomic="true">
+    <div class="d-flex">
+      <div class="toast-body d-flex align-items-center gap-2">
+        <i class="bi bi-check-circle-fill text-success fs-5"></i>
+        <span>Link scan QR berhasil disalin!</span>
+      </div>
+      <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+    </div>
+  </div>
+</div>
 ';
 
 $extraHead = '
@@ -916,7 +999,176 @@ $extraHead = '
 </style>
 ';
 
+$logoDataUri = app_logo_url();
+
 $extraScript = '
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script>
+var appLogoUri = '.json_encode($logoDataUri).';
+var currentModalData = null;
+
+function openQrModal(data) {
+  currentModalData = data;
+  document.getElementById("modalAssetKode").textContent = data.kode || "-";
+  document.getElementById("modalAssetDevice").textContent = data.device || "-";
+  document.getElementById("modalAssetUser").textContent = data.user || "-";
+  document.getElementById("modalAssetCabang").textContent = data.cabang || "-";
+  document.getElementById("modalScanUrlInput").value = data.url || "";
+
+  document.getElementById("modalBtnPrint").href = "'.e(module_url('print_qr.php')).'?asset_id=" + data.id;
+  document.getElementById("modalBtnOpenScan").href = data.url;
+
+  var qrBox = document.getElementById("modalQrBox");
+  qrBox.innerHTML = "";
+
+  if (typeof QRCode !== "undefined") {
+    new QRCode(qrBox, {
+      text: data.url,
+      width: 200,
+      height: 200,
+      correctLevel: QRCode.CorrectLevel.H
+    });
+
+    // Pasang logo Bank Mitra di tengah QR
+    attachLogoToQr(qrBox, appLogoUri);
+  }
+
+  var modalEl = document.getElementById("quickQrModal");
+  if (modalEl && typeof bootstrap !== "undefined") {
+    var modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+    modal.show();
+  }
+}
+
+function attachLogoToQr(containerEl, logoUri) {
+  if (!logoUri) return;
+  var tries = 0;
+  var timer = setInterval(function(){
+    tries++;
+    var canvas = containerEl.querySelector("canvas");
+    if (canvas && canvas.width > 0) {
+      clearInterval(timer);
+      drawLogoOnCanvas(canvas, logoUri, containerEl);
+    } else if (tries > 25) {
+      clearInterval(timer);
+    }
+  }, 40);
+}
+
+function drawLogoOnCanvas(canvas, logoUri, containerEl) {
+  var ctx = canvas.getContext("2d");
+  var img = new Image();
+  img.onload = function() {
+    var size = canvas.width;
+    var logoSize = Math.round(size * 0.22);
+    var center = Math.round((size - logoSize) / 2);
+    var pad = Math.round(size * 0.025);
+
+    var bgX = center - pad;
+    var bgY = center - pad;
+    var bgW = logoSize + (pad * 2);
+    var bgH = logoSize + (pad * 2);
+    var rad = Math.round(size * 0.035);
+
+    // Rounded background
+    ctx.save();
+    ctx.fillStyle = "#FFFFFF";
+    ctx.beginPath();
+    ctx.moveTo(bgX + rad, bgY);
+    ctx.lineTo(bgX + bgW - rad, bgY);
+    ctx.quadraticCurveTo(bgX + bgW, bgY, bgX + bgW, bgY + rad);
+    ctx.lineTo(bgX + bgW, bgY + bgH - rad);
+    ctx.quadraticCurveTo(bgX + bgW, bgY + bgH, bgX + bgW - rad, bgY + bgH);
+    ctx.lineTo(bgX + rad, bgY + bgH);
+    ctx.quadraticCurveTo(bgX, bgY + bgH, bgX, bgY + bgH - rad);
+    ctx.lineTo(bgX, bgY + rad);
+    ctx.quadraticCurveTo(bgX, bgY, bgX + rad, bgY);
+    ctx.closePath();
+    ctx.fill();
+
+    // Subtle cyan border
+    ctx.strokeStyle = "#30B0E0";
+    ctx.lineWidth = Math.max(1, Math.round(size * 0.012));
+    ctx.stroke();
+    ctx.restore();
+
+    // Draw logo
+    var aspect = (img.naturalWidth && img.naturalHeight) ? (img.naturalWidth / img.naturalHeight) : 1;
+    var dw = logoSize;
+    var dh = logoSize;
+    if (aspect > 1) {
+      dh = logoSize / aspect;
+    } else {
+      dw = logoSize * aspect;
+    }
+    var dx = center + (logoSize - dw) / 2;
+    var dy = center + (logoSize - dh) / 2;
+
+    ctx.drawImage(img, dx, dy, dw, dh);
+
+    var qImg = containerEl.querySelector("img");
+    if (qImg) {
+      try { qImg.src = canvas.toDataURL("image/png"); } catch(e) {}
+    }
+  };
+  img.src = logoUri;
+}
+
+function downloadModalQrPng() {
+  var canvas = document.querySelector("#modalQrBox canvas");
+  if (!canvas) {
+    alert("Gambar QR belum selesai dirender.");
+    return;
+  }
+  var kode = (currentModalData && currentModalData.kode) ? currentModalData.kode : "aset";
+  var a = document.createElement("a");
+  a.download = "QR-" + kode + ".png";
+  a.href = canvas.toDataURL("image/png");
+  a.click();
+}
+
+function copyModalScanUrl(btn) {
+  var input = document.getElementById("modalScanUrlInput");
+  if (!input || !input.value) return;
+  var url = input.value;
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(url).then(function() {
+      showToastNotification("Link scan QR berhasil disalin!");
+    }).catch(function() {
+      fallbackCopyText(url);
+    });
+  } else {
+    fallbackCopyText(url);
+  }
+}
+
+function fallbackCopyText(text) {
+  var ta = document.createElement("textarea");
+  ta.value = text;
+  document.body.appendChild(ta);
+  ta.select();
+  document.execCommand("copy");
+  document.body.removeChild(ta);
+  showToastNotification("Link scan QR berhasil disalin!");
+}
+
+function showToastNotification(msg) {
+  var toastEl = document.getElementById("qrAdminToast");
+  if (toastEl) {
+    var span = toastEl.querySelector(".toast-body span");
+    if (span) span.textContent = msg;
+    if (typeof bootstrap !== "undefined" && bootstrap.Toast) {
+      var bsToast = new bootstrap.Toast(toastEl, { delay: 2200 });
+      bsToast.show();
+    } else {
+      toastEl.classList.add("show");
+      setTimeout(function(){ toastEl.classList.remove("show"); }, 2200);
+    }
+  } else {
+    alert(msg);
+  }
+}
+</script>
 <script>
 document.addEventListener("DOMContentLoaded", function() {
   const STORAGE_KEY = "asset_registry_selected_assets_v1";

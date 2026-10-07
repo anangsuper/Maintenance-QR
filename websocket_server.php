@@ -52,11 +52,16 @@ echo "⏰ Started At       : " . date('Y-m-d H:i:s') . "\n";
 echo "💡 Tekan Ctrl+C untuk menghentikan server\n";
 echo "-----------------------------------------------------------------\n\n";
 
+gc_enable(); // Pastikan siklus Garbage Collector aktif untuk long-running process
+
 /** @var array<int, resource> */
 $clients = [];
 /** @var array<int, array> */
 $clientMeta = [];
 $lastHeartbeat = time();
+$lastGcCheck = time();
+$loopIteration = 0;
+$maxMemoryMb = (int)(getenv('WS_MAX_MEMORY_MB') ?: 128); // Batas aman alokasi RAM (128 MB)
 
 while (true) {
     $read = array_merge([$server], $clients);
@@ -198,6 +203,41 @@ while (true) {
             }
         }
     }
+
+    // 5. Garbage Collection & Memory Health Watchdog berkala (setiap 60 detik atau 100 iterasi)
+    $loopIteration++;
+    if ($loopIteration % 100 === 0 || (time() - $lastGcCheck >= 60)) {
+        $lastGcCheck = time();
+        $collectedCycles = gc_collect_cycles();
+        $memUsage = memory_get_usage(true) / 1048576; // MB
+        $memPeak = memory_get_peak_usage(true) / 1048576; // MB
+        $activeWs = count_active_ws($clientMeta);
+
+        // Cetak log kesehatan memori jika ada siklus yang dibersihkan atau berkala setiap 500 iterasi
+        if ($collectedCycles > 0 || $loopIteration % 500 === 0) {
+            echo "[" . date('H:i:s') . "] 🧹 [GC] Bersihkan {$collectedCycles} siklus | RAM: " . round($memUsage, 2) . " MB (Puncak: " . round($memPeak, 2) . " MB) | Klien Aktif: {$activeWs}\n";
+        }
+
+        // Pengaman Memory Threshold Guard (Cegah crash out-of-memory fatal)
+        if ($memUsage >= $maxMemoryMb) {
+            echo "[" . date('H:i:s') . "] ⚠️ [CRITICAL] Alokasi memori mendekati batas (" . round($memUsage, 2) . " MB / {$maxMemoryMb} MB).\n";
+            echo "[" . date('H:i:s') . "] 🔄 Menjalankan pembersihan darurat soket pasif...\n";
+            foreach ($clients as $cId => $cSocket) {
+                // Putus klien yang idle lebih dari 10 menit
+                if (isset($clientMeta[$cId]['connected_at']) && (time() - $clientMeta[$cId]['connected_at'] > 600)) {
+                    disconnect_client($cSocket, $cId, $clients, $clientMeta, 'Emergency memory eviction (idle > 10m)');
+                }
+            }
+            gc_collect_cycles();
+
+            // Jika memori masih tetap kritis melampaui batas maksimal, lakukan restart server secara bersih
+            $memAfter = memory_get_usage(true) / 1048576;
+            if ($memAfter >= $maxMemoryMb) {
+                echo "[" . date('H:i:s') . "] 🛑 [FATAL] Memori tidak dapat dibebaskan (" . round($memAfter, 2) . " MB). Menutup server untuk restart otomatis...\n";
+                break;
+            }
+        }
+    }
 }
 
 fclose($server);
@@ -217,6 +257,9 @@ function count_active_ws(array $meta): int {
 function disconnect_client($socket, int $id, array &$clients, array &$clientMeta, string $reason = ''): void {
     if (is_resource($socket)) {
         @fclose($socket);
+    }
+    if (isset($clientMeta[$id])) {
+        $clientMeta[$id]['buffer'] = ''; // Kosongkan buffer memori sebelum pelepasan zval
     }
     unset($clients[$id], $clientMeta[$id]);
     echo "[" . date('H:i:s') . "] [-] Client #{$id} terputus" . ($reason ? " ({$reason})" : "") . ". Total aktif: " . count_active_ws($clientMeta) . "\n";
