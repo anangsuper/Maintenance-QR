@@ -513,10 +513,7 @@ foreach ($pageAssets as $a) {
       </td>
       <td class="text-center text-muted small">'.$startNum.'</td>
       <td>
-        <div class="d-flex align-items-center gap-2">
-          <div class="fw-bold text-dark fs-6 font-monospace">'.e($kode).'</div>
-          '.($qrModalJson ? '<button type="button" class="btn btn-sm btn-light border text-primary p-1 rounded" onclick="openQrModal('.$qrModalJson.')" title="Lihat Pratinjau Stiker QR" style="line-height: 1;"><i class="bi bi-qr-code"></i></button>' : ($token ? '<a href="'.e($scanUrl).'" class="badge bg-light text-secondary border text-decoration-none" title="Lihat Kartu Kontrol"><i class="bi bi-qr-code"></i></a>' : '')).'
-        </div>
+        <div class="fw-bold text-dark fs-6 font-monospace">'.e($kode).'</div>
         <small class="text-muted" style="font-size: 0.72rem;">ID: #'.$aid.'</small>
       </td>
       <td>
@@ -536,11 +533,21 @@ foreach ($pageAssets as $a) {
       </td>
       <td class="text-center">'.$statusBadge.'</td>
       <td class="text-center">'.$maintBadge.'</td>
+      <td class="text-center text-nowrap">
+        '.($qrModalJson ? '
+        <button type="button" class="btn btn-sm btn-outline-primary d-inline-flex align-items-center gap-1 py-1 px-2 rounded-pill shadow-xs" 
+          onclick="openQrModal('.$qrModalJson.')" title="Klik untuk Pratinjau & Unduh QR">
+          <i class="bi bi-qr-code fs-6"></i>
+          <span class="small fw-semibold" style="font-size: 0.72rem;">LIHAT QR</span>
+        </button>' : '
+        <span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-25 px-2 py-1 rounded-pill font-monospace" style="font-size: 0.72rem;">
+          <i class="bi bi-dash-circle me-1"></i>BELUM ADA
+        </span>').'
+      </td>
       <td class="text-end text-nowrap">
         <div class="d-inline-flex align-items-center gap-1">
           '.$quickActionBtn.'
           <div class="btn-group btn-group-sm">
-            '.($qrModalJson ? '<button type="button" class="btn btn-sm btn-outline-primary d-inline-flex align-items-center gap-1 fw-semibold" onclick="openQrModal('.$qrModalJson.')" title="Lihat Pratinjau Stiker QR"><i class="bi bi-qr-code"></i><span class="small d-none d-xl-inline" style="font-size: 0.72rem;">QR</span></button>' : '').'
             '.($scanUrl ? '<a class="btn btn-sm btn-light border" href="'.e($scanUrl).'" title="Buka Kartu / Scan"><i class="bi bi-qr-code-scan"></i></a>' : '').'
             <a class="btn btn-sm btn-light border" target="_blank" href="'.e($cardUrl).'" title="Cetak Kartu Kontrol"><i class="bi bi-printer"></i></a>
             <a class="btn btn-sm btn-light border" href="'.e($editUrl).'" title="Edit Perangkat"><i class="bi bi-pencil"></i></a>
@@ -554,7 +561,7 @@ foreach ($pageAssets as $a) {
 if (empty($tableRows)) {
     $tableRows = '
     <tr>
-      <td colspan="9" class="text-center py-5">
+      <td colspan="10" class="text-center py-5">
         <div class="text-secondary opacity-75 mb-2"><i class="bi bi-pc-display fs-1"></i></div>
         <h6 class="fw-bold text-secondary">Tidak ada data komputer yang cocok dengan filter.</h6>
         <p class="text-muted small mb-3">Coba ubah kata kunci pencarian atau reset filter di atas.</p>
@@ -813,6 +820,7 @@ $body = '
           <th>Lokasi & IP</th>
           <th style="width: 110px;" class="text-center">Kondisi</th>
           <th style="width: 160px;" class="text-center">Maintenance ('.$currentMonthName.')</th>
+          <th style="width: 120px;" class="text-center">Label QR</th>
           <th style="width: 130px;" class="text-end">Aksi</th>
         </tr>
       </thead>
@@ -985,6 +993,24 @@ $extraHead = '
 }
 .table-row-selected > td {
   background-color: #eff6ff !important;
+}
+#modalQrBox {
+  width: 200px;
+  height: 200px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+#modalQrBox canvas {
+  display: block !important;
+  max-width: 100% !important;
+  height: auto !important;
+  margin: 0 auto !important;
+  border-radius: 4px;
+}
+#modalQrBox img {
+  display: none !important;
 }
 @keyframes fadeInUp {
   from {
