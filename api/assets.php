@@ -983,7 +983,7 @@ $body = '
           <!-- Sisi Kanan: Foto Fisik Perangkat -->
           <div class="col-12 col-md-6 text-center">
             <div id="modalAssetPhotoContainer" class="p-2 bg-light border rounded-3 shadow-xs position-relative overflow-hidden d-flex align-items-center justify-content-center" style="min-height: 200px; height: 215px;">
-              <img id="modalAssetPhotoImg" src="" alt="Foto Unit" class="w-100 h-100 object-fit-cover rounded border d-none" onerror="this.classList.add('d-none'); document.getElementById('modalAssetPhotoPlaceholder').classList.remove('d-none');">
+              <img id="modalAssetPhotoImg" src="" alt="Foto Unit" class="w-100 h-100 object-fit-cover rounded border d-none" onerror="onModalPhotoError(this)">
               <div id="modalAssetPhotoPlaceholder" class="text-secondary small py-4">
                 <i class="bi bi-camera fs-1 d-block mb-1 opacity-50 text-secondary"></i>
                 <span class="fw-semibold">Belum ada foto fisik unit</span>
@@ -1154,6 +1154,12 @@ function openQrModal(data) {
     var modal = bootstrap.Modal.getOrCreateInstance(modalEl);
     modal.show();
   }
+}
+
+function onModalPhotoError(img) {
+  if (img) img.classList.add("d-none");
+  var ph = document.getElementById("modalAssetPhotoPlaceholder");
+  if (ph) ph.classList.remove("d-none");
 }
 
 function attachLogoToQr(containerEl, logoUri) {
