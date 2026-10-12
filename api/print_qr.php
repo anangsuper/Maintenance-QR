@@ -44,6 +44,8 @@ foreach ($rows as $r) {
     }
     $kode = $r['kode_inventaris'] ?? ('ASET-' . $r['id']);
     $searchKeywords = strtolower($kode . ' ' . $deviceTitle . ' ' . $userFull . ' ' . $cabangLabel);
+    $rFoto = trim((string)($r['foto'] ?? ''));
+    $fotoSrc = function_exists('asset_image_url') ? asset_image_url($rFoto) : ($rFoto ? (str_starts_with($rFoto, 'http') ? $rFoto : module_url($rFoto)) : '');
 
     $cards .= '
     <div class="qr-sticker-wrapper" id="sticker-item-'.$i.'" data-search="'.e($searchKeywords).'" data-kode="'.e($kode).'" data-id="'.$aid.'">
@@ -74,6 +76,10 @@ foreach ($rows as $r) {
           <div class="qr-box-wrap">
             <div id="qr-'.$i.'" class="qrbox" data-qr="'.e($url).'"></div>
           </div>
+          '.($fotoSrc !== '' ? '
+          <div class="qr-photo-wrap" title="Foto Fisik Unit: '.e($deviceTitle).'">
+            <img src="'.e($fotoSrc).'" alt="Unit" onerror="this.parentElement.style.display=\'none\';">
+          </div>' : '').'
           <div class="qr-text-wrap">
             <div class="qr-kode-badge">'.e($kode).'</div>
             <div class="qr-device-name" title="'.e($deviceTitle).'">'.e($deviceTitle).'</div>
@@ -296,6 +302,32 @@ body {
   display: block;
 }
 
+.qr-photo-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #ffffff;
+  border: 1.2px solid #30B0E0;
+  border-radius: 1.5mm;
+  overflow: hidden;
+  flex-shrink: 0;
+  box-sizing: border-box;
+  box-shadow: 0 1px 3px rgba(46, 119, 173, 0.12);
+  -webkit-print-color-adjust: exact !important;
+  print-color-adjust: exact !important;
+}
+
+.qr-photo-wrap img {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover !important;
+  display: block !important;
+}
+
+.hide-photos .qr-photo-wrap {
+  display: none !important;
+}
+
 .qr-text-wrap {
   flex: 1;
   min-width: 0;
@@ -383,6 +415,8 @@ body {
 .qr-container:not(.size-mini):not(.size-atm) .qr-main-body { gap: 2.2mm; padding: 0.8mm 0; }
 .qr-container.size-medium .qr-box-wrap,
 .qr-container:not(.size-mini):not(.size-atm) .qr-box-wrap { width: 25.5mm; height: 25.5mm; padding: 0.5mm; border-radius: 1.5mm; }
+.qr-container.size-medium .qr-photo-wrap,
+.qr-container:not(.size-mini):not(.size-atm) .qr-photo-wrap { width: 19mm; height: 25.5mm; }
 .qr-container.size-medium .qr-text-wrap,
 .qr-container:not(.size-mini):not(.size-atm) .qr-text-wrap { gap: 0.8mm; }
 .qr-container.size-medium .qr-kode-badge,
@@ -414,6 +448,7 @@ body {
 .qr-container.size-mini .qr-cabang { font-size: 4.2pt; padding: 0.2mm 1.2mm; max-width: 30mm; }
 .qr-container.size-mini .qr-main-body { gap: 1.8mm; padding: 0.5mm 0; }
 .qr-container.size-mini .qr-box-wrap { width: 22mm; height: 22mm; padding: 0.4mm; border-radius: 1mm; }
+.qr-container.size-mini .qr-photo-wrap { width: 14mm; height: 22mm; }
 .qr-container.size-mini .qr-text-wrap { gap: 0.6mm; }
 .qr-container.size-mini .qr-kode-badge { font-size: 6.6pt; padding: 0.3mm 1mm; border-radius: 0.8mm; }
 .qr-container.size-mini .qr-device-name { font-size: 5.4pt; }
@@ -440,6 +475,7 @@ body {
 .qr-container.size-atm .qr-cabang { font-size: 5.5pt; padding: 0.3mm 1.8mm; max-width: 44mm; }
 .qr-container.size-atm .qr-main-body { gap: 2.8mm; padding: 1.2mm 0; }
 .qr-container.size-atm .qr-box-wrap { width: 33mm; height: 33mm; padding: 0.6mm; border-radius: 2mm; }
+.qr-container.size-atm .qr-photo-wrap { width: 24mm; height: 33mm; }
 .qr-container.size-atm .qr-text-wrap { gap: 1mm; }
 .qr-container.size-atm .qr-kode-badge { font-size: 9.2pt; padding: 0.5mm 1.8mm; border-radius: 1.2mm; }
 .qr-container.size-atm .qr-device-name { font-size: 7.5pt; }
@@ -466,6 +502,7 @@ body {
 .qr-container.size-tj121 .qr-cabang { font-size: 4.5pt; padding: 0.2mm 1.5mm; max-width: 36mm; }
 .qr-container.size-tj121 .qr-main-body { gap: 2.2mm; padding: 0.6mm 0; }
 .qr-container.size-tj121 .qr-box-wrap { width: 23mm; height: 23mm; padding: 0.5mm; border-radius: 1.2mm; }
+.qr-container.size-tj121 .qr-photo-wrap { width: 16mm; height: 23mm; }
 .qr-container.size-tj121 .qr-text-wrap { gap: 0.6mm; }
 .qr-container.size-tj121 .qr-kode-badge { font-size: 7.2pt; padding: 0.3mm 1.2mm; border-radius: 0.8mm; }
 .qr-container.size-tj121 .qr-device-name { font-size: 6.2pt; }
@@ -654,6 +691,10 @@ $body = '
       <button type="button" class="btn btn-outline-primary" id="btnTj108" onclick="applySize(\'tj108\')" title="Label Tom & Jerry No. 108 (3.8 x 1.8 cm - hemat ruang)">
         🏷️ TJ 108 (3.8 × 1.8 cm)
       </button>
+    </div>
+    <div class="form-check form-switch m-0 ms-auto d-flex align-items-center gap-1.5">
+      <input class="form-check-input" type="checkbox" id="togglePhotoStickers" checked onchange="toggleStickerPhotos(this.checked)">
+      <label class="form-check-label small fw-semibold text-secondary user-select-none" for="togglePhotoStickers" style="cursor: pointer;">Foto Unit</label>
     </div>
   </div>
 </div>
@@ -941,6 +982,16 @@ function applySize(size) {
 
   if (container) {
     container.className = "qr-container size-" + size;
+  }
+}
+
+function toggleStickerPhotos(show) {
+  var container = document.getElementById("qrContainer");
+  if (!container) return;
+  if (show) {
+    container.classList.remove("hide-photos");
+  } else {
+    container.classList.add("hide-photos");
   }
 }
 </script>';

@@ -500,7 +500,9 @@ foreach ($pageAssets as $a) {
             'user' => $user . ($divisi ? " ({$divisi})" : ''),
             'cabang' => $cabang,
             'url' => $scanUrl,
-            'token' => $token
+            'token' => $token,
+            'foto' => $fotoSrc,
+            'edit_url' => $editUrl
         ];
         $qrModalJson = htmlspecialchars(json_encode($qrModalData, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES), ENT_QUOTES, 'UTF-8');
     }
@@ -954,21 +956,49 @@ $body = '
   </div>
 </div>
 
-<!-- Modal Quick QR Preview (Sesuai Desain Pratinjau Stiker QR) -->
+<!-- Modal Quick QR Preview (Sesuai Desain Pratinjau Stiker QR & Foto Perangkat) -->
 <div class="modal fade" id="quickQrModal" tabindex="-1" aria-labelledby="quickQrModalLabel" aria-hidden="true">
-  <div class="modal-dialog modal-dialog-centered">
+  <div class="modal-dialog modal-dialog-centered modal-lg">
     <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
       <div class="modal-header text-white" style="background: linear-gradient(135deg, #1E3A60 0%, #2E77AD 100%);">
         <div>
-          <div class="small text-uppercase fw-bold" style="font-size: 0.72rem; letter-spacing: 0.08em; color: rgba(255, 255, 255, 0.85) !important;">PRATINJAU STIKER QR</div>
+          <div class="small text-uppercase fw-bold" style="font-size: 0.72rem; letter-spacing: 0.08em; color: rgba(255, 255, 255, 0.85) !important;">PRATINJAU STIKER QR &amp; FOTO UNIT</div>
           <h5 class="modal-title fw-bold text-white mb-0" id="modalAssetKode" style="color: #ffffff !important;">INV-IT-001</h5>
         </div>
         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
       <div class="modal-body p-4 text-center">
-        <!-- QR Code Canvas Container -->
-        <div class="d-inline-block p-3 bg-white border border-2 border-primary border-opacity-25 rounded-3 shadow-sm mb-3 position-relative">
-          <div id="modalQrBox" style="width: 200px; height: 200px; margin: 0 auto; display: flex; align-items: center; justify-content: center;"></div>
+        <!-- Baris QR Code & Foto Fisik Perangkat -->
+        <div class="row g-3 align-items-center mb-3">
+          <!-- Sisi Kiri: Kode QR -->
+          <div class="col-12 col-md-6 text-center">
+            <div class="p-3 bg-white border border-2 border-primary border-opacity-25 rounded-3 shadow-sm d-inline-block position-relative">
+              <div id="modalQrBox" style="width: 190px; height: 190px; margin: 0 auto; display: flex; align-items: center; justify-content: center;"></div>
+            </div>
+            <div class="small text-muted mt-2 fw-semibold" style="font-size: 0.75rem;">
+              <i class="bi bi-qr-code me-1 text-primary"></i> Kode QR Maintenance IT
+            </div>
+          </div>
+
+          <!-- Sisi Kanan: Foto Fisik Perangkat -->
+          <div class="col-12 col-md-6 text-center">
+            <div id="modalAssetPhotoContainer" class="p-2 bg-light border rounded-3 shadow-xs position-relative overflow-hidden d-flex align-items-center justify-content-center" style="min-height: 200px; height: 215px;">
+              <img id="modalAssetPhotoImg" src="" alt="Foto Unit" class="w-100 h-100 object-fit-cover rounded border d-none" onerror="this.classList.add('d-none'); document.getElementById('modalAssetPhotoPlaceholder').classList.remove('d-none');">
+              <div id="modalAssetPhotoPlaceholder" class="text-secondary small py-4">
+                <i class="bi bi-camera fs-1 d-block mb-1 opacity-50 text-secondary"></i>
+                <span class="fw-semibold">Belum ada foto fisik unit</span>
+                <div class="mt-2">
+                  <a id="modalAssetAddPhotoBtn" href="#" class="btn btn-sm btn-outline-primary py-1 px-2.5 fw-semibold" style="font-size: 0.75rem;">
+                    <i class="bi bi-plus-circle me-1"></i> Upload Foto
+                  </a>
+                </div>
+              </div>
+            </div>
+            <div class="small text-muted mt-2 fw-semibold d-flex justify-content-center align-items-center gap-1" style="font-size: 0.75rem;">
+              <i class="bi bi-pc-display me-1 text-primary"></i> Foto Fisik Unit Perangkat
+              <a id="modalAssetEditPhotoBtn" href="#" class="btn btn-sm btn-link py-0 px-1 text-decoration-none d-none" style="font-size: 0.72rem;">(Ganti Foto)</a>
+            </div>
+          </div>
         </div>
 
         <!-- Detail Perangkat -->
@@ -1079,6 +1109,30 @@ function openQrModal(data) {
 
   document.getElementById("modalBtnPrint").href = "'.e(module_url('print_qr.php')).'?asset_id=" + data.id;
   document.getElementById("modalBtnOpenScan").href = data.url;
+
+  // Handle Foto Unit
+  var photoImg = document.getElementById("modalAssetPhotoImg");
+  var photoPlaceholder = document.getElementById("modalAssetPhotoPlaceholder");
+  var editPhotoBtn = document.getElementById("modalAssetEditPhotoBtn");
+  var addPhotoBtn = document.getElementById("modalAssetAddPhotoBtn");
+  var editUrl = data.edit_url || (data.id ? ("'.e(module_url('asset_edit.php')).'?id=" + data.id) : "#");
+
+  if (editPhotoBtn) editPhotoBtn.href = editUrl;
+  if (addPhotoBtn) addPhotoBtn.href = editUrl;
+
+  if (photoImg && photoPlaceholder) {
+    if (data.foto) {
+      photoImg.src = data.foto;
+      photoImg.classList.remove("d-none");
+      photoPlaceholder.classList.add("d-none");
+      if (editPhotoBtn) editPhotoBtn.classList.remove("d-none");
+    } else {
+      photoImg.src = "";
+      photoImg.classList.add("d-none");
+      photoPlaceholder.classList.remove("d-none");
+      if (editPhotoBtn) editPhotoBtn.classList.add("d-none");
+    }
+  }
 
   var qrBox = document.getElementById("modalQrBox");
   qrBox.innerHTML = "";
