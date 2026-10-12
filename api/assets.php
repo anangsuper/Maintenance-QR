@@ -646,6 +646,9 @@ $body = '
     <a class="btn btn-outline-primary d-inline-flex align-items-center gap-1 fw-semibold" href="'.e(module_url('asset_import.php')).'">
       <i class="bi bi-file-earmark-arrow-up"></i> Import Excel / CSV
     </a>
+    <a class="btn btn-light border d-inline-flex align-items-center gap-1 fw-semibold text-dark shadow-xs" href="'.e(module_url('asset_gallery.php')).'">
+      <i class="bi bi-images text-primary"></i> Galeri Foto Unit
+    </a>
     <div class="btn-group">
       <button type="button" class="btn btn-light border dropdown-toggle d-inline-flex align-items-center gap-1" data-bs-toggle="dropdown" aria-expanded="false">
         <i class="bi bi-printer"></i> Cetak Kartu

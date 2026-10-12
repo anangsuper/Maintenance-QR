@@ -112,6 +112,7 @@ function map_sheets_assets(bool $refresh = false): array {
             'karyawan_nama' => $karMap[$a['id_karyawan'] ?? 0] ?? '-',
             'kategori_nama' => $katMap[$a['id_kategori'] ?? 0] ?? '-',
             'qr_token' => $token,
+            'foto' => $a['foto'] ?? '',
             'placement_label' => $qr['placement_label'] ?? 'Bodi Top',
             'qr_active' => $qrActive
         ];
