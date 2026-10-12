@@ -432,6 +432,13 @@ foreach ($pageAssets as $a) {
     $aid = (int)($a['id'] ?? 0);
     $kode = !empty($a['kode_inventaris']) ? $a['kode_inventaris'] : ('# ' . $aid);
     $device = asset_title($a);
+    $foto = trim((string)($a['foto'] ?? ''));
+    if ($foto) {
+        $fotoSrc = str_starts_with($foto, 'http') ? $foto : module_url($foto);
+        $thumbHtml = '<div class="me-2 flex-shrink-0" style="cursor: pointer;" onclick="viewAssetPhoto(\''.e($fotoSrc).'\', \''.e(addslashes($device)).'\', \''.e(addslashes($kode)).'\')" title="Klik untuk lihat foto unit"><img src="'.e($fotoSrc).'" class="rounded border shadow-xs" style="width: 44px; height: 44px; object-fit: cover;" alt="Foto '.e($device).'"></div>';
+    } else {
+        $thumbHtml = '<div class="rounded border bg-light d-flex align-items-center justify-content-center text-muted me-2 flex-shrink-0 shadow-xs" style="width: 44px; height: 44px;"><i class="bi bi-display fs-5"></i></div>';
+    }
     $sn = !empty($a['serial_number']) && $a['serial_number'] !== '-' ? $a['serial_number'] : '';
     $user = !empty($a['karyawan_nama']) && $a['karyawan_nama'] !== '-' ? $a['karyawan_nama'] : 'Umum / Pool';
     $cabang = !empty($a['cabang_nama']) && $a['cabang_nama'] !== '-' ? $a['cabang_nama'] : '-';
@@ -517,10 +524,15 @@ foreach ($pageAssets as $a) {
         <small class="text-muted" style="font-size: 0.72rem;">ID: #'.$aid.'</small>
       </td>
       <td>
-        <div class="fw-semibold text-dark">'.e($device).'</div>
-        <div class="small text-secondary" style="font-size: 0.75rem;">
-          '.($sn ? '<span class="me-2"><span class="tech-label">SN:</span> <code class="text-dark">'.e($sn).'</code></span>' : '').'
-          '.(!empty($a['kategori_nama']) ? '<span class="badge bg-light text-secondary border" style="font-size: 0.7rem;">'.e($a['kategori_nama']).'</span>' : '').'
+        <div class="d-flex align-items-center">
+          '.$thumbHtml.'
+          <div>
+            <div class="fw-semibold text-dark">'.e($device).'</div>
+            <div class="small text-secondary" style="font-size: 0.75rem;">
+              '.($sn ? '<span class="me-2"><span class="tech-label">SN:</span> <code class="text-dark">'.e($sn).'</code></span>' : '').'
+              '.(!empty($a['kategori_nama']) ? '<span class="badge bg-light text-secondary border" style="font-size: 0.7rem;">'.e($a['kategori_nama']).'</span>' : '').'
+            </div>
+          </div>
         </div>
       </td>
       <td>
@@ -913,6 +925,27 @@ $body = '
             <i class="bi bi-qr-code me-1"></i> Cetak QR (<span class="selectedCountNum">0</span>)
           </button>
         </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Lihat Foto Unit -->
+<div class="modal fade" id="modalViewPhoto" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
+      <div class="modal-header py-3 px-4 border-bottom bg-light">
+        <div>
+          <h5 class="modal-title fw-bold text-dark mb-0" id="viewPhotoTitle">Foto Unit Perangkat</h5>
+          <small class="text-primary font-monospace" id="viewPhotoSubtitle"></small>
+        </div>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body p-3 text-center bg-dark bg-opacity-10">
+        <img id="viewPhotoImg" src="" alt="Foto Unit" class="img-fluid rounded border shadow-sm" style="max-height: 480px; width: auto; object-fit: contain;">
+      </div>
+      <div class="modal-footer py-2 px-3 bg-light d-flex justify-content-end">
+        <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Tutup</button>
       </div>
     </div>
   </div>
@@ -1507,6 +1540,21 @@ document.addEventListener("DOMContentLoaded", function() {
     }
     const targetUrl = '.json_encode(module_url('asset_bulk_edit.php')).';
     window.location.href = targetUrl + "?ids=" + encodeURIComponent(ids.join(","));
+  };
+
+  // Preview Foto Unit Modal
+  window.viewAssetPhoto = function(src, title, kode) {
+    const img = document.getElementById("viewPhotoImg");
+    const t = document.getElementById("viewPhotoTitle");
+    const s = document.getElementById("viewPhotoSubtitle");
+    if (img) img.src = src;
+    if (t) t.textContent = title || "Foto Unit Perangkat";
+    if (s) s.textContent = kode || "";
+    const modalEl = document.getElementById("modalViewPhoto");
+    if (modalEl) {
+      const modal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
+      modal.show();
+    }
   };
 });
 </script>

@@ -52,6 +52,7 @@ CREATE TABLE IF NOT EXISTS assets (
     keterangan TEXT NULL,
     ip_address VARCHAR(50) NULL,
     printer VARCHAR(150) NULL,
+    foto TEXT NULL,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     KEY idx_assets_cabang (id_cabang),

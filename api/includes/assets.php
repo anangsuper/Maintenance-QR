@@ -121,6 +121,34 @@ function map_sheets_assets(bool $refresh = false): array {
 }
 
 
+function upload_asset_image(string $fileKey = 'foto_unit'): ?string {
+    if (empty($_FILES[$fileKey]) || empty($_FILES[$fileKey]['tmp_name']) || !is_uploaded_file($_FILES[$fileKey]['tmp_name'])) {
+        return null;
+    }
+    $file = $_FILES[$fileKey];
+    if ($file['error'] !== UPLOAD_ERR_OK) {
+        return null;
+    }
+    $maxSize = 25 * 1024 * 1024;
+    if ($file['size'] > $maxSize) {
+        return null;
+    }
+    $ext = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
+    if (!in_array($ext, ['jpg', 'jpeg', 'png', 'webp', 'gif'], true)) {
+        $ext = 'jpg';
+    }
+    $uploadDir = dirname(__DIR__) . '/uploads/assets/';
+    if (!is_dir($uploadDir)) {
+        @mkdir($uploadDir, 0775, true);
+    }
+    $fileName = 'unit_' . date('Ymd_His') . '_' . bin2hex(random_bytes(4)) . '.' . $ext;
+    $targetPath = $uploadDir . $fileName;
+    if (move_uploaded_file($file['tmp_name'], $targetPath)) {
+        return 'uploads/assets/' . $fileName;
+    }
+    return null;
+}
+
 function create_new_asset(array $data): array {
     $kode = normalize_kode_inventaris(trim((string)($data['kode_inventaris'] ?? '')));
     $merk = trim((string)($data['merk'] ?? ''));
@@ -136,6 +164,7 @@ function create_new_asset(array $data): array {
     $ip = trim((string)($data['ip_address'] ?? $data['ip'] ?? ''));
     $printer = trim((string)($data['printer'] ?? ''));
     $placement = trim((string)($data['placement_label'] ?? 'Bodi Casing')) ?: 'Bodi Casing';
+    $foto = trim((string)($data['foto'] ?? ''));
 
     if (is_google_cloud_mode()) {
         $client = google_sheets_v4_client();
@@ -252,15 +281,29 @@ function create_new_asset(array $data): array {
             try { db()->exec("ALTER TABLE assets ADD COLUMN ip_address VARCHAR(45) NULL, ADD COLUMN printer VARCHAR(100) NULL"); } catch (Throwable $e) {}
             $cols = table_columns('assets');
         }
+        if (!in_array('foto', $cols, true)) {
+            try { db()->exec("ALTER TABLE assets ADD COLUMN foto TEXT NULL"); } catch (Throwable $e) {}
+            $cols = table_columns('assets');
+        }
         if (!in_array('created_at', $cols, true)) {
             try { db()->exec("ALTER TABLE assets ADD COLUMN created_at DATETIME DEFAULT CURRENT_TIMESTAMP"); } catch (Throwable $e) {}
             $cols = table_columns('assets');
         }
         $hasIp = in_array('ip_address', $cols, true);
+        $hasFoto = in_array('foto', $cols, true);
         $hasCreatedAt = in_array('created_at', $cols, true);
         $nowStr = date('Y-m-d H:i:s');
 
-        if ($hasIp && $hasCreatedAt) {
+        if ($hasFoto && $hasIp && $hasCreatedAt) {
+            $ins = db()->prepare("
+                INSERT INTO assets
+                (kode_inventaris, merk, model, serial_number, id_kategori, id_cabang, id_divisi, id_karyawan, status, keterangan, ip_address, printer, foto, created_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ");
+            $ins->execute([
+                $kode, $merk, $model, $sn, $idKat, $idCab, $idDiv, $idKar, $status, $ket, $ip, $printer, $foto, $nowStr
+            ]);
+        } elseif ($hasIp && $hasCreatedAt) {
             $ins = db()->prepare("
                 INSERT INTO assets
                 (kode_inventaris, merk, model, serial_number, id_kategori, id_cabang, id_divisi, id_karyawan, status, keterangan, ip_address, printer, created_at)
@@ -268,24 +311,6 @@ function create_new_asset(array $data): array {
             ");
             $ins->execute([
                 $kode, $merk, $model, $sn, $idKat, $idCab, $idDiv, $idKar, $status, $ket, $ip, $printer, $nowStr
-            ]);
-        } elseif ($hasIp) {
-            $ins = db()->prepare("
-                INSERT INTO assets
-                (kode_inventaris, merk, model, serial_number, id_kategori, id_cabang, id_divisi, id_karyawan, status, keterangan, ip_address, printer)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            ");
-            $ins->execute([
-                $kode, $merk, $model, $sn, $idKat, $idCab, $idDiv, $idKar, $status, $ket, $ip, $printer
-            ]);
-        } elseif ($hasCreatedAt) {
-            $ins = db()->prepare("
-                INSERT INTO assets
-                (kode_inventaris, merk, model, serial_number, id_kategori, id_cabang, id_divisi, id_karyawan, status, keterangan, created_at)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            ");
-            $ins->execute([
-                $kode, $merk, $model, $sn, $idKat, $idCab, $idDiv, $idKar, $status, $ket, $nowStr
             ]);
         } else {
             $ins = db()->prepare("
@@ -581,9 +606,26 @@ function update_asset(int $id, array $data): array {
             try { db()->exec("ALTER TABLE assets ADD COLUMN ip_address VARCHAR(45) NULL, ADD COLUMN printer VARCHAR(100) NULL"); } catch (Throwable $e) {}
             $cols = table_columns('assets');
         }
+        if (!in_array('foto', $cols, true)) {
+            try { db()->exec("ALTER TABLE assets ADD COLUMN foto TEXT NULL"); } catch (Throwable $e) {}
+            $cols = table_columns('assets');
+        }
         $hasIp = in_array('ip_address', $cols, true);
+        $hasFoto = in_array('foto', $cols, true);
+        $foto = array_key_exists('foto', $data) ? trim((string)$data['foto']) : null;
 
-        if ($hasIp) {
+        if ($hasFoto && $foto !== null) {
+            $upSt = db()->prepare("
+                UPDATE assets
+                SET kode_inventaris = ?, merk = ?, model = ?, serial_number = ?,
+                    id_kategori = ?, id_cabang = ?, id_divisi = ?, id_karyawan = ?,
+                    status = ?, keterangan = ?, ip_address = ?, printer = ?, foto = ?
+                WHERE id = ?
+            ");
+            $upSt->execute([
+                $kode, $merk, $model, $sn, $idKat, $idCab, $idDiv, $idKar, $status, $ket, $ip, $printer, $foto, $id
+            ]);
+        } elseif ($hasIp) {
             $upSt = db()->prepare("
                 UPDATE assets
                 SET kode_inventaris = ?, merk = ?, model = ?, serial_number = ?,

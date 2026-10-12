@@ -74,6 +74,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($merk === '' && $model === '') {
         $error = 'Merk atau Model perangkat wajib diisi.';
     } else {
+        $fotoUnit = upload_asset_image('foto_unit');
+        if (!$fotoUnit && !empty($_POST['foto_url'])) {
+            $fotoUnit = trim((string)$_POST['foto_url']);
+        }
+
         $payload = [
             'kode_inventaris' => $kode,
             'merk' => $merk,
@@ -88,6 +93,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'keterangan' => $ket,
             'ip_address' => $ip,
             'printer' => $printer,
+            'foto' => $fotoUnit ?: '',
         ];
 
         $res = create_new_asset($payload);
@@ -225,7 +231,7 @@ $body = '
     '.$errorHtml.'
 
     <div class="card p-4 mb-4">
-      <form method="post" id="formAddAsset">
+      <form method="post" id="formAddAsset" enctype="multipart/form-data">
         <input type="hidden" name="_csrf" value="'.e(csrf_token()).'">
 
         <!-- Section 1: Identitas Perangkat -->
@@ -366,6 +372,34 @@ $body = '
             <label class="form-label text-secondary small fw-semibold">Spesifikasi Hardware & Sistem Operasi</label>
             <textarea class="form-control" name="keterangan" rows="3" placeholder="Contoh: Intel Core i5-12400 / RAM 16GB / SSD 512GB NVMe / Windows 11 Pro"></textarea>
             <div class="form-text small text-muted">Spesifikasi ini menjadi panduan teknisi saat audit pemeliharaan.</div>
+          </div>
+        </div>
+
+        <!-- Section 4: Foto Fisik Unit / Perangkat -->
+        <div class="d-flex align-items-center gap-2 border-bottom pb-2 mb-3">
+          <span class="tech-label text-primary">04 · FOTO FISIK PERANGKAT / UNIT</span>
+        </div>
+        <div class="row g-3 mb-4">
+          <div class="col-md-7">
+            <label class="form-label text-secondary small fw-semibold">Upload Foto Unit / Kamera HP</label>
+            <input type="file" class="form-control" name="foto_unit" id="inputFotoUnit" accept="image/*" capture="environment">
+            <div class="form-text small text-muted">Mendukung format JPG, PNG, WEBP (maks 25 MB). Pada smartphone/HP teknisi, bisa langsung membuka kamera foto.</div>
+
+            <div class="mt-3">
+              <label class="form-label text-secondary small fw-semibold">Atau URL Foto dari Server Immich / Cloud</label>
+              <input type="text" class="form-control font-monospace" name="foto_url" id="inputFotoUrl" placeholder="http://192.168.88.163:2283/api/assets/... atau link foto">
+              <div class="form-text small text-muted">Isi jika unit difoto dan disimpan di Server Immich.</div>
+            </div>
+          </div>
+          <div class="col-md-5 text-center">
+            <label class="form-label text-secondary small fw-semibold d-block text-start">Pratinjau Foto Unit</label>
+            <div id="fotoPreviewContainer" class="border rounded bg-light d-flex align-items-center justify-content-center position-relative overflow-hidden shadow-xs" style="height: 160px;">
+              <img id="imgFotoPreview" src="" alt="Pratinjau" class="w-100 h-100 object-fit-cover d-none">
+              <div id="fotoPlaceholder" class="text-secondary small">
+                <i class="bi bi-camera fs-1 d-block text-muted mb-1"></i>
+                Belum ada foto dipilih
+              </div>
+            </div>
           </div>
         </div>
 
@@ -570,6 +604,36 @@ document.addEventListener("DOMContentLoaded", function() {
       if (alertEl) {
         alertEl.textContent = "Terjadi kesalahan jaringan atau server.";
         alertEl.classList.remove("d-none");
+      }
+    });
+  // Live Preview Foto Unit
+  const inputFoto = document.getElementById("inputFotoUnit");
+  const inputFotoUrl = document.getElementById("inputFotoUrl");
+  const imgPreview = document.getElementById("imgFotoPreview");
+  const placeholder = document.getElementById("fotoPlaceholder");
+
+  if (inputFoto && imgPreview && placeholder) {
+    inputFoto.addEventListener("change", function(e) {
+      const file = e.target.files && e.target.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = function(evt) {
+          imgPreview.src = evt.target.result;
+          imgPreview.classList.remove("d-none");
+          placeholder.classList.add("d-none");
+        };
+        reader.readAsDataURL(file);
+      }
+    });
+  }
+
+  if (inputFotoUrl && imgPreview && placeholder) {
+    inputFotoUrl.addEventListener("input", function(e) {
+      const val = e.target.value.trim();
+      if (val) {
+        imgPreview.src = val;
+        imgPreview.classList.remove("d-none");
+        placeholder.classList.add("d-none");
       }
     });
   }
