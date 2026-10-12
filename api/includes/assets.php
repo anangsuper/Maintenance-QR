@@ -121,6 +121,16 @@ function map_sheets_assets(bool $refresh = false): array {
 }
 
 
+function asset_image_url(?string $foto): string {
+    $foto = trim((string)$foto);
+    if ($foto === '') return '';
+    if (str_starts_with($foto, 'http://') || str_starts_with($foto, 'https://') || str_starts_with($foto, '//')) {
+        return $foto;
+    }
+    $clean = ltrim($foto, '/');
+    return module_url($clean);
+}
+
 function upload_asset_image(string $fileKey = 'foto_unit'): ?string {
     if (empty($_FILES[$fileKey]) || empty($_FILES[$fileKey]['tmp_name']) || !is_uploaded_file($_FILES[$fileKey]['tmp_name'])) {
         return null;
@@ -139,11 +149,13 @@ function upload_asset_image(string $fileKey = 'foto_unit'): ?string {
     }
     $uploadDir = dirname(__DIR__) . '/uploads/assets/';
     if (!is_dir($uploadDir)) {
-        @mkdir($uploadDir, 0775, true);
+        @mkdir($uploadDir, 0777, true);
+        @chmod($uploadDir, 0777);
     }
     $fileName = 'unit_' . date('Ymd_His') . '_' . bin2hex(random_bytes(4)) . '.' . $ext;
     $targetPath = $uploadDir . $fileName;
     if (move_uploaded_file($file['tmp_name'], $targetPath)) {
+        @chmod($targetPath, 0666);
         return 'uploads/assets/' . $fileName;
     }
     return null;

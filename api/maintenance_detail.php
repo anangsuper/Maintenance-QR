@@ -695,6 +695,69 @@ $body = '
         <span class="badge-chip chip-secondary font-monospace" style="font-size: 0.72rem;">ID ASET #'.(int)($asset['id'] ?? 0).'</span>
       </div>
       <div class="card-body p-3 p-md-4">
+        '.(($mFoto = trim((string)($asset['foto'] ?? ''))) ? '
+        <div class="row g-3 align-items-center mb-1">
+          <div class="col-12 col-md-3 col-lg-2 text-center mb-2 mb-md-0">
+            <div class="position-relative rounded-3 overflow-hidden border shadow-xs bg-light d-flex align-items-center justify-content-center" style="cursor: pointer; min-height: 130px; max-height: 160px;" onclick="window.open(\''.e(function_exists('asset_image_url') ? asset_image_url($mFoto) : module_url($mFoto)).'\', \'_blank\')" title="Klik untuk membuka foto asli di tab baru">
+              <img src="'.e(function_exists('asset_image_url') ? asset_image_url($mFoto) : module_url($mFoto)).'" alt="Foto Unit" class="w-100 h-100 object-fit-cover" style="max-height: 160px; min-height: 130px;" onerror="this.onerror=null; this.parentElement.style.display=\'none\';">
+              <div class="position-absolute bottom-0 start-0 w-100 bg-dark bg-opacity-75 text-white py-1 small text-center" style="font-size: 0.68rem; backdrop-filter: blur(2px);">
+                <i class="bi bi-zoom-in me-1"></i> Foto Unit
+              </div>
+            </div>
+          </div>
+          <div class="col-12 col-md-9 col-lg-10">
+            <div class="row g-2 g-md-3 small">
+              <div class="col-6 col-md-3">
+                <div class="p-2.5 p-md-3 bg-light rounded-3 border h-100" style="border-color: var(--app-border) !important;">
+                  <div class="text-muted text-uppercase fw-bold" style="font-size: 0.68rem; letter-spacing: 0.04em;">Kode Inventaris:</div>
+                  <div class="fw-bold font-monospace text-primary fs-6 text-truncate" title="'.e($asset['kode_inventaris'] ?? '-').'">'.e($asset['kode_inventaris'] ?? '-').'</div>
+                </div>
+              </div>
+              <div class="col-6 col-md-3">
+                <div class="p-2.5 p-md-3 bg-light rounded-3 border h-100" style="border-color: var(--app-border) !important;">
+                  <div class="text-muted text-uppercase fw-bold" style="font-size: 0.68rem; letter-spacing: 0.04em;">Serial Number:</div>
+                  <div class="fw-semibold font-monospace text-dark text-truncate" title="'.e($asset['serial_number'] ?? '-').'">'.e($asset['serial_number'] ?? '-').'</div>
+                </div>
+              </div>
+              <div class="col-6 col-md-3">
+                <div class="p-2.5 p-md-3 bg-light rounded-3 border h-100" style="border-color: var(--app-border) !important;">
+                  <div class="text-muted text-uppercase fw-bold" style="font-size: 0.68rem; letter-spacing: 0.04em;">Jenis / Kategori:</div>
+                  <div class="fw-semibold text-dark text-truncate">'.e($asset['kategori_nama'] ?? 'Perangkat IT').'</div>
+                </div>
+              </div>
+              <div class="col-6 col-md-3">
+                <div class="p-2.5 p-md-3 bg-light rounded-3 border h-100" style="border-color: var(--app-border) !important;">
+                  <div class="text-muted text-uppercase fw-bold" style="font-size: 0.68rem; letter-spacing: 0.04em;">Merk & Model:</div>
+                  <div class="fw-bold text-dark text-truncate" title="'.e(asset_title($asset)).'">'.e(asset_title($asset)).'</div>
+                </div>
+              </div>
+              <div class="col-6 col-md-3">
+                <div class="p-2.5 p-md-3 bg-light rounded-3 border h-100" style="border-color: var(--app-border) !important;">
+                  <div class="text-muted text-uppercase fw-bold" style="font-size: 0.68rem; letter-spacing: 0.04em;">Pengguna / PIC:</div>
+                  <div class="fw-bold text-dark text-truncate"><i class="bi bi-person-circle text-primary me-1"></i>'.e($asset['karyawan_nama'] ?? '-').'</div>
+                </div>
+              </div>
+              <div class="col-6 col-md-3">
+                <div class="p-2.5 p-md-3 bg-light rounded-3 border h-100" style="border-color: var(--app-border) !important;">
+                  <div class="text-muted text-uppercase fw-bold" style="font-size: 0.68rem; letter-spacing: 0.04em;">Cabang & Divisi:</div>
+                  <div class="fw-semibold text-dark text-truncate" title="'.e($asset['cabang_nama'] ?? '-').' · '.e($asset['divisi_nama'] ?? '-').'">'.e($asset['cabang_nama'] ?? '-').' · '.e($asset['divisi_nama'] ?? '-').'</div>
+                </div>
+              </div>
+              <div class="col-6 col-md-3">
+                <div class="p-2.5 p-md-3 bg-light rounded-3 border h-100" style="border-color: var(--app-border) !important;">
+                  <div class="text-muted text-uppercase fw-bold" style="font-size: 0.68rem; letter-spacing: 0.04em;">Alamat IP:</div>
+                  <div class="fw-bold font-monospace text-primary text-truncate">'.e($asset['ip_address'] ?? $asset['ip'] ?? '-').'</div>
+                </div>
+              </div>
+              <div class="col-6 col-md-3">
+                <div class="p-2.5 p-md-3 bg-light rounded-3 border h-100" style="border-color: var(--app-border) !important;">
+                  <div class="text-muted text-uppercase fw-bold" style="font-size: 0.68rem; letter-spacing: 0.04em;">Printer Terhubung:</div>
+                  <div class="fw-semibold text-dark text-truncate">'.e($asset['printer'] ?? '-').'</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>' : '
         <div class="row g-2 g-md-3 small">
           <div class="col-6 col-md-3">
             <div class="p-2.5 p-md-3 bg-light rounded-3 border h-100" style="border-color: var(--app-border) !important;">
@@ -744,7 +807,7 @@ $body = '
               <div class="fw-semibold text-dark text-truncate">'.e($asset['printer'] ?? '-').'</div>
             </div>
           </div>
-        </div>
+        </div>').'
       </div>
     </div>
 

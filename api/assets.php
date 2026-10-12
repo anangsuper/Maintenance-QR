@@ -433,11 +433,11 @@ foreach ($pageAssets as $a) {
     $kode = !empty($a['kode_inventaris']) ? $a['kode_inventaris'] : ('# ' . $aid);
     $device = asset_title($a);
     $foto = trim((string)($a['foto'] ?? ''));
-    if ($foto) {
-        $fotoSrc = str_starts_with($foto, 'http') ? $foto : module_url($foto);
-        $thumbHtml = '<div class="me-2 flex-shrink-0" style="cursor: pointer;" onclick="viewAssetPhoto(\''.e($fotoSrc).'\', \''.e(addslashes($device)).'\', \''.e(addslashes($kode)).'\')" title="Klik untuk lihat foto unit"><img src="'.e($fotoSrc).'" class="rounded border shadow-xs" style="width: 44px; height: 44px; object-fit: cover;" alt="Foto '.e($device).'"></div>';
+    $fotoSrc = function_exists('asset_image_url') ? asset_image_url($foto) : ($foto ? (str_starts_with($foto, 'http') ? $foto : module_url($foto)) : '');
+    if ($fotoSrc !== '') {
+        $thumbHtml = '<div class="me-2 flex-shrink-0" style="cursor: pointer;" onclick="viewAssetPhoto(\''.e($fotoSrc).'\', \''.e(addslashes($device)).'\', \''.e(addslashes($kode)).'\', \''.e(addslashes($editUrl)).'\')" title="Klik untuk memperbesar foto unit"><img src="'.e($fotoSrc).'" class="rounded border shadow-xs" style="width: 44px; height: 44px; object-fit: cover;" alt="Foto '.e($device).'" onerror="this.onerror=null; this.src=\'\'; this.parentElement.innerHTML=\'<div class=\\\'rounded border bg-light d-flex align-items-center justify-content-center text-muted shadow-xs\\\' style=\\\'width: 44px; height: 44px;\\\'><i class=\\\'bi bi-display fs-5\\\'></i></div>\';"></div>';
     } else {
-        $thumbHtml = '<div class="rounded border bg-light d-flex align-items-center justify-content-center text-muted me-2 flex-shrink-0 shadow-xs" style="width: 44px; height: 44px;"><i class="bi bi-display fs-5"></i></div>';
+        $thumbHtml = '<div class="rounded border bg-light d-flex align-items-center justify-content-center text-muted me-2 flex-shrink-0 shadow-xs" style="width: 44px; height: 44px;" title="Belum ada foto unit"><i class="bi bi-display fs-5"></i></div>';
     }
     $sn = !empty($a['serial_number']) && $a['serial_number'] !== '-' ? $a['serial_number'] : '';
     $user = !empty($a['karyawan_nama']) && $a['karyawan_nama'] !== '-' ? $a['karyawan_nama'] : 'Umum / Pool';
@@ -944,7 +944,10 @@ $body = '
       <div class="modal-body p-3 text-center bg-dark bg-opacity-10">
         <img id="viewPhotoImg" src="" alt="Foto Unit" class="img-fluid rounded border shadow-sm" style="max-height: 480px; width: auto; object-fit: contain;">
       </div>
-      <div class="modal-footer py-2 px-3 bg-light d-flex justify-content-end">
+      <div class="modal-footer py-2 px-3 bg-light d-flex justify-content-between">
+        <a id="viewPhotoEditLink" href="#" class="btn btn-sm btn-outline-primary">
+          <i class="bi bi-pencil me-1"></i> Ganti / Edit Foto
+        </a>
         <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Tutup</button>
       </div>
     </div>
@@ -1543,13 +1546,22 @@ document.addEventListener("DOMContentLoaded", function() {
   };
 
   // Preview Foto Unit Modal
-  window.viewAssetPhoto = function(src, title, kode) {
+  window.viewAssetPhoto = function(src, title, kode, editUrl) {
     const img = document.getElementById("viewPhotoImg");
     const t = document.getElementById("viewPhotoTitle");
     const s = document.getElementById("viewPhotoSubtitle");
     if (img) img.src = src;
     if (t) t.textContent = title || "Foto Unit Perangkat";
     if (s) s.textContent = kode || "";
+    const editBtn = document.getElementById("viewPhotoEditLink");
+    if (editBtn) {
+      if (editUrl) {
+        editBtn.href = editUrl;
+        editBtn.classList.remove("d-none");
+      } else {
+        editBtn.classList.add("d-none");
+      }
+    }
     const modalEl = document.getElementById("modalViewPhoto");
     if (modalEl) {
       const modal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);

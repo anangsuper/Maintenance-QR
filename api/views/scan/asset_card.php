@@ -742,6 +742,40 @@ $historyCardHtml = '
   </div>
 </div>';
 
+// Foto Fisik Unit
+$fotoUnit = trim((string)($asset['foto'] ?? ''));
+$fotoUnitSrc = function_exists('asset_image_url') ? asset_image_url($fotoUnit) : ($fotoUnit ? (str_starts_with($fotoUnit, 'http') ? $fotoUnit : module_url($fotoUnit)) : '');
+
+if ($fotoUnitSrc !== '') {
+    $fotoCardHtml = '
+    <div class="col-12 col-md-4 col-lg-3 text-center mb-3 mb-md-0">
+      <div class="position-relative rounded-3 overflow-hidden border shadow-xs bg-dark bg-opacity-10 d-flex align-items-center justify-content-center" style="cursor: pointer; min-height: 175px; max-height: 210px;" onclick="openScanPhotoModal(\''.e($fotoUnitSrc).'\', \''.e(addslashes(asset_title($asset))).'\', \''.e(addslashes($asset['kode_inventaris'] ?? '')).'\')" title="Klik untuk memperbesar foto unit">
+        <img src="'.e($fotoUnitSrc).'" alt="Foto Fisik '.e(asset_title($asset)).'" class="w-100 h-100 object-fit-cover" style="max-height: 210px; min-height: 175px; display: block;" onerror="this.onerror=null; this.parentElement.innerHTML=\'<div class=\\\'p-4 text-muted small\\\'><i class=\\\'bi bi-image fs-1 d-block mb-1 text-secondary opacity-50\\\'></i>Gagal memuat foto</div>\';">
+        <div class="position-absolute bottom-0 start-0 w-100 bg-dark bg-opacity-75 text-white py-1 px-2 small text-center" style="font-size: 0.72rem; backdrop-filter: blur(2px);">
+          <i class="bi bi-zoom-in me-1"></i> Perbesar Foto
+        </div>
+      </div>
+      <div class="mt-2 d-flex justify-content-center gap-1">
+        <a href="'.e(module_url('asset_edit.php', ['id' => $assetId])).'" class="btn btn-sm btn-light border py-1 px-2.5 text-secondary fw-semibold shadow-xs" style="font-size: 0.75rem;" title="Ganti atau perbarui foto unit">
+          <i class="bi bi-camera me-1"></i> Ganti Foto
+        </a>
+      </div>
+    </div>';
+    $specColClass = 'col-12 col-md-8 col-lg-9';
+} else {
+    $fotoCardHtml = '
+    <div class="col-12 col-md-4 col-lg-3 text-center mb-3 mb-md-0">
+      <div class="rounded-3 border border-2 border-dashed bg-light p-3 d-flex flex-column align-items-center justify-content-center h-100" style="min-height: 175px; border-color: #cbd5e1 !important;">
+        <i class="bi bi-camera fs-1 text-secondary opacity-50 mb-1"></i>
+        <div class="small text-muted mb-2 fw-semibold" style="font-size: 0.75rem;">Belum ada foto fisik</div>
+        <a href="'.e(module_url('asset_edit.php', ['id' => $assetId])).'" class="btn btn-sm btn-outline-primary py-1 px-2.5 fw-semibold shadow-xs" style="font-size: 0.75rem;">
+          <i class="bi bi-plus-circle me-1"></i> Upload Foto
+        </a>
+      </div>
+    </div>';
+    $specColClass = 'col-12 col-md-8 col-lg-9';
+}
+
 $body = '
 <div class="row justify-content-center">
   <div class="col-md-11 col-lg-10">
@@ -763,35 +797,40 @@ $body = '
         </span>
       </div>
 
-      <!-- Detail Spesifikasi & Kepemilikan -->
-      <div class="row g-2 g-md-3 small mb-1">
-        <div class="col-6 col-md-4">
-          <div class="text-secondary" style="font-size: 0.72rem;">Kode Inventaris:</div>
-          <div class="fw-bold text-primary fs-6 font-monospace text-truncate">'.e($asset['kode_inventaris'] ?? '-').'</div>
-        </div>
-        <div class="col-6 col-md-4">
-          <div class="text-secondary" style="font-size: 0.72rem;">Serial Number:</div>
-          <div class="fw-semibold text-dark text-truncate">'.e($asset['serial_number'] ?? '-').'</div>
-        </div>
-        <div class="col-6 col-md-4">
-          <div class="text-secondary" style="font-size: 0.72rem;">Merk / Model:</div>
-          <div class="fw-semibold text-dark text-truncate">'.e($displayMerkModel).'</div>
-        </div>
-        <div class="col-6 col-md-4">
-          <div class="text-secondary" style="font-size: 0.72rem;">Pengguna / Pemilik:</div>
-          <div class="fw-bold text-dark text-truncate"><i class="bi bi-person-circle text-primary me-1"></i>'.e($asset['karyawan_nama'] ?? '-').'</div>
-        </div>
-        <div class="col-6 col-md-4">
-          <div class="text-secondary" style="font-size: 0.72rem;">Divisi:</div>
-          <div class="fw-semibold text-dark text-truncate">'.e($asset['divisi_nama'] ?? '-').'</div>
-        </div>
-        <div class="col-6 col-md-4">
-          <div class="text-secondary" style="font-size: 0.72rem;">Cabang / Lokasi:</div>
-          <div class="fw-semibold text-dark text-truncate">'.e($asset['cabang_nama'] ?? '-').'</div>
-        </div>
-        <div class="col-12 pt-1 border-top mt-2">
-          <div class="text-secondary" style="font-size: 0.72rem;">Maintenance Terakhir:</div>
-          <div class="fw-semibold text-dark"><i class="bi bi-clock-history me-1 text-primary"></i>'.e($lastMaintStr).'</div>
+      <div class="row g-3 align-items-center">
+        '.$fotoCardHtml.'
+        <div class="'.$specColClass.'">
+          <!-- Detail Spesifikasi & Kepemilikan -->
+          <div class="row g-2 g-md-3 small mb-1">
+            <div class="col-6 col-md-4">
+              <div class="text-secondary" style="font-size: 0.72rem;">Kode Inventaris:</div>
+              <div class="fw-bold text-primary fs-6 font-monospace text-truncate">'.e($asset['kode_inventaris'] ?? '-').'</div>
+            </div>
+            <div class="col-6 col-md-4">
+              <div class="text-secondary" style="font-size: 0.72rem;">Serial Number:</div>
+              <div class="fw-semibold text-dark text-truncate">'.e($asset['serial_number'] ?? '-').'</div>
+            </div>
+            <div class="col-6 col-md-4">
+              <div class="text-secondary" style="font-size: 0.72rem;">Merk / Model:</div>
+              <div class="fw-semibold text-dark text-truncate">'.e($displayMerkModel).'</div>
+            </div>
+            <div class="col-6 col-md-4">
+              <div class="text-secondary" style="font-size: 0.72rem;">Pengguna / Pemilik:</div>
+              <div class="fw-bold text-dark text-truncate"><i class="bi bi-person-circle text-primary me-1"></i>'.e($asset['karyawan_nama'] ?? '-').'</div>
+            </div>
+            <div class="col-6 col-md-4">
+              <div class="text-secondary" style="font-size: 0.72rem;">Divisi:</div>
+              <div class="fw-semibold text-dark text-truncate">'.e($asset['divisi_nama'] ?? '-').'</div>
+            </div>
+            <div class="col-6 col-md-4">
+              <div class="text-secondary" style="font-size: 0.72rem;">Cabang / Lokasi:</div>
+              <div class="fw-semibold text-dark text-truncate">'.e($asset['cabang_nama'] ?? '-').'</div>
+            </div>
+            <div class="col-12 pt-1 border-top mt-2">
+              <div class="text-secondary" style="font-size: 0.72rem;">Maintenance Terakhir:</div>
+              <div class="fw-semibold text-dark"><i class="bi bi-clock-history me-1 text-primary"></i>'.e($lastMaintStr).'</div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -906,7 +945,46 @@ $body = '
 
   </div>
 </div>
+
+<!-- Modal Zoom Foto Fisik Unit -->
+<div class="modal fade" id="modalScanPhoto" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
+      <div class="modal-header py-3 px-4 border-bottom bg-light">
+        <div>
+          <h5 class="modal-title fw-bold text-dark mb-0" id="scanPhotoTitle">Foto Unit Perangkat</h5>
+          <small class="text-primary font-monospace" id="scanPhotoSubtitle"></small>
+        </div>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body p-3 text-center bg-dark bg-opacity-10">
+        <img id="scanPhotoImg" src="" alt="Foto Unit" class="img-fluid rounded border shadow-sm" style="max-height: 520px; width: auto; object-fit: contain;">
+      </div>
+      <div class="modal-footer py-2 px-3 bg-light d-flex justify-content-between">
+        <a id="scanPhotoEditLink" href="'.e(module_url('asset_edit.php', ['id' => $assetId])).'" class="btn btn-sm btn-outline-secondary">
+          <i class="bi bi-pencil me-1"></i> Edit / Ganti Foto
+        </a>
+        <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Tutup</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <script>
+function openScanPhotoModal(src, title, kode) {
+  var img = document.getElementById("scanPhotoImg");
+  var t = document.getElementById("scanPhotoTitle");
+  var s = document.getElementById("scanPhotoSubtitle");
+  if (img) img.src = src;
+  if (t) t.textContent = title || "Foto Unit Perangkat";
+  if (s) s.textContent = kode || "";
+  var modalEl = document.getElementById("modalScanPhoto");
+  if (modalEl && typeof bootstrap !== "undefined") {
+    var modal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
+    modal.show();
+  }
+}
+
 // Pastikan jika pengguna kembali dari halaman rincian via tombol Back browser, halaman otomatis memuat data terbaru
 window.addEventListener("pageshow", function(event) {
   if (event.persisted) {

@@ -24,7 +24,7 @@ if [ -f "$SCRIPT_DIR/sql/00_master_schema.sql" ]; then
 fi
 
 echo "=== 4. Menyiapkan Folder Upload Foto & Izin File ==="
-mkdir -p "$SCRIPT_DIR/api/uploads"
+mkdir -p "$SCRIPT_DIR/api/uploads/assets"
 chown -R www-data:www-data "$SCRIPT_DIR"
 chmod -R 775 "$SCRIPT_DIR"
 chmod -R 777 "$SCRIPT_DIR/api/uploads"
