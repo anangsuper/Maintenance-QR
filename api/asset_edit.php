@@ -263,6 +263,8 @@ $errorHtml = $error ? '<div class="alert alert-danger alert-dismissible fade sho
 
 $modeBadge = is_google_cloud_mode() 
     ? '<span class="badge text-bg-info mb-2"><i class="bi bi-google me-1"></i> Penyimpanan: Google Cloud Sheets API v4</span>' 
+    : '<span class="badge text-bg-secondary mb-2"><i class="bi bi-database me-1"></i> Penyimpanan: MySQL Database</span>';
+
 $existingFoto = trim((string)($asset['foto'] ?? ''));
 $existingFotoSrc = '';
 if ($existingFoto) {
