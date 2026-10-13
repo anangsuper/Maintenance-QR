@@ -283,8 +283,11 @@ $body = '
     <p class="text-secondary small mb-0">Koleksi foto fisik seluruh perangkat komputer, laptop, dan printer per cabang untuk verifikasi visual.</p>
   </div>
   <div class="d-flex align-items-center gap-2 flex-wrap">
-    <a href="'.e(module_url('dashboard.php', ['tab' => 'kartu'])).'" class="btn btn-outline-primary d-inline-flex align-items-center gap-1 fw-semibold shadow-xs">
-      <i class="bi bi-credit-card-2-front"></i> Kartu Inventaris
+    <a href="'.e(module_url('inventaris_gallery.php')).'" class="btn btn-outline-primary d-inline-flex align-items-center gap-1 fw-semibold shadow-xs">
+      <i class="bi bi-collection"></i> Galeri Kartu Inventaris
+    </a>
+    <a href="'.e(module_url('dashboard.php', ['tab' => 'kartu'])).'" class="btn btn-outline-secondary d-inline-flex align-items-center gap-1 fw-semibold shadow-xs">
+      <i class="bi bi-credit-card-2-front"></i> Tabel Kartu
     </a>
     <a href="'.e(module_url('dashboard.php')).'" class="btn btn-outline-secondary d-inline-flex align-items-center gap-1 fw-semibold shadow-xs">
       <i class="bi bi-speedometer2"></i> Dashboard
@@ -296,6 +299,19 @@ $body = '
       <i class="bi bi-printer"></i> Cetak Label QR
     </a>
   </div>
+</div>
+
+<!-- Mode Switcher Tab Bar -->
+<div class="d-flex gap-2 mb-4 p-1 bg-light rounded-pill border d-inline-flex">
+  <a href="'.e(module_url('asset_gallery.php')).'" class="btn btn-sm btn-primary rounded-pill px-3 fw-semibold shadow-xs">
+    <i class="bi bi-pc-display me-1"></i> Galeri Unit Komputer / IT
+  </a>
+  <a href="'.e(module_url('inventaris_gallery.php')).'" class="btn btn-sm btn-light border-0 text-secondary rounded-pill px-3 fw-semibold">
+    <i class="bi bi-collection me-1"></i> Galeri Kartu Inventaris (Bank)
+  </a>
+  <a href="'.e(module_url('dashboard.php', ['tab' => 'kartu'])).'" class="btn btn-sm btn-light border-0 text-secondary rounded-pill px-3 fw-semibold">
+    <i class="bi bi-table me-1"></i> Tampilan Tabel Kartu
+  </a>
 </div>
 
 <!-- Stats Card Row -->
