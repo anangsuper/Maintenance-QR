@@ -208,7 +208,7 @@ foreach ($users as $u) {
     $avatarHtml = '';
     if ($uPhoto !== '') {
         $avatarHtml = '
-        <div class="flex-shrink-0 position-relative" style="cursor: pointer;" onclick="previewFacePhoto(\''.e($uPhoto).'\', \''.e(addslashes($uNama)).'\', \''.e(addslashes($uUsername)).'\', \''.e(addslashes($uRole)).'\')" title="Klik untuk melihat foto wajah petugas">
+        <div class="flex-shrink-0 position-relative js-preview-face" style="cursor: pointer;" data-photo="'.e($uPhoto).'" data-nama="'.e($uNama).'" data-username="'.e($uUsername).'" data-role="'.e($uRole).'" title="Klik untuk melihat foto wajah petugas">
           <img src="'.e($uPhoto).'" class="rounded-circle border shadow-xs" style="width: 42px; height: 42px; object-fit: cover;" alt="Foto '.e($uNama).'">
           <span class="position-absolute bottom-0 end-0 badge rounded-pill bg-success p-0 border border-white" style="width: 9px; height: 9px;" title="Terverifikasi"></span>
         </div>';
@@ -221,7 +221,7 @@ foreach ($users as $u) {
     if ($fDesc === '') {
         $bioBadge = '<a href="'.e(module_url('user_biometric_enroll.php', ['id'=>$uId])).'" class="badge-chip chip-secondary text-decoration-none" style="font-size: 0.72rem;"><i class="bi bi-camera"></i> Daftarkan</a>';
     } elseif ($fStat === 'verified' || $fStat === 'terverifikasi') {
-        $bioPhotoThumb = ($uPhoto !== '') ? '<img src="'.e($uPhoto).'" class="rounded-circle border shadow-xs me-1.5" style="width: 30px; height: 30px; object-fit: cover; cursor: pointer;" onclick="previewFacePhoto(\''.e($uPhoto).'\', \''.e(addslashes($uNama)).'\', \''.e(addslashes($uUsername)).'\', \''.e(addslashes($uRole)).'\')" title="Klik untuk memperbesar foto wajah">' : '';
+        $bioPhotoThumb = ($uPhoto !== '') ? '<img src="'.e($uPhoto).'" class="rounded-circle border shadow-xs me-1.5 js-preview-face" style="width: 30px; height: 30px; object-fit: cover; cursor: pointer;" data-photo="'.e($uPhoto).'" data-nama="'.e($uNama).'" data-username="'.e($uUsername).'" data-role="'.e($uRole).'" title="Klik untuk memperbesar foto wajah">' : '';
         $bioBadge = '<div class="d-inline-flex align-items-center gap-1">
           '.$bioPhotoThumb.'
           <span class="badge-chip chip-success" style="font-size: 0.72rem;"><i class="bi bi-shield-check"></i> Terverifikasi</span>
@@ -233,7 +233,7 @@ foreach ($users as $u) {
           </form>
         </div>';
     } elseif ($fStat === 'pending' || $fStat === 'menunggu') {
-        $bioPhotoThumb = ($uPhoto !== '') ? '<img src="'.e($uPhoto).'" class="rounded-circle border shadow-xs mb-1" style="width: 34px; height: 34px; object-fit: cover; cursor: pointer;" onclick="previewFacePhoto(\''.e($uPhoto).'\', \''.e(addslashes($uNama)).'\', \''.e(addslashes($uUsername)).'\', \''.e(addslashes($uRole)).'\')" title="Klik untuk memperbesar foto wajah">' : '';
+        $bioPhotoThumb = ($uPhoto !== '') ? '<img src="'.e($uPhoto).'" class="rounded-circle border shadow-xs mb-1 js-preview-face" style="width: 34px; height: 34px; object-fit: cover; cursor: pointer;" data-photo="'.e($uPhoto).'" data-nama="'.e($uNama).'" data-username="'.e($uUsername).'" data-role="'.e($uRole).'" title="Klik untuk memperbesar foto wajah">' : '';
         $bioBadge = '<div class="d-flex flex-column align-items-center gap-1">
           '.$bioPhotoThumb.'
           <span class="badge-chip chip-warning" style="font-size: 0.72rem;"><i class="bi bi-hourglass-split"></i> Menunggu</span>
@@ -539,9 +539,14 @@ $body = '
 <script>
 function previewFacePhoto(imgSrc, nama, username, role) {
   if (!imgSrc) return;
-  document.getElementById("previewFaceImg").src = imgSrc;
-  document.getElementById("previewFaceNama").innerText = nama || "-";
-  document.getElementById("previewFaceUser").innerText = "@" + (username || "-");
+  const imgEl = document.getElementById("previewFaceImg");
+  const namaEl = document.getElementById("previewFaceNama");
+  const userEl = document.getElementById("previewFaceUser");
+  const badgeEl = document.getElementById("previewFaceRoleBadge");
+
+  if (imgEl) imgEl.src = imgSrc;
+  if (namaEl) namaEl.innerText = nama || "-";
+  if (userEl) userEl.innerText = "@" + (username || "-");
   
   let roleBadge = '<span class="badge bg-secondary">' + (role || "Pengguna") + '</span>';
   if (role === "admin") {
@@ -551,18 +556,32 @@ function previewFacePhoto(imgSrc, nama, username, role) {
   } else {
     roleBadge = '<span class="badge bg-info text-dark"><i class="bi bi-tools me-1"></i> Teknisi IT</span>';
   }
-  document.getElementById("previewFaceRoleBadge").innerHTML = roleBadge;
+  if (badgeEl) badgeEl.innerHTML = roleBadge;
 
   const modalEl = document.getElementById("modalPreviewFace");
-  if (window.bootstrap && bootstrap.Modal) {
-    const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
-    modal.show();
-  } else {
-    // Fallback jika bootstrap modal belum diinisialisasi
-    modalEl.classList.add("show");
-    modalEl.style.display = "block";
+  if (modalEl) {
+    if (window.bootstrap && bootstrap.Modal) {
+      const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+      modal.show();
+    } else {
+      modalEl.classList.add("show");
+      modalEl.style.display = "block";
+    }
   }
 }
+
+document.addEventListener("DOMContentLoaded", function() {
+  document.addEventListener("click", function(e) {
+    const trigger = e.target.closest(".js-preview-face");
+    if (!trigger) return;
+    e.preventDefault();
+    const photo = trigger.getAttribute("data-photo") || "";
+    const nama = trigger.getAttribute("data-nama") || "";
+    const username = trigger.getAttribute("data-username") || "";
+    const role = trigger.getAttribute("data-role") || "";
+    previewFacePhoto(photo, nama, username, role);
+  });
+});
 </script>
 ';
 
