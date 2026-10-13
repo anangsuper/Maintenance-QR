@@ -192,7 +192,7 @@ CREATE TABLE IF NOT EXISTS inventaris_kartu (
     nomor_rekening VARCHAR(100) NOT NULL,
     nama_barang VARCHAR(255) NOT NULL,
     tanggal_perolehan DATE NOT NULL,
-    barcode_data TEXT NOT NULL,
+    barcode_data TEXT NULL,
     lokasi VARCHAR(150) NULL DEFAULT 'Kantor Pusat (KPO)',
     pengguna VARCHAR(150) NULL DEFAULT 'Umum / Pool',
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
