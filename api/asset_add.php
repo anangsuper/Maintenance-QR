@@ -71,21 +71,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $ip = trim((string)($_POST['ip_address'] ?? ''));
     $printer = trim((string)($_POST['printer'] ?? ''));
 
-    // Master Data Core Banking Bank
-    $noSeri = trim((string)($_POST['nomor_seri_inventaris'] ?? ''));
-    $jenisInv = trim((string)($_POST['jenis_inventaris'] ?? ''));
-    $golongan = trim((string)($_POST['golongan'] ?? ''));
-    $ruangan = trim((string)($_POST['ruangan'] ?? ''));
-    $sumberPerolehan = trim((string)($_POST['sumber_perolehan'] ?? ''));
-    $statusInv = trim((string)($_POST['status_inventaris'] ?? '1 : Aktif'));
-
-    // Cek jika ada penambahan ruangan baru secara langsung
-    $ruanganBaru = trim((string)($_POST['nama_ruangan_baru'] ?? ''));
-    $kodeRuanganBaru = trim((string)($_POST['kode_ruangan_baru'] ?? ''));
-    if ($ruanganBaru !== '') {
-        $ruangan = add_master_ruangan($ruanganBaru, $kodeRuanganBaru !== '' ? $kodeRuanganBaru : null);
-    }
-
     if ($merk === '' && $model === '') {
         $error = 'Merk atau Model perangkat wajib diisi.';
     } else {
@@ -109,12 +94,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'ip_address' => $ip,
             'printer' => $printer,
             'foto' => $fotoUnit ?: '',
-            'nomor_seri_inventaris' => $noSeri,
-            'jenis_inventaris' => $jenisInv,
-            'golongan' => $golongan,
-            'ruangan' => $ruangan,
-            'sumber_perolehan' => $sumberPerolehan,
-            'status_inventaris' => $statusInv,
         ];
 
         $res = create_new_asset($payload);
@@ -168,21 +147,20 @@ if ($successData) {
               <dd class="col-sm-8 mb-2">'.e($successData['karyawan_nama']).'</dd>
 
               <dt class="col-sm-4 text-secondary">Cabang</dt>
-              <dd class="col-sm-8 mb-2">'.e($successData['cabang_nama'] ?: '-').'</dd>
-
-              <dt class="col-sm-4 text-secondary">QR Token</dt>
-              <dd class="col-sm-8 mb-0"><code class="text-dark bg-white px-2 py-1 border rounded">'.e($successData['qr_token']).'</code></dd>
+              <dd class="col-sm-8 mb-0">'.e($successData['cabang_nama'] ?: '-').'</dd>
             </dl>
           </div>
 
           <div class="d-flex flex-column flex-sm-row gap-2 justify-content-center">
-            <a class="btn btn-primary btn-lg" target="_blank" href="'.e($printUrl).'"><i class="bi bi-printer-fill me-1"></i> Cetak Label QR Sekarang</a>
-            <a class="btn btn-outline-success btn-lg" href="'.e(module_url('asset_add.php')).'"><i class="bi bi-plus-circle me-1"></i> Tambah Komputer Lagi</a>
+            <a class="btn btn-primary btn-lg px-4 fw-semibold" target="_blank" href="'.e($printUrl).'"><i class="bi bi-printer me-1"></i> Cetak Label Stiker QR</a>
+            <a class="btn btn-success btn-lg px-4 fw-semibold" target="_blank" href="'.e(module_url('scan.php', ['t' => $successData['qr_token']])).'"><i class="bi bi-qr-code-scan me-1"></i> Buka Halaman Scan QR</a>
+            <a class="btn btn-light border btn-lg" href="'.e(module_url('asset_add.php')).'"><i class="bi bi-plus-lg me-1"></i> Tambah Aset Lain</a>
           </div>
 
           <hr class="my-4">
 
           <div class="d-flex justify-content-between flex-wrap gap-2">
+            <a class="btn btn-sm btn-outline-secondary" href="'.e(module_url('assets.php')).'"><i class="bi bi-arrow-left me-1"></i> Ke Daftar Aset</a>
             <a class="btn btn-sm btn-outline-secondary" href="'.e(module_url('qr_admin.php')).'"><i class="bi bi-qr-code me-1"></i> Ke Daftar QR Aset</a>
             <a class="btn btn-sm btn-outline-primary" href="'.e(module_url('dashboard.php')).'"><i class="bi bi-speedometer2 me-1"></i> Ke Dashboard Maintenance</a>
           </div>
@@ -229,42 +207,9 @@ foreach ($karyawans as $kar) {
         $datalistKaryawan .= '<option value="'.e($kn).'">';
         $badgeKaryawan .= '<button type="button" class="btn btn-sm btn-light border me-1 mb-1 py-0 px-2" onclick="setKaryawan(\''.e(addslashes($kn)).'\')">'.e($kn).'</button>';
     }
-// Dropdown Master Data Inventaris Bank (Core Banking)
-$optJenisInv = '';
-foreach (get_master_jenis_inventaris() as $k => $v) {
-    $sel = ($k == '3' || $k == '7') ? 'selected' : '';
-    $optJenisInv .= '<option value="'.e($v).'" '.$sel.'>'.e($v).'</option>';
-}
-
-$optGolongan = '';
-foreach (get_master_golongan_inventaris() as $k => $v) {
-    $sel = ($k == '02') ? 'selected' : '';
-    $optGolongan .= '<option value="'.e($v).'" '.$sel.'>'.e($v).'</option>';
-}
-
-$optRuangan = '';
-$ruanganList = get_master_ruangan_list();
-foreach ($ruanganList as $r) {
-    $val = trim($r['kode_ruangan'] . ' : ' . $r['nama_ruangan']);
-    $optRuangan .= '<option value="'.e($val).'">'.e($val).'</option>';
-}
-
-$optSumber = '';
-foreach (get_master_sumber_perolehan() as $k => $v) {
-    $sel = ($k == '03') ? 'selected' : '';
-    $optSumber .= '<option value="'.e($v).'" '.$sel.'>'.e($v).'</option>';
-}
-
-$optStatusInv = '';
-foreach (get_master_status_inventaris() as $k => $v) {
-    $optStatusInv .= '<option value="'.e($v).'">'.e($v).'</option>';
 }
 
 $errorHtml = $error ? '<div class="alert alert-danger alert-dismissible fade show" role="alert"><i class="bi bi-exclamation-triangle-fill me-2"></i>'.e($error).'<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>' : '';
-
-$modeBadge = is_google_cloud_mode() 
-    ? '<span class="badge text-bg-info mb-2"><i class="bi bi-google me-1"></i> Penyimpanan: Google Cloud Sheets API v4</span>' 
-    : '<span class="badge text-bg-secondary mb-2"><i class="bi bi-database me-1"></i> Penyimpanan: MySQL Database</span>';
 
 $body = '
 <div class="row justify-content-center">
@@ -401,70 +346,9 @@ $body = '
           </div>
         </div>
 
-        <!-- Section 3: Master Data Inventaris Bank (Core Banking) -->
+        <!-- Section 3: Jaringan, Printer & Spesifikasi -->
         <div class="d-flex align-items-center gap-2 border-bottom pb-2 mb-3">
-          <span class="tech-label text-primary">03 · MASTER DATA INVENTARIS BANK (CORE SYSTEM)</span>
-        </div>
-        <div class="row g-3 mb-4">
-          <div class="col-md-6">
-            <label class="form-label text-secondary small fw-semibold">Nomor Seri Inventaris Bank</label>
-            <div class="input-group">
-              <input type="text" class="form-control font-monospace" name="nomor_seri_inventaris" id="noSeriInventaris" placeholder="Contoh: 01.05.02.220124.001">
-              <button class="btn btn-light border" type="button" onclick="autoGenerateNoSeri()" title="Generate Format Bank"><i class="bi bi-magic me-1"></i>Auto</button>
-            </div>
-            <div class="form-text small text-muted">Format resmi: [Cabang].[Ruangan].[Golongan].[ddMMyy].[Nomor]</div>
-          </div>
-
-          <div class="col-md-6">
-            <label class="form-label text-secondary small fw-semibold">Jenis Inventaris <span class="text-danger">*</span></label>
-            <select class="form-select" name="jenis_inventaris">
-              '.$optJenisInv.'
-            </select>
-          </div>
-
-          <div class="col-md-6">
-            <label class="form-label text-secondary small fw-semibold">Golongan Inventaris <span class="text-danger">*</span></label>
-            <select class="form-select" name="golongan" id="selectGolongan">
-              '.$optGolongan.'
-            </select>
-          </div>
-
-          <div class="col-md-6">
-            <div class="d-flex justify-content-between align-items-center mb-1">
-              <label class="form-label text-secondary small fw-semibold mb-0">Ruangan Penempatan</label>
-              <button type="button" class="btn btn-sm btn-link p-0 text-decoration-none fw-semibold text-primary" data-bs-toggle="modal" data-bs-target="#modalQuickAddRuangan" style="font-size: 0.8rem;">
-                <i class="bi bi-plus-circle me-1"></i>+ Tambah Ruangan
-              </button>
-            </div>
-            <div class="input-group">
-              <select class="form-select" name="ruangan" id="selectRuangan">
-                '.$optRuangan.'
-              </select>
-              <button type="button" class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#modalQuickAddRuangan" title="Tambah Ruangan Baru">
-                <i class="bi bi-plus-lg text-primary"></i>
-              </button>
-            </div>
-            <div id="ruanganAddedFeedback" class="small text-success mt-1 d-none"><i class="bi bi-check-circle-fill me-1"></i><span id="ruanganAddedText">Ruangan baru berhasil dipilih.</span></div>
-          </div>
-
-          <div class="col-md-6">
-            <label class="form-label text-secondary small fw-semibold">Sumber Perolehan</label>
-            <select class="form-select" name="sumber_perolehan">
-              '.$optSumber.'
-            </select>
-          </div>
-
-          <div class="col-md-6">
-            <label class="form-label text-secondary small fw-semibold">Status Inventaris Bank</label>
-            <select class="form-select" name="status_inventaris">
-              '.$optStatusInv.'
-            </select>
-          </div>
-        </div>
-
-        <!-- Section 4: Jaringan, Printer & Spesifikasi -->
-        <div class="d-flex align-items-center gap-2 border-bottom pb-2 mb-3">
-          <span class="tech-label text-primary">04 · JARINGAN & SPESIFIKASI TEKNIS</span>
+          <span class="tech-label text-primary">03 · JARINGAN & SPESIFIKASI TEKNIS</span>
         </div>
         <div class="row g-3 mb-4">
           <div class="col-md-6">
@@ -486,9 +370,9 @@ $body = '
           </div>
         </div>
 
-        <!-- Section 5: Foto Fisik Unit / Perangkat -->
+        <!-- Section 4: Foto Fisik Unit / Perangkat -->
         <div class="d-flex align-items-center gap-2 border-bottom pb-2 mb-3">
-          <span class="tech-label text-primary">05 · FOTO FISIK PERANGKAT / UNIT</span>
+          <span class="tech-label text-primary">04 · FOTO FISIK PERANGKAT / UNIT</span>
         </div>
         <div class="row g-3 mb-4">
           <div class="col-md-7">
@@ -560,39 +444,6 @@ $body = '
       </div>
     </div>
   </div>
-</div>
-
-<!-- Modal Quick Add Ruangan -->
-<div class="modal fade" id="modalQuickAddRuangan" tabindex="-1" aria-labelledby="modalQuickAddRuanganLabel" aria-hidden="true">
-  <div class="modal-dialog modal-dialog-centered">
-    <div class="modal-content shadow border-0" style="border-radius: 16px;">
-      <div class="modal-header border-bottom py-3 px-4">
-        <h5 class="modal-title fw-bold text-dark d-flex align-items-center gap-2" id="modalQuickAddRuanganLabel">
-          <i class="bi bi-door-open text-primary"></i> Tambah Ruangan Penempatan
-        </h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-      </div>
-      <div class="modal-body p-4">
-        <div id="quickRuanganAlert" class="alert alert-danger d-none py-2 small mb-3"></div>
-        <div class="mb-3">
-          <label class="form-label text-secondary small fw-semibold">Kode Ruangan (2 Digit)</label>
-          <input type="text" class="form-control font-monospace" id="inputQuickKodeRuangan" placeholder="Contoh: 12 (Kosongkan utk otomatis)">
-          <div class="form-text small text-muted">Biarkan kosong untuk penomoran otomatis.</div>
-        </div>
-        <div class="mb-2">
-          <label class="form-label text-secondary small fw-semibold">Nama Ruangan <span class="text-danger">*</span></label>
-          <input type="text" class="form-control" id="inputQuickNamaRuangan" placeholder="Contoh: RUANG AUDIT & SKAI...">
-        </div>
-      </div>
-      <div class="modal-footer border-top bg-light py-2 px-4 d-flex justify-content-between">
-        <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Batal</button>
-        <button type="button" class="btn btn-sm btn-primary fw-semibold" id="btnQuickSubmitRuangan">
-          <span id="quickRuanganSpinner" class="spinner-border spinner-border-sm me-1 d-none"></span>
-          <i class="bi bi-check2 me-1" id="quickRuanganBtnIcon"></i> Simpan Ruangan
-        </button>
-      </div>
-    </div>
-  </div>
 </div>';
 
 $script = '
@@ -600,32 +451,6 @@ $script = '
 function autoGenerateKode() {
   var rand = Math.floor(100 + Math.random() * 900);
   document.getElementById("kodeInventaris").value = "INV-IT-" + rand;
-}
-
-function autoGenerateNoSeri() {
-  var d = new Date();
-  var dd = String(d.getDate()).padStart(2, "0");
-  var mm = String(d.getMonth() + 1).padStart(2, "0");
-  var yy = String(d.getFullYear()).slice(-2);
-  var rand = String(Math.floor(1 + Math.random() * 999)).padStart(3, "0");
-  
-  // Ambil kode ruangan
-  var selR = document.getElementById("selectRuangan");
-  var kdR = "05";
-  if (selR && selR.value) {
-    var mR = selR.value.match(/^(\d{2})/);
-    if (mR) kdR = mR[1];
-  }
-
-  // Ambil kode golongan
-  var selG = document.getElementById("selectGolongan");
-  var kdG = "02";
-  if (selG && selG.value) {
-    var mG = selG.value.match(/^(\d{2})/);
-    if (mG) kdG = mG[1];
-  }
-
-  document.getElementById("noSeriInventaris").value = "01." + kdR + "." + kdG + "." + dd + mm + yy + "." + rand;
 }
 
 function setKaryawan(name) {
@@ -759,7 +584,7 @@ document.addEventListener("DOMContentLoaded", function() {
 
       // Tampilkan feedback sukses
       if (feedbackEl && feedbackText) {
-        feedbackText.textContent = "Divisi \"" + newNama + "\" berhasil ditambahkan dan dipilih!";
+        feedbackText.textContent = "Divisi \\"" + newNama + "\\" berhasil ditambahkan dan dipilih!";
         feedbackEl.classList.remove("d-none");
         setTimeout(function() {
           feedbackEl.classList.add("d-none");
@@ -779,124 +604,6 @@ document.addEventListener("DOMContentLoaded", function() {
       if (alertEl) {
         alertEl.textContent = "Terjadi kesalahan jaringan atau server.";
         alertEl.classList.remove("d-none");
-      }
-    });
-  }
-
-  // Quick Add Ruangan Logic
-  const selectRuang = document.getElementById("selectRuangan");
-  const modalRuangEl = document.getElementById("modalQuickAddRuangan");
-  const inputNamaRuang = document.getElementById("inputQuickNamaRuangan");
-  const inputKodeRuang = document.getElementById("inputQuickKodeRuangan");
-  const btnSubmitRuang = document.getElementById("btnQuickSubmitRuangan");
-  const alertRuangEl = document.getElementById("quickRuanganAlert");
-  const spinnerRuang = document.getElementById("quickRuanganSpinner");
-  const btnRuangIcon = document.getElementById("quickRuanganBtnIcon");
-  const feedbackRuangEl = document.getElementById("ruanganAddedFeedback");
-  const feedbackRuangText = document.getElementById("ruanganAddedText");
-
-  if (modalRuangEl) {
-    modalRuangEl.addEventListener("shown.bs.modal", function() {
-      if (inputNamaRuang) {
-        inputNamaRuang.value = "";
-        inputNamaRuang.focus();
-      }
-      if (inputKodeRuang) inputKodeRuang.value = "";
-      if (alertRuangEl) {
-        alertRuangEl.classList.add("d-none");
-        alertRuangEl.textContent = "";
-      }
-    });
-  }
-
-  if (btnSubmitRuang) {
-    btnSubmitRuang.addEventListener("click", function() {
-      submitQuickRuangan();
-    });
-  }
-
-  if (inputNamaRuang) {
-    inputNamaRuang.addEventListener("keydown", function(e) {
-      if (e.key === "Enter") {
-        e.preventDefault();
-        submitQuickRuangan();
-      }
-    });
-  }
-
-  function submitQuickRuangan() {
-    const nama = inputNamaRuang ? inputNamaRuang.value.trim() : "";
-    const kode = inputKodeRuang ? inputKodeRuang.value.trim() : "";
-
-    if (!nama) {
-      if (alertRuangEl) {
-        alertRuangEl.textContent = "Nama ruangan tidak boleh kosong.";
-        alertRuangEl.classList.remove("d-none");
-      }
-      if (inputNamaRuang) inputNamaRuang.focus();
-      return;
-    }
-
-    if (alertRuangEl) alertRuangEl.classList.add("d-none");
-    if (spinnerRuang) spinnerRuang.classList.remove("d-none");
-    if (btnRuangIcon) btnRuangIcon.classList.add("d-none");
-    if (btnSubmitRuang) btnSubmitRuang.disabled = true;
-
-    const csrfInput = document.querySelector(\'input[name="_csrf"]\');
-    const csrfToken = csrfInput ? csrfInput.value : "";
-
-    const formData = new FormData();
-    formData.append("_csrf", csrfToken);
-    formData.append("nama_ruangan", nama);
-    formData.append("kode_ruangan", kode);
-
-    fetch("ruangan_ajax_add.php", {
-      method: "POST",
-      body: formData
-    })
-    .then(function(res) { return res.json(); })
-    .then(function(data) {
-      if (spinnerRuang) spinnerRuang.classList.add("d-none");
-      if (btnRuangIcon) btnRuangIcon.classList.remove("d-none");
-      if (btnSubmitRuang) btnSubmitRuang.disabled = false;
-
-      if (!data.success) {
-        if (alertRuangEl) {
-          alertRuangEl.textContent = data.error || "Gagal menambahkan ruangan baru.";
-          alertRuangEl.classList.remove("d-none");
-        }
-        return;
-      }
-
-      const newVal = data.value || (data.kode + " : " + data.nama);
-      if (selectRuang) {
-        const newOpt = document.createElement("option");
-        newOpt.value = newVal;
-        newOpt.textContent = newVal;
-        selectRuang.appendChild(newOpt);
-        selectRuang.value = newVal;
-      }
-
-      if (feedbackRuangEl && feedbackRuangText) {
-        feedbackRuangText.textContent = "Ruangan \"" + newVal + "\" berhasil ditambahkan!";
-        feedbackRuangEl.classList.remove("d-none");
-        setTimeout(function() {
-          feedbackRuangEl.classList.add("d-none");
-        }, 5000);
-      }
-
-      if (modalRuangEl) {
-        const bsModal = bootstrap.Modal.getInstance(modalRuangEl);
-        if (bsModal) bsModal.hide();
-      }
-    })
-    .catch(function(err) {
-      if (spinnerRuang) spinnerRuang.classList.add("d-none");
-      if (btnRuangIcon) btnRuangIcon.classList.remove("d-none");
-      if (btnSubmitRuang) btnSubmitRuang.disabled = false;
-      if (alertRuangEl) {
-        alertRuangEl.textContent = "Terjadi kesalahan jaringan atau server.";
-        alertRuangEl.classList.remove("d-none");
       }
     });
   }
@@ -945,7 +652,7 @@ document.addEventListener("DOMContentLoaded", function() {
       if (file) {
         if (compressBadgeAdd) {
           compressBadgeAdd.classList.remove("d-none");
-          compressBadgeAdd.innerHTML = "<span class=\"spinner-border spinner-border-sm me-1\"></span> Mengompres...";
+          compressBadgeAdd.innerHTML = "<span class=\\"spinner-border spinner-border-sm me-1\\"></span> Mengompres...";
         }
         compressImageClientSide(file, 1600, 0.82, function(compressedBlob, previewDataUrl) {
           imgPreview.src = previewDataUrl;
@@ -953,7 +660,7 @@ document.addEventListener("DOMContentLoaded", function() {
           placeholder.classList.add("d-none");
 
           try {
-            const compressedFile = new File([compressedBlob], "compressed_" + file.name.replace(/\.[^.]+$/, ".jpg"), {
+            const compressedFile = new File([compressedBlob], "compressed_" + file.name.replace(/\\.[^.]+$/, ".jpg"), {
               type: "image/jpeg",
               lastModified: Date.now()
             });
@@ -962,7 +669,7 @@ document.addEventListener("DOMContentLoaded", function() {
             inputFoto.files = dt.files;
             if (compressBadgeAdd) {
               const kbSize = Math.round(compressedBlob.size / 1024);
-              compressBadgeAdd.innerHTML = "<i class=\"bi bi-shield-check me-1\"></i> " + kbSize + " KB (Hemat Ruang)";
+              compressBadgeAdd.innerHTML = "<i class=\\"bi bi-shield-check me-1\\"></i> " + kbSize + " KB (Hemat Ruang)";
             }
           } catch (err) {
             console.warn("Fallback DataTransfer:", err);
