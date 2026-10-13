@@ -317,12 +317,30 @@ function insert_inventaris_kartu(array $data): array {
         }
     }
 
+    ensure_inventaris_kartu_columns();
+
+    $noSeri = trim((string)($data['nomor_seri_inventaris'] ?? ''));
+    $jenisInv = trim((string)($data['jenis_inventaris'] ?? ''));
+    $golongan = trim((string)($data['golongan'] ?? ''));
+    $ruangan = trim((string)($data['ruangan'] ?? ''));
+    $sumber = trim((string)($data['sumber_perolehan'] ?? ''));
+    $statusInv = trim((string)($data['status_inventaris'] ?? '1 : Aktif'));
+    $ket = trim((string)($data['keterangan'] ?? ''));
+
     try {
         $ins = db()->prepare("
-            INSERT INTO inventaris_kartu (nomor_rekening, nama_barang, tanggal_perolehan, barcode_data, lokasi, created_at)
-            VALUES (?, ?, ?, ?, ?, ?)
+            INSERT INTO inventaris_kartu (
+                nomor_rekening, nama_barang, tanggal_perolehan, barcode_data, lokasi,
+                nomor_seri_inventaris, jenis_inventaris, golongan, ruangan, sumber_perolehan, status_inventaris, keterangan,
+                created_at
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ");
-        $ins->execute([$rek, $nama, $tgl, $barcode, $lokasi, $nowStr]);
+        $ins->execute([
+            $rek, $nama, $tgl, $barcode, $lokasi,
+            $noSeri, $jenisInv, $golongan, $ruangan, $sumber, $statusInv, $ket,
+            $nowStr
+        ]);
         $newId = (int)db()->lastInsertId();
         return ['success' => true, 'id' => $newId];
     } catch (Throwable $e) {
@@ -334,6 +352,8 @@ function insert_inventaris_kartu(array $data): array {
  * Update kartu inventaris
  */
 function update_inventaris_kartu(int $id, array $data): bool {
+    ensure_inventaris_kartu_columns();
+
     $rek = trim((string)($data['nomor_rekening'] ?? ''));
     $nama = trim((string)($data['nama_barang'] ?? ''));
     $tgl = normalize_date_to_db($data['tanggal_perolehan'] ?? '');
@@ -347,6 +367,14 @@ function update_inventaris_kartu(int $id, array $data): bool {
     }
 
     if ($id <= 0 || $rek === '' || $nama === '') return false;
+
+    $noSeri = trim((string)($data['nomor_seri_inventaris'] ?? ''));
+    $jenisInv = trim((string)($data['jenis_inventaris'] ?? ''));
+    $golongan = trim((string)($data['golongan'] ?? ''));
+    $ruangan = trim((string)($data['ruangan'] ?? ''));
+    $sumber = trim((string)($data['sumber_perolehan'] ?? ''));
+    $statusInv = trim((string)($data['status_inventaris'] ?? '1 : Aktif'));
+    $ket = trim((string)($data['keterangan'] ?? ''));
 
     if (is_google_cloud_mode()) {
         $client = google_sheets_v4_client();
@@ -368,10 +396,15 @@ function update_inventaris_kartu(int $id, array $data): bool {
     try {
         $st = db()->prepare("
             UPDATE inventaris_kartu
-            SET nomor_rekening = ?, nama_barang = ?, tanggal_perolehan = ?, barcode_data = ?, lokasi = ?
+            SET nomor_rekening = ?, nama_barang = ?, tanggal_perolehan = ?, barcode_data = ?, lokasi = ?,
+                nomor_seri_inventaris = ?, jenis_inventaris = ?, golongan = ?, ruangan = ?, sumber_perolehan = ?, status_inventaris = ?, keterangan = ?
             WHERE id = ?
         ");
-        return $st->execute([$rek, $nama, $tgl, $barcode, $lokasi, $id]);
+        return $st->execute([
+            $rek, $nama, $tgl, $barcode, $lokasi,
+            $noSeri, $jenisInv, $golongan, $ruangan, $sumber, $statusInv, $ket,
+            $id
+        ]);
     } catch (Throwable $e) {
         return false;
     }

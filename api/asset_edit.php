@@ -102,13 +102,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $ruanganBaru = trim((string)($_POST['nama_ruangan_baru'] ?? ''));
     $kodeRuanganBaru = trim((string)($_POST['kode_ruangan_baru'] ?? ''));
     if ($ruanganBaru !== '') {
-        if ($kodeRuanganBaru === '') {
-            $kodeRuanganBaru = sprintf('%02d', count(get_master_ruangan_list()) + 1);
-        }
-        if (function_exists('insert_master_ruangan')) {
-            insert_master_ruangan($kodeRuanganBaru, $ruanganBaru);
-        }
-        $ruangan = "{$kodeRuanganBaru} : {$ruanganBaru}";
+        $ruangan = add_master_ruangan($ruanganBaru, $kodeRuanganBaru !== '' ? $kodeRuanganBaru : null);
     }
 
     if ($merk === '' && $model === '') {
@@ -962,7 +956,7 @@ document.addEventListener("DOMContentLoaded", function() {
     if (btnRuangIcon) btnRuangIcon.classList.add("d-none");
     if (btnSubmitRuang) btnSubmitRuang.disabled = true;
 
-    const csrfInput = document.querySelector('input[name="_csrf"]');
+    const csrfInput = document.querySelector(\'input[name="_csrf"]\');
     const csrfToken = csrfInput ? csrfInput.value : "";
 
     const formData = new FormData();

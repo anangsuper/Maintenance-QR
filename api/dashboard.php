@@ -11,12 +11,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     // A. Tambah Data Kartu Baru
     if ($action === 'create_card' || $action === 'create') {
+        $ruanganVal = trim((string)($_POST['ruangan'] ?? ''));
+        $ruanganBaru = trim((string)($_POST['nama_ruangan_baru'] ?? ''));
+        if ($ruanganBaru !== '') {
+            $ruanganVal = add_master_ruangan($ruanganBaru, trim((string)($_POST['kode_ruangan_baru'] ?? '')) ?: null);
+        }
+
         $res = insert_inventaris_kartu([
-            'nomor_rekening'   => $_POST['nomor_rekening'] ?? '',
-            'nama_barang'      => $_POST['nama_barang'] ?? '',
-            'tanggal_perolehan'=> $_POST['tanggal_perolehan'] ?? date('Y-m-d'),
-            'barcode_data'     => $_POST['barcode_data'] ?? '',
-            'lokasi'           => $_POST['lokasi'] ?? ''
+            'nomor_rekening'        => $_POST['nomor_rekening'] ?? '',
+            'nama_barang'           => $_POST['nama_barang'] ?? '',
+            'nomor_seri_inventaris' => $_POST['nomor_seri_inventaris'] ?? '',
+            'jenis_inventaris'      => $_POST['jenis_inventaris'] ?? '',
+            'golongan'              => $_POST['golongan'] ?? '',
+            'ruangan'               => $ruanganVal,
+            'sumber_perolehan'      => $_POST['sumber_perolehan'] ?? '',
+            'status_inventaris'     => $_POST['status_inventaris'] ?? '1 : Aktif',
+            'keterangan'            => $_POST['keterangan'] ?? '',
+            'tanggal_perolehan'     => $_POST['tanggal_perolehan'] ?? date('Y-m-d'),
+            'barcode_data'          => $_POST['barcode_data'] ?? '',
+            'lokasi'                => $_POST['lokasi'] ?? ''
         ]);
         if (!empty($res['success'])) {
             $_SESSION['flash'] = 'Data kartu inventaris baru berhasil disimpan.';
@@ -30,12 +43,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // B. Edit Data Kartu
     if ($action === 'update_card' || $action === 'update') {
         $cardId = (int)($_POST['id'] ?? 0);
+        $ruanganVal = trim((string)($_POST['ruangan'] ?? ''));
+        $ruanganBaru = trim((string)($_POST['nama_ruangan_baru'] ?? ''));
+        if ($ruanganBaru !== '') {
+            $ruanganVal = add_master_ruangan($ruanganBaru, trim((string)($_POST['kode_ruangan_baru'] ?? '')) ?: null);
+        }
+
         $ok = update_inventaris_kartu($cardId, [
-            'nomor_rekening'   => $_POST['nomor_rekening'] ?? '',
-            'nama_barang'      => $_POST['nama_barang'] ?? '',
-            'tanggal_perolehan'=> $_POST['tanggal_perolehan'] ?? date('Y-m-d'),
-            'barcode_data'     => $_POST['barcode_data'] ?? '',
-            'lokasi'           => $_POST['lokasi'] ?? ''
+            'nomor_rekening'        => $_POST['nomor_rekening'] ?? '',
+            'nama_barang'           => $_POST['nama_barang'] ?? '',
+            'nomor_seri_inventaris' => $_POST['nomor_seri_inventaris'] ?? '',
+            'jenis_inventaris'      => $_POST['jenis_inventaris'] ?? '',
+            'golongan'              => $_POST['golongan'] ?? '',
+            'ruangan'               => $ruanganVal,
+            'sumber_perolehan'      => $_POST['sumber_perolehan'] ?? '',
+            'status_inventaris'     => $_POST['status_inventaris'] ?? '1 : Aktif',
+            'keterangan'            => $_POST['keterangan'] ?? '',
+            'tanggal_perolehan'     => $_POST['tanggal_perolehan'] ?? date('Y-m-d'),
+            'barcode_data'          => $_POST['barcode_data'] ?? '',
+            'lokasi'                => $_POST['lokasi'] ?? ''
         ]);
         if ($ok) {
             $_SESSION['flash'] = 'Data kartu inventaris berhasil diperbarui.';
@@ -609,6 +635,33 @@ if (!empty($unresolvedFindings)) {
 // =========================================================================
 // 5. GENERASI DATA TABEL KARTU INVENTARIS
 // =========================================================================
+$optCardJenis = '';
+foreach (get_master_jenis_inventaris() as $k => $v) {
+    $optCardJenis .= '<option value="'.e($v).'">'.e($v).'</option>';
+}
+
+$optCardGolongan = '';
+foreach (get_master_golongan_inventaris() as $k => $v) {
+    $optCardGolongan .= '<option value="'.e($v).'">'.e($v).'</option>';
+}
+
+$optCardRuangan = '';
+$masterRuanganList = get_master_ruangan_list();
+foreach ($masterRuanganList as $r) {
+    $valR = trim($r['kode_ruangan'] . ' : ' . $r['nama_ruangan']);
+    $optCardRuangan .= '<option value="'.e($valR).'">'.e($valR).'</option>';
+}
+
+$optCardSumber = '';
+foreach (get_master_sumber_perolehan() as $k => $v) {
+    $optCardSumber .= '<option value="'.e($v).'">'.e($v).'</option>';
+}
+
+$optCardStatusInv = '';
+foreach (get_master_status_inventaris() as $k => $v) {
+    $optCardStatusInv .= '<option value="'.e($v).'">'.e($v).'</option>';
+}
+
 $cardsTableRowsHtml = '';
 if (empty($filteredCards)) {
     $cardsTableRowsHtml = '<tr><td colspan="8" class="text-center py-5 text-muted"><i class="bi bi-inbox fs-1 d-block mb-2 opacity-50"></i>Tidak ada data kartu inventaris yang ditemukan.</td></tr>';
@@ -2171,44 +2224,123 @@ $body .= '
 
 <!-- MODAL: TAMBAH DATA KARTU INVENTARIS -->
 <div class="modal fade" id="addCardModal" tabindex="-1" aria-hidden="true">
-  <div class="modal-dialog modal-dialog-centered">
-    <div class="modal-content border-0 shadow-lg" style="border-radius: 14px;">
+  <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-content border-0 shadow-lg" style="border-radius: 16px; overflow: hidden;">
       <form method="post">
         <input type="hidden" name="_csrf" value="'.e(csrf_token()).'">
         <input type="hidden" name="action" value="create_card">
-        <div class="modal-header bg-primary text-white py-2 px-3">
-          <h6 class="modal-title fw-bold d-flex align-items-center gap-2">
-            <i class="bi bi-plus-circle-fill"></i> Tambah Kartu Inventaris
-          </h6>
+        <div class="modal-header bg-primary text-white py-3 px-4">
+          <div>
+            <h5 class="modal-title fw-bold mb-0"><i class="bi bi-plus-circle-fill me-2"></i>Tambah Data Kartu Inventaris</h5>
+            <small class="text-white-50">Sistem Inventaris Core Banking BPR Mitratama</small>
+          </div>
           <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
         </div>
-        <div class="modal-body p-3">
-          <div class="mb-3">
-            <label class="form-label small fw-bold text-dark">Nomor Rekening</label>
-            <input type="text" name="nomor_rekening" id="addCardRekening" class="form-control form-control-sm font-monospace" placeholder="Contoh: 01.05.0493" maxlength="11" required oninput="handleRekeningInput(this, event)">
+        <div class="modal-body p-4">
+          <!-- Section 1: Identitas Rekening & Barang -->
+          <div class="d-flex align-items-center gap-2 border-bottom pb-2 mb-3">
+            <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 px-2 py-1 font-monospace small">01 · REKENING & IDENTITAS BARANG</span>
           </div>
-          <div class="mb-3">
-            <label class="form-label small fw-bold text-dark">Nama Barang</label>
-            <input type="text" name="nama_barang" class="form-control form-control-sm" placeholder="Contoh: BANGUNAN GEDUNG KANTOR PUSA" required>
+          <div class="row g-3 mb-4">
+            <div class="col-md-6">
+              <label class="form-label small fw-bold text-dark">Nomor Rekening <span class="text-danger">*</span></label>
+              <input type="text" name="nomor_rekening" id="addCardRekening" class="form-control font-monospace" placeholder="Contoh: 01.05.0493" maxlength="11" required oninput="handleRekeningInput(this, event)">
+              <div class="form-text text-muted" style="font-size: 0.72rem;">Format: <strong>XX.XX.XXXX</strong></div>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label small fw-bold text-dark">Nama Barang <span class="text-danger">*</span></label>
+              <input type="text" name="nama_barang" class="form-control" placeholder="Contoh: MOBIL AVANZA DA 1532 BV" required>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label small fw-bold text-dark">Nomor Seri Inventaris Bank</label>
+              <div class="input-group">
+                <input type="text" name="nomor_seri_inventaris" id="addCardNoSeri" class="form-control font-monospace" placeholder="Contoh: 01.05.02.200224.001">
+                <button class="btn btn-light border" type="button" onclick="autoGenerateCardNoSeri(\'add\')" title="Generate Format Bank"><i class="bi bi-magic me-1"></i>Auto</button>
+              </div>
+              <div class="form-text text-muted" style="font-size: 0.72rem;">Format resmi: [Cabang].[Ruang].[Gol].[ddMMyy].[No]</div>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label small fw-bold text-dark">Tanggal Perolehan <span class="text-danger">*</span></label>
+              <input type="text" name="tanggal_perolehan" id="addCardTanggal" class="form-control font-monospace" placeholder="dd/mm/yyyy" value="'.date('d/m/Y').'" maxlength="10" required oninput="handleDateInput(this, event)">
+              <div class="form-text text-muted" style="font-size: 0.72rem;">Format: <strong>dd/mm/yyyy</strong></div>
+            </div>
           </div>
-          <div class="mb-3">
-            <label class="form-label small fw-bold text-dark">Tanggal Perolehan</label>
-            <input type="text" name="tanggal_perolehan" id="addCardTanggal" class="form-control form-control-sm font-monospace" placeholder="dd/mm/yyyy (contoh: '.date('d/m/Y').')" value="'.date('d/m/Y').'" maxlength="10" required oninput="handleDateInput(this, event)">
-            <div class="form-text text-muted" style="font-size: 0.72rem;">Format: <strong>dd/mm/yyyy</strong></div>
+
+          <!-- Section 2: Master Core Banking Bank -->
+          <div class="d-flex align-items-center gap-2 border-bottom pb-2 mb-3">
+            <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 px-2 py-1 font-monospace small">02 · MASTER DATA CORE BANKING</span>
           </div>
-          <div class="mb-3">
-            <label class="form-label small fw-bold text-dark">Lokasi Barang</label>
-            <input type="text" name="lokasi" id="addCardLokasi" class="form-control form-control-sm" placeholder="Contoh: Kantor Pusat / Operasional / Ruang IT" onkeydown="handleLokasiKeydown(event, this)" oninput="this.dataset.customized=\'true\'">
-            <div class="form-text text-muted" style="font-size: 0.72rem;"><i class="bi bi-info-circle me-1"></i>Tekan <strong>Enter</strong> untuk otomatis menambahkan tanda <code> / </code></div>
+          <div class="row g-3 mb-4">
+            <div class="col-md-6">
+              <label class="form-label small fw-bold text-dark">Jenis Inventaris</label>
+              <select class="form-select" name="jenis_inventaris" id="addCardJenis">
+                '.$optCardJenis.'
+              </select>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label small fw-bold text-dark">Golongan Inventaris</label>
+              <select class="form-select" name="golongan" id="addCardGolongan">
+                '.$optCardGolongan.'
+              </select>
+            </div>
+            <div class="col-md-6">
+              <div class="d-flex justify-content-between align-items-center mb-1">
+                <label class="form-label small fw-bold text-dark mb-0">Ruangan Penempatan</label>
+                <button type="button" class="btn btn-sm btn-link p-0 text-decoration-none fw-semibold text-primary" data-bs-toggle="modal" data-bs-target="#modalQuickAddRuanganDashboard" style="font-size: 0.78rem;">
+                  <i class="bi bi-plus-circle me-1"></i>+ Tambah Ruangan
+                </button>
+              </div>
+              <div class="input-group">
+                <select class="form-select" name="ruangan" id="addCardRuangan">
+                  '.$optCardRuangan.'
+                </select>
+                <button type="button" class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#modalQuickAddRuanganDashboard" title="Tambah Ruangan Baru">
+                  <i class="bi bi-plus-lg text-primary"></i>
+                </button>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label small fw-bold text-dark">Sumber Perolehan</label>
+              <select class="form-select" name="sumber_perolehan" id="addCardSumber">
+                '.$optCardSumber.'
+              </select>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label small fw-bold text-dark">Status Inventaris</label>
+              <select class="form-select" name="status_inventaris" id="addCardStatusInv">
+                '.$optCardStatusInv.'
+              </select>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label small fw-bold text-dark">Lokasi Barang / Kantor</label>
+              <input type="text" name="lokasi" id="addCardLokasi" class="form-control" placeholder="Contoh: Kantor Pusat, Handil Bakti, Marabahan..." list="listLokasiBank">
+              <datalist id="listLokasiBank">
+                <option value="Kantor Pusat (KPO)">
+                <option value="Handil Bakti">
+                <option value="Marabahan">
+                <option value="Pasar Panas">
+              </datalist>
+            </div>
           </div>
-          <div class="mb-3">
-            <label class="form-label small fw-bold text-dark">Kode QR / Barcode (Data QR Code)</label>
-            <input type="text" name="barcode_data" class="form-control form-control-sm font-monospace" placeholder="Salin/tempel kode QR di sini">
+
+          <!-- Section 3: QR Code & Catatan -->
+          <div class="d-flex align-items-center gap-2 border-bottom pb-2 mb-3">
+            <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 px-2 py-1 font-monospace small">03 · KODE QR & KETERANGAN</span>
+          </div>
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label class="form-label small fw-bold text-dark">Kode QR / Barcode (Data QR Code)</label>
+              <input type="text" name="barcode_data" class="form-control font-monospace" placeholder="Salin/tempel link QR atau biarkan kosong">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label small fw-bold text-dark">Keterangan / Spesifikasi</label>
+              <textarea name="keterangan" class="form-control" rows="2" placeholder="Catatan spesifikasi unit perangkat atau nomor polisi..."></textarea>
+            </div>
           </div>
         </div>
-        <div class="modal-footer py-2 px-3 bg-light">
-          <button type="button" class="btn btn-sm btn-light border" data-bs-dismiss="modal">Batal</button>
-          <button type="submit" class="btn btn-sm btn-primary fw-semibold px-3"><i class="bi bi-save me-1"></i> Simpan Data</button>
+        <div class="modal-footer py-2.5 px-4 bg-light d-flex justify-content-between">
+          <button type="button" class="btn btn-sm btn-light border rounded-pill px-3" data-bs-dismiss="modal">Batal</button>
+          <button type="submit" class="btn btn-sm btn-primary rounded-pill fw-semibold px-4"><i class="bi bi-save me-1"></i> Simpan Data Kartu</button>
         </div>
       </form>
     </div>
@@ -2217,47 +2349,154 @@ $body .= '
 
 <!-- MODAL: EDIT DATA KARTU INVENTARIS -->
 <div class="modal fade" id="editCardModal" tabindex="-1" aria-hidden="true">
-  <div class="modal-dialog modal-dialog-centered">
-    <div class="modal-content border-0 shadow-lg" style="border-radius: 14px;">
+  <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-content border-0 shadow-lg" style="border-radius: 16px; overflow: hidden;">
       <form method="post">
         <input type="hidden" name="_csrf" value="'.e(csrf_token()).'">
         <input type="hidden" name="action" value="update_card">
         <input type="hidden" name="id" id="editCardId">
-        <div class="modal-header bg-warning text-dark py-2 px-3">
-          <h6 class="modal-title fw-bold d-flex align-items-center gap-2">
-            <i class="bi bi-pencil-square"></i> Edit Kartu Inventaris
-          </h6>
+        <div class="modal-header bg-warning text-dark py-3 px-4">
+          <div>
+            <h5 class="modal-title fw-bold mb-0 d-flex align-items-center gap-2">
+              <i class="bi bi-pencil-square"></i> Edit Kartu Inventaris
+            </h5>
+            <small class="text-dark opacity-75">Perbarui data spesifikasi dan klasifikasi Core Banking</small>
+          </div>
           <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
         </div>
-        <div class="modal-body p-3">
-          <div class="mb-3">
-            <label class="form-label small fw-bold text-dark">Nomor Rekening</label>
-            <input type="text" name="nomor_rekening" id="editCardRekening" class="form-control form-control-sm font-monospace" placeholder="Contoh: 01.05.0493" maxlength="11" required oninput="handleRekeningInput(this, event)">
+        <div class="modal-body p-4">
+          <!-- Section 1: Identitas Rekening & Barang -->
+          <div class="d-flex align-items-center gap-2 border-bottom pb-2 mb-3">
+            <span class="badge bg-warning bg-opacity-10 text-dark border border-warning border-opacity-25 px-2 py-1 font-monospace small">01 · REKENING & IDENTITAS BARANG</span>
           </div>
-          <div class="mb-3">
-            <label class="form-label small fw-bold text-dark">Nama Barang</label>
-            <input type="text" name="nama_barang" id="editCardNama" class="form-control form-control-sm" required>
+          <div class="row g-3 mb-4">
+            <div class="col-md-6">
+              <label class="form-label small fw-bold text-dark">Nomor Rekening <span class="text-danger">*</span></label>
+              <input type="text" name="nomor_rekening" id="editCardRekening" class="form-control font-monospace" placeholder="Contoh: 01.05.0493" maxlength="11" required oninput="handleRekeningInput(this, event)">
+              <div class="form-text text-muted" style="font-size: 0.72rem;">Format: <strong>XX.XX.XXXX</strong></div>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label small fw-bold text-dark">Nama Barang <span class="text-danger">*</span></label>
+              <input type="text" name="nama_barang" id="editCardNama" class="form-control" required>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label small fw-bold text-dark">Nomor Seri Inventaris Bank</label>
+              <div class="input-group">
+                <input type="text" name="nomor_seri_inventaris" id="editCardNoSeri" class="form-control font-monospace" placeholder="Contoh: 01.05.02.200224.001">
+                <button class="btn btn-light border" type="button" onclick="autoGenerateCardNoSeri(\'edit\')" title="Generate Format Bank"><i class="bi bi-magic me-1"></i>Auto</button>
+              </div>
+              <div class="form-text text-muted" style="font-size: 0.72rem;">Format resmi: [Cabang].[Ruang].[Gol].[ddMMyy].[No]</div>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label small fw-bold text-dark">Tanggal Perolehan <span class="text-danger">*</span></label>
+              <input type="text" name="tanggal_perolehan" id="editCardTanggal" class="form-control font-monospace" placeholder="dd/mm/yyyy" maxlength="10" required oninput="handleDateInput(this, event)">
+              <div class="form-text text-muted" style="font-size: 0.72rem;">Format: <strong>dd/mm/yyyy</strong></div>
+            </div>
           </div>
-          <div class="mb-3">
-            <label class="form-label small fw-bold text-dark">Tanggal Perolehan</label>
-            <input type="text" name="tanggal_perolehan" id="editCardTanggal" class="form-control form-control-sm font-monospace" placeholder="dd/mm/yyyy" maxlength="10" required oninput="handleDateInput(this, event)">
-            <div class="form-text text-muted" style="font-size: 0.72rem;">Format: <strong>dd/mm/yyyy</strong></div>
+
+          <!-- Section 2: Master Core Banking Bank -->
+          <div class="d-flex align-items-center gap-2 border-bottom pb-2 mb-3">
+            <span class="badge bg-warning bg-opacity-10 text-dark border border-warning border-opacity-25 px-2 py-1 font-monospace small">02 · MASTER DATA CORE BANKING</span>
           </div>
-          <div class="mb-3">
-            <label class="form-label small fw-bold text-dark">Lokasi Barang</label>
-            <input type="text" name="lokasi" id="editCardLokasi" class="form-control form-control-sm" placeholder="Contoh: Kantor Pusat / Operasional / Ruang IT" onkeydown="handleLokasiKeydown(event, this)">
-            <div class="form-text text-muted" style="font-size: 0.72rem;"><i class="bi bi-info-circle me-1"></i>Tekan <strong>Enter</strong> untuk otomatis menambahkan tanda <code> / </code></div>
+          <div class="row g-3 mb-4">
+            <div class="col-md-6">
+              <label class="form-label small fw-bold text-dark">Jenis Inventaris</label>
+              <select class="form-select" name="jenis_inventaris" id="editCardJenis">
+                '.$optCardJenis.'
+              </select>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label small fw-bold text-dark">Golongan Inventaris</label>
+              <select class="form-select" name="golongan" id="editCardGolongan">
+                '.$optCardGolongan.'
+              </select>
+            </div>
+            <div class="col-md-6">
+              <div class="d-flex justify-content-between align-items-center mb-1">
+                <label class="form-label small fw-bold text-dark mb-0">Ruangan Penempatan</label>
+                <button type="button" class="btn btn-sm btn-link p-0 text-decoration-none fw-semibold text-primary" data-bs-toggle="modal" data-bs-target="#modalQuickAddRuanganDashboard" style="font-size: 0.78rem;">
+                  <i class="bi bi-plus-circle me-1"></i>+ Tambah Ruangan
+                </button>
+              </div>
+              <div class="input-group">
+                <select class="form-select" name="ruangan" id="editCardRuangan">
+                  '.$optCardRuangan.'
+                </select>
+                <button type="button" class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#modalQuickAddRuanganDashboard" title="Tambah Ruangan Baru">
+                  <i class="bi bi-plus-lg text-primary"></i>
+                </button>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label small fw-bold text-dark">Sumber Perolehan</label>
+              <select class="form-select" name="sumber_perolehan" id="editCardSumber">
+                '.$optCardSumber.'
+              </select>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label small fw-bold text-dark">Status Inventaris</label>
+              <select class="form-select" name="status_inventaris" id="editCardStatusInv">
+                '.$optCardStatusInv.'
+              </select>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label small fw-bold text-dark">Lokasi Barang / Kantor</label>
+              <input type="text" name="lokasi" id="editCardLokasi" class="form-control" placeholder="Contoh: Handil Bakti, KPO..." list="listLokasiBank">
+            </div>
           </div>
-          <div class="mb-3">
-            <label class="form-label small fw-bold text-dark">Kode QR / Barcode (Data QR Code)</label>
-            <input type="text" name="barcode_data" id="editCardBarcode" class="form-control form-control-sm font-monospace" placeholder="Salin/tempel kode QR di sini">
+
+          <!-- Section 3: QR Code & Catatan -->
+          <div class="d-flex align-items-center gap-2 border-bottom pb-2 mb-3">
+            <span class="badge bg-warning bg-opacity-10 text-dark border border-warning border-opacity-25 px-2 py-1 font-monospace small">03 · KODE QR & KETERANGAN</span>
+          </div>
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label class="form-label small fw-bold text-dark">Kode QR / Barcode (Data QR Code)</label>
+              <input type="text" name="barcode_data" id="editCardBarcode" class="form-control font-monospace" placeholder="Salin/tempel kode QR di sini">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label small fw-bold text-dark">Keterangan / Spesifikasi</label>
+              <textarea name="keterangan" id="editCardKeterangan" class="form-control" rows="2" placeholder="Catatan spesifikasi perangkat..."></textarea>
+            </div>
           </div>
         </div>
-        <div class="modal-footer py-2 px-3 bg-light">
-          <button type="button" class="btn btn-sm btn-light border" data-bs-dismiss="modal">Batal</button>
-          <button type="submit" class="btn btn-sm btn-primary fw-semibold px-3"><i class="bi bi-check-lg me-1"></i> Simpan Perubahan</button>
+        <div class="modal-footer py-2.5 px-4 bg-light d-flex justify-content-between">
+          <button type="button" class="btn btn-sm btn-light border rounded-pill px-3" data-bs-dismiss="modal">Batal</button>
+          <button type="submit" class="btn btn-sm btn-primary rounded-pill fw-semibold px-4"><i class="bi bi-check-lg me-1"></i> Simpan Perubahan</button>
         </div>
       </form>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Quick Add Ruangan di Dashboard -->
+<div class="modal fade" id="modalQuickAddRuanganDashboard" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content shadow border-0" style="border-radius: 16px;">
+      <div class="modal-header border-bottom py-3 px-4">
+        <h5 class="modal-title fw-bold text-dark d-flex align-items-center gap-2">
+          <i class="bi bi-door-open text-primary"></i> Tambah Ruangan Penempatan
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body p-4">
+        <div id="quickRuanganDashboardAlert" class="alert alert-danger d-none py-2 small mb-3"></div>
+        <div class="mb-3">
+          <label class="form-label text-secondary small fw-semibold">Kode Ruangan (2 Digit)</label>
+          <input type="text" class="form-control font-monospace" id="inputQuickKodeRuanganDashboard" placeholder="Contoh: 12 (Kosongkan utk otomatis)">
+          <div class="form-text small text-muted">Biarkan kosong untuk penomoran otomatis.</div>
+        </div>
+        <div class="mb-2">
+          <label class="form-label text-secondary small fw-semibold">Nama Ruangan <span class="text-danger">*</span></label>
+          <input type="text" class="form-control" id="inputQuickNamaRuanganDashboard" placeholder="Contoh: RUANG AUDIT & SKAI...">
+        </div>
+      </div>
+      <div class="modal-footer border-top bg-light py-2 px-4 d-flex justify-content-between">
+        <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Batal</button>
+        <button type="button" class="btn btn-sm btn-primary fw-semibold" id="btnQuickSubmitRuanganDashboard" onclick="submitQuickRuanganDashboard()">
+          <i class="bi bi-check2 me-1"></i> Simpan Ruangan
+        </button>
+      </div>
     </div>
   </div>
 </div>
@@ -2649,10 +2888,144 @@ function handleLokasiKeydown(e, el) {
   }
 }
 
+function autoGenerateCardNoSeri(prefix) {
+  var d = new Date();
+  var dd = String(d.getDate()).padStart(2, "0");
+  var mm = String(d.getMonth() + 1).padStart(2, "0");
+  var yy = String(d.getFullYear()).slice(-2);
+  var rand = String(Math.floor(1 + Math.random() * 999)).padStart(3, "0");
+
+  var selR = document.getElementById(prefix === "edit" ? "editCardRuangan" : "addCardRuangan");
+  var kdR = "05";
+  if (selR && selR.value) {
+    var mR = selR.value.match(/^(\d{2})/);
+    if (mR) kdR = mR[1];
+  }
+
+  var selG = document.getElementById(prefix === "edit" ? "editCardGolongan" : "addCardGolongan");
+  var kdG = "02";
+  if (selG && selG.value) {
+    var mG = selG.value.match(/^(\d{2})/);
+    if (mG) kdG = mG[1];
+  }
+
+  var target = document.getElementById(prefix === "edit" ? "editCardNoSeri" : "addCardNoSeri");
+  if (target) {
+    target.value = "01." + kdR + "." + kdG + "." + dd + mm + yy + "." + rand;
+  }
+}
+
+function submitQuickRuanganDashboard() {
+  const inputNama = document.getElementById("inputQuickNamaRuanganDashboard");
+  const inputKode = document.getElementById("inputQuickKodeRuanganDashboard");
+  const alertEl = document.getElementById("quickRuanganDashboardAlert");
+  const btn = document.getElementById("btnQuickSubmitRuanganDashboard");
+
+  const nama = inputNama ? inputNama.value.trim() : "";
+  const kode = inputKode ? inputKode.value.trim() : "";
+
+  if (!nama) {
+    if (alertEl) {
+      alertEl.textContent = "Nama ruangan tidak boleh kosong.";
+      alertEl.classList.remove("d-none");
+    }
+    if (inputNama) inputNama.focus();
+    return;
+  }
+
+  if (alertEl) alertEl.classList.add("d-none");
+  if (btn) btn.disabled = true;
+
+  const csrfInput = document.querySelector(\'input[name="_csrf"]\');
+  const csrfToken = csrfInput ? csrfInput.value : "";
+
+  const formData = new FormData();
+  formData.append("_csrf", csrfToken);
+  formData.append("nama_ruangan", nama);
+  formData.append("kode_ruangan", kode);
+
+  fetch("ruangan_ajax_add.php", {
+    method: "POST",
+    body: formData
+  })
+  .then(function(res) { return res.json(); })
+  .then(function(data) {
+    if (btn) btn.disabled = false;
+    if (!data.success) {
+      if (alertEl) {
+        alertEl.textContent = data.error || "Gagal menambahkan ruangan baru.";
+        alertEl.classList.remove("d-none");
+      }
+      return;
+    }
+
+    const newVal = data.value || (data.kode + " : " + data.nama);
+    const selAdd = document.getElementById("addCardRuangan");
+    const selEdit = document.getElementById("editCardRuangan");
+
+    [selAdd, selEdit].forEach(function(sel) {
+      if (sel) {
+        const opt = document.createElement("option");
+        opt.value = newVal;
+        opt.textContent = newVal;
+        sel.appendChild(opt);
+        sel.value = newVal;
+      }
+    });
+
+    const modalEl = document.getElementById("modalQuickAddRuanganDashboard");
+    if (modalEl && typeof bootstrap !== "undefined") {
+      const bsModal = bootstrap.Modal.getInstance(modalEl);
+      if (bsModal) bsModal.hide();
+    }
+  })
+  .catch(function(err) {
+    if (btn) btn.disabled = false;
+    if (alertEl) {
+      alertEl.textContent = "Terjadi kesalahan jaringan atau server.";
+      alertEl.classList.remove("d-none");
+    }
+  });
+}
+
 function openCardEditModal(card) {
   document.getElementById("editCardId").value = card.id || "";
   document.getElementById("editCardRekening").value = card.nomor_rekening || "";
   document.getElementById("editCardNama").value = card.nama_barang || "";
+  document.getElementById("editCardNoSeri").value = card.nomor_seri_inventaris || "";
+
+  if (card.jenis_inventaris) {
+    document.getElementById("editCardJenis").value = card.jenis_inventaris;
+  }
+  if (card.golongan) {
+    document.getElementById("editCardGolongan").value = card.golongan;
+  }
+  if (card.ruangan) {
+    const selR = document.getElementById("editCardRuangan");
+    if (selR) {
+      let matched = false;
+      for (let i = 0; i < selR.options.length; i++) {
+        if (selR.options[i].value.toLowerCase() === card.ruangan.toLowerCase()) {
+          selR.selectedIndex = i;
+          matched = true;
+          break;
+        }
+      }
+      if (!matched) {
+        const opt = document.createElement("option");
+        opt.value = card.ruangan;
+        opt.textContent = card.ruangan;
+        selR.appendChild(opt);
+        selR.value = card.ruangan;
+      }
+    }
+  }
+  if (card.sumber_perolehan) {
+    document.getElementById("editCardSumber").value = card.sumber_perolehan;
+  }
+  if (card.status_inventaris) {
+    document.getElementById("editCardStatusInv").value = card.status_inventaris;
+  }
 
   let rawDate = (card.tanggal_perolehan || "").trim();
   let formattedDate = rawDate;
@@ -2665,6 +3038,7 @@ function openCardEditModal(card) {
   document.getElementById("editCardTanggal").value = formattedDate;
   document.getElementById("editCardLokasi").value = card.lokasi || "";
   document.getElementById("editCardBarcode").value = card.barcode_data || "";
+  document.getElementById("editCardKeterangan").value = card.keterangan || "";
 
   const modal = new bootstrap.Modal(document.getElementById("editCardModal"));
   modal.show();
