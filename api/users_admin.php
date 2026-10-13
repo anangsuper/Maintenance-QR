@@ -503,9 +503,10 @@ $body = '
       '.$formContent.'
     </div>
   </div>
-</div>
+</div>';
 
-<!-- Modal Pratinjau Foto Wajah Petugas -->
+// Modal Pratinjau Foto Wajah Petugas
+$modalHtml = <<<HTML
 <div class="modal fade" id="modalPreviewFace" tabindex="-1" aria-labelledby="modalPreviewFaceLabel" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered" style="max-width: 380px;">
     <div class="modal-content border-0 shadow-lg" style="border-radius: 14px; overflow: hidden;">
@@ -539,16 +540,16 @@ $body = '
 <script>
 function previewFacePhoto(imgSrc, nama, username, role) {
   if (!imgSrc) return;
-  const imgEl = document.getElementById("previewFaceImg");
-  const namaEl = document.getElementById("previewFaceNama");
-  const userEl = document.getElementById("previewFaceUser");
-  const badgeEl = document.getElementById("previewFaceRoleBadge");
+  var imgEl = document.getElementById("previewFaceImg");
+  var namaEl = document.getElementById("previewFaceNama");
+  var userEl = document.getElementById("previewFaceUser");
+  var badgeEl = document.getElementById("previewFaceRoleBadge");
 
   if (imgEl) imgEl.src = imgSrc;
   if (namaEl) namaEl.innerText = nama || "-";
   if (userEl) userEl.innerText = "@" + (username || "-");
   
-  let roleBadge = '<span class="badge bg-secondary">' + (role || "Pengguna") + '</span>';
+  var roleBadge = '<span class="badge bg-secondary">' + (role || "Pengguna") + '</span>';
   if (role === "admin") {
     roleBadge = '<span class="badge bg-primary"><i class="bi bi-shield-lock-fill me-1"></i> Administrator</span>';
   } else if (role === "hrd" || role === "umum" || role === "hrd_umum" || role === "sdm") {
@@ -558,10 +559,10 @@ function previewFacePhoto(imgSrc, nama, username, role) {
   }
   if (badgeEl) badgeEl.innerHTML = roleBadge;
 
-  const modalEl = document.getElementById("modalPreviewFace");
+  var modalEl = document.getElementById("modalPreviewFace");
   if (modalEl) {
     if (window.bootstrap && bootstrap.Modal) {
-      const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+      var modal = bootstrap.Modal.getOrCreateInstance(modalEl);
       modal.show();
     } else {
       modalEl.classList.add("show");
@@ -572,17 +573,19 @@ function previewFacePhoto(imgSrc, nama, username, role) {
 
 document.addEventListener("DOMContentLoaded", function() {
   document.addEventListener("click", function(e) {
-    const trigger = e.target.closest(".js-preview-face");
+    var trigger = e.target.closest(".js-preview-face");
     if (!trigger) return;
     e.preventDefault();
-    const photo = trigger.getAttribute("data-photo") || "";
-    const nama = trigger.getAttribute("data-nama") || "";
-    const username = trigger.getAttribute("data-username") || "";
-    const role = trigger.getAttribute("data-role") || "";
+    var photo = trigger.getAttribute("data-photo") || "";
+    var nama = trigger.getAttribute("data-nama") || "";
+    var username = trigger.getAttribute("data-username") || "";
+    var role = trigger.getAttribute("data-role") || "";
     previewFacePhoto(photo, nama, username, role);
   });
 });
 </script>
-';
+HTML;
+
+$body .= $modalHtml;
 
 render_page('Kelola Akun Pengguna', $body);
