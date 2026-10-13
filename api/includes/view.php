@@ -45,17 +45,37 @@ function render_page(string $title, string $content, string $extraHead = '', str
         $systemItems[] = ['title' => 'Dokumen Desain', 'url' => module_url('system_design.php'), 'icon' => 'bi-file-earmark-pdf', 'active' => ($currentPage === 'system_design.php')];
     }
 
-    // Sidebar navigation menu
-    $navLinks = [
-        'OPERATIONS' => [
-            ['title' => 'Dashboard', 'url' => module_url('dashboard.php'), 'icon' => 'bi-speedometer2', 'active' => ($currentPage === 'dashboard.php' && !in_array($_GET['tab'] ?? '', ['kartu', 'temuan'], true))],
-            ['title' => 'Temuan Kendala', 'url' => module_url('dashboard.php', ['tab' => 'temuan']), 'icon' => 'bi-tools', 'active' => ($currentPage === 'dashboard.php' && ($_GET['tab'] ?? '') === 'temuan')],
-            ['title' => 'Asset Registry', 'url' => module_url('assets.php'), 'icon' => 'bi-pc-display', 'active' => in_array($currentPage, ['assets.php', 'asset_add.php', 'asset_edit.php', 'asset_delete.php', 'asset_import.php'], true)],
+    $isHrdRole = is_hrd();
+    $brandTag = $isHrdRole ? 'SDM & UMUM' : 'IT OPS';
+    $displayRole = $isHrdRole ? 'SDM & Umum' : (($role === 'admin') ? 'Administrator' : ucfirst($role));
+
+    // Susun menu operasi (khusus SDM, kartu inventaris dan galeri foto diprioritaskan di atas)
+    $operationsItems = [];
+    if ($isHrdRole) {
+        $operationsItems = [
+            ['title' => 'Dashboard', 'url' => module_url('dashboard.php', ['tab' => 'kartu']), 'icon' => 'bi-speedometer2', 'active' => ($currentPage === 'dashboard.php' && !in_array($_GET['tab'] ?? '', ['kartu', 'temuan'], true))],
+            ['title' => 'Kartu Inventaris', 'url' => module_url('dashboard.php', ['tab' => 'kartu']), 'icon' => 'bi-credit-card-2-front', 'active' => ($currentPage === 'dashboard.php' && ($_GET['tab'] ?? '') === 'kartu') || in_array($currentPage, ['inventory_card.php', 'cetak_kartu.php', 'print_inventory_card.php', 'kartu_detail.php'], true)],
             ['title' => 'Galeri Foto', 'url' => module_url('asset_gallery.php'), 'icon' => 'bi-images', 'active' => in_array($currentPage, ['asset_gallery.php', 'inventaris_gallery.php'], true)],
+            ['title' => 'Asset Registry', 'url' => module_url('assets.php'), 'icon' => 'bi-pc-display', 'active' => in_array($currentPage, ['assets.php', 'asset_add.php', 'asset_edit.php', 'asset_delete.php', 'asset_import.php'], true)],
+            ['title' => 'Temuan Kendala', 'url' => module_url('dashboard.php', ['tab' => 'temuan']), 'icon' => 'bi-tools', 'active' => ($currentPage === 'dashboard.php' && ($_GET['tab'] ?? '') === 'temuan')],
             ['title' => 'Maintenance', 'url' => module_url('audit.php'), 'icon' => 'bi-clipboard-check', 'active' => in_array($currentPage, ['audit.php', 'monthly_history.php', 'history.php', 'maintenance_detail.php'], true)],
             ['title' => 'QR Scanner', 'url' => module_url('scanner.php'), 'icon' => 'bi-qr-code-scan', 'active' => ($currentPage === 'scanner.php')],
-            ['title' => 'Kartu Inventaris', 'url' => module_url('dashboard.php', ['tab' => 'kartu']), 'icon' => 'bi-credit-card-2-front', 'active' => ($currentPage === 'dashboard.php' && ($_GET['tab'] ?? '') === 'kartu') || in_array($currentPage, ['inventory_card.php', 'cetak_kartu.php', 'print_inventory_card.php'], true)],
-        ],
+        ];
+    } else {
+        $operationsItems = [
+            ['title' => 'Dashboard', 'url' => module_url('dashboard.php'), 'icon' => 'bi-speedometer2', 'active' => ($currentPage === 'dashboard.php' && !in_array($_GET['tab'] ?? '', ['kartu', 'temuan'], true))],
+            ['title' => 'Kartu Inventaris', 'url' => module_url('dashboard.php', ['tab' => 'kartu']), 'icon' => 'bi-credit-card-2-front', 'active' => ($currentPage === 'dashboard.php' && ($_GET['tab'] ?? '') === 'kartu') || in_array($currentPage, ['inventory_card.php', 'cetak_kartu.php', 'print_inventory_card.php', 'kartu_detail.php'], true)],
+            ['title' => 'Galeri Foto', 'url' => module_url('asset_gallery.php'), 'icon' => 'bi-images', 'active' => in_array($currentPage, ['asset_gallery.php', 'inventaris_gallery.php'], true)],
+            ['title' => 'Temuan Kendala', 'url' => module_url('dashboard.php', ['tab' => 'temuan']), 'icon' => 'bi-tools', 'active' => ($currentPage === 'dashboard.php' && ($_GET['tab'] ?? '') === 'temuan')],
+            ['title' => 'Asset Registry', 'url' => module_url('assets.php'), 'icon' => 'bi-pc-display', 'active' => in_array($currentPage, ['assets.php', 'asset_add.php', 'asset_edit.php', 'asset_delete.php', 'asset_import.php'], true)],
+            ['title' => 'Maintenance', 'url' => module_url('audit.php'), 'icon' => 'bi-clipboard-check', 'active' => in_array($currentPage, ['audit.php', 'monthly_history.php', 'history.php', 'maintenance_detail.php'], true)],
+            ['title' => 'QR Scanner', 'url' => module_url('scanner.php'), 'icon' => 'bi-qr-code-scan', 'active' => ($currentPage === 'scanner.php')],
+        ];
+    }
+
+    // Sidebar navigation menu
+    $navLinks = [
+        'OPERATIONS' => $operationsItems,
         'MONITORING' => $monitoringItems,
         'MANAGEMENT' => $managementItems,
         'SYSTEM' => $systemItems
@@ -80,10 +100,6 @@ function render_page(string $title, string $content, string $extraHead = '', str
         }
         $sidebarMenuHtml .= '</ul>';
     }
-
-    $isHrdRole = in_array(strtolower($role), ['hrd', 'umum', 'hrd_umum', 'sdm', 'sdm_umum'], true);
-    $brandTag = $isHrdRole ? 'HRD & UMUM' : 'IT OPS';
-    $displayRole = $isHrdRole ? 'HRD / Umum' : (($role === 'admin') ? 'Administrator' : ucfirst($role));
 
     $sidebarHtml = '
     <aside class="app-sidebar d-none d-lg-flex flex-column" id="appDesktopSidebar">

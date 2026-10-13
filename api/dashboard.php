@@ -727,6 +727,35 @@ if (empty($displayCards)) {
         }
         $todayBadge = $isCardToday ? '<span class="badge bg-success-subtle text-success border border-success-subtle ms-1" style="font-size: 0.65rem; font-weight: 700;"><i class="bi bi-stars me-0.5"></i>Hari Ini</span>' : '';
 
+        $photoThumbHtml = '';
+        if (!empty($c['foto'])) {
+            $photoThumbHtml = '<a href="'.e(module_url('kartu_detail.php', ['id'=>$cId])).'" target="_blank" class="flex-shrink-0 position-relative text-decoration-none" title="Lihat Foto Fisik Inventaris">
+                <img src="'.e(app_url($c['foto'])).'" alt="Foto" class="rounded border shadow-xs" style="width: 36px; height: 36px; object-fit: cover;">
+                <span class="position-absolute bottom-0 end-0 badge rounded-pill bg-success p-0 border border-white" style="width: 8px; height: 8px;" title="Ada Foto Fisik"></span>
+            </a>';
+        } else {
+            $photoThumbHtml = '<a href="'.e(module_url('kartu_detail.php', ['id'=>$cId])).'" target="_blank" class="flex-shrink-0 d-inline-flex align-items-center justify-content-center rounded border bg-light text-muted text-decoration-none" style="width: 36px; height: 36px;" title="Belum Ada Foto - Klik untuk Ambil/Upload Foto">
+                <i class="bi bi-camera text-secondary opacity-50" style="font-size: 1.05rem;"></i>
+            </a>';
+        }
+
+        // Tentukan style badge lokasi
+        $lokasiNorm = strtoupper(trim((string)$lokasi));
+        $lokasiBadgeClass = 'bg-secondary-subtle text-secondary border border-secondary-subtle';
+        if (str_contains($lokasiNorm, '01') || str_contains($lokasiNorm, 'PUSAT') || str_contains($lokasiNorm, 'KPO')) {
+            $lokasiBadgeClass = 'bg-primary-subtle text-primary border border-primary-subtle';
+        } elseif (str_contains($lokasiNorm, '02') || str_contains($lokasiNorm, 'BATULICIN')) {
+            $lokasiBadgeClass = 'bg-success-subtle text-success border border-success-subtle';
+        } elseif (str_contains($lokasiNorm, '03') || str_contains($lokasiNorm, 'MARTAPURA')) {
+            $lokasiBadgeClass = 'bg-warning-subtle text-warning-emphasis border border-warning-subtle';
+        } elseif (str_contains($lokasiNorm, '04') || str_contains($lokasiNorm, 'TANJUNG')) {
+            $lokasiBadgeClass = 'bg-info-subtle text-info-emphasis border border-info-subtle';
+        } elseif (str_contains($lokasiNorm, '05') || str_contains($lokasiNorm, 'HANDIL')) {
+            $lokasiBadgeClass = 'bg-danger-subtle text-danger border border-danger-subtle';
+        }
+
+        $noSeriBadge = !empty($c['nomor_seri_inventaris']) ? '<span class="badge bg-light text-dark border font-monospace mt-0.5" style="font-size: 0.68rem;"><i class="bi bi-hash me-0.5"></i>'.e($c['nomor_seri_inventaris']).'</span>' : '';
+
         $cardsTableRowsHtml .= '
         <tr id="card-row-'.$cId.'">
           <td class="text-center" style="width: 38px;">
@@ -735,19 +764,25 @@ if (empty($displayCards)) {
           <td style="min-width: 140px;">
             <div class="font-monospace fw-bold text-primary" style="font-size: 0.88rem;">'.e($rek).'</div>
             <div class="small text-muted font-monospace" style="font-size: 0.72rem;" title="Nomor Aset Gabungan">'.e($gabungan).'</div>
+            '.$noSeriBadge.'
           </td>
           <td>
-            <div class="fw-semibold text-dark text-break">'.e($nama).'</div>
-            <div class="small text-secondary font-monospace mt-0.5">
-              <i class="bi bi-calendar-event text-primary me-1"></i>'.e($tglCard).'
-              '.$todayBadge.'
+            <div class="d-flex align-items-center gap-2.5">
+              '.$photoThumbHtml.'
+              <div>
+                <a href="'.e(module_url('kartu_detail.php', ['id'=>$cId])).'" target="_blank" class="fw-semibold text-dark text-decoration-none hover-primary text-break" title="Buka Detail &amp; Foto Fisik">'.e($nama).'</a>
+                <div class="small text-secondary font-monospace mt-0.5">
+                  <i class="bi bi-calendar-event text-primary me-1"></i>'.e($tglCard).'
+                  '.$todayBadge.'
+                </div>
+              </div>
             </div>
           </td>
           <td style="width: 100px;" class="text-center">
             '.($barcode ? '<a href="'.e($barcode).'" target="_blank" class="badge bg-primary-subtle text-primary border border-primary-subtle text-decoration-none py-1 px-2" title="'.e($barcode).'"><i class="bi bi-qr-code me-1"></i>Label QR</a>' : '<span class="text-muted small">-</span>').'
           </td>
           <td style="width: 90px;" class="text-center">
-            <span class="badge-chip chip-secondary">'.e($lokasi).'</span>
+            <span class="badge px-2 py-1 rounded-pill '.$lokasiBadgeClass.'" style="font-size: 0.75rem; font-weight: 600;">'.e($lokasi).'</span>
           </td>
           <td class="text-end text-nowrap" style="width: 140px;">
             <div class="btn-group btn-group-sm">

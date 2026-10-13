@@ -76,11 +76,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     if ($faceVerified === '1' && !empty($verifierName)) {
         $isAuthorized = true;
         $verifierLabel = $verifierName . ($verifierConfidence > 0 ? " ({$verifierConfidence}% Cocok - Scan Wajah)" : " (Scan Wajah)");
-    } elseif (is_logged_in() && is_admin()) {
+    } elseif (is_logged_in() && (is_admin() || is_hrd())) {
         $isAuthorized = true;
-        $adminName = current_user_name() ?: 'Administrator';
-        $verifierLabel = $adminName . " (Sesi Admin)";
-        $verifierName = $adminName;
+        $staffRole = is_admin() ? 'Sesi Admin' : 'Sesi SDM & Umum';
+        $staffName = current_user_name() ?: (is_admin() ? 'Administrator' : 'Staf SDM & Umum');
+        $verifierLabel = $staffName . " ({$staffRole})";
+        $verifierName = $staffName;
     }
 
     if (!$isAuthorized) {
@@ -636,11 +637,13 @@ $pageTitle = $card ? e($card['nama_barang']) . ' - Kartu Inventaris' : 'Kartu In
                                         <span>Scan Wajah & Simpan Foto</span>
                                     </button>
 
-                                    <?php if (is_logged_in() && (is_admin() || (function_exists('has_role') && has_role('admin')))): ?>
+                                    <?php if (is_logged_in() && (is_admin() || is_hrd())): ?>
                                         <div class="mt-2 text-center">
-                                            <button type="button" class="btn btn-link btn-xs text-muted p-0 text-decoration-none" onclick="submitAsLoggedInAdmin()" style="font-size: 0.72rem;">
-                                                <i class="bi bi-shield-lock me-1"></i> Otorisasi Cepat via Sesi Admin (<?= e(current_user_name()) ?>)
+                                            <button type="button" class="btn btn-outline-primary btn-sm w-100 rounded-pill fw-semibold py-1.5 shadow-xs d-flex align-items-center justify-content-center gap-1.5" onclick="submitAsAuthorizedStaff()" style="font-size: 0.76rem;">
+                                                <i class="bi bi-shield-check text-success"></i>
+                                                <span>Simpan via Sesi <?= e(is_admin() ? 'Admin' : 'SDM & Umum') ?> (<?= e(current_user_name()) ?>)</span>
                                             </button>
+                                            <div class="form-text text-muted mt-1" style="font-size: 0.68rem;">Tanpa pemindaian biometrik wajah kamera</div>
                                         </div>
                                     <?php endif; ?>
                                 </form>
@@ -1132,7 +1135,7 @@ $pageTitle = $card ? e($card['nama_barang']) . ' - Kartu Inventaris' : 'Kartu In
             openBiometricModal();
         }
 
-        function submitAsLoggedInAdmin() {
+        function submitAsAuthorizedStaff() {
             if (!fileInput || !fileInput.files || fileInput.files.length === 0) {
                 alert('Silakan pilih file foto barang terlebih dahulu!');
                 fileInput.focus();
@@ -1141,11 +1144,15 @@ $pageTitle = $card ? e($card['nama_barang']) . ' - Kartu Inventaris' : 'Kartu In
             const btn = document.getElementById('btnMulaiScanWajah');
             if (btn) {
                 btn.disabled = true;
-                btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Menyimpan via Sesi Admin...';
+                btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Menyimpan foto...';
             }
             document.getElementById('bioVerified').value = "1";
-            document.getElementById('bioUserName').value = "Administrator";
+            document.getElementById('bioUserName').value = <?= json_encode(current_user_name() ?: 'Staf SDM & Umum') ?>;
             document.getElementById('uploadPhotoForm').submit();
+        }
+
+        function submitAsLoggedInAdmin() {
+            submitAsAuthorizedStaff();
         }
 
         async function loadBioModels() {

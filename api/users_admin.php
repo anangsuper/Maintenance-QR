@@ -193,8 +193,8 @@ foreach ($users as $u) {
 
     $roleBadge = ($uRole === 'admin')
         ? '<span class="badge-chip chip-primary"><i class="bi bi-shield-lock-fill"></i> Admin</span>'
-        : (($uRole === 'hrd' || $uRole === 'umum' || $uRole === 'hrd_umum' || $uRole === 'sdm')
-            ? '<span class="badge-chip chip-warning text-dark"><i class="bi bi-briefcase-fill"></i> HRD / Umum</span>'
+        : (($uRole === 'hrd' || $uRole === 'umum' || $uRole === 'hrd_umum' || $uRole === 'sdm' || str_contains($uRole, 'sdm'))
+            ? '<span class="badge-chip chip-warning text-dark"><i class="bi bi-person-workspace"></i> SDM & Umum</span>'
             : (($uRole === 'auditor')
                 ? '<span class="badge-chip chip-secondary"><i class="bi bi-eye-fill"></i> Auditor</span>'
                 : '<span class="badge-chip chip-info"><i class="bi bi-tools"></i> Teknisi IT</span>'));
@@ -331,7 +331,7 @@ if ($editUser) {
         <label class="form-label text-uppercase fw-bold text-muted" style="font-size: 0.75rem; letter-spacing: 0.04em;">Hak Akses / Peran <span class="text-danger">*</span></label>
         <select class="form-select" name="role">
           <option value="teknisi" '.($editRole==='teknisi'?'selected':'').'>Teknisi IT (Inspeksi & Checklist)</option>
-          <option value="hrd" '.($editRole==='hrd'||$editRole==='umum'||$editRole==='hrd_umum'||$editRole==='sdm'?'selected':'').'>HRD / Bagian Umum (Inventaris, Cabang, Divisi & Karyawan)</option>
+          <option value="sdm" '.($editRole==='sdm'||$editRole==='hrd'||$editRole==='umum'||$editRole==='hrd_umum'||str_contains($editRole,'sdm')?'selected':'').'>SDM & Umum / HRD (Kartu Inventaris, Cabang, Divisi & Karyawan)</option>
           <option value="auditor" '.($editRole==='auditor'?'selected':'').'>Auditor / SKAI (Read-Only Audit Trail)</option>
           <option value="admin" '.($editRole==='admin'?'selected':'').'>Administrator (Akses Penuh Sistem)</option>
         </select>
@@ -400,7 +400,7 @@ if ($editUser) {
         <label class="form-label text-uppercase fw-bold text-muted" style="font-size: 0.75rem; letter-spacing: 0.04em;">Hak Akses / Peran <span class="text-danger">*</span></label>
         <select class="form-select" name="role">
           <option value="teknisi" selected>Teknisi IT (Inspeksi & Checklist)</option>
-          <option value="hrd">HRD / Bagian Umum (Inventaris, Cabang, Divisi & Karyawan)</option>
+          <option value="sdm">SDM & Umum / HRD (Kartu Inventaris, Cabang, Divisi & Karyawan)</option>
           <option value="auditor">Auditor / SKAI (Read-Only Audit Trail)</option>
           <option value="admin">Administrator (Akses Penuh Sistem)</option>
         </select>

@@ -293,15 +293,25 @@ function has_role(string $role): bool {
         return false;
     }
     $cur = current_user_role();
-    return strcasecmp($cur, $role) === 0;
+    if (strcasecmp($cur, $role) === 0) return true;
+    if (in_array(strtolower($role), ['sdm', 'hrd', 'umum', 'sdm_umum'], true) && is_hrd()) {
+        return true;
+    }
+    if (in_array(strtolower($role), ['admin', 'administrator'], true) && is_admin()) {
+        return true;
+    }
+    return false;
 }
 
 function is_hrd(): bool {
     if (!is_logged_in()) {
         return false;
     }
-    $role = current_user_role();
-    return in_array($role, ['hrd', 'umum', 'hrd_umum', 'sdm', 'sdm_umum'], true);
+    $role = strtolower(current_user_role());
+    return in_array($role, ['hrd', 'umum', 'hrd_umum', 'sdm', 'sdm_umum', 'sdm & umum', 'sdm/hrd'], true)
+        || str_contains($role, 'sdm')
+        || str_contains($role, 'hrd')
+        || str_contains($role, 'umum');
 }
 
 function is_admin_or_hrd(): bool {

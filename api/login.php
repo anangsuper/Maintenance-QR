@@ -9,9 +9,9 @@ if (!empty($_GET['redirect'])) {
 // Jika sesi telah berakhir (idle timeout), pastikan auth session dibersihkan
 if (!empty($_GET['expired'])) {
     logout_user();
-} elseif (is_logged_in()) {
-    // Jika sudah login aktif, langsung redirect ke halaman tujuan atau dashboard
-    $redirect = safe_redirect_url($_SESSION['after_login'] ?? null, module_url('dashboard.php'));
+    // Jika sudah login aktif, langsung redirect ke halaman tujuan atau dashboard (SDM diarahkan ke tab kartu)
+    $defaultRedirect = is_hrd() ? module_url('dashboard.php', ['tab' => 'kartu']) : module_url('dashboard.php');
+    $redirect = safe_redirect_url($_SESSION['after_login'] ?? null, $defaultRedirect);
     unset($_SESSION['after_login']);
     header('Location: ' . $redirect);
     exit;
@@ -50,7 +50,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'user_id' => (int)($_SESSION['user_id'] ?? 0),
                 'ip' => $clientIp
             ]);
-            $redirect = safe_redirect_url($_SESSION['after_login'] ?? null, module_url('dashboard.php'));
+            $defaultRedirect = is_hrd() ? module_url('dashboard.php', ['tab' => 'kartu']) : module_url('dashboard.php');
+            $redirect = safe_redirect_url($_SESSION['after_login'] ?? null, $defaultRedirect);
             unset($_SESSION['after_login']);
             header('Location: ' . $redirect);
             exit;
