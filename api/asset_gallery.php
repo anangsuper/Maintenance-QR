@@ -299,7 +299,7 @@ $body = '
       <i class="bi bi-table"></i> Tabel Aset
     </a>
     <a href="'.e(module_url('print_qr.php', ['cabang' => $cabangId])).'" target="_blank" class="btn btn-outline-primary d-inline-flex align-items-center gap-1 fw-semibold shadow-xs">
-      <i class="bi bi-printer"></i> Cetak Stiker QR + Foto
+      <i class="bi bi-printer"></i> Cetak Stiker Label QR
     </a>
   </div>
 </div>
