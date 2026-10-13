@@ -128,23 +128,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (($_POST['action'] ?? '') === 'upda
         ];
         update_asset($assetId, $upPayload);
 
-        // Jika terdapat pencocokan data di inventaris_kartu, sinkronkan juga
+        // Jika terdapat pencocokan nomor inventaris persis di inventaris_kartu, sinkronkan kartu tersebut saja
         try {
-            $stCard = db()->prepare("
-                UPDATE inventaris_kartu 
-                SET foto = ?, foto_updated_by = ?, foto_updated_at = ? 
-                WHERE REPLACE(nomor_rekening, '.', '') = REPLACE(?, '.', '')
-                   OR REPLACE(nomor_rekening, '.', '') = REPLACE(?, '.', '')
-                   OR (nama_barang LIKE ? AND nama_barang != '')
-            ");
-            $stCard->execute([
-                $fotoPath,
-                $verifierName,
-                $nowStr,
-                $asset['kode_inventaris'] ?? '',
-                $asset['serial_number'] ?? '',
-                '%' . ($asset['model'] ?: $asset['merk']) . '%'
-            ]);
+            $cleanRek = !empty($asset['kode_inventaris']) ? trim($asset['kode_inventaris']) : '';
+            if ($cleanRek !== '' && function_exists('update_inventaris_kartu_foto')) {
+                update_inventaris_kartu_foto(0, $fotoPath, $cleanRek, $verifierName);
+            }
         } catch (Throwable $e) {}
 
         $_SESSION['flash_scan'] = '✓ Foto fisik perangkat berhasil disimpan dan diverifikasi oleh ' . htmlspecialchars($verifierName) . '.';

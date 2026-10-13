@@ -529,21 +529,63 @@ function update_asset(int $id, array $data): array {
     if ($id <= 0) return ['success' => false, 'error' => 'ID aset tidak valid'];
 
     $oldAsset = get_asset_by_id($id);
+    if (!$oldAsset) return ['success' => false, 'error' => 'Aset dengan ID tersebut tidak ditemukan'];
 
-    $kode = normalize_kode_inventaris(trim((string)($data['kode_inventaris'] ?? '')));
-    $merk = trim((string)($data['merk'] ?? ''));
-    $model = trim((string)($data['model'] ?? ''));
-    $sn = trim((string)($data['serial_number'] ?? ''));
-    $idKat = (int)($data['id_kategori'] ?? 0);
-    $idCab = (int)($data['id_cabang'] ?? 0);
-    $idDiv = (int)($data['id_divisi'] ?? 0);
-    $idKar = (int)($data['id_karyawan'] ?? 0);
-    $namaKar = trim((string)($data['nama_karyawan'] ?? $data['custom_karyawan'] ?? ''));
-    $status = trim((string)($data['status'] ?? 'Aktif')) ?: 'Aktif';
-    $ket = trim((string)($data['keterangan'] ?? ''));
-    $ip = trim((string)($data['ip_address'] ?? $data['ip'] ?? ''));
-    $printer = trim((string)($data['printer'] ?? ''));
-    $placement = trim((string)($data['placement_label'] ?? 'Bodi Casing')) ?: 'Bodi Casing';
+    $kode = array_key_exists('kode_inventaris', $data)
+        ? normalize_kode_inventaris(trim((string)$data['kode_inventaris']))
+        : ($oldAsset['kode_inventaris'] ?? '');
+
+    $merk = array_key_exists('merk', $data)
+        ? trim((string)$data['merk'])
+        : ($oldAsset['merk'] ?? '');
+
+    $model = array_key_exists('model', $data)
+        ? trim((string)$data['model'])
+        : ($oldAsset['model'] ?? '');
+
+    $sn = array_key_exists('serial_number', $data)
+        ? trim((string)$data['serial_number'])
+        : ($oldAsset['serial_number'] ?? '');
+
+    $idKat = array_key_exists('id_kategori', $data)
+        ? (int)$data['id_kategori']
+        : (int)($oldAsset['id_kategori'] ?? 0);
+
+    $idCab = array_key_exists('id_cabang', $data)
+        ? (int)$data['id_cabang']
+        : (int)($oldAsset['id_cabang'] ?? 0);
+
+    $idDiv = array_key_exists('id_divisi', $data)
+        ? (int)$data['id_divisi']
+        : (int)($oldAsset['id_divisi'] ?? 0);
+
+    $idKar = array_key_exists('id_karyawan', $data)
+        ? (int)$data['id_karyawan']
+        : (int)($oldAsset['id_karyawan'] ?? 0);
+
+    $namaKar = (array_key_exists('nama_karyawan', $data) || array_key_exists('custom_karyawan', $data))
+        ? trim((string)($data['nama_karyawan'] ?? $data['custom_karyawan'] ?? ''))
+        : ($oldAsset['karyawan_nama'] ?? '');
+
+    $status = array_key_exists('status', $data)
+        ? (trim((string)$data['status']) ?: 'Aktif')
+        : ($oldAsset['status'] ?? 'Aktif');
+
+    $ket = array_key_exists('keterangan', $data)
+        ? trim((string)$data['keterangan'])
+        : ($oldAsset['keterangan'] ?? '');
+
+    $ip = (array_key_exists('ip_address', $data) || array_key_exists('ip', $data))
+        ? trim((string)($data['ip_address'] ?? $data['ip'] ?? ''))
+        : ($oldAsset['ip_address'] ?? $oldAsset['ip'] ?? '');
+
+    $printer = array_key_exists('printer', $data)
+        ? trim((string)$data['printer'])
+        : ($oldAsset['printer'] ?? '');
+
+    $placement = array_key_exists('placement_label', $data)
+        ? (trim((string)$data['placement_label']) ?: 'Bodi Casing')
+        : ($oldAsset['placement_label'] ?? 'Bodi Casing');
 
     if (is_google_cloud_mode()) {
         $client = google_sheets_v4_client();
@@ -590,7 +632,7 @@ function update_asset(int $id, array $data): array {
         }
 
         if ($kode === '') {
-            $kode = sprintf('INV-IT-%03d', $id);
+            $kode = !empty($oldAsset['kode_inventaris']) ? $oldAsset['kode_inventaris'] : sprintf('INV-IT-%03d', $id);
         }
 
         $assetRow = [
@@ -621,7 +663,7 @@ function update_asset(int $id, array $data): array {
             if ((int)($q['asset_id'] ?? 0) === $id) {
                 $foundQr = true;
                 $qrRowNum = (int)($q['_row_num'] ?? 0);
-                if ($qrRowNum > 1) {
+                if ($qrRowNum > 1 && array_key_exists('placement_label', $data)) {
                     $client->updateValues("Asset_QR_Tokens!D{$qrRowNum}", [[$placement]]);
                 }
                 break;
@@ -661,7 +703,7 @@ function update_asset(int $id, array $data): array {
 
     // MySQL Mode
     try {
-        if ($namaKar !== '') {
+        if ($namaKar !== '' && (array_key_exists('nama_karyawan', $data) || array_key_exists('custom_karyawan', $data))) {
             $kName = name_column('karyawan') ?: 'nama_karyawan';
             $findSt = db()->prepare("SELECT id FROM karyawan WHERE LOWER(`{$kName}`) = LOWER(?) LIMIT 1");
             $findSt->execute([$namaKar]);
@@ -676,26 +718,31 @@ function update_asset(int $id, array $data): array {
         }
 
         if ($kode === '') {
-            $kode = sprintf('INV-IT-%03d', $id);
+            $kode = !empty($oldAsset['kode_inventaris']) ? $oldAsset['kode_inventaris'] : sprintf('INV-IT-%03d', $id);
         }
 
         ensure_asset_master_columns();
         $cols = table_columns('assets');
 
-        $updateFields = [
-            'kode_inventaris' => $kode,
-            'merk' => $merk,
-            'model' => $model,
-            'serial_number' => $sn,
-            'id_kategori' => $idKat,
-            'id_cabang' => $idCab,
-            'id_divisi' => $idDiv,
-            'id_karyawan' => $idKar,
-            'status' => $status,
-            'keterangan' => $ket,
-        ];
-        if (in_array('ip_address', $cols, true)) $updateFields['ip_address'] = $ip;
-        if (in_array('printer', $cols, true)) $updateFields['printer'] = $printer;
+        $updateFields = [];
+        if (array_key_exists('kode_inventaris', $data)) $updateFields['kode_inventaris'] = $kode;
+        if (array_key_exists('merk', $data)) $updateFields['merk'] = $merk;
+        if (array_key_exists('model', $data)) $updateFields['model'] = $model;
+        if (array_key_exists('serial_number', $data)) $updateFields['serial_number'] = $sn;
+        if (array_key_exists('id_kategori', $data)) $updateFields['id_kategori'] = $idKat;
+        if (array_key_exists('id_cabang', $data)) $updateFields['id_cabang'] = $idCab;
+        if (array_key_exists('id_divisi', $data)) $updateFields['id_divisi'] = $idDiv;
+        if (array_key_exists('id_karyawan', $data) || array_key_exists('nama_karyawan', $data) || array_key_exists('custom_karyawan', $data)) {
+            $updateFields['id_karyawan'] = $idKar;
+        }
+        if (array_key_exists('status', $data)) $updateFields['status'] = $status;
+        if (array_key_exists('keterangan', $data)) $updateFields['keterangan'] = $ket;
+        if ((array_key_exists('ip_address', $data) || array_key_exists('ip', $data)) && in_array('ip_address', $cols, true)) {
+            $updateFields['ip_address'] = $ip;
+        }
+        if (array_key_exists('printer', $data) && in_array('printer', $cols, true)) {
+            $updateFields['printer'] = $printer;
+        }
         if (array_key_exists('foto', $data)) {
             $updateFields['foto'] = trim((string)$data['foto']);
         }
@@ -724,28 +771,32 @@ function update_asset(int $id, array $data): array {
             $updateFields['status_inventaris'] = trim((string)$data['status_inventaris']);
         }
 
-        $setParts = [];
-        $values = [];
-        foreach ($updateFields as $colName => $val) {
-            $setParts[] = "`{$colName}` = ?";
-            $values[] = $val;
-        }
-        $values[] = $id;
+        if (!empty($updateFields)) {
+            $setParts = [];
+            $values = [];
+            foreach ($updateFields as $colName => $val) {
+                $setParts[] = "`{$colName}` = ?";
+                $values[] = $val;
+            }
+            $values[] = $id;
 
-        $upSt = db()->prepare("UPDATE assets SET " . implode(', ', $setParts) . " WHERE id = ?");
-        $upSt->execute($values);
+            $upSt = db()->prepare("UPDATE assets SET " . implode(', ', $setParts) . " WHERE id = ?");
+            $upSt->execute($values);
+        }
 
         // Pastikan asset_qr_tokens ada dan token tetap utuh & permanen
-        $checkQr = db()->prepare("SELECT token FROM asset_qr_tokens WHERE asset_id = ? LIMIT 1");
-        $checkQr->execute([$id]);
-        $existingToken = $checkQr->fetchColumn();
-        if ($existingToken) {
-            $upQr = db()->prepare("UPDATE asset_qr_tokens SET placement_label = ? WHERE asset_id = ?");
-            $upQr->execute([$placement, $id]);
-        } else {
-            $staticToken = get_static_qr_token($id);
-            $insQr = db()->prepare("INSERT INTO asset_qr_tokens (asset_id, token, placement_label, is_active) VALUES (?, ?, ?, 1)");
-            $insQr->execute([$id, $staticToken, $placement]);
+        if (array_key_exists('placement_label', $data)) {
+            $checkQr = db()->prepare("SELECT token FROM asset_qr_tokens WHERE asset_id = ? LIMIT 1");
+            $checkQr->execute([$id]);
+            $existingToken = $checkQr->fetchColumn();
+            if ($existingToken) {
+                $upQr = db()->prepare("UPDATE asset_qr_tokens SET placement_label = ? WHERE asset_id = ?");
+                $upQr->execute([$placement, $id]);
+            } else {
+                $staticToken = get_static_qr_token($id);
+                $insQr = db()->prepare("INSERT INTO asset_qr_tokens (asset_id, token, placement_label, is_active) VALUES (?, ?, ?, 1)");
+                $insQr->execute([$id, $staticToken, $placement]);
+            }
         }
 
         if ($oldAsset) {
