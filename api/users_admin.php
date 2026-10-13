@@ -543,13 +543,13 @@ function previewFacePhoto(imgSrc, nama, username, role) {
   document.getElementById("previewFaceNama").innerText = nama || "-";
   document.getElementById("previewFaceUser").innerText = "@" + (username || "-");
   
-  let roleBadge = \'<span class="badge bg-secondary">\' + (role || "Pengguna") + \'</span>\';
+  let roleBadge = '<span class="badge bg-secondary">' + (role || "Pengguna") + '</span>';
   if (role === "admin") {
-    roleBadge = \'<span class="badge bg-primary"><i class="bi bi-shield-lock-fill me-1"></i> Administrator</span>\';
+    roleBadge = '<span class="badge bg-primary"><i class="bi bi-shield-lock-fill me-1"></i> Administrator</span>';
   } else if (role === "hrd" || role === "umum" || role === "hrd_umum" || role === "sdm") {
-    roleBadge = \'<span class="badge bg-warning text-dark"><i class="bi bi-person-workspace me-1"></i> SDM & Umum</span>\';
+    roleBadge = '<span class="badge bg-warning text-dark"><i class="bi bi-person-workspace me-1"></i> SDM & Umum</span>';
   } else {
-    roleBadge = \'<span class="badge bg-info text-dark"><i class="bi bi-tools me-1"></i> Teknisi IT</span>\';
+    roleBadge = '<span class="badge bg-info text-dark"><i class="bi bi-tools me-1"></i> Teknisi IT</span>';
   }
   document.getElementById("previewFaceRoleBadge").innerHTML = roleBadge;
 
@@ -564,6 +564,6 @@ function previewFacePhoto(imgSrc, nama, username, role) {
   }
 }
 </script>
-\';
+';
 
-render_page(\'Kelola Akun Pengguna\', $body);
+render_page('Kelola Akun Pengguna', $body);
