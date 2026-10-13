@@ -748,29 +748,6 @@ $historyCardHtml = '
 $fotoUnit = trim((string)($asset['foto'] ?? ''));
 $fotoUnitSrc = function_exists('asset_image_url') ? asset_image_url($fotoUnit) : ($fotoUnit ? (str_starts_with($fotoUnit, 'http') ? $fotoUnit : module_url($fotoUnit)) : '');
 
-// Data Master Core Banking (Sesuai Core System BPR Mitratama)
-$noSeriBank = trim((string)($asset['nomor_seri_inventaris'] ?? ''));
-$ruanganBank = trim((string)($asset['ruangan'] ?? ''));
-$jenisBank = trim((string)($asset['jenis_inventaris'] ?? ''));
-$golonganBank = trim((string)($asset['golongan'] ?? ''));
-
-// Fallback jika belum terisi di assets, cari kecocokan di inventaris_kartu
-if ($noSeriBank === '' || $ruanganBank === '' || $jenisBank === '') {
-    if (function_exists('get_inventaris_kartu_rows')) {
-        $cleanKode = preg_replace('/[^0-9a-zA-Z]/', '', (string)($asset['kode_inventaris'] ?? ''));
-        $cleanSn = preg_replace('/[^0-9a-zA-Z]/', '', (string)($asset['serial_number'] ?? ''));
-        foreach (get_inventaris_kartu_rows() as $ik) {
-            $ikRek = preg_replace('/[^0-9a-zA-Z]/', '', (string)($ik['nomor_rekening'] ?? ''));
-            if (($ikRek !== '' && ($ikRek === $cleanKode || $ikRek === $cleanSn)) || stripos($ik['nama_barang'] ?? '', ($asset['model'] ?: $asset['merk'] ?: '___')) !== false) {
-                if ($noSeriBank === '') $noSeriBank = $ik['nomor_seri_inventaris'] ?? '';
-                if ($ruanganBank === '') $ruanganBank = $ik['ruangan'] ?? '';
-                if ($jenisBank === '') $jenisBank = $ik['jenis_inventaris'] ?? '';
-                if ($golonganBank === '') $golonganBank = $ik['golongan'] ?? '';
-                break;
-            }
-        }
-    }
-}
 
 $verifiedBadge = !empty($asset['foto_updated_by']) ? '
   <div class="mt-1">
@@ -834,35 +811,19 @@ $body = '
       <div class="row g-3 align-items-center">
         '.$fotoCardHtml.'
         <div class="'.$specColClass.'">
-          <!-- Detail Spesifikasi & Kepemilikan (Termasuk Master Core Banking) -->
+          <!-- Detail Spesifikasi & Kepemilikan -->
           <div class="row g-2 g-md-3 small mb-1">
             <div class="col-6 col-md-4">
               <div class="text-secondary" style="font-size: 0.72rem;">Kode Inventaris:</div>
               <div class="fw-bold text-primary fs-6 font-monospace text-truncate">'.e($asset['kode_inventaris'] ?? '-').'</div>
             </div>
             <div class="col-6 col-md-4">
-              <div class="text-secondary" style="font-size: 0.72rem;">No Seri Inventaris (Bank):</div>
-              <div class="fw-semibold text-dark font-monospace text-truncate">'.e($noSeriBank ?: '-').'</div>
-            </div>
-            <div class="col-6 col-md-4">
-              <div class="text-secondary" style="font-size: 0.72rem;">Serial Number (S/N):</div>
+              <div class="text-secondary" style="font-size: 0.72rem;">Serial Number:</div>
               <div class="fw-semibold text-dark text-truncate">'.e($asset['serial_number'] ?? '-').'</div>
             </div>
             <div class="col-6 col-md-4">
               <div class="text-secondary" style="font-size: 0.72rem;">Merk / Model:</div>
               <div class="fw-semibold text-dark text-truncate">'.e($displayMerkModel).'</div>
-            </div>
-            <div class="col-6 col-md-4">
-              <div class="text-secondary" style="font-size: 0.72rem;">Jenis Inventaris:</div>
-              <div class="fw-semibold text-dark text-truncate">'.e($jenisBank ?: '-').'</div>
-            </div>
-            <div class="col-6 col-md-4">
-              <div class="text-secondary" style="font-size: 0.72rem;">Ruangan Penempatan:</div>
-              <div class="fw-bold text-dark text-truncate"><i class="bi bi-door-open text-primary me-1"></i>'.e($ruanganBank ?: '-').'</div>
-            </div>
-            <div class="col-6 col-md-4">
-              <div class="text-secondary" style="font-size: 0.72rem;">Golongan:</div>
-              <div class="fw-semibold text-dark text-truncate">'.e($golonganBank ?: '-').'</div>
             </div>
             <div class="col-6 col-md-4">
               <div class="text-secondary" style="font-size: 0.72rem;">Pengguna / Pemilik:</div>
