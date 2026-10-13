@@ -2,10 +2,6 @@
 require __DIR__ . '/bootstrap.php';
 require_login();
 
-// Helper Immich
-if (file_exists(__DIR__ . '/helpers/immich.php')) {
-    require_once __DIR__ . '/helpers/immich.php';
-}
 
 // 1. Ambil Parameter Filter
 $search = trim((string)($_GET['q'] ?? ''));
@@ -53,14 +49,6 @@ foreach ($rawAssets as $a) {
     }
 }
 
-// Cek Status Immich
-$immichStatus = false;
-$immichUrl = cfg('immich_url', envv('IMMICH_URL', 'http://127.0.0.1:2283'));
-$immichApiKey = cfg('immich_api_key', envv('IMMICH_API_KEY', ''));
-if (function_exists('immich_ping') && !empty($immichApiKey)) {
-    $ping = immich_ping();
-    $immichStatus = !empty($ping['success']);
-}
 
 // 4. Filter Data Aset Sesuai Pilihan Pengguna
 $filteredAssets = array_filter($rawAssets, function($a) use ($search, $cabangId, $divisiId, $photoFilter) {
@@ -340,17 +328,14 @@ $body = '
     </div>
   </div>
   <div class="col-12 col-sm-6 col-xl-3">
-    <div class="card p-3 border-0 shadow-sm bg-white rounded-3 h-100 border-start '.($immichStatus ? 'border-info' : 'border-secondary').' border-4">
+    <div class="card p-3 border-0 shadow-sm bg-white rounded-3 h-100 border-start border-info border-4">
       <div class="d-flex align-items-center justify-content-between">
         <div>
-          <div class="text-muted small fw-bold text-uppercase" style="font-size: 0.7rem;">Penyimpanan Server</div>
-          <div class="fw-bold text-dark small mb-0">
-            '.($immichStatus ? '<span class="text-info"><i class="bi bi-cloud-check-fill me-1"></i>Immich Server Online</span>' : '<span class="text-secondary"><i class="bi bi-folder-check me-1"></i>Lokal Server Ubuntu</span>').'
-          </div>
-          <div class="text-muted" style="font-size: 0.7rem;">/uploads/assets/</div>
+          <div class="text-muted small fw-bold text-uppercase" style="font-size: 0.7rem;">Kantor Cabang</div>
+          <div class="h4 fw-bold mb-0 text-dark">'.count($cabangs).' <span class="fs-6 fw-normal text-muted">Cabang</span></div>
         </div>
-        <div class="rounded-3 bg-secondary bg-opacity-10 p-2 text-secondary fs-3">
-          <i class="bi bi-server"></i>
+        <div class="rounded-3 bg-info bg-opacity-10 p-2 text-info fs-3">
+          <i class="bi bi-buildings"></i>
         </div>
       </div>
     </div>
@@ -387,20 +372,6 @@ $body = '
       <button type="submit" class="btn btn-sm btn-primary">Filter</button>
     </div>
   </form>
-</div>
-
-<!-- Info Banner Immich vs Lokal -->
-<div class="alert alert-info border-0 shadow-xs rounded-3 py-2 px-3 mb-4 d-flex align-items-center justify-content-between flex-wrap gap-2" style="background-color: #f0f7ff; border-left: 4px solid #0284c7 !important;">
-  <div class="d-flex align-items-center gap-2">
-    <i class="bi bi-info-circle-fill text-info fs-5"></i>
-    <span class="small text-dark">
-      Foto yang diupload otomatis tersimpan di folder server <code>/var/www/html/Server-Maintenance/api/uploads/assets/</code>.
-      Jika Anda mengaktifkan <strong>Immich Photo Server</strong> di port <code>2283</code>, seluruh foto dapat dijelajahi via aplikasi Immich mobile & web.
-    </span>
-  </div>
-  <a href="http://192.168.88.163:2283" target="_blank" class="btn btn-xs btn-outline-info text-dark rounded-pill px-3 py-1 shadow-xs fw-semibold" style="font-size: 0.75rem;">
-    <i class="bi bi-box-arrow-up-right me-1"></i> Buka Immich Web (Port 2283)
-  </a>
 </div>
 
 <!-- Gallery Grid -->
