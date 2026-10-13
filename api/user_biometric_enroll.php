@@ -1,6 +1,6 @@
 <?php
 require __DIR__ . '/bootstrap.php';
-require_login();
+require_it();
 
 // Handle AJAX POST simpan biometrik atau tambah teknisi baru langsung dari HP
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {

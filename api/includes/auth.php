@@ -340,6 +340,14 @@ function require_admin_or_hrd(): void {
     }
 }
 
+function require_it(): void {
+    require_login();
+    if (is_hrd() && !is_admin()) {
+        header('Location: ' . module_url('dashboard.php', ['tab' => 'kartu']));
+        exit;
+    }
+}
+
 
 function login_user_session(array $user): void {
     $_SESSION['user_id'] = (int)($user['id'] ?? 1);

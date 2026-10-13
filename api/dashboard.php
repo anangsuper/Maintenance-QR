@@ -165,7 +165,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 // 2. Ambil Parameter Filter dengan Validasi
 $activeTab = trim((string)($_GET['tab'] ?? ''));
-if ($activeTab === '' && (isset($_GET['q_kartu']) || isset($_GET['cabang_kartu']))) {
+if (is_hrd() && !is_admin()) {
+    $activeTab = 'kartu';
+} elseif ($activeTab === '' && (isset($_GET['q_kartu']) || isset($_GET['cabang_kartu']))) {
     $activeTab = 'kartu';
 }
 if ($activeTab === 'galeri' || $activeTab === 'gallery') {
@@ -1322,87 +1324,141 @@ $body .= '
   </div>
 </div>
 
-<!-- TOP KPI METRICS (6 KOTAK METRIK UTAMA) -->
-<div class="row g-3 mb-4">
-  <div class="col-6 col-md-4 col-xl-2">
-    <div class="card card-metric h-100" style="border-left-color: var(--blue-corporate);">
-      <div class="metric-value" id="kpiTotalAll">'.$totalAll.'</div>
-      <div class="metric-label">Komputer &amp; Laptop</div>
-      <div class="small text-muted mt-2" style="font-size: 0.72rem;">Unit terdaftar</div>
-    </div>
-  </div>
-
-  <div class="col-6 col-md-4 col-xl-2">
-    <div class="card card-metric h-100" style="border-left-color: #16803C;">
-      <div class="metric-value text-success" id="kpiTotalDone">'.$totalDone.'</div>
-      <div class="metric-label">Selesai Diperiksa</div>
-      <div class="small text-success mt-2" style="font-size: 0.72rem;"><i class="bi bi-check-circle me-1"></i><span id="kpiPercentDoneText">'.$percentDone.'%</span> kepatuhan</div>
-    </div>
-  </div>
-
-  <div class="col-6 col-md-4 col-xl-2">
-    <div class="card card-metric h-100" style="border-left-color: #B54708;">
-      <div class="metric-value text-warning" id="kpiTotalDue">'.$totalDue.'</div>
-      <div class="metric-label">Belum Maintenance</div>
-      <div class="small text-secondary mt-2" style="font-size: 0.72rem;">Menunggu giliran</div>
-    </div>
-  </div>
-
-  <div class="col-6 col-md-4 col-xl-2">
-    <a href="'.e(module_url('dashboard.php', ['tab' => 'temuan', 'bulan'=>$month, 'tahun'=>$year, 'cabang'=>$cabangId])).'" class="text-decoration-none">
-      <div class="card card-metric h-100" style="border-left-color: #B42318; cursor: pointer;">
-        <div class="metric-value text-danger" id="kpiTotalFindings">'.$totalUnresolvedFindings.'</div>
-        <div class="metric-label">Temuan Kendala</div>
-        <div class="small text-danger mt-2" style="font-size: 0.72rem;"><i class="bi bi-tools me-1"></i>Buka temuan &raquo;</div>
-      </div>
-    </a>
-  </div>
-
-  <div class="col-6 col-md-4 col-xl-2">
-    <a href="'.e(module_url('asset_gallery.php', $cabangId > 0 ? ['cabang' => $cabangId] : [])).'" class="text-decoration-none">
-      <div class="card card-metric h-100" style="border-left-color: #2E7CF6; cursor: pointer;">
-        <div class="metric-value text-primary d-flex align-items-center justify-content-between">
-          <span id="kpiTotalActive">'.($totalAll - $totalBroken).'</span>
-          '.($totalWithPhotoCount > 0 ? '<span class="badge bg-info-subtle text-info border border-info-subtle" style="font-size: 0.68rem; font-weight: 700;" title="Total unit aset dengan foto fisik"><i class="bi bi-camera me-1"></i>'.$totalWithPhotoCount.' Foto</span>' : '').'
+if (is_hrd() && !is_admin()) {
+    // TOP KPI KHUSUS SDM & UMUM (HANYA METRIK INVENTARIS)
+    $body .= '
+    <div class="row g-3 mb-4">
+      <div class="col-sm-4 col-12">
+        <div class="card card-metric h-100" style="border-left-color: #6bb82a;">
+          <div class="metric-value text-success d-flex align-items-center justify-content-between">
+            <span>'.$totalCardsCount.'</span>
+            '.($todayCardsCount > 0 ? '<span class="badge bg-success-subtle text-success border border-success-subtle" style="font-size: 0.68rem; font-weight: 700;">+'.$todayCardsCount.' Hari Ini</span>' : '').'
+          </div>
+          <div class="metric-label text-dark">Kartu Inventaris Aktif</div>
+          <div class="small text-secondary mt-2" style="font-size: 0.72rem;">Seluruh kantor cabang bank</div>
         </div>
-        <div class="metric-label">Perangkat Aktif</div>
-        <div class="small text-primary mt-2" style="font-size: 0.72rem;"><i class="bi bi-images me-1"></i>Galeri Foto &raquo;</div>
       </div>
-    </a>
-  </div>
+      <div class="col-sm-4 col-12">
+        <a href="'.e(module_url('asset_gallery.php', ['sub' => 'inventaris'])).'" class="text-decoration-none">
+          <div class="card card-metric h-100" style="border-left-color: #2E7CF6; cursor: pointer;">
+            <div class="metric-value text-primary d-flex align-items-center justify-content-between">
+              <span>'.$totalInvWithPhotoCount.'</span>
+              <span class="badge bg-primary-subtle text-primary border border-primary-subtle" style="font-size: 0.68rem; font-weight: 700;"><i class="bi bi-camera me-1"></i>Foto Fisik</span>
+            </div>
+            <div class="metric-label">Foto Inventaris Bank</div>
+            <div class="small text-primary mt-2" style="font-size: 0.72rem;"><i class="bi bi-images me-1"></i>Buka Galeri Inventaris &raquo;</div>
+          </div>
+        </a>
+      </div>
+      <div class="col-sm-4 col-12">
+        <a href="'.e(module_url('cabang_admin.php')).'" class="text-decoration-none">
+          <div class="card card-metric h-100" style="border-left-color: #D97706; cursor: pointer;">
+            <div class="metric-value text-warning d-flex align-items-center justify-content-between">
+              <span>5</span>
+              <span class="badge bg-warning-subtle text-warning border border-warning-subtle" style="font-size: 0.68rem; font-weight: 700;">Kantor</span>
+            </div>
+            <div class="metric-label">Jaringan Cabang</div>
+            <div class="small text-warning mt-2" style="font-size: 0.72rem;"><i class="bi bi-buildings me-1"></i>Kelola Cabang &raquo;</div>
+          </div>
+        </a>
+      </div>
+    </div>
 
-  <div class="col-6 col-md-4 col-xl-2">
-    <a href="'.e(module_url('dashboard.php', ['tab' => 'kartu'])).'" class="text-decoration-none">
-      <div class="card card-metric h-100" style="border-left-color: #6bb82a; cursor: pointer;">
-        <div class="metric-value text-success d-flex align-items-center justify-content-between">
-          <span>'.$totalCardsCount.'</span>
-          '.($todayCardsCount > 0 ? '<span class="badge bg-success-subtle text-success border border-success-subtle" style="font-size: 0.68rem; font-weight: 700;">+'.$todayCardsCount.' Hari Ini</span>' : '').'
+    <!-- TABS NAVIGATION: KHUSUS SDM & UMUM -->
+    <div class="dashboard-main-nav">
+      <a class="dashboard-nav-tab active" href="'.e(module_url('dashboard.php', ['tab' => 'kartu'])).'">
+        <i class="bi bi-credit-card-2-front"></i> Kartu Inventaris &amp; Label QR
+        <span class="badge bg-primary text-white rounded-pill ms-1">'.$totalCardsCount.'</span>
+      </a>
+      <a class="dashboard-nav-tab" href="'.e(module_url('asset_gallery.php', ['sub' => 'inventaris'])).'">
+        <i class="bi bi-images"></i> Galeri Foto Inventaris
+        <span class="badge bg-info text-white rounded-pill ms-1">'.$totalInvWithPhotoCount.'</span>
+      </a>
+    </div>';
+} else {
+    // TOP KPI METRICS LENGKAP IT OPERATIONS & MAINTENANCE
+    $body .= '
+    <div class="row g-3 mb-4">
+      <div class="col-6 col-md-4 col-xl-2">
+        <div class="card card-metric h-100" style="border-left-color: var(--blue-corporate);">
+          <div class="metric-value" id="kpiTotalAll">'.$totalAll.'</div>
+          <div class="metric-label">Komputer &amp; Laptop</div>
+          <div class="small text-muted mt-2" style="font-size: 0.72rem;">Unit terdaftar</div>
         </div>
-        <div class="metric-label text-dark">Kartu Inventaris Aktif</div>
-        <div class="small text-primary mt-2" style="font-size: 0.72rem;"><i class="bi bi-arrow-right-circle me-1"></i>Buka Kartu &raquo;</div>
       </div>
-    </a>
-  </div>
-</div>
 
-<!-- TABS NAVIGATION: SATU HALAMAN DASHBOARD -->
-<div class="dashboard-main-nav">
-  <a class="dashboard-nav-tab '.(!in_array($activeTab, ['kartu', 'temuan'], true) ? 'active' : '').'" href="'.e(module_url('dashboard.php', ['bulan'=>$month,'tahun'=>$year,'cabang'=>$cabangId])).'">
-    <i class="bi bi-speedometer2"></i> Ringkasan Maintenance &amp; Kepatuhan
-  </a>
-  <a class="dashboard-nav-tab '.($activeTab === 'temuan' ? 'active' : '').'" href="'.e(module_url('dashboard.php', ['tab' => 'temuan', 'bulan'=>$month,'tahun'=>$year,'cabang'=>$cabangId])).'">
-    <i class="bi bi-tools"></i> Temuan Kendala &amp; Perbaikan
-    <span class="badge '.($totalUnresolvedFindings > 0 ? 'bg-danger' : 'bg-secondary').' text-white rounded-pill ms-1">'.$totalUnresolvedFindings.'</span>
-  </a>
-  <a class="dashboard-nav-tab '.($activeTab === 'kartu' ? 'active' : '').'" href="'.e(module_url('dashboard.php', ['tab' => 'kartu'])).'">
-    <i class="bi bi-credit-card-2-front"></i> Kartu Inventaris &amp; Label QR
-    <span class="badge bg-primary text-white rounded-pill ms-1">'.$totalCardsCount.'</span>
-  </a>
-  <a class="dashboard-nav-tab" href="'.e(module_url('asset_gallery.php', $cabangId > 0 ? ['cabang' => $cabangId] : [])).'">
-    <i class="bi bi-images"></i> Galeri Foto
-    <span class="badge bg-info text-white rounded-pill ms-1">'.($totalWithPhotoCount + $totalInvWithPhotoCount).'</span>
-  </a>
-</div>';
+      <div class="col-6 col-md-4 col-xl-2">
+        <div class="card card-metric h-100" style="border-left-color: #16803C;">
+          <div class="metric-value text-success" id="kpiTotalDone">'.$totalDone.'</div>
+          <div class="metric-label">Selesai Diperiksa</div>
+          <div class="small text-success mt-2" style="font-size: 0.72rem;"><i class="bi bi-check-circle me-1"></i><span id="kpiPercentDoneText">'.$percentDone.'%</span> kepatuhan</div>
+        </div>
+      </div>
+
+      <div class="col-6 col-md-4 col-xl-2">
+        <div class="card card-metric h-100" style="border-left-color: #B54708;">
+          <div class="metric-value text-warning" id="kpiTotalDue">'.$totalDue.'</div>
+          <div class="metric-label">Belum Maintenance</div>
+          <div class="small text-secondary mt-2" style="font-size: 0.72rem;">Menunggu giliran</div>
+        </div>
+      </div>
+
+      <div class="col-6 col-md-4 col-xl-2">
+        <a href="'.e(module_url('dashboard.php', ['tab' => 'temuan', 'bulan'=>$month, 'tahun'=>$year, 'cabang'=>$cabangId])).'" class="text-decoration-none">
+          <div class="card card-metric h-100" style="border-left-color: #B42318; cursor: pointer;">
+            <div class="metric-value text-danger" id="kpiTotalFindings">'.$totalUnresolvedFindings.'</div>
+            <div class="metric-label">Temuan Kendala</div>
+            <div class="small text-danger mt-2" style="font-size: 0.72rem;"><i class="bi bi-tools me-1"></i>Buka temuan &raquo;</div>
+          </div>
+        </a>
+      </div>
+
+      <div class="col-6 col-md-4 col-xl-2">
+        <a href="'.e(module_url('asset_gallery.php', $cabangId > 0 ? ['cabang' => $cabangId] : [])).'" class="text-decoration-none">
+          <div class="card card-metric h-100" style="border-left-color: #2E7CF6; cursor: pointer;">
+            <div class="metric-value text-primary d-flex align-items-center justify-content-between">
+              <span id="kpiTotalActive">'.($totalAll - $totalBroken).'</span>
+              '.($totalWithPhotoCount > 0 ? '<span class="badge bg-info-subtle text-info border border-info-subtle" style="font-size: 0.68rem; font-weight: 700;" title="Total unit aset dengan foto fisik"><i class="bi bi-camera me-1"></i>'.$totalWithPhotoCount.' Foto</span>' : '').'
+            </div>
+            <div class="metric-label">Perangkat Aktif</div>
+            <div class="small text-primary mt-2" style="font-size: 0.72rem;"><i class="bi bi-images me-1"></i>Galeri Foto &raquo;</div>
+          </div>
+        </a>
+      </div>
+
+      <div class="col-6 col-md-4 col-xl-2">
+        <a href="'.e(module_url('dashboard.php', ['tab' => 'kartu'])).'" class="text-decoration-none">
+          <div class="card card-metric h-100" style="border-left-color: #6bb82a; cursor: pointer;">
+            <div class="metric-value text-success d-flex align-items-center justify-content-between">
+              <span>'.$totalCardsCount.'</span>
+              '.($todayCardsCount > 0 ? '<span class="badge bg-success-subtle text-success border border-success-subtle" style="font-size: 0.68rem; font-weight: 700;">+'.$todayCardsCount.' Hari Ini</span>' : '').'
+            </div>
+            <div class="metric-label text-dark">Kartu Inventaris Aktif</div>
+            <div class="small text-primary mt-2" style="font-size: 0.72rem;"><i class="bi bi-arrow-right-circle me-1"></i>Buka Kartu &raquo;</div>
+          </div>
+        </a>
+      </div>
+    </div>
+
+    <!-- TABS NAVIGATION: SATU HALAMAN DASHBOARD LENGKAP IT -->
+    <div class="dashboard-main-nav">
+      <a class="dashboard-nav-tab '.(!in_array($activeTab, ['kartu', 'temuan'], true) ? 'active' : '').'" href="'.e(module_url('dashboard.php', ['bulan'=>$month,'tahun'=>$year,'cabang'=>$cabangId])).'">
+        <i class="bi bi-speedometer2"></i> Ringkasan Maintenance &amp; Kepatuhan
+      </a>
+      <a class="dashboard-nav-tab '.($activeTab === 'temuan' ? 'active' : '').'" href="'.e(module_url('dashboard.php', ['tab' => 'temuan', 'bulan'=>$month,'tahun'=>$year,'cabang'=>$cabangId])).'">
+        <i class="bi bi-tools"></i> Temuan Kendala &amp; Perbaikan
+        <span class="badge '.($totalUnresolvedFindings > 0 ? 'bg-danger' : 'bg-secondary').' text-white rounded-pill ms-1">'.$totalUnresolvedFindings.'</span>
+      </a>
+      <a class="dashboard-nav-tab '.($activeTab === 'kartu' ? 'active' : '').'" href="'.e(module_url('dashboard.php', ['tab' => 'kartu'])).'">
+        <i class="bi bi-credit-card-2-front"></i> Kartu Inventaris &amp; Label QR
+        <span class="badge bg-primary text-white rounded-pill ms-1">'.$totalCardsCount.'</span>
+      </a>
+      <a class="dashboard-nav-tab" href="'.e(module_url('asset_gallery.php', $cabangId > 0 ? ['cabang' => $cabangId] : [])).'">
+        <i class="bi bi-images"></i> Galeri Foto
+        <span class="badge bg-info text-white rounded-pill ms-1">'.($totalWithPhotoCount + $totalInvWithPhotoCount).'</span>
+      </a>
+    </div>';
+}
 
 // =========================================================================
 // 7. KONTEN TAB: KARTU INVENTARIS ATAU MONITORING

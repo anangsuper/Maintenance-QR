@@ -1,6 +1,6 @@
 <?php
 require __DIR__ . '/bootstrap.php';
-require_login();
+require_it();
 
 // Parameter Pencarian & Filter
 $search = trim((string)($_GET['q'] ?? ''));

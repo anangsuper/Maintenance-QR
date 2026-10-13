@@ -1,6 +1,6 @@
 <?php
 require __DIR__ . '/bootstrap.php';
-require_login();
+require_it();
 
 $currentYear = (int)date('Y');
 $yearParam = isset($_GET['tahun']) ? (int)$_GET['tahun'] : 0;

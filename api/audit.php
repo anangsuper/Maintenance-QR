@@ -1,6 +1,6 @@
 <?php
 require __DIR__ . '/bootstrap.php';
-require_login();
+require_it();
 
 $month = max(1, min(12, (int)($_GET['bulan'] ?? date('n'))));
 $currentYear = (int)date('Y');
