@@ -283,11 +283,17 @@ $body = '
     <p class="text-secondary small mb-0">Koleksi foto fisik seluruh perangkat komputer, laptop, dan printer per cabang untuk verifikasi visual.</p>
   </div>
   <div class="d-flex align-items-center gap-2 flex-wrap">
+    <a href="'.e(module_url('dashboard.php', ['tab' => 'kartu'])).'" class="btn btn-outline-primary d-inline-flex align-items-center gap-1 fw-semibold shadow-xs">
+      <i class="bi bi-credit-card-2-front"></i> Kartu Inventaris
+    </a>
+    <a href="'.e(module_url('dashboard.php')).'" class="btn btn-outline-secondary d-inline-flex align-items-center gap-1 fw-semibold shadow-xs">
+      <i class="bi bi-speedometer2"></i> Dashboard
+    </a>
     <a href="'.e(module_url('assets.php')).'" class="btn btn-outline-secondary d-inline-flex align-items-center gap-1 fw-semibold shadow-xs">
       <i class="bi bi-table"></i> Tabel Aset
     </a>
-    <a href="'.e(module_url('print_qr.php', ['cabang' => $cabangId])).'" target="_blank" class="btn btn-outline-primary d-inline-flex align-items-center gap-1 fw-semibold shadow-xs">
-      <i class="bi bi-printer"></i> Cetak Stiker Label QR
+    <a href="'.e(module_url('print_qr.php', ['cabang' => $cabangId])).'" target="_blank" class="btn btn-outline-secondary d-inline-flex align-items-center gap-1 fw-semibold shadow-xs">
+      <i class="bi bi-printer"></i> Cetak Label QR
     </a>
   </div>
 </div>

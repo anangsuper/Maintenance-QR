@@ -168,6 +168,10 @@ $activeTab = trim((string)($_GET['tab'] ?? ''));
 if ($activeTab === '' && (isset($_GET['q_kartu']) || isset($_GET['cabang_kartu']))) {
     $activeTab = 'kartu';
 }
+if ($activeTab === 'galeri' || $activeTab === 'gallery') {
+    $cabIdReq = max(0, (int)($_GET['cabang'] ?? 0));
+    redirect(module_url('asset_gallery.php', $cabIdReq > 0 ? ['cabang' => $cabIdReq] : []));
+}
 
 $month = max(1, min(12, (int)($_GET['bulan'] ?? date('n'))));
 $year = max(2020, min(2100, (int)($_GET['tahun'] ?? date('Y'))));
@@ -427,6 +431,12 @@ $filteredCards = array_filter($allCards, function($r) use ($searchCard, $cabangC
 usort($filteredCards, fn($a, $b) => ($b['id'] ?? 0) <=> ($a['id'] ?? 0));
 
 $rawAssetsForModal = is_google_cloud_mode() ? map_sheets_assets() : get_qr_admin_rows(0);
+$totalWithPhotoCount = 0;
+foreach ($rawAssetsForModal as $ra) {
+    if (!empty(trim((string)($ra['foto'] ?? '')))) {
+        $totalWithPhotoCount++;
+    }
+}
 $logoUri = app_logo_data_uri();
 
 $flash = $_SESSION['flash'] ?? '';
@@ -1303,11 +1313,16 @@ $body .= '
   </div>
 
   <div class="col-6 col-md-4 col-xl-2">
-    <div class="card card-metric h-100" style="border-left-color: #2E7CF6;">
-      <div class="metric-value text-primary" id="kpiTotalActive">'.($totalAll - $totalBroken).'</div>
-      <div class="metric-label">Perangkat Aktif</div>
-      <div class="small text-secondary mt-2" style="font-size: 0.72rem;">Siap pakai</div>
-    </div>
+    <a href="'.e(module_url('asset_gallery.php', $cabangId > 0 ? ['cabang' => $cabangId] : [])).'" class="text-decoration-none">
+      <div class="card card-metric h-100" style="border-left-color: #2E7CF6; cursor: pointer;">
+        <div class="metric-value text-primary d-flex align-items-center justify-content-between">
+          <span id="kpiTotalActive">'.($totalAll - $totalBroken).'</span>
+          '.($totalWithPhotoCount > 0 ? '<span class="badge bg-info-subtle text-info border border-info-subtle" style="font-size: 0.68rem; font-weight: 700;" title="Total unit aset dengan foto fisik"><i class="bi bi-camera me-1"></i>'.$totalWithPhotoCount.' Foto</span>' : '').'
+        </div>
+        <div class="metric-label">Perangkat Aktif</div>
+        <div class="small text-primary mt-2" style="font-size: 0.72rem;"><i class="bi bi-images me-1"></i>Galeri Foto &raquo;</div>
+      </div>
+    </a>
   </div>
 
   <div class="col-6 col-md-4 col-xl-2">
@@ -1337,6 +1352,10 @@ $body .= '
     <i class="bi bi-credit-card-2-front"></i> Kartu Inventaris &amp; Label QR
     <span class="badge bg-primary text-white rounded-pill ms-1">'.$totalCardsCount.'</span>
   </a>
+  <a class="dashboard-nav-tab" href="'.e(module_url('asset_gallery.php', $cabangId > 0 ? ['cabang' => $cabangId] : [])).'">
+    <i class="bi bi-images"></i> Galeri Foto Aset
+    <span class="badge bg-info text-white rounded-pill ms-1">'.$totalWithPhotoCount.'</span>
+  </a>
 </div>';
 
 // =========================================================================
@@ -1355,6 +1374,9 @@ if ($activeTab === 'kartu') {
         <div class="text-muted small">Kelola data kartu inventaris, cetak massal A4, dan cetak kartu pilihan.</div>
       </div>
       <div class="d-flex gap-2 flex-wrap align-items-center">
+        <a href="'.e(module_url('asset_gallery.php', $cabangId > 0 ? ['cabang' => $cabangId] : [])).'" class="btn btn-outline-primary d-inline-flex align-items-center gap-1 fw-semibold shadow-xs">
+          <i class="bi bi-images"></i> Galeri Foto Aset
+        </a>
         <button type="button" class="btn btn-primary d-inline-flex align-items-center gap-1 fw-semibold px-3" data-bs-toggle="modal" data-bs-target="#addCardModal">
           <i class="bi bi-plus-lg"></i> Tambah Data Kartu
         </button>
