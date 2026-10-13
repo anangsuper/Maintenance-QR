@@ -114,13 +114,46 @@ function map_sheets_assets(bool $refresh = false): array {
             'qr_token' => $token,
             'foto' => $a['foto'] ?? '',
             'placement_label' => $qr['placement_label'] ?? 'Bodi Top',
-            'qr_active' => $qrActive
+            'qr_active' => $qrActive,
+            'nomor_seri_inventaris' => $a['nomor_seri_inventaris'] ?? '',
+            'jenis_inventaris' => $a['jenis_inventaris'] ?? '',
+            'golongan' => $a['golongan'] ?? '',
+            'ruangan' => $a['ruangan'] ?? '',
+            'sumber_perolehan' => $a['sumber_perolehan'] ?? '',
+            'status_inventaris' => $a['status_inventaris'] ?? '',
+            'foto_updated_by' => $a['foto_updated_by'] ?? '',
+            'foto_updated_at' => $a['foto_updated_at'] ?? ''
         ];
     }, $assets);
 
     return $cachedAssets;
 }
 
+function ensure_asset_master_columns(): void {
+    static $ensured = false;
+    if ($ensured) return;
+    try {
+        $cols = table_columns('assets');
+        $alterSql = [];
+        if (!in_array('ip_address', $cols, true)) $alterSql[] = "ADD COLUMN ip_address VARCHAR(45) NULL";
+        if (!in_array('printer', $cols, true)) $alterSql[] = "ADD COLUMN printer VARCHAR(100) NULL";
+        if (!in_array('foto', $cols, true)) $alterSql[] = "ADD COLUMN foto TEXT NULL";
+        if (!in_array('created_at', $cols, true)) $alterSql[] = "ADD COLUMN created_at DATETIME DEFAULT CURRENT_TIMESTAMP";
+        if (!in_array('nomor_seri_inventaris', $cols, true)) $alterSql[] = "ADD COLUMN nomor_seri_inventaris VARCHAR(100) NULL";
+        if (!in_array('jenis_inventaris', $cols, true)) $alterSql[] = "ADD COLUMN jenis_inventaris VARCHAR(100) NULL";
+        if (!in_array('golongan', $cols, true)) $alterSql[] = "ADD COLUMN golongan VARCHAR(100) NULL";
+        if (!in_array('ruangan', $cols, true)) $alterSql[] = "ADD COLUMN ruangan VARCHAR(150) NULL";
+        if (!in_array('sumber_perolehan', $cols, true)) $alterSql[] = "ADD COLUMN sumber_perolehan VARCHAR(100) NULL";
+        if (!in_array('status_inventaris', $cols, true)) $alterSql[] = "ADD COLUMN status_inventaris VARCHAR(100) NULL";
+        if (!in_array('foto_updated_by', $cols, true)) $alterSql[] = "ADD COLUMN foto_updated_by VARCHAR(150) NULL";
+        if (!in_array('foto_updated_at', $cols, true)) $alterSql[] = "ADD COLUMN foto_updated_at DATETIME NULL";
+
+        if (!empty($alterSql)) {
+            db()->exec("ALTER TABLE assets " . implode(', ', $alterSql));
+        }
+        $ensured = true;
+    } catch (Throwable $e) {}
+}
 
 function asset_image_url(?string $foto): string {
     $foto = trim((string)$foto);
@@ -144,18 +177,57 @@ function upload_asset_image(string $fileKey = 'foto_unit'): ?string {
     if ($file['size'] > $maxSize) {
         return null;
     }
-    $ext = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
-    if (!in_array($ext, ['jpg', 'jpeg', 'png', 'webp', 'gif'], true)) {
-        $ext = 'jpg';
-    }
     $uploadDir = dirname(__DIR__) . '/uploads/assets/';
     if (!is_dir($uploadDir)) {
         @mkdir($uploadDir, 0777, true);
         @chmod($uploadDir, 0777);
     }
-    $fileName = 'unit_' . date('Ymd_His') . '_' . bin2hex(random_bytes(4)) . '.' . $ext;
+    $fileName = 'unit_' . date('Ymd_His') . '_' . bin2hex(random_bytes(4)) . '.jpg';
     $targetPath = $uploadDir . $fileName;
+
+    // Kompresi otomatis (PHP GD max 1600px quality 82%) agar hemat storage server
+    if (function_exists('compress_and_save_uploaded_image')) {
+        if (compress_and_save_uploaded_image($file['tmp_name'], $targetPath, 1600, 82)) {
+            return 'uploads/assets/' . $fileName;
+        }
+    }
+
     if (move_uploaded_file($file['tmp_name'], $targetPath)) {
+        @chmod($targetPath, 0666);
+        return 'uploads/assets/' . $fileName;
+    }
+    return null;
+}
+
+function save_asset_base64_image(string $base64Data): ?string {
+    $clean = trim($base64Data);
+    if ($clean === '') return null;
+    if (preg_match('/^data:image\/(\w+);base64,/', $clean)) {
+        $clean = substr($clean, strpos($clean, ',') + 1);
+    }
+    $decoded = base64_decode($clean);
+    if ($decoded === false || strlen($decoded) === 0) return null;
+
+    $uploadDir = dirname(__DIR__) . '/uploads/assets/';
+    if (!is_dir($uploadDir)) {
+        @mkdir($uploadDir, 0777, true);
+        @chmod($uploadDir, 0777);
+    }
+    $fileName = 'unit_' . date('Ymd_His') . '_' . bin2hex(random_bytes(4)) . '.jpg';
+    $targetPath = $uploadDir . $fileName;
+    $tmpPath = $uploadDir . 'tmp_' . bin2hex(random_bytes(6)) . '.jpg';
+    @file_put_contents($tmpPath, $decoded);
+
+    $saved = false;
+    if (function_exists('compress_and_save_uploaded_image')) {
+        $saved = compress_and_save_uploaded_image($tmpPath, $targetPath, 1600, 82);
+    }
+    if (!$saved) {
+        $saved = @rename($tmpPath, $targetPath);
+    } else {
+        @unlink($tmpPath);
+    }
+    if ($saved && file_exists($targetPath)) {
         @chmod($targetPath, 0666);
         return 'uploads/assets/' . $fileName;
     }
@@ -289,52 +361,45 @@ function create_new_asset(array $data): array {
             $kode = sprintf('INV-IT-%03d', $nextVal);
         }
 
+        ensure_asset_master_columns();
         $cols = table_columns('assets');
-        if (!in_array('ip_address', $cols, true)) {
-            try { db()->exec("ALTER TABLE assets ADD COLUMN ip_address VARCHAR(45) NULL, ADD COLUMN printer VARCHAR(100) NULL"); } catch (Throwable $e) {}
-            $cols = table_columns('assets');
-        }
-        if (!in_array('foto', $cols, true)) {
-            try { db()->exec("ALTER TABLE assets ADD COLUMN foto TEXT NULL"); } catch (Throwable $e) {}
-            $cols = table_columns('assets');
-        }
-        if (!in_array('created_at', $cols, true)) {
-            try { db()->exec("ALTER TABLE assets ADD COLUMN created_at DATETIME DEFAULT CURRENT_TIMESTAMP"); } catch (Throwable $e) {}
-            $cols = table_columns('assets');
-        }
-        $hasIp = in_array('ip_address', $cols, true);
-        $hasFoto = in_array('foto', $cols, true);
-        $hasCreatedAt = in_array('created_at', $cols, true);
         $nowStr = date('Y-m-d H:i:s');
 
-        if ($hasFoto && $hasIp && $hasCreatedAt) {
-            $ins = db()->prepare("
-                INSERT INTO assets
-                (kode_inventaris, merk, model, serial_number, id_kategori, id_cabang, id_divisi, id_karyawan, status, keterangan, ip_address, printer, foto, created_at)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            ");
-            $ins->execute([
-                $kode, $merk, $model, $sn, $idKat, $idCab, $idDiv, $idKar, $status, $ket, $ip, $printer, $foto, $nowStr
-            ]);
-        } elseif ($hasIp && $hasCreatedAt) {
-            $ins = db()->prepare("
-                INSERT INTO assets
-                (kode_inventaris, merk, model, serial_number, id_kategori, id_cabang, id_divisi, id_karyawan, status, keterangan, ip_address, printer, created_at)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            ");
-            $ins->execute([
-                $kode, $merk, $model, $sn, $idKat, $idCab, $idDiv, $idKar, $status, $ket, $ip, $printer, $nowStr
-            ]);
-        } else {
-            $ins = db()->prepare("
-                INSERT INTO assets
-                (kode_inventaris, merk, model, serial_number, id_kategori, id_cabang, id_divisi, id_karyawan, status, keterangan)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            ");
-            $ins->execute([
-                $kode, $merk, $model, $sn, $idKat, $idCab, $idDiv, $idKar, $status, $ket
-            ]);
-        }
+        $noSeri = trim((string)($data['nomor_seri_inventaris'] ?? ''));
+        $jenisInv = trim((string)($data['jenis_inventaris'] ?? ''));
+        $golongan = trim((string)($data['golongan'] ?? ''));
+        $ruangan = trim((string)($data['ruangan'] ?? ''));
+        $sumberPerolehan = trim((string)($data['sumber_perolehan'] ?? ''));
+        $statusInv = trim((string)($data['status_inventaris'] ?? '1 : Aktif'));
+
+        $insertData = [
+            'kode_inventaris' => $kode,
+            'merk' => $merk,
+            'model' => $model,
+            'serial_number' => $sn,
+            'id_kategori' => $idKat,
+            'id_cabang' => $idCab,
+            'id_divisi' => $idDiv,
+            'id_karyawan' => $idKar,
+            'status' => $status,
+            'keterangan' => $ket,
+        ];
+        if (in_array('ip_address', $cols, true)) $insertData['ip_address'] = $ip;
+        if (in_array('printer', $cols, true)) $insertData['printer'] = $printer;
+        if (in_array('foto', $cols, true)) $insertData['foto'] = $foto;
+        if (in_array('created_at', $cols, true)) $insertData['created_at'] = $nowStr;
+        if (in_array('nomor_seri_inventaris', $cols, true)) $insertData['nomor_seri_inventaris'] = $noSeri;
+        if (in_array('jenis_inventaris', $cols, true)) $insertData['jenis_inventaris'] = $jenisInv;
+        if (in_array('golongan', $cols, true)) $insertData['golongan'] = $golongan;
+        if (in_array('ruangan', $cols, true)) $insertData['ruangan'] = $ruangan;
+        if (in_array('sumber_perolehan', $cols, true)) $insertData['sumber_perolehan'] = $sumberPerolehan;
+        if (in_array('status_inventaris', $cols, true)) $insertData['status_inventaris'] = $statusInv;
+
+        $fieldNames = array_keys($insertData);
+        $fieldHolders = array_fill(0, count($fieldNames), '?');
+        $sql = "INSERT INTO assets (`" . implode('`, `', $fieldNames) . "`) VALUES (" . implode(', ', $fieldHolders) . ")";
+        $ins = db()->prepare($sql);
+        $ins->execute(array_values($insertData));
         $assetId = (int)db()->lastInsertId();
 
         $token = bin2hex(random_bytes(16));
@@ -614,53 +679,61 @@ function update_asset(int $id, array $data): array {
             $kode = sprintf('INV-IT-%03d', $id);
         }
 
+        ensure_asset_master_columns();
         $cols = table_columns('assets');
-        if (!in_array('ip_address', $cols, true)) {
-            try { db()->exec("ALTER TABLE assets ADD COLUMN ip_address VARCHAR(45) NULL, ADD COLUMN printer VARCHAR(100) NULL"); } catch (Throwable $e) {}
-            $cols = table_columns('assets');
-        }
-        if (!in_array('foto', $cols, true)) {
-            try { db()->exec("ALTER TABLE assets ADD COLUMN foto TEXT NULL"); } catch (Throwable $e) {}
-            $cols = table_columns('assets');
-        }
-        $hasIp = in_array('ip_address', $cols, true);
-        $hasFoto = in_array('foto', $cols, true);
-        $foto = array_key_exists('foto', $data) ? trim((string)$data['foto']) : null;
 
-        if ($hasFoto && $foto !== null) {
-            $upSt = db()->prepare("
-                UPDATE assets
-                SET kode_inventaris = ?, merk = ?, model = ?, serial_number = ?,
-                    id_kategori = ?, id_cabang = ?, id_divisi = ?, id_karyawan = ?,
-                    status = ?, keterangan = ?, ip_address = ?, printer = ?, foto = ?
-                WHERE id = ?
-            ");
-            $upSt->execute([
-                $kode, $merk, $model, $sn, $idKat, $idCab, $idDiv, $idKar, $status, $ket, $ip, $printer, $foto, $id
-            ]);
-        } elseif ($hasIp) {
-            $upSt = db()->prepare("
-                UPDATE assets
-                SET kode_inventaris = ?, merk = ?, model = ?, serial_number = ?,
-                    id_kategori = ?, id_cabang = ?, id_divisi = ?, id_karyawan = ?,
-                    status = ?, keterangan = ?, ip_address = ?, printer = ?
-                WHERE id = ?
-            ");
-            $upSt->execute([
-                $kode, $merk, $model, $sn, $idKat, $idCab, $idDiv, $idKar, $status, $ket, $ip, $printer, $id
-            ]);
-        } else {
-            $upSt = db()->prepare("
-                UPDATE assets
-                SET kode_inventaris = ?, merk = ?, model = ?, serial_number = ?,
-                    id_kategori = ?, id_cabang = ?, id_divisi = ?, id_karyawan = ?,
-                    status = ?, keterangan = ?
-                WHERE id = ?
-            ");
-            $upSt->execute([
-                $kode, $merk, $model, $sn, $idKat, $idCab, $idDiv, $idKar, $status, $ket, $id
-            ]);
+        $updateFields = [
+            'kode_inventaris' => $kode,
+            'merk' => $merk,
+            'model' => $model,
+            'serial_number' => $sn,
+            'id_kategori' => $idKat,
+            'id_cabang' => $idCab,
+            'id_divisi' => $idDiv,
+            'id_karyawan' => $idKar,
+            'status' => $status,
+            'keterangan' => $ket,
+        ];
+        if (in_array('ip_address', $cols, true)) $updateFields['ip_address'] = $ip;
+        if (in_array('printer', $cols, true)) $updateFields['printer'] = $printer;
+        if (array_key_exists('foto', $data)) {
+            $updateFields['foto'] = trim((string)$data['foto']);
         }
+        if (array_key_exists('foto_updated_by', $data) && in_array('foto_updated_by', $cols, true)) {
+            $updateFields['foto_updated_by'] = trim((string)$data['foto_updated_by']);
+        }
+        if (array_key_exists('foto_updated_at', $data) && in_array('foto_updated_at', $cols, true)) {
+            $updateFields['foto_updated_at'] = trim((string)$data['foto_updated_at']);
+        }
+        if (array_key_exists('nomor_seri_inventaris', $data) && in_array('nomor_seri_inventaris', $cols, true)) {
+            $updateFields['nomor_seri_inventaris'] = trim((string)$data['nomor_seri_inventaris']);
+        }
+        if (array_key_exists('jenis_inventaris', $data) && in_array('jenis_inventaris', $cols, true)) {
+            $updateFields['jenis_inventaris'] = trim((string)$data['jenis_inventaris']);
+        }
+        if (array_key_exists('golongan', $data) && in_array('golongan', $cols, true)) {
+            $updateFields['golongan'] = trim((string)$data['golongan']);
+        }
+        if (array_key_exists('ruangan', $data) && in_array('ruangan', $cols, true)) {
+            $updateFields['ruangan'] = trim((string)$data['ruangan']);
+        }
+        if (array_key_exists('sumber_perolehan', $data) && in_array('sumber_perolehan', $cols, true)) {
+            $updateFields['sumber_perolehan'] = trim((string)$data['sumber_perolehan']);
+        }
+        if (array_key_exists('status_inventaris', $data) && in_array('status_inventaris', $cols, true)) {
+            $updateFields['status_inventaris'] = trim((string)$data['status_inventaris']);
+        }
+
+        $setParts = [];
+        $values = [];
+        foreach ($updateFields as $colName => $val) {
+            $setParts[] = "`{$colName}` = ?";
+            $values[] = $val;
+        }
+        $values[] = $id;
+
+        $upSt = db()->prepare("UPDATE assets SET " . implode(', ', $setParts) . " WHERE id = ?");
+        $upSt->execute($values);
 
         // Pastikan asset_qr_tokens ada dan token tetap utuh & permanen
         $checkQr = db()->prepare("SELECT token FROM asset_qr_tokens WHERE asset_id = ? LIMIT 1");

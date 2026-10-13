@@ -10,7 +10,7 @@
  * - Ruangan (Dinamis / Bisa Ditambahkan)
  * - Golongan (01 s/d 05)
  * - Sumber Perolehan, Tanggal Perolehan, Status, dan Keterangan
- * - Wadah Foto Barang dengan Otorisasi Pemindaian Wajah (Biometric Face Recognition)
+ * - Wadah Foto Barang dengan Kompresi Gambar Cerdas & Otorisasi Wajah
  * 
  * Menggantikan link Canva secara permanen.
  * 
@@ -41,7 +41,7 @@ $dataSuccess = null;
 $dataError = null;
 
 // =========================================================================
-// 1. HANDLE UPLOAD / GANTI FOTO DENGAN VERIFIKASI WAJAH (FACE BIOMETRIC)
+// 1. HANDLE UPLOAD / GANTI FOTO DENGAN KOMPRESI CERDAS & VERIFIKASI WAJAH
 // =========================================================================
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'upload_foto' && $card) {
     verify_csrf();
@@ -58,7 +58,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     if ($faceVerified === '1' && !empty($verifierName)) {
         $isAuthorized = true;
         $verifierLabel = $verifierName . ($verifierConfidence > 0 ? " ({$verifierConfidence}% Cocok - Scan Wajah)" : " (Scan Wajah)");
-    } elseif (is_logged_in() && has_role('admin')) {
+    } elseif (is_logged_in() && is_admin()) {
         $isAuthorized = true;
         $adminName = current_user_name() ?: 'Administrator';
         $verifierLabel = $adminName . " (Sesi Admin)";
@@ -70,7 +70,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     } elseif (!empty($_FILES['foto_barang']['name'])) {
         $file = $_FILES['foto_barang'];
         if ($file['error'] === UPLOAD_ERR_OK) {
-            $maxSize = 25 * 1024 * 1024; // 25MB
+            $maxSize = 25 * 1024 * 1024; // 25MB batas awal sebelum kompresi
             if ($file['size'] > $maxSize) {
                 $uploadError = "Ukuran file terlalu besar (maksimal 25MB).";
             } else {
@@ -83,11 +83,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                     @mkdir($uploadDir, 0777, true);
                     @chmod($uploadDir, 0777);
                 }
-                $fileName = 'kartu_' . $card['id'] . '_' . date('Ymd_His') . '_' . bin2hex(random_bytes(3)) . '.' . $ext;
+                // Simpan selalu dalam format jpg terkompresi hemat ruang
+                $fileName = 'kartu_' . $card['id'] . '_' . date('Ymd_His') . '_' . bin2hex(random_bytes(3)) . '.jpg';
                 $targetPath = $uploadDir . $fileName;
 
-                if (move_uploaded_file($file['tmp_name'], $targetPath)) {
-                    @chmod($targetPath, 0666);
+                // Kompresi gambar otomatis (max 1600px, quality 82, file size ~150-250KB)
+                if (compress_and_save_uploaded_image($file['tmp_name'], $targetPath, 1600, 82)) {
                     $relativePhoto = 'uploads/assets/' . $fileName;
                     
                     // Simpan ke database beserta jejak verifikator wajah
@@ -108,9 +109,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                         );
                     } catch (Throwable $e) {}
 
-                    $uploadSuccess = "Foto barang berhasil diperbarui! Diverifikasi secara biometrik oleh: " . $verifierLabel;
+                    $uploadSuccess = "Foto barang berhasil dikompres dan disimpan ke server! Diverifikasi oleh: " . $verifierLabel;
                 } else {
-                    $uploadError = "Gagal memindahkan file foto ke folder uploads server.";
+                    $uploadError = "Gagal memproses dan mengompres file foto ke folder uploads server.";
                 }
             }
         } else {
@@ -348,8 +349,9 @@ $pageTitle = $card ? e($card['nama_barang']) . ' - Kartu Inventaris' : 'Kartu In
             box-shadow: 0 4px 12px rgba(0,0,0,0.15);
         }
         .bank-data-table td, .bank-data-table th {
-            padding: 8px 12px;
+            padding: 9px 12px;
             vertical-align: middle;
+            font-size: 0.88rem;
         }
         
         /* Gaya Biometric Scanner */
@@ -455,7 +457,7 @@ $pageTitle = $card ? e($card['nama_barang']) . ' - Kartu Inventaris' : 'Kartu In
         </div>
     </header>
 
-    <main class="container py-4" style="max-width: 880px;">
+    <main class="container py-4" style="max-width: 1020px;">
 
         <!-- Alert Notifikasi -->
         <?php if ($uploadSuccess): ?>
@@ -545,11 +547,11 @@ $pageTitle = $card ? e($card['nama_barang']) . ' - Kartu Inventaris' : 'Kartu In
                     </div>
                 </div>
 
-                <div class="p-4 p-md-4">
+                <div class="p-3 p-md-4">
                     <div class="row g-4 align-items-start">
                         
-                        <!-- Kolom Foto Barang & Biometric Action -->
-                        <div class="col-md-5 text-center">
+                        <!-- Kolom Foto Barang & Biometric Action (Kiri: 5 Kolom) -->
+                        <div class="col-lg-5 col-md-5 text-center">
                             <div class="item-photo-wrapper mb-2 shadow-xs <?= $photoUrl ? 'has-image' : '' ?>" id="photoWrapper">
                                 <img id="previewImg" src="<?= $photoUrl ? e($photoUrl) : '' ?>" alt="Foto <?= e($card['nama_barang']) ?>" class="<?= $photoUrl ? '' : 'd-none' ?>" onclick="viewFullImage(this.src, '<?= e(addslashes($card['nama_barang'])) ?>')" title="Klik untuk memperbesar">
                                 
@@ -560,7 +562,7 @@ $pageTitle = $card ? e($card['nama_barang']) . ' - Kartu Inventaris' : 'Kartu In
                                 </div>
 
                                 <div id="previewBadge" class="preview-alert-badge d-none">
-                                    <i class="bi bi-eye me-1"></i> Pratinjau Foto Baru Terpilih
+                                    <i class="bi bi-eye me-1"></i> Pratinjau Terkompresi Siap Simpan
                                 </div>
                             </div>
 
@@ -589,9 +591,14 @@ $pageTitle = $card ? e($card['nama_barang']) . ' - Kartu Inventaris' : 'Kartu In
                                     <input type="hidden" name="verifier_confidence" id="bioConfidence" value="">
                                     <input type="hidden" name="verifier_photo" id="bioPhotoSnap" value="">
 
-                                    <label class="form-label small fw-bold text-secondary mb-1">
-                                        <i class="bi bi-image me-1"></i> 1. Pilih / Jepret Foto Barang:
-                                    </label>
+                                    <div class="d-flex justify-content-between align-items-center mb-1">
+                                        <label class="form-label small fw-bold text-secondary mb-0">
+                                            <i class="bi bi-image me-1"></i> 1. Pilih / Jepret Foto:
+                                        </label>
+                                        <span id="compressBadge" class="badge bg-primary bg-opacity-10 text-primary d-none" style="font-size: 0.68rem;">
+                                            <i class="bi bi-shield-check me-1"></i> Terkompres Cerdas
+                                        </span>
+                                    </div>
                                     <input type="file" id="fotoBarangInput" name="foto_barang" class="form-control form-control-sm mb-2" accept="image/*" capture="environment" required>
 
                                     <label class="form-label small fw-bold text-secondary mb-1">
@@ -602,7 +609,7 @@ $pageTitle = $card ? e($card['nama_barang']) . ' - Kartu Inventaris' : 'Kartu In
                                         <span>Scan Wajah & Simpan Foto</span>
                                     </button>
 
-                                    <?php if (is_logged_in() && has_role('admin')): ?>
+                                    <?php if (is_logged_in() && (is_admin() || has_role('admin'))): ?>
                                         <div class="mt-2 text-center">
                                             <button type="button" class="btn btn-link btn-xs text-muted p-0 text-decoration-none" onclick="submitAsLoggedInAdmin()" style="font-size: 0.72rem;">
                                                 <i class="bi bi-shield-lock me-1"></i> Otorisasi Cepat via Sesi Admin (<?= e(current_user_name()) ?>)
@@ -613,8 +620,8 @@ $pageTitle = $card ? e($card['nama_barang']) . ' - Kartu Inventaris' : 'Kartu In
                             </div>
                         </div>
 
-                        <!-- Kolom Detail Data Master Inventaris Sesuai Core System Bank -->
-                        <div class="col-md-7">
+                        <!-- Kolom Detail Data Master Inventaris Sesuai Core System Bank (Kanan: 7 Kolom) -->
+                        <div class="col-lg-7 col-md-7">
                             
                             <!-- Header Nama Barang -->
                             <div class="p-3 bg-light rounded-3 border mb-3">
@@ -625,8 +632,8 @@ $pageTitle = $card ? e($card['nama_barang']) . ' - Kartu Inventaris' : 'Kartu In
                                 <h3 class="h5 fw-bold text-dark mb-0"><?= e($card['nama_barang']) ?></h3>
                             </div>
 
-                            <!-- Tabel Identitas Core Banking (Sesuai Form Master) -->
-                            <div class="table-responsive rounded-3 border">
+                            <!-- Tabel Identitas Core Banking (Sesuai Form Master Gambar 1) -->
+                            <div class="table-responsive rounded-3 border bg-white">
                                 <table class="table table-sm table-striped bank-data-table mb-0">
                                     <tbody>
                                         <tr>
@@ -680,6 +687,7 @@ $pageTitle = $card ? e($card['nama_barang']) . ' - Kartu Inventaris' : 'Kartu In
                             </div>
 
                         </div>
+
                     </div>
                 </div>
 
@@ -692,7 +700,7 @@ $pageTitle = $card ? e($card['nama_barang']) . ' - Kartu Inventaris' : 'Kartu In
                             </div>
                             <div>
                                 <h6 class="fw-bold mb-1 text-dark">Barcode & QR Code Resmi Bank</h6>
-                                <p class="text-secondary small mb-1" style="max-width: 420px; font-size: 0.78rem;">
+                                <p class="text-secondary small mb-1" style="max-width: 480px; font-size: 0.78rem;">
                                     Hasil pemindaian stiker fisik inventaris diarahkan langsung ke halaman ini di server lokal BPR Mitratama.
                                 </p>
                                 <div class="small font-mono text-muted text-break" style="font-size: 0.72rem;">
@@ -710,7 +718,7 @@ $pageTitle = $card ? e($card['nama_barang']) . ' - Kartu Inventaris' : 'Kartu In
                 </div>
             </div>
 
-            <!-- Tautan Terkait IT Asset (Jika Ada) -->
+            <!-- Tautan Terkait IT Asset (Jika Terdaftar di Master TI) -->
             <?php if ($matchedAsset): ?>
                 <div class="card card-custom p-3 p-md-4 mb-4 bg-white">
                     <div class="d-flex align-items-center justify-content-between mb-2">
@@ -785,7 +793,7 @@ $pageTitle = $card ? e($card['nama_barang']) . ' - Kartu Inventaris' : 'Kartu In
                                 <div class="form-text text-muted" style="font-size: 0.70rem;">Format: [Cabang].[Ruangan].[Golongan].[ddMMyy].[Nomor]</div>
                             </div>
 
-                            <!-- Jenis Inventaris (Image 2) -->
+                            <!-- Jenis Inventaris (Gambar 2) -->
                             <div class="col-md-6">
                                 <label class="form-label small fw-bold text-secondary">Jenis Inventaris</label>
                                 <select name="jenis_inventaris" class="form-select form-select-sm" required>
@@ -797,7 +805,7 @@ $pageTitle = $card ? e($card['nama_barang']) . ' - Kartu Inventaris' : 'Kartu In
                                 </select>
                             </div>
 
-                            <!-- Golongan (Image 3) -->
+                            <!-- Golongan (Gambar 3) -->
                             <div class="col-md-6">
                                 <label class="form-label small fw-bold text-secondary">Golongan Inventaris</label>
                                 <select name="golongan" class="form-select form-select-sm" required>
@@ -999,21 +1007,60 @@ $pageTitle = $card ? e($card['nama_barang']) . ' - Kartu Inventaris' : 'Kartu In
         const HOLD_FRAMES_REQUIRED = 10;
         const MODEL_URL = "https://cdn.jsdelivr.net/npm/@vladmandic/face-api/model/";
 
-        // 1. Live Instant Preview ketika user memilih file foto
+        // 1. Kompresi Gambar Cerdas di Browser (Client-side) sebelum Unggah
         const fileInput = document.getElementById('fotoBarangInput');
         const previewImg = document.getElementById('previewImg');
         const emptyPlaceholder = document.getElementById('emptyPhotoPlaceholder');
         const previewBadge = document.getElementById('previewBadge');
+        const compressBadge = document.getElementById('compressBadge');
         const photoWrapper = document.getElementById('photoWrapper');
+
+        function compressImageClientSide(file, maxDimension, quality, callback) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const img = new Image();
+                img.onload = function() {
+                    let w = img.width;
+                    let h = img.height;
+
+                    if (w > maxDimension || h > maxDimension) {
+                        if (w >= h) {
+                            h = Math.round((h / w) * maxDimension);
+                            w = maxDimension;
+                        } else {
+                            w = Math.round((w / h) * maxDimension);
+                            h = maxDimension;
+                        }
+                    }
+
+                    const canvas = document.createElement('canvas');
+                    canvas.width = w;
+                    canvas.height = h;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, w, h);
+
+                    canvas.toBlob(function(blob) {
+                        callback(blob, canvas.toDataURL('image/jpeg', quality));
+                    }, 'image/jpeg', quality);
+                };
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
 
         if (fileInput) {
             fileInput.addEventListener('change', function() {
                 const file = this.files && this.files[0];
                 if (file) {
-                    const reader = new FileReader();
-                    reader.onload = function(e) {
+                    // Tampilkan badge kompresi
+                    if (compressBadge) {
+                        compressBadge.classList.remove('d-none');
+                        compressBadge.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Mengompres...';
+                    }
+
+                    compressImageClientSide(file, 1600, 0.82, function(compressedBlob, previewDataUrl) {
                         if (previewImg) {
-                            previewImg.src = e.target.result;
+                            previewImg.src = previewDataUrl;
                             previewImg.classList.remove('d-none');
                         }
                         if (emptyPlaceholder) {
@@ -1025,8 +1072,25 @@ $pageTitle = $card ? e($card['nama_barang']) . ' - Kartu Inventaris' : 'Kartu In
                         if (photoWrapper) {
                             photoWrapper.classList.add('has-image');
                         }
-                    };
-                    reader.readAsDataURL(file);
+
+                        // Gantikan payload input file dengan file terkompres (~150-250KB)
+                        try {
+                            const compressedFile = new File([compressedBlob], "compressed_" + file.name.replace(/\.[^.]+$/, ".jpg"), {
+                                type: "image/jpeg",
+                                lastModified: Date.now()
+                            });
+                            const dataTransfer = new DataTransfer();
+                            dataTransfer.items.add(compressedFile);
+                            fileInput.files = dataTransfer.files;
+
+                            if (compressBadge) {
+                                const kbSize = Math.round(compressedBlob.size / 1024);
+                                compressBadge.innerHTML = '<i class="bi bi-shield-check me-1"></i> ' + kbSize + ' KB (Hemat Ruang)';
+                            }
+                        } catch (e) {
+                            console.warn("DataTransfer update fallback:", e);
+                        }
+                    });
                 }
             });
         }

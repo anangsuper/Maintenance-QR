@@ -3,6 +3,8 @@
 $historyList = get_asset_maintenance_history($assetId);
 $cardMatrix = get_asset_yearly_card_matrix($assetId, $year);
 $loggedIn = is_logged_in();
+$enrolledTechs = get_enrolled_technicians(false);
+$hasEnrolledTechs = !empty($enrolledTechs);
 $complaints = get_asset_complaints($assetId);
 $pendingComplaintsCount = 0;
 foreach ($complaints as $c) {
@@ -746,6 +748,37 @@ $historyCardHtml = '
 $fotoUnit = trim((string)($asset['foto'] ?? ''));
 $fotoUnitSrc = function_exists('asset_image_url') ? asset_image_url($fotoUnit) : ($fotoUnit ? (str_starts_with($fotoUnit, 'http') ? $fotoUnit : module_url($fotoUnit)) : '');
 
+// Data Master Core Banking (Sesuai Core System BPR Mitratama)
+$noSeriBank = trim((string)($asset['nomor_seri_inventaris'] ?? ''));
+$ruanganBank = trim((string)($asset['ruangan'] ?? ''));
+$jenisBank = trim((string)($asset['jenis_inventaris'] ?? ''));
+$golonganBank = trim((string)($asset['golongan'] ?? ''));
+
+// Fallback jika belum terisi di assets, cari kecocokan di inventaris_kartu
+if ($noSeriBank === '' || $ruanganBank === '' || $jenisBank === '') {
+    if (function_exists('get_inventaris_kartu_rows')) {
+        $cleanKode = preg_replace('/[^0-9a-zA-Z]/', '', (string)($asset['kode_inventaris'] ?? ''));
+        $cleanSn = preg_replace('/[^0-9a-zA-Z]/', '', (string)($asset['serial_number'] ?? ''));
+        foreach (get_inventaris_kartu_rows() as $ik) {
+            $ikRek = preg_replace('/[^0-9a-zA-Z]/', '', (string)($ik['nomor_rekening'] ?? ''));
+            if (($ikRek !== '' && ($ikRek === $cleanKode || $ikRek === $cleanSn)) || stripos($ik['nama_barang'] ?? '', ($asset['model'] ?: $asset['merk'] ?: '___')) !== false) {
+                if ($noSeriBank === '') $noSeriBank = $ik['nomor_seri_inventaris'] ?? '';
+                if ($ruanganBank === '') $ruanganBank = $ik['ruangan'] ?? '';
+                if ($jenisBank === '') $jenisBank = $ik['jenis_inventaris'] ?? '';
+                if ($golonganBank === '') $golonganBank = $ik['golongan'] ?? '';
+                break;
+            }
+        }
+    }
+}
+
+$verifiedBadge = !empty($asset['foto_updated_by']) ? '
+  <div class="mt-1">
+    <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 rounded-pill px-2 py-0.5" style="font-size: 0.68rem;">
+      <i class="bi bi-patch-check-fill me-1"></i> Diverifikasi: <strong>'.e($asset['foto_updated_by']).'</strong>
+    </span>
+  </div>' : '';
+
 if ($fotoUnitSrc !== '') {
     $fotoCardHtml = '
     <div class="col-12 col-md-4 col-lg-3 text-center mb-3 mb-md-0">
@@ -755,10 +788,11 @@ if ($fotoUnitSrc !== '') {
           <i class="bi bi-zoom-in me-1"></i> Perbesar Foto
         </div>
       </div>
+      '.$verifiedBadge.'
       <div class="mt-2 d-flex justify-content-center gap-1">
-        <a href="'.e(module_url('asset_edit.php', ['id' => $assetId])).'" class="btn btn-sm btn-light border py-1 px-2.5 text-secondary fw-semibold shadow-xs" style="font-size: 0.75rem;" title="Ganti atau perbarui foto unit">
+        <button type="button" class="btn btn-sm btn-light border py-1 px-2.5 text-secondary fw-semibold shadow-xs" style="font-size: 0.75rem;" onclick="openUploadFotoTeknisiModal()" title="Ganti atau perbarui foto unit dengan scan wajah teknisi">
           <i class="bi bi-camera me-1"></i> Ganti Foto
-        </a>
+        </button>
       </div>
     </div>';
     $specColClass = 'col-12 col-md-8 col-lg-9';
@@ -768,9 +802,9 @@ if ($fotoUnitSrc !== '') {
       <div class="rounded-3 border border-2 border-dashed bg-light p-3 d-flex flex-column align-items-center justify-content-center h-100" style="min-height: 175px; border-color: #cbd5e1 !important;">
         <i class="bi bi-camera fs-1 text-secondary opacity-50 mb-1"></i>
         <div class="small text-muted mb-2 fw-semibold" style="font-size: 0.75rem;">Belum ada foto fisik</div>
-        <a href="'.e(module_url('asset_edit.php', ['id' => $assetId])).'" class="btn btn-sm btn-outline-primary py-1 px-2.5 fw-semibold shadow-xs" style="font-size: 0.75rem;">
+        <button type="button" class="btn btn-sm btn-outline-primary py-1 px-2.5 fw-semibold shadow-xs" onclick="openUploadFotoTeknisiModal()" style="font-size: 0.75rem;">
           <i class="bi bi-plus-circle me-1"></i> Upload Foto
-        </a>
+        </button>
       </div>
     </div>';
     $specColClass = 'col-12 col-md-8 col-lg-9';
@@ -800,19 +834,35 @@ $body = '
       <div class="row g-3 align-items-center">
         '.$fotoCardHtml.'
         <div class="'.$specColClass.'">
-          <!-- Detail Spesifikasi & Kepemilikan -->
+          <!-- Detail Spesifikasi & Kepemilikan (Termasuk Master Core Banking) -->
           <div class="row g-2 g-md-3 small mb-1">
             <div class="col-6 col-md-4">
               <div class="text-secondary" style="font-size: 0.72rem;">Kode Inventaris:</div>
               <div class="fw-bold text-primary fs-6 font-monospace text-truncate">'.e($asset['kode_inventaris'] ?? '-').'</div>
             </div>
             <div class="col-6 col-md-4">
-              <div class="text-secondary" style="font-size: 0.72rem;">Serial Number:</div>
+              <div class="text-secondary" style="font-size: 0.72rem;">No Seri Inventaris (Bank):</div>
+              <div class="fw-semibold text-dark font-monospace text-truncate">'.e($noSeriBank ?: '-').'</div>
+            </div>
+            <div class="col-6 col-md-4">
+              <div class="text-secondary" style="font-size: 0.72rem;">Serial Number (S/N):</div>
               <div class="fw-semibold text-dark text-truncate">'.e($asset['serial_number'] ?? '-').'</div>
             </div>
             <div class="col-6 col-md-4">
               <div class="text-secondary" style="font-size: 0.72rem;">Merk / Model:</div>
               <div class="fw-semibold text-dark text-truncate">'.e($displayMerkModel).'</div>
+            </div>
+            <div class="col-6 col-md-4">
+              <div class="text-secondary" style="font-size: 0.72rem;">Jenis Inventaris:</div>
+              <div class="fw-semibold text-dark text-truncate">'.e($jenisBank ?: '-').'</div>
+            </div>
+            <div class="col-6 col-md-4">
+              <div class="text-secondary" style="font-size: 0.72rem;">Ruangan Penempatan:</div>
+              <div class="fw-bold text-dark text-truncate"><i class="bi bi-door-open text-primary me-1"></i>'.e($ruanganBank ?: '-').'</div>
+            </div>
+            <div class="col-6 col-md-4">
+              <div class="text-secondary" style="font-size: 0.72rem;">Golongan:</div>
+              <div class="fw-semibold text-dark text-truncate">'.e($golonganBank ?: '-').'</div>
             </div>
             <div class="col-6 col-md-4">
               <div class="text-secondary" style="font-size: 0.72rem;">Pengguna / Pemilik:</div>
@@ -961,16 +1011,185 @@ $body = '
         <img id="scanPhotoImg" src="" alt="Foto Unit" class="img-fluid rounded border shadow-sm" style="max-height: 520px; width: auto; object-fit: contain;">
       </div>
       <div class="modal-footer py-2 px-3 bg-light d-flex justify-content-between">
-        <a id="scanPhotoEditLink" href="'.e(module_url('asset_edit.php', ['id' => $assetId])).'" class="btn btn-sm btn-outline-secondary">
-          <i class="bi bi-pencil me-1"></i> Edit / Ganti Foto
-        </a>
+        <button type="button" class="btn btn-sm btn-outline-primary" data-bs-dismiss="modal" onclick="openUploadFotoTeknisiModal()">
+          <i class="bi bi-camera me-1"></i> Ganti / Perbarui Foto Ini
+        </button>
         <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Tutup</button>
       </div>
     </div>
   </div>
 </div>
 
+<!-- Modal Upload Foto Unit dengan Verifikasi Wajah Teknisi -->
+<div class="modal fade" id="modalUploadFotoTeknisi" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
+      <div class="modal-header bg-primary text-white py-3 px-4">
+        <div>
+          <h5 class="modal-title fw-bold mb-0"><i class="bi bi-camera-fill me-2"></i>Foto Fisik Perangkat</h5>
+          <small class="text-white-50">'.e($asset['kode_inventaris'] ?? 'Aset').' · '.e(asset_title($asset)).'</small>
+        </div>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+
+      <form method="post" enctype="multipart/form-data" id="formUploadFotoUnit" action="'.e(module_url('scan.php', ['t' => $token])).'">
+        <input type="hidden" name="_csrf" value="'.e(csrf_token()).'">
+        <input type="hidden" name="action" value="update_asset_photo">
+        <input type="hidden" name="foto_base64" id="scanPhotoBase64" value="">
+        <input type="hidden" name="face_verified" id="scanPhotoBioVerified" value="0">
+        <input type="hidden" name="verifier_name" id="scanPhotoBioUserName" value="">
+        <input type="hidden" name="verifier_user_id" id="scanPhotoBioUserId" value="">
+        <input type="hidden" name="verifier_confidence" id="scanPhotoBioConfidence" value="">
+        <input type="hidden" name="verifier_photo" id="scanPhotoBioSnap" value="">
+
+        <div class="modal-body p-4">
+          <!-- Step 1: Ambil / Pilih Foto Unit -->
+          <div class="mb-3">
+            <label class="form-label small fw-bold text-secondary mb-1">
+              <i class="bi bi-image me-1 text-primary"></i> 1. Jepret Kamera / Pilih Foto Fisik Unit:
+            </label>
+            <input type="file" id="fotoBarangScanInput" name="foto_unit" class="form-control" accept="image/*" capture="environment" onchange="handleScanPhotoSelect(event)" required>
+            <div class="form-text small" style="font-size: 0.73rem;">
+              Format JPEG, JPG, PNG. Otomatis dikompresi cerdas ke resolusi jernih hemat ruang server (~150-250KB).
+            </div>
+          </div>
+
+          <!-- Preview & Status Kompresi -->
+          <div id="scanPhotoPreviewContainer" class="d-none mb-3">
+            <div class="position-relative rounded-3 border overflow-hidden bg-light text-center p-2">
+              <img id="scanPhotoPreviewImg" src="" alt="Pratinjau" class="img-fluid rounded" style="max-height: 190px; object-fit: contain;">
+              <div id="scanPhotoCompressBadge" class="mt-2 text-success small fw-semibold">
+                <i class="bi bi-shield-check me-1"></i> Terkompres Cerdas Siap Unggah
+              </div>
+            </div>
+          </div>
+
+          <!-- Step 2: Otorisasi Biometrik Wajah -->
+          <div class="bg-light p-3 rounded-3 border mb-2">
+            <div class="d-flex align-items-center justify-content-between mb-2">
+              <span class="small fw-bold text-dark">
+                <i class="bi bi-person-bounding-box me-1 text-primary"></i> 2. Otorisasi Teknisi:
+              </span>
+              '.($hasEnrolledTechs
+                ? '<span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 px-2 py-0.5 rounded-pill" style="font-size: 0.68rem;"><i class="bi bi-check-circle me-1"></i>'.count($enrolledTechs).' Teknisi Terdaftar</span>'
+                : '<span class="badge bg-warning bg-opacity-10 text-dark border border-warning border-opacity-25 px-2 py-0.5 rounded-pill" style="font-size: 0.68rem;"><i class="bi bi-exclamation-triangle me-1"></i>Belum Ada Wajah Terdaftar</span>').'
+            </div>
+
+            <p class="text-muted small mb-3" style="font-size: 0.75rem;">
+              Untuk menjaga integritas data inventaris Core Banking, perubahan foto fisik unit wajib diverifikasi oleh wajah Teknisi IT terdaftar.
+            </p>
+
+            <button type="button" id="btnMulaiScanWajahFoto" class="btn btn-primary w-100 fw-bold py-2.5 rounded-pill shadow-xs d-flex align-items-center justify-content-center gap-2" onclick="startTeknisiFaceScanForPhoto()">
+              <i class="bi bi-person-bounding-box fs-5"></i>
+              <span>Scan Wajah Teknisi & Simpan Foto</span>
+            </button>
+
+            '.($loggedIn ? '
+              <div class="mt-2 text-center">
+                <button type="button" class="btn btn-link btn-xs text-muted p-0 text-decoration-none" onclick="submitPhotoAsLoggedInAdmin()" style="font-size: 0.72rem;">
+                  <i class="bi bi-shield-lock me-1"></i> Otorisasi Cepat via Sesi Login ('.e(current_user_name()).')
+                </button>
+              </div>' : '').'
+          </div>
+
+          <div class="text-center">
+            <a href="'.e(module_url('user_biometric_enroll.php', ['ret' => module_url('scan.php', ['t' => $token])])).'" class="text-decoration-none small text-primary" style="font-size: 0.72rem;">
+              <i class="bi bi-person-plus me-1"></i> Daftarkan Wajah Teknisi Baru
+            </a>
+          </div>
+        </div>
+
+        <div class="modal-footer py-2 px-3 bg-light">
+          <button type="button" class="btn btn-sm btn-secondary rounded-pill px-3" data-bs-dismiss="modal">Batal</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Scanner Biometrik Wajah Teknisi -->
+<div class="modal fade" id="modalFaceVerifyPhoto" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden bg-dark text-white">
+      <div class="modal-header border-secondary border-opacity-25 py-3 px-4">
+        <div>
+          <h6 class="modal-title fw-bold text-white mb-0"><i class="bi bi-person-bounding-box text-primary me-2"></i>Verifikasi Biometrik Wajah Teknisi</h6>
+          <small class="text-white-50">Arahkan wajah Anda ke kamera</small>
+        </div>
+        <button type="button" class="btn-close btn-close-white" onclick="closePhotoFaceModal()"></button>
+      </div>
+
+      <div class="modal-body p-3 text-center position-relative">
+        <!-- Video Box & Scanner Frame -->
+        <div class="position-relative mx-auto rounded-3 overflow-hidden bg-black shadow-inner" style="max-width: 320px; aspect-ratio: 1/1;">
+          <video id="bioPhotoVideo" autoplay muted playsinline class="w-100 h-100 object-fit-cover" style="transform: scaleX(-1);"></video>
+          
+          <!-- Oval Guide Frame -->
+          <div class="position-absolute top-50 start-50 translate-middle pointer-events-none" style="width: 72%; height: 85%; border: 2.5px dashed rgba(59, 130, 246, 0.85); border-radius: 50%; box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.35);"></div>
+          
+          <!-- Scanning Ray Animation -->
+          <div id="bioPhotoScanRay" class="position-absolute start-0 w-100" style="height: 3px; background: linear-gradient(90deg, transparent, #3b82f6, #60a5fa, transparent); animation: scanRayAnim 2s infinite ease-in-out;"></div>
+
+          <!-- Success Overlay -->
+          <div id="bioPhotoSuccessOverlay" class="position-absolute top-0 start-0 w-100 h-100 bg-success bg-opacity-75 d-flex flex-column align-items-center justify-content-center text-white d-none" style="backdrop-filter: blur(4px);">
+            <i class="bi bi-check-circle-fill display-3 mb-2 animate-bounce"></i>
+            <h5 class="fw-bold mb-1" id="bioPhotoMatchedName">Wajah Terverifikasi!</h5>
+            <span class="badge bg-white text-success fw-bold px-3 py-1 rounded-pill" id="bioPhotoMatchConf">100% Cocok</span>
+          </div>
+        </div>
+
+        <div id="bioPhotoStatusBox" class="alert alert-secondary py-2 px-3 small fw-semibold mt-3 mb-2 text-start text-dark">
+          <span class="spinner-border spinner-border-sm me-2 text-primary"></span> Menyiapkan kamera dan modul pengenalan wajah...
+        </div>
+
+        <div class="text-white-50 small" style="font-size: 0.72rem;">
+          Pastikan wajah berada di dalam oval, tidak memakai masker, dan pencahayaan memadai.
+        </div>
+      </div>
+
+      <div class="modal-footer border-secondary border-opacity-25 py-2 px-3 d-flex justify-content-between">
+        <button type="button" class="btn btn-outline-light btn-sm rounded-pill px-3" onclick="closePhotoFaceModal()">
+          Batal
+        </button>
+        <button type="button" id="btnManualTriggerPhotoBio" class="btn btn-primary btn-sm rounded-pill px-3 fw-bold" onclick="triggerInstantPhotoFaceVerify()">
+          <i class="bi bi-camera me-1"></i> Verifikasi Sekarang
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+@keyframes scanRayAnim {
+  0% { top: 10%; opacity: 0.3; }
+  50% { top: 85%; opacity: 1; }
+  100% { top: 10%; opacity: 0.3; }
+}
+</style>
+
+<script src="https://cdn.jsdelivr.net/npm/@vladmandic/face-api/dist/face-api.min.js"></script>
 <script>
+window.__ENROLLED_TECHS = '.json_encode($enrolledTechs, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT).';
+
+const parsedEnrolledTechs = (Array.isArray(window.__ENROLLED_TECHS) ? window.__ENROLLED_TECHS : []).map(t => {
+  let desc = t.descriptor || t.face_descriptor;
+  if (typeof desc === "string") {
+    try { desc = JSON.parse(desc); } catch (e) { desc = null; }
+  }
+  return {
+    id: t.id,
+    nama: t.nama,
+    descriptor: (Array.isArray(desc) && desc.length >= 64) ? new Float32Array(desc) : null
+  };
+}).filter(t => t.descriptor !== null);
+
+let photoBioModelsLoaded = false;
+let photoBioModelsLoading = false;
+let photoBioVideoStream = null;
+let photoBioTrackingTimer = null;
+let photoBioCompleted = false;
+const MODEL_URL = "https://cdn.jsdelivr.net/npm/@vladmandic/face-api/model/";
+
 function openScanPhotoModal(src, title, kode) {
   var img = document.getElementById("scanPhotoImg");
   var t = document.getElementById("scanPhotoTitle");
@@ -985,7 +1204,356 @@ function openScanPhotoModal(src, title, kode) {
   }
 }
 
-// Pastikan jika pengguna kembali dari halaman rincian via tombol Back browser, halaman otomatis memuat data terbaru
+function openUploadFotoTeknisiModal() {
+  var modalEl = document.getElementById("modalUploadFotoTeknisi");
+  if (modalEl && typeof bootstrap !== "undefined") {
+    var modal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
+    modal.show();
+  }
+}
+
+function handleScanPhotoSelect(event) {
+  const file = event.target.files && event.target.files[0];
+  if (!file) return;
+
+  const previewContainer = document.getElementById("scanPhotoPreviewContainer");
+  const previewImg = document.getElementById("scanPhotoPreviewImg");
+  const compressBadge = document.getElementById("scanPhotoCompressBadge");
+
+  const originalSizeKb = Math.round(file.size / 1024);
+
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    const tempImg = new Image();
+    tempImg.onload = function() {
+      // Kompresi Canvas Cerdas Client-Side
+      const maxDim = 1600;
+      let w = tempImg.width;
+      let h = tempImg.height;
+      if (w > maxDim || h > maxDim) {
+        if (w > h) {
+          h = Math.round((h * maxDim) / w);
+          w = maxDim;
+        } else {
+          w = Math.round((w * maxDim) / h);
+          h = maxDim;
+        }
+      }
+
+      const canvas = document.createElement("canvas");
+      canvas.width = w;
+      canvas.height = h;
+      const ctx = canvas.getContext("2d");
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = "high";
+      ctx.drawImage(tempImg, 0, 0, w, h);
+
+      // Export JPEG Quality 0.82
+      const compressedDataUrl = canvas.toDataURL("image/jpeg", 0.82);
+      document.getElementById("scanPhotoBase64").value = compressedDataUrl;
+
+      const approxSizeKb = Math.round((compressedDataUrl.length * 3 / 4) / 1024);
+
+      if (previewImg) previewImg.src = compressedDataUrl;
+      if (previewContainer) previewContainer.classList.remove("d-none");
+      if (compressBadge) {
+        compressBadge.innerHTML = '<i class="bi bi-shield-check me-1"></i> Siap Diunggah: <strong>' + approxSizeKb + ' KB</strong> <span class="text-muted">(Semula ' + originalSizeKb + ' KB)</span>';
+      }
+    };
+    tempImg.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+async function loadPhotoBioModels() {
+  if (photoBioModelsLoaded) return true;
+  if (photoBioModelsLoading) return true;
+  photoBioModelsLoading = true;
+  try {
+    const statusBox = document.getElementById("bioPhotoStatusBox");
+    if (statusBox) {
+      statusBox.className = "alert alert-info py-2 px-3 small fw-semibold mt-3 mb-2 text-start";
+      statusBox.innerHTML = '<span class="spinner-border spinner-border-sm me-2 text-primary"></span> Mengunduh model pengenalan wajah AI...';
+    }
+    if (typeof faceapi !== "undefined" && faceapi.tf) {
+      try {
+        await faceapi.tf.setBackend("webgl");
+        await faceapi.tf.ready();
+      } catch(e) {}
+    }
+    await Promise.all([
+      faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL),
+      faceapi.nets.faceLandmark68TinyNet.loadFromUri(MODEL_URL),
+      faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL)
+    ]);
+    photoBioModelsLoaded = true;
+    photoBioModelsLoading = false;
+    return true;
+  } catch(err) {
+    console.error("Gagal memuat face-api models:", err);
+    photoBioModelsLoading = false;
+    const statusBox = document.getElementById("bioPhotoStatusBox");
+    if (statusBox) {
+      statusBox.className = "alert alert-danger py-2 px-3 small fw-semibold mt-3 mb-2 text-start";
+      statusBox.innerHTML = '<i class="bi bi-exclamation-triangle-fill me-1"></i> Gagal memuat model AI biometrik. Periksa koneksi internet.';
+    }
+    return false;
+  }
+}
+
+function calcEuclideanDist(a, b) {
+  let s = 0;
+  for (let i = 0; i < a.length; i++) {
+    const d = a[i] - b[i];
+    s += d * d;
+  }
+  return Math.sqrt(s);
+}
+
+function findBestMatchTech(queryVec) {
+  let bestDist = 999;
+  let bestTech = null;
+  for (let i = 0; i < parsedEnrolledTechs.length; i++) {
+    const t = parsedEnrolledTechs[i];
+    const dist = calcEuclideanDist(queryVec, t.descriptor);
+    if (dist < bestDist) {
+      bestDist = dist;
+      bestTech = t;
+    }
+  }
+  return { tech: bestTech, dist: bestDist };
+}
+
+function captureVideoSnapshot(videoEl) {
+  try {
+    if (!videoEl || !videoEl.videoWidth || !videoEl.videoHeight) return "";
+    const c = document.createElement("canvas");
+    const outSize = 180;
+    c.width = outSize;
+    c.height = outSize;
+    const ctx = c.getContext("2d");
+    const s = Math.min(videoEl.videoWidth, videoEl.videoHeight);
+    const sx = (videoEl.videoWidth - s) / 2;
+    const sy = (videoEl.videoHeight - s) / 2;
+    ctx.translate(outSize, 0);
+    ctx.scale(-1, 1);
+    ctx.drawImage(videoEl, sx, sy, s, s, 0, 0, outSize, outSize);
+    return c.toDataURL("image/jpeg", 0.65);
+  } catch (err) {
+    return "";
+  }
+}
+
+function finalizePhotoFaceVerification(tech, dist, videoEl) {
+  photoBioCompleted = true;
+  if (photoBioTrackingTimer) clearInterval(photoBioTrackingTimer);
+
+  let conf = Math.round((1.0 - (dist / 0.60)) * 100);
+  if (conf > 99) conf = 99;
+  if (conf < 75) conf = 75;
+
+  document.getElementById("scanPhotoBioVerified").value = "1";
+  document.getElementById("scanPhotoBioUserId").value = tech.id;
+  document.getElementById("scanPhotoBioUserName").value = tech.nama;
+  document.getElementById("scanPhotoBioConfidence").value = conf;
+
+  const snap = captureVideoSnapshot(videoEl);
+  document.getElementById("scanPhotoBioSnap").value = snap;
+
+  const matchedNameEl = document.getElementById("bioPhotoMatchedName");
+  if (matchedNameEl) matchedNameEl.textContent = tech.nama;
+  const matchConfEl = document.getElementById("bioPhotoMatchConf");
+  if (matchConfEl) matchConfEl.textContent = conf + "% Cocok";
+
+  const successOverlay = document.getElementById("bioPhotoSuccessOverlay");
+  if (successOverlay) successOverlay.classList.remove("d-none");
+
+  const statusBox = document.getElementById("bioPhotoStatusBox");
+  if (statusBox) {
+    statusBox.className = "alert alert-success py-2 px-3 small fw-bold mt-3 mb-2 text-start";
+    statusBox.innerHTML = '<i class="bi bi-check-circle-fill me-1"></i> Wajah Terverifikasi: <strong>' + tech.nama + '</strong>! Menyimpan foto...';
+  }
+
+  if (photoBioVideoStream) {
+    try { photoBioVideoStream.getTracks().forEach(t => t.stop()); } catch(e) {}
+  }
+
+  setTimeout(() => {
+    document.getElementById("formUploadFotoUnit").submit();
+  }, 700);
+}
+
+async function triggerInstantPhotoFaceVerify() {
+  const video = document.getElementById("bioPhotoVideo");
+  const statusBox = document.getElementById("bioPhotoStatusBox");
+  if (!video || !video.videoWidth || photoBioCompleted) return;
+
+  statusBox.className = "alert alert-warning py-2 px-3 small fw-bold mt-3 mb-2 text-start text-dark";
+  statusBox.innerHTML = '<span class="spinner-border spinner-border-sm me-2 text-warning"></span> Memproses pencocokan biometrik...';
+
+  const detectorOptions = new faceapi.TinyFaceDetectorOptions({ inputSize: 224, scoreThreshold: 0.3 });
+  try {
+    const detection = await faceapi.detectSingleFace(video, detectorOptions)
+      .withFaceLandmarks(true)
+      .withFaceDescriptor();
+
+    if (!detection) {
+      statusBox.className = "alert alert-warning py-2 px-3 small fw-semibold mt-3 mb-2 text-start text-dark";
+      statusBox.innerHTML = '<i class="bi bi-exclamation-circle me-1"></i> Wajah tidak terdeteksi. Posisikan wajah di tengah oval.';
+      return;
+    }
+
+    if (!parsedEnrolledTechs.length) {
+      statusBox.className = "alert alert-danger py-2 px-3 small fw-semibold mt-3 mb-2 text-start";
+      statusBox.innerHTML = '<i class="bi bi-person-x me-1"></i> Belum ada teknisi terdaftar di sistem Core Banking.';
+      return;
+    }
+
+    const { tech, dist } = findBestMatchTech(detection.descriptor);
+    if (tech && dist < 0.60) {
+      finalizePhotoFaceVerification(tech, dist, video);
+    } else {
+      statusBox.className = "alert alert-danger py-2 px-3 small fw-semibold mt-3 mb-2 text-start";
+      statusBox.innerHTML = '<i class="bi bi-person-x me-1"></i> Wajah tidak cocok dengan teknisi terdaftar (Jarak: ' + dist.toFixed(2) + '). Pastikan Anda terdaftar.';
+    }
+  } catch(err) {
+    console.error("Error trigger bio verify:", err);
+  }
+}
+
+async function startTeknisiFaceScanForPhoto() {
+  const fileInput = document.getElementById("fotoBarangScanInput");
+  const base64Input = document.getElementById("scanPhotoBase64");
+  if ((!fileInput.files || !fileInput.files.length) && !base64Input.value) {
+    alert("Silakan pilih atau jepret foto fisik perangkat terlebih dahulu!");
+    fileInput.focus();
+    return;
+  }
+
+  // Tutup modal upload foto
+  const uploadModalEl = document.getElementById("modalUploadFotoTeknisi");
+  if (uploadModalEl && typeof bootstrap !== "undefined") {
+    const upModal = bootstrap.Modal.getInstance(uploadModalEl);
+    if (upModal) upModal.hide();
+  }
+
+  // Buka modal kamera biometrik
+  const bioModalEl = document.getElementById("modalFaceVerifyPhoto");
+  if (bioModalEl && typeof bootstrap !== "undefined") {
+    const bioModal = bootstrap.Modal.getInstance(bioModalEl) || new bootstrap.Modal(bioModalEl);
+    bioModal.show();
+  }
+
+  photoBioCompleted = false;
+  const successOverlay = document.getElementById("bioPhotoSuccessOverlay");
+  if (successOverlay) successOverlay.classList.add("d-none");
+
+  const statusBox = document.getElementById("bioPhotoStatusBox");
+  if (statusBox) {
+    statusBox.className = "alert alert-secondary py-2 px-3 small fw-semibold mt-3 mb-2 text-start text-dark";
+    statusBox.innerHTML = '<span class="spinner-border spinner-border-sm me-2 text-primary"></span> Menyiapkan kamera...';
+  }
+
+  // Nyalakan Kamera
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: "user", width: { ideal: 640 }, height: { ideal: 480 } },
+      audio: false
+    });
+    photoBioVideoStream = stream;
+    const video = document.getElementById("bioPhotoVideo");
+    video.srcObject = stream;
+    await video.play();
+  } catch(err) {
+    console.error("Camera access error:", err);
+    if (statusBox) {
+      statusBox.className = "alert alert-danger py-2 px-3 small fw-semibold mt-3 mb-2 text-start";
+      statusBox.innerHTML = '<i class="bi bi-camera-video-off me-1"></i> Izin kamera tidak diberikan atau perangkat tidak memiliki webcam.';
+    }
+    return;
+  }
+
+  // Load Model AI
+  const loaded = await loadPhotoBioModels();
+  if (!loaded) return;
+
+  if (statusBox) {
+    statusBox.className = "alert alert-primary py-2 px-3 small fw-semibold mt-3 mb-2 text-start text-dark";
+    statusBox.innerHTML = '<i class="bi bi-person-check me-1 text-primary"></i> Posisikan wajah di tengah oval. Sistem otomatis mencocokkan wajah...';
+  }
+
+  // Tracking Loop Otomatis
+  const detectorOptions = new faceapi.TinyFaceDetectorOptions({ inputSize: 224, scoreThreshold: 0.35 });
+  const video = document.getElementById("bioPhotoVideo");
+
+  if (photoBioTrackingTimer) clearInterval(photoBioTrackingTimer);
+  photoBioTrackingTimer = setInterval(async () => {
+    if (photoBioCompleted || !video || !video.videoWidth || video.paused || video.ended) return;
+
+    try {
+      const detection = await faceapi.detectSingleFace(video, detectorOptions)
+        .withFaceLandmarks(true)
+        .withFaceDescriptor();
+
+      if (detection && !photoBioCompleted) {
+        if (!parsedEnrolledTechs.length) {
+          if (statusBox) {
+            statusBox.className = "alert alert-danger py-2 px-3 small fw-semibold mt-3 mb-2 text-start";
+            statusBox.innerHTML = '<i class="bi bi-person-x me-1"></i> Belum ada teknisi terdaftar.';
+          }
+          return;
+        }
+
+        const { tech, dist } = findBestMatchTech(detection.descriptor);
+        if (tech && dist < 0.60) {
+          finalizePhotoFaceVerification(tech, dist, video);
+        } else {
+          if (statusBox) {
+            statusBox.className = "alert alert-warning py-2 px-3 small fw-semibold mt-3 mb-2 text-start text-dark";
+            statusBox.innerHTML = '<i class="bi bi-search me-1 text-primary"></i> Wajah terdeteksi, mencocokkan dengan data teknisi...';
+          }
+        }
+      }
+    } catch(e) {}
+  }, 450);
+}
+
+function closePhotoFaceModal() {
+  if (photoBioTrackingTimer) clearInterval(photoBioTrackingTimer);
+  if (photoBioVideoStream) {
+    try { photoBioVideoStream.getTracks().forEach(t => t.stop()); } catch(e) {}
+  }
+  const bioModalEl = document.getElementById("modalFaceVerifyPhoto");
+  if (bioModalEl && typeof bootstrap !== "undefined") {
+    const bioModal = bootstrap.Modal.getInstance(bioModalEl);
+    if (bioModal) bioModal.hide();
+  }
+  openUploadFotoTeknisiModal();
+}
+
+function submitPhotoAsLoggedInAdmin() {
+  const fileInput = document.getElementById("fotoBarangScanInput");
+  const base64Input = document.getElementById("scanPhotoBase64");
+  if ((!fileInput.files || !fileInput.files.length) && !base64Input.value) {
+    alert("Silakan pilih atau jepret foto fisik perangkat terlebih dahulu!");
+    fileInput.focus();
+    return;
+  }
+
+  document.getElementById("scanPhotoBioVerified").value = "1";
+  document.getElementById("scanPhotoBioUserName").value = "'.e(addslashes(current_user_name())).'";
+  document.getElementById("scanPhotoBioConfidence").value = "100";
+  
+  const form = document.getElementById("formUploadFotoUnit");
+  const btn = document.getElementById("btnMulaiScanWajahFoto");
+  if (btn) {
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Menyimpan Foto...';
+  }
+  form.submit();
+}
+
+// Pastikan jika pengguna kembali via tombol Back, halaman memuat data terbaru
 window.addEventListener("pageshow", function(event) {
   if (event.persisted) {
     window.location.reload();

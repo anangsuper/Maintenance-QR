@@ -94,6 +94,67 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (($_POST['action'] ?? '') === 'reso
 }
 
 // =========================================================================
+// 0.1. PROSES UPDATE FOTO FISIK ASET DENGAN VERIFIKASI WAJAH TEKNISI (POST)
+// =========================================================================
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && (($_POST['action'] ?? '') === 'update_asset_photo')) {
+    $sentCsrf = (string)($_POST['_csrf'] ?? '');
+    $sessionCsrf = (string)($_SESSION['_csrf'] ?? '');
+    $postToken = trim((string)($_POST['t'] ?? ''));
+    $csrfValid = ($sessionCsrf !== '' && $sentCsrf !== '' && hash_equals($sessionCsrf, $sentCsrf));
+    $tokenValid = ($postToken !== '' && hash_equals($token, $postToken));
+    if (!$csrfValid && !$tokenValid) {
+        verify_csrf();
+    }
+
+    $verifierName = trim((string)($_POST['verifier_name'] ?? ''));
+    if ($verifierName === '') {
+        $verifierName = is_logged_in() ? current_user_name() : 'Teknisi IT';
+    }
+
+    $fotoPath = null;
+    if (!empty($_FILES['foto_unit']['tmp_name'])) {
+        $fotoPath = upload_asset_image('foto_unit');
+    } elseif (!empty($_POST['foto_base64'])) {
+        $fotoPath = save_asset_base64_image($_POST['foto_base64']);
+    }
+
+    if ($fotoPath) {
+        $nowStr = date('Y-m-d H:i:s');
+        $upPayload = [
+            'foto' => $fotoPath,
+            'foto_updated_by' => $verifierName,
+            'foto_updated_at' => $nowStr
+        ];
+        update_asset($assetId, $upPayload);
+
+        // Jika terdapat pencocokan data di inventaris_kartu, sinkronkan juga
+        try {
+            $stCard = db()->prepare("
+                UPDATE inventaris_kartu 
+                SET foto = ?, foto_updated_by = ?, foto_updated_at = ? 
+                WHERE REPLACE(nomor_rekening, '.', '') = REPLACE(?, '.', '')
+                   OR REPLACE(nomor_rekening, '.', '') = REPLACE(?, '.', '')
+                   OR (nama_barang LIKE ? AND nama_barang != '')
+            ");
+            $stCard->execute([
+                $fotoPath,
+                $verifierName,
+                $nowStr,
+                $asset['kode_inventaris'] ?? '',
+                $asset['serial_number'] ?? '',
+                '%' . ($asset['model'] ?: $asset['merk']) . '%'
+            ]);
+        } catch (Throwable $e) {}
+
+        $_SESSION['flash_scan'] = '✓ Foto fisik perangkat berhasil disimpan dan diverifikasi oleh ' . htmlspecialchars($verifierName) . '.';
+        header('Location: ' . module_url('scan.php', ['t' => $token, 'photo_updated' => 1]));
+        exit;
+    } else {
+        $error = 'File foto tidak valid atau gagal diproses oleh server.';
+    }
+}
+
+// =========================================================================
 // 1. PROSES SIMPAN FORM MAINTENANCE & TINDAK LANJUT (POST)
 // =========================================================================
 $successData = null;

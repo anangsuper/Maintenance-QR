@@ -689,4 +689,99 @@ function generate_default_nomor_seri(array $card): string {
     return "{$kdCabang}.{$kdRuangan}.{$kdGolongan}.{$tglPart}.{$idUrut}";
 }
 
+/**
+ * Kompres dan simpan gambar aset dengan kualitas tajam tapi ukuran file hemat (~150-280KB)
+ * Menjaga performa server agar tidak kehabisan storage
+ */
+function compress_and_save_uploaded_image(string $tmpPath, string $targetPath, int $maxDimension = 1600, int $quality = 82): bool {
+    if (!file_exists($tmpPath)) return false;
+
+    // Pastikan direktori tujuan tersedia
+    $dir = dirname($targetPath);
+    if (!is_dir($dir)) {
+        @mkdir($dir, 0777, true);
+        @chmod($dir, 0777);
+    }
+
+    // Jika ekstensi GD PHP tersedia, lakukan kompresi & resize pintar
+    if (function_exists('imagecreatefromstring') && function_exists('imagecreatetruecolor') && function_exists('imagecopyresampled')) {
+        $raw = @file_get_contents($tmpPath);
+        if ($raw !== false && strlen($raw) > 0) {
+            $src = @imagecreatefromstring($raw);
+            if ($src !== false) {
+                $w = imagesx($src);
+                $h = imagesy($src);
+
+                // Auto-rotate dari metadata EXIF kamera HP jika tersedia
+                if (function_exists('exif_read_data')) {
+                    try {
+                        $exif = @exif_read_data($tmpPath);
+                        if (!empty($exif['Orientation'])) {
+                            switch ((int)$exif['Orientation']) {
+                                case 3:
+                                    $src = imagerotate($src, 180, 0);
+                                    break;
+                                case 6:
+                                    $src = imagerotate($src, -90, 0);
+                                    $w = imagesx($src);
+                                    $h = imagesy($src);
+                                    break;
+                                case 8:
+                                    $src = imagerotate($src, 90, 0);
+                                    $w = imagesx($src);
+                                    $h = imagesy($src);
+                                    break;
+                            }
+                        }
+                    } catch (Throwable $ignore) {}
+                }
+
+                // Hitung skala baru (maksimum 1600px pada sisi terpanjang)
+                $newW = $w;
+                $newH = $h;
+                if ($w > $maxDimension || $h > $maxDimension) {
+                    if ($w >= $h) {
+                        $newW = $maxDimension;
+                        $newH = (int)round(($h / $w) * $maxDimension);
+                    } else {
+                        $newH = $maxDimension;
+                        $newW = (int)round(($w / $h) * $maxDimension);
+                    }
+                }
+
+                $dst = imagecreatetruecolor($newW, $newH);
+
+                // Pertahankan latar belakang bersih
+                $white = imagecolorallocate($dst, 255, 255, 255);
+                imagefilledrectangle($dst, 0, 0, $newW, $newH, $white);
+
+                imagecopyresampled($dst, $src, 0, 0, 0, 0, $newW, $newH, $w, $h);
+
+                // Simpan sebagai JPEG terkompresi kualitas 82 (sangat tajam & ringan)
+                $saved = @imagejpeg($dst, $targetPath, $quality);
+                imagedestroy($src);
+                imagedestroy($dst);
+
+                if ($saved && file_exists($targetPath)) {
+                    @chmod($targetPath, 0666);
+                    return true;
+                }
+            }
+        }
+    }
+
+    // Fallback bila GD belum aktif di server: gunakan move_uploaded_file standar
+    if (is_uploaded_file($tmpPath)) {
+        $ok = @move_uploaded_file($tmpPath, $targetPath);
+    } else {
+        $ok = @copy($tmpPath, $targetPath);
+    }
+    if ($ok && file_exists($targetPath)) {
+        @chmod($targetPath, 0666);
+        return true;
+    }
+    return false;
+}
+
+
 

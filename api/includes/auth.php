@@ -288,6 +288,14 @@ function is_admin(): bool {
     return in_array($role, ['admin', 'administrator'], true);
 }
 
+function has_role(string $role): bool {
+    if (!is_logged_in()) {
+        return false;
+    }
+    $cur = current_user_role();
+    return strcasecmp($cur, $role) === 0;
+}
+
 function is_hrd(): bool {
     if (!is_logged_in()) {
         return false;
