@@ -32,6 +32,7 @@ $search = trim((string)($_GET['q'] ?? ''));
 $photoFilter = trim((string)($_GET['photo'] ?? 'all')); // 'all', 'with_photo', 'no_photo'
 
 // Helper Query URL
+if (!function_exists('gallery_query')) {
 function gallery_query(array $overrides = []): string {
     $params = $_GET;
     foreach ($overrides as $k => $v) {
@@ -42,6 +43,7 @@ function gallery_query(array $overrides = []): string {
         }
     }
     return module_url('asset_gallery.php', $params);
+}
 }
 
 // Hitung total untuk badge switcher

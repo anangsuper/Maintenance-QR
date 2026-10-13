@@ -5,6 +5,7 @@ require_once __DIR__ . '/includes/inventaris_kartu.php';
 require_login();
 
 // Helper untuk URL query parameter pada halaman ini
+if (!function_exists('card_url')) {
 function card_url(array $params = []): string {
     $merged = array_merge($_GET, $params);
     foreach ($merged as $k => $v) {
@@ -13,6 +14,7 @@ function card_url(array $params = []): string {
         }
     }
     return module_url('print_inventory_card.php', $merged);
+}
 }
 
 // 1. Tangani Form Tambah Kartu Baru
