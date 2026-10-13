@@ -414,20 +414,20 @@ function delete_inventaris_kartu(array|int $ids): bool {
  */
 function get_inventaris_kartu_by_id(int $id): ?array {
     if ($id <= 0) return null;
+    try {
+        $st = db()->prepare("SELECT * FROM inventaris_kartu WHERE id = ? LIMIT 1");
+        $st->execute([$id]);
+        $row = $st->fetch();
+        if ($row) return $row;
+    } catch (Throwable $e) {}
+
     $rows = get_inventaris_kartu_rows();
     foreach ($rows as $r) {
         if ((int)($r['id'] ?? 0) === $id) {
             return $r;
         }
     }
-    try {
-        $st = db()->prepare("SELECT * FROM inventaris_kartu WHERE id = ? LIMIT 1");
-        $st->execute([$id]);
-        $row = $st->fetch();
-        return $row ?: null;
-    } catch (Throwable $e) {
-        return null;
-    }
+    return null;
 }
 
 /**
@@ -455,18 +455,28 @@ function get_inventaris_kartu_by_norek(string $noRek): ?array {
 }
 
 /**
- * Update foto kartu inventaris
+ * Update foto kartu inventaris (mendukung update via ID atau Nomor Rekening)
  */
-function update_inventaris_kartu_foto(int $id, string $fotoPath): bool {
-    if ($id <= 0) return false;
+function update_inventaris_kartu_foto(int $id, string $fotoPath, ?string $noRek = null): bool {
+    if ($id <= 0 && empty($noRek)) return false;
     try {
-        $cols = table_columns('inventaris_kartu');
-        if (!in_array('foto', $cols, true)) {
-            db()->exec("ALTER TABLE inventaris_kartu ADD COLUMN foto TEXT NULL;");
+        try {
+            db()->exec("ALTER TABLE inventaris_kartu ADD COLUMN IF NOT EXISTS foto TEXT NULL;");
+        } catch (Throwable $ignore) {}
+
+        if ($id > 0) {
+            $st = db()->prepare("UPDATE inventaris_kartu SET foto = ? WHERE id = ?");
+            $st->execute([$fotoPath, $id]);
         }
-        $st = db()->prepare("UPDATE inventaris_kartu SET foto = ? WHERE id = ?");
-        return $st->execute([$fotoPath, $id]);
+        if (!empty($noRek)) {
+            $cleanRek = trim($noRek);
+            $digits = preg_replace('/[^0-9]/', '', $cleanRek);
+            $st2 = db()->prepare("UPDATE inventaris_kartu SET foto = ? WHERE nomor_rekening = ? OR REPLACE(nomor_rekening, '.', '') = ?");
+            $st2->execute([$fotoPath, $cleanRek, $digits]);
+        }
+        return true;
     } catch (Throwable $e) {
+        error_log("Gagal update foto kartu inventaris: " . $e->getMessage());
         return false;
     }
 }

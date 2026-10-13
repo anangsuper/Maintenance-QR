@@ -6,7 +6,7 @@
  * Menampilkan rincian lengkap barang, lokasi, nomor rekening, dan foto barang.
  * Menggantikan link eksternal Canva secara permanen.
  * 
- * Akses: https://192.168.88.163/kartu_detail.php?id=...
+ * Akses: https://192.168.88.163/kartu_detail.php?id=... (atau ?rek=...)
  */
 require_once __DIR__ . '/bootstrap.php';
 require_once __DIR__ . '/includes/inventaris_kartu.php';
@@ -50,19 +50,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                     @chmod($targetPath, 0666);
                     $relativePhoto = 'uploads/assets/' . $fileName;
                     
-                    // Simpan ke database
-                    update_inventaris_kartu_foto((int)$card['id'], $relativePhoto);
+                    // Simpan ke database (baik via ID maupun Nomor Rekening)
+                    update_inventaris_kartu_foto((int)$card['id'], $relativePhoto, (string)($card['nomor_rekening'] ?? ''));
                     $card['foto'] = $relativePhoto;
-                    $uploadSuccess = "Foto barang berhasil disimpan!";
+                    $uploadSuccess = "Foto barang berhasil diupload dan disimpan ke server!";
                 } else {
-                    $uploadError = "Gagal memindahkan file foto ke server.";
+                    $uploadError = "Gagal memindahkan file foto ke folder uploads server.";
                 }
             }
         } else {
-            $uploadError = "Terjadi kesalahan saat mengunggah foto (kode: " . $file['error'] . ").";
+            $uploadError = "Terjadi kesalahan saat mengunggah foto (kode error: " . $file['error'] . ").";
         }
     } else {
-        $uploadError = "Silakan pilih foto terlebih dahulu.";
+        $uploadError = "Silakan pilih file foto terlebih dahulu.";
     }
 }
 
@@ -105,7 +105,7 @@ if ($displayPhoto) {
 $currentUrl = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" : "http") . "://$_SERVER[HTTP_HOST]$_SERVER[REQUEST_URI]";
 $canonicalQrUrl = $card ? module_url('kartu_detail.php', ['id' => $card['id']]) : $currentUrl;
 
-$pageTitle = $card ? e($card['nama_barang']) . ' - Kartu Inventaris' : 'Kartu Inventaris Tidak Ditemukan';
+$pageTitle = $card ? e($card['nama_barang']) . ' - Detail Kartu Inventaris' : 'Kartu Inventaris Tidak Ditemukan';
 ?>
 <!DOCTYPE html>
 <html lang="id">
@@ -116,7 +116,7 @@ $pageTitle = $card ? e($card['nama_barang']) . ' - Kartu Inventaris' : 'Kartu In
     <!-- Bootstrap 5 CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
-    <!-- Google Fonts Inter -->
+    <!-- Google Fonts Inter / Plus Jakarta Sans -->
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
     <!-- QRCode.js -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
@@ -176,6 +176,10 @@ $pageTitle = $card ? e($card['nama_barang']) . ' - Kartu Inventaris' : 'Kartu In
             display: flex;
             align-items: center;
             justify-content: center;
+            border: 2px dashed #CBD5E1;
+            transition: all 0.2s ease;
+        }
+        .item-photo-wrapper.has-image {
             border: 1px solid #E2E8F0;
         }
         .item-photo-wrapper img {
@@ -194,6 +198,21 @@ $pageTitle = $card ? e($card['nama_barang']) . ' - Kartu Inventaris' : 'Kartu In
             border-radius: 12px;
             border: 1px solid #CBD5E1;
             display: inline-block;
+        }
+        .preview-alert-badge {
+            background: rgba(0, 43, 73, 0.85);
+            backdrop-filter: blur(4px);
+            color: #ffffff;
+            font-size: 0.75rem;
+            font-weight: 600;
+            padding: 6px 12px;
+            border-radius: 8px;
+            position: absolute;
+            bottom: 12px;
+            left: 12px;
+            right: 12px;
+            text-align: center;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
         }
     </style>
 </head>
@@ -225,12 +244,12 @@ $pageTitle = $card ? e($card['nama_barang']) . ' - Kartu Inventaris' : 'Kartu In
         </div>
     </header>
 
-    <main class="container py-4" style="max-w: 860px; max-width: 860px;">
+    <main class="container py-4" style="max-width: 860px;">
 
         <?php if ($uploadSuccess): ?>
-            <div class="alert alert-success alert-dismissible fade show rounded-3 shadow-xs mb-4" role="alert">
+            <div class="alert alert-success alert-dismissible fade show rounded-3 shadow-xs mb-4 border-success" role="alert">
                 <i class="bi bi-check-circle-fill me-2 fs-5 align-middle"></i>
-                <strong>Berhasil!</strong> <?= e($uploadSuccess) ?>
+                <strong>Sukses!</strong> <?= e($uploadSuccess) ?>
                 <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
             </div>
         <?php endif; ?>
@@ -290,37 +309,36 @@ $pageTitle = $card ? e($card['nama_barang']) . ' - Kartu Inventaris' : 'Kartu In
                         
                         <!-- Kolom Foto Barang -->
                         <div class="col-md-5 text-center">
-                            <div class="item-photo-wrapper mb-3 shadow-xs">
-                                <?php if ($photoUrl): ?>
-                                    <img src="<?= e($photoUrl) ?>" alt="Foto <?= e($card['nama_barang']) ?>" onclick="viewFullImage('<?= e($photoUrl) ?>', '<?= e(addslashes($card['nama_barang'])) ?>')" title="Klik untuk memperbesar">
-                                <?php else: ?>
-                                    <div class="text-center p-4">
-                                        <i class="bi bi-camera text-muted display-4 mb-2 d-block"></i>
-                                        <div class="small text-secondary fw-semibold">Belum Ada Foto Barang</div>
-                                        <div class="text-muted" style="font-size: 0.72rem;">Klik tombol di bawah untuk upload</div>
-                                    </div>
-                                <?php endif; ?>
+                            <!-- Wadah Foto dengan Live Instant Preview -->
+                            <div class="item-photo-wrapper mb-3 shadow-xs <?= $photoUrl ? 'has-image' : '' ?>" id="photoWrapper">
+                                <img id="previewImg" src="<?= $photoUrl ? e($photoUrl) : '' ?>" alt="Foto <?= e($card['nama_barang']) ?>" class="<?= $photoUrl ? '' : 'd-none' ?>" onclick="viewFullImage(this.src, '<?= e(addslashes($card['nama_barang'])) ?>')" title="Klik untuk memperbesar">
+                                
+                                <div id="emptyPhotoPlaceholder" class="text-center p-4 <?= $photoUrl ? 'd-none' : '' ?>">
+                                    <i class="bi bi-camera text-muted display-4 mb-2 d-block"></i>
+                                    <div class="small text-secondary fw-semibold">Belum Ada Foto Barang</div>
+                                    <div class="text-muted" style="font-size: 0.72rem;">Pilih foto pada form di bawah</div>
+                                </div>
+
+                                <div id="previewBadge" class="preview-alert-badge d-none">
+                                    <i class="bi bi-eye me-1"></i> Pratinjau Foto Baru Terpilih
+                                </div>
                             </div>
 
-                            <!-- Tombol Upload Foto -->
-                            <button type="button" class="btn btn-sm btn-outline-secondary w-100 rounded-pill py-2 fw-semibold" data-bs-toggle="collapse" data-bs-target="#uploadPhotoSection">
-                                <i class="bi bi-camera me-1"></i> <?= $photoUrl ? 'Ganti Foto Barang' : 'Ambil / Upload Foto' ?>
-                            </button>
-
-                            <div class="collapse mt-3 text-start" id="uploadPhotoSection">
-                                <div class="bg-light p-3 rounded-3 border">
-                                    <form method="post" enctype="multipart/form-data">
-                                        <input type="hidden" name="_csrf" value="<?= e(csrf_token()) ?>">
-                                        <input type="hidden" name="action" value="upload_foto">
-                                        
-                                        <label class="form-label small fw-bold text-secondary mb-1">Pilih / Jepret Foto:</label>
-                                        <input type="file" name="foto_barang" class="form-control form-control-sm mb-2" accept="image/*" capture="environment" required>
-                                        
-                                        <button type="submit" class="btn btn-primary btn-sm w-100 rounded-2 fw-semibold">
-                                            <i class="bi bi-cloud-arrow-up me-1"></i> Simpan Foto
-                                        </button>
-                                    </form>
-                                </div>
+                            <!-- Form Upload Foto Langsung Muncul -->
+                            <div class="bg-light p-3 rounded-3 border text-start">
+                                <form method="post" enctype="multipart/form-data" id="uploadPhotoForm">
+                                    <input type="hidden" name="_csrf" value="<?= e(csrf_token()) ?>">
+                                    <input type="hidden" name="action" value="upload_foto">
+                                    
+                                    <label class="form-label small fw-bold text-secondary mb-1">
+                                        <i class="bi bi-image me-1"></i> Pilih / Jepret Foto:
+                                    </label>
+                                    <input type="file" id="fotoBarangInput" name="foto_barang" class="form-control form-control-sm mb-2" accept="image/*" capture="environment" required>
+                                    
+                                    <button type="submit" id="btnSimpanFoto" class="btn btn-primary btn-sm w-100 rounded-2 fw-semibold py-2">
+                                        <i class="bi bi-cloud-arrow-up me-1"></i> Simpan Foto
+                                    </button>
+                                </form>
                             </div>
                         </div>
 
@@ -462,7 +480,52 @@ $pageTitle = $card ? e($card['nama_barang']) . ' - Kartu Inventaris' : 'Kartu In
         });
         <?php endif; ?>
 
+        // Live Instant Preview ketika user memilih file foto
+        const fileInput = document.getElementById('fotoBarangInput');
+        const previewImg = document.getElementById('previewImg');
+        const emptyPlaceholder = document.getElementById('emptyPhotoPlaceholder');
+        const previewBadge = document.getElementById('previewBadge');
+        const photoWrapper = document.getElementById('photoWrapper');
+
+        if (fileInput) {
+            fileInput.addEventListener('change', function() {
+                const file = this.files && this.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        if (previewImg) {
+                            previewImg.src = e.target.result;
+                            previewImg.classList.remove('d-none');
+                        }
+                        if (emptyPlaceholder) {
+                            emptyPlaceholder.classList.add('d-none');
+                        }
+                        if (previewBadge) {
+                            previewBadge.classList.remove('d-none');
+                        }
+                        if (photoWrapper) {
+                            photoWrapper.classList.add('has-image');
+                        }
+                    };
+                    reader.readAsDataURL(file);
+                }
+            });
+        }
+
+        // Tampilkan feedback loading saat tombol Simpan Foto diklik
+        const uploadForm = document.getElementById('uploadPhotoForm');
+        if (uploadForm) {
+            uploadForm.addEventListener('submit', function() {
+                const btn = document.getElementById('btnSimpanFoto');
+                if (btn) {
+                    btn.disabled = true;
+                    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Menyimpan Foto ke Server...';
+                }
+            });
+        }
+
         function viewFullImage(src, title) {
+            if (!src) return;
             document.getElementById('imageModalSrc').src = src;
             document.getElementById('imageModalTitle').innerText = title || 'Foto Barang';
             new bootstrap.Modal(document.getElementById('imageModal')).show();
