@@ -5,6 +5,19 @@ require_login();
 // Pastikan kolom tambahan seperti foto, nomor_seri_inventaris, dll sudah tersedia
 ensure_inventaris_kartu_columns();
 
+// Handle aksi pengosongan seluruh foto kartu inventaris
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'reset_all_photos') {
+    verify_csrf();
+    if (function_exists('reset_all_inventaris_kartu_photos')) {
+        reset_all_inventaris_kartu_photos();
+    } else {
+        db()->exec("UPDATE inventaris_kartu SET foto = NULL, foto_updated_by = NULL, foto_updated_at = NULL");
+    }
+    $_SESSION['flash'] = '✓ Seluruh foto kartu inventaris berhasil dikosongkan. Anda dapat memperbarui foto masing-masing barang secara mandiri.';
+    header('Location: ' . module_url('inventaris_gallery.php'));
+    exit;
+}
+
 // 1. Ambil Parameter Filter
 $search = trim((string)($_GET['q'] ?? ''));
 $cabangCode = trim((string)($_GET['cabang'] ?? ''));
@@ -23,22 +36,6 @@ $masterRuangan = get_master_ruangan_list();
 
 // 3. Ambil Seluruh Data Kartu Inventaris
 $rawCards = get_inventaris_kartu_rows(!empty($_GET['refresh']));
-
-// Map foto dari tabel assets (jika kartu inventaris belum memiliki foto langsung tapi nomor rekening cocok dengan unit IT)
-$assetPhotoMap = [];
-try {
-    $stPhoto = db()->query("SELECT nomor_rekening, foto, updated_by FROM assets WHERE foto IS NOT NULL AND foto != ''");
-    while ($ap = $stPhoto->fetch()) {
-        $rRek = trim((string)($ap['nomor_rekening'] ?? ''));
-        $rClean = preg_replace('/[^0-9]/', '', $rRek);
-        if ($rClean !== '' && !isset($assetPhotoMap[$rClean])) {
-            $assetPhotoMap[$rClean] = [
-                'foto' => (string)$ap['foto'],
-                'by'   => (string)($ap['updated_by'] ?? 'Sistem IT')
-            ];
-        }
-    }
-} catch (Throwable $ignore) {}
 
 // Siapkan data kartu lengkap dengan cabang terstandar dan resolusi foto
 $allPreparedCards = [];
@@ -76,15 +73,10 @@ foreach ($rawCards as $c) {
         $branchStats[$assignedCode]['count']++;
     }
 
-    // Resolusi Foto
+    // Resolusi Foto: Hanya foto asli milik kartu inventaris ini
     $foto = trim((string)($c['foto'] ?? ''));
     $fotoBy = trim((string)($c['foto_updated_by'] ?? ''));
     $fotoAt = trim((string)($c['foto_updated_at'] ?? ''));
-
-    if ($foto === '' && isset($assetPhotoMap[$cleanRek])) {
-        $foto = $assetPhotoMap[$cleanRek]['foto'];
-        if ($fotoBy === '') $fotoBy = $assetPhotoMap[$cleanRek]['by'];
-    }
 
     $hasFoto = ($foto !== '');
     if ($hasFoto) {
@@ -430,6 +422,9 @@ $body = '
     <p class="text-secondary small mb-0">Koleksi foto fisik seluruh barang inventaris Bank (peralatan kantor, mesin, kendaraan, gedung, dll) per kantor cabang.</p>
   </div>
   <div class="d-flex align-items-center gap-2 flex-wrap">
+    <button type="button" class="btn btn-outline-danger d-inline-flex align-items-center gap-1 fw-semibold shadow-xs" data-bs-toggle="modal" data-bs-target="#confirmResetPhotosModal">
+      <i class="bi bi-trash"></i> Kosongkan Semua Foto
+    </button>
     <a href="'.e(module_url('dashboard.php', ['tab' => 'kartu'])).'" class="btn btn-outline-primary d-inline-flex align-items-center gap-1 fw-semibold shadow-xs">
       <i class="bi bi-credit-card-2-front"></i> Tabel Kartu Inventaris
     </a>
@@ -619,6 +614,31 @@ $body = '
             <i class="bi bi-printer me-1"></i> Cetak Kartu A4
           </a>
         </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Konfirmasi Kosongkan Semua Foto Kartu Inventaris -->
+<div class="modal fade" id="confirmResetPhotosModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-sm">
+    <div class="modal-content border-0 shadow-lg rounded-4">
+      <div class="modal-header border-0 pb-0">
+        <h6 class="modal-title fw-bold text-danger"><i class="bi bi-exclamation-triangle-fill me-1"></i> Kosongkan Foto?</h6>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body text-center p-3">
+        <p class="small text-secondary mb-3">Tindakan ini akan mengosongkan seluruh foto pada kartu inventaris Bank, sehingga Anda dapat mengunggah foto baru per barang secara mandiri.</p>
+        <form method="post" action="'.e(module_url('inventaris_gallery.php')).'">
+          <input type="hidden" name="_csrf" value="'.e(csrf_token()).'">
+          <input type="hidden" name="action" value="reset_all_photos">
+          <div class="d-grid gap-2">
+            <button type="submit" class="btn btn-danger btn-sm rounded-pill fw-semibold">
+              <i class="bi bi-trash me-1"></i> Ya, Kosongkan Semua Foto
+            </button>
+            <button type="button" class="btn btn-light btn-sm rounded-pill border" data-bs-dismiss="modal">Batal</button>
+          </div>
+        </form>
       </div>
     </div>
   </div>

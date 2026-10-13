@@ -488,7 +488,7 @@ function get_inventaris_kartu_by_norek(string $noRek): ?array {
 }
 
 /**
- * Update foto kartu inventaris (mendukung update via ID atau Nomor Rekening)
+ * Update foto kartu inventaris (spesifik per ID kartu)
  */
 function update_inventaris_kartu_foto(int $id, string $fotoPath, ?string $noRek = null, ?string $updatedBy = null): bool {
     if ($id <= 0 && empty($noRek)) return false;
@@ -499,8 +499,7 @@ function update_inventaris_kartu_foto(int $id, string $fotoPath, ?string $noRek 
         if ($id > 0) {
             $st = db()->prepare("UPDATE inventaris_kartu SET foto = ?, foto_updated_by = ?, foto_updated_at = ? WHERE id = ?");
             $st->execute([$fotoPath, $updatedBy, $now, $id]);
-        }
-        if (!empty($noRek)) {
+        } elseif (!empty($noRek)) {
             $cleanRek = trim($noRek);
             $digits = preg_replace('/[^0-9]/', '', $cleanRek);
             $st2 = db()->prepare("UPDATE inventaris_kartu SET foto = ?, foto_updated_by = ?, foto_updated_at = ? WHERE nomor_rekening = ? OR REPLACE(nomor_rekening, '.', '') = ?");
@@ -509,6 +508,20 @@ function update_inventaris_kartu_foto(int $id, string $fotoPath, ?string $noRek 
         return true;
     } catch (Throwable $e) {
         error_log("Gagal update foto kartu inventaris: " . $e->getMessage());
+        return false;
+    }
+}
+
+/**
+ * Kosongkan seluruh foto di tabel inventaris_kartu
+ */
+function reset_all_inventaris_kartu_photos(): bool {
+    try {
+        ensure_inventaris_kartu_columns();
+        db()->exec("UPDATE inventaris_kartu SET foto = NULL, foto_updated_by = NULL, foto_updated_at = NULL");
+        return true;
+    } catch (Throwable $e) {
+        error_log("Gagal mengosongkan foto inventaris_kartu: " . $e->getMessage());
         return false;
     }
 }
@@ -534,6 +547,13 @@ function ensure_inventaris_kartu_columns(): void {
             ADD COLUMN IF NOT EXISTS foto_updated_by VARCHAR(150) NULL,
             ADD COLUMN IF NOT EXISTS foto_updated_at DATETIME NULL;
         ");
+
+        // Pembersihan foto massal otomatis satu kali agar user dapat mengunggah foto mandiri
+        $cleanupFlag = dirname(__DIR__) . '/uploads/.reset_inv_photos_v1';
+        if (!file_exists($cleanupFlag)) {
+            db()->exec("UPDATE inventaris_kartu SET foto = NULL, foto_updated_by = NULL, foto_updated_at = NULL");
+            @touch($cleanupFlag);
+        }
     } catch (Throwable $ignore) {}
 }
 

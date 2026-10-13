@@ -41,6 +41,24 @@ $dataSuccess = null;
 $dataError = null;
 
 // =========================================================================
+// 0. HANDLE HAPUS / KOSONGKAN FOTO KARTU
+// =========================================================================
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'delete_foto' && $card) {
+    verify_csrf();
+    try {
+        db()->prepare("UPDATE inventaris_kartu SET foto = NULL, foto_updated_by = NULL, foto_updated_at = NULL WHERE id = ?")->execute([(int)$card['id']]);
+        $card['foto'] = null;
+        $card['foto_updated_by'] = null;
+        $card['foto_updated_at'] = null;
+        $_SESSION['flash'] = '✓ Foto kartu inventaris berhasil dihapus/dikosongkan.';
+        header('Location: ' . module_url('kartu_detail.php', ['id' => (int)$card['id']]));
+        exit;
+    } catch (Throwable $e) {
+        $uploadError = 'Gagal menghapus foto: ' . $e->getMessage();
+    }
+}
+
+// =========================================================================
 // 1. HANDLE UPLOAD / GANTI FOTO DENGAN KOMPRESI CERDAS & VERIFIKASI WAJAH
 // =========================================================================
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'upload_foto' && $card) {
@@ -91,8 +109,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                 if (compress_and_save_uploaded_image($file['tmp_name'], $targetPath, 1600, 82)) {
                     $relativePhoto = 'uploads/assets/' . $fileName;
                     
-                    // Simpan ke database beserta jejak verifikator wajah
-                    update_inventaris_kartu_foto((int)$card['id'], $relativePhoto, (string)($card['nomor_rekening'] ?? ''), $verifierLabel);
+                    // Simpan ke database HANYA untuk ID kartu ini
+                    update_inventaris_kartu_foto((int)$card['id'], $relativePhoto, null, $verifierLabel);
                     $card['foto'] = $relativePhoto;
                     $card['foto_updated_by'] = $verifierLabel;
                     $card['foto_updated_at'] = date('Y-m-d H:i:s');
@@ -221,13 +239,8 @@ if (empty($enrolledTechs)) {
     } catch (Throwable $e) {}
 }
 
-// Resolusi foto final
-$displayPhoto = null;
-if (!empty($card['foto'])) {
-    $displayPhoto = $card['foto'];
-} elseif (!empty($matchedAsset['foto'])) {
-    $displayPhoto = $matchedAsset['foto'];
-}
+// Resolusi foto final: Hanya gunakan foto asli milik kartu inventaris ini
+$displayPhoto = !empty($card['foto']) ? $card['foto'] : null;
 
 $photoUrl = '';
 if ($displayPhoto) {
@@ -566,15 +579,29 @@ $pageTitle = $card ? e($card['nama_barang']) . ' - Kartu Inventaris' : 'Kartu In
                                 </div>
                             </div>
 
-                            <!-- Label Verifikator Terakhir -->
-                            <?php if (!empty($card['foto_updated_by'])): ?>
-                                <div class="mb-3">
-                                    <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 rounded-pill px-2.5 py-1 text-wrap" style="font-size: 0.70rem;">
-                                        <i class="bi bi-patch-check-fill me-1"></i> Foto Diverifikasi: <strong><?= e($card['foto_updated_by']) ?></strong>
-                                        <?php if (!empty($card['foto_updated_at'])): ?>
-                                            (<?= date('d/m/Y H:i', strtotime($card['foto_updated_at'])) ?>)
-                                        <?php endif; ?>
-                                    </span>
+                            <!-- Label Verifikator Terakhir & Tombol Hapus Foto -->
+                            <?php if (!empty($card['foto'])): ?>
+                                <div class="mb-3 d-flex flex-wrap align-items-center justify-content-between gap-2">
+                                    <?php if (!empty($card['foto_updated_by'])): ?>
+                                        <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 rounded-pill px-2.5 py-1 text-wrap" style="font-size: 0.70rem;">
+                                            <i class="bi bi-patch-check-fill me-1"></i> Foto Diverifikasi: <strong><?= e($card['foto_updated_by']) ?></strong>
+                                            <?php if (!empty($card['foto_updated_at'])): ?>
+                                                (<?= date('d/m/Y H:i', strtotime($card['foto_updated_at'])) ?>)
+                                            <?php endif; ?>
+                                        </span>
+                                    <?php else: ?>
+                                        <span class="badge bg-info bg-opacity-10 text-info border border-info border-opacity-25 rounded-pill px-2.5 py-1" style="font-size: 0.70rem;">
+                                            <i class="bi bi-camera me-1"></i> Foto Tersimpan
+                                        </span>
+                                    <?php endif; ?>
+
+                                    <form method="post" onsubmit="return confirm('Apakah Anda yakin ingin menghapus/mengosongkan foto kartu inventaris ini?');" class="d-inline">
+                                        <input type="hidden" name="_csrf" value="<?= e(csrf_token()) ?>">
+                                        <input type="hidden" name="action" value="delete_foto">
+                                        <button type="submit" class="btn btn-outline-danger btn-xs py-1 px-2.5 rounded-pill" style="font-size: 0.72rem;">
+                                            <i class="bi bi-trash me-1"></i> Kosongkan Foto
+                                        </button>
+                                    </form>
                                 </div>
                             <?php endif; ?>
 
