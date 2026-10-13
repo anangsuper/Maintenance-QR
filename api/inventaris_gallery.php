@@ -5,4 +5,5 @@ require_login();
 // Redirect ke halaman galeri terpadu dengan sub-tab inventaris
 $params = $_GET;
 $params['sub'] = 'inventaris';
-redirect(module_url('asset_gallery.php', $params));
+header('Location: ' . module_url('asset_gallery.php', $params));
+exit;

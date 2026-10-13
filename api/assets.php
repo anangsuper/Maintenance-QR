@@ -445,6 +445,7 @@ $startNum = $offset;
 foreach ($pageAssets as $a) {
     $startNum++;
     $aid = (int)($a['id'] ?? 0);
+    $editUrl = module_url('asset_edit.php', ['id' => $aid]);
     $kode = !empty($a['kode_inventaris']) ? $a['kode_inventaris'] : ('# ' . $aid);
     $device = asset_title($a);
     $foto = trim((string)($a['foto'] ?? ''));

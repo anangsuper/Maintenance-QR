@@ -140,6 +140,19 @@ function module_url(string $file = '', array $params = []): string {
     return $url;
 }
 
+if (!function_exists('app_url')) {
+    function app_url(string $path = '', array $params = []): string {
+        return module_url($path, $params);
+    }
+}
+
+if (!function_exists('redirect')) {
+    function redirect(string $url, int $statusCode = 302): void {
+        header('Location: ' . $url, true, $statusCode);
+        exit;
+    }
+}
+
 function login_url(): string {
     $u = cfg('login_url', envv('LOGIN_URL', '/login.php'));
     if (preg_match('~^https?://~i', $u)) return $u;

@@ -749,33 +749,40 @@ $pageTitle = $card ? e($card['nama_barang']) . ' - Kartu Inventaris' : 'Kartu In
             </div>
 
             <!-- Tautan Terkait IT Asset (Jika Terdaftar di Master TI) -->
-            <?php if ($matchedAsset): ?>
+            <?php if ($matchedAsset): 
+                $matchedNama = function_exists('asset_title') ? asset_title($matchedAsset) : trim(($matchedAsset['merk'] ?? '') . ' ' . ($matchedAsset['model'] ?? ''));
+                if ($matchedNama === '') $matchedNama = 'Perangkat TI #' . ($matchedAsset['id'] ?? '');
+                $matchedKode = (string)($matchedAsset['kode_inventaris'] ?? $matchedAsset['id'] ?? '-');
+                $matchedScanToken = (string)($matchedAsset['qr_token'] ?? $matchedAsset['kode_inventaris'] ?? $matchedAsset['id'] ?? '');
+                $matchedKaryawan = (string)($matchedAsset['karyawan_nama'] ?? $matchedAsset['nama_karyawan'] ?? '-');
+                $matchedDivisi = (string)($matchedAsset['divisi_nama'] ?? $matchedAsset['nama_divisi'] ?? '-');
+            ?>
                 <div class="card card-custom p-3 p-md-4 mb-4 bg-white">
                     <div class="d-flex align-items-center justify-content-between mb-2">
                         <div class="d-flex align-items-center gap-2">
                             <span class="badge bg-info text-dark rounded-pill px-2.5 py-1">Aset TI Terhubung</span>
-                            <h6 class="mb-0 fw-bold"><?= e($matchedAsset['nama_aset']) ?> (<?= e($matchedAsset['kode_aset']) ?>)</h6>
+                            <h6 class="mb-0 fw-bold"><?= e($matchedNama) ?> (<?= e($matchedKode) ?>)</h6>
                         </div>
-                        <a href="<?= module_url('scan.php', ['code' => $matchedAsset['kode_aset']]) ?>" class="btn btn-outline-primary btn-sm rounded-pill px-3">
+                        <a href="<?= module_url('scan.php', ['t' => $matchedScanToken]) ?>" class="btn btn-outline-primary btn-sm rounded-pill px-3">
                             <i class="bi bi-wrench me-1"></i> Buka Maintenance TI
                         </a>
                     </div>
                     <div class="row g-2 small text-muted">
                         <div class="col-sm-3 col-6">
                             <span>Penanggung Jawab:</span>
-                            <strong class="d-block text-dark"><?= e($matchedAsset['nama_karyawan'] ?: '-') ?></strong>
+                            <strong class="d-block text-dark"><?= e($matchedKaryawan ?: '-') ?></strong>
                         </div>
                         <div class="col-sm-3 col-6">
                             <span>Divisi / Lokasi:</span>
-                            <strong class="d-block text-dark"><?= e($matchedAsset['nama_divisi'] ?: '-') ?></strong>
+                            <strong class="d-block text-dark"><?= e($matchedDivisi ?: '-') ?></strong>
                         </div>
                         <div class="col-sm-3 col-6">
                             <span>Alamat IP:</span>
-                            <strong class="d-block text-dark font-mono"><?= e($matchedAsset['ip_address'] ?: '-') ?></strong>
+                            <strong class="d-block text-dark font-mono"><?= e($matchedAsset['ip_address'] ?? '-') ?></strong>
                         </div>
                         <div class="col-sm-3 col-6">
                             <span>S/N Perangkat:</span>
-                            <strong class="d-block text-dark font-mono"><?= e($matchedAsset['serial_number'] ?: '-') ?></strong>
+                            <strong class="d-block text-dark font-mono"><?= e($matchedAsset['serial_number'] ?? '-') ?></strong>
                         </div>
                     </div>
                 </div>

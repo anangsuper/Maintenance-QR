@@ -729,8 +729,9 @@ if (empty($displayCards)) {
 
         $photoThumbHtml = '';
         if (!empty($c['foto'])) {
+            $cFotoSrc = function_exists('asset_image_url') ? asset_image_url($c['foto']) : module_url($c['foto']);
             $photoThumbHtml = '<a href="'.e(module_url('kartu_detail.php', ['id'=>$cId])).'" target="_blank" class="flex-shrink-0 position-relative text-decoration-none" title="Lihat Foto Fisik Inventaris">
-                <img src="'.e(app_url($c['foto'])).'" alt="Foto" class="rounded border shadow-xs" style="width: 36px; height: 36px; object-fit: cover;">
+                <img src="'.e($cFotoSrc).'" alt="Foto" class="rounded border shadow-xs" style="width: 36px; height: 36px; object-fit: cover;">
                 <span class="position-absolute bottom-0 end-0 badge rounded-pill bg-success p-0 border border-white" style="width: 8px; height: 8px;" title="Ada Foto Fisik"></span>
             </a>';
         } else {
