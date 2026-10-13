@@ -11,8 +11,10 @@ $maintStatus = trim((string)($_GET['maint'] ?? '')); // 'all', 'done', 'pending'
 $page = max(1, (int)($_GET['page'] ?? 1));
 $perPage = max(5, min(100, (int)($_GET['per_page'] ?? 15)));
 
-$month = (int)date('n');
-$year = (int)date('Y');
+$month = max(1, min(12, (int)($_GET['bulan'] ?? date('n'))));
+$currentYear = (int)date('Y');
+$yearParam = isset($_GET['tahun']) ? (int)$_GET['tahun'] : 0;
+$year = ($yearParam >= 2020 && $yearParam <= 2035) ? $yearParam : $currentYear;
 $monthNames = [
     1 => 'Januari', 2 => 'Februari', 3 => 'Maret', 4 => 'April',
     5 => 'Mei', 6 => 'Juni', 7 => 'Juli', 8 => 'Agustus',
@@ -294,6 +296,19 @@ foreach ($divisis as $d) {
     $did = (int)($d['id'] ?? 0);
     $dnama = $d['nama'] ?? $d['nama_divisi'] ?? ('Divisi #' . $did);
     $optDiv .= '<option value="'.$did.'"'.($did === $divisiId ? ' selected' : '').'>'.e($dnama).'</option>';
+}
+
+// Render Opsi Dropdown Periode Bulan & Tahun
+$optMonth = '';
+for ($m = 1; $m <= 12; $m++) {
+    $optMonth .= '<option value="'.$m.'"'.($m === $month ? ' selected' : '').'>'.$monthNames[$m].'</option>';
+}
+
+$optYear = '';
+$startYear = max(2023, $currentYear - 2);
+$endYear = $currentYear + 2;
+for ($y = $startYear; $y <= $endYear; $y++) {
+    $optYear .= '<option value="'.$y.'"'.($y === $year ? ' selected' : '').'>'.$y.'</option>';
 }
 
 // Render Opsi Dropdown untuk Edit Massal
@@ -729,7 +744,7 @@ $body = '
 <!-- Compact Filter Bar -->
 <div class="card p-3 mb-4">
   <form method="get" class="row g-2 align-items-end">
-    <div class="col-lg-4 col-md-6">
+    <div class="col-lg-3 col-md-6">
       <label class="form-label text-secondary small fw-semibold mb-1">Cari Perangkat / User / IP</label>
       <div class="input-group input-group-sm">
         <span class="input-group-text bg-white border-end-0"><i class="bi bi-search text-muted"></i></span>
@@ -749,22 +764,24 @@ $body = '
       </select>
     </div>
     <div class="col-lg-2 col-md-3 col-sm-6">
-      <label class="form-label text-secondary small fw-semibold mb-1">Status Unit</label>
-      <select class="form-select form-select-sm" name="status">
-        <option value="">Semua Status</option>
-        <option value="Aktif"'.($statusAset === 'Aktif' ? ' selected' : '').'>Aktif</option>
-        <option value="Backup"'.($statusAset === 'Backup' ? ' selected' : '').'>Backup</option>
-        <option value="Perbaikan"'.($statusAset === 'Perbaikan' ? ' selected' : '').'>Perbaikan</option>
-        <option value="Nonaktif"'.($statusAset === 'Nonaktif' ? ' selected' : '').'>Nonaktif</option>
-      </select>
-    </div>
-    <div class="col-lg-2 col-md-3 col-sm-6">
       <label class="form-label text-secondary small fw-semibold mb-1">Status Maintenance</label>
       <select class="form-select form-select-sm" name="maint">
         <option value="all">Semua Status</option>
         <option value="done"'.($maintStatus === 'done' ? ' selected' : '').'>Selesai</option>
         <option value="pending"'.($maintStatus === 'pending' ? ' selected' : '').'>Belum Selesai</option>
         <option value="repair"'.($maintStatus === 'repair' ? ' selected' : '').'>Ada Temuan</option>
+      </select>
+    </div>
+    <div class="col-lg-2 col-md-3 col-sm-6">
+      <label class="form-label text-secondary small fw-semibold mb-1">Periode Bulan</label>
+      <select class="form-select form-select-sm" name="bulan">
+        '.$optMonth.'
+      </select>
+    </div>
+    <div class="col-lg-1 col-md-2 col-sm-6">
+      <label class="form-label text-secondary small fw-semibold mb-1">Tahun</label>
+      <select class="form-select form-select-sm" name="tahun">
+        '.$optYear.'
       </select>
     </div>
     <div class="col-12 d-flex justify-content-between align-items-center pt-2 border-top mt-2">

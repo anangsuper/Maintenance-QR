@@ -58,9 +58,13 @@ if ($isCli || (isset($_POST['confirm_migration']) && $_POST['confirm_migration']
                     continue;
                 }
                 
-                $pdo->exec($q);
-                $stmtCount++;
-                $currentQuery = '';
+                try {
+                    $pdo->exec($q);
+                    $stmtCount++;
+                    $currentQuery = '';
+                } catch (Throwable $eq) {
+                    throw new Exception("Error pada query #{$stmtCount} (" . substr($q, 0, 120) . "): " . $eq->getMessage());
+                }
             }
         }
 
