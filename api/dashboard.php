@@ -1362,13 +1362,9 @@ $body .= '
     <i class="bi bi-credit-card-2-front"></i> Kartu Inventaris &amp; Label QR
     <span class="badge bg-primary text-white rounded-pill ms-1">'.$totalCardsCount.'</span>
   </a>
-  <a class="dashboard-nav-tab" href="'.e(module_url('inventaris_gallery.php', $cabangId > 0 ? ['cabang' => sprintf('%02d', $cabangId)] : [])).'">
-    <i class="bi bi-collection"></i> Galeri Inventaris
-    <span class="badge bg-success text-white rounded-pill ms-1">'.$totalInvWithPhotoCount.'</span>
-  </a>
   <a class="dashboard-nav-tab" href="'.e(module_url('asset_gallery.php', $cabangId > 0 ? ['cabang' => $cabangId] : [])).'">
-    <i class="bi bi-pc-display"></i> Galeri Unit IT
-    <span class="badge bg-info text-white rounded-pill ms-1">'.$totalWithPhotoCount.'</span>
+    <i class="bi bi-images"></i> Galeri Foto
+    <span class="badge bg-info text-white rounded-pill ms-1">'.($totalWithPhotoCount + $totalInvWithPhotoCount).'</span>
   </a>
 </div>';
 
@@ -1388,8 +1384,8 @@ if ($activeTab === 'kartu') {
         <div class="text-muted small">Kelola data kartu inventaris, cetak massal A4, dan cetak kartu pilihan.</div>
       </div>
       <div class="d-flex gap-2 flex-wrap align-items-center">
-        <a href="'.e(module_url('inventaris_gallery.php', $cabangId > 0 ? ['cabang' => sprintf('%02d', $cabangId)] : [])).'" class="btn btn-outline-primary d-inline-flex align-items-center gap-1 fw-semibold shadow-xs">
-          <i class="bi bi-collection"></i> Galeri Foto Inventaris
+        <a href="'.e(module_url('asset_gallery.php', ['sub' => 'inventaris'])).'" class="btn btn-outline-primary d-inline-flex align-items-center gap-1 fw-semibold shadow-xs">
+          <i class="bi bi-images"></i> Galeri Foto Inventaris
         </a>
         <button type="button" class="btn btn-primary d-inline-flex align-items-center gap-1 fw-semibold px-3" data-bs-toggle="modal" data-bs-target="#addCardModal">
           <i class="bi bi-plus-lg"></i> Tambah Data Kartu
