@@ -1322,7 +1322,7 @@ $body .= '
       <a href="'.e(module_url('dashboard.php', ['bulan'=>$month,'tahun'=>$year,'cabang'=>$cabangId,'refresh'=>1])).'" class="btn btn-sm btn-light border" title="Segarkan Data Google Sheets"><i class="bi bi-arrow-clockwise"></i></a>
     </form>
   </div>
-</div>
+</div>';
 
 if (is_hrd() && !is_admin()) {
     // TOP KPI KHUSUS SDM & UMUM (HANYA METRIK INVENTARIS)
