@@ -662,11 +662,20 @@ foreach (get_master_status_inventaris() as $k => $v) {
     $optCardStatusInv .= '<option value="'.e($v).'">'.e($v).'</option>';
 }
 
+// Pagination untuk Tab Kartu Inventaris
+$totalFilteredCards = count($filteredCards);
+$perPageCards = max(10, min(100, (int)($_GET['limit_kartu'] ?? 25)));
+$pageKartu = max(1, (int)($_GET['p_kartu'] ?? 1));
+$totalPagesCards = max(1, (int)ceil($totalFilteredCards / $perPageCards));
+if ($pageKartu > $totalPagesCards) $pageKartu = $totalPagesCards;
+$offsetCards = ($pageKartu - 1) * $perPageCards;
+$displayCards = array_slice($filteredCards, $offsetCards, $perPageCards);
+
 $cardsTableRowsHtml = '';
-if (empty($filteredCards)) {
-    $cardsTableRowsHtml = '<tr><td colspan="8" class="text-center py-5 text-muted"><i class="bi bi-inbox fs-1 d-block mb-2 opacity-50"></i>Tidak ada data kartu inventaris yang ditemukan.</td></tr>';
+if (empty($displayCards)) {
+    $cardsTableRowsHtml = '<tr><td colspan="6" class="text-center py-5 text-muted"><i class="bi bi-inbox fs-1 d-block mb-2 opacity-50"></i>Tidak ada data kartu inventaris yang ditemukan.</td></tr>';
 } else {
-    foreach ($filteredCards as $c) {
+    foreach ($displayCards as $c) {
         $cId = (int)$c['id'];
         $rek = $c['nomor_rekening'] ?? '';
         $nama = $c['nama_barang'] ?? '';
@@ -696,52 +705,45 @@ if (empty($filteredCards)) {
                 $isCardToday = true;
             }
         }
-        $todayBadge = $isCardToday ? '<span class="badge bg-success-subtle text-success border border-success-subtle ms-1" style="font-size: 0.68rem; font-weight: 700;"><i class="bi bi-stars me-1"></i>Hari Ini</span>' : '';
+        $todayBadge = $isCardToday ? '<span class="badge bg-success-subtle text-success border border-success-subtle ms-1" style="font-size: 0.65rem; font-weight: 700;"><i class="bi bi-stars me-0.5"></i>Hari Ini</span>' : '';
 
         $cardsTableRowsHtml .= '
         <tr id="card-row-'.$cId.'">
-          <td class="text-center">
+          <td class="text-center" style="width: 38px;">
             <input class="form-check-input card-checkbox" type="checkbox" value="'.$cId.'" onchange="updateCardCounters()">
           </td>
-          <td>
-            <span class="font-monospace fw-bold text-primary" style="font-size: 0.88rem;">'.e($rek).'</span>
+          <td style="min-width: 140px;">
+            <div class="font-monospace fw-bold text-primary" style="font-size: 0.88rem;">'.e($rek).'</div>
+            <div class="small text-muted font-monospace" style="font-size: 0.72rem;" title="Nomor Aset Gabungan">'.e($gabungan).'</div>
           </td>
           <td>
-            <div class="fw-semibold text-dark">'.e($nama).'</div>
+            <div class="fw-semibold text-dark text-break">'.e($nama).'</div>
+            <div class="small text-secondary font-monospace mt-0.5">
+              <i class="bi bi-calendar-event text-primary me-1"></i>'.e($tglCard).'
+              '.$todayBadge.'
+            </div>
           </td>
-          <td>
-            <span class="small text-secondary font-monospace"><i class="bi bi-calendar-event text-primary me-1"></i>'.e($tglCard).'</span>
-            '.$todayBadge.'
+          <td style="width: 100px;" class="text-center">
+            '.($barcode ? '<a href="'.e($barcode).'" target="_blank" class="badge bg-primary-subtle text-primary border border-primary-subtle text-decoration-none py-1 px-2" title="'.e($barcode).'"><i class="bi bi-qr-code me-1"></i>Label QR</a>' : '<span class="text-muted small">-</span>').'
           </td>
-          <td>
-            <span class="badge-chip chip-primary font-monospace" style="font-weight: 700; letter-spacing: 0.04em;">'.e($gabungan).'</span>
-          </td>
-          <td>';
-        if ($barcode) {
-            $cardsTableRowsHtml .= '<a href="'.e($barcode).'" target="_blank" class="small text-truncate d-inline-block text-primary text-decoration-none" style="max-width: 180px;" title="'.e($barcode).'"><i class="bi bi-box-arrow-up-right me-1"></i>'.e($barcode).'</a>';
-        } else {
-            $cardsTableRowsHtml .= '<span class="text-muted small">-</span>';
-        }
-        $cardsTableRowsHtml .= '
-          </td>
-          <td>
+          <td style="width: 90px;" class="text-center">
             <span class="badge-chip chip-secondary">'.e($lokasi).'</span>
           </td>
-          <td class="text-end text-nowrap">
+          <td class="text-end text-nowrap" style="width: 140px;">
             <div class="btn-group btn-group-sm">
-              <a class="btn btn-sm btn-light border text-primary" target="_blank" href="'.e(module_url('kartu_detail.php', ['id'=>$cId])).'" title="Buka Halaman Detail Web & Foto">
+              <a class="btn btn-sm btn-light border text-primary" target="_blank" href="'.e(module_url('kartu_detail.php', ['id'=>$cId])).'" title="Buka Detail Web &amp; Foto" style="padding: 2px 7px;">
                 <i class="bi bi-box-arrow-up-right"></i>
               </a>
-              <button type="button" class="btn btn-sm btn-light border" title="Pratinjau Fisik Kartu" onclick=\'openCardPreviewModal('.$jsonPayload.')\'>
+              <button type="button" class="btn btn-sm btn-light border" title="Pratinjau Fisik Kartu" onclick=\'openCardPreviewModal('.$jsonPayload.')\' style="padding: 2px 7px;">
                 <i class="bi bi-eye"></i>
               </button>
-              <a class="btn btn-sm btn-light border" target="_blank" href="'.e(module_url('print_inventory_card.php', ['source'=>'inventaris_kartu', 'id'=>$cId])).'" title="Cetak Kartu Ini">
+              <a class="btn btn-sm btn-light border" target="_blank" href="'.e(module_url('print_inventory_card.php', ['source'=>'inventaris_kartu', 'id'=>$cId])).'" title="Cetak Kartu Ini" style="padding: 2px 7px;">
                 <i class="bi bi-printer"></i>
               </a>
-              <button type="button" class="btn btn-sm btn-light border" title="Edit Kartu" onclick=\'openCardEditModal('.$jsonPayload.')\'>
+              <button type="button" class="btn btn-sm btn-light border text-primary" title="Edit Kartu" onclick=\'openCardEditModal('.$jsonPayload.')\' style="padding: 2px 7px;">
                 <i class="bi bi-pencil"></i>
               </button>
-              <button type="button" class="btn btn-sm btn-light border text-danger" title="Hapus Kartu" onclick="confirmDeleteCard('.$cId.', \''.e(addslashes($rek . ' - ' . $nama)).'\')">
+              <button type="button" class="btn btn-sm btn-light border text-danger" title="Hapus Kartu" onclick="confirmDeleteCard('.$cId.', \''.e(addslashes($rek . ' - ' . $nama)).'\')" style="padding: 2px 7px;">
                 <i class="bi bi-trash"></i>
               </button>
             </div>
@@ -1518,16 +1520,14 @@ if ($activeTab === 'kartu') {
         <table class="table table-hover align-middle mb-0">
           <thead class="table-light" style="border-bottom: 2px solid var(--app-border);">
             <tr>
-              <th style="width: 44px;" class="text-center">
+              <th style="width: 40px;" class="text-center">
                 <input class="form-check-input" type="checkbox" id="checkAllRows" onchange="toggleSelectAllCards(this)" title="Pilih Semua Kartu" style="cursor: pointer; width: 1.15rem; height: 1.15rem;">
               </th>
-              <th style="width: 140px;">NOMOR REKENING</th>
-              <th>NAMA BARANG</th>
-              <th style="width: 170px;">TANGGAL PEROLEHAN</th>
-              <th style="width: 180px;">NOMOR ASSET (GABUNGAN)</th>
-              <th>KODE QR / BARCODE</th>
-              <th>LOKASI</th>
-              <th class="text-end" style="width: 150px;">AKSI</th>
+              <th style="width: 140px;">NOMOR INVENTARIS</th>
+              <th>NAMA BARANG &amp; TGL PEROLEHAN</th>
+              <th style="width: 105px;" class="text-center">LABEL QR</th>
+              <th style="width: 90px;" class="text-center">LOKASI</th>
+              <th class="text-end" style="width: 140px;">AKSI</th>
             </tr>
           </thead>
           <tbody>
@@ -1535,9 +1535,41 @@ if ($activeTab === 'kartu') {
           </tbody>
         </table>
       </div>
-      <div class="card-footer bg-white border-top py-2 px-3 d-flex justify-content-between align-items-center text-muted small">
-        <div>Menampilkan <strong>'.count($filteredCards).'</strong> dari <strong>'.$totalCardsCount.'</strong> kartu inventaris terdaftar</div>
-        <div class="font-monospace">Ukuran Standar Kartu: 85.6 × 54.0 mm</div>
+      <div class="card-footer bg-white border-top py-2 px-3 d-flex flex-wrap justify-content-between align-items-center gap-2">
+        <div class="text-muted small">
+          Menampilkan <strong>'.($totalFilteredCards > 0 ? ($offsetCards + 1) : 0).' - '.min($offsetCards + $perPageCards, $totalFilteredCards).'</strong> dari <strong>'.$totalFilteredCards.'</strong> kartu inventaris terdaftar
+        </div>
+        '.($totalPagesCards > 1 ? '
+        <nav aria-label="Halaman Kartu">
+          <ul class="pagination pagination-sm mb-0">
+            <li class="page-item '.($pageKartu <= 1 ? 'disabled' : '').'">
+              <a class="page-link" href="'.e(module_url('dashboard.php', array_merge($_GET, ['tab'=>'kartu', 'p_kartu'=>max(1, $pageKartu - 1)]))).'"><i class="bi bi-chevron-left"></i></a>
+            </li>
+            '.implode('', array_map(function($p) use ($pageKartu) {
+                if ($p === '...') return '<li class="page-item disabled"><span class="page-link">&hellip;</span></li>';
+                $act = ($p == $pageKartu) ? 'active fw-bold' : '';
+                return '<li class="page-item '.$act.'"><a class="page-link" href="'.e(module_url('dashboard.php', array_merge($_GET, ['tab'=>'kartu', 'p_kartu'=>$p]))).'">'.$p.'</a></li>';
+            }, (function() use ($pageKartu, $totalPagesCards) {
+                $pages = [];
+                $start = max(1, $pageKartu - 2);
+                $end = min($totalPagesCards, $pageKartu + 2);
+                if ($start > 1) {
+                    $pages[] = 1;
+                    if ($start > 2) $pages[] = '...';
+                }
+                for ($i = $start; $i <= $end; $i++) $pages[] = $i;
+                if ($end < $totalPagesCards) {
+                    if ($end < $totalPagesCards - 1) $pages[] = '...';
+                    $pages[] = $totalPagesCards;
+                }
+                return $pages;
+            })())).'
+            <li class="page-item '.($pageKartu >= $totalPagesCards ? 'disabled' : '').'">
+              <a class="page-link" href="'.e(module_url('dashboard.php', array_merge($_GET, ['tab'=>'kartu', 'p_kartu'=>min($totalPagesCards, $pageKartu + 1)]))).'"><i class="bi bi-chevron-right"></i></a>
+            </li>
+          </ul>
+        </nav>
+        ' : '').'
       </div>
     </div>';
 
