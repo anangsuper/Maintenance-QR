@@ -2266,16 +2266,47 @@ INSERT INTO system_audit_logs (created_at, user_id, user_name, user_role, ip_add
 INSERT INTO system_audit_logs (created_at, user_id, user_name, user_role, ip_address, action, module, target_id, target_label, details) VALUES ('2026-10-12 15:31:01', 1, 'Administrator', 'admin', '110.139.95.58', 'LOGIN_SUCCESS', 'KEAMANAN', 1, 'admin', 'Login berhasil ke sistem');
 
 -- 12. INVENTARIS_KARTU
+DROP TABLE IF EXISTS master_ruangan;
+CREATE TABLE master_ruangan (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    kode_ruangan VARCHAR(20) NOT NULL,
+    nama_ruangan VARCHAR(150) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE KEY uq_ruangan (kode_ruangan, nama_ruangan)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+INSERT IGNORE INTO master_ruangan (kode_ruangan, nama_ruangan) VALUES 
+('01', 'RUANG DIREKSI / DIREKTUR UTAMA'),
+('02', 'RUANG DIREKTUR OPERASIONAL'),
+('03', 'RUANG KEPALA DIVISI'),
+('04', 'RUANG IT & SERVER'),
+('05', 'LANTAI I GEDUNG DEPAN'),
+('06', 'LANTAI I KASIR / TELLER'),
+('07', 'CUSTOMER SERVICE (CS)'),
+('08', 'RUANG ARSIP / PERPUSTAKAAN'),
+('09', 'RUANG RAPAT (MEETING ROOM)'),
+('10', 'GUDANG & LOGISTIK'),
+('11', 'PARKIRAN & AREA LUAR');
+
 DROP TABLE IF EXISTS inventaris_kartu;
 CREATE TABLE inventaris_kartu (
     id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
     nomor_rekening VARCHAR(100) NOT NULL,
+    nomor_seri_inventaris VARCHAR(100) NULL,
     nama_barang VARCHAR(255) NOT NULL,
+    jenis_inventaris VARCHAR(100) NULL,
+    golongan VARCHAR(100) NULL,
+    ruangan VARCHAR(150) NULL,
+    sumber_perolehan VARCHAR(100) NULL,
     tanggal_perolehan DATE NOT NULL,
     barcode_data TEXT NULL,
     lokasi VARCHAR(150) NULL DEFAULT 'Kantor Pusat (KPO)',
     pengguna VARCHAR(150) NULL DEFAULT 'Umum / Pool',
+    status_inventaris VARCHAR(50) DEFAULT '1 : Aktif',
+    keterangan TEXT NULL,
     foto TEXT NULL,
+    foto_updated_by VARCHAR(150) NULL,
+    foto_updated_at DATETIME NULL,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     KEY idx_nomor_rekening (nomor_rekening)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

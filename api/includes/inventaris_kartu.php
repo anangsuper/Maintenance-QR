@@ -457,22 +457,21 @@ function get_inventaris_kartu_by_norek(string $noRek): ?array {
 /**
  * Update foto kartu inventaris (mendukung update via ID atau Nomor Rekening)
  */
-function update_inventaris_kartu_foto(int $id, string $fotoPath, ?string $noRek = null): bool {
+function update_inventaris_kartu_foto(int $id, string $fotoPath, ?string $noRek = null, ?string $updatedBy = null): bool {
     if ($id <= 0 && empty($noRek)) return false;
     try {
-        try {
-            db()->exec("ALTER TABLE inventaris_kartu ADD COLUMN IF NOT EXISTS foto TEXT NULL;");
-        } catch (Throwable $ignore) {}
+        ensure_inventaris_kartu_columns();
 
+        $now = date('Y-m-d H:i:s');
         if ($id > 0) {
-            $st = db()->prepare("UPDATE inventaris_kartu SET foto = ? WHERE id = ?");
-            $st->execute([$fotoPath, $id]);
+            $st = db()->prepare("UPDATE inventaris_kartu SET foto = ?, foto_updated_by = ?, foto_updated_at = ? WHERE id = ?");
+            $st->execute([$fotoPath, $updatedBy, $now, $id]);
         }
         if (!empty($noRek)) {
             $cleanRek = trim($noRek);
             $digits = preg_replace('/[^0-9]/', '', $cleanRek);
-            $st2 = db()->prepare("UPDATE inventaris_kartu SET foto = ? WHERE nomor_rekening = ? OR REPLACE(nomor_rekening, '.', '') = ?");
-            $st2->execute([$fotoPath, $cleanRek, $digits]);
+            $st2 = db()->prepare("UPDATE inventaris_kartu SET foto = ?, foto_updated_by = ?, foto_updated_at = ? WHERE nomor_rekening = ? OR REPLACE(nomor_rekening, '.', '') = ?");
+            $st2->execute([$fotoPath, $updatedBy, $now, $cleanRek, $digits]);
         }
         return true;
     } catch (Throwable $e) {
@@ -480,4 +479,214 @@ function update_inventaris_kartu_foto(int $id, string $fotoPath, ?string $noRek 
         return false;
     }
 }
+
+/**
+ * Pastikan kolom-kolom baru (Nomor Seri, Jenis, Golongan, Ruangan, Keterangan, dll) ada di tabel inventaris_kartu
+ */
+function ensure_inventaris_kartu_columns(): void {
+    static $done = false;
+    if ($done) return;
+    $done = true;
+    try {
+        db()->exec("
+            ALTER TABLE inventaris_kartu 
+            ADD COLUMN IF NOT EXISTS nomor_seri_inventaris VARCHAR(100) NULL,
+            ADD COLUMN IF NOT EXISTS jenis_inventaris VARCHAR(100) NULL,
+            ADD COLUMN IF NOT EXISTS golongan VARCHAR(100) NULL,
+            ADD COLUMN IF NOT EXISTS ruangan VARCHAR(150) NULL,
+            ADD COLUMN IF NOT EXISTS sumber_perolehan VARCHAR(100) NULL,
+            ADD COLUMN IF NOT EXISTS status_inventaris VARCHAR(50) DEFAULT '1 : Aktif',
+            ADD COLUMN IF NOT EXISTS keterangan TEXT NULL,
+            ADD COLUMN IF NOT EXISTS foto TEXT NULL,
+            ADD COLUMN IF NOT EXISTS foto_updated_by VARCHAR(150) NULL,
+            ADD COLUMN IF NOT EXISTS foto_updated_at DATETIME NULL;
+        ");
+    } catch (Throwable $ignore) {}
+}
+
+/**
+ * Master Data Jenis Inventaris BPR Mitratama (Sesuai Core System)
+ */
+function get_master_jenis_inventaris(): array {
+    return [
+        '1' => '1 : TANAH',
+        '2' => '2 : BANGUNAN',
+        '3' => '3 : PERALATAN KANTOR',
+        '4' => '4 : KENDARAAN',
+        '5' => '5 : MESIN',
+        '6' => '6 : BERWUJUD LAINNYA',
+        '7' => '7 : PROGRAM KOMPUTER',
+    ];
+}
+
+/**
+ * Master Data Golongan Inventaris BPR Mitratama (Sesuai Core System)
+ */
+function get_master_golongan_inventaris(): array {
+    return [
+        '01' => '01 : TANAH & GEDUNG',
+        '02' => '02 : GOLONGAN I',
+        '03' => '03 : GOLONGAN II',
+        '04' => '04 : GOLONGAN III',
+        '05' => '05 : ASET TIDAK BERWUJUD',
+    ];
+}
+
+/**
+ * Master Data Sumber Perolehan BPR Mitratama
+ */
+function get_master_sumber_perolehan(): array {
+    return [
+        '01' => '01 : MODAL AWAL',
+        '02' => '02 : MODAL DISETOR',
+        '03' => '03 : PEMBELIAN INVENTARIS',
+        '04' => '04 : HIBAH / LAINNYA',
+    ];
+}
+
+/**
+ * Master Data Status Inventaris
+ */
+function get_master_status_inventaris(): array {
+    return [
+        '1 : Aktif' => '1 : Aktif',
+        '2 : Rusak / Perbaikan' => '2 : Rusak / Perbaikan',
+        '3 : Dihapus / Mutasi' => '3 : Dihapus / Mutasi',
+        '4 : Tidak Aktif' => '4 : Tidak Aktif',
+    ];
+}
+
+/**
+ * Mengambil daftar Ruangan dari database master_ruangan (dinamis & bisa ditambah)
+ */
+function get_master_ruangan_list(): array {
+    try {
+        db()->exec("
+            CREATE TABLE IF NOT EXISTS master_ruangan (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                kode_ruangan VARCHAR(20) NOT NULL,
+                nama_ruangan VARCHAR(150) NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                UNIQUE KEY uq_ruangan (kode_ruangan, nama_ruangan)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+        ");
+        $rows = db()->query("SELECT * FROM master_ruangan ORDER BY kode_ruangan ASC, id ASC")->fetchAll();
+        if (empty($rows)) {
+            $defaultRooms = [
+                ['01', 'RUANG DIREKSI / DIREKTUR UTAMA'],
+                ['02', 'RUANG DIREKTUR OPERASIONAL'],
+                ['03', 'RUANG KEPALA DIVISI'],
+                ['04', 'RUANG IT & SERVER'],
+                ['05', 'LANTAI I GEDUNG DEPAN'],
+                ['06', 'LANTAI I KASIR / TELLER'],
+                ['07', 'CUSTOMER SERVICE (CS)'],
+                ['08', 'RUANG ARSIP / PERPUSTAKAAN'],
+                ['09', 'RUANG RAPAT (MEETING ROOM)'],
+                ['10', 'GUDANG & LOGISTIK'],
+                ['11', 'PARKIRAN & AREA LUAR'],
+            ];
+            $st = db()->prepare("INSERT IGNORE INTO master_ruangan (kode_ruangan, nama_ruangan) VALUES (?, ?)");
+            foreach ($defaultRooms as $r) {
+                $st->execute([$r[0], $r[1]]);
+            }
+            $rows = db()->query("SELECT * FROM master_ruangan ORDER BY kode_ruangan ASC, id ASC")->fetchAll();
+        }
+        return $rows;
+    } catch (Throwable $e) {
+        return [];
+    }
+}
+
+/**
+ * Menambahkan Ruangan Baru ke Master Ruangan
+ */
+function add_master_ruangan(string $namaRuangan, ?string $kodeRuangan = null): string {
+    $namaClean = strtoupper(trim($namaRuangan));
+    if ($namaClean === '') return '';
+    try {
+        get_master_ruangan_list(); // pastikan tabel ada
+        if (empty($kodeRuangan)) {
+            $st = db()->query("SELECT MAX(CAST(kode_ruangan AS UNSIGNED)) as max_c FROM master_ruangan");
+            $maxC = (int)($st->fetch()['max_c'] ?? 11);
+            $kodeRuangan = sprintf('%02d', max($maxC + 1, 1));
+        } else {
+            $kodeRuangan = sprintf('%02d', (int)$kodeRuangan);
+        }
+        $st = db()->prepare("INSERT IGNORE INTO master_ruangan (kode_ruangan, nama_ruangan) VALUES (?, ?)");
+        $st->execute([$kodeRuangan, $namaClean]);
+        return "{$kodeRuangan} : {$namaClean}";
+    } catch (Throwable $e) {
+        return $namaClean;
+    }
+}
+
+/**
+ * Update Data Master Lengkap Kartu Inventaris (Jenis, Golongan, Ruangan, No Seri, Keterangan)
+ */
+function update_inventaris_kartu_data(int $id, array $data): bool {
+    if ($id <= 0) return false;
+    ensure_inventaris_kartu_columns();
+    try {
+        $st = db()->prepare("
+            UPDATE inventaris_kartu 
+            SET nomor_seri_inventaris = ?,
+                jenis_inventaris = ?,
+                golongan = ?,
+                ruangan = ?,
+                sumber_perolehan = ?,
+                status_inventaris = ?,
+                keterangan = ?
+            WHERE id = ?
+        ");
+        return $st->execute([
+            $data['nomor_seri_inventaris'] ?? null,
+            $data['jenis_inventaris'] ?? null,
+            $data['golongan'] ?? null,
+            $data['ruangan'] ?? null,
+            $data['sumber_perolehan'] ?? null,
+            $data['status_inventaris'] ?? '1 : Aktif',
+            $data['keterangan'] ?? null,
+            $id
+        ]);
+    } catch (Throwable $e) {
+        error_log("Gagal update data inventaris kartu: " . $e->getMessage());
+        return false;
+    }
+}
+
+/**
+ * Auto-generate format Nomor Seri Inventaris resmi bank jika belum diset
+ * Contoh: 01.05.02.220124.001
+ */
+function generate_default_nomor_seri(array $card): string {
+    if (!empty($card['nomor_seri_inventaris'])) {
+        return (string)$card['nomor_seri_inventaris'];
+    }
+    $cBranch = get_cabang_from_nomor_rekening((string)($card['nomor_rekening'] ?? ''));
+    $kdCabang = $cBranch ? $cBranch['code'] : '01';
+
+    // Ambil kode ruangan (default 05)
+    $kdRuangan = '05';
+    if (!empty($card['ruangan']) && preg_match('/^(\d{2})/i', trim($card['ruangan']), $mR)) {
+        $kdRuangan = $mR[1];
+    }
+
+    // Ambil kode golongan (default 02)
+    $kdGolongan = '02';
+    if (!empty($card['golongan']) && preg_match('/^(\d{2})/i', trim($card['golongan']), $mG)) {
+        $kdGolongan = $mG[1];
+    }
+
+    // Tanggal ddMMyy
+    $tglClean = trim((string)($card['tanggal_perolehan'] ?? ''));
+    $tglPart = '010124';
+    if (!empty($tglClean) && $tglClean !== '0000-00-00') {
+        $ts = strtotime($tglClean);
+        if ($ts) $tglPart = date('dmy', $ts);
+    }
+
+    $idUrut = sprintf('%03d', (int)($card['id'] % 1000 ?: 1));
+    return "{$kdCabang}.{$kdRuangan}.{$kdGolongan}.{$tglPart}.{$idUrut}";
+}
+
 

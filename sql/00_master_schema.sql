@@ -187,15 +187,32 @@ CREATE TABLE IF NOT EXISTS employee_complaints (
     KEY idx_complaint_status (status)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+CREATE TABLE IF NOT EXISTS master_ruangan (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    kode_ruangan VARCHAR(20) NOT NULL,
+    nama_ruangan VARCHAR(150) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE KEY uq_ruangan (kode_ruangan, nama_ruangan)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 CREATE TABLE IF NOT EXISTS inventaris_kartu (
     id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
     nomor_rekening VARCHAR(100) NOT NULL,
+    nomor_seri_inventaris VARCHAR(100) NULL,
     nama_barang VARCHAR(255) NOT NULL,
+    jenis_inventaris VARCHAR(100) NULL,
+    golongan VARCHAR(100) NULL,
+    ruangan VARCHAR(150) NULL,
+    sumber_perolehan VARCHAR(100) NULL,
     tanggal_perolehan DATE NOT NULL,
     barcode_data TEXT NULL,
     lokasi VARCHAR(150) NULL DEFAULT 'Kantor Pusat (KPO)',
     pengguna VARCHAR(150) NULL DEFAULT 'Umum / Pool',
+    status_inventaris VARCHAR(50) DEFAULT '1 : Aktif',
+    keterangan TEXT NULL,
     foto TEXT NULL,
+    foto_updated_by VARCHAR(150) NULL,
+    foto_updated_at DATETIME NULL,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     KEY idx_nomor_rekening (nomor_rekening)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
