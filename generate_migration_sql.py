@@ -35,7 +35,7 @@ def int_or_null(v):
 sql_lines = [
     "-- ============================================================",
     "-- FULL DATABASE MIGRATION FROM GOOGLE SPREADSHEETS (OCT 2026)",
-    "-- REPLACING ALL PREVIOUS DATA (CLEAN & ERROR-FREE)",
+    "-- COMPLETE FRESH RE-CREATION OF ALL TABLES & CLEAN RE-IMPORT",
     "-- ============================================================",
     "USE db_maintenance_qr;",
     "SET NAMES utf8mb4;",
@@ -44,10 +44,17 @@ sql_lines = [
 ]
 
 # 1. CABANG
+sql_lines.append("-- 1. CABANG")
+sql_lines.append("DROP TABLE IF EXISTS cabang;")
+sql_lines.append("""CREATE TABLE cabang (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    nama_cabang VARCHAR(150) NOT NULL,
+    alamat TEXT NULL,
+    telepon VARCHAR(50) NULL,
+    penanggung_jawab VARCHAR(150) NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;""")
 ws = wb['Cabang']
 rows = list(ws.iter_rows(values_only=True))
-sql_lines.append("-- 1. CABANG")
-sql_lines.append("TRUNCATE TABLE cabang;")
 for r in rows[1:]:
     if r[0] is not None and str(r[0]).strip() != '':
         cid = int_or_null(r[0])
@@ -60,25 +67,33 @@ for r in rows[1:]:
 sql_lines.append("")
 
 # 2. DIVISI
+sql_lines.append("-- 2. DIVISI")
+sql_lines.append("DROP TABLE IF EXISTS divisi;")
+sql_lines.append("""CREATE TABLE divisi (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    nama_divisi VARCHAR(150) NOT NULL,
+    id_cabang INT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;""")
 ws = wb['Divisi']
 rows = list(ws.iter_rows(values_only=True))
-sql_lines.append("-- 2. DIVISI")
-sql_lines.append("TRUNCATE TABLE divisi;")
 for r in rows[1:]:
     if r[0] is not None and str(r[0]).strip() != '':
         did = int_or_null(r[0])
         if did == 'NULL': continue
         nama = sql_val(r[1])
-        # id_cabang harus berupa integer atau NULL, bukan string teks seperti 'Internal Control Unit'
         id_cabang = int_or_null(r[2] if len(r) > 2 else None)
         sql_lines.append(f"INSERT INTO divisi (id, nama_divisi, id_cabang) VALUES ({did}, {nama}, {id_cabang});")
 sql_lines.append("")
 
 # 3. KATEGORI_ASET
+sql_lines.append("-- 3. KATEGORI_ASET")
+sql_lines.append("DROP TABLE IF EXISTS kategori_aset;")
+sql_lines.append("""CREATE TABLE kategori_aset (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    nama_kategori VARCHAR(100) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;""")
 ws = wb['Kategori_Aset']
 rows = list(ws.iter_rows(values_only=True))
-sql_lines.append("-- 3. KATEGORI_ASET")
-sql_lines.append("TRUNCATE TABLE kategori_aset;")
 for r in rows[1:]:
     if r[0] is not None and str(r[0]).strip() != '':
         kid = int_or_null(r[0])
@@ -88,10 +103,17 @@ for r in rows[1:]:
 sql_lines.append("")
 
 # 4. KARYAWAN
+sql_lines.append("-- 4. KARYAWAN")
+sql_lines.append("DROP TABLE IF EXISTS karyawan;")
+sql_lines.append("""CREATE TABLE karyawan (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    nama_karyawan VARCHAR(150) NOT NULL,
+    nik VARCHAR(50) NULL,
+    id_cabang INT NULL,
+    id_divisi INT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;""")
 ws = wb['Karyawan']
 rows = list(ws.iter_rows(values_only=True))
-sql_lines.append("-- 4. KARYAWAN")
-sql_lines.append("TRUNCATE TABLE karyawan;")
 for r in rows[1:]:
     if r[0] is not None and str(r[0]).strip() != '':
         kid = int_or_null(r[0])
@@ -103,10 +125,30 @@ for r in rows[1:]:
 sql_lines.append("")
 
 # 5. ASSETS
+sql_lines.append("-- 5. ASSETS")
+sql_lines.append("DROP TABLE IF EXISTS assets;")
+sql_lines.append("""CREATE TABLE assets (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    kode_inventaris VARCHAR(100) NOT NULL,
+    merk VARCHAR(100) NULL,
+    model VARCHAR(100) NULL,
+    serial_number VARCHAR(100) NULL,
+    id_kategori INT NULL,
+    id_cabang INT NULL DEFAULT 1,
+    id_divisi INT NULL,
+    id_karyawan INT NULL,
+    status VARCHAR(50) NOT NULL DEFAULT 'Aktif',
+    keterangan TEXT NULL,
+    ip_address VARCHAR(50) NULL,
+    printer VARCHAR(150) NULL,
+    foto TEXT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    KEY idx_assets_cabang (id_cabang),
+    KEY idx_assets_status (status)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;""")
 ws = wb['Assets']
 rows = list(ws.iter_rows(values_only=True))
-sql_lines.append("-- 5. ASSETS")
-sql_lines.append("TRUNCATE TABLE assets;")
 valid_asset_ids = set()
 for r in rows[1:]:
     if r[0] is not None and str(r[0]).strip() != '':
@@ -142,10 +184,22 @@ for r in rows[1:]:
 sql_lines.append("")
 
 # 6. ASSET_QR_TOKENS
+sql_lines.append("-- 6. ASSET_QR_TOKENS")
+sql_lines.append("DROP TABLE IF EXISTS asset_qr_tokens;")
+sql_lines.append("""CREATE TABLE asset_qr_tokens (
+    id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    asset_id INT NOT NULL,
+    token CHAR(32) NOT NULL,
+    placement_label VARCHAR(120) NULL,
+    is_active TINYINT(1) NOT NULL DEFAULT 1,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    UNIQUE KEY uq_asset_qr_asset (asset_id),
+    UNIQUE KEY uq_asset_qr_token (token),
+    KEY idx_asset_qr_active (is_active)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;""")
 ws = wb['Asset_QR_Tokens']
 rows = list(ws.iter_rows(values_only=True))
-sql_lines.append("-- 6. ASSET_QR_TOKENS")
-sql_lines.append("TRUNCATE TABLE asset_qr_tokens;")
 covered_assets = set()
 for r in rows[1:]:
     if r[0] is not None and str(r[0]).strip() != '' and r[1] is not None and str(r[1]).strip() != '':
@@ -158,17 +212,32 @@ for r in rows[1:]:
         covered_assets.add(int(aid))
         sql_lines.append(f"INSERT INTO asset_qr_tokens (asset_id, token, placement_label, is_active, created_at) VALUES ({aid}, {tok}, {label}, {active}, {c_at});")
 
-# Generate static tokens for remaining assets not in Asset_QR_Tokens
 for aid in sorted(valid_asset_ids - covered_assets):
     tok = hashlib.sha256(f"STATIC_QR_MAINTENANCE_KEY_SALT_{aid}".encode()).hexdigest()[:32]
     sql_lines.append(f"INSERT INTO asset_qr_tokens (asset_id, token, placement_label, is_active, created_at) VALUES ({aid}, '{tok}', 'Bodi Casing', 1, '2024-01-01 00:00:00');")
 sql_lines.append("")
 
 # 7. USERS
+sql_lines.append("-- 7. USERS")
+sql_lines.append("DROP TABLE IF EXISTS users;")
+sql_lines.append("""CREATE TABLE users (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    nama VARCHAR(150) NOT NULL,
+    nama_panggilan VARCHAR(50) NULL,
+    username VARCHAR(100) NOT NULL UNIQUE,
+    password VARCHAR(255) NOT NULL,
+    role VARCHAR(50) NOT NULL DEFAULT 'admin',
+    telepon VARCHAR(50) NULL,
+    status VARCHAR(50) NOT NULL DEFAULT 'Aktif',
+    face_descriptor TEXT NULL,
+    face_photo MEDIUMTEXT NULL,
+    face_status VARCHAR(50) DEFAULT 'none',
+    passkey_credential TEXT NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;""")
 ws = wb['Users']
 rows = list(ws.iter_rows(values_only=True))
-sql_lines.append("-- 7. USERS")
-sql_lines.append("TRUNCATE TABLE users;")
 for r in rows[1:]:
     if r[0] is not None and str(r[0]).strip() != '':
         uid = int_or_null(r[0])
@@ -189,10 +258,34 @@ for r in rows[1:]:
 sql_lines.append("")
 
 # 8. MAINTENANCE_SCAN
+sql_lines.append("-- 8. MAINTENANCE_SCAN")
+sql_lines.append("DROP TABLE IF EXISTS maintenance_scan;")
+sql_lines.append("""CREATE TABLE maintenance_scan (
+    id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    asset_id INT NOT NULL,
+    technician_user_id INT NULL,
+    technician_name VARCHAR(150) NULL,
+    maintenance_date DATE NOT NULL,
+    maintenance_time TIME NOT NULL,
+    maintenance_month TINYINT UNSIGNED NOT NULL,
+    maintenance_year SMALLINT UNSIGNED NOT NULL,
+    status VARCHAR(50) NOT NULL DEFAULT 'Selesai',
+    source VARCHAR(50) NOT NULL DEFAULT 'Maintenance',
+    findings TEXT NULL,
+    recommendation TEXT NULL,
+    biometric_verified TINYINT(1) DEFAULT 0,
+    biometric_confidence FLOAT NULL,
+    biometric_photo MEDIUMTEXT NULL,
+    latitude VARCHAR(50) NULL,
+    longitude VARCHAR(50) NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE KEY uq_maintenance_asset_period (asset_id, maintenance_month, maintenance_year),
+    KEY idx_maintenance_period (maintenance_year, maintenance_month),
+    KEY idx_maintenance_technician (technician_user_id),
+    KEY idx_maintenance_date (maintenance_date)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;""")
 ws = wb['Maintenance_Scan']
 rows = list(ws.iter_rows(values_only=True))
-sql_lines.append("-- 8. MAINTENANCE_SCAN")
-sql_lines.append("TRUNCATE TABLE maintenance_scan;")
 for r in rows[1:]:
     if r[0] is not None and str(r[0]).strip() != '':
         mid = int_or_null(r[0])
@@ -201,7 +294,6 @@ for r in rows[1:]:
         uid = int_or_null(r[2])
         tech_name = sql_val(r[3])
         
-        # Tanggal & waktu maintenance
         m_date_val = r[4]
         if isinstance(m_date_val, (datetime.datetime, datetime.date)):
             m_date = f"'{m_date_val.strftime('%Y-%m-%d')}'"
@@ -230,10 +322,22 @@ for r in rows[1:]:
 sql_lines.append("")
 
 # 9. MAINTENANCE_CHECKLISTS
+sql_lines.append("-- 9. MAINTENANCE_CHECKLISTS")
+sql_lines.append("DROP TABLE IF EXISTS maintenance_checklists;")
+sql_lines.append("""CREATE TABLE maintenance_checklists (
+    id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    maintenance_id BIGINT UNSIGNED NOT NULL,
+    asset_id INT NOT NULL,
+    checklist_number TINYINT NOT NULL,
+    checklist_name VARCHAR(150) NOT NULL,
+    checked TINYINT(1) DEFAULT 0,
+    notes VARCHAR(255) NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    KEY idx_chk_maintenance (maintenance_id),
+    KEY idx_chk_asset (asset_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;""")
 ws = wb['Maintenance_Checklists']
 rows = list(ws.iter_rows(values_only=True))
-sql_lines.append("-- 9. MAINTENANCE_CHECKLISTS")
-sql_lines.append("TRUNCATE TABLE maintenance_checklists;")
 for r in rows:
     if r[0] is not None and str(r[0]).strip() != '':
         mid = int_or_null(r[1])
@@ -244,13 +348,10 @@ for r in rows:
         checked = int_or_null(r[5] if len(r) > 5 else 1)
         notes = sql_val(r[6] if len(r) > 6 else None)
         c_at = sql_val(r[7] if len(r) > 7 and r[7] is not None else datetime.datetime.now())
-        # Hindari memasukkan id sheet untuk mencegah error duplicate key (18 duplikat di spreadsheet)
         sql_lines.append(f"INSERT INTO maintenance_checklists (maintenance_id, asset_id, checklist_number, checklist_name, checked, notes, created_at) VALUES ({mid}, {aid}, {chk_num}, {chk_name}, {checked}, {notes}, {c_at});")
 sql_lines.append("")
 
 # 10. MAINTENANCE_FINDINGS
-ws = wb['Maintenance_Findings']
-rows = list(ws.iter_rows(values_only=True))
 sql_lines.append("-- 10. MAINTENANCE_FINDINGS")
 sql_lines.append("DROP TABLE IF EXISTS maintenance_findings;")
 sql_lines.append("""CREATE TABLE maintenance_findings (
@@ -273,7 +374,8 @@ sql_lines.append("""CREATE TABLE maintenance_findings (
     KEY idx_finding_asset (asset_id),
     KEY idx_finding_status (repair_status)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;""")
-
+ws = wb['Maintenance_Findings']
+rows = list(ws.iter_rows(values_only=True))
 for r in rows[1:]:
     if r[0] is not None and str(r[0]).strip() != '':
         mid = int_or_null(r[1])
@@ -291,10 +393,27 @@ for r in rows[1:]:
 sql_lines.append("")
 
 # 11. AUDIT_TRAIL -> system_audit_logs
+sql_lines.append("-- 11. AUDIT_TRAIL (system_audit_logs)")
+sql_lines.append("DROP TABLE IF EXISTS system_audit_logs;")
+sql_lines.append("""CREATE TABLE system_audit_logs (
+    id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    user_id INT NULL,
+    user_name VARCHAR(100) NOT NULL,
+    user_role VARCHAR(50) NOT NULL,
+    ip_address VARCHAR(45) NULL,
+    user_agent VARCHAR(255) NULL,
+    action VARCHAR(50) NOT NULL,
+    module VARCHAR(50) NOT NULL,
+    target_id INT NULL,
+    target_label VARCHAR(255) NULL,
+    details TEXT NULL,
+    KEY idx_audit_created (created_at),
+    KEY idx_audit_user (user_id),
+    KEY idx_audit_action (action)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;""")
 ws = wb['Audit_Trail']
 rows = list(ws.iter_rows(values_only=True))
-sql_lines.append("-- 11. AUDIT_TRAIL (system_audit_logs)")
-sql_lines.append("TRUNCATE TABLE system_audit_logs;")
 for r in rows[1:]:
     if r[0] is not None and str(r[0]).strip() != '':
         c_at = sql_val(r[1] if len(r) > 1 and r[1] is not None else datetime.datetime.now())
@@ -307,15 +426,25 @@ for r in rows[1:]:
         tid = int_or_null(r[8] if len(r) > 8 else None)
         tlabel = sql_val(r[9] if len(r) > 9 else None)
         details = sql_val(r[10] if len(r) > 10 else None)
-        # Hindari memasukkan fixed id untuk mencegah error duplikasi id di sheet (id 9, 22, 86, 99)
         sql_lines.append(f"INSERT INTO system_audit_logs (created_at, user_id, user_name, user_role, ip_address, action, module, target_id, target_label, details) VALUES ({c_at}, {uid}, {uname}, {urole}, {ip}, {act}, {mod}, {tid}, {tlabel}, {details});")
 sql_lines.append("")
 
 # 12. INVENTARIS_KARTU
+sql_lines.append("-- 12. INVENTARIS_KARTU")
+sql_lines.append("DROP TABLE IF EXISTS inventaris_kartu;")
+sql_lines.append("""CREATE TABLE inventaris_kartu (
+    id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    nomor_rekening VARCHAR(100) NOT NULL,
+    nama_barang VARCHAR(255) NOT NULL,
+    tanggal_perolehan DATE NOT NULL,
+    barcode_data TEXT NOT NULL,
+    lokasi VARCHAR(150) NULL DEFAULT 'Kantor Pusat (KPO)',
+    pengguna VARCHAR(150) NULL DEFAULT 'Umum / Pool',
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    KEY idx_nomor_rekening (nomor_rekening)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;""")
 ws = wb['inventaris_kartu']
 rows = list(ws.iter_rows(values_only=True))
-sql_lines.append("-- 12. INVENTARIS_KARTU")
-sql_lines.append("TRUNCATE TABLE inventaris_kartu;")
 for r in rows[1:]:
     if r[0] is not None and str(r[0]).strip() != '':
         norek = sql_val(r[1])
@@ -328,13 +457,10 @@ for r in rows[1:]:
         bc = sql_val(r[4] if len(r) > 4 else '')
         lok = sql_val(r[5] if len(r) > 5 else 'Kantor Pusat (KPO)')
         c_at = sql_val(r[6] if len(r) > 6 and r[6] is not None else datetime.datetime.now())
-        # Hindari duplikat id (id 9, 10, 11, 12, 13 duplikat di spreadsheet)
         sql_lines.append(f"INSERT INTO inventaris_kartu (nomor_rekening, nama_barang, tanggal_perolehan, barcode_data, lokasi, pengguna, created_at) VALUES ({norek}, {nama}, {tgl}, {bc}, {lok}, 'Umum / Pool', {c_at});")
 sql_lines.append("")
 
 # 13. EMPLOYEE_COMPLAINTS
-ws = wb['Employee_Complaints']
-rows = list(ws.iter_rows(values_only=True))
 sql_lines.append("-- 13. EMPLOYEE_COMPLAINTS")
 sql_lines.append("DROP TABLE IF EXISTS employee_complaints;")
 sql_lines.append("""CREATE TABLE employee_complaints (
@@ -349,10 +475,11 @@ sql_lines.append("""CREATE TABLE employee_complaints (
     resolved_by VARCHAR(150) NULL,
     resolved_at DATETIME NULL,
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    KEY idx_asset (asset_id),
-    KEY idx_status (status)
+    KEY idx_complaint_asset (asset_id),
+    KEY idx_complaint_status (status)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;""")
-
+ws = wb['Employee_Complaints']
+rows = list(ws.iter_rows(values_only=True))
 for r in rows[1:]:
     if r[0] is not None and str(r[0]).strip() != '':
         aid = int_or_null(r[1])
