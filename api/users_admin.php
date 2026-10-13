@@ -187,6 +187,7 @@ foreach ($users as $u) {
     $uStatus = (string)($u['status'] ?? 'Aktif');
     $fDesc = trim((string)($u['face_descriptor'] ?? ''));
     $fStat = strtolower(trim((string)($u['face_status'] ?? '')));
+    $uPhoto = trim((string)($u['face_photo'] ?? ''));
     $isBeingEdited = ($editId === $uId);
 
     $nickBadge = ($uNick !== '') ? '<span class="badge-chip chip-secondary ms-1 font-monospace" title="Nama Panggilan untuk Kolom Paraf Kartu Kontrol IT" style="font-size: 0.7rem;"><i class="bi bi-pen"></i> Paraf: '.e($uNick).'</span>' : '';
@@ -203,11 +204,26 @@ foreach ($users as $u) {
         ? '<span class="badge-chip chip-danger"><i class="bi bi-x-circle-fill"></i> Nonaktif</span>'
         : '<span class="badge-chip chip-success"><i class="bi bi-check-circle-fill"></i> Aktif</span>';
 
+    // Avatar Foto Wajah Petugas
+    $avatarHtml = '';
+    if ($uPhoto !== '') {
+        $avatarHtml = '
+        <div class="flex-shrink-0 position-relative" style="cursor: pointer;" onclick="previewFacePhoto(\''.e($uPhoto).'\', \''.e(addslashes($uNama)).'\', \''.e(addslashes($uUsername)).'\', \''.e(addslashes($uRole)).'\')" title="Klik untuk melihat foto wajah petugas">
+          <img src="'.e($uPhoto).'" class="rounded-circle border shadow-xs" style="width: 42px; height: 42px; object-fit: cover;" alt="Foto '.e($uNama).'">
+          <span class="position-absolute bottom-0 end-0 badge rounded-pill bg-success p-0 border border-white" style="width: 9px; height: 9px;" title="Terverifikasi"></span>
+        </div>';
+    } else {
+        $initial = strtoupper(substr($uNama ?: $uUsername, 0, 1));
+        $avatarHtml = '<div class="rounded-circle bg-light border d-flex align-items-center justify-content-center fw-bold text-secondary shadow-xs flex-shrink-0" style="width: 42px; height: 42px; font-size: 0.95rem;">'.$initial.'</div>';
+    }
+
     // Status Biometrik & Tombol Aksi Verifikasi Admin
     if ($fDesc === '') {
         $bioBadge = '<a href="'.e(module_url('user_biometric_enroll.php', ['id'=>$uId])).'" class="badge-chip chip-secondary text-decoration-none" style="font-size: 0.72rem;"><i class="bi bi-camera"></i> Daftarkan</a>';
     } elseif ($fStat === 'verified' || $fStat === 'terverifikasi') {
+        $bioPhotoThumb = ($uPhoto !== '') ? '<img src="'.e($uPhoto).'" class="rounded-circle border shadow-xs me-1.5" style="width: 30px; height: 30px; object-fit: cover; cursor: pointer;" onclick="previewFacePhoto(\''.e($uPhoto).'\', \''.e(addslashes($uNama)).'\', \''.e(addslashes($uUsername)).'\', \''.e(addslashes($uRole)).'\')" title="Klik untuk memperbesar foto wajah">' : '';
         $bioBadge = '<div class="d-inline-flex align-items-center gap-1">
+          '.$bioPhotoThumb.'
           <span class="badge-chip chip-success" style="font-size: 0.72rem;"><i class="bi bi-shield-check"></i> Terverifikasi</span>
           <form method="post" class="d-inline" onsubmit="return confirm(\'Hapus/reset data biometrik wajah '.addslashes($uNama).'?\')">
             <input type="hidden" name="_csrf" value="'.e(csrf_token()).'">
@@ -217,7 +233,9 @@ foreach ($users as $u) {
           </form>
         </div>';
     } elseif ($fStat === 'pending' || $fStat === 'menunggu') {
+        $bioPhotoThumb = ($uPhoto !== '') ? '<img src="'.e($uPhoto).'" class="rounded-circle border shadow-xs mb-1" style="width: 34px; height: 34px; object-fit: cover; cursor: pointer;" onclick="previewFacePhoto(\''.e($uPhoto).'\', \''.e(addslashes($uNama)).'\', \''.e(addslashes($uUsername)).'\', \''.e(addslashes($uRole)).'\')" title="Klik untuk memperbesar foto wajah">' : '';
         $bioBadge = '<div class="d-flex flex-column align-items-center gap-1">
+          '.$bioPhotoThumb.'
           <span class="badge-chip chip-warning" style="font-size: 0.72rem;"><i class="bi bi-hourglass-split"></i> Menunggu</span>
           <div class="d-flex gap-1 mt-1">
             <form method="post" class="d-inline" onsubmit="return confirm(\'Setujui biometrik '.addslashes($uNama).'?\')">
@@ -238,7 +256,7 @@ foreach ($users as $u) {
         $bioBadge = '<span class="badge-chip chip-danger" style="font-size: 0.72rem;"><i class="bi bi-x-circle"></i> Ditolak</span>';
     }
 
-    $telHtml = ($uTel !== '-' && $uTel !== '') ? '<div class="small text-muted mt-1" style="font-size: 0.78rem;"><i class="bi bi-telephone me-1 text-secondary"></i>'.e($uTel).'</div>' : '';
+    $telHtml = ($uTel !== '-' && $uTel !== '') ? '<div class="small text-muted mt-0.5" style="font-size: 0.76rem;"><i class="bi bi-telephone me-1 text-secondary"></i>'.e($uTel).'</div>' : '';
 
     $delBtnHtml = '';
     if ($uId !== current_user_id()) {
@@ -258,13 +276,17 @@ foreach ($users as $u) {
     <tr class="'.($isBeingEdited ? 'table-active' : '').'" style="border-bottom: 1px solid var(--app-border);">
       <td class="text-center font-monospace text-muted small">'.sprintf('%02d', $no).'</td>
       <td>
-        <div class="fw-bold text-dark d-flex align-items-center flex-wrap gap-1">
-          <i class="bi bi-person-circle text-primary"></i>
-          <span>'.e($uNama).'</span>
-          '.$nickBadge.'
+        <div class="d-flex align-items-center gap-2.5">
+          '.$avatarHtml.'
+          <div>
+            <div class="fw-bold text-dark d-flex align-items-center flex-wrap gap-1">
+              <span>'.e($uNama).'</span>
+              '.$nickBadge.'
+            </div>
+            <div class="text-muted font-monospace small" style="font-size: 0.78rem;">@'.e($uUsername).'</div>
+            '.$telHtml.'
+          </div>
         </div>
-        <div class="text-muted font-monospace small" style="font-size: 0.78rem;">@'.e($uUsername).'</div>
-        '.$telHtml.'
       </td>
       <td>'.$roleBadge.'</td>
       <td class="text-center">'.$bioBadge.'</td>
@@ -481,6 +503,67 @@ $body = '
       '.$formContent.'
     </div>
   </div>
-</div>';
+</div>
 
-render_page('Kelola Akun Pengguna', $body);
+<!-- Modal Pratinjau Foto Wajah Petugas -->
+<div class="modal fade" id="modalPreviewFace" tabindex="-1" aria-labelledby="modalPreviewFaceLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered" style="max-width: 380px;">
+    <div class="modal-content border-0 shadow-lg" style="border-radius: 14px; overflow: hidden;">
+      <div class="modal-header py-2 px-3 bg-dark text-white border-0">
+        <h6 class="modal-title fs-7 fw-bold mb-0 d-flex align-items-center gap-2" id="modalPreviewFaceLabel">
+          <i class="bi bi-person-bounding-box text-primary"></i> Foto Biometrik Petugas
+        </h6>
+        <button type="button" class="btn-close btn-close-white btn-sm" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body text-center p-4">
+        <div class="position-relative d-inline-block mb-3">
+          <img id="previewFaceImg" src="" alt="Foto Wajah Petugas" class="rounded-circle shadow-sm border border-3 border-primary" style="width: 150px; height: 150px; object-fit: cover;">
+          <span class="position-absolute bottom-0 end-0 badge rounded-pill bg-success p-2 border border-white" title="Biometrik Aktif">
+            <i class="bi bi-shield-check"></i>
+          </span>
+        </div>
+        <h5 class="fw-bold mb-1 text-dark" id="previewFaceNama">-</h5>
+        <div class="text-muted small font-monospace mb-2" id="previewFaceUser">@-</div>
+        <div id="previewFaceRoleBadge" class="mb-3"></div>
+        <div class="p-2 bg-light rounded-3 text-muted small border">
+          <i class="bi bi-info-circle text-primary me-1"></i> Foto ini terdaftar dalam basis data biometrik untuk pengenalan wajah login & absensi tugas.
+        </div>
+      </div>
+      <div class="modal-footer py-2 px-3 bg-light border-0 justify-content-center">
+        <button type="button" class="btn btn-secondary btn-sm px-4 fw-semibold" data-bs-dismiss="modal">Tutup</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+function previewFacePhoto(imgSrc, nama, username, role) {
+  if (!imgSrc) return;
+  document.getElementById("previewFaceImg").src = imgSrc;
+  document.getElementById("previewFaceNama").innerText = nama || "-";
+  document.getElementById("previewFaceUser").innerText = "@" + (username || "-");
+  
+  let roleBadge = \'<span class="badge bg-secondary">\' + (role || "Pengguna") + \'</span>\';
+  if (role === "admin") {
+    roleBadge = \'<span class="badge bg-primary"><i class="bi bi-shield-lock-fill me-1"></i> Administrator</span>\';
+  } else if (role === "hrd" || role === "umum" || role === "hrd_umum" || role === "sdm") {
+    roleBadge = \'<span class="badge bg-warning text-dark"><i class="bi bi-person-workspace me-1"></i> SDM & Umum</span>\';
+  } else {
+    roleBadge = \'<span class="badge bg-info text-dark"><i class="bi bi-tools me-1"></i> Teknisi IT</span>\';
+  }
+  document.getElementById("previewFaceRoleBadge").innerHTML = roleBadge;
+
+  const modalEl = document.getElementById("modalPreviewFace");
+  if (window.bootstrap && bootstrap.Modal) {
+    const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+    modal.show();
+  } else {
+    // Fallback jika bootstrap modal belum diinisialisasi
+    modalEl.classList.add("show");
+    modalEl.style.display = "block";
+  }
+}
+</script>
+\';
+
+render_page(\'Kelola Akun Pengguna\', $body);
