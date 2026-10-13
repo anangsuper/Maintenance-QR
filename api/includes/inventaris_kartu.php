@@ -408,3 +408,66 @@ function delete_inventaris_kartu(array|int $ids): bool {
         return false;
     }
 }
+
+/**
+ * Mengambil satu data kartu inventaris berdasarkan ID
+ */
+function get_inventaris_kartu_by_id(int $id): ?array {
+    if ($id <= 0) return null;
+    $rows = get_inventaris_kartu_rows();
+    foreach ($rows as $r) {
+        if ((int)($r['id'] ?? 0) === $id) {
+            return $r;
+        }
+    }
+    try {
+        $st = db()->prepare("SELECT * FROM inventaris_kartu WHERE id = ? LIMIT 1");
+        $st->execute([$id]);
+        $row = $st->fetch();
+        return $row ?: null;
+    } catch (Throwable $e) {
+        return null;
+    }
+}
+
+/**
+ * Mengambil satu data kartu inventaris berdasarkan nomor rekening
+ */
+function get_inventaris_kartu_by_norek(string $noRek): ?array {
+    $clean = trim($noRek);
+    if ($clean === '') return null;
+    $digits = preg_replace('/[^0-9]/', '', $clean);
+    try {
+        $st = db()->prepare("SELECT * FROM inventaris_kartu WHERE nomor_rekening = ? OR REPLACE(nomor_rekening, '.', '') = ? LIMIT 1");
+        $st->execute([$clean, $digits]);
+        $row = $st->fetch();
+        if ($row) return $row;
+    } catch (Throwable $e) {}
+
+    $rows = get_inventaris_kartu_rows();
+    foreach ($rows as $r) {
+        $rRek = (string)($r['nomor_rekening'] ?? '');
+        if ($rRek === $clean || preg_replace('/[^0-9]/', '', $rRek) === $digits) {
+            return $r;
+        }
+    }
+    return null;
+}
+
+/**
+ * Update foto kartu inventaris
+ */
+function update_inventaris_kartu_foto(int $id, string $fotoPath): bool {
+    if ($id <= 0) return false;
+    try {
+        $cols = table_columns('inventaris_kartu');
+        if (!in_array('foto', $cols, true)) {
+            db()->exec("ALTER TABLE inventaris_kartu ADD COLUMN foto TEXT NULL;");
+        }
+        $st = db()->prepare("UPDATE inventaris_kartu SET foto = ? WHERE id = ?");
+        return $st->execute([$fotoPath, $id]);
+    } catch (Throwable $e) {
+        return false;
+    }
+}
+

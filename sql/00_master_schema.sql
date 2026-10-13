@@ -195,6 +195,7 @@ CREATE TABLE IF NOT EXISTS inventaris_kartu (
     barcode_data TEXT NULL,
     lokasi VARCHAR(150) NULL DEFAULT 'Kantor Pusat (KPO)',
     pengguna VARCHAR(150) NULL DEFAULT 'Umum / Pool',
+    foto TEXT NULL,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     KEY idx_nomor_rekening (nomor_rekening)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

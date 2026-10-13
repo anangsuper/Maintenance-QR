@@ -166,7 +166,8 @@ if ($source === 'inventaris_kartu') {
 
         $tglFormatted = format_card_date($tglRaw);
 
-        $qrTarget = $barcode !== '' ? $barcode : module_url('scan.php', ['t' => get_static_qr_token($id)]);
+        // Arahkan QR code kartu inventaris ke halaman web detail resmi sistem (bukan Canva)
+        $qrTarget = module_url('kartu_detail.php', ['id' => $id]);
 
         $cardsData[] = [
             'index'        => $index,
@@ -346,7 +347,10 @@ if ($exportMode === 'doc') {
     $colCount = 0;
     $cardIndexOnPage = 0;
     foreach ($cardsData as $c) {
-        $qrTarget = !empty($c['barcode_data']) ? $c['barcode_data'] : ($c['qr_url'] ?? module_url('scan.php', ['t' => get_static_qr_token((int)($c['id'] ?? 0))]));
+        $cId = (int)($c['id'] ?? 0);
+        $qrTarget = ($source === 'inventaris_kartu' && $cId > 0)
+            ? module_url('kartu_detail.php', ['id' => $cId])
+            : (!empty($c['barcode_data']) ? $c['barcode_data'] : ($c['qr_url'] ?? module_url('scan.php', ['t' => get_static_qr_token($cId)])));
         $qrImgUrl = 'https://api.qrserver.com/v1/create-qr-code/?size=110x110&margin=0&data=' . urlencode($qrTarget);
 
         if ($colCount % 2 === 0) {

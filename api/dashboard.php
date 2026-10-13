@@ -676,6 +676,9 @@ if (empty($filteredCards)) {
           </td>
           <td class="text-end text-nowrap">
             <div class="btn-group btn-group-sm">
+              <a class="btn btn-sm btn-light border text-primary" target="_blank" href="'.e(module_url('kartu_detail.php', ['id'=>$cId])).'" title="Buka Halaman Detail Web & Foto">
+                <i class="bi bi-box-arrow-up-right"></i>
+              </a>
               <button type="button" class="btn btn-sm btn-light border" title="Pratinjau Fisik Kartu" onclick=\'openCardPreviewModal('.$jsonPayload.')\'>
                 <i class="bi bi-eye"></i>
               </button>
@@ -2693,7 +2696,7 @@ function openCardPreviewModal(card) {
   document.getElementById("pvTglPerolehan").innerText = tglDisplay;
   document.getElementById("pvLokasi").innerText = card.lokasi || "KPO";
 
-  const qrTarget = card.barcode_data || window.location.origin;
+  const qrTarget = card.id ? (window.location.origin + "/kartu_detail.php?id=" + card.id) : (card.barcode_data || window.location.origin);
   const qrBox = document.getElementById("pvQrBox");
   qrBox.innerHTML = "";
   new QRCode(qrBox, {
