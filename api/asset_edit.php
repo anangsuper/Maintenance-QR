@@ -1060,7 +1060,7 @@ document.addEventListener("DOMContentLoaded", function() {
       if (file) {
         if (compressBadgeEdit) {
           compressBadgeEdit.classList.remove("d-none");
-          compressBadgeEdit.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Mengompres...';
+          compressBadgeEdit.innerHTML = "<span class=\"spinner-border spinner-border-sm me-1\"></span> Mengompres...";
         }
         compressImageClientSide(file, 1600, 0.82, function(compressedBlob, previewDataUrl) {
           imgPreview.src = previewDataUrl;
@@ -1078,7 +1078,7 @@ document.addEventListener("DOMContentLoaded", function() {
             inputFoto.files = dt.files;
             if (compressBadgeEdit) {
               const kbSize = Math.round(compressedBlob.size / 1024);
-              compressBadgeEdit.innerHTML = '<i class="bi bi-shield-check me-1"></i> ' + kbSize + ' KB (Hemat Ruang)';
+              compressBadgeEdit.innerHTML = "<i class=\"bi bi-shield-check me-1\"></i> " + kbSize + " KB (Hemat Ruang)";
             }
           } catch (err) {
             console.warn("Fallback DataTransfer:", err);

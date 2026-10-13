@@ -1257,7 +1257,7 @@ function handleScanPhotoSelect(event) {
       if (previewImg) previewImg.src = compressedDataUrl;
       if (previewContainer) previewContainer.classList.remove("d-none");
       if (compressBadge) {
-        compressBadge.innerHTML = '<i class="bi bi-shield-check me-1"></i> Siap Diunggah: <strong>' + approxSizeKb + ' KB</strong> <span class="text-muted">(Semula ' + originalSizeKb + ' KB)</span>';
+        compressBadge.innerHTML = "<i class=\"bi bi-shield-check me-1\"></i> Siap Diunggah: <strong>" + approxSizeKb + " KB</strong> <span class=\"text-muted\">(Semula " + originalSizeKb + " KB)</span>";
       }
     };
     tempImg.src = e.target.result;
@@ -1273,7 +1273,7 @@ async function loadPhotoBioModels() {
     const statusBox = document.getElementById("bioPhotoStatusBox");
     if (statusBox) {
       statusBox.className = "alert alert-info py-2 px-3 small fw-semibold mt-3 mb-2 text-start";
-      statusBox.innerHTML = '<span class="spinner-border spinner-border-sm me-2 text-primary"></span> Mengunduh model pengenalan wajah AI...';
+      statusBox.innerHTML = "<span class=\"spinner-border spinner-border-sm me-2 text-primary\"></span> Mengunduh model pengenalan wajah AI...";
     }
     if (typeof faceapi !== "undefined" && faceapi.tf) {
       try {
@@ -1295,7 +1295,7 @@ async function loadPhotoBioModels() {
     const statusBox = document.getElementById("bioPhotoStatusBox");
     if (statusBox) {
       statusBox.className = "alert alert-danger py-2 px-3 small fw-semibold mt-3 mb-2 text-start";
-      statusBox.innerHTML = '<i class="bi bi-exclamation-triangle-fill me-1"></i> Gagal memuat model AI biometrik. Periksa koneksi internet.';
+      statusBox.innerHTML = "<i class=\"bi bi-exclamation-triangle-fill me-1\"></i> Gagal memuat model AI biometrik. Periksa koneksi internet.";
     }
     return false;
   }
@@ -1371,7 +1371,7 @@ function finalizePhotoFaceVerification(tech, dist, videoEl) {
   const statusBox = document.getElementById("bioPhotoStatusBox");
   if (statusBox) {
     statusBox.className = "alert alert-success py-2 px-3 small fw-bold mt-3 mb-2 text-start";
-    statusBox.innerHTML = '<i class="bi bi-check-circle-fill me-1"></i> Wajah Terverifikasi: <strong>' + tech.nama + '</strong>! Menyimpan foto...';
+    statusBox.innerHTML = "<i class=\"bi bi-check-circle-fill me-1\"></i> Wajah Terverifikasi: <strong>" + tech.nama + "</strong>! Menyimpan foto...";
   }
 
   if (photoBioVideoStream) {
@@ -1389,7 +1389,7 @@ async function triggerInstantPhotoFaceVerify() {
   if (!video || !video.videoWidth || photoBioCompleted) return;
 
   statusBox.className = "alert alert-warning py-2 px-3 small fw-bold mt-3 mb-2 text-start text-dark";
-  statusBox.innerHTML = '<span class="spinner-border spinner-border-sm me-2 text-warning"></span> Memproses pencocokan biometrik...';
+  statusBox.innerHTML = "<span class=\"spinner-border spinner-border-sm me-2 text-warning\"></span> Memproses pencocokan biometrik...";
 
   const detectorOptions = new faceapi.TinyFaceDetectorOptions({ inputSize: 224, scoreThreshold: 0.3 });
   try {
@@ -1399,13 +1399,13 @@ async function triggerInstantPhotoFaceVerify() {
 
     if (!detection) {
       statusBox.className = "alert alert-warning py-2 px-3 small fw-semibold mt-3 mb-2 text-start text-dark";
-      statusBox.innerHTML = '<i class="bi bi-exclamation-circle me-1"></i> Wajah tidak terdeteksi. Posisikan wajah di tengah oval.';
+      statusBox.innerHTML = "<i class=\"bi bi-exclamation-circle me-1\"></i> Wajah tidak terdeteksi. Posisikan wajah di tengah oval.";
       return;
     }
 
     if (!parsedEnrolledTechs.length) {
       statusBox.className = "alert alert-danger py-2 px-3 small fw-semibold mt-3 mb-2 text-start";
-      statusBox.innerHTML = '<i class="bi bi-person-x me-1"></i> Belum ada teknisi terdaftar di sistem Core Banking.';
+      statusBox.innerHTML = "<i class=\"bi bi-person-x me-1\"></i> Belum ada teknisi terdaftar di sistem Core Banking.";
       return;
     }
 
@@ -1414,7 +1414,7 @@ async function triggerInstantPhotoFaceVerify() {
       finalizePhotoFaceVerification(tech, dist, video);
     } else {
       statusBox.className = "alert alert-danger py-2 px-3 small fw-semibold mt-3 mb-2 text-start";
-      statusBox.innerHTML = '<i class="bi bi-person-x me-1"></i> Wajah tidak cocok dengan teknisi terdaftar (Jarak: ' + dist.toFixed(2) + '). Pastikan Anda terdaftar.';
+      statusBox.innerHTML = "<i class=\"bi bi-person-x me-1\"></i> Wajah tidak cocok dengan teknisi terdaftar (Jarak: " + dist.toFixed(2) + "). Pastikan Anda terdaftar.";
     }
   } catch(err) {
     console.error("Error trigger bio verify:", err);
@@ -1451,7 +1451,7 @@ async function startTeknisiFaceScanForPhoto() {
   const statusBox = document.getElementById("bioPhotoStatusBox");
   if (statusBox) {
     statusBox.className = "alert alert-secondary py-2 px-3 small fw-semibold mt-3 mb-2 text-start text-dark";
-    statusBox.innerHTML = '<span class="spinner-border spinner-border-sm me-2 text-primary"></span> Menyiapkan kamera...';
+    statusBox.innerHTML = "<span class=\"spinner-border spinner-border-sm me-2 text-primary\"></span> Menyiapkan kamera...";
   }
 
   // Nyalakan Kamera
@@ -1468,7 +1468,7 @@ async function startTeknisiFaceScanForPhoto() {
     console.error("Camera access error:", err);
     if (statusBox) {
       statusBox.className = "alert alert-danger py-2 px-3 small fw-semibold mt-3 mb-2 text-start";
-      statusBox.innerHTML = '<i class="bi bi-camera-video-off me-1"></i> Izin kamera tidak diberikan atau perangkat tidak memiliki webcam.';
+      statusBox.innerHTML = "<i class=\"bi bi-camera-video-off me-1\"></i> Izin kamera tidak diberikan atau perangkat tidak memiliki webcam.";
     }
     return;
   }
@@ -1479,7 +1479,7 @@ async function startTeknisiFaceScanForPhoto() {
 
   if (statusBox) {
     statusBox.className = "alert alert-primary py-2 px-3 small fw-semibold mt-3 mb-2 text-start text-dark";
-    statusBox.innerHTML = '<i class="bi bi-person-check me-1 text-primary"></i> Posisikan wajah di tengah oval. Sistem otomatis mencocokkan wajah...';
+    statusBox.innerHTML = "<i class=\"bi bi-person-check me-1 text-primary\"></i> Posisikan wajah di tengah oval. Sistem otomatis mencocokkan wajah...";
   }
 
   // Tracking Loop Otomatis
@@ -1499,7 +1499,7 @@ async function startTeknisiFaceScanForPhoto() {
         if (!parsedEnrolledTechs.length) {
           if (statusBox) {
             statusBox.className = "alert alert-danger py-2 px-3 small fw-semibold mt-3 mb-2 text-start";
-            statusBox.innerHTML = '<i class="bi bi-person-x me-1"></i> Belum ada teknisi terdaftar.';
+            statusBox.innerHTML = "<i class=\"bi bi-person-x me-1\"></i> Belum ada teknisi terdaftar.";
           }
           return;
         }
@@ -1510,7 +1510,7 @@ async function startTeknisiFaceScanForPhoto() {
         } else {
           if (statusBox) {
             statusBox.className = "alert alert-warning py-2 px-3 small fw-semibold mt-3 mb-2 text-start text-dark";
-            statusBox.innerHTML = '<i class="bi bi-search me-1 text-primary"></i> Wajah terdeteksi, mencocokkan dengan data teknisi...';
+            statusBox.innerHTML = "<i class=\"bi bi-search me-1 text-primary\"></i> Wajah terdeteksi, mencocokkan dengan data teknisi...";
           }
         }
       }
@@ -1548,7 +1548,7 @@ function submitPhotoAsLoggedInAdmin() {
   const btn = document.getElementById("btnMulaiScanWajahFoto");
   if (btn) {
     btn.disabled = true;
-    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Menyimpan Foto...';
+    btn.innerHTML = "<span class=\"spinner-border spinner-border-sm me-2\"></span>Menyimpan Foto...";
   }
   form.submit();
 }

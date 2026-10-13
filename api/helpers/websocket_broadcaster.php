@@ -13,6 +13,7 @@ declare(strict_types=1);
  * @param array $payload Data detail perubahan (asset, teknisi, status, totals baru, dll)
  * @return bool
  */
+if (!function_exists('broadcast_dashboard_change')) {
 function broadcast_dashboard_change(string $event, array $payload): bool {
     $now = date('Y-m-d H:i:s');
     $eventId = (int)(microtime(true) * 1000);
@@ -67,7 +68,9 @@ function broadcast_dashboard_change(string $event, array $payload): bool {
 
     return true;
 }
+}
 
+if (!function_exists('save_event_to_fallback_buffer')) {
 /**
  * Menyimpan buffer 50 event terakhir di folder temporary sistem
  */
@@ -93,7 +96,9 @@ function save_event_to_fallback_buffer(array $event): void {
 
     @file_put_contents($bufferFile, json_encode($events), LOCK_EX);
 }
+}
 
+if (!function_exists('get_fallback_events')) {
 /**
  * Ambil daftar event fallback sejak timestamp / event_id tertentu
  */
@@ -116,4 +121,5 @@ function get_fallback_events(int $sinceEventId = 0): array {
     return array_values(array_filter($events, function($e) use ($sinceEventId) {
         return (int)($e['event_id'] ?? 0) > $sinceEventId;
     }));
+}
 }

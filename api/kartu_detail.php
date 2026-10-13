@@ -609,7 +609,7 @@ $pageTitle = $card ? e($card['nama_barang']) . ' - Kartu Inventaris' : 'Kartu In
                                         <span>Scan Wajah & Simpan Foto</span>
                                     </button>
 
-                                    <?php if (is_logged_in() && (is_admin() || has_role('admin'))): ?>
+                                    <?php if (is_logged_in() && (is_admin() || (function_exists('has_role') && has_role('admin')))): ?>
                                         <div class="mt-2 text-center">
                                             <button type="button" class="btn btn-link btn-xs text-muted p-0 text-decoration-none" onclick="submitAsLoggedInAdmin()" style="font-size: 0.72rem;">
                                                 <i class="bi bi-shield-lock me-1"></i> Otorisasi Cepat via Sesi Admin (<?= e(current_user_name()) ?>)
