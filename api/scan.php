@@ -112,10 +112,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (($_POST['action'] ?? '') === 'upda
     }
 
     $fotoPath = null;
-    if (!empty($_FILES['foto_unit']['tmp_name'])) {
-        $fotoPath = upload_asset_image('foto_unit');
-    } elseif (!empty($_POST['foto_base64'])) {
+    if (!empty($_POST['foto_base64'])) {
         $fotoPath = save_asset_base64_image($_POST['foto_base64']);
+    }
+    if (!$fotoPath && !empty($_FILES['foto_unit']['tmp_name'])) {
+        $fotoPath = upload_asset_image('foto_unit');
     }
 
     if ($fotoPath) {

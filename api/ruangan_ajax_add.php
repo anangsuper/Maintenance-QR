@@ -19,14 +19,8 @@ if ($nama === '') {
     exit;
 }
 
-if ($kode === '') {
-    $existing = get_master_ruangan_list();
-    $kode = sprintf('%02d', count($existing) + 1);
-}
-
-$ok = insert_master_ruangan($kode, $nama);
-if ($ok) {
-    $formatted = "{$kode} : {$nama}";
+$formatted = add_master_ruangan($nama, $kode !== '' ? $kode : null);
+if ($formatted !== '') {
     echo json_encode([
         'success' => true,
         'kode' => $kode,
