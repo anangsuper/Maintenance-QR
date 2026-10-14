@@ -364,7 +364,15 @@ function create_new_user(array $data): array {
     $telepon = trim((string)($data['telepon'] ?? ''));
     $status = trim((string)($data['status'] ?? 'Aktif')) ?: 'Aktif';
 
-    if (!in_array($role, ['admin', 'teknisi', 'auditor'], true)) {
+    if (in_array($role, ['hrd', 'umum', 'hrd_umum', 'sdm_umum', 'sdm & umum', 'sdm/hrd'], true) || str_contains($role, 'sdm') || str_contains($role, 'hrd') || str_contains($role, 'umum')) {
+        $role = 'sdm';
+    } elseif (in_array($role, ['admin', 'administrator'], true)) {
+        $role = 'admin';
+    } elseif (in_array($role, ['auditor', 'skai'], true)) {
+        $role = 'auditor';
+    }
+
+    if (!in_array($role, ['admin', 'teknisi', 'auditor', 'sdm'], true)) {
         $role = 'teknisi';
     }
 
@@ -565,7 +573,16 @@ function update_user(int $id, array $data): array {
     $password = trim((string)($data['password'] ?? ''));
 
     if ($nama === '') return ['success' => false, 'error' => 'Nama lengkap wajib diisi'];
-    if (!in_array($role, ['admin', 'teknisi', 'auditor'], true)) {
+
+    if (in_array($role, ['hrd', 'umum', 'hrd_umum', 'sdm_umum', 'sdm & umum', 'sdm/hrd'], true) || str_contains($role, 'sdm') || str_contains($role, 'hrd') || str_contains($role, 'umum')) {
+        $role = 'sdm';
+    } elseif (in_array($role, ['admin', 'administrator'], true)) {
+        $role = 'admin';
+    } elseif (in_array($role, ['auditor', 'skai'], true)) {
+        $role = 'auditor';
+    }
+
+    if (!in_array($role, ['admin', 'teknisi', 'auditor', 'sdm'], true)) {
         $role = 'teknisi';
     }
 

@@ -56,6 +56,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         ]);
 
         if (!empty($res['success'])) {
+            if ($id === current_user_id()) {
+                $_SESSION['nama'] = $nama;
+                $effectiveRole = in_array(strtolower($role), ['hrd', 'umum', 'hrd_umum', 'sdm_umum', 'sdm & umum', 'sdm/hrd'], true) || str_contains(strtolower($role), 'sdm') ? 'sdm' : strtolower($role);
+                $_SESSION['role'] = $effectiveRole;
+            }
             $_SESSION['flash'] = "Data akun '{$nama}' berhasil diperbarui.";
             header('Location: ' . module_url('users_admin.php'));
             exit;
@@ -552,8 +557,10 @@ function previewFacePhoto(imgSrc, nama, username, role) {
   var roleBadge = '<span class="badge bg-secondary">' + (role || "Pengguna") + '</span>';
   if (role === "admin") {
     roleBadge = '<span class="badge bg-primary"><i class="bi bi-shield-lock-fill me-1"></i> Administrator</span>';
-  } else if (role === "hrd" || role === "umum" || role === "hrd_umum" || role === "sdm") {
+  } else if (role === "hrd" || role === "umum" || role === "hrd_umum" || role === "sdm" || (typeof role === "string" && (role.indexOf("sdm") !== -1 || role.indexOf("hrd") !== -1))) {
     roleBadge = '<span class="badge bg-warning text-dark"><i class="bi bi-person-workspace me-1"></i> SDM & Umum</span>';
+  } else if (role === "auditor" || role === "skai") {
+    roleBadge = '<span class="badge bg-secondary"><i class="bi bi-eye-fill me-1"></i> Auditor</span>';
   } else {
     roleBadge = '<span class="badge bg-info text-dark"><i class="bi bi-tools me-1"></i> Teknisi IT</span>';
   }
