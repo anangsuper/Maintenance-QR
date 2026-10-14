@@ -1,6 +1,6 @@
 <?php
 require __DIR__ . '/bootstrap.php';
-require_login();
+require_it();
 
 $cabangs = get_cabang_list();
 $divisis = get_divisi_list();

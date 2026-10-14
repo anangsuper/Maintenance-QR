@@ -4,7 +4,7 @@
  * Mendukung pembacaan file CSV & XLSX, validasi kolom, pemetaan cabang otomatis, dan pendaftaran QR Token
  */
 require __DIR__ . '/bootstrap.php';
-require_login();
+require_it();
 
 $flash = $_SESSION['flash'] ?? '';
 $flashError = $_SESSION['flash_error'] ?? '';

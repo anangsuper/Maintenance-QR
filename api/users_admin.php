@@ -20,22 +20,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $telepon = trim((string)($_POST['telepon'] ?? ''));
         $status = trim((string)($_POST['status'] ?? 'Aktif'));
 
-        $res = create_new_user([
-            'username' => $username,
-            'password' => $password,
-            'nama' => $nama,
-            'nama_panggilan' => $nama_panggilan,
-            'role' => $role,
-            'telepon' => $telepon,
-            'status' => $status
-        ]);
-
-        if (!empty($res['success'])) {
-            $_SESSION['flash'] = "Akun '{$nama}' (@{$username}) berhasil dibuat.";
-            header('Location: ' . module_url('users_admin.php'));
-            exit;
+        if (!is_admin() && strtolower($role) === 'admin') {
+            $error = 'Akses ditolak: Hanya Administrator yang berwenang membuat akun dengan peran Administrator.';
         } else {
-            $error = $res['error'] ?? 'Gagal membuat akun pengguna baru.';
+            $res = create_new_user([
+                'username' => $username,
+                'password' => $password,
+                'nama' => $nama,
+                'nama_panggilan' => $nama_panggilan,
+                'role' => $role,
+                'telepon' => $telepon,
+                'status' => $status
+            ]);
+
+            if (!empty($res['success'])) {
+                $_SESSION['flash'] = "Akun '{$nama}' (@{$username}) berhasil dibuat.";
+                header('Location: ' . module_url('users_admin.php'));
+                exit;
+            } else {
+                $error = $res['error'] ?? 'Gagal membuat akun pengguna baru.';
+            }
         }
     } elseif ($action === 'edit') {
         $id = (int)($_POST['user_id'] ?? 0);
@@ -46,26 +50,38 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $status = trim((string)($_POST['status'] ?? 'Aktif'));
         $password = trim((string)($_POST['password'] ?? ''));
 
-        $res = update_user($id, [
-            'nama' => $nama,
-            'nama_panggilan' => $nama_panggilan,
-            'role' => $role,
-            'telepon' => $telepon,
-            'status' => $status,
-            'password' => $password
-        ]);
+        $targetUser = get_user_by_id($id);
+        $targetRole = strtolower($targetUser['role'] ?? '');
+        $isTargetAdmin = in_array($targetRole, ['admin', 'administrator'], true);
 
-        if (!empty($res['success'])) {
-            if ($id === current_user_id()) {
-                $_SESSION['nama'] = $nama;
-                $effectiveRole = in_array(strtolower($role), ['hrd', 'umum', 'hrd_umum', 'sdm_umum', 'sdm & umum', 'sdm/hrd'], true) || str_contains(strtolower($role), 'sdm') ? 'sdm' : strtolower($role);
-                $_SESSION['role'] = $effectiveRole;
-            }
-            $_SESSION['flash'] = "Data akun '{$nama}' berhasil diperbarui.";
-            header('Location: ' . module_url('users_admin.php'));
-            exit;
+        if (!$targetUser) {
+            $error = 'Pengguna tidak ditemukan.';
+        } elseif (!is_admin() && $isTargetAdmin) {
+            $error = 'Akses ditolak: Hanya Administrator yang berwenang mengubah akun Administrator.';
+        } elseif (!is_admin() && strtolower($role) === 'admin') {
+            $error = 'Akses ditolak: Hanya Administrator yang dapat memberikan hak akses Administrator.';
         } else {
-            $error = $res['error'] ?? 'Gagal memperbarui data pengguna.';
+            $res = update_user($id, [
+                'nama' => $nama,
+                'nama_panggilan' => $nama_panggilan,
+                'role' => $role,
+                'telepon' => $telepon,
+                'status' => $status,
+                'password' => $password
+            ]);
+
+            if (!empty($res['success'])) {
+                if ($id === current_user_id()) {
+                    $_SESSION['nama'] = $nama;
+                    $effectiveRole = in_array(strtolower($role), ['hrd', 'umum', 'hrd_umum', 'sdm_umum', 'sdm & umum', 'sdm/hrd'], true) || str_contains(strtolower($role), 'sdm') ? 'sdm' : strtolower($role);
+                    $_SESSION['role'] = $effectiveRole;
+                }
+                $_SESSION['flash'] = "Data akun '{$nama}' berhasil diperbarui.";
+                header('Location: ' . module_url('users_admin.php'));
+                exit;
+            } else {
+                $error = $res['error'] ?? 'Gagal memperbarui data pengguna.';
+            }
         }
     } elseif ($action === 'approve_face') {
         $id = (int)($_POST['user_id'] ?? 0);
@@ -89,13 +105,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     } elseif ($action === 'delete') {
         $id = (int)($_POST['user_id'] ?? 0);
-        $res = delete_user($id);
-        if (!empty($res['success'])) {
-            $_SESSION['flash'] = "Akun pengguna #{$id} berhasil dihapus dari sistem.";
-            header('Location: ' . module_url('users_admin.php'));
-            exit;
+        $targetUser = get_user_by_id($id);
+        $targetRole = strtolower($targetUser['role'] ?? '');
+        $isTargetAdmin = in_array($targetRole, ['admin', 'administrator'], true);
+
+        if (!is_admin() && $isTargetAdmin) {
+            $error = 'Akses ditolak: Akun Administrator hanya dapat dihapus oleh Administrator.';
         } else {
-            $error = $res['error'] ?? 'Gagal menghapus akun pengguna.';
+            $res = delete_user($id);
+            if (!empty($res['success'])) {
+                $_SESSION['flash'] = "Akun pengguna #{$id} berhasil dihapus dari sistem.";
+                header('Location: ' . module_url('users_admin.php'));
+                exit;
+            } else {
+                $error = $res['error'] ?? 'Gagal menghapus akun pengguna.';
+            }
         }
     }
 }
@@ -104,6 +128,11 @@ $editId = max(0, (int)($_GET['edit'] ?? 0));
 $editUser = null;
 if ($editId > 0) {
     $editUser = get_user_by_id($editId, true);
+    if ($editUser && !is_admin() && in_array(strtolower($editUser['role'] ?? ''), ['admin', 'administrator'], true)) {
+        $_SESSION['flash'] = 'Akses ditolak: Anda tidak memiliki izin untuk mengedit akun Administrator.';
+        header('Location: ' . module_url('users_admin.php'));
+        exit;
+    }
 }
 
 $users = get_user_list(true);
@@ -263,19 +292,30 @@ foreach ($users as $u) {
 
     $telHtml = ($uTel !== '-' && $uTel !== '') ? '<div class="small text-muted mt-0.5" style="font-size: 0.76rem;"><i class="bi bi-telephone me-1 text-secondary"></i>'.e($uTel).'</div>' : '';
 
+    $isUserAdmin = in_array($uRole, ['admin', 'administrator'], true);
+    $canManageUser = is_admin() || !$isUserAdmin;
+
     $delBtnHtml = '';
     if ($uId !== current_user_id()) {
-        $confirmMsg = json_encode("Apakah Anda yakin ingin menghapus akun {$uNama} (@{$uUsername})? Tindakan ini permanen dan tidak dapat dibatalkan.");
-        $delBtnHtml = '
-        <form method="post" class="d-inline" onsubmit="return confirm(' . htmlspecialchars($confirmMsg, ENT_QUOTES, 'UTF-8') . ')">
-          <input type="hidden" name="_csrf" value="'.e(csrf_token()).'">
-          <input type="hidden" name="action" value="delete">
-          <input type="hidden" name="user_id" value="'.$uId.'">
-          <button type="submit" class="btn btn-outline-danger" title="Hapus Pengguna"><i class="bi bi-trash"></i></button>
-        </form>';
+        if ($canManageUser) {
+            $confirmMsg = json_encode("Apakah Anda yakin ingin menghapus akun {$uNama} (@{$uUsername})? Tindakan ini permanen dan tidak dapat dibatalkan.");
+            $delBtnHtml = '
+            <form method="post" class="d-inline" onsubmit="return confirm(' . htmlspecialchars($confirmMsg, ENT_QUOTES, 'UTF-8') . ')">
+              <input type="hidden" name="_csrf" value="'.e(csrf_token()).'">
+              <input type="hidden" name="action" value="delete">
+              <input type="hidden" name="user_id" value="'.$uId.'">
+              <button type="submit" class="btn btn-outline-danger" title="Hapus Pengguna"><i class="bi bi-trash"></i></button>
+            </form>';
+        } else {
+            $delBtnHtml = ' <span class="badge-chip chip-secondary ms-1" style="font-size: 0.7rem;" title="Hanya Administrator yang dapat mengelola akun ini"><i class="bi bi-shield-lock-fill"></i> Terkunci</span>';
+        }
     } else {
         $delBtnHtml = ' <span class="badge-chip chip-secondary ms-1" style="font-size: 0.7rem;" title="Akun Anda yang sedang aktif"><i class="bi bi-person-check-fill"></i> Anda</span>';
     }
+
+    $editBtnHtml = $canManageUser
+        ? '<a class="btn btn-outline-secondary" href="'.e(module_url('users_admin.php', ['edit'=>$uId])).'" title="Edit Pengguna"><i class="bi bi-pencil-square"></i></a>'
+        : '';
 
     $userRowsHtml .= '
     <tr class="'.($isBeingEdited ? 'table-active' : '').'" style="border-bottom: 1px solid var(--app-border);">
@@ -299,7 +339,7 @@ foreach ($users as $u) {
       <td class="text-nowrap text-end">
         <div class="btn-group btn-group-sm">
           <a class="btn btn-outline-secondary" href="'.e(module_url('user_biometric_enroll.php', ['id'=>$uId])).'" title="Daftarkan / Perbarui Wajah Biometrik"><i class="bi bi-camera"></i></a>
-          <a class="btn btn-outline-secondary" href="'.e(module_url('users_admin.php', ['edit'=>$uId])).'" title="Edit Pengguna"><i class="bi bi-pencil-square"></i></a>
+          '.$editBtnHtml.'
         </div>
         '.$delBtnHtml.'
       </td>
@@ -360,7 +400,7 @@ if ($editUser) {
           <option value="teknisi" '.($editRole==='teknisi'?'selected':'').'>Teknisi IT (Inspeksi & Checklist)</option>
           <option value="sdm" '.($editRole==='sdm'||$editRole==='hrd'||$editRole==='umum'||$editRole==='hrd_umum'||str_contains($editRole,'sdm')?'selected':'').'>SDM & Umum / HRD (Kartu Inventaris, Cabang, Divisi & Karyawan)</option>
           <option value="auditor" '.($editRole==='auditor'?'selected':'').'>Auditor / SKAI (Read-Only Audit Trail)</option>
-          <option value="admin" '.($editRole==='admin'?'selected':'').'>Administrator (Akses Penuh Sistem)</option>
+          '.(is_admin() ? '<option value="admin" '.($editRole==='admin'?'selected':'').'>Administrator (Akses Penuh Sistem)</option>' : '').'
         </select>
       </div>
 
@@ -429,7 +469,7 @@ if ($editUser) {
           <option value="teknisi" selected>Teknisi IT (Inspeksi & Checklist)</option>
           <option value="sdm">SDM & Umum / HRD (Kartu Inventaris, Cabang, Divisi & Karyawan)</option>
           <option value="auditor">Auditor / SKAI (Read-Only Audit Trail)</option>
-          <option value="admin">Administrator (Akses Penuh Sistem)</option>
+          '.(is_admin() ? '<option value="admin">Administrator (Akses Penuh Sistem)</option>' : '').'
         </select>
       </div>
 

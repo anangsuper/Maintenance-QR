@@ -1,6 +1,6 @@
 <?php
 require __DIR__ . '/bootstrap.php';
-require_login();
+require_it();
 
 // Handle Form POST (Simpan Semua Perubahan Multi-Row Super Cepat & Anti-Timeout)
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'save_bulk') {

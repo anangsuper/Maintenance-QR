@@ -348,6 +348,27 @@ function require_it(): void {
     }
 }
 
+function is_auditor(): bool {
+    if (!is_logged_in()) {
+        return false;
+    }
+    $role = strtolower(current_user_role());
+    return in_array($role, ['auditor', 'skai'], true);
+}
+
+function is_admin_or_auditor(): bool {
+    return is_admin() || is_auditor();
+}
+
+function require_admin_or_auditor(): void {
+    require_login();
+    if (!is_admin_or_auditor()) {
+        http_response_code(403);
+        render_page('Akses Ditolak', '<div class="alert alert-danger border-0 shadow-sm"><i class="bi bi-shield-exclamation me-2"></i>Menu ini hanya untuk Administrator dan Auditor / SKAI.</div>');
+        exit;
+    }
+}
+
 
 function login_user_session(array $user): void {
     $_SESSION['user_id'] = (int)($user['id'] ?? 1);

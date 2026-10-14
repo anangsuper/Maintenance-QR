@@ -1,6 +1,6 @@
 <?php
 require __DIR__ . '/bootstrap.php';
-require_admin_or_hrd();
+require_admin();
 
 $id = max(0, (int)($_GET['id'] ?? $_POST['id'] ?? 0));
 if ($id <= 0) {

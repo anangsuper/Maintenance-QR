@@ -1,6 +1,6 @@
 <?php
 require __DIR__ . '/bootstrap.php';
-require_admin();
+require_admin_or_auditor();
 
 // Pastikan skema penyimpanan siap
 ensure_audit_log_storage();
