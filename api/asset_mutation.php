@@ -178,57 +178,352 @@ if ($selectedId > 0) {
 $title = 'Form Mutasi & Serah Terima Aset';
 $head = '
 <style>
-.location-box {
-  padding: 16px 20px;
-  border-radius: 12px;
-  background: #F8FAFC;
-  border: 1px solid #E2E8F0;
-  transition: all 0.35s ease;
+/* ============================================================
+   ASSET MUTATION PAGE — PREMIUM UI STYLES
+   ============================================================ */
+
+/* Page layout */
+body { background: #F0F4F8; }
+
+/* Heading area */
+.mutation-page-header {
+  background: linear-gradient(135deg, #1E3A5F 0%, #1E40AF 60%, #2563EB 100%);
+  border-radius: 20px;
+  padding: 28px 32px;
+  color: #fff;
+  margin-bottom: 28px;
+  box-shadow: 0 8px 32px rgba(37,99,235,0.22);
+  position: relative;
+  overflow: hidden;
 }
+.mutation-page-header::before {
+  content: "";
+  position: absolute;
+  top: -60px; right: -60px;
+  width: 200px; height: 200px;
+  background: rgba(255,255,255,0.06);
+  border-radius: 50%;
+}
+.mutation-page-header .tech-label {
+  font-size: 0.68rem;
+  letter-spacing: 0.12em;
+  font-weight: 700;
+  opacity: 0.75;
+  text-transform: uppercase;
+  margin-bottom: 6px;
+}
+.mutation-page-header h1 {
+  font-size: 1.5rem;
+  font-weight: 800;
+  margin-bottom: 4px;
+}
+.mutation-page-header p {
+  font-size: 0.875rem;
+  opacity: 0.8;
+  margin: 0;
+}
+.mutation-page-header .header-actions .btn {
+  background: rgba(255,255,255,0.12);
+  border: 1px solid rgba(255,255,255,0.25);
+  color: #fff;
+  font-size: 0.8rem;
+  font-weight: 600;
+  padding: 7px 16px;
+  border-radius: 10px;
+  backdrop-filter: blur(4px);
+  transition: all 0.2s;
+}
+.mutation-page-header .header-actions .btn:hover {
+  background: rgba(255,255,255,0.22);
+  transform: translateY(-1px);
+}
+
+/* Cards */
+.mutation-card {
+  border: none;
+  border-radius: 20px;
+  box-shadow: 0 4px 24px rgba(15,23,42,0.09);
+  background: #fff;
+  height: 100%;
+  overflow: hidden;
+}
+.mutation-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 24px 0;
+  margin-bottom: 20px;
+}
+.mutation-card-header h5 {
+  font-size: 1rem;
+  font-weight: 800;
+  color: #0F172A;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.mutation-card-body { padding: 0 24px 24px; }
+
+/* Catalog open button */
 .btn-catalog-pulse {
   position: relative;
   overflow: hidden;
-  box-shadow: 0 4px 14px rgba(37, 99, 235, 0.25);
-  transition: all 0.2s ease;
+  background: linear-gradient(135deg, #1E40AF 0%, #3B82F6 100%) !important;
+  border: none !important;
+  border-radius: 14px !important;
+  font-size: 0.95rem !important;
+  font-weight: 700 !important;
+  padding: 13px 20px !important;
+  letter-spacing: 0.02em;
+  box-shadow: 0 6px 20px rgba(37,99,235,0.35), 0 2px 8px rgba(37,99,235,0.2);
+  transition: all 0.25s cubic-bezier(.4,0,.2,1);
+}
+.btn-catalog-pulse::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(255,255,255,0.15), transparent);
+  pointer-events: none;
 }
 .btn-catalog-pulse:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 6px 18px rgba(37, 99, 235, 0.35);
+  transform: translateY(-2px);
+  box-shadow: 0 10px 28px rgba(37,99,235,0.45), 0 4px 12px rgba(37,99,235,0.25);
 }
-.modal-branch-pill {
+.btn-catalog-pulse:active { transform: translateY(0); }
+.btn-catalog-badge {
+  background: rgba(255,255,255,0.2) !important;
+  border: 1px solid rgba(255,255,255,0.35) !important;
+  color: #fff !important;
   border-radius: 20px;
   font-size: 0.75rem;
-  padding: 4px 12px;
+  font-weight: 700;
+  padding: 3px 10px;
+}
+
+/* Divider with label */
+.or-divider {
+  position: relative;
+  text-align: center;
+  margin: 14px 0;
+}
+.or-divider::before {
+  content: "";
+  position: absolute;
+  top: 50%; left: 0; right: 0;
+  height: 1px;
+  background: #E2E8F0;
+}
+.or-divider span {
+  position: relative;
+  background: #fff;
+  padding: 0 10px;
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: #94A3B8;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+/* Filter row */
+.filter-label {
+  font-size: 0.67rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #64748B;
+  margin-bottom: 5px;
+  display: block;
+}
+.form-select, .form-control {
+  border-radius: 10px !important;
+  border-color: #E2E8F0 !important;
+  font-size: 0.875rem;
+  color: #1E293B;
+  box-shadow: none !important;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.form-select:focus, .form-control:focus {
+  border-color: #3B82F6 !important;
+  box-shadow: 0 0 0 3px rgba(59,130,246,0.12) !important;
+}
+.input-group-text {
+  border-radius: 10px 0 0 10px !important;
+  border-color: #E2E8F0 !important;
+  background: #F8FAFC;
+}
+.input-group .form-control { border-radius: 0 !important; }
+.input-group .btn-outline-secondary {
+  border-radius: 0 10px 10px 0 !important;
+  border-color: #E2E8F0 !important;
+}
+
+/* Location info box */
+.location-box {
+  padding: 18px 20px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, #F8FAFC 0%, #EFF6FF 100%);
+  border: 1.5px solid #DBEAFE;
+  transition: all 0.35s ease;
+  position: relative;
+}
+.location-box.flash {
+  background: linear-gradient(135deg, #EFF6FF 0%, #DBEAFE 100%);
+  border-color: #93C5FD;
+}
+
+/* Right column form */
+.form-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #64748B;
+  margin-bottom: 6px;
+}
+textarea.form-control { border-radius: 12px !important; }
+
+/* Submit button */
+.btn-submit-mutation {
+  background: linear-gradient(135deg, #059669 0%, #10B981 100%);
+  border: none;
+  border-radius: 12px;
+  font-size: 0.95rem;
+  font-weight: 700;
+  padding: 12px 28px;
+  color: #fff;
+  box-shadow: 0 6px 18px rgba(16,185,129,0.3);
+  transition: all 0.25s;
+  letter-spacing: 0.02em;
+}
+.btn-submit-mutation:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 24px rgba(16,185,129,0.4);
+  color: #fff;
+}
+.btn-cancel-mutation {
+  border-radius: 12px;
+  font-weight: 600;
+  font-size: 0.875rem;
+  padding: 11px 22px;
+  border: 1.5px solid #CBD5E1;
+  color: #64748B;
+  background: #fff;
+  transition: all 0.2s;
+}
+.btn-cancel-mutation:hover {
+  border-color: #94A3B8;
+  color: #334155;
+  background: #F8FAFC;
+}
+
+/* Type switcher */
+.type-switcher .btn {
+  font-size: 0.72rem;
+  font-weight: 600;
+  border-radius: 8px !important;
+  padding: 5px 12px;
+}
+
+/* Info alert */
+.info-bast {
+  background: linear-gradient(135deg, #EFF6FF, #F0F9FF);
+  border: 1px solid #BAE6FD;
+  border-radius: 12px;
+  padding: 14px 16px;
+  font-size: 0.82rem;
+  color: #0C4A6E;
+  margin-top: 16px;
+}
+
+/* Modal styles */
+.modal-content {
+  border: none !important;
+  border-radius: 20px !important;
+  box-shadow: 0 24px 80px rgba(15,23,42,0.22) !important;
+  overflow: hidden;
+}
+.modal-header {
+  background: linear-gradient(135deg, #1E3A5F, #1E40AF);
+  color: #fff;
+  border: none !important;
+  padding: 20px 24px;
+}
+.modal-header .modal-title { color: #fff; font-weight: 800; font-size: 1.05rem; }
+.modal-header p { color: rgba(255,255,255,0.75); font-size: 0.82rem; margin: 3px 0 0; }
+.modal-header .btn-close { filter: brightness(0) invert(1); opacity: 0.7; }
+.modal-header .btn-close:hover { opacity: 1; }
+.modal-footer {
+  background: #F8FAFC;
+  border-top: 1px solid #E2E8F0 !important;
+  padding: 14px 24px;
+}
+
+/* Branch pills */
+.modal-branch-pill {
+  border-radius: 20px;
+  font-size: 0.73rem;
+  font-weight: 600;
+  padding: 5px 14px;
   transition: all 0.15s ease;
 }
-.table-catalog-row {
-  cursor: pointer;
-  transition: background-color 0.15s ease;
+
+/* Table */
+.table-catalog-row { cursor: pointer; transition: background-color 0.12s ease; }
+.table-catalog-row:hover { background-color: #EFF6FF !important; }
+.table thead th {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: #64748B;
+  border-bottom: 2px solid #E2E8F0;
+  padding: 12px 14px;
+  background: #F8FAFC;
 }
-.table-catalog-row:hover {
-  background-color: #F1F5F9 !important;
+.table tbody td { padding: 12px 14px; vertical-align: middle; }
+
+/* Section divider number badges */
+.step-badge {
+  width: 28px; height: 28px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.78rem;
+  font-weight: 800;
+  flex-shrink: 0;
+}
+
+/* Responsive tweaks */
+@media (max-width: 768px) {
+  .mutation-page-header { padding: 20px 18px; }
+  .mutation-card-body { padding: 0 16px 20px; }
+  .mutation-card-header { padding: 16px 16px 0; }
 }
 </style>';
 
 $errorHtml = $error ? '<div class="alert alert-danger alert-dismissible fade show border-0 shadow-sm mb-4" style="border-left: 4px solid #DC2626 !important;"><i class="bi bi-exclamation-triangle-fill me-2 text-danger"></i>'.e($error).'<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>' : '';
 
 $body = '
-<!-- Header Navigasi -->
-<div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
-  <div>
-    <div class="tech-label mb-1">ASSET LIFECYCLE / TRANSFER & BAST</div>
-    <h1 class="h3 fw-bold text-dark mb-1 d-flex align-items-center gap-2">
-      <i class="bi bi-arrow-left-right text-primary"></i> Mutasi &amp; Serah Terima Aset
-    </h1>
-    <p class="text-secondary small mb-0">Relokasi perangkat antar-kantor cabang, pergantian pengguna, dan penerbitan Berita Acara Serah Terima (BAST).</p>
-  </div>
-  <div class="d-flex align-items-center gap-2">
-    <a href="'.e(module_url('asset_mutations.php')).'" class="btn btn-outline-secondary fw-semibold btn-sm px-3 bg-white">
-      <i class="bi bi-journal-text me-1"></i> Riwayat Mutasi
-    </a>
-    <a href="'.e(module_url('dashboard.php')).'" class="btn btn-outline-secondary fw-semibold btn-sm px-3 bg-white">
-      <i class="bi bi-arrow-left me-1"></i> Dashboard
-    </a>
+<!-- Header Premium -->
+<div class="mutation-page-header">
+  <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+    <div>
+      <div class="tech-label">ASSET LIFECYCLE / TRANSFER &amp; BAST</div>
+      <h1 class="d-flex align-items-center gap-2 mb-1">
+        <i class="bi bi-arrow-left-right"></i> Mutasi &amp; Serah Terima Aset
+      </h1>
+      <p>Relokasi perangkat antar-kantor cabang, pergantian pengguna, dan penerbitan Berita Acara Serah Terima (BAST).</p>
+    </div>
+    <div class="header-actions d-flex align-items-center gap-2 flex-shrink-0">
+      <a href="'.e(module_url('asset_mutations.php')).'" class="btn">
+        <i class="bi bi-journal-text me-1"></i> Riwayat Mutasi
+      </a>
+      <a href="'.e(module_url('dashboard.php')).'" class="btn">
+        <i class="bi bi-arrow-left me-1"></i> Dashboard
+      </a>
+    </div>
   </div>
 </div>
 
@@ -241,27 +536,28 @@ $body = '
   <div class="row g-4">
     <!-- Kolom Kiri: Pemilihan & Informasi Aset Saat Ini -->
     <div class="col-lg-5">
-      <div class="card p-4 h-100 border-0 shadow-sm" style="border-radius: 16px;">
-        <div class="d-flex align-items-center justify-content-between mb-3">
-          <h5 class="fw-bold text-dark mb-0 d-flex align-items-center gap-2">
-            <i class="bi bi-box-seam-fill text-primary"></i> 1. Aset yang Dimutasi
+      <div class="mutation-card">
+        <div class="mutation-card-header">
+          <h5>
+            <span class="step-badge bg-primary text-white">1</span>
+            <i class="bi bi-box-seam-fill text-primary"></i> Aset yang Dimutasi
           </h5>
-          <div class="btn-group btn-group-sm" role="group">
-            <a href="?type=komputer" class="btn '.($selectedType === 'komputer' ? 'btn-primary active fw-bold' : 'btn-outline-secondary bg-white').'" style="font-size: 0.72rem;">Komputer / IT</a>
-            <a href="?type=inventaris" class="btn '.($selectedType === 'inventaris' ? 'btn-primary active fw-bold' : 'btn-outline-secondary bg-white').'" style="font-size: 0.72rem;">Inventaris Lain</a>
+          <div class="type-switcher btn-group btn-group-sm" role="group">
+            <a href="?type=komputer" class="btn '.($selectedType === 'komputer' ? 'btn-primary active fw-bold' : 'btn-outline-secondary bg-white').'">Komputer / IT</a>
+            <a href="?type=inventaris" class="btn '.($selectedType === 'inventaris' ? 'btn-primary active fw-bold' : 'btn-outline-secondary bg-white').'">Inventaris Lain</a>
           </div>
         </div>
+        <div class="mutation-card-body">
 
         <!-- Tombol Utama: Buka Katalog Modal Pencarian -->
-        <button type="button" class="btn btn-primary btn-catalog-pulse fw-bold w-100 py-2.5 mb-3 d-flex align-items-center justify-content-center gap-2" data-bs-toggle="modal" data-bs-target="#modalPilihAset" style="border-radius: 12px; background: linear-gradient(135deg, #1E40AF 0%, #2563EB 100%); border: none;">
+        <button type="button" class="btn btn-catalog-pulse w-100 mb-3 d-flex align-items-center justify-content-center gap-2" data-bs-toggle="modal" data-bs-target="#modalPilihAset">
           <i class="bi bi-grid-3x3-gap-fill fs-5"></i>
           <span>Buka Katalog &amp; Cari Aset</span>
-          <span class="badge bg-white text-primary ms-1 px-2.5 py-1 rounded-pill small">'.count($assetsList).' Unit</span>
+          <span class="btn-catalog-badge badge ms-2">'.count($assetsList).' Unit</span>
         </button>
 
-        <div class="position-relative text-center my-2">
-          <hr class="border-secondary opacity-20 my-0">
-          <span class="position-absolute top-50 start-50 translate-middle bg-white px-2 small text-muted text-uppercase fw-bold" style="font-size: 0.65rem; letter-spacing: 0.05em;">Atau Pilih Cepat di Bawah</span>
+        <div class="or-divider">
+          <span>Atau Pilih Cepat di Bawah</span>
         </div>
 
         <!-- Filter Cepat: Cabang & Ketik Pencarian -->
@@ -313,7 +609,7 @@ $body .= '
         <!-- Info Box Kondisi Asal Terpilih -->
         <div class="location-box mt-2" id="lokasiAsalBox">
           <div class="d-flex align-items-center justify-content-between mb-2">
-            <span class="badge bg-secondary px-2.5 py-1" style="font-size: 0.7rem; border-radius: 6px;">LOKASI ASAL SAAT INI</span>
+            <span class="badge bg-primary px-3 py-2" style="font-size: 0.68rem; border-radius: 8px; letter-spacing:0.05em;">LOKASI ASAL SAAT INI</span>
             <span class="text-muted small" style="font-size: 0.72rem;"><i class="bi bi-shield-check text-success me-1"></i>Terverifikasi</span>
           </div>
           
@@ -348,20 +644,24 @@ $body .= '
           </div>
         </div>
 
-        <div class="alert alert-info border-0 mt-3 p-3 small mb-0" style="background: #EFF6FF; border-radius: 10px;">
+        <div class="info-bast">
           <i class="bi bi-info-circle-fill text-primary me-1"></i>
           Setelah mutasi diproses, sistem akan otomatis mencatat riwayat perpindahan di log audit dan menerbitkan formulir <strong>BAST (Berita Acara Serah Terima)</strong> resmi.
         </div>
-      </div>
+        </div><!-- /mutation-card-body -->
+      </div><!-- /mutation-card left -->
     </div>
 
     <!-- Kolom Kanan: Tujuan Baru & Alasan Mutasi -->
     <div class="col-lg-7">
-      <div class="card p-4 h-100 border-0 shadow-sm" style="border-radius: 16px;">
-        <h5 class="fw-bold text-dark mb-3 d-flex align-items-center gap-2">
-          <i class="bi bi-geo-alt-fill text-success"></i> 2. Tujuan Mutasi &amp; Serah Terima
-        </h5>
-
+      <div class="mutation-card">
+        <div class="mutation-card-header">
+          <h5>
+            <span class="step-badge bg-success text-white">2</span>
+            <i class="bi bi-geo-alt-fill text-success"></i> Tujuan Mutasi &amp; Serah Terima
+          </h5>
+        </div>
+        <div class="mutation-card-body">
         <div class="row g-3">
           <div class="col-md-6">
             <label class="form-label text-uppercase fw-bold text-muted small" style="font-size: 0.72rem; letter-spacing: 0.05em;">Kantor Cabang Tujuan <span class="text-danger">*</span></label>
@@ -425,12 +725,15 @@ $body .= '
         <hr class="my-4 border-secondary opacity-15">
 
         <div class="d-flex justify-content-between align-items-center">
-          <a href="'.e(module_url('assets.php')).'" class="btn btn-outline-secondary px-4 fw-semibold">Batal</a>
-          <button type="submit" class="btn btn-primary px-4 py-2.5 fw-bold shadow-sm d-inline-flex align-items-center gap-2">
-            <i class="bi bi-check-circle-fill"></i> Proses Mutasi &amp; Terbitkan BAST &raquo;
+          <a href="'.e(module_url('assets.php')).'" class="btn-cancel-mutation btn">
+            <i class="bi bi-x-circle me-1"></i> Batal
+          </a>
+          <button type="submit" class="btn-submit-mutation btn d-inline-flex align-items-center gap-2">
+            <i class="bi bi-check-circle-fill"></i> Proses Mutasi &amp; Terbitkan BAST
           </button>
         </div>
-      </div>
+        </div><!-- /mutation-card-body -->
+      </div><!-- /mutation-card -->
     </div>
   </div>
 </form>
@@ -439,12 +742,12 @@ $body .= '
 <div class="modal fade" id="modalPilihAset" tabindex="-1" aria-labelledby="modalPilihAsetLabel" aria-hidden="true">
   <div class="modal-dialog modal-xl modal-dialog-scrollable">
     <div class="modal-content border-0 shadow-lg" style="border-radius: 16px;">
-      <div class="modal-header bg-light py-3 px-4 border-bottom">
+      <div class="modal-header">
         <div>
-          <h5 class="modal-title fw-bold text-dark d-flex align-items-center gap-2" id="modalPilihAsetLabel">
+          <h5 class="modal-title d-flex align-items-center gap-2" id="modalPilihAsetLabel">
             <i class="bi bi-grid-3x3-gap-fill text-primary"></i> Katalog Pemilihan Aset Mutasi
           </h5>
-          <p class="text-secondary small mb-0">Klik tombol <strong>"Pilih Unit"</strong> pada perangkat yang ingin dipindahkan ke kantor cabang lain.</p>
+          <p>Klik tombol <strong>"Pilih Unit"</strong> pada perangkat yang ingin dipindahkan ke kantor cabang lain.</p>
         </div>
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
