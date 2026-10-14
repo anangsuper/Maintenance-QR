@@ -565,24 +565,30 @@ foreach ($pageAssets as $a) {
       <td class="text-center">'.$maintBadge.'</td>
       <td class="text-center text-nowrap">
         '.($qrModalJson ? '
-        <button type="button" class="btn btn-sm btn-outline-primary d-inline-flex align-items-center gap-1 py-1 px-2 rounded-pill shadow-xs" 
+        <button type="button" class="btn btn-sm btn-outline-primary d-inline-flex align-items-center gap-1 py-1 px-2.5 rounded-pill shadow-xs" 
           onclick="openQrModal('.$qrModalJson.')" title="Klik untuk Pratinjau & Unduh QR">
-          <i class="bi bi-qr-code fs-6"></i>
-          <span class="small fw-semibold" style="font-size: 0.72rem;">LIHAT QR</span>
+          <i class="bi bi-qr-code"></i>
+          <span style="font-size: 0.72rem; font-weight: 600;">QR</span>
         </button>' : '
-        <span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-25 px-2 py-1 rounded-pill font-monospace" style="font-size: 0.72rem;">
-          <i class="bi bi-dash-circle me-1"></i>BELUM ADA
+        <span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-25 px-2 py-1 rounded-pill" style="font-size: 0.7rem;">
+          <i class="bi bi-dash"></i>
         </span>').'
       </td>
       <td class="text-end text-nowrap">
         <div class="d-inline-flex align-items-center gap-1">
           '.$quickActionBtn.'
-          <div class="btn-group btn-group-sm">
-            '.($scanUrl ? '<a class="btn btn-sm btn-light border" href="'.e($scanUrl).'" title="Buka Kartu / Scan"><i class="bi bi-qr-code-scan"></i></a>' : '').'
-            <a class="btn btn-sm btn-light border text-primary" href="'.e(module_url('asset_mutation.php', ['id' => $aid, 'type' => 'komputer'])).'" title="Mutasi &amp; Serah Terima Aset (BAST)"><i class="bi bi-arrow-left-right"></i></a>
-            <a class="btn btn-sm btn-light border" target="_blank" href="'.e($cardUrl).'" title="Cetak Kartu Kontrol"><i class="bi bi-printer"></i></a>
-            <a class="btn btn-sm btn-light border" href="'.e($editUrl).'" title="Edit Perangkat"><i class="bi bi-pencil"></i></a>
-            <a class="btn btn-sm btn-light border text-danger" href="'.e($deleteUrl).'" title="Hapus Perangkat"><i class="bi bi-trash"></i></a>
+          <div class="dropdown">
+            <button class="btn btn-sm btn-light border px-2 py-1 shadow-xs" type="button" data-bs-toggle="dropdown" aria-expanded="false" title="Menu Aksi Lainnya">
+              <i class="bi bi-three-dots-vertical"></i>
+            </button>
+            <ul class="dropdown-menu dropdown-menu-end shadow-sm border py-1" style="font-size: 0.82rem; min-width: 170px;">
+              '.($scanUrl ? '<li><a class="dropdown-item py-1.5" href="'.e($scanUrl).'"><i class="bi bi-qr-code-scan me-2 text-info"></i> Buka / Scan</a></li>' : '').'
+              <li><a class="dropdown-item py-1.5" href="'.e(module_url('asset_mutation.php', ['id' => $aid, 'type' => 'komputer'])).'"><i class="bi bi-arrow-left-right me-2 text-primary"></i> Mutasi Aset</a></li>
+              <li><a class="dropdown-item py-1.5" target="_blank" href="'.e($cardUrl).'"><i class="bi bi-printer me-2 text-secondary"></i> Cetak Kartu</a></li>
+              <li><a class="dropdown-item py-1.5" href="'.e($editUrl).'"><i class="bi bi-pencil me-2 text-warning"></i> Edit Data</a></li>
+              <li><hr class="dropdown-divider my-1"></li>
+              <li><a class="dropdown-item py-1.5 text-danger" href="'.e($deleteUrl).'" onclick="return confirm(\'Yakin ingin menghapus aset '.e(addslashes($kode)).'?\');"><i class="bi bi-trash me-2"></i> Hapus</a></li>
+            </ul>
           </div>
         </div>
       </td>
@@ -845,22 +851,22 @@ $body = '
     </div>
   </div>
 
-  <div class="table-responsive">
-    <table class="table table-hover align-middle mb-0">
+  <div class="table-responsive" style="overflow-x: auto;">
+    <table class="table table-hover align-middle mb-0" style="table-layout: auto;">
       <thead>
         <tr>
-          <th style="width: 40px;" class="text-center">
+          <th style="width: 38px;" class="text-center">
             <input class="form-check-input" type="checkbox" id="checkAllAssets" title="Pilih Semua di Halaman Ini" style="cursor: pointer; width: 1.15rem; height: 1.15rem;">
           </th>
-          <th style="width: 40px;" class="text-center">No</th>
-          <th style="width: 150px;">Kode Inventaris</th>
+          <th style="width: 36px;" class="text-center">No</th>
+          <th style="width: 125px;">Kode</th>
           <th>Perangkat / Spesifikasi</th>
           <th>Pengguna / Divisi</th>
-          <th>Lokasi & IP</th>
-          <th style="width: 110px;" class="text-center">Kondisi</th>
-          <th style="width: 160px;" class="text-center">Maintenance ('.$currentMonthName.')</th>
-          <th style="width: 120px;" class="text-center">Label QR</th>
-          <th style="width: 130px;" class="text-end">Aksi</th>
+          <th>Lokasi &amp; IP</th>
+          <th style="width: 85px;" class="text-center">Kondisi</th>
+          <th style="width: 135px;" class="text-center">Maintenance</th>
+          <th style="width: 75px;" class="text-center">QR</th>
+          <th style="width: 110px;" class="text-end">Aksi</th>
         </tr>
       </thead>
       <tbody>
