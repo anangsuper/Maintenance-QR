@@ -205,6 +205,9 @@ if (empty($existingAudit)) {
         [1, date('Y-m-d H:i:s'), 1, 'admin', 'admin', '127.0.0.1', 'CREATE', 'SISTEM', 1, 'Audit Trail Initialized', 'Inisialisasi modul Audit Trail POJK / ISO 27001']
     ], 'USER_ENTERED');
     $results[] = "✅ Tab Audit_Trail — dibuat + header & log inisialisasi";
+} else {
+    $results[] = "⏭️ Tab Audit_Trail — sudah ada";
+}
 // ====== 12. Tab inventaris_kartu ======
 $client->createSheetIfNotExists('inventaris_kartu');
 $existingInv = $client->getValues('inventaris_kartu!A1:H1');

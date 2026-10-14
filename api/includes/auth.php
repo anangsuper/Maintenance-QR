@@ -348,6 +348,14 @@ function require_it(): void {
     }
 }
 
+function is_it(): bool {
+    if (!is_logged_in()) {
+        return false;
+    }
+    $role = strtolower(current_user_role());
+    return in_array($role, ['admin', 'teknisi', 'it'], true) || (!is_hrd() && !is_auditor());
+}
+
 function is_auditor(): bool {
     if (!is_logged_in()) {
         return false;
