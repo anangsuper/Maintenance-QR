@@ -1287,16 +1287,28 @@ label.form-label,
   margin-bottom: 6px;
 }
 
-/* ── Smooth page animations ── */
-.card, .mutation-card, .alert, .badge, .btn {
-  animation: fadeInUp 0.22s ease both;
+/* ── Smooth page animations (aman untuk layout) ── */
+.mutation-card {
+  animation: pageFadeIn 0.2s ease both;
 }
-@keyframes fadeInUp {
-  from { opacity: 0; transform: translateY(6px); }
-  to   { opacity: 1; transform: translateY(0); }
+@keyframes pageFadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
 }
 
-/* ── Responsive tweaks mobile ── */
+/* ── Responsive tweaks mobile & grid protection ── */
+.branch-nav-bar {
+  max-width: 100%;
+  overflow-x: auto;
+  white-space: nowrap;
+}
+.row {
+  margin-right: -0.75rem;
+  margin-left: -0.75rem;
+}
+.app-content-container {
+  overflow-x: hidden;
+}
 @media (max-width: 576px) {
   .mutation-page-header { border-radius: 14px !important; padding: 18px 16px !important; }
   .modal-content { border-radius: 16px !important; }
