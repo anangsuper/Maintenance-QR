@@ -73,7 +73,6 @@ function render_page(string $title, string $content, string $extraHead = '', str
             ['title' => 'Asset Registry', 'url' => module_url('assets.php'), 'icon' => 'bi-pc-display', 'active' => in_array($currentPage, ['assets.php', 'asset_add.php', 'asset_edit.php', 'asset_delete.php', 'asset_import.php'], true)],
             ['title' => 'Mutasi Aset', 'url' => module_url('asset_mutations.php'), 'icon' => 'bi-arrow-left-right', 'active' => in_array($currentPage, ['asset_mutations.php', 'asset_mutation.php', 'print_bast.php'], true)],
             ['title' => 'Maintenance', 'url' => module_url('audit.php'), 'icon' => 'bi-clipboard-check', 'active' => in_array($currentPage, ['audit.php', 'monthly_history.php', 'history.php', 'maintenance_detail.php'], true)],
-            ['title' => 'QR Scanner', 'url' => module_url('scanner.php'), 'icon' => 'bi-qr-code-scan', 'active' => ($currentPage === 'scanner.php')],
         ];
     }
 
