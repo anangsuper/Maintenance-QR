@@ -917,8 +917,10 @@ $body = '
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
       <div class="modal-body text-center p-3">
-        <div class="p-2 border rounded-3 bg-white d-inline-block shadow-xs mb-2">
-          <canvas id="invModalQrCanvas" width="160" height="160" style="display: block; margin: 0 auto;"></canvas>
+        <div class="p-2 border rounded-3 bg-white d-inline-block shadow-xs mb-2" style="min-width: 176px; min-height: 176px;">
+          <div id="invModalQrContainer" style="display: flex; align-items: center; justify-content: center; width: 160px; height: 160px; margin: 0 auto;">
+            <canvas id="invModalQrCanvas" width="160" height="160" style="display: block;"></canvas>
+          </div>
         </div>
         <div class="font-monospace fw-bold text-dark mb-1" id="invModalRekening" style="font-size: 0.82rem;"></div>
         <div class="fw-semibold text-secondary small mb-1" id="invModalNama"></div>
@@ -1022,19 +1024,43 @@ function openInvQrModal(data) {
   document.getElementById("invModalDetailBtn").href = data.detail_url || "#";
   document.getElementById("invModalPrintBtn").href = data.print_url || "#";
 
-  var canvas = document.getElementById("invModalQrCanvas");
-  if (canvas && window.QRCode) {
-    var ctx = canvas.getContext("2d");
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    QRCode.toCanvas(canvas, data.barcode || data.nomor_rekening, {
-      width: 160,
-      margin: 1,
-      color: { dark: "#08182f", light: "#ffffff" }
-    });
+  var qrPayload = data.detail_url || data.barcode || data.nomor_rekening || "";
+  var container = document.getElementById("invModalQrContainer");
+  if (container) {
+    container.innerHTML = '<canvas id="invModalQrCanvas" width="160" height="160" style="display: block;"></canvas>';
+    var canvas = document.getElementById("invModalQrCanvas");
+    
+    var rendered = false;
+    if (window.QRCode && typeof window.QRCode.toCanvas === "function" && canvas) {
+      try {
+        window.QRCode.toCanvas(canvas, qrPayload, {
+          width: 160,
+          margin: 1,
+          color: { dark: "#08182f", light: "#ffffff" }
+        }, function(err) {
+          if (err) {
+            fallbackQrImg(container, qrPayload);
+          }
+        });
+        rendered = true;
+      } catch (e) {
+        rendered = false;
+      }
+    }
+    
+    if (!rendered) {
+      fallbackQrImg(container, qrPayload);
+    }
   }
 
   var modal = new bootstrap.Modal(document.getElementById("invQuickQrModal"));
   modal.show();
+}
+
+function fallbackQrImg(container, text) {
+  if (!container) return;
+  var encoded = encodeURIComponent(text);
+  container.innerHTML = '<img src="https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=' + encoded + '" width="160" height="160" style="display:block; border-radius: 4px;" alt="QR Code">';
 }
 
 // Lightbox Unit IT
