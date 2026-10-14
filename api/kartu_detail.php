@@ -441,6 +441,55 @@ $pageTitle = $card ? e($card['nama_barang']) . ' - Kartu Inventaris' : 'Kartu In
             justify-content: center;
             z-index: 10;
         }
+
+        /* ── Mobile-First Optimization for Smartphones (HP) ── */
+        @media (max-width: 768px) {
+            body {
+                background: #f8fafc;
+            }
+            .header-brand {
+                padding: 12px 14px !important;
+            }
+            .header-brand h1 {
+                font-size: 0.85rem !important;
+            }
+            main.container {
+                padding-left: 10px !important;
+                padding-right: 10px !important;
+                padding-top: 14px !important;
+            }
+            .card-custom {
+                border-radius: 14px !important;
+                box-shadow: 0 4px 16px rgba(0, 43, 73, 0.06) !important;
+            }
+            .card-custom .p-3, .card-custom .p-md-4 {
+                padding: 14px !important;
+            }
+            .bank-data-table {
+                font-size: 0.82rem !important;
+            }
+            .bank-data-table td {
+                padding: 8px 10px !important;
+                word-break: break-word;
+            }
+            .item-photo-wrapper {
+                border-radius: 12px;
+                max-height: 240px;
+            }
+            .qr-card-box {
+                margin: 0 auto;
+            }
+            .btn {
+                padding: 9px 16px !important;
+                font-size: 0.84rem !important;
+            }
+            /* Form inputs touch-friendly */
+            .form-control, .form-select {
+                font-size: 0.92rem !important;
+                min-height: 42px;
+                border-radius: 10px;
+            }
+        }
     </style>
 </head>
 <body>
