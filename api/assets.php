@@ -579,6 +579,7 @@ foreach ($pageAssets as $a) {
           '.$quickActionBtn.'
           <div class="btn-group btn-group-sm">
             '.($scanUrl ? '<a class="btn btn-sm btn-light border" href="'.e($scanUrl).'" title="Buka Kartu / Scan"><i class="bi bi-qr-code-scan"></i></a>' : '').'
+            <a class="btn btn-sm btn-light border text-primary" href="'.e(module_url('asset_mutation.php', ['id' => $aid, 'type' => 'komputer'])).'" title="Mutasi &amp; Serah Terima Aset (BAST)"><i class="bi bi-arrow-left-right"></i></a>
             <a class="btn btn-sm btn-light border" target="_blank" href="'.e($cardUrl).'" title="Cetak Kartu Kontrol"><i class="bi bi-printer"></i></a>
             <a class="btn btn-sm btn-light border" href="'.e($editUrl).'" title="Edit Perangkat"><i class="bi bi-pencil"></i></a>
             <a class="btn btn-sm btn-light border text-danger" href="'.e($deleteUrl).'" title="Hapus Perangkat"><i class="bi bi-trash"></i></a>
@@ -664,6 +665,9 @@ $body = '
     </a>
     <a class="btn btn-light border d-inline-flex align-items-center gap-1 fw-semibold text-dark shadow-xs" href="'.e(module_url('asset_gallery.php')).'">
       <i class="bi bi-images text-primary"></i> Galeri Foto Unit
+    </a>
+    <a class="btn btn-light border d-inline-flex align-items-center gap-1 fw-semibold text-dark shadow-xs" href="'.e(module_url('asset_mutations.php')).'">
+      <i class="bi bi-arrow-left-right text-primary"></i> Mutasi Aset
     </a>
     <div class="btn-group">
       <button type="button" class="btn btn-light border dropdown-toggle d-inline-flex align-items-center gap-1" data-bs-toggle="dropdown" aria-expanded="false">

@@ -62,6 +62,7 @@ function render_page(string $title, string $content, string $extraHead = '', str
         $operationsItems = [
             ['title' => 'Kartu Inventaris', 'url' => module_url('dashboard.php', ['tab' => 'kartu']), 'icon' => 'bi-credit-card-2-front', 'active' => ($currentPage === 'dashboard.php' && ($_GET['tab'] ?? '') === 'kartu') || in_array($currentPage, ['inventory_card.php', 'cetak_kartu.php', 'print_inventory_card.php', 'kartu_detail.php'], true)],
             ['title' => 'Galeri Foto Inventaris', 'url' => module_url('asset_gallery.php', ['sub' => 'inventaris']), 'icon' => 'bi-images', 'active' => in_array($currentPage, ['asset_gallery.php', 'inventaris_gallery.php'], true)],
+            ['title' => 'Mutasi Aset', 'url' => module_url('asset_mutations.php'), 'icon' => 'bi-arrow-left-right', 'active' => in_array($currentPage, ['asset_mutations.php', 'asset_mutation.php', 'print_bast.php'], true)],
         ];
     } else {
         $operationsItems = [
@@ -70,6 +71,7 @@ function render_page(string $title, string $content, string $extraHead = '', str
             ['title' => 'Galeri Foto', 'url' => module_url('asset_gallery.php'), 'icon' => 'bi-images', 'active' => in_array($currentPage, ['asset_gallery.php', 'inventaris_gallery.php'], true)],
             ['title' => 'Temuan Kendala', 'url' => module_url('dashboard.php', ['tab' => 'temuan']), 'icon' => 'bi-tools', 'active' => ($currentPage === 'dashboard.php' && ($_GET['tab'] ?? '') === 'temuan')],
             ['title' => 'Asset Registry', 'url' => module_url('assets.php'), 'icon' => 'bi-pc-display', 'active' => in_array($currentPage, ['assets.php', 'asset_add.php', 'asset_edit.php', 'asset_delete.php', 'asset_import.php'], true)],
+            ['title' => 'Mutasi Aset', 'url' => module_url('asset_mutations.php'), 'icon' => 'bi-arrow-left-right', 'active' => in_array($currentPage, ['asset_mutations.php', 'asset_mutation.php', 'print_bast.php'], true)],
             ['title' => 'Maintenance', 'url' => module_url('audit.php'), 'icon' => 'bi-clipboard-check', 'active' => in_array($currentPage, ['audit.php', 'monthly_history.php', 'history.php', 'maintenance_detail.php'], true)],
             ['title' => 'QR Scanner', 'url' => module_url('scanner.php'), 'icon' => 'bi-qr-code-scan', 'active' => ($currentPage === 'scanner.php')],
         ];
