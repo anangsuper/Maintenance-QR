@@ -1115,7 +1115,196 @@ h1, h2, h3, h4, h5, h6,
   .app-content-container { padding: 0 !important; max-width: 100% !important; }
   body { background: #FFFFFF !important; }
 }
+
+/* ============================================================
+   PREMIUM GLOBAL UI UPGRADE — ALL PAGES
+   ============================================================ */
+
+/* ── Fix: teks di dalam gradient/dark header selalu putih ── */
+[class*="bg-navy"],
+[class*="bg-primary"],
+[class*="bg-dark"],
+[style*="background: linear-gradient"],
+[style*="background:linear-gradient"] {
+  color: inherit;
+}
+.mutation-page-header,
+.mutation-page-header * {
+  color: #ffffff !important;
+}
+.mutation-page-header .step-badge,
+.mutation-page-header .type-switcher * {
+  color: inherit !important;
+}
+
+/* ── Card Premium — elevasi saat hover ── */
+.card {
+  transition: box-shadow 0.25s cubic-bezier(.4,0,.2,1), transform 0.25s cubic-bezier(.4,0,.2,1), border-color 0.2s !important;
+}
+.card:hover {
+  box-shadow: 0 8px 28px rgba(15,23,42,0.11), 0 2px 8px rgba(15,23,42,0.05) !important;
+  border-color: #C7D7F0 !important;
+}
+.card-metric:hover {
+  transform: translateY(-3px) !important;
+  box-shadow: 0 12px 32px rgba(15,23,42,0.13) !important;
+}
+
+/* ── Table — lebih bersih & readable ── */
+.table thead th {
+  font-size: 0.71rem !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.07em !important;
+  text-transform: uppercase !important;
+  color: #475569 !important;
+  background: linear-gradient(180deg, #F8FAFC 0%, #F1F5F9 100%) !important;
+  padding: 13px 16px !important;
+  border-bottom: 2px solid #E2E8F0 !important;
+}
+.table tbody td {
+  padding: 13px 16px !important;
+  border-bottom: 1px solid #F1F5F9 !important;
+  vertical-align: middle !important;
+  color: #1E293B !important;
+}
+.table tbody tr:hover td {
+  background-color: #EFF6FF !important;
+}
+.table tbody tr:last-child td {
+  border-bottom: none !important;
+}
+
+/* ── Badge Improvements ── */
+.badge {
+  font-weight: 600 !important;
+  letter-spacing: 0.03em;
+  padding: 4px 10px !important;
+  border-radius: 6px !important;
+}
+.badge.rounded-pill { border-radius: 20px !important; }
+
+/* ── Alert Styling ── */
+.alert {
+  border-radius: 12px !important;
+  border-left-width: 4px !important;
+  font-size: 0.875rem;
+}
+.alert-success { background: #F0FDF4 !important; border-color: #86EFAC !important; color: #15803D !important; }
+.alert-danger  { background: #FEF2F2 !important; border-color: #FCA5A5 !important; color: #DC2626 !important; }
+.alert-warning { background: #FFFBEB !important; border-color: #FCD34D !important; color: #B45309 !important; }
+.alert-info    { background: #F0F9FF !important; border-color: #7DD3FC !important; color: #0369A1 !important; }
+
+/* ── Dropdown Menu ── */
+.dropdown-menu {
+  border-radius: 12px !important;
+  border: 1px solid #E2E8F0 !important;
+  box-shadow: 0 8px 24px rgba(15,23,42,0.12), 0 2px 8px rgba(15,23,42,0.05) !important;
+  padding: 6px !important;
+}
+.dropdown-item {
+  border-radius: 8px !important;
+  font-size: 0.86rem !important;
+  padding: 9px 14px !important;
+  transition: background 0.15s !important;
+}
+.dropdown-item:hover {
+  background-color: #EFF6FF !important;
+  color: #1D4ED8 !important;
+}
+.dropdown-divider { margin: 5px 0 !important; }
+
+/* ── Modal Premium ── */
+.modal-content {
+  border-radius: 18px !important;
+  border: none !important;
+  box-shadow: 0 20px 64px rgba(15,23,42,0.2) !important;
+  overflow: hidden;
+}
+.modal-header {
+  padding: 18px 24px !important;
+}
+.modal-body {
+  padding: 20px 24px !important;
+}
+.modal-footer {
+  padding: 14px 24px !important;
+  background: #F8FAFC !important;
+  border-top: 1px solid #E2E8F0 !important;
+}
+
+/* ── Input Group ── */
+.input-group-text {
+  background: #F8FAFC !important;
+  border-color: #CBD5E1 !important;
+  color: #64748B;
+  font-size: 0.875rem;
+}
+
+/* ── Pagination ── */
+.page-link {
+  border-radius: 8px !important;
+  margin: 0 2px;
+  border: 1px solid #E2E8F0 !important;
+  color: #475569 !important;
+  font-weight: 600;
+  font-size: 0.84rem;
+  transition: all 0.18s !important;
+}
+.page-link:hover {
+  background: #EFF6FF !important;
+  color: #1D4ED8 !important;
+  border-color: #BFDBFE !important;
+}
+.page-item.active .page-link {
+  background: linear-gradient(135deg, #1E40AF, #2563EB) !important;
+  border-color: transparent !important;
+  color: #fff !important;
+  box-shadow: 0 3px 10px rgba(37,99,235,0.3) !important;
+}
+
+/* ── Topbar Search Button ── */
+.topbar-search-btn {
+  border-radius: 10px !important;
+}
+
+/* ── Sidebar upgrade ── */
+.sidebar-link {
+  border-radius: 10px !important;
+}
+.sidebar-link.active {
+  background: linear-gradient(90deg, rgba(59,130,246,0.22) 0%, rgba(59,130,246,0.07) 100%) !important;
+  border-left-color: #60A5FA !important;
+}
+
+/* ── Form Label Global ── */
+label.form-label,
+.form-label {
+  font-size: 0.73rem !important;
+  font-weight: 700 !important;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #475569 !important;
+  margin-bottom: 6px;
+}
+
+/* ── Smooth page animations ── */
+.card, .mutation-card, .alert, .badge, .btn {
+  animation: fadeInUp 0.22s ease both;
+}
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ── Responsive tweaks mobile ── */
+@media (max-width: 576px) {
+  .mutation-page-header { border-radius: 14px !important; padding: 18px 16px !important; }
+  .modal-content { border-radius: 16px !important; }
+  .card { border-radius: 14px !important; }
+  .btn { font-size: 0.82rem; }
+}
 </style>
+
 '.$extraHead.'
 </head>
 <body>
