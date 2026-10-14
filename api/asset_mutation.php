@@ -208,18 +208,20 @@ body { background: #F0F4F8; }
   font-size: 0.68rem;
   letter-spacing: 0.12em;
   font-weight: 700;
-  opacity: 0.75;
+  color: rgba(255,255,255,0.85) !important;
   text-transform: uppercase;
   margin-bottom: 6px;
 }
-.mutation-page-header h1 {
+.mutation-page-header h1,
+.mutation-page-header h1 * {
   font-size: 1.5rem;
   font-weight: 800;
   margin-bottom: 4px;
+  color: #ffffff !important;
 }
 .mutation-page-header p {
   font-size: 0.875rem;
-  opacity: 0.8;
+  color: rgba(255,255,255,0.82) !important;
   margin: 0;
 }
 .mutation-page-header .header-actions .btn {
@@ -254,10 +256,11 @@ body { background: #F0F4F8; }
   padding: 20px 24px 0;
   margin-bottom: 20px;
 }
-.mutation-card-header h5 {
+.mutation-card-header h5,
+.mutation-card-header h5 * {
   font-size: 1rem;
   font-weight: 800;
-  color: #0F172A;
+  color: #0F172A !important;
   margin: 0;
   display: flex;
   align-items: center;
@@ -378,7 +381,7 @@ body { background: #F0F4F8; }
   font-weight: 700;
   letter-spacing: 0.04em;
   text-transform: uppercase;
-  color: #64748B;
+  color: #475569 !important;
   margin-bottom: 6px;
 }
 textarea.form-control { border-radius: 12px !important; }
