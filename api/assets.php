@@ -703,8 +703,8 @@ $body = '
 <!-- Stat Cards -->
 <div class="row g-3 mb-4">
   <div class="col-6 col-lg-3">
-    <a href="'.e(filter_query(['status' => null, 'maint' => null, 'page' => 1])).'" class="text-decoration-none">
-      <div class="card card-metric h-100" style="border-left-color: var(--blue-corporate);">
+    <a href="'.e(filter_query(['status' => null, 'maint' => null, 'page' => 1])).'" class="text-decoration-none d-block h-100">
+      <div class="card card-metric h-100" style="border-left-color: var(--blue-corporate) !important;">
         <div class="metric-value">'.$statTotal.'</div>
         <div class="metric-label">Total Unit Aset</div>
         <div class="small text-muted mt-2" style="font-size: 0.72rem;">Seluruh unit terdaftar</div>
@@ -712,8 +712,8 @@ $body = '
     </a>
   </div>
   <div class="col-6 col-lg-3">
-    <a href="'.e(filter_query(['maint' => 'done', 'page' => 1])).'" class="text-decoration-none">
-      <div class="card card-metric h-100" style="border-left-color: #16803C;">
+    <a href="'.e(filter_query(['maint' => 'done', 'page' => 1])).'" class="text-decoration-none d-block h-100">
+      <div class="card card-metric h-100" style="border-left-color: #16A34A !important;">
         <div class="metric-value text-success">'.$statDoneMaint.'</div>
         <div class="metric-label">Sudah Maintenance</div>
         <div class="small text-success mt-2" style="font-size: 0.72rem;">Bulan '.$currentMonthName.'</div>
@@ -721,8 +721,8 @@ $body = '
     </a>
   </div>
   <div class="col-6 col-lg-3">
-    <a href="'.e(filter_query(['maint' => 'pending', 'page' => 1])).'" class="text-decoration-none">
-      <div class="card card-metric h-100" style="border-left-color: #B54708;">
+    <a href="'.e(filter_query(['maint' => 'pending', 'page' => 1])).'" class="text-decoration-none d-block h-100">
+      <div class="card card-metric h-100" style="border-left-color: #D97706 !important;">
         <div class="metric-value text-warning">'.$statPendingMaint.'</div>
         <div class="metric-label">Belum Diperiksa</div>
         <div class="small text-muted mt-2" style="font-size: 0.72rem;">Menunggu inspeksi</div>
@@ -730,8 +730,8 @@ $body = '
     </a>
   </div>
   <div class="col-6 col-lg-3">
-    <a href="'.e(filter_query(['maint' => 'repair', 'page' => 1])).'" class="text-decoration-none">
-      <div class="card card-metric h-100" style="border-left-color: #B42318;">
+    <a href="'.e(filter_query(['maint' => 'repair', 'page' => 1])).'" class="text-decoration-none d-block h-100">
+      <div class="card card-metric h-100" style="border-left-color: #DC2626 !important;">
         <div class="metric-value text-danger">'.$statRepair.'</div>
         <div class="metric-label">Temuan Masalah</div>
         <div class="small text-danger mt-2" style="font-size: 0.72rem;">Perlu tindak lanjut</div>

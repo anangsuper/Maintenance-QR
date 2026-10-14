@@ -4,14 +4,14 @@ require_it();
 
 $head = '<style>
 .scanner-container-dark {
-  max-width: 500px;
+  max-width: 520px;
   margin: 0 auto;
-  background-color: var(--navy-deep);
-  border: 1px solid var(--navy-subtle);
-  border-radius: 14px;
-  padding: 24px 20px;
+  background: linear-gradient(180deg, #051329 0%, #0B1E38 100%);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 18px;
+  padding: 26px 22px;
   color: #FFFFFF;
-  box-shadow: 0 10px 25px -5px rgba(8, 24, 47, 0.4);
+  box-shadow: 0 20px 40px -10px rgba(5, 19, 41, 0.6);
 }
 
 .scanner-viewport-wrapper {

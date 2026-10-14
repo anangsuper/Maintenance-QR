@@ -533,22 +533,22 @@ $body = '
 <div class="row g-4">
   <!-- Kolom Kiri: Tabel Daftar Pengguna -->
   <div class="col-lg-8">
-    <div class="card p-0 border shadow-sm h-100" style="border-radius: 8px; border-color: var(--app-border) !important; background: #fff;">
-      <div class="card-header bg-white py-3 px-4 d-flex justify-content-between align-items-center" style="border-bottom: 1px solid var(--app-border);">
+    <div class="card p-0 overflow-hidden shadow-sm h-100">
+      <div class="card-header bg-white py-3 px-4 d-flex justify-content-between align-items-center border-bottom">
         <div class="fw-bold text-dark text-uppercase small" style="letter-spacing: 0.05em;">
           <i class="bi bi-person-badge text-primary me-2"></i>Daftar Pengguna Aktif ('.count($users).')
         </div>
       </div>
       <div class="table-responsive">
         <table class="table table-hover align-middle mb-0">
-          <thead style="background-color: var(--app-navy); color: #ffffff;">
+          <thead>
             <tr>
-              <th style="width: 50px; background-color: var(--app-navy); color: #ffffff;" class="text-center font-monospace">NO</th>
-              <th style="background-color: var(--app-navy); color: #ffffff;">NAMA & USERNAME</th>
-              <th style="background-color: var(--app-navy); color: #ffffff;">PERAN</th>
-              <th style="width: 150px; background-color: var(--app-navy); color: #ffffff;" class="text-center">BIOMETRIK WAJAH</th>
-              <th style="width: 110px; background-color: var(--app-navy); color: #ffffff;" class="text-center">STATUS</th>
-              <th style="width: 120px; background-color: var(--app-navy); color: #ffffff;" class="text-end">AKSI</th>
+              <th style="width: 50px;" class="text-center font-monospace">NO</th>
+              <th>NAMA & USERNAME</th>
+              <th>PERAN</th>
+              <th style="width: 150px;" class="text-center">BIOMETRIK WAJAH</th>
+              <th style="width: 110px;" class="text-center">STATUS</th>
+              <th style="width: 120px;" class="text-end">AKSI</th>
             </tr>
           </thead>
           <tbody>
@@ -561,7 +561,7 @@ $body = '
 
   <!-- Kolom Kanan: Form Tambah / Edit Pengguna -->
   <div class="col-lg-4">
-    <div class="card p-0 border shadow-sm" style="border-radius: 8px; border-color: var(--app-border) !important; background: #fff;">
+    <div class="card p-0 overflow-hidden shadow-sm">
       '.$formCardHeader.'
       '.$formContent.'
     </div>

@@ -865,35 +865,39 @@ $head = '
 }
 .branch-nav-pill {
   white-space: nowrap;
-  padding: 6px 14px;
-  font-size: 0.82rem;
-  font-weight: 500;
-  border-radius: 6px;
+  padding: 7px 16px;
+  font-size: 0.83rem;
+  font-weight: 600;
+  border-radius: 8px;
   background: #FFFFFF;
   border: 1px solid var(--border-subtle);
-  color: var(--text-secondary);
+  color: #475569;
   text-decoration: none;
-  transition: all 0.15s ease;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
 }
 .branch-nav-pill:hover {
-  background: #F8FAFC;
-  color: var(--text-primary);
-  border-color: var(--border-strong);
+  background: #F1F5F9;
+  color: #0F172A;
+  border-color: #CBD5E1;
+  transform: translateY(-1px);
 }
 .branch-nav-pill.active {
-  background: var(--blue-corporate);
-  border-color: var(--blue-corporate);
-  color: #FFFFFF;
-  font-weight: 600;
+  background: linear-gradient(135deg, #1E40AF 0%, #2563EB 100%) !important;
+  border-color: #1D4ED8 !important;
+  color: #FFFFFF !important;
+  font-weight: 700;
+  box-shadow: 0 3px 8px rgba(37, 99, 235, 0.3);
 }
 .ops-header-badge {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 4px 10px;
-  border-radius: 20px;
-  font-size: 0.75rem;
+  gap: 7px;
+  padding: 6px 14px;
+  border-radius: 30px;
+  font-size: 0.76rem;
   font-weight: 600;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
 }
 .activity-time {
   min-width: 45px;
@@ -912,29 +916,38 @@ $head = '
 }
 .dashboard-main-nav {
   display: flex;
-  gap: 8px;
-  border-bottom: 2px solid #E2E8F0;
+  gap: 6px;
+  background: #F1F5F9;
+  padding: 6px;
+  border-radius: 12px;
+  border: 1px solid #E2E8F0;
   margin-bottom: 24px;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
 }
 .dashboard-nav-tab {
-  padding: 10px 18px;
-  font-size: 0.9rem;
+  padding: 8px 18px;
+  font-size: 0.85rem;
   font-weight: 600;
   color: #64748B;
   text-decoration: none;
-  border-bottom: 2px solid transparent;
-  margin-bottom: -2px;
+  border-radius: 8px;
+  border: none;
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  transition: all 0.15s ease;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  white-space: nowrap;
 }
 .dashboard-nav-tab:hover {
-  color: var(--blue-corporate);
+  color: #1E293B;
+  background: rgba(255, 255, 255, 0.65);
 }
 .dashboard-nav-tab.active {
-  color: var(--blue-corporate);
-  border-bottom-color: var(--blue-corporate);
+  background: #FFFFFF;
+  color: #1D4ED8;
+  font-weight: 700;
+  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.08), 0 1px 2px rgba(15, 23, 42, 0.04);
 }
 
 /* Ukuran Standar Kartu ATM (CR80: 85.6mm x 54.0mm) */
@@ -1327,12 +1340,12 @@ $body .= '
 if (is_hrd() && !is_admin()) {
     // BANNER PINTASAN CEPAT RAMAH PENGGUNA KHUSUS SDM & UMUM
     $body .= '
-    <div class="card border-0 shadow-sm mb-4" style="background: linear-gradient(135deg, #f0fdf4 0%, #e6fcf5 100%); border-left: 5px solid #16a34a !important; border-radius: 12px;">
+    <div class="card border-0 mb-4 overflow-hidden" style="background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(240, 253, 244, 0.95) 100%); border: 1px solid rgba(187, 247, 208, 0.8) !important; border-left: 5px solid #16a34a !important; border-radius: 16px; box-shadow: 0 10px 25px -5px rgba(22, 163, 74, 0.08), 0 8px 10px -6px rgba(22, 163, 74, 0.04);">
       <div class="card-body p-3 p-md-4">
         <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
           <div>
             <div class="d-flex align-items-center gap-2 mb-1">
-              <span class="badge bg-success px-2 py-1" style="font-size: 0.7rem; letter-spacing: 0.05em;">PORTAL SDM &amp; UMUM</span>
+              <span class="badge bg-success px-2.5 py-1" style="font-size: 0.7rem; letter-spacing: 0.05em; border-radius: 6px;">PORTAL SDM &amp; UMUM</span>
               <span class="text-muted small">| Selamat bertugas, <strong>'.e($_SESSION['nama'] ?? 'Petugas').'</strong></span>
             </div>
             <h4 class="fw-bold text-dark mb-1">Pusat Inventaris &amp; Label Aset Non-Komputer</h4>
@@ -1340,16 +1353,16 @@ if (is_hrd() && !is_admin()) {
           </div>
           <div class="d-flex flex-wrap gap-2">
             <a href="'.e(module_url('create_card.php')).'" class="btn btn-success fw-bold btn-sm px-3 shadow-sm">
-              <i class="bi bi-plus-circle-fill me-1"></i> Buat Kartu Baru
+              <i class="bi bi-plus-circle-fill me-1.5"></i> Buat Kartu Baru
             </a>
             <a href="'.e(module_url('dashboard.php', ['tab' => 'kartu'])).'" class="btn btn-outline-success fw-semibold btn-sm px-3 bg-white">
-              <i class="bi bi-printer-fill me-1"></i> Cetak Label CR80
+              <i class="bi bi-printer-fill me-1.5"></i> Cetak Label CR80
             </a>
             <a href="'.e(module_url('asset_gallery.php', ['sub' => 'inventaris'])).'" class="btn btn-outline-secondary fw-semibold btn-sm px-3 bg-white">
-              <i class="bi bi-images me-1"></i> Galeri Foto
+              <i class="bi bi-images me-1.5"></i> Galeri Foto
             </a>
             <button type="button" class="btn btn-outline-primary fw-semibold btn-sm px-3 bg-white" data-bs-toggle="modal" data-bs-target="#modalPanduanAplikasi">
-              <i class="bi bi-journal-text me-1"></i> Panduan Alur
+              <i class="bi bi-journal-text me-1.5"></i> Panduan Alur
             </button>
           </div>
         </div>
@@ -1360,7 +1373,7 @@ if (is_hrd() && !is_admin()) {
     $body .= '
     <div class="row g-3 mb-4">
       <div class="col-sm-4 col-12">
-        <div class="card card-metric h-100" style="border-left-color: #6bb82a;">
+        <div class="card card-metric h-100" style="border-left-color: #16a34a !important;">
           <div class="metric-value text-success d-flex align-items-center justify-content-between">
             <span>'.$totalCardsCount.'</span>
             '.($todayCardsCount > 0 ? '<span class="badge bg-success-subtle text-success border border-success-subtle" style="font-size: 0.68rem; font-weight: 700;">+'.$todayCardsCount.' Hari Ini</span>' : '').'
@@ -1370,8 +1383,8 @@ if (is_hrd() && !is_admin()) {
         </div>
       </div>
       <div class="col-sm-4 col-12">
-        <a href="'.e(module_url('asset_gallery.php', ['sub' => 'inventaris'])).'" class="text-decoration-none">
-          <div class="card card-metric h-100" style="border-left-color: #2E7CF6; cursor: pointer;">
+        <a href="'.e(module_url('asset_gallery.php', ['sub' => 'inventaris'])).'" class="text-decoration-none d-block h-100">
+          <div class="card card-metric h-100" style="border-left-color: #2563EB !important; cursor: pointer;">
             <div class="metric-value text-primary d-flex align-items-center justify-content-between">
               <span>'.$totalInvWithPhotoCount.'</span>
               <span class="badge bg-primary-subtle text-primary border border-primary-subtle" style="font-size: 0.68rem; font-weight: 700;"><i class="bi bi-camera me-1"></i>Foto Fisik</span>
@@ -1382,8 +1395,8 @@ if (is_hrd() && !is_admin()) {
         </a>
       </div>
       <div class="col-sm-4 col-12">
-        <a href="'.e(module_url('cabang_admin.php')).'" class="text-decoration-none">
-          <div class="card card-metric h-100" style="border-left-color: #D97706; cursor: pointer;">
+        <a href="'.e(module_url('cabang_admin.php')).'" class="text-decoration-none d-block h-100">
+          <div class="card card-metric h-100" style="border-left-color: #D97706 !important; cursor: pointer;">
             <div class="metric-value text-warning d-flex align-items-center justify-content-between">
               <span>5</span>
               <span class="badge bg-warning-subtle text-warning border border-warning-subtle" style="font-size: 0.68rem; font-weight: 700;">Kantor</span>
@@ -1418,28 +1431,28 @@ if (is_hrd() && !is_admin()) {
     }
 
     $body .= '
-    <div class="card border-0 shadow-sm mb-4" style="background: linear-gradient(135deg, #f0f7ff 0%, #e8f2ff 100%); border-left: 5px solid #2563eb !important; border-radius: 12px;">
+    <div class="card border-0 mb-4 overflow-hidden" style="background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(240, 247, 255, 0.95) 100%); border: 1px solid rgba(191, 219, 254, 0.8) !important; border-left: 5px solid #2563eb !important; border-radius: 16px; box-shadow: 0 10px 25px -5px rgba(37, 99, 235, 0.08), 0 8px 10px -6px rgba(37, 99, 235, 0.04);">
       <div class="card-body p-3 p-md-4">
         <div class="d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-3">
           <div>
             <div class="d-flex align-items-center gap-2 mb-1">
-              <span class="badge bg-primary px-2 py-1" style="font-size: 0.7rem; letter-spacing: 0.05em;">'.$roleDisplay.'</span>
+              <span class="badge bg-primary px-2.5 py-1" style="font-size: 0.7rem; letter-spacing: 0.05em; border-radius: 6px;">'.$roleDisplay.'</span>
               <span class="text-muted small">| Halo, <strong>'.e($_SESSION['nama'] ?? 'Petugas').'</strong></span>
             </div>
             <h4 class="fw-bold text-dark mb-1">'.$roleTitle.'</h4>
             <p class="text-secondary small mb-0">'.$roleSub.'</p>
           </div>
           <div class="d-flex flex-wrap gap-2">
-            '.(is_it() ? '<a href="'.e(module_url('scanner.php')).'" class="btn btn-primary fw-bold btn-sm px-3 shadow-sm"><i class="bi bi-qr-code-scan me-1"></i> Mulai Scan QR</a>' : '').'
+            '.(is_it() ? '<a href="'.e(module_url('scanner.php')).'" class="btn btn-primary fw-bold btn-sm px-3 shadow-sm"><i class="bi bi-qr-code-scan me-1.5"></i> Mulai Scan QR</a>' : '').'
             <a href="'.e(module_url('dashboard.php', ['tab' => 'komputer', 'bulan' => $month, 'tahun' => $year, 'cabang' => $cabangId])).'" class="btn btn-outline-primary fw-semibold btn-sm px-3 bg-white">
-              <i class="bi bi-pc-display me-1"></i> Daftar PC ('.$totalAll.')
+              <i class="bi bi-pc-display me-1.5"></i> Daftar PC ('.$totalAll.')
             </a>
             <a href="'.e(module_url('dashboard.php', ['tab' => 'temuan', 'bulan' => $month, 'tahun' => $year, 'cabang' => $cabangId])).'" class="btn btn-outline-danger fw-semibold btn-sm px-3 bg-white">
-              <i class="bi bi-exclamation-triangle-fill me-1"></i> Temuan ('.$totalUnresolvedFindings.')
+              <i class="bi bi-exclamation-triangle-fill me-1.5"></i> Temuan ('.$totalUnresolvedFindings.')
             </a>
-            '.(is_admin_or_auditor() ? '<a href="'.e(module_url('audit_trail.php')).'" class="btn btn-outline-secondary fw-semibold btn-sm px-3 bg-white"><i class="bi bi-shield-check me-1"></i> Log Audit</a>' : '').'
+            '.(is_admin_or_auditor() ? '<a href="'.e(module_url('audit_trail.php')).'" class="btn btn-outline-secondary fw-semibold btn-sm px-3 bg-white"><i class="bi bi-shield-check me-1.5"></i> Log Audit</a>' : '').'
             <button type="button" class="btn btn-outline-info fw-semibold btn-sm px-3 bg-white text-dark" data-bs-toggle="modal" data-bs-target="#modalPanduanAplikasi">
-              <i class="bi bi-journal-text text-primary me-1"></i> Panduan Alur
+              <i class="bi bi-journal-text text-primary me-1.5"></i> Panduan Alur
             </button>
           </div>
         </div>
@@ -1450,7 +1463,7 @@ if (is_hrd() && !is_admin()) {
     $body .= '
     <div class="row g-3 mb-4">
       <div class="col-6 col-md-4 col-xl-2">
-        <div class="card card-metric h-100" style="border-left-color: var(--blue-corporate);">
+        <div class="card card-metric h-100" style="border-left-color: var(--blue-corporate) !important;">
           <div class="metric-value" id="kpiTotalAll">'.$totalAll.'</div>
           <div class="metric-label">Komputer &amp; Laptop</div>
           <div class="small text-muted mt-2" style="font-size: 0.72rem;">Unit terdaftar</div>
@@ -1458,7 +1471,7 @@ if (is_hrd() && !is_admin()) {
       </div>
 
       <div class="col-6 col-md-4 col-xl-2">
-        <div class="card card-metric h-100" style="border-left-color: #16803C;">
+        <div class="card card-metric h-100" style="border-left-color: #16A34A !important;">
           <div class="metric-value text-success" id="kpiTotalDone">'.$totalDone.'</div>
           <div class="metric-label">Selesai Diperiksa</div>
           <div class="small text-success mt-2" style="font-size: 0.72rem;"><i class="bi bi-check-circle me-1"></i><span id="kpiPercentDoneText">'.$percentDone.'%</span> kepatuhan</div>
@@ -1466,7 +1479,7 @@ if (is_hrd() && !is_admin()) {
       </div>
 
       <div class="col-6 col-md-4 col-xl-2">
-        <div class="card card-metric h-100" style="border-left-color: #B54708;">
+        <div class="card card-metric h-100" style="border-left-color: #D97706 !important;">
           <div class="metric-value text-warning" id="kpiTotalDue">'.$totalDue.'</div>
           <div class="metric-label">Belum Maintenance</div>
           <div class="small text-secondary mt-2" style="font-size: 0.72rem;">Menunggu giliran</div>
@@ -1474,8 +1487,8 @@ if (is_hrd() && !is_admin()) {
       </div>
 
       <div class="col-6 col-md-4 col-xl-2">
-        <a href="'.e(module_url('dashboard.php', ['tab' => 'temuan', 'bulan'=>$month, 'tahun'=>$year, 'cabang'=>$cabangId])).'" class="text-decoration-none">
-          <div class="card card-metric h-100" style="border-left-color: #B42318; cursor: pointer;">
+        <a href="'.e(module_url('dashboard.php', ['tab' => 'temuan', 'bulan'=>$month, 'tahun'=>$year, 'cabang'=>$cabangId])).'" class="text-decoration-none d-block h-100">
+          <div class="card card-metric h-100" style="border-left-color: #DC2626 !important; cursor: pointer;">
             <div class="metric-value text-danger" id="kpiTotalFindings">'.$totalUnresolvedFindings.'</div>
             <div class="metric-label">Temuan Kendala</div>
             <div class="small text-danger mt-2" style="font-size: 0.72rem;"><i class="bi bi-tools me-1"></i>Buka temuan &raquo;</div>
@@ -1484,8 +1497,8 @@ if (is_hrd() && !is_admin()) {
       </div>
 
       <div class="col-6 col-md-4 col-xl-2">
-        <a href="'.e(module_url('asset_gallery.php', $cabangId > 0 ? ['cabang' => $cabangId] : [])).'" class="text-decoration-none">
-          <div class="card card-metric h-100" style="border-left-color: #2E7CF6; cursor: pointer;">
+        <a href="'.e(module_url('asset_gallery.php', $cabangId > 0 ? ['cabang' => $cabangId] : [])).'" class="text-decoration-none d-block h-100">
+          <div class="card card-metric h-100" style="border-left-color: #2563EB !important; cursor: pointer;">
             <div class="metric-value text-primary d-flex align-items-center justify-content-between">
               <span id="kpiTotalActive">'.($totalAll - $totalBroken).'</span>
               '.($totalWithPhotoCount > 0 ? '<span class="badge bg-info-subtle text-info border border-info-subtle" style="font-size: 0.68rem; font-weight: 700;" title="Total unit aset dengan foto fisik"><i class="bi bi-camera me-1"></i>'.$totalWithPhotoCount.' Foto</span>' : '').'
@@ -1497,8 +1510,8 @@ if (is_hrd() && !is_admin()) {
       </div>
 
       <div class="col-6 col-md-4 col-xl-2">
-        <a href="'.e(module_url('dashboard.php', ['tab' => 'kartu'])).'" class="text-decoration-none">
-          <div class="card card-metric h-100" style="border-left-color: #6bb82a; cursor: pointer;">
+        <a href="'.e(module_url('dashboard.php', ['tab' => 'kartu'])).'" class="text-decoration-none d-block h-100">
+          <div class="card card-metric h-100" style="border-left-color: #16A34A !important; cursor: pointer;">
             <div class="metric-value text-success d-flex align-items-center justify-content-between">
               <span>'.$totalCardsCount.'</span>
               '.($todayCardsCount > 0 ? '<span class="badge bg-success-subtle text-success border border-success-subtle" style="font-size: 0.68rem; font-weight: 700;">+'.$todayCardsCount.' Hari Ini</span>' : '').'
