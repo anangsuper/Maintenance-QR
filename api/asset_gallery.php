@@ -1027,7 +1027,7 @@ function openInvQrModal(data) {
   var qrPayload = data.detail_url || data.barcode || data.nomor_rekening || "";
   var container = document.getElementById("invModalQrContainer");
   if (container) {
-    container.innerHTML = '<canvas id="invModalQrCanvas" width="160" height="160" style="display: block;"></canvas>';
+    container.innerHTML = \'<canvas id="invModalQrCanvas" width="160" height="160" style="display: block;"></canvas>\';
     var canvas = document.getElementById("invModalQrCanvas");
     
     var rendered = false;
@@ -1060,7 +1060,7 @@ function openInvQrModal(data) {
 function fallbackQrImg(container, text) {
   if (!container) return;
   var encoded = encodeURIComponent(text);
-  container.innerHTML = '<img src="https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=' + encoded + '" width="160" height="160" style="display:block; border-radius: 4px;" alt="QR Code">';
+  container.innerHTML = \'<img src="https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=\' + encoded + \'" width="160" height="160" style="display:block; border-radius: 4px;" alt="QR Code">\';
 }
 
 // Lightbox Unit IT
