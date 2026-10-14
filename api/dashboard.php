@@ -1325,6 +1325,37 @@ $body .= '
 </div>';
 
 if (is_hrd() && !is_admin()) {
+    // BANNER PINTASAN CEPAT RAMAH PENGGUNA KHUSUS SDM & UMUM
+    $body .= '
+    <div class="card border-0 shadow-sm mb-4" style="background: linear-gradient(135deg, #f0fdf4 0%, #e6fcf5 100%); border-left: 5px solid #16a34a !important; border-radius: 12px;">
+      <div class="card-body p-3 p-md-4">
+        <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+          <div>
+            <div class="d-flex align-items-center gap-2 mb-1">
+              <span class="badge bg-success px-2 py-1" style="font-size: 0.7rem; letter-spacing: 0.05em;">PORTAL SDM &amp; UMUM</span>
+              <span class="text-muted small">| Selamat bertugas, <strong>'.e($_SESSION['nama'] ?? 'Petugas').'</strong></span>
+            </div>
+            <h4 class="fw-bold text-dark mb-1">Pusat Inventaris &amp; Label Aset Non-Komputer</h4>
+            <p class="text-secondary small mb-0">Kelola inventaris perabot, cetak kartu label fisik ukuran CR80/PVC, dan pemeliharaan gedung/ruangan.</p>
+          </div>
+          <div class="d-flex flex-wrap gap-2">
+            <a href="'.e(module_url('create_card.php')).'" class="btn btn-success fw-bold btn-sm px-3 shadow-sm">
+              <i class="bi bi-plus-circle-fill me-1"></i> Buat Kartu Baru
+            </a>
+            <a href="'.e(module_url('dashboard.php', ['tab' => 'kartu'])).'" class="btn btn-outline-success fw-semibold btn-sm px-3 bg-white">
+              <i class="bi bi-printer-fill me-1"></i> Cetak Label CR80
+            </a>
+            <a href="'.e(module_url('asset_gallery.php', ['sub' => 'inventaris'])).'" class="btn btn-outline-secondary fw-semibold btn-sm px-3 bg-white">
+              <i class="bi bi-images me-1"></i> Galeri Foto
+            </a>
+            <button type="button" class="btn btn-outline-primary fw-semibold btn-sm px-3 bg-white" data-bs-toggle="modal" data-bs-target="#modalPanduanAplikasi">
+              <i class="bi bi-journal-text me-1"></i> Panduan Alur
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>';
+
     // TOP KPI KHUSUS SDM & UMUM (HANYA METRIK INVENTARIS)
     $body .= '
     <div class="row g-3 mb-4">
@@ -1376,6 +1407,45 @@ if (is_hrd() && !is_admin()) {
       </a>
     </div>';
 } else {
+    // BANNER PINTASAN CEPAT RAMAH PENGGUNA KHUSUS IT, AUDITOR & ADMIN
+    $roleDisplay = strtoupper(current_user_role());
+    if ($roleDisplay === 'AUDITOR' || $roleDisplay === 'SKAI') {
+        $roleTitle = 'Portal Pengawasan & Log Audit SKAI';
+        $roleSub = 'Verifikasi transparansi pemeliharaan aset, ekspor bukti audit trail, dan pantau status kepatuhan cabang.';
+    } else {
+        $roleTitle = 'Pusat Pemeliharaan Aset IT & Kepatuhan Bank';
+        $roleSub = 'Alur 3 Langkah Cepat: <strong>1. Scan QR Komputer</strong> &rarr; <strong>2. Ceklis 9 Standar Bank</strong> &rarr; <strong>3. Verifikasi &amp; Simpan Berita Acara</strong>.';
+    }
+
+    $body .= '
+    <div class="card border-0 shadow-sm mb-4" style="background: linear-gradient(135deg, #f0f7ff 0%, #e8f2ff 100%); border-left: 5px solid #2563eb !important; border-radius: 12px;">
+      <div class="card-body p-3 p-md-4">
+        <div class="d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-3">
+          <div>
+            <div class="d-flex align-items-center gap-2 mb-1">
+              <span class="badge bg-primary px-2 py-1" style="font-size: 0.7rem; letter-spacing: 0.05em;">'.$roleDisplay.'</span>
+              <span class="text-muted small">| Halo, <strong>'.e($_SESSION['nama'] ?? 'Petugas').'</strong></span>
+            </div>
+            <h4 class="fw-bold text-dark mb-1">'.$roleTitle.'</h4>
+            <p class="text-secondary small mb-0">'.$roleSub.'</p>
+          </div>
+          <div class="d-flex flex-wrap gap-2">
+            '.(is_it() ? '<a href="'.e(module_url('scanner.php')).'" class="btn btn-primary fw-bold btn-sm px-3 shadow-sm"><i class="bi bi-qr-code-scan me-1"></i> Mulai Scan QR</a>' : '').'
+            <a href="'.e(module_url('dashboard.php', ['tab' => 'komputer', 'bulan' => $month, 'tahun' => $year, 'cabang' => $cabangId])).'" class="btn btn-outline-primary fw-semibold btn-sm px-3 bg-white">
+              <i class="bi bi-pc-display me-1"></i> Daftar PC ('.$totalAll.')
+            </a>
+            <a href="'.e(module_url('dashboard.php', ['tab' => 'temuan', 'bulan' => $month, 'tahun' => $year, 'cabang' => $cabangId])).'" class="btn btn-outline-danger fw-semibold btn-sm px-3 bg-white">
+              <i class="bi bi-exclamation-triangle-fill me-1"></i> Temuan ('.$totalUnresolvedFindings.')
+            </a>
+            '.(is_admin_or_auditor() ? '<a href="'.e(module_url('audit_trail.php')).'" class="btn btn-outline-secondary fw-semibold btn-sm px-3 bg-white"><i class="bi bi-shield-check me-1"></i> Log Audit</a>' : '').'
+            <button type="button" class="btn btn-outline-info fw-semibold btn-sm px-3 bg-white text-dark" data-bs-toggle="modal" data-bs-target="#modalPanduanAplikasi">
+              <i class="bi bi-journal-text text-primary me-1"></i> Panduan Alur
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>';
+
     // TOP KPI METRICS LENGKAP IT OPERATIONS & MAINTENANCE
     $body .= '
     <div class="row g-3 mb-4">

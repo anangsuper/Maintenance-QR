@@ -196,10 +196,19 @@ function render_page(string $title, string $content, string $extraHead = '', str
           <span class="d-none d-md-inline">Pasang App</span>
         </button>
 
-        <a href="'.e(module_url('asset_add.php')).'" class="btn btn-sm btn-primary d-none d-sm-inline-flex align-items-center gap-1 fw-semibold px-3">
-          <i class="bi bi-plus-lg"></i>
-          <span>Tambah Aset</span>
-        </a>
+        <!-- Tombol Panduan Cepat Mudah Dipahami -->
+        <button type="button" class="btn btn-sm btn-outline-primary d-inline-flex align-items-center gap-1.5 fw-semibold px-2.5 py-1" data-bs-toggle="modal" data-bs-target="#modalPanduanAplikasi" title="Buka Panduan Mudah Penggunaan Aplikasi">
+          <i class="bi bi-question-circle-fill"></i>
+          <span class="d-none d-md-inline">Panduan</span>
+        </button>
+
+        '.($isHrdRole
+            ? '<a href="'.e(module_url('dashboard.php', ['tab' => 'kartu'])).'" class="btn btn-sm btn-warning text-dark d-none d-sm-inline-flex align-items-center gap-1 fw-bold px-3 shadow-xs"><i class="bi bi-credit-card-2-front-fill me-1"></i><span>Kartu Inventaris</span></a>'
+            : (in_array($role, ['auditor', 'skai'], true)
+                ? '<a href="'.e(module_url('audit_trail.php')).'" class="btn btn-sm btn-outline-secondary d-none d-sm-inline-flex align-items-center gap-1 fw-semibold px-3"><i class="bi bi-shield-check me-1"></i><span>Log Aktivitas</span></a>'
+                : '<a href="'.e(module_url('asset_add.php')).'" class="btn btn-sm btn-primary d-none d-sm-inline-flex align-items-center gap-1 fw-semibold px-3"><i class="bi bi-plus-lg me-1"></i><span>Tambah Aset</span></a>'
+            )
+        ).'
 
         <div class="dropdown">
           <button class="topbar-user-btn dropdown-toggle border-0" type="button" data-bs-toggle="dropdown" aria-expanded="false">
@@ -208,11 +217,22 @@ function render_page(string $title, string $content, string $extraHead = '', str
           <ul class="dropdown-menu dropdown-menu-end shadow-sm border mt-2">
             <li class="px-3 py-2 border-bottom">
               <div class="fw-bold text-dark">'.e($userName).'</div>
-              <div class="small text-muted text-capitalize"><i class="bi bi-shield-lock me-1"></i>'.e($role).'</div>
+              <div class="small text-muted text-capitalize"><i class="bi bi-shield-lock me-1"></i>'.e($displayRole).'</div>
             </li>
-            <li><a class="dropdown-item py-2" href="'.e(module_url('assets.php')).'"><i class="bi bi-pc-display me-2 text-primary"></i> Data Komputer</a></li>
-            <li><a class="dropdown-item py-2" href="'.e(module_url('scanner.php')).'"><i class="bi bi-qr-code-scan me-2 text-info"></i> Scanner QR</a></li>
-            '.($isAdminUser ? '<li><a class="dropdown-item py-2" href="'.e(module_url('audit_trail.php')).'"><i class="bi bi-shield-check me-2 text-warning"></i> Log Aktivitas (Audit)</a></li>' : '').'
+            '.($isHrdRole ? '
+              <li><a class="dropdown-item py-2" href="'.e(module_url('dashboard.php', ['tab' => 'kartu'])).'"><i class="bi bi-credit-card-2-front me-2 text-warning"></i> Kartu Inventaris</a></li>
+              <li><a class="dropdown-item py-2" href="'.e(module_url('asset_gallery.php', ['sub' => 'inventaris'])).'"><i class="bi bi-images me-2 text-primary"></i> Galeri Foto Barang</a></li>
+              <li><a class="dropdown-item py-2" href="'.e(module_url('cabang_admin.php')).'"><i class="bi bi-buildings me-2 text-success"></i> Kantor Cabang</a></li>
+            ' : (in_array($role, ['auditor', 'skai'], true) ? '
+              <li><a class="dropdown-item py-2" href="'.e(module_url('audit.php')).'"><i class="bi bi-file-earmark-bar-graph me-2 text-primary"></i> Laporan Audit</a></li>
+              <li><a class="dropdown-item py-2" href="'.e(module_url('monthly_history.php')).'"><i class="bi bi-calendar3 me-2 text-info"></i> Riwayat Bulanan</a></li>
+              <li><a class="dropdown-item py-2" href="'.e(module_url('audit_trail.php')).'"><i class="bi bi-shield-check me-2 text-warning"></i> Log Aktivitas (Audit)</a></li>
+            ' : '
+              <li><a class="dropdown-item py-2" href="'.e(module_url('assets.php')).'"><i class="bi bi-pc-display me-2 text-primary"></i> Data Komputer</a></li>
+              <li><a class="dropdown-item py-2" href="'.e(module_url('scanner.php')).'"><i class="bi bi-qr-code-scan me-2 text-info"></i> Scanner QR</a></li>
+              '.($isAdminUser ? '<li><a class="dropdown-item py-2" href="'.e(module_url('audit_trail.php')).'"><i class="bi bi-shield-check me-2 text-warning"></i> Log Aktivitas (Audit)</a></li>' : '').'
+            ')).'
+            <li><button class="dropdown-item py-2 text-primary" type="button" data-bs-toggle="modal" data-bs-target="#modalPanduanAplikasi"><i class="bi bi-question-circle-fill me-2"></i> Bantuan & Panduan</button></li>
             <li><hr class="dropdown-divider"></li>
             <li><a class="dropdown-item py-2 text-danger" href="'.e(module_url('logout.php')).'"><i class="bi bi-box-arrow-right me-2"></i> Keluar</a></li>
           </ul>
@@ -1066,6 +1086,222 @@ h1, h2, h3, h4, h5, h6,
       <div class="modal-footer py-2 px-3 bg-light border-top d-flex justify-content-between">
         <span class="small text-muted" style="font-size: 0.75rem;"><kbd>Esc</kbd> untuk menutup</span>
         <span class="small text-muted" style="font-size: 0.75rem;">PT. BPR Mitratama Arthabuana</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Panduan Penggunaan Sistem (Ramah Pemula & Mudah Dipahami) -->
+<div class="modal fade" id="modalPanduanAplikasi" tabindex="-1" aria-labelledby="modalPanduanAplikasiLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+    <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
+      <div class="modal-header py-3 px-4 text-white" style="background: linear-gradient(135deg, #0A192F 0%, #172A46 100%); border-bottom: 2px solid #D97706;">
+        <div class="d-flex align-items-center gap-3">
+          <div class="rounded-circle d-flex align-items-center justify-content-center text-warning" style="width: 44px; height: 44px; background: rgba(245, 158, 11, 0.15);">
+            <i class="bi bi-lightbulb-fill fs-4"></i>
+          </div>
+          <div>
+            <h5 class="modal-title fw-bold mb-0" id="modalPanduanAplikasiLabel">Panduan Singkat Alur Sistem</h5>
+            <div class="text-white-50 small" style="font-size: 0.78rem;">Petunjuk langkah-demi-langkah mudah dipahami sesuai peranan Anda</div>
+          </div>
+        </div>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body p-4 bg-light">
+        <!-- Tab Pill Navigasi Panduan -->
+        <ul class="nav nav-pills nav-fill mb-4 p-1 bg-white rounded-3 border shadow-xs" id="pillsPanduanTab" role="tablist">
+          <li class="nav-item" role="presentation">
+            <button class="nav-link '.(!$isHrdRole ? 'active fw-bold' : 'text-secondary').' py-2" id="pill-panduan-it-tab" data-bs-toggle="pill" data-bs-target="#pill-panduan-it" type="button" role="tab">
+              <i class="bi bi-tools me-1 text-primary"></i> 1. Teknisi IT
+            </button>
+          </li>
+          <li class="nav-item" role="presentation">
+            <button class="nav-link '.($isHrdRole ? 'active fw-bold' : 'text-secondary').' py-2" id="pill-panduan-sdm-tab" data-bs-toggle="pill" data-bs-target="#pill-panduan-sdm" type="button" role="tab">
+              <i class="bi bi-person-workspace me-1 text-warning"></i> 2. SDM &amp; Umum
+            </button>
+          </li>
+          <li class="nav-item" role="presentation">
+            <button class="nav-link text-secondary py-2" id="pill-panduan-audit-tab" data-bs-toggle="pill" data-bs-target="#pill-panduan-audit" type="button" role="tab">
+              <i class="bi bi-shield-check me-1 text-success"></i> 3. Auditor / SKAI
+            </button>
+          </li>
+          <li class="nav-item" role="presentation">
+            <button class="nav-link text-secondary py-2" id="pill-panduan-status-tab" data-bs-toggle="pill" data-bs-target="#pill-panduan-status" type="button" role="tab">
+              <i class="bi bi-palette me-1 text-info"></i> 4. Arti Warna &amp; Checklist
+            </button>
+          </li>
+        </ul>
+
+        <div class="tab-content" id="pillsPanduanTabContent">
+          <!-- Panduan 1: Teknisi IT -->
+          <div class="tab-pane fade '.(!$isHrdRole ? 'show active' : '').'" id="pill-panduan-it" role="tabpanel">
+            <div class="card border-0 shadow-sm p-4 bg-white rounded-3 mb-3">
+              <h6 class="fw-bold text-dark mb-3"><i class="bi bi-play-circle-fill text-primary me-2"></i>Alur Pemeriksaan Komputer di Lapangan:</h6>
+              <div class="row g-3">
+                <div class="col-md-6">
+                  <div class="p-3 border rounded-3 h-100 bg-light">
+                    <div class="d-flex align-items-center gap-2 mb-2">
+                      <span class="badge rounded-pill bg-primary text-white px-2.5 py-1">Langkah 1</span>
+                      <strong class="text-dark small">Pindai Stiker QR</strong>
+                    </div>
+                    <p class="text-muted small mb-0">Buka menu <strong>Scanner QR</strong> pada smartphone atau klik ikon scanner di laptop. Arahkan kamera ke stiker QR pada CPU/monitor.</p>
+                  </div>
+                </div>
+                <div class="col-md-6">
+                  <div class="p-3 border rounded-3 h-100 bg-light">
+                    <div class="d-flex align-items-center gap-2 mb-2">
+                      <span class="badge rounded-pill bg-primary text-white px-2.5 py-1">Langkah 2</span>
+                      <strong class="text-dark small">Isi 9 Butir Checklist</strong>
+                    </div>
+                    <p class="text-muted small mb-0">Beri tanda centang pada 9 butir checklist fisik & software. Jika ada komponen rusak, pilih status <strong>Temuan / Kendala</strong>.</p>
+                  </div>
+                </div>
+                <div class="col-md-6">
+                  <div class="p-3 border rounded-3 h-100 bg-light">
+                    <div class="d-flex align-items-center gap-2 mb-2">
+                      <span class="badge rounded-pill bg-primary text-white px-2.5 py-1">Langkah 3</span>
+                      <strong class="text-dark small">Verifikasi Wajah Petugas</strong>
+                    </div>
+                    <p class="text-muted small mb-0">Arahkan kamera ke wajah Anda untuk konfirmasi kehadiran fisik teknisi (mencegah titip checklist). Sistem AI akan memverifikasi kecocokan.</p>
+                  </div>
+                </div>
+                <div class="col-md-6">
+                  <div class="p-3 border rounded-3 h-100 bg-light">
+                    <div class="d-flex align-items-center gap-2 mb-2">
+                      <span class="badge rounded-pill bg-success text-white px-2.5 py-1">Langkah 4</span>
+                      <strong class="text-dark small">Selesai &amp; Paraf Otomatis</strong>
+                    </div>
+                    <p class="text-muted small mb-0">Klik <strong>Simpan Pemeliharaan</strong>. Nama paraf Anda otomatis tercatat pada Kartu Kontrol IT 12 Bulan dan live di dashboard.</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Panduan 2: SDM & Umum -->
+          <div class="tab-pane fade '.($isHrdRole ? 'show active' : '').'" id="pill-panduan-sdm" role="tabpanel">
+            <div class="card border-0 shadow-sm p-4 bg-white rounded-3 mb-3">
+              <h6 class="fw-bold text-dark mb-3"><i class="bi bi-credit-card-2-front-fill text-warning me-2"></i>Alur Pengelolaan Kartu Inventaris Barang Bank:</h6>
+              <div class="row g-3">
+                <div class="col-md-6">
+                  <div class="p-3 border rounded-3 h-100 bg-light">
+                    <div class="d-flex align-items-center gap-2 mb-2">
+                      <span class="badge rounded-pill bg-warning text-dark px-2.5 py-1">Langkah 1</span>
+                      <strong class="text-dark small">Buka Tab Kartu Inventaris</strong>
+                    </div>
+                    <p class="text-muted small mb-0">Buka menu <strong>Kartu Inventaris</strong> untuk melihat seluruh data barang inventaris kantor (kursi, AC, genset, brankas, printer, dll).</p>
+                  </div>
+                </div>
+                <div class="col-md-6">
+                  <div class="p-3 border rounded-3 h-100 bg-light">
+                    <div class="d-flex align-items-center gap-2 mb-2">
+                      <span class="badge rounded-pill bg-warning text-dark px-2.5 py-1">Langkah 2</span>
+                      <strong class="text-dark small">Tambah Data / Import Excel</strong>
+                    </div>
+                    <p class="text-muted small mb-0">Klik tombol <strong>+ Tambah Data Kartu</strong> untuk menginput 1 kartu baru, atau tombol <strong>Import FBD3</strong> untuk import massal Excel.</p>
+                  </div>
+                </div>
+                <div class="col-md-6">
+                  <div class="p-3 border rounded-3 h-100 bg-light">
+                    <div class="d-flex align-items-center gap-2 mb-2">
+                      <span class="badge rounded-pill bg-warning text-dark px-2.5 py-1">Langkah 3</span>
+                      <strong class="text-dark small">Unggah Foto Fisik Barang</strong>
+                    </div>
+                    <p class="text-muted small mb-0">Buka rincian kartu barang, lalu klik <strong>Unggah Foto</strong> agar kondisi fisik barang terdokumentasi rapi di sistem dan galeri foto.</p>
+                  </div>
+                </div>
+                <div class="col-md-6">
+                  <div class="p-3 border rounded-3 h-100 bg-light">
+                    <div class="d-flex align-items-center gap-2 mb-2">
+                      <span class="badge rounded-pill bg-success text-white px-2.5 py-1">Langkah 4</span>
+                      <strong class="text-dark small">Cetak Kartu Standar ATM</strong>
+                    </div>
+                    <p class="text-muted small mb-0">Klik tombol <strong>Cetak Kartu CR80</strong> (ukuran standar kartu ATM 85.6mm x 54mm) atau cetak format lembar A4 untuk ditempel pada unit barang.</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Panduan 3: Auditor / SKAI -->
+          <div class="tab-pane fade" id="pill-panduan-audit" role="tabpanel">
+            <div class="card border-0 shadow-sm p-4 bg-white rounded-3 mb-3">
+              <h6 class="fw-bold text-dark mb-3"><i class="bi bi-shield-check text-success me-2"></i>Panduan Pemeriksaan Kepatuhan &amp; Audit Trail:</h6>
+              <div class="row g-3">
+                <div class="col-md-6">
+                  <div class="p-3 border rounded-3 h-100 bg-light">
+                    <strong class="text-dark d-block mb-1"><i class="bi bi-speedometer2 text-primary me-1"></i> 1. Monitoring Kepatuhan</strong>
+                    <p class="text-muted small mb-0">Pantau persentase pemeliharaan bulanan di dashboard utama. Pastikan target kepatuhan pemeliharaan seluruh cabang tercapai.</p>
+                  </div>
+                </div>
+                <div class="col-md-6">
+                  <div class="p-3 border rounded-3 h-100 bg-light">
+                    <strong class="text-dark d-block mb-1"><i class="bi bi-journal-text text-warning me-1"></i> 2. Log Aktivitas (Audit Trail)</strong>
+                    <p class="text-muted small mb-0">Buka menu <strong>Log Aktivitas (Audit)</strong> untuk memeriksa rekaman mutasi data, login, pengubahan status, dan unduh CSV untuk arsip OJK/ISO.</p>
+                  </div>
+                </div>
+                <div class="col-md-6">
+                  <div class="p-3 border rounded-3 h-100 bg-light">
+                    <strong class="text-dark d-block mb-1"><i class="bi bi-calendar3 text-info me-1"></i> 3. Riwayat Bulanan</strong>
+                    <p class="text-muted small mb-0">Buka menu <strong>Riwayat Bulanan</strong> untuk melihat riwayat audit pemeliharaan bulan-bulan lampau secara terperinci.</p>
+                  </div>
+                </div>
+                <div class="col-md-6">
+                  <div class="p-3 border rounded-3 h-100 bg-light">
+                    <strong class="text-dark d-block mb-1"><i class="bi bi-tools text-danger me-1"></i> 4. Pantau Temuan Kendala</strong>
+                    <p class="text-muted small mb-0">Buka tab <strong>Temuan Kendala</strong> untuk memantau apakah kerusakan komputer yang ditemukan teknisi sudah diperbaiki atau belum.</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Panduan 4: Arti Warna Status & 9 Checklist -->
+          <div class="tab-pane fade" id="pill-panduan-status" role="tabpanel">
+            <div class="card border-0 shadow-sm p-4 bg-white rounded-3 mb-3">
+              <h6 class="fw-bold text-dark mb-3"><i class="bi bi-palette-fill text-info me-2"></i>Arti Warna Indikator Status &amp; 9 Checklist IT:</h6>
+              <div class="row g-2 mb-3">
+                <div class="col-sm-4">
+                  <div class="p-2.5 rounded-3 border bg-success bg-opacity-10 text-success fw-bold small">
+                    <i class="bi bi-check-circle-fill me-1"></i> Hijau: Selesai / Normal
+                    <div class="fw-normal text-muted" style="font-size: 0.72rem;">Perangkat dalam kondisi prima dan checklist telah lengkap.</div>
+                  </div>
+                </div>
+                <div class="col-sm-4">
+                  <div class="p-2.5 rounded-3 border bg-warning bg-opacity-10 text-warning-emphasis fw-bold small">
+                    <i class="bi bi-hourglass-split me-1"></i> Kuning: Proses / Pending
+                    <div class="fw-normal text-muted" style="font-size: 0.72rem;">Sedang dalam proses perbaikan atau verifikasi admin.</div>
+                  </div>
+                </div>
+                <div class="col-sm-4">
+                  <div class="p-2.5 rounded-3 border bg-danger bg-opacity-10 text-danger fw-bold small">
+                    <i class="bi bi-exclamation-triangle-fill me-1"></i> Merah: Temuan Kerusakan
+                    <div class="fw-normal text-muted" style="font-size: 0.72rem;">Ada komponen rusak yang membutuhkan penggantian suku cadang.</div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="p-3 bg-light rounded-3 border small">
+                <strong class="text-dark d-block mb-1.5"><i class="bi bi-check2-square text-primary me-1"></i> 9 Standar Checklist Pemeliharaan Komputer:</strong>
+                <ol class="mb-0 ps-3 text-muted">
+                  <li>Pembersihan debu &amp; kotoran fisik CPU / Monitor / Printer</li>
+                  <li>Pemeriksaan kipas pendingin &amp; suhu processor</li>
+                  <li>Scan virus / malware &amp; update database antivirus bank</li>
+                  <li>Pembersihan file sampah (temp / cache) &amp; disk cleanup</li>
+                  <li>Pemeriksaan koneksi kabel LAN, IP Address, &amp; stabilitas jaringan</li>
+                  <li>Pemeriksaan integritas sistem operasi &amp; update keamanan</li>
+                  <li>Pemeriksaan fungsi printer, scanner, &amp; perangkat pendukung</li>
+                  <li>Pemeriksaan kelayakan UPS / stabilizer &amp; suplai listrik</li>
+                  <li>Pemeriksaan cadangan data (backup) file penting user</li>
+                </ol>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer py-2.5 px-4 bg-white border-top d-flex justify-content-between align-items-center">
+        <span class="small text-muted"><i class="bi bi-shield-lock-fill text-primary me-1"></i> Sistem Terproteksi Standar Perbankan POJK No. 75</span>
+        <button type="button" class="btn btn-primary btn-sm px-4 fw-semibold" data-bs-dismiss="modal">Saya Paham</button>
       </div>
     </div>
   </div>

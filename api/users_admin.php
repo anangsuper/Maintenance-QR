@@ -402,6 +402,15 @@ if ($editUser) {
           <option value="auditor" '.($editRole==='auditor'?'selected':'').'>Auditor / SKAI (Read-Only Audit Trail)</option>
           '.(is_admin() ? '<option value="admin" '.($editRole==='admin'?'selected':'').'>Administrator (Akses Penuh Sistem)</option>' : '').'
         </select>
+        <div class="p-2.5 mt-2 bg-light rounded-3 border small" style="font-size: 0.72rem; line-height: 1.45;">
+          <div class="fw-bold text-dark mb-1"><i class="bi bi-info-circle-fill text-primary me-1"></i> Penjelasan Hak Akses:</div>
+          <ul class="mb-0 ps-3 text-muted">
+            <li><strong>Teknisi IT:</strong> Checklist pemeliharaan, scanner QR, &amp; verifikasi wajah.</li>
+            <li><strong>SDM &amp; Umum:</strong> Kartu inventaris barang non-komputer &amp; cetak CR80.</li>
+            <li><strong>Auditor:</strong> Read-only monitoring &amp; ekspor log audit trail.</li>
+            '.(is_admin() ? '<li><strong>Admin:</strong> Akses penuh seluruh sistem dan kelola pengguna.</li>' : '').'
+          </ul>
+        </div>
       </div>
 
       <div class="mb-3">
@@ -471,6 +480,15 @@ if ($editUser) {
           <option value="auditor">Auditor / SKAI (Read-Only Audit Trail)</option>
           '.(is_admin() ? '<option value="admin">Administrator (Akses Penuh Sistem)</option>' : '').'
         </select>
+        <div class="p-2.5 mt-2 bg-light rounded-3 border small" style="font-size: 0.72rem; line-height: 1.45;">
+          <div class="fw-bold text-dark mb-1"><i class="bi bi-info-circle-fill text-primary me-1"></i> Penjelasan Hak Akses:</div>
+          <ul class="mb-0 ps-3 text-muted">
+            <li><strong>Teknisi IT:</strong> Checklist pemeliharaan, scanner QR, &amp; verifikasi wajah.</li>
+            <li><strong>SDM &amp; Umum:</strong> Kartu inventaris barang non-komputer &amp; cetak CR80.</li>
+            <li><strong>Auditor:</strong> Read-only monitoring &amp; ekspor log audit trail.</li>
+            '.(is_admin() ? '<li><strong>Admin:</strong> Akses penuh seluruh sistem dan kelola pengguna.</li>' : '').'
+          </ul>
+        </div>
       </div>
 
       <div class="mb-3">
