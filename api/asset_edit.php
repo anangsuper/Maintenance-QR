@@ -469,9 +469,9 @@ $body = '
             ' : '').'
 
             <div class="mt-3">
-              <label class="form-label text-secondary small fw-semibold">Atau URL Foto dari Server Immich / Cloud</label>
-              <input type="text" class="form-control font-monospace" name="foto_url" id="inputFotoUrl" value="'.e(str_starts_with($existingFoto, 'http') ? $existingFoto : '').'" placeholder="http://192.168.88.163:2283/api/assets/... atau link foto">
-              <div class="form-text small text-muted">Isi jika unit disimpan di Server Immich.</div>
+              <label class="form-label text-secondary small fw-semibold">Atau URL Foto Eksternal / Cloud</label>
+              <input type="text" class="form-control font-monospace" name="foto_url" id="inputFotoUrl" value="'.e(str_starts_with($existingFoto, 'http') ? $existingFoto : '').'" placeholder="https://domain.com/path/foto.jpg">
+              <div class="form-text small text-muted">Isi jika foto unit dihosting di server penyimpanan cloud/eksternal.</div>
             </div>
           </div>
           <div class="col-md-5 text-center">

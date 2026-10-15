@@ -386,9 +386,9 @@ $body = '
             <div class="form-text small text-muted">Foto dikompres otomatis hemat ruang server (~150-250KB) dan tajam. Pada smartphone teknisi, langsung membuka kamera.</div>
 
             <div class="mt-3">
-              <label class="form-label text-secondary small fw-semibold">Atau URL Foto dari Server Immich / Cloud</label>
-              <input type="text" class="form-control font-monospace" name="foto_url" id="inputFotoUrl" placeholder="http://192.168.88.163:2283/api/assets/... atau link foto">
-              <div class="form-text small text-muted">Isi jika unit difoto dan disimpan di Server Immich.</div>
+              <label class="form-label text-secondary small fw-semibold">Atau URL Foto Eksternal / Cloud</label>
+              <input type="text" class="form-control font-monospace" name="foto_url" id="inputFotoUrl" placeholder="https://domain.com/path/foto.jpg">
+              <div class="form-text small text-muted">Isi jika foto unit dihosting di server penyimpanan cloud/eksternal.</div>
             </div>
           </div>
           <div class="col-md-5 text-center">

@@ -16,11 +16,6 @@ return [
     'app_url' => '',
     'login_url' => '',
 
-    // 3. INTEGRASI SERVER IMMICH (PHOTO SERVER)
-    // Masukkan alamat server Immich Anda dan API Key dari dashboard Immich
-    'immich_url' => 'http://127.0.0.1:2283',
-    'immich_api_key' => '', // Dapatkan dari: User Settings -> API Keys di Immich
-
-    // 4. KUNCI ENKRIPSI SESI
+    // 3. KUNCI ENKRIPSI SESI
     'app_key' => 'c89b21f3a9e245a4980d92e85a6e2945d7f1b2c3a4e5f60718293a4b5c6d7e8f',
 ];
