@@ -14,6 +14,7 @@ if (!empty($_GET['expired'])) {
     $defaultRedirect = is_hrd() ? module_url('dashboard.php', ['tab' => 'kartu']) : module_url('dashboard.php');
     $redirect = safe_redirect_url($_SESSION['after_login'] ?? null, $defaultRedirect);
     unset($_SESSION['after_login']);
+    session_write_close();
     header('Location: ' . $redirect);
     exit;
 }
@@ -54,6 +55,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $defaultRedirect = is_hrd() ? module_url('dashboard.php', ['tab' => 'kartu']) : module_url('dashboard.php');
             $redirect = safe_redirect_url($_SESSION['after_login'] ?? null, $defaultRedirect);
             unset($_SESSION['after_login']);
+            session_write_close();
             header('Location: ' . $redirect);
             exit;
         } else {

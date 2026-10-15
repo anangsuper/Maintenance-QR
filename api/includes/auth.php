@@ -33,12 +33,23 @@ function set_auth_cookie(array $userData, int $lifetime = 0): void {
 
     // expires = 0 (Session Cookie): otomatis dihapus saat browser ditutup.
     // Selama browser masih terbuka, cookie ini memastikan navigasi antar-halaman
-    // di serverless / Vercel tetap login dan tidak ter-logout tiba-tiba.
+    // di serverless / Vercel dan Local IP tetap login dan tidak ter-logout tiba-tiba.
+    $isHttps = is_https();
     setcookie('_auth_session', $cookieVal, [
         'expires' => 0,
         'path' => '/',
         'domain' => '',
-        'secure' => is_https(),
+        'secure' => $isHttps,
+        'httponly' => true,
+        'samesite' => 'Lax'
+    ]);
+    // Cookie LAN: Selalu insecure agar diterima di browser yang mengakses via HTTP (LAN IP)
+    // dan tidak bentrok dengan sisa cookie Secure lama di Chromium/Edge
+    setcookie('_auth_lan', $cookieVal, [
+        'expires' => 0,
+        'path' => '/',
+        'domain' => '',
+        'secure' => false,
         'httponly' => true,
         'samesite' => 'Lax'
     ]);
@@ -50,7 +61,7 @@ function restore_auth_from_cookie(): bool {
         return true;
     }
 
-    $raw = $_COOKIE['_auth_session'] ?? '';
+    $raw = $_COOKIE['_auth_session'] ?? $_COOKIE['_auth_lan'] ?? '';
     if (!$raw || !str_contains($raw, '.')) return false;
 
     [$b64Payload, $sig] = explode('.', $raw, 2);
@@ -188,6 +199,11 @@ function safe_redirect_url(?string $url, ?string $fallback = null): string {
         return $fallback;
     }
 
+    // Cegah redirect loop kembali ke halaman login atau logout
+    if (preg_match('~/(login|logout)\.php~i', $url)) {
+        return $fallback;
+    }
+
     // Relative path yang aman diawali satu slash '/'
     if (str_starts_with($url, '/') && !str_starts_with($url, '//') && !str_starts_with($url, '/\\')) {
         return $url;
@@ -204,7 +220,11 @@ function safe_redirect_url(?string $url, ?string $fallback = null): string {
         if (str_contains($url, ':')) {
             return $fallback;
         }
-        return '/' . ltrim($url, '/');
+        $relPath = '/' . ltrim($url, '/');
+        if (preg_match('~/(login|logout)\.php~i', $relPath)) {
+            return $fallback;
+        }
+        return $relPath;
     }
 
     // Jika berupa URL absolut, verifikasi bahwa host sama dengan domain aplikasi saat ini
@@ -215,6 +235,10 @@ function safe_redirect_url(?string $url, ?string $fallback = null): string {
         if ($parsedHost === $expectedHost) {
             $scheme = strtolower($parsed['scheme'] ?? 'https');
             if ($scheme === 'http' || $scheme === 'https') {
+                $targetPath = (string)($parsed['path'] ?? '');
+                if (preg_match('~/(login|logout)\.php~i', $targetPath)) {
+                    return $fallback;
+                }
                 return $url;
             }
         }
@@ -252,7 +276,9 @@ function require_login(): void {
             if (session_status() !== PHP_SESSION_ACTIVE) {
                 session_start();
             }
-            $_SESSION['after_login'] = $savedRedirect;
+            if (!str_contains($savedRedirect, 'login.php') && !str_contains($savedRedirect, 'logout.php')) {
+                $_SESSION['after_login'] = $savedRedirect;
+            }
             header('Location: ' . module_url('login.php', ['expired' => 1]));
             exit;
         }
@@ -266,7 +292,7 @@ function require_login(): void {
         $now = time();
         $_SESSION['last_activity'] = $now;
         // Refresh token sesi jika sudah berjalan lebih dari 5 menit agar batas idle 2 jam ter-refresh saat aktif
-        if (($now - $last > 300 || empty($_COOKIE['_auth_session'])) && !empty($_SESSION['user_id'])) {
+        if (($now - $last > 300 || (empty($_COOKIE['_auth_session']) && empty($_COOKIE['_auth_lan']))) && !empty($_SESSION['user_id'])) {
             set_auth_cookie([
                 'id' => $_SESSION['user_id'],
                 'nama' => $_SESSION['nama'] ?? '',
@@ -278,7 +304,10 @@ function require_login(): void {
     }
 
     // Belum login: redirect ke halaman login
-    $_SESSION['after_login'] = request_uri_full();
+    $reqUri = request_uri_full();
+    if (!str_contains($reqUri, 'login.php') && !str_contains($reqUri, 'logout.php')) {
+        $_SESSION['after_login'] = $reqUri;
+    }
     header('Location: ' . module_url('login.php'));
     exit;
 }
@@ -677,8 +706,13 @@ function logout_user(): void {
             $params['path'], $params['domain'],
             $params['secure'], $params['httponly']
         );
+        // Hapus juga nama cookie varian alternatif
+        setcookie('PHPSESSID', '', time() - 42000, '/', '', false, true);
+        setcookie('PHPSESSID_LAN', '', time() - 42000, '/', '', false, true);
+        setcookie('PHPSESSID_SEC', '', time() - 42000, '/', '', true, true);
     }
     setcookie('_auth_session', '', time() - 42000, '/', '', is_https(), true);
+    setcookie('_auth_lan', '', time() - 42000, '/', '', false, true);
     @session_destroy();
 }
 

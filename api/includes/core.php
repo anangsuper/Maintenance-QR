@@ -52,11 +52,18 @@ if (session_status() !== PHP_SESSION_ACTIVE) {
     $idleTimeout = (int)cfg('session_timeout', envv('SESSION_TIMEOUT', '7200')); // Idle timeout 2 jam
     ini_set('session.gc_maxlifetime', (string)$idleTimeout);
 
+    $isHttps = is_https();
+    $sessionName = $isHttps ? 'PHPSESSID_SEC' : 'PHPSESSID_LAN';
+    if (!empty($_COOKIE['PHPSESSID']) && empty($_COOKIE[$sessionName])) {
+        $sessionName = 'PHPSESSID';
+    }
+    session_name($sessionName);
+
     session_set_cookie_params([
         'lifetime' => 0, // 0 = Cookie sesi berakhir dan otomatis logout saat browser ditutup
         'path' => '/',
         'domain' => '',
-        'secure' => is_https(),
+        'secure' => $isHttps,
         'httponly' => true,
         'samesite' => 'Lax'
     ]);
