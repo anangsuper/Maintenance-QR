@@ -823,7 +823,6 @@ body {
               required 
               autofocus 
               spellcheck="false"
-              <?= $isLocked ? 'disabled' : '' ?>
             >
           </div>
         </div>
@@ -842,7 +841,6 @@ body {
               placeholder="Masukkan kata sandi..." 
               required
               style="padding-right: 46px;"
-              <?= $isLocked ? 'disabled' : '' ?>
             >
             <button 
               type="button" 
@@ -851,16 +849,15 @@ body {
               onclick="togglePassword()" 
               title="Lihat / Sembunyikan Kata Sandi"
               aria-label="Toggle Password Visibility"
-              <?= $isLocked ? 'disabled' : '' ?>
             >
               <i class="bi bi-eye" id="eyeIcon"></i>
             </button>
           </div>
         </div>
 
-        <button type="submit" class="btn-login-submit" id="submitBtn" <?= $isLocked ? 'disabled style="opacity: 0.6; cursor: not-allowed;"' : '' ?>>
-          <i class="bi <?= $isLocked ? 'bi-lock-fill' : 'bi-box-arrow-in-right' ?>" id="submitIcon"></i>
-          <span id="submitText"><?= $isLocked ? 'Akses Terkunci Sementara' : 'Masuk Sekarang' ?></span>
+        <button type="submit" class="btn-login-submit" id="submitBtn">
+          <i class="bi bi-box-arrow-in-right" id="submitIcon"></i>
+          <span id="submitText">Masuk Sekarang</span>
         </button>
       </form>
     </div>

@@ -799,13 +799,12 @@ function clear_lockout_storage_record(string $identifier): void {
 function check_login_throttle(string $username, string $ip): array {
     $now = time();
 
-    // Periksa throttle berdasarkan Username (jika diisi) dan IP Address
+    // Sesuai standar regulasi OJK (POJK No. 75/POJK.03/2016 Bab IX Pasal 38),
+    // pengamanan brute-force diterapkan pada akun pengguna (User Account Lockout).
+    // Alamat IP kantor / LAN tidak diblokir secara massal agar staf/karyawan lain tidak mengalami DoS.
     $targets = [];
     if ($username !== '') {
         $targets[] = ['id' => 'user:' . strtolower($username), 'type' => 'username', 'label' => "Akun '{$username}'"];
-    }
-    if ($ip !== '') {
-        $targets[] = ['id' => 'ip:' . $ip, 'type' => 'ip', 'label' => "Alamat IP ({$ip})"];
     }
 
     foreach ($targets as $t) {
@@ -817,7 +816,7 @@ function check_login_throttle(string $username, string $ip): array {
                 'locked' => true,
                 'remaining_seconds' => $remSeconds,
                 'attempts' => $rec['attempts'],
-                'message' => "Akses {$t['label']} terkunci sementara selama 15 menit sesuai standar OJK akibat 5 kali salah kata sandi berturut-turut. Silakan tunggu {$remMinutes} menit lagi sebelum mencoba kembali."
+                'message' => "Akses {$t['label']} terkunci sementara selama 15 menit sesuai regulasi OJK akibat 5 kali salah kata sandi berturut-turut. Silakan tunggu {$remMinutes} menit lagi atau hubungi Administrator IT."
             ];
         }
 
@@ -855,9 +854,6 @@ function record_login_failure(string $username, string $ip): array {
     $targets = [];
     if ($username !== '') {
         $targets[] = ['id' => 'user:' . strtolower($username), 'type' => 'username', 'label' => "Akun '{$username}'"];
-    }
-    if ($ip !== '') {
-        $targets[] = ['id' => 'ip:' . $ip, 'type' => 'ip', 'label' => "Alamat IP ({$ip})"];
     }
 
     $isLockedNow = false;
