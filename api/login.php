@@ -633,35 +633,6 @@ body {
   box-shadow: 0 4px 12px -2px rgba(29, 104, 216, 0.4);
 }
 
-/* Security Notice Card */
-.security-card {
-  margin-top: 14px;
-  padding: 12px 14px;
-  background-color: #f8fafc;
-  border: 1px solid #e2e8f0;
-  border-radius: 10px;
-  display: flex;
-  gap: 12px;
-  align-items: flex-start;
-}
-
-.security-card i {
-  color: #475569;
-  font-size: 1.1rem;
-  margin-top: 2px;
-  flex-shrink: 0;
-}
-
-.security-card-text {
-  font-size: 0.76rem;
-  color: #64748b;
-  line-height: 1.45;
-}
-
-.security-card-text strong {
-  color: #334155;
-}
-
 /* Auth Panel Footer */
 .auth-footer {
   text-align: center;
@@ -892,13 +863,6 @@ body {
           <span id="submitText"><?= $isLocked ? 'Akses Terkunci Sementara' : 'Masuk Sekarang' ?></span>
         </button>
       </form>
-
-      <div class="security-card">
-        <i class="bi bi-shield-exclamation"></i>
-        <div class="security-card-text">
-          <strong>Akses Terbatas:</strong> Sistem internal ini khusus untuk staf IT dan petugas berwenang PT. BPR Mitratama Arthabuana. Segala aktivitas diawasi &amp; dicatat ke log audit sesuai standar POJK No. 75/POJK.03/2016.
-        </div>
-      </div>
     </div>
 
     <!-- Panel Footer -->
