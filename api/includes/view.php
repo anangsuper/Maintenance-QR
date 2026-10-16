@@ -61,9 +61,10 @@ function render_page(string $title, string $content, string $extraHead = '', str
     if ($isHrdRole) {
         $operationsItems = [
             ['title' => 'Kartu Inventaris', 'url' => module_url('dashboard.php', ['tab' => 'kartu']), 'icon' => 'bi-credit-card-2-front', 'active' => ($currentPage === 'dashboard.php' && ($_GET['tab'] ?? '') === 'kartu') || in_array($currentPage, ['inventory_card.php', 'cetak_kartu.php', 'print_inventory_card.php', 'kartu_detail.php'], true)],
+            ['title' => 'Memo Pengajuan', 'url' => module_url('memo_pengajuan.php'), 'icon' => 'bi-file-earmark-text', 'active' => in_array($currentPage, ['memo_pengajuan.php', 'print_memo.php'], true)],
+            ['title' => 'Kepatuhan SDM (OJK)', 'url' => module_url('sdm_kepatuhan.php'), 'icon' => 'bi-shield-check', 'active' => ($currentPage === 'sdm_kepatuhan.php')],
             ['title' => 'Galeri Foto Inventaris', 'url' => module_url('asset_gallery.php', ['sub' => 'inventaris']), 'icon' => 'bi-images', 'active' => in_array($currentPage, ['asset_gallery.php', 'inventaris_gallery.php'], true)],
             ['title' => 'Mutasi Inventaris', 'url' => module_url('inventaris_mutation.php'), 'icon' => 'bi-arrow-left-right', 'active' => in_array($currentPage, ['inventaris_mutation.php', 'asset_mutations.php', 'print_bast.php'], true)],
-            ['title' => 'Memo Pengajuan', 'url' => module_url('memo_pengajuan.php'), 'icon' => 'bi-file-earmark-text', 'active' => in_array($currentPage, ['memo_pengajuan.php', 'print_memo.php'], true)],
         ];
     } else {
         $operationsItems = [
@@ -75,6 +76,7 @@ function render_page(string $title, string $content, string $extraHead = '', str
             ['title' => 'Mutasi PC / Aset IT', 'url' => module_url('asset_mutation.php'), 'icon' => 'bi-arrow-left-right', 'active' => in_array($currentPage, ['asset_mutation.php'], true)],
             ['title' => 'Mutasi Inventaris', 'url' => module_url('inventaris_mutation.php'), 'icon' => 'bi-arrow-left-right', 'active' => in_array($currentPage, ['inventaris_mutation.php', 'asset_mutations.php', 'print_bast.php'], true)],
             ['title' => 'Memo Pengajuan', 'url' => module_url('memo_pengajuan.php'), 'icon' => 'bi-file-earmark-text', 'active' => in_array($currentPage, ['memo_pengajuan.php', 'print_memo.php'], true)],
+            ['title' => 'Kepatuhan SDM (OJK)', 'url' => module_url('sdm_kepatuhan.php'), 'icon' => 'bi-shield-check', 'active' => ($currentPage === 'sdm_kepatuhan.php')],
             ['title' => 'Maintenance', 'url' => module_url('audit.php'), 'icon' => 'bi-clipboard-check', 'active' => in_array($currentPage, ['audit.php', 'monthly_history.php', 'history.php', 'maintenance_detail.php'], true)],
         ];
     }
