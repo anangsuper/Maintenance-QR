@@ -37,6 +37,18 @@ $penggunaTujuan = e($mutation['pengguna_tujuan'] ?: 'Umum');
 $alasan = e($mutation['alasan_mutasi']);
 $keterangan = e($mutation['keterangan'] ?: 'Perangkat dalam kondisi operasional normal dan layak pakai.');
 $petugas = e($mutation['petugas_nama'] ?: 'Petugas IT');
+
+$isInventaris = (($mutation['asset_type'] ?? '') === 'inventaris');
+$bastFormCode = $isInventaris ? 'FORMULIR: BAST-INV-01' : 'FORMULIR: BAST-IT-01';
+$kopSub = $isInventaris
+    ? 'Kantor Operasional &amp; Pengelolaan Sarana Prasarana / Fasilitas Inventaris<br>SK Otoritas Jasa Keuangan (OJK) · POJK No. 75/POJK.03/2016'
+    : 'Kantor Operasional &amp; Manajemen Aset Teknologi Informasi<br>SK Otoritas Jasa Keuangan (OJK) · POJK No. 75/POJK.03/2016';
+$docTitle = $isInventaris
+    ? 'BERITA ACARA MUTASI &amp; SERAH TERIMA INVENTARIS / SARPRAS'
+    : 'BERITA ACARA SERAH TERIMA (BAST) &amp; MUTASI ASET IT';
+$snOrCatVal = $isInventaris ? e($mutation['divisi_tujuan'] ?: ($mutation['divisi_asal'] ?: '-')) : $sn;
+$kondisiFisik = e($mutation['kondisi_fisik'] ?? 'BAIK / UTUH');
+$backUrl = $isInventaris ? module_url('dashboard.php', ['tab' => 'kartu']) : module_url('asset_mutations.php');
 ?>
 <!doctype html>
 <html lang="id">
@@ -202,8 +214,8 @@ body {
   <button type="button" class="btn btn-primary fw-bold shadow-lg px-4 py-2" onclick="window.print()">
     <i class="bi bi-printer-fill me-1.5"></i> Cetak Dokumen BAST
   </button>
-  <a href="<?= e(module_url('asset_mutations.php')) ?>" class="btn btn-dark fw-semibold shadow-lg px-3 py-2">
-    <i class="bi bi-arrow-left me-1"></i> Kembali ke Riwayat
+  <a href="<?= e($backUrl) ?>" class="btn btn-dark fw-semibold shadow-lg px-3 py-2">
+    <i class="bi bi-arrow-left me-1"></i> Kembali
   </a>
 </div>
 
@@ -215,26 +227,25 @@ body {
       <div>
         <div class="kop-title">PT. BPR MITRATAMA ARTHABUANA</div>
         <div class="kop-subtitle">
-          Kantor Operasional &amp; Manajemen Aset Teknologi Informasi<br>
-          SK Otoritas Jasa Keuangan (OJK) · POJK No. 75/POJK.03/2016
+          <?= $kopSub ?>
         </div>
       </div>
     </div>
     <div class="text-end small text-muted font-monospace" style="font-size: 0.72rem;">
-      FORMULIR: BAST-IT-01<br>
+      <?= $bastFormCode ?><br>
       TGL: <?= date('d/m/Y', $dateTs) ?>
     </div>
   </div>
 
   <!-- Judul Dokumen -->
   <div class="document-title">
-    <div class="doc-main-heading">BERITA ACARA SERAH TERIMA (BAST) &amp; MUTASI ASET</div>
+    <div class="doc-main-heading"><?= $docTitle ?></div>
     <div class="doc-number">Nomor: <?= $bastNo ?></div>
   </div>
 
   <!-- Pembuka Dokumen -->
   <p class="doc-paragraph">
-    Pada hari ini <strong><?= $hari ?></strong>, tanggal <strong><?= $tgl ?></strong> bulan <strong><?= $bln ?></strong> tahun <strong><?= $thn ?></strong> (<?= date('d/m/Y', $dateTs) ?> pukul <?= $jam ?> WIB), bertempat di <strong><?= $cabangTujuan ?></strong>, telah dilakukan serah terima fisik dan mutasi tanggung jawab atas perangkat operasional inventaris bank antara para pihak:
+    Pada hari ini <strong><?= $hari ?></strong>, tanggal <strong><?= $tgl ?></strong> bulan <strong><?= $bln ?></strong> tahun <strong><?= $thn ?></strong> (<?= date('d/m/Y', $dateTs) ?> pukul <?= $jam ?> WIB), bertempat di <strong><?= $cabangTujuan ?></strong>, telah dilakukan serah terima fisik dan mutasi tanggung jawab atas <?= $isInventaris ? 'fasilitas sarana/inventaris operasional kantor' : 'perangkat operasional teknologi informasi' ?> bank antara para pihak:
   </p>
 
   <!-- Pihak I & Pihak II -->
@@ -243,7 +254,7 @@ body {
       <div class="p-2.5 border rounded bg-light h-100">
         <strong class="text-primary d-block mb-1"><i class="bi bi-arrow-up-right-circle me-1"></i> PIHAK PERTAMA (Yang Menyerahkan):</strong>
         <table class="table-borderless w-100 mt-1">
-          <tr><td style="width: 85px;" class="text-muted">Nama</td><td>: <strong><?= $penggunaAsal ?></strong></td></tr>
+          <tr><td style="width: 105px;" class="text-muted"><?= $isInventaris ? 'Penanggung Jawab' : 'Nama Pemegang' ?></td><td>: <strong><?= $penggunaAsal ?></strong></td></tr>
           <tr><td class="text-muted">Cabang Asal</td><td>: <?= $cabangAsal ?></td></tr>
           <tr><td class="text-muted">Ruangan Asal</td><td>: <?= $ruanganAsal ?></td></tr>
         </table>
@@ -253,7 +264,7 @@ body {
       <div class="p-2.5 border rounded bg-light h-100">
         <strong class="text-success d-block mb-1"><i class="bi bi-arrow-down-left-circle me-1"></i> PIHAK KEDUA (Yang Menerima):</strong>
         <table class="table-borderless w-100 mt-1">
-          <tr><td style="width: 85px;" class="text-muted">Nama</td><td>: <strong><?= $penggunaTujuan ?></strong></td></tr>
+          <tr><td style="width: 105px;" class="text-muted"><?= $isInventaris ? 'Penanggung Jawab' : 'Nama Pemegang' ?></td><td>: <strong><?= $penggunaTujuan ?></strong></td></tr>
           <tr><td class="text-muted">Cabang Tujuan</td><td>: <?= $cabangTujuan ?></td></tr>
           <tr><td class="text-muted">Ruangan Baru</td><td>: <?= $ruanganTujuan ?></td></tr>
         </table>
@@ -270,10 +281,10 @@ body {
     <thead>
       <tr>
         <th style="width: 35px;" class="text-center">No</th>
-        <th style="width: 140px;">Kode Inventaris</th>
-        <th>Nama Perangkat / Spesifikasi</th>
-        <th style="width: 120px;">Nomor Seri (SN)</th>
-        <th style="width: 110px;" class="text-center">Kondisi Fisik</th>
+        <th style="width: 150px;"><?= $isInventaris ? 'No. Rekening Inventaris' : 'Kode Inventaris' ?></th>
+        <th><?= $isInventaris ? 'Nama Barang / Fasilitas Inventaris' : 'Nama Perangkat / Spesifikasi' ?></th>
+        <th style="width: 130px;"><?= $isInventaris ? 'Golongan / Kategori' : 'Nomor Seri (SN)' ?></th>
+        <th style="width: 120px;" class="text-center">Kondisi Fisik</th>
       </tr>
     </thead>
     <tbody>
@@ -282,10 +293,10 @@ body {
         <td class="font-monospace fw-bold"><?= $kodeAset ?></td>
         <td>
           <strong><?= $namaAset ?></strong>
-          <div class="text-muted small">Jenis: <?= strtoupper($mutation['asset_type']) ?></div>
+          <div class="text-muted small"><?= $isInventaris ? ('Ruang Baru: ' . ($ruanganTujuan ?: '-')) : ('Jenis: ' . strtoupper($mutation['asset_type'])) ?></div>
         </td>
-        <td class="font-monospace"><?= $sn ?></td>
-        <td class="text-center text-success fw-bold">BAIK / NORMAL</td>
+        <td class="font-monospace"><?= $snOrCatVal ?></td>
+        <td class="text-center text-success fw-bold"><?= strtoupper($kondisiFisik) ?></td>
       </tr>
     </tbody>
   </table>
@@ -293,11 +304,11 @@ body {
   <!-- Alasan & Keterangan -->
   <div class="p-2.5 border rounded bg-light mb-3 small" style="font-size: 0.8rem; line-height: 1.5;">
     <div><strong>Alasan Mutasi:</strong> <?= $alasan ?></div>
-    <div class="mt-1"><strong>Kelengkapan &amp; Keterangan:</strong> <?= $keterangan ?></div>
+    <div class="mt-1"><strong>Kelengkapan &amp; Catatan Kondisi:</strong> <?= $keterangan ?></div>
   </div>
 
   <p class="doc-paragraph mb-4">
-    Sejak tanggal penandatanganan Berita Acara ini, tanggung jawab pemeliharaan rutin, operasional, dan keberadaan fisik perangkat tersebut sepenuhnya beralih kepada <strong>PIHAK KEDUA</strong> di <strong><?= $cabangTujuan ?></strong>. Demikian Berita Acara Serah Terima ini dibuat dengan sebenarnya dalam rangkap secukupnya untuk dipergunakan sebagaimana mestinya.
+    Sejak tanggal penandatanganan Berita Acara ini, tanggung jawab pemeliharaan rutin, perawatan fisik, dan keberadaan fasilitas/barang tersebut sepenuhnya beralih kepada <strong>PIHAK KEDUA</strong> di <strong><?= $cabangTujuan ?></strong>. Demikian Berita Acara Serah Terima ini dibuat dengan sebenarnya dalam rangkap secukupnya untuk dipergunakan sebagaimana mestinya.
   </p>
 
   <!-- Bagian 4 Tanda Tangan -->
@@ -307,19 +318,19 @@ body {
         <div class="text-muted small">Pihak Yang Menyerahkan,</div>
         <div class="sig-space"></div>
         <div class="sig-name"><?= $penggunaAsal ?></div>
-        <div class="sig-role">Pemegang Asal</div>
+        <div class="sig-role"><?= $isInventaris ? 'PIC / Penanggung Jawab Asal' : 'Pemegang Asal' ?></div>
       </div>
       <div class="col-3 sig-box">
         <div class="text-muted small">Pihak Yang Menerima,</div>
         <div class="sig-space"></div>
         <div class="sig-name"><?= $penggunaTujuan ?></div>
-        <div class="sig-role">Pemegang Baru</div>
+        <div class="sig-role"><?= $isInventaris ? 'PIC / Penanggung Jawab Baru' : 'Pemegang Baru' ?></div>
       </div>
       <div class="col-3 sig-box">
-        <div class="text-muted small">Petugas Pelaksana IT,</div>
+        <div class="text-muted small"><?= $isInventaris ? 'Bagian Umum &amp; SDM,' : 'Petugas Pelaksana IT,' ?></div>
         <div class="sig-space"></div>
         <div class="sig-name"><?= $petugas ?></div>
-        <div class="sig-role">Staf IT Operations</div>
+        <div class="sig-role"><?= $isInventaris ? 'Pengelola Sarpras &amp; Inventaris' : 'Staf IT Operations' ?></div>
       </div>
       <div class="col-3 sig-box">
         <div class="text-muted small">Mengetahui,</div>

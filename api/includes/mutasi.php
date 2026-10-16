@@ -32,6 +32,7 @@ function ensure_mutasi_schema(): void {
                     divisi_asal VARCHAR(100) DEFAULT '',
                     divisi_tujuan VARCHAR(100) DEFAULT '',
                     alasan_mutasi VARCHAR(255) NOT NULL,
+                    kondisi_fisik VARCHAR(100) DEFAULT 'Baik / Utuh',
                     keterangan TEXT,
                     petugas_user_id INT DEFAULT 0,
                     petugas_nama VARCHAR(100) NOT NULL,
@@ -41,8 +42,10 @@ function ensure_mutasi_schema(): void {
                     INDEX (nomor_bast)
                 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
             ");
+            // Pastikan kolom kondisi_fisik ada jika tabel sudah dibuat sebelumnya
+            db()->exec("ALTER TABLE asset_mutations ADD COLUMN IF NOT EXISTS kondisi_fisik VARCHAR(100) DEFAULT 'Baik / Utuh';");
         } catch (Throwable $e) {
-            // Abaikan jika tabel sudah ada atau tidak ada permission create table
+            // Abaikan jika tabel sudah ada atau tidak ada permission alter table
         }
     } else {
         $client = google_sheets_v4_client();
@@ -138,7 +141,7 @@ function romawi_bulan(int $m): string {
     return $romawi[$m] ?? 'I';
 }
 
-function generate_nomor_bast(): string {
+function generate_nomor_bast(string $assetType = 'komputer'): string {
     $m = (int)date('n');
     $y = (int)date('Y');
     $romawi = romawi_bulan($m);
@@ -153,7 +156,8 @@ function generate_nomor_bast(): string {
     }
 
     $numPadded = str_pad((string)$countThisYear, 3, '0', STR_PAD_LEFT);
-    return "BAST/BMR/{$romawi}/{$y}/{$numPadded}";
+    $prefix = ($assetType === 'inventaris') ? 'BAST-INV' : 'BAST-IT';
+    return "{$prefix}/BMR/{$romawi}/{$y}/{$numPadded}";
 }
 
 function get_asset_mutations(?array $filters = []): array {
@@ -195,6 +199,7 @@ function get_asset_mutations(?array $filters = []): array {
                     'divisi_asal'     => (string)($r['divisi_asal'] ?? $r['col_14'] ?? ''),
                     'divisi_tujuan'   => (string)($r['divisi_tujuan'] ?? $r['col_15'] ?? ''),
                     'alasan_mutasi'   => (string)($r['alasan_mutasi'] ?? $r['col_16'] ?? ''),
+                    'kondisi_fisik'   => (string)($r['kondisi_fisik'] ?? 'Baik / Utuh'),
                     'keterangan'      => (string)($r['keterangan'] ?? $r['col_17'] ?? ''),
                     'petugas_nama'    => (string)($r['petugas_nama'] ?? $r['col_18'] ?? ''),
                     'created_at'      => (string)($r['created_at'] ?? $r['col_19'] ?? '')
@@ -252,8 +257,11 @@ function process_asset_mutation(array $data): array {
     $ruanganTujuan = trim((string)($data['ruangan_tujuan'] ?? ''));
     $penggunaTujuan = trim((string)($data['pengguna_tujuan'] ?? ''));
     $divisiTujuan = trim((string)($data['divisi_tujuan'] ?? ''));
+    $kondisiFisik = trim((string)($data['kondisi_fisik'] ?? 'Baik / Utuh'));
     $keterangan = trim((string)($data['keterangan'] ?? ''));
-    $petugasNama = trim((string)($data['petugas_nama'] ?? ($_SESSION['nama'] ?? 'Petugas IT')));
+
+    $defaultPetugas = ($assetType === 'inventaris') ? 'Bagian Umum & SDM' : 'Petugas IT';
+    $petugasNama = trim((string)($data['petugas_nama'] ?? ($_SESSION['nama'] ?? $defaultPetugas)));
     $petugasId = (int)($_SESSION['user_id'] ?? 0);
 
     $kodeAset = '';
@@ -345,7 +353,7 @@ function process_asset_mutation(array $data): array {
         update_inventaris_kartu($assetId, $updateCardData);
     }
 
-    $nomorBast = generate_nomor_bast();
+    $nomorBast = generate_nomor_bast($assetType);
     $now = date('Y-m-d H:i:s');
 
     $all = get_asset_mutations();
@@ -373,6 +381,7 @@ function process_asset_mutation(array $data): array {
         'divisi_asal'     => $divisiAsal,
         'divisi_tujuan'   => $divisiTujuan ?: $divisiAsal,
         'alasan_mutasi'   => $alasan,
+        'kondisi_fisik'   => $kondisiFisik,
         'keterangan'      => $keterangan,
         'petugas_nama'    => $petugasNama,
         'created_at'      => $now
@@ -386,13 +395,13 @@ function process_asset_mutation(array $data): array {
                     kode_aset, nama_aset, serial_number, id_cabang_asal, cabang_asal,
                     id_cabang_tujuan, cabang_tujuan, ruangan_asal, ruangan_tujuan,
                     pengguna_asal, pengguna_tujuan, divisi_asal, divisi_tujuan,
-                    alasan_mutasi, keterangan, petugas_user_id, petugas_nama, status, created_at
+                    alasan_mutasi, kondisi_fisik, keterangan, petugas_user_id, petugas_nama, status, created_at
                 ) VALUES (
                     ?, ?, ?, ?, ?,
                     ?, ?, ?, ?, ?,
                     ?, ?, ?, ?,
                     ?, ?, ?, ?,
-                    ?, ?, ?, ?, 'Selesai', ?
+                    ?, ?, ?, ?, ?, 'Selesai', ?
                 )
             ");
             $st->execute([
@@ -400,7 +409,7 @@ function process_asset_mutation(array $data): array {
                 $kodeAset, $namaAset, $sn, $idCabangAsal, $cabangAsal,
                 $idCabangTujuan, $record['cabang_tujuan'], $ruanganAsal, $record['ruangan_tujuan'],
                 $penggunaAsal, $record['pengguna_tujuan'], $divisiAsal, $record['divisi_tujuan'],
-                $alasan, $keterangan, $petugasId, $petugasNama, $now
+                $alasan, $kondisiFisik, $keterangan, $petugasId, $petugasNama, $now
             ]);
         } catch (Throwable $e) {
             // fallback if id conflict

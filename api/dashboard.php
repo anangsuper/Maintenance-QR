@@ -789,7 +789,7 @@ if (empty($displayCards)) {
           </td>
           <td class="text-end text-nowrap" style="width: 140px;">
             <div class="btn-group btn-group-sm">
-              <a class="btn btn-sm btn-light border text-success" target="_blank" href="'.e(module_url('asset_mutation.php', ['id'=>$cId, 'type'=>'inventaris'])).'" title="Mutasi Barang Inventaris" style="padding: 2px 7px;">
+              <a class="btn btn-sm btn-light border text-success" target="_blank" href="'.e(module_url('inventaris_mutation.php', ['id'=>$cId])).'" title="Mutasi Fasilitas &amp; Kartu Inventaris" style="padding: 2px 7px;">
                 <i class="bi bi-arrow-left-right"></i>
               </a>
               <a class="btn btn-sm btn-light border text-primary" target="_blank" href="'.e(module_url('kartu_detail.php', ['id'=>$cId])).'" title="Buka Detail Web &amp; Foto" style="padding: 2px 7px;">

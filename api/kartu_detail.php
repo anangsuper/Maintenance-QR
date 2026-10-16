@@ -601,8 +601,8 @@ $pageTitle = $card ? e($card['nama_barang']) . ' - Kartu Inventaris' : 'Kartu In
                         </span>
                     </div>
                     <div class="d-flex align-items-center gap-2">
-                        <a href="<?= module_url('asset_mutation.php', ['id' => $card['id'], 'type' => 'inventaris']) ?>" class="btn btn-outline-success btn-sm rounded-pill px-3 fw-semibold shadow-xs">
-                            <i class="bi bi-arrow-left-right me-1"></i> Mutasi Barang
+                        <a href="<?= module_url('inventaris_mutation.php', ['id' => $card['id']]) ?>" class="btn btn-outline-success btn-sm rounded-pill px-3 fw-semibold shadow-xs">
+                            <i class="bi bi-arrow-left-right me-1"></i> Mutasi Barang Inventaris
                         </a>
                         <button type="button" class="btn btn-outline-primary btn-sm rounded-pill px-3 fw-semibold shadow-xs" data-bs-toggle="modal" data-bs-target="#modalEditDataKartu">
                             <i class="bi bi-pencil-square me-1"></i> Edit Data Inventaris

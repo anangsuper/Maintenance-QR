@@ -36,6 +36,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $penggunaTujuan = trim((string)($_POST['pengguna_tujuan'] ?? ''));
     $divisiTujuan = trim((string)($_POST['divisi_tujuan'] ?? ''));
     $golonganTujuan = trim((string)($_POST['golongan_tujuan'] ?? ''));
+    $kondisiFisik = trim((string)($_POST['kondisi_fisik'] ?? 'Baik / Utuh'));
     $alasan = trim((string)($_POST['alasan_mutasi'] ?? ''));
     $keterangan = trim((string)($_POST['keterangan'] ?? ''));
 
@@ -64,8 +65,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'divisi_tujuan'   => $divisiTujuan,
             'golongan_tujuan' => $golonganTujuan,
             'alasan_mutasi'   => $alasan,
+            'kondisi_fisik'   => $kondisiFisik,
             'keterangan'      => $keterangan,
-            'petugas_nama'    => $_SESSION['nama'] ?? 'Petugas IT'
+            'petugas_nama'    => $_SESSION['nama'] ?? ($assetType === 'inventaris' ? 'Bagian Umum & SDM' : 'Petugas IT')
         ]);
 
         if (!empty($result['success'])) {
@@ -550,23 +552,27 @@ textarea.form-control { border-radius: 12px !important; }
 
 $errorHtml = $error ? '<div class="alert alert-danger alert-dismissible fade show border-0 shadow-sm mb-4" style="border-left: 4px solid #DC2626 !important;"><i class="bi bi-exclamation-triangle-fill me-2 text-danger"></i>'.e($error).'<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>' : '';
 
+$headerBadge = $isInventaris ? 'SARPRAS &amp; FASILITAS / MUTASI INVENTARIS' : 'ASSET LIFECYCLE / TRANSFER &amp; BAST';
+$headerTitle = $isInventaris ? '<i class="bi bi-building-gear text-success"></i> Mutasi &amp; Pemindahan Fasilitas Inventaris' : '<i class="bi bi-arrow-left-right text-primary"></i> Mutasi &amp; Serah Terima Aset IT';
+$headerDesc = $isInventaris ? 'Relokasi mebel, perabot kantor, dan fasilitas gedung antar-ruangan atau cabang, serta penerbitan Berita Acara Mutasi Inventaris (BAST-INV).' : 'Relokasi perangkat komputer antar-kantor cabang, pergantian pengguna, dan penerbitan Berita Acara Serah Terima (BAST-IT).';
+
 $body = '
 <!-- Header Premium -->
 <div class="mutation-page-header">
   <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
     <div>
-      <div class="tech-label">ASSET LIFECYCLE / TRANSFER &amp; BAST</div>
+      <div class="tech-label">'.$headerBadge.'</div>
       <h1 class="d-flex align-items-center gap-2 mb-1">
-        <i class="bi bi-arrow-left-right"></i> Mutasi &amp; Serah Terima Aset
+        '.$headerTitle.'
       </h1>
-      <p>Relokasi perangkat antar-kantor cabang, pergantian pengguna, dan penerbitan Berita Acara Serah Terima (BAST).</p>
+      <p>'.$headerDesc.'</p>
     </div>
     <div class="header-actions d-flex align-items-center gap-2 flex-shrink-0">
       <a href="'.e(module_url('asset_mutations.php')).'" class="btn">
         <i class="bi bi-journal-text me-1"></i> Riwayat Mutasi
       </a>
-      <a href="'.e(module_url('dashboard.php')).'" class="btn">
-        <i class="bi bi-arrow-left me-1"></i> Dashboard
+      <a href="'.e($cancelUrl).'" class="btn">
+        <i class="bi bi-arrow-left me-1"></i> Kembali
       </a>
     </div>
   </div>
@@ -574,7 +580,9 @@ $body = '
 
 '.$errorHtml.'
 
-<form method="post" action="'.e(module_url('asset_mutation.php')).'">
+$formAction = htmlspecialchars($_SERVER['REQUEST_URI'] ?? '', ENT_QUOTES, 'UTF-8');
+
+<form method="post" action="'.$formAction.'">
   <input type="hidden" name="_csrf" value="'.e(csrf_token()).'">
   <input type="hidden" name="asset_type" value="'.e($selectedType).'">
 
@@ -584,12 +592,12 @@ $body = '
       <div class="mutation-card">
         <div class="mutation-card-header">
           <h5>
-            <span class="step-badge bg-primary text-white">1</span>
-            <i class="bi bi-box-seam-fill text-primary"></i> Aset yang Dimutasi
+            <span class="step-badge '.($isInventaris ? 'bg-success' : 'bg-primary').' text-white">1</span>
+            <i class="bi '.($isInventaris ? 'bi-archive-fill text-success' : 'bi-box-seam-fill text-primary').'"></i> '.($isInventaris ? 'Barang Inventaris yang Dimutasi' : 'Perangkat IT yang Dimutasi').'
           </h5>
           <div class="type-switcher btn-group btn-group-sm" role="group">
             <a href="?type=komputer" class="btn '.($selectedType === 'komputer' ? 'btn-primary active fw-bold shadow-xs' : 'btn-outline-secondary bg-white').'"><i class="bi bi-pc-display me-1"></i> Komputer / IT</a>
-            <a href="?type=inventaris" class="btn '.($selectedType === 'inventaris' ? 'btn-primary active fw-bold shadow-xs' : 'btn-outline-secondary bg-white').'"><i class="bi bi-card-heading me-1"></i> Kartu Inventaris</a>
+            <a href="?type=inventaris" class="btn '.($selectedType === 'inventaris' ? 'btn-success active fw-bold shadow-xs' : 'btn-outline-secondary bg-white').'"><i class="bi bi-card-heading me-1"></i> Kartu Inventaris</a>
           </div>
         </div>
         <div class="mutation-card-body">
@@ -797,6 +805,16 @@ if ($isInventaris) {
             </select>
           </div>
 
+          <div class="col-md-6">
+            <label class="form-label text-uppercase fw-bold text-muted small" style="font-size: 0.72rem; letter-spacing: 0.05em;">Kondisi Fisik Saat Mutasi <span class="text-danger">*</span></label>
+            <select name="kondisi_fisik" class="form-select" required>
+              <option value="Baik / Utuh" selected>Baik / Utuh / Normal (Siap Pakai)</option>
+              <option value="Rusak Ringan">Rusak Ringan (Perlu Rekondisi Ringan)</option>
+              <option value="Rusak Berat">Rusak Berat (Disimpan di Gudang / Pengajuan Afkir)</option>
+            </select>
+            <div class="form-text small" style="font-size: 0.72rem;">Kondisi fisik barang saat serah terima antar unit/ruangan.</div>
+          </div>
+
           <div class="col-12">
             <label class="form-label text-uppercase fw-bold text-muted small" style="font-size: 0.72rem; letter-spacing: 0.05em;">Catatan / Spesifikasi &amp; Kondisi Fisik Barang</label>
             <textarea class="form-control" name="keterangan" rows="3" placeholder="Contoh: Kondisi fisik utuh dan baik, kunci laci/lemari disertakan lengkap, tidak ada cacat atau kerusakan fisik."></textarea>
@@ -902,7 +920,7 @@ $body .= '
             <i class="bi bi-x-circle me-1"></i> Batal
           </a>
           <button type="submit" class="btn-submit-mutation btn d-inline-flex align-items-center gap-2">
-            <i class="bi bi-check-circle-fill"></i> Proses Mutasi &amp; Terbitkan BAST
+            '.($isInventaris ? '<i class="bi bi-check-circle-fill"></i> Proses Mutasi &amp; Terbitkan BAST Inventaris' : '<i class="bi bi-check-circle-fill"></i> Proses Mutasi &amp; Terbitkan BAST IT').'
           </button>
         </div>
         </div><!-- /mutation-card-body -->
