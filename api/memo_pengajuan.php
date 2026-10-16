@@ -86,6 +86,58 @@ $allMemos = get_all_memo([
     'cabang' => $filterCabang
 ]);
 
+// Export CSV Rekap Memo Pengadaan
+if (isset($_GET['export']) && $_GET['export'] === 'csv') {
+    $filename = 'rekap_memo_pengajuan_' . date('Ymd_His') . '.csv';
+    header('Content-Type: text/csv; charset=UTF-8');
+    header('Content-Disposition: attachment; filename="' . $filename . '"');
+    
+    // BOM UTF-8 for Excel compatibility
+    echo "\xEF\xBB\xBF";
+    
+    $out = fopen('php://output', 'w');
+    fputcsv($out, [
+        'No',
+        'Nomor Memo',
+        'Tanggal Memo',
+        'Kantor Cabang',
+        'Kepada',
+        'Pengaju',
+        'Jabatan Pengaju',
+        'Perihal Pengadaan',
+        'Estimasi Biaya (Rp)',
+        'Realisasi Biaya (Rp)',
+        'Status',
+        'Tanggal Beli',
+        'Catatan Realisasi',
+        'Lampiran Penawaran',
+        'Ada Nota Toko'
+    ]);
+    
+    $no = 1;
+    foreach ($allMemos as $row) {
+        fputcsv($out, [
+            $no++,
+            $row['nomor_memo'],
+            $row['tanggal_memo'],
+            $row['cabang_nama'],
+            $row['kepada'],
+            $row['nama_pengaju'],
+            $row['jabatan_pengaju'],
+            $row['perihal'],
+            (float)($row['total_estimasi'] ?? 0),
+            (float)($row['biaya_realisasi'] ?? 0),
+            $row['status'],
+            $row['tanggal_beli'] ?? '',
+            $row['catatan_realisasi'] ?? '',
+            !empty($row['lampiran_file']) ? 'Ada' : 'Tidak Ada',
+            !empty($row['bukti_beli_file']) ? 'Ada Nota' : 'Belum Ada'
+        ]);
+    }
+    fclose($out);
+    exit;
+}
+
 $totalCount = count($allMemos);
 $diajukanCount = 0;
 $disetujuiCount = 0;
@@ -182,6 +234,24 @@ if (empty($allMemos)) {
               </button>';
         }
 
+        $daftarkanKartuBtn = '';
+        if ($st === 'Selesai Dibeli') {
+            $cardUrl = module_url('dashboard.php', [
+                'tab' => 'kartu',
+                'add' => '1',
+                'from_memo' => $mid,
+                'nama' => $m['perihal'],
+                'cabang' => $m['cabang_nama'],
+                'tgl' => (!empty($m['tanggal_beli']) ? $m['tanggal_beli'] : $m['tanggal_memo']),
+                'harga' => (!empty($m['biaya_realisasi']) ? (int)$m['biaya_realisasi'] : (int)$total),
+                'ket' => 'Pengadaan via Memo No. ' . $nomor . (!empty($m['catatan_realisasi']) ? ' (' . $m['catatan_realisasi'] . ')' : '')
+            ]);
+            $daftarkanKartuBtn = '
+              <a href="'.e($cardUrl).'" class="btn btn-sm btn-success fw-bold d-inline-flex align-items-center gap-1 px-2.5 shadow-xs" title="Daftarkan langsung barang ini ke Kartu Inventaris Aktif">
+                <i class="bi bi-credit-card-2-front"></i> Daftarkan Kartu
+              </a>';
+        }
+
         $tableRows .= '
         <tr>
           <td class="text-center font-monospace text-muted small">'.$no++.'</td>
@@ -208,14 +278,17 @@ if (empty($allMemos)) {
             <span class="status-pill '.$stBadge.'">'.e($st).'</span>
           </td>
           <td class="text-end text-nowrap">
-            <div class="btn-group btn-group-sm">
-              '.$realisasiBtn.'
-              <a href="'.$printUrl.'" target="_blank" class="btn btn-outline-primary fw-semibold" title="Cetak Dokumen Memo">
-                <i class="bi bi-printer me-1"></i> Cetak
-              </a>
-              <button type="button" class="btn btn-light border" title="Edit Memo" onclick=\'openEditMemoModal('.$memoJson.')\'>
-                <i class="bi bi-pencil"></i>
-              </button>
+            <div class="d-inline-flex align-items-center gap-1">
+              '.$daftarkanKartuBtn.'
+              <div class="btn-group btn-group-sm">
+                '.$realisasiBtn.'
+                <a href="'.$printUrl.'" target="_blank" class="btn btn-outline-primary fw-semibold" title="Cetak Dokumen Memo">
+                  <i class="bi bi-printer me-1"></i> Cetak
+                </a>
+                <button type="button" class="btn btn-light border" title="Edit Memo" onclick=\'openEditMemoModal('.$memoJson.')\'>
+                  <i class="bi bi-pencil"></i>
+                </button>
+              </div>
             </div>
           </td>
         </tr>';
@@ -244,6 +317,9 @@ $body = '
         <button type="button" class="btn btn-warning text-dark fw-bold btn-sm px-3 shadow-sm d-inline-flex align-items-center gap-2" onclick="openCreateMemoModal()">
           <i class="bi bi-plus-circle-fill"></i> Buat Memo Baru
         </button>
+        <a href="'.e(module_url('memo_pengajuan.php', array_filter(['export' => 'csv', 'cabang' => $filterCabang, 'q' => $q]))).'" class="btn btn-outline-success fw-semibold btn-sm px-3 bg-white d-inline-flex align-items-center gap-1.5" title="Unduh rekap data memo dalam format Excel / CSV">
+          <i class="bi bi-file-earmark-excel"></i> Ekspor CSV
+        </a>
         <a href="'.e(module_url('dashboard.php', ['tab' => 'kartu'])).'" class="btn btn-outline-secondary fw-semibold btn-sm px-3 bg-white d-inline-flex align-items-center gap-1.5">
           <i class="bi bi-card-heading"></i> Data Kartu
         </a>

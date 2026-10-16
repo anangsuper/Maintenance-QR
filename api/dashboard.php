@@ -3384,6 +3384,48 @@ document.addEventListener("DOMContentLoaded", function() {
   if (urlParams.get("add") === "1" || window.location.hash === "#addCardModal") {
     const addCardModalEl = document.getElementById("addCardModal");
     if (addCardModalEl) {
+      if (urlParams.get("from_memo")) {
+        const namaInput = addCardModalEl.querySelector('input[name="nama_barang"]');
+        if (namaInput && urlParams.get("nama")) {
+          namaInput.value = urlParams.get("nama");
+        }
+
+        const tglInput = document.getElementById("addCardTanggal");
+        if (tglInput && urlParams.get("tgl")) {
+          const raw = urlParams.get("tgl");
+          if (raw.includes("-")) {
+            const p = raw.split("-");
+            if (p.length === 3) tglInput.value = `${p[2]}/${p[1]}/${p[0]}`;
+          } else {
+            tglInput.value = raw;
+          }
+        }
+
+        const lokasiInput = document.getElementById("addCardLokasi");
+        if (lokasiInput && urlParams.get("cabang")) {
+          lokasiInput.value = urlParams.get("cabang");
+        }
+
+        const ketInput = addCardModalEl.querySelector('textarea[name="keterangan"]');
+        if (ketInput && urlParams.get("ket")) {
+          let extra = urlParams.get("ket");
+          if (urlParams.get("harga")) {
+            const val = parseInt(urlParams.get("harga"), 10);
+            if (!isNaN(val) && val > 0) {
+              extra += " · Biaya: Rp. " + val.toLocaleString("id-ID");
+            }
+          }
+          ketInput.value = extra;
+        }
+
+        // Auto generate no seri inventaris
+        if (typeof autoGenerateCardNoSeri === "function") {
+          setTimeout(function() {
+            autoGenerateCardNoSeri("add");
+          }, 300);
+        }
+      }
+
       const modal = bootstrap.Modal.getOrCreateInstance(addCardModalEl);
       modal.show();
     }
