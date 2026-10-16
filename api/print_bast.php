@@ -41,8 +41,8 @@ $petugas = e($mutation['petugas_nama'] ?: 'Petugas IT');
 $isInventaris = (($mutation['asset_type'] ?? '') === 'inventaris');
 $bastFormCode = $isInventaris ? 'FORMULIR: BAST-INV-01' : 'FORMULIR: BAST-IT-01';
 $kopSub = $isInventaris
-    ? 'Kantor Operasional &amp; Pengelolaan Sarana Prasarana / Fasilitas Inventaris<br>SK Otoritas Jasa Keuangan (OJK) · POJK No. 75/POJK.03/2016'
-    : 'Kantor Operasional &amp; Manajemen Aset Teknologi Informasi<br>SK Otoritas Jasa Keuangan (OJK) · POJK No. 75/POJK.03/2016';
+    ? 'Kantor Operasional · Pengelolaan Sarana Prasarana &amp; Fasilitas Gedung'
+    : 'Kantor Operasional · Divisi Teknologi Informasi &amp; Komputer';
 $docTitle = $isInventaris
     ? 'BERITA ACARA MUTASI &amp; SERAH TERIMA INVENTARIS / SARPRAS'
     : 'BERITA ACARA SERAH TERIMA (BAST) &amp; MUTASI ASET IT';
@@ -158,7 +158,7 @@ body {
 }
 
 .signature-section {
-  margin-top: 35px;
+  margin-top: 22px;
   page-break-inside: avoid;
 }
 
@@ -168,7 +168,7 @@ body {
 }
 
 .sig-space {
-  height: 65px;
+  height: 52px;
 }
 
 .sig-name {
@@ -231,9 +231,13 @@ body {
         </div>
       </div>
     </div>
-    <div class="text-end small text-muted font-monospace" style="font-size: 0.72rem;">
-      <?= $bastFormCode ?><br>
-      TGL: <?= date('d/m/Y', $dateTs) ?>
+    <div class="text-end">
+      <div class="badge bg-light text-dark border px-2.5 py-1 font-monospace" style="font-size: 0.72rem; letter-spacing: 0.04em;">
+        <?= $bastFormCode ?>
+      </div>
+      <div class="text-muted font-monospace mt-1" style="font-size: 0.72rem;">
+        Tanggal: <?= date('d/m/Y', $dateTs) ?>
+      </div>
     </div>
   </div>
 
@@ -311,31 +315,36 @@ body {
     Sejak tanggal penandatanganan Berita Acara ini, tanggung jawab pemeliharaan rutin, perawatan fisik, dan keberadaan fasilitas/barang tersebut sepenuhnya beralih kepada <strong>PIHAK KEDUA</strong> di <strong><?= $cabangTujuan ?></strong>. Demikian Berita Acara Serah Terima ini dibuat dengan sebenarnya dalam rangkap secukupnya untuk dipergunakan sebagaimana mestinya.
   </p>
 
-  <!-- Bagian 4 Tanda Tangan -->
+  <!-- Bagian Tanda Tangan Resmi (2 Tingkat Sesuai Standar Perbankan) -->
   <div class="signature-section">
-    <div class="row text-center">
-      <div class="col-3 sig-box">
-        <div class="text-muted small">Pihak Yang Menyerahkan,</div>
+    <!-- Tingkat 1: Para Pihak (Penyerah & Penerima) -->
+    <div class="row text-center mb-4">
+      <div class="col-6 sig-box">
+        <div class="text-muted small fw-semibold">Pihak Yang Menyerahkan,</div>
         <div class="sig-space"></div>
         <div class="sig-name"><?= $penggunaAsal ?></div>
         <div class="sig-role"><?= $isInventaris ? 'PIC / Penanggung Jawab Asal' : 'Pemegang Asal' ?></div>
       </div>
-      <div class="col-3 sig-box">
-        <div class="text-muted small">Pihak Yang Menerima,</div>
+      <div class="col-6 sig-box">
+        <div class="text-muted small fw-semibold">Pihak Yang Menerima,</div>
         <div class="sig-space"></div>
         <div class="sig-name"><?= $penggunaTujuan ?></div>
         <div class="sig-role"><?= $isInventaris ? 'PIC / Penanggung Jawab Baru' : 'Pemegang Baru' ?></div>
       </div>
-      <div class="col-3 sig-box">
-        <div class="text-muted small"><?= $isInventaris ? 'Bagian Umum &amp; SDM,' : 'Petugas Pelaksana IT,' ?></div>
+    </div>
+
+    <!-- Tingkat 2: Petugas Pelaksana & Mengetahui Pimpinan Cabang -->
+    <div class="row text-center pt-1">
+      <div class="col-6 sig-box">
+        <div class="text-muted small fw-semibold"><?= $isInventaris ? 'Petugas Pengelola Sarpras / SDM,' : 'Petugas Pelaksana IT Operations,' ?></div>
         <div class="sig-space"></div>
         <div class="sig-name"><?= $petugas ?></div>
-        <div class="sig-role"><?= $isInventaris ? 'Pengelola Sarpras &amp; Inventaris' : 'Staf IT Operations' ?></div>
+        <div class="sig-role"><?= $isInventaris ? 'Staf Bagian Umum &amp; SDM' : 'Staf IT Operations' ?></div>
       </div>
-      <div class="col-3 sig-box">
-        <div class="text-muted small">Mengetahui,</div>
+      <div class="col-6 sig-box">
+        <div class="text-muted small fw-semibold">Mengetahui &amp; Menyetujui,</div>
         <div class="sig-space"></div>
-        <div class="sig-name">( .................................... )</div>
+        <div class="sig-name">( ................................................... )</div>
         <div class="sig-role">Pimpinan Kantor Cabang</div>
       </div>
     </div>
