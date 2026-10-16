@@ -250,6 +250,7 @@ if (empty($allMemos)) {
         }
 
         $daftarkanKartuBtn = '';
+        $bastPengadaanBtn = '';
         if ($st === 'Selesai Dibeli') {
             $cardUrl = module_url('dashboard.php', [
                 'tab' => 'kartu',
@@ -264,6 +265,12 @@ if (empty($allMemos)) {
             $daftarkanKartuBtn = '
               <a href="'.e($cardUrl).'" class="btn btn-sm btn-success fw-bold d-inline-flex align-items-center gap-1 px-2.5 shadow-xs text-nowrap" style="font-size:0.75rem;" title="Daftarkan langsung barang ini ke Kartu Inventaris Aktif">
                 <i class="bi bi-credit-card-2-front"></i> Daftarkan Kartu
+              </a>';
+
+            $bastUrl = module_url('print_bast_pengadaan.php', ['id' => $mid]);
+            $bastPengadaanBtn = '
+              <a href="'.e($bastUrl).'" target="_blank" class="btn btn-outline-dark fw-semibold d-inline-flex align-items-center" style="font-size:0.75rem;" title="Cetak Berita Acara Serah Terima &amp; Pemeriksaan Fisik Barang (BAST Pengadaan)">
+                <i class="bi bi-file-earmark-check text-primary me-1"></i> BAST
               </a>';
         }
 
@@ -296,9 +303,10 @@ if (empty($allMemos)) {
               '.$daftarkanKartuBtn.'
               '.$realisasiBtn.'
               <div class="btn-group btn-group-sm shadow-xs">
-                <a href="'.$printUrl.'" target="_blank" class="btn btn-outline-primary fw-semibold d-inline-flex align-items-center" style="font-size:0.75rem;" title="Cetak Dokumen Memo">
-                  <i class="bi bi-printer me-1"></i> Cetak
+                <a href="'.$printUrl.'" target="_blank" class="btn btn-outline-primary fw-semibold d-inline-flex align-items-center" style="font-size:0.75rem;" title="Cetak Dokumen Memo Internal">
+                  <i class="bi bi-printer me-1"></i> Memo
                 </a>
+                '.$bastPengadaanBtn.'
                 <button type="button" class="btn btn-light border d-inline-flex align-items-center" style="font-size:0.75rem;" title="Edit Memo" onclick=\'openEditMemoModal('.$memoJson.')\'>
                   <i class="bi bi-pencil"></i>
                 </button>
@@ -422,7 +430,7 @@ $body .= '
           <th style="min-width: 200px;">PERIHAL PERMOHONAN</th>
           <th style="min-width: 160px; width: 170px;">ESTIMASI &amp; REALISASI</th>
           <th style="min-width: 130px; width: 130px;" class="text-center">STATUS</th>
-          <th style="min-width: 280px; width: 280px;" class="text-end">AKSI</th>
+          <th style="min-width: 330px; width: 330px;" class="text-end">AKSI</th>
         </tr>
       </thead>
       <tbody>
