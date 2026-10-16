@@ -3385,7 +3385,7 @@ document.addEventListener("DOMContentLoaded", function() {
     const addCardModalEl = document.getElementById("addCardModal");
     if (addCardModalEl) {
       if (urlParams.get("from_memo")) {
-        const namaInput = addCardModalEl.querySelector('input[name="nama_barang"]');
+        const namaInput = addCardModalEl.querySelector("input[name=\"nama_barang\"]");
         if (namaInput && urlParams.get("nama")) {
           namaInput.value = urlParams.get("nama");
         }
@@ -3406,7 +3406,7 @@ document.addEventListener("DOMContentLoaded", function() {
           lokasiInput.value = urlParams.get("cabang");
         }
 
-        const ketInput = addCardModalEl.querySelector('textarea[name="keterangan"]');
+        const ketInput = addCardModalEl.querySelector("textarea[name=\"keterangan\"]");
         if (ketInput && urlParams.get("ket")) {
           let extra = urlParams.get("ket");
           if (urlParams.get("harga")) {
