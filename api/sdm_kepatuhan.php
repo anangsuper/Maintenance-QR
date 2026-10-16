@@ -19,8 +19,8 @@ if (!is_it() && !is_hrd()) {
 
 ensure_sdm_kepatuhan_schema();
 
-$error = $_SESSION['error'] ?? '';
-$flash = $_SESSION['flash'] ?? '';
+$error = $_SESSION['error'] ?? flash_alert('danger') ?? '';
+$flash = $_SESSION['flash'] ?? flash_alert('success') ?? '';
 unset($_SESSION['error'], $_SESSION['flash']);
 
 $tab = $_GET['tab'] ?? 'sertifikasi';
