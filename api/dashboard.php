@@ -1317,6 +1317,7 @@ $body = '
     <p class="text-secondary small mb-0">'.$headerDesc.'</p>
   </div>
   <div class="d-flex align-items-center gap-2 flex-wrap">
+    '.(!$isHrdOnly ? '
     <div class="ops-header-badge" style="background:#ECFDF3; border:1px solid #A6F4C5; color:#16803C;">
       <span class="status-dot operational"></span>
       <span>Operasional Normal</span>
@@ -1324,7 +1325,7 @@ $body = '
     <div id="wsStatusBadge" class="ops-header-badge" style="background:#ECFDF3; border:1px solid #A6F4C5; color:#16803C; cursor: pointer;" title="Status Koneksi Real-Time WebSocket">
       <span id="wsStatusDot" class="status-dot operational"></span>
       <span id="wsStatusText"><i class="bi bi-broadcast me-1"></i>WebSocket Live</span>
-    </div>
+    </div>' : '').'
     <form method="get" class="d-flex align-items-center gap-2">
       <select name="bulan" class="form-select form-select-sm" style="width: 120px;" onchange="this.form.submit()">';
 for ($m = 1; $m <= 12; $m++) {
@@ -1350,7 +1351,7 @@ if (is_hrd() && !is_admin()) {
     $body .= '
     <div class="card border-0 mb-4 overflow-hidden shadow-sm" style="background: linear-gradient(135deg, #ffffff 0%, #f0fdf4 100%); border: 1px solid #bbf7d0 !important; border-left: 5px solid #16a34a !important; border-radius: 16px;">
       <div class="card-body p-3 p-md-4">
-        <div class="d-flex flex-column flex-xl-row justify-content-between align-items-xl-center gap-3">
+        <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
           <div>
             <div class="d-flex align-items-center gap-2 mb-1">
               <span class="badge bg-success px-2.5 py-1" style="font-size: 0.7rem; letter-spacing: 0.05em; border-radius: 6px;">PORTAL SARPRAS</span>
@@ -1366,12 +1367,6 @@ if (is_hrd() && !is_admin()) {
             <a href="'.e(module_url('memo_pengajuan.php')).'" class="btn btn-warning fw-bold btn-sm px-3 shadow-xs text-dark d-inline-flex align-items-center gap-1.5 text-nowrap">
               <i class="bi bi-file-earmark-text-fill"></i> Memo Pengajuan
             </a>
-            <a href="'.e(module_url('dashboard.php', ['tab' => 'kartu'])).'" class="btn btn-outline-secondary fw-semibold btn-sm px-3 bg-white shadow-xs d-inline-flex align-items-center gap-1.5 text-nowrap" title="Buka Daftar Kartu &amp; Cetak Label">
-              <i class="bi bi-printer"></i> Cetak Label CR80
-            </a>
-            <button type="button" class="btn btn-outline-secondary fw-semibold btn-sm px-2.5 bg-white shadow-xs d-inline-flex align-items-center gap-1.5 text-nowrap" data-bs-toggle="modal" data-bs-target="#modalPanduanAplikasi" title="Panduan Alur Sistem">
-              <i class="bi bi-question-circle"></i> Panduan
-            </button>
           </div>
         </div>
       </div>
@@ -3434,6 +3429,10 @@ document.addEventListener("DOMContentLoaded", function() {
   }
 });
 </script>
+';
+
+if (!$isHrdOnly) {
+    $extraScript .= '
 <script>
 window.REALTIME_CONFIG = {
   month: ' . (int)$month . ',
@@ -3444,5 +3443,6 @@ window.REALTIME_CONFIG = {
 };
 </script>
 <script src="realtime_dashboard.js"></script>';
+}
 
-render_page('Dashboard IT Operations', $body, $head, $extraScript);
+render_page($headerTitle, $body, $head, $extraScript);
