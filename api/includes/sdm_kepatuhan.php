@@ -136,3 +136,42 @@ function sdm_file_url(string $relPath): string {
     if (empty($relPath)) return '';
     return module_url('uploads/' . ltrim($relPath, '/'));
 }
+
+if (!function_exists('flash_alert')) {
+    function flash_alert(string $type, ?string $msg = null): ?string {
+        if ($msg !== null) {
+            $_SESSION['flash_' . $type] = $msg;
+            return null;
+        }
+        $val = $_SESSION['flash_' . $type] ?? null;
+        unset($_SESSION['flash_' . $type]);
+        return $val;
+    }
+}
+
+if (!function_exists('redirect')) {
+    function redirect(string $url): void {
+        header('Location: ' . $url);
+        exit;
+    }
+}
+
+if (!function_exists('csrf_protect')) {
+    function csrf_protect(): void {
+        if (function_exists('verify_csrf')) {
+            verify_csrf();
+        }
+    }
+}
+
+if (!function_exists('cabang_list')) {
+    function cabang_list(): array {
+        return function_exists('get_cabang_list') ? get_cabang_list() : [];
+    }
+}
+
+if (!function_exists('is_admin_or_hrd')) {
+    function is_admin_or_hrd(): bool {
+        return (function_exists('is_admin') && is_admin()) || (function_exists('is_hrd') && is_hrd());
+    }
+}

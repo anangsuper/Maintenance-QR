@@ -9,18 +9,19 @@
  * 3. Mandatory Block Leave (Cuti Wajib 5 Hari) - POJK No. 62/POJK.03/2020 & Strategi Anti-Fraud
  */
 
-require_once __DIR__ . '/bootstrap.php';
+require __DIR__ . '/bootstrap.php';
 require_login();
 
-if (!is_admin_or_hrd()) {
-    flash_alert('danger', 'Akses dibatasi hanya untuk Bagian Umum, SDM, dan Administrator.');
-    redirect(module_url('dashboard.php'));
+// Validasi hak akses: IT, SDM/HRD, dan Admin
+if (!is_it() && !is_hrd()) {
+    require_admin();
 }
 
 ensure_sdm_kepatuhan_schema();
 
-$flash = flash_alert('success');
-$error = flash_alert('danger');
+$error = $_SESSION['error'] ?? '';
+$flash = $_SESSION['flash'] ?? '';
+unset($_SESSION['error'], $_SESSION['flash']);
 
 $tab = $_GET['tab'] ?? 'sertifikasi';
 if (!in_array($tab, ['sertifikasi', 'pelatihan', 'block_leave'], true)) {
@@ -28,13 +29,13 @@ if (!in_array($tab, ['sertifikasi', 'pelatihan', 'block_leave'], true)) {
 }
 
 $tahunAktif = (int)($_GET['tahun'] ?? date('Y'));
-$cabangList = cabang_list();
+$cabangList = get_cabang_list();
 
 // ==========================================
 // POST ACTION HANDLERS
 // ==========================================
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    csrf_protect();
+    verify_csrf();
     $action = $_POST['action'] ?? '';
 
     // 1. Simpan / Edit Sertifikasi Profesi
