@@ -155,6 +155,21 @@ $head = '
   font-weight: 700;
   padding: 4px 10px;
   border-radius: 50px;
+  white-space: nowrap !important;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  line-height: 1.2;
+}
+.table > :not(caption) > * > * {
+  padding: 0.65rem 0.75rem;
+}
+.table th {
+  font-size: 0.72rem;
+  letter-spacing: 0.04em;
+  font-weight: 700;
+  color: #475569;
 }
 #modalMemoInternal .modal-dialog {
   max-height: calc(100vh - 2rem);
@@ -204,32 +219,32 @@ if (empty($allMemos)) {
             $fUrl = memo_file_url($m['lampiran_file']);
             $isPdf = str_ends_with(strtolower($m['lampiran_file']), '.pdf');
             $icon = $isPdf ? 'bi-file-earmark-pdf text-secondary' : 'bi-image text-secondary';
-            $lampiranBadge .= '<a href="'.e($fUrl).'" target="_blank" class="badge bg-light text-secondary border shadow-xs text-decoration-none d-inline-flex align-items-center gap-1" style="font-size:0.67rem;" title="Berkas Penawaran Harga / Brosur"><i class="bi '.$icon.'"></i> Penawaran</a> ';
+            $lampiranBadge .= '<a href="'.e($fUrl).'" target="_blank" class="badge bg-light text-secondary border shadow-xs text-decoration-none d-inline-flex align-items-center gap-1 px-2 py-1" style="font-size:0.68rem;" title="Berkas Penawaran Harga / Brosur"><i class="bi '.$icon.'"></i> Penawaran</a> ';
         }
         if (!empty($m['bukti_beli_file'])) {
             $bUrl = memo_file_url($m['bukti_beli_file']);
             $isPdf = str_ends_with(strtolower($m['bukti_beli_file']), '.pdf');
             $bIcon = $isPdf ? 'bi-receipt-cutoff text-success' : 'bi-receipt text-success';
-            $lampiranBadge .= '<a href="'.e($bUrl).'" target="_blank" class="badge bg-success-subtle text-success border border-success-subtle shadow-xs text-decoration-none d-inline-flex align-items-center gap-1" style="font-size:0.67rem;" title="Nota Pembelian Toko Resmi"><i class="bi '.$bIcon.'"></i> Nota Toko ✓</a> ';
+            $lampiranBadge .= '<a href="'.e($bUrl).'" target="_blank" class="badge bg-success-subtle text-success border border-success-subtle shadow-xs text-decoration-none d-inline-flex align-items-center gap-1 px-2 py-1" style="font-size:0.68rem;" title="Nota Pembelian Toko Resmi"><i class="bi '.$bIcon.'"></i> Nota Toko ✓</a> ';
         }
         if (!empty($m['foto_barang_file'])) {
             $pUrl = memo_file_url($m['foto_barang_file']);
-            $lampiranBadge .= '<a href="'.e($pUrl).'" target="_blank" class="badge bg-primary-subtle text-primary border border-primary-subtle shadow-xs text-decoration-none d-inline-flex align-items-center gap-1" style="font-size:0.67rem;" title="Foto Fisik Barang yang Tiba"><i class="bi bi-camera"></i> Foto Fisik</a> ';
+            $lampiranBadge .= '<a href="'.e($pUrl).'" target="_blank" class="badge bg-primary-subtle text-primary border border-primary-subtle shadow-xs text-decoration-none d-inline-flex align-items-center gap-1 px-2 py-1" style="font-size:0.68rem;" title="Foto Fisik Barang yang Tiba"><i class="bi bi-camera"></i> Foto Fisik</a> ';
         }
         if ($lampiranBadge !== '') {
-            $lampiranBadge = '<div class="mt-1 d-flex flex-wrap gap-1">' . $lampiranBadge . '</div>';
+            $lampiranBadge = '<div class="mt-1.5 d-flex flex-wrap gap-1 align-items-center">' . $lampiranBadge . '</div>';
         }
 
         $realisasiBiayaHtml = '';
         if (!empty($m['biaya_realisasi']) && (float)$m['biaya_realisasi'] > 0) {
-            $realisasiBiayaHtml = '<div class="small text-success fw-bold mt-0.5" style="font-size:0.72rem;"><i class="bi bi-receipt me-1"></i>Riil: Rp. '.number_format((float)$m['biaya_realisasi'], 0, ',', '.').',-</div>';
+            $realisasiBiayaHtml = '<div class="small text-success fw-bold mt-1" style="font-size:0.75rem;"><i class="bi bi-check2-circle me-1"></i>Riil: Rp. '.number_format((float)$m['biaya_realisasi'], 0, ',', '.').',-</div>';
         }
 
         $realisasiBtn = '';
         if (in_array($st, ['Disetujui', 'Selesai Dibeli'], true)) {
             $hasNota = !empty($m['bukti_beli_file']);
             $realisasiBtn = '
-              <button type="button" class="btn btn-sm '.($hasNota ? 'btn-outline-success' : 'btn-warning text-dark fw-bold').' d-inline-flex align-items-center gap-1 px-2.5" onclick=\'openRealisasiModal('.$memoJson.')\' title="'.($hasNota ? 'Lihat / Edit Bukti Pembelian & Nota Toko' : 'Upload Bukti Pembelian & Nota Toko').'">
+              <button type="button" class="btn btn-sm '.($hasNota ? 'btn-outline-success bg-white' : 'btn-warning text-dark fw-bold').' d-inline-flex align-items-center gap-1 px-2.5 shadow-xs text-nowrap" style="font-size:0.75rem;" onclick=\'openRealisasiModal('.$memoJson.')\' title="'.($hasNota ? 'Lihat / Edit Bukti Pembelian & Nota Toko' : 'Upload Bukti Pembelian & Nota Toko').'">
                 <i class="bi bi-receipt"></i> '.($hasNota ? 'Nota Toko' : '+ Nota Toko').'
               </button>';
         }
@@ -247,7 +262,7 @@ if (empty($allMemos)) {
                 'ket' => 'Pengadaan via Memo No. ' . $nomor . (!empty($m['catatan_realisasi']) ? ' (' . $m['catatan_realisasi'] . ')' : '')
             ]);
             $daftarkanKartuBtn = '
-              <a href="'.e($cardUrl).'" class="btn btn-sm btn-success fw-bold d-inline-flex align-items-center gap-1 px-2.5 shadow-xs" title="Daftarkan langsung barang ini ke Kartu Inventaris Aktif">
+              <a href="'.e($cardUrl).'" class="btn btn-sm btn-success fw-bold d-inline-flex align-items-center gap-1 px-2.5 shadow-xs text-nowrap" style="font-size:0.75rem;" title="Daftarkan langsung barang ini ke Kartu Inventaris Aktif">
                 <i class="bi bi-credit-card-2-front"></i> Daftarkan Kartu
               </a>';
         }
@@ -256,36 +271,35 @@ if (empty($allMemos)) {
         <tr>
           <td class="text-center font-monospace text-muted small">'.$no++.'</td>
           <td>
-            <a href="'.$printUrl.'" target="_blank" class="fw-bold text-dark font-monospace text-decoration-none d-block">
+            <a href="'.$printUrl.'" target="_blank" class="fw-bold text-dark font-monospace text-decoration-none text-nowrap d-inline-block" style="font-size:0.82rem;" title="Lihat &amp; Cetak Dokumen Memo">
               <i class="bi bi-file-earmark-pdf-fill text-danger me-1"></i>'.$nomor.'
             </a>
-            <div class="small text-muted" style="font-size:0.75rem;"><i class="bi bi-calendar3 me-1"></i>'.$tgl.'</div>
+            <div class="small text-muted mt-0.5" style="font-size:0.75rem;"><i class="bi bi-calendar3 me-1"></i>'.$tgl.'</div>
           </td>
           <td>
             <span class="badge bg-light text-dark border px-2 py-0.5 small mb-1">'.$cabang.'</span>
-            <div class="small">'.$pengaju.'</div>
+            <div class="small text-secondary">'.$pengaju.'</div>
           </td>
           <td>
             <strong class="text-dark small d-block">'.$perihal.'</strong>
             '.$lampiranBadge.'
           </td>
           <td class="text-nowrap">
-            <div class="fw-bold text-dark">Rp. '.number_format($total, 0, ',', '.').',-</div>
+            <div class="fw-bold text-dark" style="font-size:0.85rem;">Rp. '.number_format($total, 0, ',', '.').',-</div>
             '.$realisasiBiayaHtml.'
-            <div class="text-muted small fst-italic" style="font-size:0.68rem;">'.e($m['terbilang']).'</div>
           </td>
-          <td class="text-center">
+          <td class="text-center text-nowrap">
             <span class="status-pill '.$stBadge.'">'.e($st).'</span>
           </td>
           <td class="text-end text-nowrap">
-            <div class="d-inline-flex align-items-center gap-1">
+            <div class="d-inline-flex align-items-center justify-content-end gap-1.5 flex-nowrap">
               '.$daftarkanKartuBtn.'
-              <div class="btn-group btn-group-sm">
-                '.$realisasiBtn.'
-                <a href="'.$printUrl.'" target="_blank" class="btn btn-outline-primary fw-semibold" title="Cetak Dokumen Memo">
+              '.$realisasiBtn.'
+              <div class="btn-group btn-group-sm shadow-xs">
+                <a href="'.$printUrl.'" target="_blank" class="btn btn-outline-primary fw-semibold d-inline-flex align-items-center" style="font-size:0.75rem;" title="Cetak Dokumen Memo">
                   <i class="bi bi-printer me-1"></i> Cetak
                 </a>
-                <button type="button" class="btn btn-light border" title="Edit Memo" onclick=\'openEditMemoModal('.$memoJson.')\'>
+                <button type="button" class="btn btn-light border d-inline-flex align-items-center" style="font-size:0.75rem;" title="Edit Memo" onclick=\'openEditMemoModal('.$memoJson.')\'>
                   <i class="bi bi-pencil"></i>
                 </button>
               </div>
@@ -402,13 +416,13 @@ $body .= '
     <table class="table table-hover align-middle mb-0">
       <thead class="table-light">
         <tr>
-          <th style="width: 50px;" class="text-center font-monospace">NO</th>
-          <th style="width: 230px;">NOMOR MEMO &amp; TANGGAL</th>
-          <th style="width: 180px;">CABANG &amp; PENGAJU</th>
-          <th>PERIHAL PERMOHONAN</th>
-          <th style="width: 200px;">ESTIMASI BIAYA</th>
-          <th style="width: 120px;" class="text-center">STATUS</th>
-          <th style="width: 140px;" class="text-end">AKSI</th>
+          <th style="min-width: 45px; width: 45px;" class="text-center font-monospace">NO</th>
+          <th style="min-width: 220px; width: 220px;">NOMOR MEMO &amp; TANGGAL</th>
+          <th style="min-width: 170px; width: 170px;">CABANG &amp; PENGAJU</th>
+          <th style="min-width: 200px;">PERIHAL PERMOHONAN</th>
+          <th style="min-width: 160px; width: 170px;">ESTIMASI &amp; REALISASI</th>
+          <th style="min-width: 130px; width: 130px;" class="text-center">STATUS</th>
+          <th style="min-width: 280px; width: 280px;" class="text-end">AKSI</th>
         </tr>
       </thead>
       <tbody>
