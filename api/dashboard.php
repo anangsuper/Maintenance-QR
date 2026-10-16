@@ -1358,6 +1358,9 @@ if (is_hrd() && !is_admin()) {
             <button type="button" class="btn btn-success fw-bold btn-sm px-3 shadow-sm" data-bs-toggle="modal" data-bs-target="#addCardModal">
               <i class="bi bi-plus-circle-fill me-1.5"></i> Buat Kartu Baru
             </button>
+            <a href="'.e(module_url('memo_pengajuan.php')).'" class="btn btn-warning fw-semibold btn-sm px-3 shadow-sm text-dark">
+              <i class="bi bi-file-earmark-text-fill me-1.5"></i> Memo Pengajuan
+            </a>
             <a href="'.e(module_url('dashboard.php', ['tab' => 'kartu'])).'" class="btn btn-outline-success fw-semibold btn-sm px-3 bg-white">
               <i class="bi bi-printer-fill me-1.5"></i> Cetak Label CR80
             </a>
@@ -1562,6 +1565,9 @@ if ($activeTab === 'kartu') {
         <div class="text-muted small">Kelola data kartu inventaris, cetak massal A4, dan cetak kartu pilihan.</div>
       </div>
       <div class="d-flex gap-2 flex-wrap align-items-center">
+        <a href="'.e(module_url('memo_pengajuan.php')).'" class="btn btn-warning text-dark fw-bold d-inline-flex align-items-center gap-1 shadow-xs">
+          <i class="bi bi-file-earmark-text-fill"></i> Memo Pengajuan
+        </a>
         <a href="'.e(module_url('asset_gallery.php', ['sub' => 'inventaris'])).'" class="btn btn-outline-primary d-inline-flex align-items-center gap-1 fw-semibold shadow-xs">
           <i class="bi bi-images"></i> Galeri Foto Inventaris
         </a>

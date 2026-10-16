@@ -1,0 +1,510 @@
+<?php
+/**
+ * Modul Manajemen & Pembuatan Memo Internal Pengajuan Inventaris
+ * PT BPR Mitratama Arthabuana
+ */
+
+require __DIR__ . '/bootstrap.php';
+require_login();
+
+// Validasi hak akses: IT, SDM/HRD, dan Admin
+if (!is_it() && !is_hrd()) {
+    require_admin();
+}
+
+$error = '';
+$flash = $_SESSION['flash'] ?? '';
+unset($_SESSION['flash']);
+
+$cabangList = get_cabang_list();
+
+// Handle Submit POST (Simpan / Update Memo)
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    verify_csrf();
+
+    $action = trim((string)($_POST['action'] ?? 'save_memo'));
+
+    if ($action === 'save_memo') {
+        $result = save_memo_pengajuan($_POST);
+        if (!empty($result['success'])) {
+            $_SESSION['flash'] = 'Memo Internal pengajuan berhasil disimpan (Nomor: ' . e($result['nomor_memo']) . ').';
+            header('Location: ' . module_url('memo_pengajuan.php'));
+            exit;
+        } else {
+            $error = $result['error'] ?? 'Gagal menyimpan memo internal.';
+        }
+    } elseif ($action === 'update_status') {
+        $memoId = (int)($_POST['memo_id'] ?? 0);
+        $newStatus = trim((string)($_POST['new_status'] ?? 'Diajukan'));
+        if ($memoId > 0 && in_array($newStatus, ['Diajukan', 'Disetujui', 'Ditolak', 'Selesai Dibeli'], true)) {
+            try {
+                $st = db()->prepare("UPDATE memo_pengajuan_inventaris SET status = ? WHERE id = ?");
+                $st->execute([$newStatus, $memoId]);
+                $_SESSION['flash'] = 'Status pengajuan memo berhasil diperbarui menjadi ' . e($newStatus) . '.';
+            } catch (Throwable $e) {
+                $error = 'Gagal memperbarui status: ' . $e->getMessage();
+            }
+        }
+        header('Location: ' . module_url('memo_pengajuan.php'));
+        exit;
+    }
+}
+
+// Filter pencarian
+$q = trim((string)($_GET['q'] ?? ''));
+$filterCabang = trim((string)($_GET['cabang'] ?? ''));
+
+$allMemos = get_all_memo([
+    'q' => $q,
+    'cabang' => $filterCabang
+]);
+
+$head = '
+<style>
+.memo-page-header {
+  background: linear-gradient(135deg, #1E293B 0%, #334155 50%, #475569 100%);
+  color: #FFFFFF;
+  padding: 26px 32px;
+  border-radius: 18px;
+  margin-bottom: 24px;
+  box-shadow: 0 10px 25px -5px rgba(30, 41, 59, 0.25);
+}
+.memo-page-header h1 {
+  font-size: 1.5rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  margin: 0;
+}
+.memo-page-header .tech-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #94A3B8;
+}
+.memo-page-header .header-actions .btn {
+  font-size: 0.82rem;
+  padding: 8px 16px;
+  border-radius: 10px;
+  font-weight: 600;
+}
+.status-pill {
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 50px;
+}
+</style>
+';
+
+$flashHtml = $flash ? '<div class="alert alert-success alert-dismissible fade show border-0 shadow-sm mb-4" style="border-left: 4px solid #16A34A !important;"><i class="bi bi-check-circle-fill me-2 text-success"></i>'.e($flash).'<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>' : '';
+$errorHtml = $error ? '<div class="alert alert-danger alert-dismissible fade show border-0 shadow-sm mb-4" style="border-left: 4px solid #DC2626 !important;"><i class="bi bi-exclamation-triangle-fill me-2 text-danger"></i>'.e($error).'<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>' : '';
+
+$tableRows = '';
+if (empty($allMemos)) {
+    $tableRows = '<tr><td colspan="7" class="text-center py-5 text-muted"><i class="bi bi-file-earmark-text fs-1 d-block mb-2 opacity-50"></i>Belum ada memo internal pengajuan yang tercatat.<br><button type="button" class="btn btn-primary btn-sm mt-3 fw-bold" onclick="openCreateMemoModal()"><i class="bi bi-plus-lg me-1"></i> Buat Memo Pertama</button></td></tr>';
+} else {
+    $no = 1;
+    foreach ($allMemos as $m) {
+        $mid = (int)$m['id'];
+        $nomor = e($m['nomor_memo']);
+        $tgl = date('d/m/Y', strtotime($m['tanggal_memo']));
+        $cabang = e($m['cabang_nama']);
+        $perihal = e($m['perihal']);
+        $total = (float)$m['total_estimasi'];
+        $pengaju = e($m['nama_pengaju']) . '<br><small class="text-muted">' . e($m['jabatan_pengaju']) . '</small>';
+        $st = $m['status'] ?? 'Diajukan';
+
+        $stBadge = match($st) {
+            'Disetujui' => 'bg-success-subtle text-success border border-success-subtle',
+            'Selesai Dibeli' => 'bg-primary-subtle text-primary border border-primary-subtle',
+            'Ditolak' => 'bg-danger-subtle text-danger border border-danger-subtle',
+            default => 'bg-warning-subtle text-warning-emphasis border border-warning-subtle'
+        };
+
+        $printUrl = module_url('print_memo.php', ['id' => $mid]);
+        $memoJson = htmlspecialchars(json_encode($m), ENT_QUOTES, 'UTF-8');
+
+        $tableRows .= '
+        <tr>
+          <td class="text-center font-monospace text-muted small">'.$no++.'</td>
+          <td>
+            <a href="'.$printUrl.'" target="_blank" class="fw-bold text-dark font-monospace text-decoration-none d-block">
+              <i class="bi bi-file-earmark-pdf-fill text-danger me-1"></i>'.$nomor.'
+            </a>
+            <div class="small text-muted" style="font-size:0.75rem;"><i class="bi bi-calendar3 me-1"></i>'.$tgl.'</div>
+          </td>
+          <td>
+            <span class="badge bg-light text-dark border px-2 py-0.5 small mb-1">'.$cabang.'</span>
+            <div class="small">'.$pengaju.'</div>
+          </td>
+          <td>
+            <strong class="text-dark small d-block">'.$perihal.'</strong>
+          </td>
+          <td class="text-nowrap">
+            <div class="fw-bold text-dark">Rp. '.number_format($total, 0, ',', '.').',-</div>
+            <div class="text-muted small fst-italic" style="font-size:0.7rem;">'.e($m['terbilang']).'</div>
+          </td>
+          <td class="text-center">
+            <span class="status-pill '.$stBadge.'">'.e($st).'</span>
+          </td>
+          <td class="text-end text-nowrap">
+            <div class="btn-group btn-group-sm">
+              <a href="'.$printUrl.'" target="_blank" class="btn btn-outline-primary fw-semibold" title="Cetak Dokumen Memo">
+                <i class="bi bi-printer me-1"></i> Cetak
+              </a>
+              <button type="button" class="btn btn-light border" title="Edit Memo" onclick=\'openEditMemoModal('.$memoJson.')\'>
+                <i class="bi bi-pencil"></i>
+              </button>
+            </div>
+          </td>
+        </tr>';
+    }
+}
+
+$body = '
+'.$flashHtml.'
+'.$errorHtml.'
+
+<!-- Header Banner -->
+<div class="memo-page-header">
+  <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+    <div>
+      <div class="tech-label">PENGELOLAAN SARANA PRASARANA &amp; PENGADAAN</div>
+      <h1 class="d-flex align-items-center gap-2 mb-1">
+        <i class="bi bi-file-earmark-text"></i> Memo Internal Pengajuan Inventaris
+      </h1>
+      <p class="text-white text-opacity-75 mb-0">Dokumen resmi permohonan pengadaan barang/fasilitas baru dari kantor cabang ke Direksi dan Bagian Umum &amp; SDM.</p>
+    </div>
+    <div class="header-actions d-flex flex-wrap align-items-center gap-2 flex-shrink-0">
+      <button type="button" class="btn btn-primary fw-bold px-3 shadow-sm d-inline-flex align-items-center gap-1.5" onclick="openCreateMemoModal()">
+        <i class="bi bi-plus-circle-fill"></i> Buat Memo Baru
+      </button>
+      <a href="'.e(module_url('dashboard.php', ['tab' => 'kartu'])).'" class="btn btn-outline-light">
+        <i class="bi bi-card-heading me-1"></i> Data Kartu Inventaris
+      </a>
+      <a href="'.e(module_url('inventaris_mutation.php')).'" class="btn btn-outline-light">
+        <i class="bi bi-arrow-left-right me-1"></i> Mutasi Barang
+      </a>
+    </div>
+  </div>
+</div>
+
+<!-- Search & Filter Card -->
+<div class="card p-3 mb-4 border-0 shadow-sm" style="border-radius: 14px;">
+  <form method="get" class="d-flex flex-wrap gap-2">
+    <div class="input-group flex-grow-1">
+      <span class="input-group-text bg-white border-end-0 text-muted"><i class="bi bi-search"></i></span>
+      <input type="text" name="q" class="form-control border-start-0 ps-0" placeholder="Cari nomor memo, perihal pengadaan, kantor cabang, nama pengaju..." value="'.e($q).'">
+    </div>
+    <select name="cabang" class="form-select" style="max-width: 200px;">
+      <option value="">-- Semua Cabang --</option>';
+
+foreach ($cabangList as $c) {
+    $cName = $c['nama_cabang'] ?? '';
+    $sel = ($filterCabang === $cName) ? 'selected' : '';
+    $body .= '<option value="'.e($cName).'" '.$sel.'>'.e($cName).'</option>';
+}
+
+$body .= '
+    </select>
+    <button type="submit" class="btn btn-primary px-3 fw-semibold">Filter</button>
+    '.(($q || $filterCabang) ? '<a href="'.e(module_url('memo_pengajuan.php')).'" class="btn btn-light border px-3">Reset</a>' : '').'
+  </form>
+</div>
+
+<!-- Table Card -->
+<div class="card p-0 overflow-hidden shadow-sm border-0 mb-4" style="border-radius: 14px;">
+  <div class="card-header bg-white py-3 px-4 d-flex justify-content-between align-items-center border-bottom">
+    <div class="fw-bold text-dark text-uppercase small" style="letter-spacing: 0.05em;">
+      <i class="bi bi-journal-text text-primary me-2"></i>Daftar Arsip Memo Internal ('.count($allMemos).')
+    </div>
+  </div>
+  <div class="table-responsive">
+    <table class="table table-hover align-middle mb-0">
+      <thead class="table-light">
+        <tr>
+          <th style="width: 50px;" class="text-center font-monospace">NO</th>
+          <th style="width: 230px;">NOMOR MEMO &amp; TANGGAL</th>
+          <th style="width: 180px;">CABANG &amp; PENGAJU</th>
+          <th>PERIHAL PERMOHONAN</th>
+          <th style="width: 200px;">ESTIMASI BIAYA</th>
+          <th style="width: 120px;" class="text-center">STATUS</th>
+          <th style="width: 140px;" class="text-end">AKSI</th>
+        </tr>
+      </thead>
+      <tbody>
+        '.$tableRows.'
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- MODAL: FORM PEMBUATAN / EDIT MEMO INTERNAL -->
+<div class="modal fade" id="modalMemoInternal" tabindex="-1" aria-labelledby="modalMemoLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-scrollable">
+    <div class="modal-content border-0 shadow-lg" style="border-radius: 16px;">
+      <div class="modal-header bg-dark text-white">
+        <div>
+          <h5 class="modal-title d-flex align-items-center gap-2" id="modalMemoLabel">
+            <i class="bi bi-file-earmark-text-fill text-warning"></i> Form Memo Internal Pengajuan Inventaris
+          </h5>
+          <p class="text-white text-opacity-75 small mb-0">Format resmi permohonan pengadaan barang/fasilitas BPR Mitratama Arthabuana.</p>
+        </div>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+
+      <form method="post" action="'.e(module_url('memo_pengajuan.php')).'">
+        <input type="hidden" name="_csrf" value="'.e(csrf_token()).'">
+        <input type="hidden" name="action" value="save_memo">
+        <input type="hidden" name="id" id="memoFormId" value="0">
+
+        <div class="modal-body p-4">
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label class="form-label text-uppercase fw-bold text-muted small" style="font-size:0.72rem;">Kantor Cabang Pemohon <span class="text-danger">*</span></label>
+              <select name="cabang_nama" id="memoCabangSelect" class="form-select" onchange="autoUpdateNomorMemo()" required>';
+
+foreach ($cabangList as $c) {
+    $cName = $c['nama_cabang'] ?? '';
+    $body .= '<option value="'.e($cName).'">'.e($cName).'</option>';
+}
+
+$body .= '
+              </select>
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label text-uppercase fw-bold text-muted small" style="font-size:0.72rem;">Tanggal Memo <span class="text-danger">*</span></label>
+              <input type="date" name="tanggal_memo" id="memoTanggal" class="form-control" value="'.date('Y-m-d').'" required>
+            </div>
+
+            <div class="col-12">
+              <label class="form-label text-uppercase fw-bold text-muted small" style="font-size:0.72rem;">Nomor Memo <span class="text-danger">*</span></label>
+              <div class="input-group">
+                <input type="text" name="nomor_memo" id="memoNomor" class="form-control font-monospace fw-bold" placeholder="Contoh: 396/INT/MI/OPS/BANK-MITRA.KC.BTL/VIII/2026" required>
+                <button type="button" class="btn btn-outline-secondary" onclick="autoUpdateNomorMemo()"><i class="bi bi-magic me-1"></i>Auto Nomor</button>
+              </div>
+              <div class="form-text small" style="font-size:0.72rem;">Dapat diisi otomatis sesuai cabang pemohon atau diedit manual sesuai nomor agenda surat.</div>
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label text-uppercase fw-bold text-muted small" style="font-size:0.72rem;">Kepada Yth <span class="text-danger">*</span></label>
+              <input type="text" name="kepada" id="memoKepada" class="form-control" value="Direksi" required>
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label text-uppercase fw-bold text-muted small" style="font-size:0.72rem;">Dari <span class="text-danger">*</span></label>
+              <input type="text" name="dari_jabatan" id="memoDari" class="form-control" value="Kepala Cabang Kantor Batulicin" required>
+            </div>
+
+            <div class="col-md-9">
+              <label class="form-label text-uppercase fw-bold text-muted small" style="font-size:0.72rem;">Perihal Pengajuan <span class="text-danger">*</span></label>
+              <input type="text" name="perihal" id="memoPerihal" class="form-control fw-bold" placeholder="Contoh: Permohonan Pengajuan Pembelian Monitor CCTV dan Penggantian Kamera CCTV di Lantai 2" required>
+            </div>
+
+            <div class="col-md-3">
+              <label class="form-label text-uppercase fw-bold text-muted small" style="font-size:0.72rem;">Lampiran</label>
+              <input type="text" name="lampiran" id="memoLampiran" class="form-control" value="-">
+            </div>
+
+            <div class="col-12">
+              <label class="form-label text-uppercase fw-bold text-muted small" style="font-size:0.72rem;">Uraian / Isi Permohonan Pengajuan <span class="text-danger">*</span></label>
+              <textarea name="isi_memo" id="memoIsi" rows="4" class="form-control" placeholder="Contoh: Sehubungan dengan adanya pembelian Monitor CCTV, Penggantian Camera CCTV di Lantai 2, Kabel HDMI dan Wiring Duck Pembungkus kabel. Maka kami dari Kepala Kantor Cabang Batulicin mengajukan permohonan pengajuan untuk biaya tersebut..." required></textarea>
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label text-uppercase fw-bold text-muted small" style="font-size:0.72rem;">Estimasi Biaya (Rp) <span class="text-danger">*</span></label>
+              <input type="number" name="total_estimasi" id="memoEstimasi" class="form-control fw-bold fs-6" placeholder="2500000" oninput="updateTerbilangLive()" required>
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label text-uppercase fw-bold text-muted small" style="font-size:0.72rem;">Status Pengajuan</label>
+              <select name="status" id="memoStatus" class="form-select">
+                <option value="Diajukan">Diajukan</option>
+                <option value="Disetujui">Disetujui</option>
+                <option value="Selesai Dibeli">Selesai Dibeli</option>
+                <option value="Ditolak">Ditolak</option>
+              </select>
+            </div>
+
+            <div class="col-12">
+              <div class="p-2.5 rounded bg-light border">
+                <span class="text-muted small fw-semibold d-block">Terbilang (Otomatis):</span>
+                <input type="text" name="terbilang" id="memoTerbilang" class="form-control-plaintext fw-bold fst-italic text-primary" readonly value="//Dua Juta Lima Ratus Ribu Rupiah//">
+              </div>
+            </div>
+
+            <div class="col-12"><hr class="my-1 border-secondary opacity-15"></div>
+
+            <div class="col-12">
+              <h6 class="fw-bold text-dark small text-uppercase mb-2"><i class="bi bi-pen me-1 text-primary"></i>Pejabat Penandatangan Memo</h6>
+            </div>
+
+            <!-- Tanda Tangan 1: Pengaju -->
+            <div class="col-md-4">
+              <div class="p-2 border rounded bg-light">
+                <span class="small fw-bold text-muted d-block mb-1">Yang Mengajukan:</span>
+                <input type="text" name="nama_pengaju" id="memoPengajuNama" class="form-control form-control-sm mb-1 fw-bold" placeholder="Nama Kepala Cabang" value="Muhammad Azimal" required>
+                <input type="text" name="jabatan_pengaju" id="memoPengajuJabatan" class="form-control form-control-sm" placeholder="Jabatan" value="Kepala Cabang" required>
+              </div>
+            </div>
+
+            <!-- Tanda Tangan 2: Mengetahui -->
+            <div class="col-md-4">
+              <div class="p-2 border rounded bg-light">
+                <span class="small fw-bold text-muted d-block mb-1">Mengetahui:</span>
+                <input type="text" name="nama_mengetahui" id="memoMengetahuiNama" class="form-control form-control-sm mb-1 fw-bold" value="Defie Damayanti" required>
+                <input type="text" name="jabatan_mengetahui" id="memoMengetahuiJabatan" class="form-control form-control-sm" value="Kabag. Umum & SDM" required>
+              </div>
+            </div>
+
+            <!-- Tanda Tangan 3: Menyetujui -->
+            <div class="col-md-4">
+              <div class="p-2 border rounded bg-light">
+                <span class="small fw-bold text-muted d-block mb-1">Menyetujui:</span>
+                <input type="text" name="nama_menyetujui" id="memoMenyetujuiNama" class="form-control form-control-sm mb-1 fw-bold" value="Kahar Muzaqir, SH" required>
+                <input type="text" name="jabatan_menyetujui" id="memoMenyetujuiJabatan" class="form-control form-control-sm" value="Direktur Operasional" required>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <div class="modal-footer bg-light d-flex justify-content-between">
+          <button type="button" class="btn btn-secondary px-3" data-bs-dismiss="modal">Batal</button>
+          <button type="submit" class="btn btn-primary px-4 fw-bold">
+            <i class="bi bi-save me-1"></i> Simpan Dokumen Memo
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+';
+
+$extraScript = '
+<script>
+function terbilangJs(angka) {
+  angka = Math.abs(parseInt(angka) || 0);
+  const huruf = ["", "Satu", "Dua", "Tiga", "Empat", "Lima", "Enam", "Tujuh", "Delapan", "Sembilan", "Sepuluh", "Sebelas"];
+  let hasil = "";
+
+  if (angka < 12) {
+    hasil = huruf[angka];
+  } else if (angka < 20) {
+    hasil = terbilangJs(angka - 10) + " Belas";
+  } else if (angka < 100) {
+    hasil = terbilangJs(Math.floor(angka / 10)) + " Puluh " + terbilangJs(angka % 10);
+  } else if (angka < 200) {
+    hasil = "Seratus " + terbilangJs(angka - 100);
+  } else if (angka < 1000) {
+    hasil = terbilangJs(Math.floor(angka / 100)) + " Ratus " + terbilangJs(angka % 100);
+  } else if (angka < 2000) {
+    hasil = "Seribu " + terbilangJs(angka - 1000);
+  } else if (angka < 1000000) {
+    hasil = terbilangJs(Math.floor(angka / 1000)) + " Ribu " + terbilangJs(angka % 1000);
+  } else if (angka < 1000000000) {
+    hasil = terbilangJs(Math.floor(angka / 1000000)) + " Juta " + terbilangJs(angka % 1000000);
+  } else if (angka < 1000000000000) {
+    hasil = terbilangJs(Math.floor(angka / 1000000000)) + " Milyar " + terbilangJs(angka % 1000000000);
+  }
+
+  return hasil.replace(/\\s+/g, " ").trim();
+}
+
+function updateTerbilangLive() {
+  const num = parseInt(document.getElementById("memoEstimasi").value) || 0;
+  if (num > 0) {
+    const text = terbilangJs(num);
+    document.getElementById("memoTerbilang").value = "//" + text + " Rupiah//";
+  } else {
+    document.getElementById("memoTerbilang").value = "";
+  }
+}
+
+function resolveBranchCode(name) {
+  name = (name || "").toLowerCase();
+  if (name.indexOf("batulicin") !== -1) return "KC.BTL";
+  if (name.indexOf("martapura") !== -1) return "KC.MTP";
+  if (name.indexOf("tanjung") !== -1) return "KC.TJG";
+  if (name.indexOf("handil") !== -1) return "KC.HDL";
+  if (name.indexOf("pusat") !== -1 || name.indexOf("kpo") !== -1) return "KPO";
+  return "KC";
+}
+
+function getRomawiMonth(m) {
+  const r = ["I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X", "XI", "XII"];
+  return r[m] || "I";
+}
+
+function autoUpdateNomorMemo() {
+  const cabangSel = document.getElementById("memoCabangSelect");
+  const cabangName = cabangSel ? cabangSel.value : "Batulicin";
+  const code = resolveBranchCode(cabangName);
+  
+  const d = new Date();
+  const romawi = getRomawiMonth(d.getMonth());
+  const year = d.getFullYear();
+
+  document.getElementById("memoDari").value = "Kepala Cabang Kantor " + cabangName;
+
+  // Pertahankan nomor urut jika sudah ada
+  const currentNomor = document.getElementById("memoNomor").value;
+  let numSeq = "001";
+  const match = currentNomor.match(/^(\\d+)/);
+  if (match) {
+    numSeq = match[1];
+  }
+
+  document.getElementById("memoNomor").value = `${numSeq}/INT/MI/OPS/BANK-MITRA.${code}/${romawi}/${year}`;
+}
+
+function openCreateMemoModal() {
+  document.getElementById("memoFormId").value = "0";
+  document.getElementById("memoPerihal").value = "";
+  document.getElementById("memoIsi").value = "Sehubungan dengan adanya pengadaan inventaris/fasilitas, maka kami mengajukan permohonan pengajuan untuk biaya tersebut.";
+  document.getElementById("memoEstimasi").value = "";
+  document.getElementById("memoTerbilang").value = "";
+  document.getElementById("modalMemoLabel").innerHTML = \'<i class="bi bi-file-earmark-plus-fill text-warning"></i> Buat Memo Internal Pengajuan Baru\';
+
+  autoUpdateNomorMemo();
+
+  const modalEl = document.getElementById("modalMemoInternal");
+  if (modalEl) {
+    bootstrap.Modal.getOrCreateInstance(modalEl).show();
+  }
+}
+
+function openEditMemoModal(data) {
+  document.getElementById("memoFormId").value = data.id || 0;
+  document.getElementById("memoCabangSelect").value = data.cabang_nama || "";
+  document.getElementById("memoTanggal").value = data.tanggal_memo || "";
+  document.getElementById("memoNomor").value = data.nomor_memo || "";
+  document.getElementById("memoKepada").value = data.kepada || "Direksi";
+  document.getElementById("memoDari").value = data.dari_jabatan || "";
+  document.getElementById("memoPerihal").value = data.perihal || "";
+  document.getElementById("memoLampiran").value = data.lampiran || "-";
+  document.getElementById("memoIsi").value = data.isi_memo || "";
+  document.getElementById("memoEstimasi").value = data.total_estimasi || 0;
+  document.getElementById("memoTerbilang").value = data.terbilang || "";
+  document.getElementById("memoStatus").value = data.status || "Diajukan";
+
+  document.getElementById("memoPengajuNama").value = data.nama_pengaju || "";
+  document.getElementById("memoPengajuJabatan").value = data.jabatan_pengaju || "Kepala Cabang";
+  document.getElementById("memoMengetahuiNama").value = data.nama_mengetahui || "Defie Damayanti";
+  document.getElementById("memoMengetahuiJabatan").value = data.jabatan_mengetahui || "Kabag. Umum & SDM";
+  document.getElementById("memoMenyetujuiNama").value = data.nama_menyetujui || "Kahar Muzaqir, SH";
+  document.getElementById("memoMenyetujuiJabatan").value = data.jabatan_menyetujui || "Direktur Operasional";
+
+  document.getElementById("modalMemoLabel").innerHTML = \'<i class="bi bi-pencil-square text-warning"></i> Edit Dokumen Memo Internal\';
+
+  const modalEl = document.getElementById("modalMemoInternal");
+  if (modalEl) {
+    bootstrap.Modal.getOrCreateInstance(modalEl).show();
+  }
+}
+</script>
+';
+
+render_page('Memo Internal Pengajuan Inventaris', $body, $head, $extraScript);
