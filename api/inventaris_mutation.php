@@ -901,7 +901,7 @@ function escapeHtml(str) {
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#039;");
+    .replace(/\x27/g, "&#039;");
 }
 
 document.addEventListener("DOMContentLoaded", function() {
