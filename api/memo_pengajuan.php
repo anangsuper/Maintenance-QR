@@ -59,35 +59,18 @@ $allMemos = get_all_memo([
     'cabang' => $filterCabang
 ]);
 
+$totalCount = count($allMemos);
+$diajukanCount = 0;
+$disetujuiCount = 0;
+$totalBiaya = 0;
+foreach ($allMemos as $am) {
+    if (($am['status'] ?? '') === 'Diajukan') $diajukanCount++;
+    if (in_array($am['status'] ?? '', ['Disetujui', 'Selesai Dibeli'], true)) $disetujuiCount++;
+    $totalBiaya += (float)($am['total_estimasi'] ?? 0);
+}
+
 $head = '
 <style>
-.memo-page-header {
-  background: linear-gradient(135deg, #1E293B 0%, #334155 50%, #475569 100%);
-  color: #FFFFFF;
-  padding: 26px 32px;
-  border-radius: 18px;
-  margin-bottom: 24px;
-  box-shadow: 0 10px 25px -5px rgba(30, 41, 59, 0.25);
-}
-.memo-page-header h1 {
-  font-size: 1.5rem;
-  font-weight: 800;
-  letter-spacing: -0.02em;
-  margin: 0;
-}
-.memo-page-header .tech-label {
-  font-size: 0.72rem;
-  font-weight: 700;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: #94A3B8;
-}
-.memo-page-header .header-actions .btn {
-  font-size: 0.82rem;
-  padding: 8px 16px;
-  border-radius: 10px;
-  font-weight: 600;
-}
 .status-pill {
   font-size: 0.72rem;
   font-weight: 700;
@@ -178,26 +161,68 @@ $body = '
 '.$flashHtml.'
 '.$errorHtml.'
 
-<!-- Header Banner -->
-<div class="memo-page-header">
-  <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
-    <div>
-      <div class="tech-label">PENGELOLAAN SARANA PRASARANA &amp; PENGADAAN</div>
-      <h1 class="d-flex align-items-center gap-2 mb-1">
-        <i class="bi bi-file-earmark-text"></i> Memo Internal Pengajuan Inventaris
-      </h1>
-      <p class="text-white text-opacity-75 mb-0">Dokumen resmi permohonan pengadaan barang/fasilitas baru dari kantor cabang ke Direksi dan Bagian Umum &amp; SDM.</p>
+<!-- Header Banner (Clean Theme Bank Mitra) -->
+<div class="card border-0 mb-4 overflow-hidden shadow-sm" style="background: linear-gradient(135deg, #ffffff 0%, #fefce8 100%); border: 1px solid #fef08a !important; border-left: 5px solid #eab308 !important; border-radius: 16px;">
+  <div class="card-body p-3 p-md-4">
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+      <div>
+        <div class="d-flex align-items-center gap-2 mb-1">
+          <span class="badge bg-warning text-dark px-2.5 py-1" style="font-size: 0.7rem; font-weight: 700; letter-spacing: 0.05em; border-radius: 6px;">PENGELOLAAN SARPRAS &amp; SDM</span>
+          <span class="text-muted small">| Dokumen Resmi Pengadaan Inventaris</span>
+        </div>
+        <h3 class="fw-bold text-dark mb-1 d-flex align-items-center gap-2">
+          <i class="bi bi-file-earmark-text-fill text-warning"></i> Memo Internal Pengajuan Inventaris
+        </h3>
+        <p class="text-secondary small mb-0">Format resmi permohonan pengadaan sarana/fasilitas baru dari kantor cabang kepada Direksi dan Bagian Umum &amp; SDM.</p>
+      </div>
+      <div class="d-flex flex-wrap align-items-center gap-2">
+        <button type="button" class="btn btn-warning text-dark fw-bold btn-sm px-3 shadow-sm d-inline-flex align-items-center gap-2" onclick="openCreateMemoModal()">
+          <i class="bi bi-plus-circle-fill"></i> Buat Memo Baru
+        </button>
+        <a href="'.e(module_url('dashboard.php', ['tab' => 'kartu'])).'" class="btn btn-outline-secondary fw-semibold btn-sm px-3 bg-white d-inline-flex align-items-center gap-1.5">
+          <i class="bi bi-card-heading"></i> Data Kartu
+        </a>
+        <a href="'.e(module_url('inventaris_mutation.php')).'" class="btn btn-outline-secondary fw-semibold btn-sm px-3 bg-white d-inline-flex align-items-center gap-1.5">
+          <i class="bi bi-arrow-left-right"></i> Mutasi Barang
+        </a>
+      </div>
     </div>
-    <div class="header-actions d-flex flex-wrap align-items-center gap-2 flex-shrink-0">
-      <button type="button" class="btn btn-primary fw-bold px-3 shadow-sm d-inline-flex align-items-center gap-1.5" onclick="openCreateMemoModal()">
-        <i class="bi bi-plus-circle-fill"></i> Buat Memo Baru
-      </button>
-      <a href="'.e(module_url('dashboard.php', ['tab' => 'kartu'])).'" class="btn btn-outline-light">
-        <i class="bi bi-card-heading me-1"></i> Data Kartu Inventaris
-      </a>
-      <a href="'.e(module_url('inventaris_mutation.php')).'" class="btn btn-outline-light">
-        <i class="bi bi-arrow-left-right me-1"></i> Mutasi Barang
-      </a>
+  </div>
+</div>
+
+<!-- KPI Mini Stats -->
+<div class="row g-3 mb-4">
+  <div class="col-sm-4 col-12">
+    <div class="card p-3 border-0 shadow-sm h-100" style="border-radius: 14px; border-left: 4px solid #3b82f6 !important;">
+      <div class="d-flex align-items-center justify-content-between">
+        <div>
+          <div class="text-muted small fw-semibold text-uppercase" style="font-size:0.7rem;">Total Memo Tercatat</div>
+          <div class="fs-4 fw-bold text-dark mt-0.5">'.$totalCount.' Dokumen</div>
+        </div>
+        <div class="p-2.5 rounded-3 bg-primary-subtle text-primary fs-4"><i class="bi bi-journal-text"></i></div>
+      </div>
+    </div>
+  </div>
+  <div class="col-sm-4 col-12">
+    <div class="card p-3 border-0 shadow-sm h-100" style="border-radius: 14px; border-left: 4px solid #f59e0b !important;">
+      <div class="d-flex align-items-center justify-content-between">
+        <div>
+          <div class="text-muted small fw-semibold text-uppercase" style="font-size:0.7rem;">Status Diajukan</div>
+          <div class="fs-4 fw-bold text-warning mt-0.5">'.$diajukanCount.' Memo</div>
+        </div>
+        <div class="p-2.5 rounded-3 bg-warning-subtle text-warning fs-4"><i class="bi bi-hourglass-split"></i></div>
+      </div>
+    </div>
+  </div>
+  <div class="col-sm-4 col-12">
+    <div class="card p-3 border-0 shadow-sm h-100" style="border-radius: 14px; border-left: 4px solid #10b981 !important;">
+      <div class="d-flex align-items-center justify-content-between">
+        <div>
+          <div class="text-muted small fw-semibold text-uppercase" style="font-size:0.7rem;">Disetujui / Selesai</div>
+          <div class="fs-4 fw-bold text-success mt-0.5">'.$disetujuiCount.' Memo</div>
+        </div>
+        <div class="p-2.5 rounded-3 bg-success-subtle text-success fs-4"><i class="bi bi-check2-circle"></i></div>
+      </div>
     </div>
   </div>
 </div>
