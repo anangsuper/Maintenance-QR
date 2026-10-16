@@ -1299,6 +1299,11 @@ foreach ($cabangStats as $bCode => $b) {
     $branchBadgesWidgetHtml .= '<span class="badge bg-light text-dark border py-1 px-2"><span class="font-monospace fw-bold text-primary me-1">'.$bCode.'</span>'.e($b['name']).': <strong>'.$b['count'].'</strong>'.($b['today'] > 0 ? ' <span class="text-success fw-bold">(+'.$b['today'].')</span>' : '').'</span>';
 }
 
+$isHrdOnly = (is_hrd() && !is_admin());
+$headerTechLabel = $isHrdOnly ? 'PENGELOLAAN SARANA PRASARANA' : 'BANKING IT OPERATIONS COMMAND';
+$headerTitle = $isHrdOnly ? 'Dashboard Inventaris &amp; Sarana Prasarana' : 'Dashboard IT Operations';
+$headerDesc = $isHrdOnly ? 'Pusat pengelolaan inventaris fisik, memo pengajuan pengadaan, dan cetak kartu label BPR Mitratama Arthabuana.' : 'Pusat komando pemeliharaan aset IT, audit berkala, dan manajemen cetak label kartu inventaris.';
+
 $body = '
 <!-- Flash Messages -->
 '.($flash ? '<div class="alert alert-success alert-dismissible fade show border-0 shadow-sm mb-3" style="border-left: 4px solid #10B981 !important;"><i class="bi bi-check-circle-fill me-2 text-success"></i>'.e($flash).'<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>' : '').'
@@ -1307,9 +1312,9 @@ $body = '
 <!-- Page Header -->
 <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3 mb-3">
   <div>
-    <div class="tech-label mb-1">BANKING IT OPERATIONS COMMAND</div>
-    <h1 class="h3 mb-1 fw-bold text-dark">Dashboard IT Operations</h1>
-    <p class="text-secondary small mb-0">Pusat komando pemeliharaan aset IT, audit berkala, dan manajemen cetak label kartu inventaris.</p>
+    <div class="tech-label mb-1">'.$headerTechLabel.'</div>
+    <h1 class="h3 mb-1 fw-bold text-dark">'.$headerTitle.'</h1>
+    <p class="text-secondary small mb-0">'.$headerDesc.'</p>
   </div>
   <div class="d-flex align-items-center gap-2 flex-wrap">
     <div class="ops-header-badge" style="background:#ECFDF3; border:1px solid #A6F4C5; color:#16803C;">
@@ -1343,32 +1348,29 @@ $body .= '
 if (is_hrd() && !is_admin()) {
     // BANNER PINTASAN CEPAT RAMAH PENGGUNA KHUSUS SDM & UMUM
     $body .= '
-    <div class="card border-0 mb-4 overflow-hidden" style="background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(240, 253, 244, 0.95) 100%); border: 1px solid rgba(187, 247, 208, 0.8) !important; border-left: 5px solid #16a34a !important; border-radius: 16px; box-shadow: 0 10px 25px -5px rgba(22, 163, 74, 0.08), 0 8px 10px -6px rgba(22, 163, 74, 0.04);">
+    <div class="card border-0 mb-4 overflow-hidden shadow-sm" style="background: linear-gradient(135deg, #ffffff 0%, #f0fdf4 100%); border: 1px solid #bbf7d0 !important; border-left: 5px solid #16a34a !important; border-radius: 16px;">
       <div class="card-body p-3 p-md-4">
-        <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+        <div class="d-flex flex-column flex-xl-row justify-content-between align-items-xl-center gap-3">
           <div>
             <div class="d-flex align-items-center gap-2 mb-1">
-              <span class="badge bg-success px-2.5 py-1" style="font-size: 0.7rem; letter-spacing: 0.05em; border-radius: 6px;">PORTAL SDM &amp; UMUM</span>
+              <span class="badge bg-success px-2.5 py-1" style="font-size: 0.7rem; letter-spacing: 0.05em; border-radius: 6px;">PORTAL SARPRAS</span>
               <span class="text-muted small">| Selamat bertugas, <strong>'.e($_SESSION['nama'] ?? 'Petugas').'</strong></span>
             </div>
-            <h4 class="fw-bold text-dark mb-1">Pusat Inventaris &amp; Label Aset Non-Komputer</h4>
-            <p class="text-secondary small mb-0">Kelola inventaris perabot, cetak kartu label fisik ukuran CR80/PVC, dan pemeliharaan gedung/ruangan.</p>
+            <h4 class="fw-bold text-dark mb-1">Pusat Inventaris &amp; Pengadaan Barang</h4>
+            <p class="text-secondary small mb-0">Kelola inventaris perabot, memo pengajuan pengadaan, dan cetak kartu label fisik CR80/PVC.</p>
           </div>
-          <div class="d-flex flex-wrap gap-2">
-            <button type="button" class="btn btn-success fw-bold btn-sm px-3 shadow-sm" data-bs-toggle="modal" data-bs-target="#addCardModal">
-              <i class="bi bi-plus-circle-fill me-1.5"></i> Buat Kartu Baru
+          <div class="d-flex flex-wrap align-items-center gap-2">
+            <button type="button" class="btn btn-success fw-bold btn-sm px-3 shadow-xs d-inline-flex align-items-center gap-1.5 text-nowrap" data-bs-toggle="modal" data-bs-target="#addCardModal">
+              <i class="bi bi-plus-circle-fill"></i> Buat Kartu Baru
             </button>
-            <a href="'.e(module_url('memo_pengajuan.php')).'" class="btn btn-warning fw-semibold btn-sm px-3 shadow-sm text-dark">
-              <i class="bi bi-file-earmark-text-fill me-1.5"></i> Memo Pengajuan
+            <a href="'.e(module_url('memo_pengajuan.php')).'" class="btn btn-warning fw-bold btn-sm px-3 shadow-xs text-dark d-inline-flex align-items-center gap-1.5 text-nowrap">
+              <i class="bi bi-file-earmark-text-fill"></i> Memo Pengajuan
             </a>
-            <a href="'.e(module_url('dashboard.php', ['tab' => 'kartu'])).'" class="btn btn-outline-success fw-semibold btn-sm px-3 bg-white">
-              <i class="bi bi-printer-fill me-1.5"></i> Cetak Label CR80
+            <a href="'.e(module_url('dashboard.php', ['tab' => 'kartu'])).'" class="btn btn-outline-secondary fw-semibold btn-sm px-3 bg-white shadow-xs d-inline-flex align-items-center gap-1.5 text-nowrap" title="Buka Daftar Kartu &amp; Cetak Label">
+              <i class="bi bi-printer"></i> Cetak Label CR80
             </a>
-            <a href="'.e(module_url('asset_gallery.php', ['sub' => 'inventaris'])).'" class="btn btn-outline-secondary fw-semibold btn-sm px-3 bg-white">
-              <i class="bi bi-images me-1.5"></i> Galeri Foto
-            </a>
-            <button type="button" class="btn btn-outline-primary fw-semibold btn-sm px-3 bg-white" data-bs-toggle="modal" data-bs-target="#modalPanduanAplikasi">
-              <i class="bi bi-journal-text me-1.5"></i> Panduan Alur
+            <button type="button" class="btn btn-outline-secondary fw-semibold btn-sm px-2.5 bg-white shadow-xs d-inline-flex align-items-center gap-1.5 text-nowrap" data-bs-toggle="modal" data-bs-target="#modalPanduanAplikasi" title="Panduan Alur Sistem">
+              <i class="bi bi-question-circle"></i> Panduan
             </button>
           </div>
         </div>
