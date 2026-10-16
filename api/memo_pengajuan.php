@@ -25,6 +25,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $action = trim((string)($_POST['action'] ?? 'save_memo'));
 
     if ($action === 'save_memo') {
+        if (!empty($_FILES['lampiran_file']['tmp_name'])) {
+            $uploadedPath = upload_memo_lampiran('lampiran_file');
+            if ($uploadedPath) {
+                $_POST['lampiran_file'] = $uploadedPath;
+            }
+        }
         $result = save_memo_pengajuan($_POST);
         if (!empty($result['success'])) {
             $_SESSION['flash'] = 'Memo Internal pengajuan berhasil disimpan (Nomor: ' . e($result['nomor_memo']) . ').';
@@ -120,6 +126,14 @@ if (empty($allMemos)) {
         $printUrl = module_url('print_memo.php', ['id' => $mid]);
         $memoJson = htmlspecialchars(json_encode($m), ENT_QUOTES, 'UTF-8');
 
+        $lampiranBadge = '';
+        if (!empty($m['lampiran_file'])) {
+            $fUrl = memo_file_url($m['lampiran_file']);
+            $isPdf = str_ends_with(strtolower($m['lampiran_file']), '.pdf');
+            $icon = $isPdf ? 'bi-file-earmark-pdf-fill text-danger' : 'bi-image-fill text-primary';
+            $lampiranBadge = '<div class="mt-1"><a href="'.e($fUrl).'" target="_blank" class="badge bg-light text-dark border shadow-xs text-decoration-none d-inline-flex align-items-center gap-1" style="font-size:0.68rem;"><i class="bi '.$icon.'"></i> Nota / Lampiran</a></div>';
+        }
+
         $tableRows .= '
         <tr>
           <td class="text-center font-monospace text-muted small">'.$no++.'</td>
@@ -135,6 +149,7 @@ if (empty($allMemos)) {
           </td>
           <td>
             <strong class="text-dark small d-block">'.$perihal.'</strong>
+            '.$lampiranBadge.'
           </td>
           <td class="text-nowrap">
             <div class="fw-bold text-dark">Rp. '.number_format($total, 0, ',', '.').',-</div>
@@ -280,7 +295,7 @@ $body .= '
 <!-- MODAL: FORM PEMBUATAN / EDIT MEMO INTERNAL -->
 <div class="modal fade" id="modalMemoInternal" tabindex="-1" aria-labelledby="modalMemoLabel" aria-hidden="true">
   <div class="modal-dialog modal-lg modal-dialog-scrollable">
-    <form method="post" action="'.e(module_url('memo_pengajuan.php')).'" class="modal-content border-0 shadow-lg" style="border-radius: 16px;">
+    <form method="post" action="'.e(module_url('memo_pengajuan.php')).'" enctype="multipart/form-data" class="modal-content border-0 shadow-lg" style="border-radius: 16px;">
       <input type="hidden" name="_csrf" value="'.e(csrf_token()).'">
       <input type="hidden" name="action" value="save_memo">
       <input type="hidden" name="id" id="memoFormId" value="0">
@@ -334,14 +349,27 @@ $body .= '
               <input type="text" name="dari_jabatan" id="memoDari" class="form-control" value="Kepala Cabang Kantor Batulicin" required>
             </div>
 
-            <div class="col-md-9">
+            <div class="col-md-8">
               <label class="form-label text-uppercase fw-bold text-muted small" style="font-size:0.72rem;">Perihal Pengajuan <span class="text-danger">*</span></label>
               <input type="text" name="perihal" id="memoPerihal" class="form-control fw-bold" placeholder="Contoh: Permohonan Pengajuan Pembelian Monitor CCTV dan Penggantian Kamera CCTV di Lantai 2" required>
             </div>
 
-            <div class="col-md-3">
-              <label class="form-label text-uppercase fw-bold text-muted small" style="font-size:0.72rem;">Lampiran</label>
-              <input type="text" name="lampiran" id="memoLampiran" class="form-control" value="-">
+            <div class="col-md-4">
+              <label class="form-label text-uppercase fw-bold text-muted small" style="font-size:0.72rem;">Keterangan Lampiran (Kop)</label>
+              <input type="text" name="lampiran" id="memoLampiran" class="form-control" value="1 (satu) Berkas" placeholder="Contoh: 1 (satu) Berkas">
+            </div>
+
+            <div class="col-12">
+              <div class="p-3 rounded-3 bg-light border">
+                <label class="form-label text-uppercase fw-bold text-dark small mb-1" style="font-size:0.75rem;">
+                  <i class="bi bi-paperclip me-1 text-primary"></i>Upload Berkas Nota / Kuitansi / Brosur / Foto Fisik Barang
+                </label>
+                <input type="file" name="lampiran_file" id="memoLampiranFile" class="form-control" accept=".pdf,image/*">
+                <div class="form-text text-muted small mt-1" style="font-size:0.72rem;">
+                  Format: <strong>PDF, JPG, JPEG, PNG, WEBP</strong> (Maks. 25MB). Bukti nota pembelian, kuitansi toko, brosur penawaran, atau foto fisik barang.
+                </div>
+                <div id="memoLampiranCurrent" class="mt-2 d-none"></div>
+              </div>
             </div>
 
             <div class="col-12">
@@ -501,6 +529,16 @@ function openCreateMemoModal() {
   document.getElementById("memoIsi").value = "Sehubungan dengan adanya pengadaan inventaris/fasilitas, maka kami mengajukan permohonan pengajuan untuk biaya tersebut.";
   document.getElementById("memoEstimasi").value = "";
   document.getElementById("memoTerbilang").value = "";
+  document.getElementById("memoLampiran").value = "1 (satu) Berkas";
+
+  const fileInput = document.getElementById("memoLampiranFile");
+  if (fileInput) fileInput.value = "";
+  const curBox = document.getElementById("memoLampiranCurrent");
+  if (curBox) {
+    curBox.classList.add("d-none");
+    curBox.innerHTML = "";
+  }
+
   document.getElementById("modalMemoLabel").innerHTML = \'<i class="bi bi-file-earmark-plus-fill text-warning"></i> Buat Memo Internal Pengajuan Baru\';
 
   autoUpdateNomorMemo();
@@ -519,11 +557,27 @@ function openEditMemoModal(data) {
   document.getElementById("memoKepada").value = data.kepada || "Direksi";
   document.getElementById("memoDari").value = data.dari_jabatan || "";
   document.getElementById("memoPerihal").value = data.perihal || "";
-  document.getElementById("memoLampiran").value = data.lampiran || "-";
+  document.getElementById("memoLampiran").value = data.lampiran || "1 (satu) Berkas";
   document.getElementById("memoIsi").value = data.isi_memo || "";
   document.getElementById("memoEstimasi").value = data.total_estimasi || 0;
   document.getElementById("memoTerbilang").value = data.terbilang || "";
   document.getElementById("memoStatus").value = data.status || "Diajukan";
+
+  const fileInput = document.getElementById("memoLampiranFile");
+  if (fileInput) fileInput.value = "";
+  const curBox = document.getElementById("memoLampiranCurrent");
+  if (curBox) {
+    if (data.lampiran_file) {
+      const isPdf = (data.lampiran_file || "").toLowerCase().endsWith(".pdf");
+      const icon = isPdf ? "bi-file-earmark-pdf-fill text-danger" : "bi-image-fill text-primary";
+      const fileUrl = (data.lampiran_file.startsWith("http") || data.lampiran_file.startsWith("/")) ? data.lampiran_file : ("" + data.lampiran_file);
+      curBox.classList.remove("d-none");
+      curBox.innerHTML = \'<div class="d-flex align-items-center justify-content-between flex-wrap gap-2"><div><i class="bi \' + icon + \' me-1"></i> <a href="\' + fileUrl + \'" target="_blank" class="fw-bold text-decoration-none">Lihat Berkas Lampiran Tersimpan</a></div><small class="text-muted">Pilih file baru jika ingin mengganti</small></div>\';
+    } else {
+      curBox.classList.add("d-none");
+      curBox.innerHTML = "";
+    }
+  }
 
   document.getElementById("memoPengajuNama").value = data.nama_pengaju || "";
   document.getElementById("memoPengajuJabatan").value = data.jabatan_pengaju || "Kepala Cabang";

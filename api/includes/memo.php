@@ -22,6 +22,7 @@ function ensure_memo_schema(): void {
                     cabang_nama VARCHAR(100) NOT NULL,
                     perihal VARCHAR(255) NOT NULL,
                     lampiran VARCHAR(50) DEFAULT '-',
+                    lampiran_file VARCHAR(255) DEFAULT '',
                     isi_memo TEXT NOT NULL,
                     total_estimasi DECIMAL(15,2) NOT NULL DEFAULT 0,
                     terbilang VARCHAR(255) DEFAULT '',
@@ -38,10 +39,73 @@ function ensure_memo_schema(): void {
                     INDEX (id_cabang)
                 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
             ");
+
+            // Migration: pastikan kolom lampiran_file ada jika tabel sudah ada sebelumnya
+            $cols = db()->query("SHOW COLUMNS FROM memo_pengajuan_inventaris LIKE 'lampiran_file'")->fetchAll();
+            if (empty($cols)) {
+                db()->exec("ALTER TABLE memo_pengajuan_inventaris ADD COLUMN lampiran_file VARCHAR(255) DEFAULT '' AFTER lampiran");
+            }
         } catch (Throwable $e) {
             // Ignore schema error
         }
     }
+}
+
+/**
+ * URL absolut/relatif file lampiran memo
+ */
+function memo_file_url(?string $path): string {
+    $path = trim((string)$path);
+    if ($path === '') return '';
+    if (str_starts_with($path, 'http://') || str_starts_with($path, 'https://') || str_starts_with($path, '//')) {
+        return $path;
+    }
+    $clean = ltrim($path, '/');
+    return module_url($clean);
+}
+
+/**
+ * Upload berkas lampiran memo (PDF, JPG, PNG, WEBP)
+ */
+function upload_memo_lampiran(string $fileKey = 'lampiran_file'): ?string {
+    if (empty($_FILES[$fileKey]) || empty($_FILES[$fileKey]['tmp_name']) || !is_uploaded_file($_FILES[$fileKey]['tmp_name'])) {
+        return null;
+    }
+    $file = $_FILES[$fileKey];
+    if ($file['error'] !== UPLOAD_ERR_OK) {
+        return null;
+    }
+    $maxSize = 25 * 1024 * 1024; // 25 MB
+    if ($file['size'] > $maxSize) {
+        return null;
+    }
+    $ext = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
+    $allowedExts = ['pdf', 'jpg', 'jpeg', 'png', 'webp'];
+    if (!in_array($ext, $allowedExts, true)) {
+        return null;
+    }
+
+    $uploadDir = dirname(__DIR__) . '/uploads/memo/';
+    if (!is_dir($uploadDir)) {
+        @mkdir($uploadDir, 0777, true);
+        @chmod($uploadDir, 0777);
+    }
+
+    $safeName = 'memo_' . date('Ymd_His') . '_' . bin2hex(random_bytes(4)) . '.' . $ext;
+    $targetPath = $uploadDir . $safeName;
+
+    if (in_array($ext, ['jpg', 'jpeg', 'png', 'webp'], true) && function_exists('compress_and_save_uploaded_image')) {
+        if (compress_and_save_uploaded_image($file['tmp_name'], $targetPath, 1800, 85)) {
+            @chmod($targetPath, 0666);
+            return 'uploads/memo/' . $safeName;
+        }
+    }
+
+    if (move_uploaded_file($file['tmp_name'], $targetPath)) {
+        @chmod($targetPath, 0666);
+        return 'uploads/memo/' . $safeName;
+    }
+    return null;
 }
 
 /**
@@ -211,13 +275,21 @@ function save_memo_pengajuan(array $data): array {
         return ['success' => false, 'error' => 'Uraian pengajuan memo wajib diisi.'];
     }
 
+    $lampiranFile = trim((string)($data['lampiran_file'] ?? ''));
+
     if (!is_google_cloud_mode()) {
         try {
             if ($id > 0) {
+                // Jika tidak ada upload file baru, pertahankan file lama
+                if ($lampiranFile === '') {
+                    $old = get_memo_by_id($id);
+                    $lampiranFile = (string)($old['lampiran_file'] ?? '');
+                }
+
                 $st = db()->prepare("
                     UPDATE memo_pengajuan_inventaris SET
                         nomor_memo = ?, tanggal_memo = ?, kepada = ?, dari_jabatan = ?,
-                        cabang_nama = ?, perihal = ?, lampiran = ?, isi_memo = ?,
+                        cabang_nama = ?, perihal = ?, lampiran = ?, lampiran_file = ?, isi_memo = ?,
                         total_estimasi = ?, terbilang = ?, nama_pengaju = ?, jabatan_pengaju = ?,
                         nama_mengetahui = ?, jabatan_mengetahui = ?, nama_menyetujui = ?, jabatan_menyetujui = ?,
                         status = ?
@@ -225,7 +297,7 @@ function save_memo_pengajuan(array $data): array {
                 ");
                 $st->execute([
                     $nomor, $tgl, $kepada, $dari,
-                    $cabang, $perihal, $lampiran, $isi,
+                    $cabang, $perihal, $lampiran, $lampiranFile, $isi,
                     $total, $terbilang, $pengaju, $jabatanPengaju,
                     $mengetahui, $jabatanMengetahui, $menyetujui, $jabatanMenyetujui,
                     $status, $id
@@ -235,13 +307,13 @@ function save_memo_pengajuan(array $data): array {
                 $st = db()->prepare("
                     INSERT INTO memo_pengajuan_inventaris (
                         nomor_memo, tanggal_memo, kepada, dari_jabatan,
-                        cabang_nama, perihal, lampiran, isi_memo,
+                        cabang_nama, perihal, lampiran, lampiran_file, isi_memo,
                         total_estimasi, terbilang, nama_pengaju, jabatan_pengaju,
                         nama_mengetahui, jabatan_mengetahui, nama_menyetujui, jabatan_menyetujui,
                         status, user_id
                     ) VALUES (
                         ?, ?, ?, ?,
-                        ?, ?, ?, ?,
+                        ?, ?, ?, ?, ?,
                         ?, ?, ?, ?,
                         ?, ?, ?, ?,
                         ?, ?
@@ -249,7 +321,7 @@ function save_memo_pengajuan(array $data): array {
                 ");
                 $st->execute([
                     $nomor, $tgl, $kepada, $dari,
-                    $cabang, $perihal, $lampiran, $isi,
+                    $cabang, $perihal, $lampiran, $lampiranFile, $isi,
                     $total, $terbilang, $pengaju, $jabatanPengaju,
                     $mengetahui, $jabatanMengetahui, $menyetujui, $jabatanMenyetujui,
                     $status, $userId
@@ -257,7 +329,7 @@ function save_memo_pengajuan(array $data): array {
                 $memoId = (int)db()->lastInsertId();
             }
 
-            return ['success' => true, 'id' => $memoId, 'nomor_memo' => $nomor];
+            return ['success' => true, 'id' => $memoId, 'nomor_memo' => $nomor, 'lampiran_file' => $lampiranFile];
         } catch (Throwable $e) {
             return ['success' => false, 'error' => 'Database error: ' . $e->getMessage()];
         }

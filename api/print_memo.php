@@ -163,6 +163,11 @@ body {
 <body>
 
 <div class="floating-action-bar no-print">
+  <?php if (!empty($memo['lampiran_file'])): ?>
+    <a href="<?= e(memo_file_url($memo['lampiran_file'])) ?>" target="_blank" class="btn btn-warning text-dark fw-bold shadow-lg px-3 py-2">
+      <i class="bi bi-paperclip me-1"></i> Buka Lampiran / Nota
+    </a>
+  <?php endif; ?>
   <button type="button" class="btn btn-primary fw-bold shadow-lg px-4 py-2" onclick="window.print()">
     <i class="bi bi-printer-fill me-1.5"></i> Cetak Dokumen Memo
   </button>
@@ -207,7 +212,13 @@ body {
           </tr>
           <tr>
             <td style="padding-top: 4px;">Lampiran</td>
-            <td style="padding-top: 4px;">: <?= $lampiran ?></td>
+            <td style="padding-top: 4px;">: <?= $lampiran ?>
+              <?php if (!empty($memo['lampiran_file'])): ?>
+                <span class="no-print ms-2 small" style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 0.82rem;">
+                  (<a href="<?= e(memo_file_url($memo['lampiran_file'])) ?>" target="_blank" style="color: #2563EB; font-weight: 600; text-decoration: underline;"><i class="bi bi-paperclip"></i> Lihat Berkas Digital</a>)
+                </span>
+              <?php endif; ?>
+            </td>
           </tr>
         </table>
       </td>
