@@ -61,6 +61,75 @@ function ensure_mutasi_schema(): void {
     }
 }
 
+function resolve_cabang_match(?string $noRek, ?string $lokasi = '', ?string $rawCabang = '', ?array $cabangMaster = null): string {
+    if ($cabangMaster === null) {
+        $cabangMaster = get_cabang_list();
+    }
+
+    $cleanRek = trim((string)$noRek);
+    $cleanLok = strtolower(trim((string)$lokasi));
+    $cleanRaw = strtolower(trim((string)$rawCabang));
+
+    // 1. Ekstrak prefix 2 digit nomor rekening (misal: 01.5.00423 -> 01)
+    $prefix = '';
+    if (preg_match('/^(\d{2})[\.\-]/', $cleanRek, $m)) {
+        $prefix = $m[1];
+    }
+
+    // 2. Petakan prefix atau kata kunci ke pola cabang
+    $pattern = '';
+    if ($prefix === '01') {
+        $pattern = 'pusat|kpo';
+    } elseif ($prefix === '02') {
+        $pattern = 'batulicin';
+    } elseif ($prefix === '03') {
+        $pattern = 'martapura';
+    } elseif ($prefix === '04') {
+        $pattern = 'tanjung';
+    } elseif ($prefix === '05') {
+        $pattern = 'handil';
+    } else {
+        $combined = $cleanLok . ' ' . $cleanRaw;
+        if (preg_match('/(pusat|kpo)/i', $combined)) {
+            $pattern = 'pusat|kpo';
+        } elseif (preg_match('/batulicin/i', $combined)) {
+            $pattern = 'batulicin';
+        } elseif (preg_match('/martapura/i', $combined)) {
+            $pattern = 'martapura';
+        } elseif (preg_match('/tanjung/i', $combined)) {
+            $pattern = 'tanjung';
+        } elseif (preg_match('/handil/i', $combined)) {
+            $pattern = 'handil';
+        } elseif (preg_match('/kas/i', $combined)) {
+            $pattern = 'kas';
+        }
+    }
+
+    // 3. Cari nama cabang resmi dari daftar master cabang
+    if ($pattern !== '') {
+        foreach ($cabangMaster as $c) {
+            $cName = (string)($c['nama_cabang'] ?? $c['nama'] ?? '');
+            if (preg_match('/' . $pattern . '/i', $cName)) {
+                return $cName;
+            }
+        }
+    }
+
+    // 4. Jika rawCabang sudah sesuai dengan salah satu master cabang, gunakan itu
+    if ($rawCabang !== '') {
+        foreach ($cabangMaster as $c) {
+            $cName = (string)($c['nama_cabang'] ?? $c['nama'] ?? '');
+            if (strcasecmp($cName, $rawCabang) === 0) {
+                return $cName;
+            }
+        }
+        return $rawCabang;
+    }
+
+    $first = $cabangMaster[0]['nama_cabang'] ?? $cabangMaster[0]['nama'] ?? 'Kantor Pusat Operasional';
+    return $first;
+}
+
 function romawi_bulan(int $m): string {
     $romawi = [
         1 => 'I', 2 => 'II', 3 => 'III', 4 => 'IV', 5 => 'V', 6 => 'VI',
@@ -255,17 +324,25 @@ function process_asset_mutation(array $data): array {
         $kodeAset = (string)($card['nomor_rekening'] ?? 'INV-' . $assetId);
         $namaAset = (string)($card['nama_barang'] ?? 'Aset Inventaris');
         $sn = (string)($card['nomor_seri_inventaris'] ?? '');
-        $cabangAsal = (string)($card['cabang_nama'] ?? 'Pusat');
-        $ruanganAsal = (string)($card['ruangan'] ?? '');
-        $penggunaAsal = (string)($card['pengguna'] ?? 'Umum');
-        $divisiAsal = (string)($card['golongan'] ?? '');
+        $cabangAsal = resolve_cabang_match($kodeAset, (string)($card['lokasi'] ?? ''), (string)($card['cabang_nama'] ?? ''));
+        $ruanganAsal = (string)(!empty($card['ruangan']) ? $card['ruangan'] : (!empty($card['lokasi']) ? $card['lokasi'] : '-'));
+        $penggunaAsal = (string)(!empty($card['pengguna']) ? $card['pengguna'] : 'Umum / Pool');
+        $divisiAsal = (string)(!empty($card['golongan']) ? $card['golongan'] : ($card['jenis_inventaris'] ?? '-'));
 
         // Update data kartu inventaris
-        update_inventaris_kartu($assetId, [
-            'ruangan'     => $ruanganTujuan ?: $ruanganAsal,
-            'keterangan'  => "Mutasi ke {$cabangTujuan} (" . date('d/m/Y') . ")" . ($keterangan ? ": {$keterangan}" : ''),
-            'lokasi'      => $cabangTujuan ?: $cabangAsal
-        ]);
+        $updateCardData = [
+            'nomor_rekening' => $kodeAset,
+            'nama_barang'    => $namaAset,
+            'ruangan'        => $ruanganTujuan ?: $ruanganAsal,
+            'keterangan'     => "Mutasi ke {$cabangTujuan} (" . date('d/m/Y') . ")" . ($keterangan ? ": {$keterangan}" : ''),
+            'lokasi'         => $cabangTujuan ?: $cabangAsal,
+            'pengguna'       => $penggunaTujuan ?: $penggunaAsal
+        ];
+        $golonganTujuan = trim((string)($data['golongan_tujuan'] ?? ''));
+        if ($golonganTujuan !== '') {
+            $updateCardData['golongan'] = $golonganTujuan;
+        }
+        update_inventaris_kartu($assetId, $updateCardData);
     }
 
     $nomorBast = generate_nomor_bast();

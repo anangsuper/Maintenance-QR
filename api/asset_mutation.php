@@ -20,6 +20,10 @@ if (!in_array($selectedType, ['komputer', 'inventaris'], true)) {
 // Ambil master data untuk form
 $cabangList = get_cabang_list();
 $divisiList = get_divisi_list();
+$masterRuanganList = function_exists('get_master_ruangan_list') ? get_master_ruangan_list() : [];
+$masterGolonganList = function_exists('get_master_golongan_inventaris') ? get_master_golongan_inventaris() : [];
+$masterJenisList = function_exists('get_master_jenis_inventaris') ? get_master_jenis_inventaris() : [];
+$isInventaris = ($selectedType === 'inventaris');
 
 // Handle Submit POST
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -31,8 +35,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $ruanganTujuan = trim((string)($_POST['ruangan_tujuan'] ?? ''));
     $penggunaTujuan = trim((string)($_POST['pengguna_tujuan'] ?? ''));
     $divisiTujuan = trim((string)($_POST['divisi_tujuan'] ?? ''));
+    $golonganTujuan = trim((string)($_POST['golongan_tujuan'] ?? ''));
     $alasan = trim((string)($_POST['alasan_mutasi'] ?? ''));
     $keterangan = trim((string)($_POST['keterangan'] ?? ''));
+
+    if ($assetType === 'inventaris') {
+        if (empty($penggunaTujuan)) {
+            $penggunaTujuan = 'Umum / Pool';
+        }
+        if (!empty($golonganTujuan)) {
+            $divisiTujuan = $golonganTujuan;
+        }
+    }
 
     if ($assetId <= 0) {
         $error = 'Silakan pilih aset yang akan dimutasi.';
@@ -48,6 +62,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'ruangan_tujuan'  => $ruanganTujuan,
             'pengguna_tujuan' => $penggunaTujuan,
             'divisi_tujuan'   => $divisiTujuan,
+            'golongan_tujuan' => $golonganTujuan,
             'alasan_mutasi'   => $alasan,
             'keterangan'      => $keterangan,
             'petugas_nama'    => $_SESSION['nama'] ?? 'Petugas IT'
@@ -68,6 +83,14 @@ $assetsList = [];
 $assetsForJs = [];
 $cabangStats = [];
 
+// Inisialisasi statistik cabang dari master agar urutan dan nama konsisten
+foreach ($cabangList as $c) {
+    $cName = $c['nama_cabang'] ?? '';
+    if ($cName !== '') {
+        $cabangStats[$cName] = 0;
+    }
+}
+
 if ($selectedType === 'komputer') {
     if (is_google_cloud_mode()) {
         $rawAssets = map_sheets_assets();
@@ -83,7 +106,8 @@ if ($selectedType === 'komputer') {
         $aid = (int)($ka['id'] ?? 0);
         $kKode = (string)($ka['kode_inventaris'] ?? ('PC-' . $aid));
         $kNama = asset_title($ka);
-        $kCabang = (string)($ka['cabang_nama'] ?? 'Kantor Pusat Operasional');
+        $rawCab = (string)($ka['cabang_nama'] ?? '');
+        $kCabang = resolve_cabang_match($kKode, (string)($ka['lokasi'] ?? ''), $rawCab, $cabangList);
         $kRuangan = (string)($ka['ruangan'] ?? $ka['lokasi'] ?? '-');
         $kPengguna = (string)($ka['karyawan_nama'] ?? 'Umum');
         $kDivisi = (string)($ka['divisi_nama'] ?? '-');
@@ -98,7 +122,10 @@ if ($selectedType === 'komputer') {
             'ruangan' => $kRuangan,
             'pengguna' => $kPengguna,
             'divisi' => $kDivisi,
+            'golongan' => '-',
+            'jenis' => $kKategori,
             'sn' => $kSn,
+            'tgl' => (string)($ka['created_at'] ?? ''),
             'kategori' => $kKategori,
             'search_text' => strtolower($kKode . ' ' . $kNama . ' ' . $kCabang . ' ' . $kRuangan . ' ' . $kPengguna . ' ' . $kDivisi . ' ' . $kSn . ' ' . $kKategori)
         ];
@@ -113,12 +140,15 @@ if ($selectedType === 'komputer') {
             $aid = (int)($ir['id'] ?? 0);
             $kKode = (string)($ir['nomor_rekening'] ?? ('INV-' . $aid));
             $kNama = (string)($ir['nama_barang'] ?? 'Aset Inventaris');
-            $kCabang = (string)($ir['cabang_nama'] ?? 'Kantor Pusat');
-            $kRuangan = (string)($ir['ruangan'] ?? '-');
-            $kPengguna = (string)($ir['pengguna'] ?? 'Umum');
-            $kDivisi = (string)($ir['golongan'] ?? '-');
+            $kCabang = resolve_cabang_match($kKode, (string)($ir['lokasi'] ?? ''), (string)($ir['cabang_nama'] ?? ''), $cabangList);
+            $kRuangan = (string)(!empty($ir['ruangan']) ? $ir['ruangan'] : (!empty($ir['lokasi']) ? $ir['lokasi'] : '-'));
+            $kPengguna = (string)(!empty($ir['pengguna']) ? $ir['pengguna'] : 'Umum / Pool');
+            $kGolongan = (string)(!empty($ir['golongan']) ? $ir['golongan'] : '-');
+            $kJenis = (string)(!empty($ir['jenis_inventaris']) ? $ir['jenis_inventaris'] : 'Peralatan / Fasilitas');
+            $kDivisi = $kGolongan !== '-' ? $kGolongan : $kJenis;
             $kSn = (string)($ir['nomor_seri_inventaris'] ?? '');
-            $kKategori = (string)($ir['golongan'] ?? 'Inventaris Kantor');
+            $kTgl = (string)($ir['tanggal_perolehan'] ?? '');
+            $kKategori = $kJenis ?: ($kGolongan !== '-' ? $kGolongan : 'Inventaris Kantor');
 
             $item = [
                 'id' => $aid,
@@ -128,7 +158,10 @@ if ($selectedType === 'komputer') {
                 'ruangan' => $kRuangan,
                 'pengguna' => $kPengguna,
                 'divisi' => $kDivisi,
+                'golongan' => $kGolongan,
+                'jenis' => $kJenis,
                 'sn' => $kSn,
+                'tgl' => $kTgl,
                 'kategori' => $kKategori,
                 'search_text' => strtolower($kKode . ' ' . $kNama . ' ' . $kCabang . ' ' . $kRuangan . ' ' . $kPengguna . ' ' . $kDivisi . ' ' . $kSn . ' ' . $kKategori)
             ];
@@ -146,9 +179,12 @@ $currentCabang = '';
 $currentRuangan = '';
 $currentPengguna = '';
 $currentDivisi = '';
+$currentGolongan = '';
+$currentJenis = '';
 $currentKode = '';
 $currentNama = '';
 $currentSn = '';
+$currentTgl = '';
 
 if ($selectedId > 0) {
     if (isset($assetsForJs[$selectedId])) {
@@ -160,6 +196,9 @@ if ($selectedId > 0) {
         $currentRuangan = $ci['ruangan'];
         $currentPengguna = $ci['pengguna'];
         $currentDivisi = $ci['divisi'];
+        $currentGolongan = $ci['golongan'] ?? '-';
+        $currentJenis = $ci['jenis'] ?? '-';
+        $currentTgl = $ci['tgl'] ?? '';
     } else {
         // Fallback fetch satuan
         $singleAsset = ($selectedType === 'komputer') ? get_asset_by_id($selectedId) : get_inventaris_kartu_by_id($selectedId);
@@ -167,10 +206,13 @@ if ($selectedId > 0) {
             $currentKode = $singleAsset['kode_inventaris'] ?? $singleAsset['nomor_rekening'] ?? ('ID-' . $selectedId);
             $currentNama = ($selectedType === 'komputer') ? asset_title($singleAsset) : ($singleAsset['nama_barang'] ?? 'Aset');
             $currentSn = $singleAsset['serial_number'] ?? $singleAsset['nomor_seri_inventaris'] ?? '';
-            $currentCabang = $singleAsset['cabang_nama'] ?? 'Kantor Pusat';
-            $currentRuangan = $singleAsset['ruangan'] ?? $singleAsset['lokasi'] ?? '-';
-            $currentPengguna = $singleAsset['karyawan_nama'] ?? $singleAsset['pengguna'] ?? 'Umum';
-            $currentDivisi = $singleAsset['divisi_nama'] ?? $singleAsset['golongan'] ?? '-';
+            $currentCabang = resolve_cabang_match($currentKode, $singleAsset['lokasi'] ?? '', $singleAsset['cabang_nama'] ?? '', $cabangList);
+            $currentRuangan = !empty($singleAsset['ruangan']) ? $singleAsset['ruangan'] : (!empty($singleAsset['lokasi']) ? $singleAsset['lokasi'] : '-');
+            $currentPengguna = ($selectedType === 'komputer') ? ($singleAsset['karyawan_nama'] ?? 'Umum') : (!empty($singleAsset['pengguna']) ? $singleAsset['pengguna'] : 'Umum / Pool');
+            $currentDivisi = ($selectedType === 'komputer') ? ($singleAsset['divisi_nama'] ?? '-') : (!empty($singleAsset['golongan']) ? $singleAsset['golongan'] : ($singleAsset['jenis_inventaris'] ?? '-'));
+            $currentGolongan = $singleAsset['golongan'] ?? '-';
+            $currentJenis = $singleAsset['jenis_inventaris'] ?? '-';
+            $currentTgl = $singleAsset['tanggal_perolehan'] ?? '';
         }
     }
 }
@@ -546,8 +588,8 @@ $body = '
             <i class="bi bi-box-seam-fill text-primary"></i> Aset yang Dimutasi
           </h5>
           <div class="type-switcher btn-group btn-group-sm" role="group">
-            <a href="?type=komputer" class="btn '.($selectedType === 'komputer' ? 'btn-primary active fw-bold' : 'btn-outline-secondary bg-white').'">Komputer / IT</a>
-            <a href="?type=inventaris" class="btn '.($selectedType === 'inventaris' ? 'btn-primary active fw-bold' : 'btn-outline-secondary bg-white').'">Inventaris Lain</a>
+            <a href="?type=komputer" class="btn '.($selectedType === 'komputer' ? 'btn-primary active fw-bold shadow-xs' : 'btn-outline-secondary bg-white').'"><i class="bi bi-pc-display me-1"></i> Komputer / IT</a>
+            <a href="?type=inventaris" class="btn '.($selectedType === 'inventaris' ? 'btn-primary active fw-bold shadow-xs' : 'btn-outline-secondary bg-white').'"><i class="bi bi-card-heading me-1"></i> Kartu Inventaris</a>
           </div>
         </div>
         <div class="mutation-card-body">
@@ -568,21 +610,22 @@ $body = '
           <div class="col-sm-6">
             <label class="form-label text-uppercase fw-bold text-muted small mb-1" style="font-size: 0.68rem;">Filter Cabang Asal</label>
             <select id="filterCabangAsal" class="form-select form-select-sm" onchange="filterAssetList()">
-              <option value="">-- Semua Cabang --</option>';
+              <option value="">-- Semua Cabang ('.count($assetsList).' Unit) --</option>';
 
 foreach ($cabangList as $c) {
     $cName = $c['nama_cabang'] ?? '';
-    $body .= '<option value="'.e($cName).'">'.e($cName).'</option>';
+    $cCount = $cabangStats[$cName] ?? 0;
+    $body .= '<option value="'.e($cName).'">'.e($cName).' ('.$cCount.' unit)</option>';
 }
 
 $body .= '
             </select>
           </div>
           <div class="col-sm-6">
-            <label class="form-label text-uppercase fw-bold text-muted small mb-1" style="font-size: 0.68rem;">Ketik Nama / User / Kode</label>
+            <label class="form-label text-uppercase fw-bold text-muted small mb-1" style="font-size: 0.68rem;">'.($isInventaris ? 'Cari Nama / No. Rek / Ruangan' : 'Ketik Nama / User / Kode').'</label>
             <div class="input-group input-group-sm">
               <span class="input-group-text bg-white border-end-0"><i class="bi bi-search text-muted"></i></span>
-              <input type="text" id="quickSearchAsset" class="form-control border-start-0" placeholder="Ketik kata kunci..." oninput="filterAssetList()" autocomplete="off">
+              <input type="text" id="quickSearchAsset" class="form-control border-start-0" placeholder="'.($isInventaris ? 'Ketik kata kunci inventaris...' : 'Ketik kata kunci...').'" oninput="filterAssetList()" autocomplete="off">
               <button class="btn btn-outline-secondary" type="button" onclick="resetQuickFilter()" title="Reset pencarian"><i class="bi bi-x"></i></button>
             </div>
           </div>
@@ -590,14 +633,19 @@ $body .= '
 
         <!-- Dropdown Seleksi Perangkat -->
         <div class="mb-3">
-          <label class="form-label text-uppercase fw-bold text-muted small mb-1" style="font-size: 0.72rem; letter-spacing: 0.05em;">Pilih Perangkat / Unit <span class="text-danger">*</span></label>
+          <label class="form-label text-uppercase fw-bold text-muted small mb-1" style="font-size: 0.72rem; letter-spacing: 0.05em;">'.($isInventaris ? 'Pilih Barang / Unit Inventaris' : 'Pilih Perangkat / Unit').' <span class="text-danger">*</span></label>
           <select name="asset_id" id="selectAssetId" class="form-select" onchange="onAssetChange(this.value)" required style="border-radius: 10px; font-weight: 500;">
-            <option value="">-- Pilih Perangkat Terdaftar --</option>';
+            <option value="">-- '.($isInventaris ? 'Pilih Barang / Unit Inventaris Terdaftar' : 'Pilih Perangkat Terdaftar').' --</option>';
 
 foreach ($assetsList as $a) {
     $aid = (int)$a['id'];
     $sel = ($aid === $selectedId) ? 'selected' : '';
-    $label = $a['kode'] . ' - ' . $a['nama'] . ' (' . $a['pengguna'] . ' | ' . $a['cabang'] . ')';
+    if ($isInventaris) {
+        $ruangInfo = ($a['ruangan'] !== '-' && $a['ruangan'] !== '') ? $a['ruangan'] . ' | ' : '';
+        $label = $a['kode'] . ' - ' . $a['nama'] . ' (' . $ruangInfo . $a['cabang'] . ')';
+    } else {
+        $label = $a['kode'] . ' - ' . $a['nama'] . ' (' . $a['pengguna'] . ' | ' . $a['cabang'] . ')';
+    }
     $body .= '<option value="'.$aid.'" '.$sel.'>'.e($label).'</option>';
 }
 
@@ -617,11 +665,11 @@ $body .= '
           </div>
           
           <div class="mb-2">
-            <div class="small text-muted" style="font-size: 0.72rem;">KODE &amp; NAMA ASET:</div>
+            <div class="small text-muted" style="font-size: 0.72rem;" id="labelKodeHeader">'.($isInventaris ? 'NOMOR REKENING &amp; NAMA BARANG:' : 'KODE &amp; NAMA ASET:').'</div>
             <strong class="text-dark fs-6" id="displayKode">'.e($currentKode ?: 'Belum dipilih').'</strong>
             <div class="text-secondary small fw-semibold" id="displayNama">'.e($currentNama).'</div>
             <div class="small font-monospace text-muted mt-0.5" id="displaySnWrapper" style="'.($currentSn ? '' : 'display:none;').'">
-              SN: <span id="displaySn">'.e($currentSn).'</span>
+              <span id="displaySnLabel">'.($isInventaris ? 'No. Seri:' : 'SN:').'</span> <span id="displaySn">'.e($currentSn).'</span>
             </div>
           </div>
           
@@ -633,15 +681,15 @@ $body .= '
               <strong class="text-dark" id="displayCabang">'.e($currentCabang ?: '-').'</strong>
             </div>
             <div class="col-6">
-              <span class="text-muted d-block" style="font-size: 0.7rem;">RUANGAN / AREA:</span>
+              <span class="text-muted d-block" style="font-size: 0.7rem;" id="labelRuanganHeader">'.($isInventaris ? 'RUANGAN / LOKASI ASAL:' : 'RUANGAN / AREA:').'</span>
               <strong class="text-dark" id="displayRuangan">'.e($currentRuangan ?: '-').'</strong>
             </div>
             <div class="col-6 mt-2">
-              <span class="text-muted d-block" style="font-size: 0.7rem;">PENGGUNA / PIC LAMA:</span>
+              <span class="text-muted d-block" style="font-size: 0.7rem;" id="labelPenggunaHeader">'.($isInventaris ? 'PENANGGUNG JAWAB / PIC LAMA:' : 'PENGGUNA / PIC LAMA:').'</span>
               <strong class="text-dark" id="displayPengguna">'.e($currentPengguna ?: '-').'</strong>
             </div>
             <div class="col-6 mt-2">
-              <span class="text-muted d-block" style="font-size: 0.7rem;">DIVISI:</span>
+              <span class="text-muted d-block" style="font-size: 0.7rem;" id="labelDivisiHeader">'.($isInventaris ? 'GOLONGAN / KATEGORI:' : 'DIVISI:').'</span>
               <strong class="text-dark" id="displayDivisi">'.e($currentDivisi ?: '-').'</strong>
             </div>
           </div>
@@ -658,31 +706,138 @@ $body .= '
     <!-- Kolom Kanan: Tujuan Baru & Alasan Mutasi -->
     <div class="col-lg-7">
       <div class="mutation-card">
-        <div class="mutation-card-header">
-          <h5>
+        <div class="mutation-card-header d-flex justify-content-between align-items-center">
+          <h5 class="mb-0">
             <span class="step-badge bg-success text-white">2</span>
-            <i class="bi bi-geo-alt-fill text-success"></i> Tujuan Mutasi &amp; Serah Terima
+            <i class="bi bi-geo-alt-fill text-success"></i> '.($isInventaris ? 'Tujuan Mutasi &amp; Penempatan Inventaris' : 'Tujuan Mutasi &amp; Serah Terima').'
           </h5>
+          <span class="badge '.($isInventaris ? 'bg-warning-subtle text-warning-emphasis border border-warning-subtle' : 'bg-primary-subtle text-primary-emphasis border border-primary-subtle').' px-2.5 py-1 small fw-semibold" style="font-size: 0.72rem;">
+            '.($isInventaris ? '<i class="bi bi-card-heading me-1"></i>Mutasi Kartu Inventaris' : '<i class="bi bi-pc-display me-1"></i>Mutasi Aset Komputer/IT').'
+          </span>
         </div>
         <div class="mutation-card-body">
-        <div class="row g-3">
+        <div class="row g-3">';
+
+if ($isInventaris) {
+    // ==========================================
+    // FORM TUJUAN KHUSUS KARTU INVENTARIS
+    // ==========================================
+    $body .= '
+          <div class="col-md-6">
+            <label class="form-label text-uppercase fw-bold text-muted small" style="font-size: 0.72rem; letter-spacing: 0.05em;">Kantor Cabang Tujuan <span class="text-danger">*</span></label>
+            <select name="cabang_tujuan" id="cabangTujuanSelect" class="form-select" required>
+              <option value="">-- Pilih Cabang Tujuan --</option>';
+
+    foreach ($cabangList as $c) {
+        $cName = $c['nama_cabang'] ?? '';
+        $body .= '<option value="'.e($cName).'">'.e($cName).'</option>';
+    }
+
+    $body .= '
+            </select>
+            <div class="form-text small" style="font-size: 0.72rem;">Kantor cabang bank penerima fisik barang inventaris.</div>
+          </div>
+
+          <div class="col-md-6">
+            <label class="form-label text-uppercase fw-bold text-muted small" style="font-size: 0.72rem; letter-spacing: 0.05em;">Ruangan Penempatan Baru <span class="text-danger">*</span></label>
+            <input type="text" list="listMasterRuangan" class="form-control" name="ruangan_tujuan" id="inputRuanganTujuan" placeholder="Pilih atau ketik ruangan baru..." required>
+            <datalist id="listMasterRuangan">';
+
+    foreach ($masterRuanganList as $mr) {
+        $kode = is_array($mr) ? ($mr['kode_ruangan'] ?? '') : '';
+        $nama = is_array($mr) ? ($mr['nama_ruangan'] ?? '') : (string)$mr;
+        $label = ($kode !== '') ? sprintf('%02d : %s', (int)$kode, $nama) : $nama;
+        $body .= '<option value="'.e($label).'">';
+    }
+
+    $body .= '
+            </datalist>
+            <div class="form-text small" style="font-size: 0.72rem;">Pilih master ruangan resmi atau ketik nama ruangan baru.</div>
+          </div>
+
+          <div class="col-md-6">
+            <label class="form-label text-uppercase fw-bold text-muted small" style="font-size: 0.72rem; letter-spacing: 0.05em;">Penanggung Jawab / Pengguna Baru <span class="text-danger">*</span></label>
+            <input type="text" class="form-control" name="pengguna_tujuan" id="inputPenggunaTujuan" value="Umum / Pool" placeholder="Contoh: Umum / Pool atau Nama Karyawan/PIC" required>
+            <div class="form-text small" style="font-size: 0.72rem;">Gunakan "Umum / Pool" untuk fasilitas bersama ruangan/cabang, atau nama staf penanggung jawab.</div>
+          </div>
+
+          <div class="col-md-6">
+            <label class="form-label text-uppercase fw-bold text-muted small" style="font-size: 0.72rem; letter-spacing: 0.05em;">Golongan Inventaris</label>
+            <select name="golongan_tujuan" id="selectGolonganTujuan" class="form-select">
+              <option value="">-- Tetap Sesuai Golongan Saat Ini --</option>';
+
+    foreach ($masterGolonganList as $k => $val) {
+        $body .= '<option value="'.e($val).'">'.e($val).'</option>';
+    }
+
+    $body .= '
+            </select>
+            <div class="form-text small" style="font-size: 0.72rem;">Klasifikasi aktiva inventaris (otomatis mengikuti kartu asal).</div>
+          </div>
+
+          <div class="col-12">
+            <label class="form-label text-uppercase fw-bold text-muted small" style="font-size: 0.72rem; letter-spacing: 0.05em;">Alasan Mutasi / Pemindahan Barang <span class="text-danger">*</span></label>
+            <select name="alasan_mutasi" class="form-select mb-2" required>
+              <option value="">-- Pilih Alasan Resmi Mutasi --</option>';
+
+    $reasonsInv = [
+        'Relokasi Kantor / Renovasi Ruangan',
+        'Penataan Ulang Fasilitas / Layout Ruangan',
+        'Kebutuhan Penambahan Fasilitas di Kantor Cabang',
+        'Rotasi / Perpindahan Fasilitas Antar Cabang',
+        'Penarikan ke Gudang / Pool Kantor Pusat',
+        'Peremajaan / Penggantian Fisik Barang',
+        'Lainnya'
+    ];
+    foreach ($reasonsInv as $r) {
+        $body .= '<option value="'.e($r).'">'.e($r).'</option>';
+    }
+
+    $body .= '
+            </select>
+          </div>
+
+          <div class="col-12">
+            <label class="form-label text-uppercase fw-bold text-muted small" style="font-size: 0.72rem; letter-spacing: 0.05em;">Catatan / Spesifikasi &amp; Kondisi Fisik Barang</label>
+            <textarea class="form-control" name="keterangan" rows="3" placeholder="Contoh: Kondisi fisik utuh dan baik, kunci laci/lemari disertakan lengkap, tidak ada cacat atau kerusakan fisik."></textarea>
+            <div class="form-text small" style="font-size: 0.72rem;">Catat kondisi fisik barang atau kelengkapan kunci/laci sebelum serah terima.</div>
+          </div>';
+
+} else {
+    // ==========================================
+    // FORM TUJUAN KHUSUS KOMPUTER / IT
+    // ==========================================
+    $body .= '
           <div class="col-md-6">
             <label class="form-label text-uppercase fw-bold text-muted small" style="font-size: 0.72rem; letter-spacing: 0.05em;">Kantor Cabang Tujuan <span class="text-danger">*</span></label>
             <select name="cabang_tujuan" class="form-select" required>
               <option value="">-- Pilih Cabang Tujuan --</option>';
 
-foreach ($cabangList as $c) {
-    $cName = $c['nama_cabang'] ?? '';
-    $body .= '<option value="'.e($cName).'">'.e($cName).'</option>';
-}
+    foreach ($cabangList as $c) {
+        $cName = $c['nama_cabang'] ?? '';
+        $body .= '<option value="'.e($cName).'">'.e($cName).'</option>';
+    }
 
-$body .= '
+    $body .= '
             </select>
+            <div class="form-text small" style="font-size: 0.72rem;">Kantor cabang penerima perangkat komputer.</div>
           </div>
 
           <div class="col-md-6">
             <label class="form-label text-uppercase fw-bold text-muted small" style="font-size: 0.72rem; letter-spacing: 0.05em;">Ruangan / Lokasi Penempatan Baru</label>
-            <input type="text" class="form-control" name="ruangan_tujuan" placeholder="Contoh: Meja CS 2 / Ruang Teller">
+            <input type="text" list="listMasterRuangan" class="form-control" name="ruangan_tujuan" placeholder="Contoh: Meja CS 2 / Ruang Teller">
+            <datalist id="listMasterRuangan">';
+
+    foreach ($masterRuanganList as $mr) {
+        $rName = is_array($mr) ? ($mr['nama_ruangan'] ?? '') : (string)$mr;
+        if ($rName !== '') {
+            $body .= '<option value="'.e($rName).'">';
+        }
+    }
+
+    $body .= '
+            </datalist>
+            <div class="form-text small" style="font-size: 0.72rem;">Ruangan spesifik penempatan perangkat.</div>
           </div>
 
           <div class="col-md-6">
@@ -696,39 +851,54 @@ $body .= '
             <select name="divisi_tujuan" class="form-select">
               <option value="">-- Pilih Divisi (Opsional) --</option>';
 
-foreach ($divisiList as $d) {
-    $dName = $d['nama_divisi'] ?? '';
-    $body .= '<option value="'.e($dName).'">'.e($dName).'</option>';
-}
+    foreach ($divisiList as $d) {
+        $dName = $d['nama_divisi'] ?? '';
+        $body .= '<option value="'.e($dName).'">'.e($dName).'</option>';
+    }
 
-$body .= '
+    $body .= '
             </select>
+            <div class="form-text small" style="font-size: 0.72rem;">Divisi penugasan karyawan penerima unit.</div>
           </div>
 
           <div class="col-12">
             <label class="form-label text-uppercase fw-bold text-muted small" style="font-size: 0.72rem; letter-spacing: 0.05em;">Alasan Mutasi / Pemindahan Aset <span class="text-danger">*</span></label>
             <select name="alasan_mutasi" class="form-select mb-2" required>
-              <option value="">-- Pilih Alasan Resmi Mutasi --</option>
-              <option value="Rotasi / Perpindahan Tugas Karyawan">Rotasi / Perpindahan Tugas Karyawan</option>
-              <option value="Peremajaan / Penggantian Perangkat Baru">Peremajaan / Penggantian Perangkat Baru</option>
-              <option value="Kebutuhan Penambahan Unit di Kantor Cabang">Kebutuhan Penambahan Unit di Kantor Cabang</option>
-              <option value="Unit Cadangan Sementara (Unit Back-up)">Unit Cadangan Sementara (Unit Back-up)</option>
-              <option value="Relokasi Kantor / Renovasi Ruangan">Relokasi Kantor / Renovasi Ruangan</option>
-              <option value="Penarikan ke Kantor Pusat (Pool)">Penarikan ke Kantor Pusat (Pool)</option>
-              <option value="Lainnya">Lainnya (Tuliskan pada catatan)</option>
+              <option value="">-- Pilih Alasan Resmi Mutasi --</option>';
+
+    $reasonsIT = [
+        'Rotasi / Perpindahan Tugas Karyawan',
+        'Peremajaan / Penggantian Perangkat Baru',
+        'Kebutuhan Penambahan Unit di Kantor Cabang',
+        'Unit Cadangan Sementara (Unit Back-up)',
+        'Relokasi Kantor / Renovasi Ruangan',
+        'Penarikan ke Kantor Pusat (Pool)',
+        'Lainnya'
+    ];
+    foreach ($reasonsIT as $reason) {
+        $body .= '<option value="'.e($reason).'">'.e($reason).'</option>';
+    }
+
+    $body .= '
             </select>
           </div>
 
           <div class="col-12">
             <label class="form-label text-uppercase fw-bold text-muted small" style="font-size: 0.72rem; letter-spacing: 0.05em;">Catatan / Kelengkapan Aksesoris</label>
             <textarea class="form-control" name="keterangan" rows="3" placeholder="Contoh: Disertakan Adaptor Charger original, Kabel Power, Mouse, dan Tas Laptop dalam kondisi baik."></textarea>
-          </div>
+            <div class="form-text small" style="font-size: 0.72rem;">Sebutkan kelengkapan aksesoris dan nomor seri adaptor jika ada.</div>
+          </div>';
+}
+
+$cancelUrl = $isInventaris ? module_url('dashboard.php', ['tab' => 'kartu']) : module_url('assets.php');
+
+$body .= '
         </div>
 
         <hr class="my-4 border-secondary opacity-15">
 
         <div class="d-flex justify-content-between align-items-center">
-          <a href="'.e(module_url('assets.php')).'" class="btn-cancel-mutation btn">
+          <a href="'.e($cancelUrl).'" class="btn-cancel-mutation btn">
             <i class="bi bi-x-circle me-1"></i> Batal
           </a>
           <button type="submit" class="btn-submit-mutation btn d-inline-flex align-items-center gap-2">
@@ -748,9 +918,9 @@ $body .= '
       <div class="modal-header">
         <div>
           <h5 class="modal-title d-flex align-items-center gap-2" id="modalPilihAsetLabel">
-            <i class="bi bi-grid-3x3-gap-fill text-primary"></i> Katalog Pemilihan Aset Mutasi
+            <i class="bi bi-grid-3x3-gap-fill text-primary"></i> '.($isInventaris ? 'Katalog Pemilihan Inventaris Mutasi' : 'Katalog Pemilihan Aset Mutasi').'
           </h5>
-          <p>Klik tombol <strong>"Pilih Unit"</strong> pada perangkat yang ingin dipindahkan ke kantor cabang lain.</p>
+          <p>Klik tombol <strong>"Pilih Unit"</strong> pada barang yang ingin dipindahkan ke kantor cabang lain.</p>
         </div>
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
@@ -762,7 +932,7 @@ $body .= '
             <label class="form-label small fw-bold text-uppercase text-muted" style="font-size: 0.68rem;">Pencarian Kata Kunci Cepat</label>
             <div class="input-group">
               <span class="input-group-text bg-white border-end-0"><i class="bi bi-search text-primary"></i></span>
-              <input type="text" id="modalSearchInput" class="form-control border-start-0" placeholder="Ketik nama karyawan (mis: Siti / Yanti), kode inventaris, merk, nomor seri..." oninput="filterModalTable()" autocomplete="off">
+              <input type="text" id="modalSearchInput" class="form-control border-start-0" placeholder="'.($isInventaris ? 'Ketik nama barang, nomor rekening inventaris, ruangan...' : 'Ketik nama karyawan (mis: Siti / Yanti), kode inventaris, merk, nomor seri...').'" oninput="filterModalTable()" autocomplete="off">
               <button class="btn btn-outline-secondary" type="button" onclick="clearModalSearch()"><i class="bi bi-x-circle me-1"></i>Reset</button>
             </div>
           </div>
@@ -788,7 +958,9 @@ $body .= '
           <button type="button" class="btn btn-sm btn-primary active modal-branch-pill" data-cabang="" onclick="setModalBranchFilter(\'\', this)">Semua ('.count($assetsList).')</button>';
 
 foreach ($cabangStats as $cName => $cCount) {
-    $body .= '<button type="button" class="btn btn-sm btn-outline-secondary modal-branch-pill" data-cabang="'.e($cName).'" onclick="setModalBranchFilter(\''.e(addslashes($cName)).'\', this)">'.e($cName).' ('.$cCount.')</button>';
+    if ($cCount > 0 || in_array($cName, array_column($cabangList, 'nama_cabang'), true)) {
+        $body .= '<button type="button" class="btn btn-sm btn-outline-secondary modal-branch-pill" data-cabang="'.e($cName).'" onclick="setModalBranchFilter(\''.e(addslashes($cName)).'\', this)">'.e($cName).' ('.$cCount.')</button>';
+    }
 }
 
 $body .= '
@@ -800,10 +972,10 @@ $body .= '
             <thead class="table-light sticky-top" style="z-index: 1;">
               <tr>
                 <th class="text-center" style="width: 50px;">No</th>
-                <th style="min-width: 150px;">Kode &amp; SN</th>
-                <th style="min-width: 220px;">Perangkat &amp; Tipe</th>
-                <th style="min-width: 170px;">Lokasi Asal</th>
-                <th style="min-width: 150px;">Pengguna Saat Ini</th>
+                <th style="min-width: 150px;">'.($isInventaris ? 'No. Rekening &amp; Seri' : 'Kode &amp; SN').'</th>
+                <th style="min-width: 220px;">'.($isInventaris ? 'Nama Barang &amp; Golongan' : 'Perangkat &amp; Tipe').'</th>
+                <th style="min-width: 170px;">'.($isInventaris ? 'Cabang &amp; Ruangan Asal' : 'Lokasi Asal').'</th>
+                <th style="min-width: 150px;">'.($isInventaris ? 'Penanggung Jawab / PIC' : 'Pengguna Saat Ini').'</th>
                 <th class="text-center" style="width: 120px;">Aksi</th>
               </tr>
             </thead>
@@ -831,8 +1003,35 @@ const CURRENT_TYPE = ' . json_encode($selectedType) . ';
 let currentModalBranch = "";
 let currentModalQuery = "";
 
+function isBranchMatch(assetBranch, filterBranch) {
+  if (!filterBranch) return true;
+  if (!assetBranch) return false;
+  
+  const ab = assetBranch.toLowerCase().trim();
+  const fb = filterBranch.toLowerCase().trim();
+  if (ab === fb) return true;
+  if (ab.includes(fb) || fb.includes(ab)) return true;
+  
+  const aliases = [
+    ["01", "pusat", "kpo", "kantor pusat", "kantor pusat operasional", "kantor pusat (kpo)"],
+    ["02", "batulicin", "cabang batulicin"],
+    ["03", "martapura", "cabang martapura", "kantor kas martapura"],
+    ["04", "tanjung", "cabang tanjung"],
+    ["05", "handil", "handil bakti", "cabang handil", "cabang handil bakti"],
+    ["kas", "kantor kas"]
+  ];
+  for (let i = 0; i < aliases.length; i++) {
+    const group = aliases[i];
+    const fbInGroup = group.some(alias => fb === alias || fb.includes(alias));
+    const abInGroup = group.some(alias => ab === alias || ab.includes(alias));
+    if (fbInGroup && abInGroup) return true;
+  }
+  return false;
+}
+
 function onAssetChange(val) {
   val = parseInt(val) || 0;
+  const isInv = (CURRENT_TYPE === "inventaris");
   if (!val || !ASSETS_MAP[val]) {
     document.getElementById("displayKode").textContent = "Belum dipilih";
     document.getElementById("displayNama").textContent = "-";
@@ -849,6 +1048,8 @@ function onAssetChange(val) {
   document.getElementById("displayNama").textContent = asset.nama || "-";
   if (asset.sn) {
     document.getElementById("displaySn").textContent = asset.sn;
+    const snLabel = document.getElementById("displaySnLabel");
+    if (snLabel) snLabel.textContent = isInv ? "No. Seri:" : "SN:";
     document.getElementById("displaySnWrapper").style.display = "block";
   } else {
     document.getElementById("displaySnWrapper").style.display = "none";
@@ -856,7 +1057,7 @@ function onAssetChange(val) {
   document.getElementById("displayCabang").textContent = asset.cabang || "-";
   document.getElementById("displayRuangan").textContent = asset.ruangan || "-";
   document.getElementById("displayPengguna").textContent = asset.pengguna || "-";
-  document.getElementById("displayDivisi").textContent = asset.divisi || "-";
+  document.getElementById("displayDivisi").textContent = (asset.golongan && asset.golongan !== "-") ? asset.golongan : (asset.divisi || "-");
 
   // Highlight flash effect
   const box = document.getElementById("lokasiAsalBox");
@@ -867,6 +1068,21 @@ function onAssetChange(val) {
       box.style.backgroundColor = "#F8FAFC";
       box.style.borderColor = "#E2E8F0";
     }, 500);
+  }
+
+  // Auto-select golongan tujuan jika mutasi kartu inventaris
+  if (isInv && asset.golongan && asset.golongan !== "-") {
+    const selGol = document.getElementById("selectGolonganTujuan");
+    if (selGol) {
+      for (let i = 0; i < selGol.options.length; i++) {
+        const optVal = selGol.options[i].value;
+        const optText = selGol.options[i].text;
+        if (optVal === asset.golongan || optText === asset.golongan || (optVal && asset.golongan.includes(optVal))) {
+          selGol.selectedIndex = i;
+          break;
+        }
+      }
+    }
   }
 
   // Update URL history state tanpa reload
@@ -880,23 +1096,31 @@ function onAssetChange(val) {
 
 function filterAssetList() {
   const q = (document.getElementById("quickSearchAsset")?.value || "").toLowerCase().trim();
-  const c = (document.getElementById("filterCabangAsal")?.value || "").toLowerCase().trim();
+  const c = (document.getElementById("filterCabangAsal")?.value || "").trim();
   const sel = document.getElementById("selectAssetId");
   if (!sel) return;
 
   const curVal = parseInt(sel.value) || 0;
-  sel.innerHTML = \'<option value="">-- Pilih Perangkat Terdaftar --</option>\';
+  const isInv = (CURRENT_TYPE === "inventaris");
+  sel.innerHTML = isInv 
+    ? \'<option value="">-- Pilih Barang / Unit Inventaris Terdaftar --</option>\'
+    : \'<option value="">-- Pilih Perangkat Terdaftar --</option>\';
 
   let count = 0;
   for (let i = 0; i < ASSETS_ARRAY.length; i++) {
     const a = ASSETS_ARRAY[i];
-    if (c && a.cabang.toLowerCase() !== c) continue;
+    if (c && !isBranchMatch(a.cabang, c)) continue;
     if (q && !a.search_text.includes(q)) continue;
 
     count++;
     const opt = document.createElement("option");
     opt.value = a.id;
-    opt.textContent = a.kode + " - " + a.nama + " (" + a.pengguna + " | " + a.cabang + ")";
+    if (isInv) {
+      const ruangInfo = (a.ruangan && a.ruangan !== "-") ? a.ruangan + " | " : "";
+      opt.textContent = a.kode + " - " + a.nama + " (" + ruangInfo + a.cabang + ")";
+    } else {
+      opt.textContent = a.kode + " - " + a.nama + " (" + a.pengguna + " | " + a.cabang + ")";
+    }
     if (a.id === curVal) {
       opt.selected = true;
     }
@@ -909,7 +1133,10 @@ function filterAssetList() {
     if (curAsset) {
       const opt = document.createElement("option");
       opt.value = curAsset.id;
-      opt.textContent = curAsset.kode + " - " + curAsset.nama + " (" + curAsset.pengguna + " | " + curAsset.cabang + ") [Terpilih]";
+      const extra = isInv 
+        ? ((curAsset.ruangan && curAsset.ruangan !== "-") ? curAsset.ruangan + " | " : "")
+        : (curAsset.pengguna + " | ");
+      opt.textContent = curAsset.kode + " - " + curAsset.nama + " (" + extra + curAsset.cabang + ") [Terpilih]";
       opt.selected = true;
       sel.appendChild(opt);
     }
@@ -935,41 +1162,42 @@ function renderModalTable() {
   if (!tbody) return;
 
   const q = currentModalQuery.toLowerCase().trim();
-  const c = currentModalBranch.toLowerCase().trim();
+  const c = currentModalBranch.trim();
   const selectedId = parseInt(document.getElementById("selectAssetId")?.value) || 0;
+  const isInv = (CURRENT_TYPE === "inventaris");
 
   let matches = 0;
   let html = "";
 
   for (let i = 0; i < ASSETS_ARRAY.length; i++) {
     const item = ASSETS_ARRAY[i];
-    if (c && item.cabang.toLowerCase() !== c) continue;
+    if (c && !isBranchMatch(item.cabang, c)) continue;
     if (q && !item.search_text.includes(q)) continue;
 
     matches++;
     const isSelected = (item.id === selectedId);
     html += `
-      <tr class="table-catalog-row ${isSelected ? \'table-primary\' : \'\'}" onclick="selectAssetAndCloseModal(${item.id})">
+      <tr class="table-catalog-row ${isSelected ? "table-primary" : ""}" onclick="selectAssetAndCloseModal(${item.id})">
         <td class="text-center text-muted small">${matches}</td>
         <td>
           <div class="fw-bold font-monospace text-primary">${escapeHtml(item.kode)}</div>
-          ${item.sn ? `<div class="small font-monospace text-muted" style="font-size:0.72rem;">SN: ${escapeHtml(item.sn)}</div>` : \'\'}
+          ${item.sn ? `<div class="small font-monospace text-muted" style="font-size:0.72rem;">${isInv ? "No. Seri:" : "SN:"} ${escapeHtml(item.sn)}</div>` : ""}
         </td>
         <td>
           <div class="fw-semibold text-dark">${escapeHtml(item.nama)}</div>
-          <span class="badge bg-light text-secondary border small" style="font-size:0.7rem;">${escapeHtml(item.kategori || \'Unit\')}</span>
+          <span class="badge bg-light text-secondary border small" style="font-size:0.7rem;">${escapeHtml(item.kategori || (isInv ? "Inventaris" : "Unit"))}</span>
         </td>
         <td>
           <div class="text-dark fw-medium">${escapeHtml(item.cabang)}</div>
-          <div class="text-muted small" style="font-size:0.72rem;"><i class="bi bi-geo-alt me-1"></i>${escapeHtml(item.ruangan || \'-\')}</div>
+          <div class="text-muted small" style="font-size:0.72rem;"><i class="bi bi-geo-alt me-1"></i>${escapeHtml(item.ruangan || "-")}</div>
         </td>
         <td>
-          <div class="fw-bold text-dark">${escapeHtml(item.pengguna || \'Umum\')}</div>
-          <div class="text-muted small" style="font-size:0.72rem;">Div: ${escapeHtml(item.divisi || \'-\')}</div>
+          <div class="fw-bold text-dark">${escapeHtml(item.pengguna || (isInv ? "Umum / Pool" : "Umum"))}</div>
+          <div class="text-muted small" style="font-size:0.72rem;">${isInv ? "Gol:" : "Div:"} ${escapeHtml(item.divisi || "-")}</div>
         </td>
         <td class="text-center" onclick="event.stopPropagation()">
-          <button type="button" class="btn btn-sm ${isSelected ? \'btn-success\' : \'btn-primary\'} fw-bold px-3 py-1.5 shadow-sm" onclick="selectAssetAndCloseModal(${item.id})">
-            <i class="bi ${isSelected ? \'bi-check-circle-fill\' : \'bi-check-lg\'} me-1"></i> ${isSelected ? \'Terpilih\' : \'Pilih Unit\'}
+          <button type="button" class="btn btn-sm ${isSelected ? "btn-success" : "btn-primary"} fw-bold px-3 py-1.5 shadow-sm" onclick="selectAssetAndCloseModal(${item.id})">
+            <i class="bi ${isSelected ? "bi-check-circle-fill" : "bi-check-lg"} me-1"></i> ${isSelected ? "Terpilih" : "Pilih Unit"}
           </button>
         </td>
       </tr>
@@ -1037,6 +1265,7 @@ function onModalCabangSelect(branch) {
 
 function selectAssetAndCloseModal(id) {
   const sel = document.getElementById("selectAssetId");
+  const isInv = (CURRENT_TYPE === "inventaris");
   if (sel) {
     let opt = sel.querySelector(\'option[value="\' + id + \'"]\');
     if (!opt) {
@@ -1044,7 +1273,12 @@ function selectAssetAndCloseModal(id) {
       if (a) {
         opt = document.createElement("option");
         opt.value = a.id;
-        opt.textContent = a.kode + " - " + a.nama + " (" + a.pengguna + " | " + a.cabang + ")";
+        if (isInv) {
+          const ruangInfo = (a.ruangan && a.ruangan !== "-") ? a.ruangan + " | " : "";
+          opt.textContent = a.kode + " - " + a.nama + " (" + ruangInfo + a.cabang + ")";
+        } else {
+          opt.textContent = a.kode + " - " + a.nama + " (" + a.pengguna + " | " + a.cabang + ")";
+        }
         sel.appendChild(opt);
       }
     }

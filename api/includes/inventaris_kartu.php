@@ -354,27 +354,35 @@ function insert_inventaris_kartu(array $data): array {
 function update_inventaris_kartu(int $id, array $data): bool {
     ensure_inventaris_kartu_columns();
 
-    $rek = trim((string)($data['nomor_rekening'] ?? ''));
-    $nama = trim((string)($data['nama_barang'] ?? ''));
-    $tgl = normalize_date_to_db($data['tanggal_perolehan'] ?? '');
-    $barcode = trim((string)($data['barcode_data'] ?? ''));
+    if ($id <= 0) return false;
+
+    $current = null;
+    if (empty($data['nomor_rekening']) || empty($data['nama_barang'])) {
+        $current = get_inventaris_kartu_by_id($id);
+    }
+
+    $rek = trim((string)($data['nomor_rekening'] ?? ($current['nomor_rekening'] ?? '')));
+    $nama = trim((string)($data['nama_barang'] ?? ($current['nama_barang'] ?? '')));
+    $tgl = !empty($data['tanggal_perolehan']) ? normalize_date_to_db($data['tanggal_perolehan']) : ($current['tanggal_perolehan'] ?? date('Y-m-d'));
+    $barcode = trim((string)($data['barcode_data'] ?? ($current['barcode_data'] ?? '')));
     
     // Tentukan lokasi: gunakan input lokasi jika diisi, atau default berdasarkan cabang
-    $lokasi = trim((string)($data['lokasi'] ?? ''));
+    $lokasi = trim((string)($data['lokasi'] ?? ($current['lokasi'] ?? '')));
     if ($lokasi === '') {
         $cBranch = get_cabang_from_nomor_rekening($rek);
         $lokasi = $cBranch ? $cBranch['lokasi'] : 'Kantor Pusat (KPO)';
     }
 
-    if ($id <= 0 || $rek === '' || $nama === '') return false;
+    if ($rek === '' || $nama === '') return false;
 
-    $noSeri = trim((string)($data['nomor_seri_inventaris'] ?? ''));
-    $jenisInv = trim((string)($data['jenis_inventaris'] ?? ''));
-    $golongan = trim((string)($data['golongan'] ?? ''));
-    $ruangan = trim((string)($data['ruangan'] ?? ''));
-    $sumber = trim((string)($data['sumber_perolehan'] ?? ''));
-    $statusInv = trim((string)($data['status_inventaris'] ?? '1 : Aktif'));
-    $ket = trim((string)($data['keterangan'] ?? ''));
+    $noSeri = trim((string)($data['nomor_seri_inventaris'] ?? ($current['nomor_seri_inventaris'] ?? '')));
+    $jenisInv = trim((string)($data['jenis_inventaris'] ?? ($current['jenis_inventaris'] ?? '')));
+    $golongan = trim((string)($data['golongan'] ?? ($current['golongan'] ?? '')));
+    $ruangan = trim((string)($data['ruangan'] ?? ($current['ruangan'] ?? '')));
+    $pengguna = trim((string)($data['pengguna'] ?? ($current['pengguna'] ?? 'Umum / Pool')));
+    $sumber = trim((string)($data['sumber_perolehan'] ?? ($current['sumber_perolehan'] ?? '')));
+    $statusInv = trim((string)($data['status_inventaris'] ?? ($current['status_inventaris'] ?? '1 : Aktif')));
+    $ket = trim((string)($data['keterangan'] ?? ($current['keterangan'] ?? '')));
 
     if (is_google_cloud_mode()) {
         $client = google_sheets_v4_client();
@@ -397,12 +405,12 @@ function update_inventaris_kartu(int $id, array $data): bool {
         $st = db()->prepare("
             UPDATE inventaris_kartu
             SET nomor_rekening = ?, nama_barang = ?, tanggal_perolehan = ?, barcode_data = ?, lokasi = ?,
-                nomor_seri_inventaris = ?, jenis_inventaris = ?, golongan = ?, ruangan = ?, sumber_perolehan = ?, status_inventaris = ?, keterangan = ?
+                nomor_seri_inventaris = ?, jenis_inventaris = ?, golongan = ?, ruangan = ?, pengguna = ?, sumber_perolehan = ?, status_inventaris = ?, keterangan = ?
             WHERE id = ?
         ");
         return $st->execute([
             $rek, $nama, $tgl, $barcode, $lokasi,
-            $noSeri, $jenisInv, $golongan, $ruangan, $sumber, $statusInv, $ket,
+            $noSeri, $jenisInv, $golongan, $ruangan, $pengguna, $sumber, $statusInv, $ket,
             $id
         ]);
     } catch (Throwable $e) {
@@ -540,6 +548,7 @@ function ensure_inventaris_kartu_columns(): void {
             ADD COLUMN IF NOT EXISTS jenis_inventaris VARCHAR(100) NULL,
             ADD COLUMN IF NOT EXISTS golongan VARCHAR(100) NULL,
             ADD COLUMN IF NOT EXISTS ruangan VARCHAR(150) NULL,
+            ADD COLUMN IF NOT EXISTS pengguna VARCHAR(150) NULL DEFAULT 'Umum / Pool',
             ADD COLUMN IF NOT EXISTS sumber_perolehan VARCHAR(100) NULL,
             ADD COLUMN IF NOT EXISTS status_inventaris VARCHAR(50) DEFAULT '1 : Aktif',
             ADD COLUMN IF NOT EXISTS keterangan TEXT NULL,

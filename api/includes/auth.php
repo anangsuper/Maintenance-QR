@@ -140,8 +140,10 @@ function module_base_url(): string {
     $host = $_SERVER['HTTP_X_FORWARDED_HOST'] ?? $_SERVER['HTTP_HOST'] ?? 'localhost';
     $script = str_replace('\\', '/', $_SERVER['SCRIPT_NAME'] ?? '/');
     $dir = rtrim(dirname($script), '/');
-    // Strip /api prefix for Vercel deployment (routes rewrite /xxx.php -> /api/xxx.php)
-    $dir = preg_replace('~/api$~', '', $dir);
+    // Strip /api prefix only for Vercel deployment (routes rewrite /xxx.php -> /api/xxx.php)
+    if (!empty($_SERVER['VERCEL']) || str_ends_with(strtolower((string)($_SERVER['HTTP_HOST'] ?? '')), '.vercel.app')) {
+        $dir = preg_replace('~/api$~', '', $dir);
+    }
     return $scheme . '://' . $host . ($dir === '/' ? '' : $dir);
 }
 
@@ -583,7 +585,9 @@ function authenticate_user(string $username, string $password): array {
         try {
             $cols = table_columns('users');
             $nameCol = in_array('nama', $cols, true) ? 'nama' : (in_array('name', $cols, true) ? 'name' : 'username');
-            $st = db()->prepare("SELECT id, `{$nameCol}` AS nama, username, password, role, status FROM users WHERE LOWER(username) = LOWER(?) LIMIT 1");
+            $hasStatus = in_array('status', $cols, true);
+            $statusField = $hasStatus ? ', status' : '';
+            $st = db()->prepare("SELECT id, `{$nameCol}` AS nama, username, password, role{$statusField} FROM users WHERE LOWER(TRIM(username)) = LOWER(TRIM(?)) LIMIT 1");
             $st->execute([$username]);
             $user = $st->fetch();
 

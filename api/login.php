@@ -896,14 +896,33 @@ const submitIcon = document.getElementById("submitIcon");
 const submitText = document.getElementById("submitText");
 
 if (loginForm) {
-  loginForm.addEventListener("submit", function() {
-    if (submitBtn && !submitBtn.disabled) {
-      submitBtn.disabled = true;
+  loginForm.addEventListener("submit", function(e) {
+    if (loginForm.checkValidity && !loginForm.checkValidity()) {
+      return;
+    }
+    if (submitBtn) {
       submitIcon.className = "spinner-border spinner-border-sm";
       submitText.textContent = "Memverifikasi Akun...";
+      submitBtn.style.pointerEvents = "none";
+      submitBtn.style.opacity = "0.85";
+      // Delay disabling button so browser dispatches the POST request first
+      setTimeout(function() {
+        submitBtn.disabled = true;
+      }, 50);
     }
   });
 }
+
+// Reset button state on page show (handles browser back/forward cache)
+window.addEventListener("pageshow", function() {
+  if (submitBtn) {
+    submitBtn.removeAttribute("disabled");
+    submitBtn.style.pointerEvents = "";
+    submitBtn.style.opacity = "";
+    if (submitText) submitText.textContent = "Masuk Sekarang";
+    if (submitIcon) submitIcon.className = "bi bi-box-arrow-in-right";
+  }
+});
 
 // Countdown Timer jika akun/IP terkunci (Standar OJK 15 Menit)
 const lockRemainingSecs = <?= (int)$lockRemainingSeconds ?>;

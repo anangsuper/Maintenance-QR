@@ -789,6 +789,9 @@ if (empty($displayCards)) {
           </td>
           <td class="text-end text-nowrap" style="width: 140px;">
             <div class="btn-group btn-group-sm">
+              <a class="btn btn-sm btn-light border text-success" target="_blank" href="'.e(module_url('asset_mutation.php', ['id'=>$cId, 'type'=>'inventaris'])).'" title="Mutasi Barang Inventaris" style="padding: 2px 7px;">
+                <i class="bi bi-arrow-left-right"></i>
+              </a>
               <a class="btn btn-sm btn-light border text-primary" target="_blank" href="'.e(module_url('kartu_detail.php', ['id'=>$cId])).'" title="Buka Detail Web &amp; Foto" style="padding: 2px 7px;">
                 <i class="bi bi-box-arrow-up-right"></i>
               </a>
@@ -1352,9 +1355,9 @@ if (is_hrd() && !is_admin()) {
             <p class="text-secondary small mb-0">Kelola inventaris perabot, cetak kartu label fisik ukuran CR80/PVC, dan pemeliharaan gedung/ruangan.</p>
           </div>
           <div class="d-flex flex-wrap gap-2">
-            <a href="'.e(module_url('create_card.php')).'" class="btn btn-success fw-bold btn-sm px-3 shadow-sm">
+            <button type="button" class="btn btn-success fw-bold btn-sm px-3 shadow-sm" data-bs-toggle="modal" data-bs-target="#addCardModal">
               <i class="bi bi-plus-circle-fill me-1.5"></i> Buat Kartu Baru
-            </a>
+            </button>
             <a href="'.e(module_url('dashboard.php', ['tab' => 'kartu'])).'" class="btn btn-outline-success fw-semibold btn-sm px-3 bg-white">
               <i class="bi bi-printer-fill me-1.5"></i> Cetak Label CR80
             </a>
@@ -3369,6 +3372,17 @@ function appendModalAction(text) {
     ta.value = text;
   }
 }
+
+document.addEventListener("DOMContentLoaded", function() {
+  const urlParams = new URLSearchParams(window.location.search);
+  if (urlParams.get("add") === "1" || window.location.hash === "#addCardModal") {
+    const addCardModalEl = document.getElementById("addCardModal");
+    if (addCardModalEl) {
+      const modal = bootstrap.Modal.getOrCreateInstance(addCardModalEl);
+      modal.show();
+    }
+  }
+});
 </script>
 <script>
 window.REALTIME_CONFIG = {
