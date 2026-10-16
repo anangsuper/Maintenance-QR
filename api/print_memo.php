@@ -164,8 +164,18 @@ body {
 
 <div class="floating-action-bar no-print">
   <?php if (!empty($memo['lampiran_file'])): ?>
-    <a href="<?= e(memo_file_url($memo['lampiran_file'])) ?>" target="_blank" class="btn btn-warning text-dark fw-bold shadow-lg px-3 py-2">
-      <i class="bi bi-paperclip me-1"></i> Buka Lampiran / Nota
+    <a href="<?= e(memo_file_url($memo['lampiran_file'])) ?>" target="_blank" class="btn btn-light border fw-semibold shadow-lg px-3 py-2">
+      <i class="bi bi-file-earmark-text me-1"></i> Penawaran / Brosur
+    </a>
+  <?php endif; ?>
+  <?php if (!empty($memo['bukti_beli_file'])): ?>
+    <a href="<?= e(memo_file_url($memo['bukti_beli_file'])) ?>" target="_blank" class="btn btn-warning text-dark fw-bold shadow-lg px-3 py-2">
+      <i class="bi bi-receipt me-1"></i> Nota Toko
+    </a>
+  <?php endif; ?>
+  <?php if (!empty($memo['foto_barang_file'])): ?>
+    <a href="<?= e(memo_file_url($memo['foto_barang_file'])) ?>" target="_blank" class="btn btn-light border fw-semibold shadow-lg px-3 py-2">
+      <i class="bi bi-camera me-1 text-primary"></i> Foto Barang
     </a>
   <?php endif; ?>
   <button type="button" class="btn btn-primary fw-bold shadow-lg px-4 py-2" onclick="window.print()">
@@ -215,7 +225,12 @@ body {
             <td style="padding-top: 4px;">: <?= $lampiran ?>
               <?php if (!empty($memo['lampiran_file'])): ?>
                 <span class="no-print ms-2 small" style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 0.82rem;">
-                  (<a href="<?= e(memo_file_url($memo['lampiran_file'])) ?>" target="_blank" style="color: #2563EB; font-weight: 600; text-decoration: underline;"><i class="bi bi-paperclip"></i> Lihat Berkas Digital</a>)
+                  (<a href="<?= e(memo_file_url($memo['lampiran_file'])) ?>" target="_blank" style="color: #475569; font-weight: 600; text-decoration: underline;"><i class="bi bi-file-earmark-text"></i> Penawaran</a>)
+                </span>
+              <?php endif; ?>
+              <?php if (!empty($memo['bukti_beli_file'])): ?>
+                <span class="no-print ms-1 small" style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 0.82rem;">
+                  (<a href="<?= e(memo_file_url($memo['bukti_beli_file'])) ?>" target="_blank" style="color: #16A34A; font-weight: 600; text-decoration: underline;"><i class="bi bi-receipt"></i> Nota Toko</a>)
                 </span>
               <?php endif; ?>
             </td>

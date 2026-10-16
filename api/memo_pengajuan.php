@@ -39,6 +39,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } else {
             $error = $result['error'] ?? 'Gagal menyimpan memo internal.';
         }
+    } elseif ($action === 'save_realisasi') {
+        if (!empty($_FILES['bukti_beli_file']['tmp_name'])) {
+            $uploadedBukti = upload_memo_bukti('bukti_beli_file');
+            if ($uploadedBukti) {
+                $_POST['bukti_beli_file'] = $uploadedBukti;
+            }
+        }
+        if (!empty($_FILES['foto_barang_file']['tmp_name'])) {
+            $uploadedFoto = upload_memo_foto_barang('foto_barang_file');
+            if ($uploadedFoto) {
+                $_POST['foto_barang_file'] = $uploadedFoto;
+            }
+        }
+        $result = save_memo_realisasi($_POST);
+        if (!empty($result['success'])) {
+            $_SESSION['flash'] = 'Bukti realisasi pembelian & nota toko berhasil disimpan.';
+            header('Location: ' . module_url('memo_pengajuan.php'));
+            exit;
+        } else {
+            $error = $result['error'] ?? 'Gagal menyimpan bukti realisasi.';
+        }
     } elseif ($action === 'update_status') {
         $memoId = (int)($_POST['memo_id'] ?? 0);
         $newStatus = trim((string)($_POST['new_status'] ?? 'Diajukan'));
@@ -130,8 +151,35 @@ if (empty($allMemos)) {
         if (!empty($m['lampiran_file'])) {
             $fUrl = memo_file_url($m['lampiran_file']);
             $isPdf = str_ends_with(strtolower($m['lampiran_file']), '.pdf');
-            $icon = $isPdf ? 'bi-file-earmark-pdf-fill text-danger' : 'bi-image-fill text-primary';
-            $lampiranBadge = '<div class="mt-1"><a href="'.e($fUrl).'" target="_blank" class="badge bg-light text-dark border shadow-xs text-decoration-none d-inline-flex align-items-center gap-1" style="font-size:0.68rem;"><i class="bi '.$icon.'"></i> Nota / Lampiran</a></div>';
+            $icon = $isPdf ? 'bi-file-earmark-pdf text-secondary' : 'bi-image text-secondary';
+            $lampiranBadge .= '<a href="'.e($fUrl).'" target="_blank" class="badge bg-light text-secondary border shadow-xs text-decoration-none d-inline-flex align-items-center gap-1" style="font-size:0.67rem;" title="Berkas Penawaran Harga / Brosur"><i class="bi '.$icon.'"></i> Penawaran</a> ';
+        }
+        if (!empty($m['bukti_beli_file'])) {
+            $bUrl = memo_file_url($m['bukti_beli_file']);
+            $isPdf = str_ends_with(strtolower($m['bukti_beli_file']), '.pdf');
+            $bIcon = $isPdf ? 'bi-receipt-cutoff text-success' : 'bi-receipt text-success';
+            $lampiranBadge .= '<a href="'.e($bUrl).'" target="_blank" class="badge bg-success-subtle text-success border border-success-subtle shadow-xs text-decoration-none d-inline-flex align-items-center gap-1" style="font-size:0.67rem;" title="Nota Pembelian Toko Resmi"><i class="bi '.$bIcon.'"></i> Nota Toko ✓</a> ';
+        }
+        if (!empty($m['foto_barang_file'])) {
+            $pUrl = memo_file_url($m['foto_barang_file']);
+            $lampiranBadge .= '<a href="'.e($pUrl).'" target="_blank" class="badge bg-primary-subtle text-primary border border-primary-subtle shadow-xs text-decoration-none d-inline-flex align-items-center gap-1" style="font-size:0.67rem;" title="Foto Fisik Barang yang Tiba"><i class="bi bi-camera"></i> Foto Fisik</a> ';
+        }
+        if ($lampiranBadge !== '') {
+            $lampiranBadge = '<div class="mt-1 d-flex flex-wrap gap-1">' . $lampiranBadge . '</div>';
+        }
+
+        $realisasiBiayaHtml = '';
+        if (!empty($m['biaya_realisasi']) && (float)$m['biaya_realisasi'] > 0) {
+            $realisasiBiayaHtml = '<div class="small text-success fw-bold mt-0.5" style="font-size:0.72rem;"><i class="bi bi-receipt me-1"></i>Riil: Rp. '.number_format((float)$m['biaya_realisasi'], 0, ',', '.').',-</div>';
+        }
+
+        $realisasiBtn = '';
+        if (in_array($st, ['Disetujui', 'Selesai Dibeli'], true)) {
+            $hasNota = !empty($m['bukti_beli_file']);
+            $realisasiBtn = '
+              <button type="button" class="btn btn-sm '.($hasNota ? 'btn-outline-success' : 'btn-warning text-dark fw-bold').' d-inline-flex align-items-center gap-1 px-2.5" onclick=\'openRealisasiModal('.$memoJson.')\' title="'.($hasNota ? 'Lihat / Edit Bukti Pembelian & Nota Toko' : 'Upload Bukti Pembelian & Nota Toko').'">
+                <i class="bi bi-receipt"></i> '.($hasNota ? 'Nota Toko' : '+ Nota Toko').'
+              </button>';
         }
 
         $tableRows .= '
@@ -153,13 +201,15 @@ if (empty($allMemos)) {
           </td>
           <td class="text-nowrap">
             <div class="fw-bold text-dark">Rp. '.number_format($total, 0, ',', '.').',-</div>
-            <div class="text-muted small fst-italic" style="font-size:0.7rem;">'.e($m['terbilang']).'</div>
+            '.$realisasiBiayaHtml.'
+            <div class="text-muted small fst-italic" style="font-size:0.68rem;">'.e($m['terbilang']).'</div>
           </td>
           <td class="text-center">
             <span class="status-pill '.$stBadge.'">'.e($st).'</span>
           </td>
           <td class="text-end text-nowrap">
             <div class="btn-group btn-group-sm">
+              '.$realisasiBtn.'
               <a href="'.$printUrl.'" target="_blank" class="btn btn-outline-primary fw-semibold" title="Cetak Dokumen Memo">
                 <i class="bi bi-printer me-1"></i> Cetak
               </a>
@@ -356,17 +406,17 @@ $body .= '
 
             <div class="col-md-4">
               <label class="form-label text-uppercase fw-bold text-muted small" style="font-size:0.72rem;">Keterangan Lampiran (Kop)</label>
-              <input type="text" name="lampiran" id="memoLampiran" class="form-control" value="1 (satu) Berkas" placeholder="Contoh: 1 (satu) Berkas">
+              <input type="text" name="lampiran" id="memoLampiran" class="form-control" value="-" placeholder="Contoh: - atau 1 Berkas Penawaran">
             </div>
 
             <div class="col-12">
               <div class="p-3 rounded-3 bg-light border">
                 <label class="form-label text-uppercase fw-bold text-dark small mb-1" style="font-size:0.75rem;">
-                  <i class="bi bi-paperclip me-1 text-primary"></i>Upload Berkas Nota / Kuitansi / Brosur / Foto Fisik Barang
+                  <i class="bi bi-file-earmark-arrow-up me-1 text-primary"></i>Berkas Penawaran Harga / Brosur / Foto Kerusakan Lama (Opsional)
                 </label>
                 <input type="file" name="lampiran_file" id="memoLampiranFile" class="form-control" accept=".pdf,image/*">
                 <div class="form-text text-muted small mt-1" style="font-size:0.72rem;">
-                  Format: <strong>PDF, JPG, JPEG, PNG, WEBP</strong> (Maks. 25MB). Bukti nota pembelian, kuitansi toko, brosur penawaran, atau foto fisik barang.
+                  <em>Opsional (Boleh dikosongkan):</em> Surat penawaran harga dari toko atau foto kondisi barang lama untuk bahan pertimbangan Direksi. <strong>Nota toko resmi di-upload nanti setelah memo disetujui &amp; dibeli.</strong>
                 </div>
                 <div id="memoLampiranCurrent" class="mt-2 d-none"></div>
               </div>
@@ -442,6 +492,98 @@ $body .= '
           </button>
         </div>
       </form>
+  </div>
+</div>
+
+<!-- MODAL: REALISASI PEMBELIAN & UPLOAD NOTA TOKO -->
+<div class="modal fade" id="modalUploadRealisasi" tabindex="-1" aria-labelledby="modalRealisasiLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable">
+    <form method="post" action="'.e(module_url('memo_pengajuan.php')).'" enctype="multipart/form-data" class="modal-content border-0 shadow-lg" style="border-radius: 16px;">
+      <input type="hidden" name="_csrf" value="'.e(csrf_token()).'">
+      <input type="hidden" name="action" value="save_realisasi">
+      <input type="hidden" name="id" id="realisasiMemoId" value="0">
+      <input type="hidden" name="status" value="Selesai Dibeli">
+
+      <div class="modal-header bg-success text-white flex-shrink-0">
+        <div>
+          <h5 class="modal-title d-flex align-items-center gap-2" id="modalRealisasiLabel">
+            <i class="bi bi-receipt-cutoff"></i> Realisasi Pembelian &amp; Upload Nota Toko
+          </h5>
+          <p class="text-white text-opacity-85 small mb-0">Pertanggungjawaban pembelian barang setelah memo disetujui Direksi &amp; Bagian Umum.</p>
+        </div>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+
+      <div class="modal-body p-4 custom-scrollbar">
+        <div class="alert alert-success-subtle border-success-subtle d-flex align-items-center gap-2 mb-3 py-2 px-3 small">
+          <i class="bi bi-check-circle-fill text-success fs-5"></i>
+          <div>Barang telah disetujui dan dibeli. Unggah nota toko dan foto fisik barang sebagai arsip pertanggungjawaban operasional cabang.</div>
+        </div>
+
+        <div class="row g-3">
+          <div class="col-md-6">
+            <label class="form-label text-uppercase fw-bold text-muted small" style="font-size:0.72rem;">Nomor Memo</label>
+            <input type="text" id="realisasiNomorMemo" class="form-control font-monospace bg-light fw-bold" readonly>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label text-uppercase fw-bold text-muted small" style="font-size:0.72rem;">Kantor Cabang</label>
+            <input type="text" id="realisasiCabang" class="form-control bg-light" readonly>
+          </div>
+          <div class="col-12">
+            <label class="form-label text-uppercase fw-bold text-muted small" style="font-size:0.72rem;">Perihal Pengadaan</label>
+            <input type="text" id="realisasiPerihal" class="form-control bg-light fw-bold" readonly>
+          </div>
+
+          <div class="col-md-6">
+            <label class="form-label text-uppercase fw-bold text-muted small" style="font-size:0.72rem;">Tanggal Pembelian / Nota <span class="text-danger">*</span></label>
+            <input type="date" name="tanggal_beli" id="realisasiTanggalBeli" class="form-control" value="'.date('Y-m-d').'" required>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label text-uppercase fw-bold text-muted small" style="font-size:0.72rem;">Biaya Riil / Realisasi (Rp) <span class="text-danger">*</span></label>
+            <input type="number" name="biaya_realisasi" id="realisasiBiaya" class="form-control fw-bold fs-6" placeholder="Total sesuai nota" required>
+            <div class="form-text small" style="font-size:0.7rem;">Nominal total kuitansi/faktur toko (boleh berbeda dari estimasi awal jika ada diskon/ongkir).</div>
+          </div>
+
+          <div class="col-12">
+            <div class="p-3 rounded-3 bg-light border">
+              <label class="form-label text-uppercase fw-bold text-dark small mb-1" style="font-size:0.75rem;">
+                <i class="bi bi-receipt me-1 text-success"></i>Upload Nota Pembelian / Kuitansi Toko Asli (PDF / Gambar) <span class="text-danger">*</span>
+              </label>
+              <input type="file" name="bukti_beli_file" id="realisasiBuktiFile" class="form-control" accept=".pdf,image/*">
+              <div class="form-text text-muted small mt-1" style="font-size:0.72rem;">
+                Format: <strong>PDF, JPG, JPEG, PNG, WEBP</strong> (Maks. 25MB). Foto struk nota kontan toko, invoice, atau kuitansi pembayaran resmi.
+              </div>
+              <div id="realisasiBuktiCurrent" class="mt-2 d-none"></div>
+            </div>
+          </div>
+
+          <div class="col-12">
+            <div class="p-3 rounded-3 bg-light border">
+              <label class="form-label text-uppercase fw-bold text-dark small mb-1" style="font-size:0.75rem;">
+                <i class="bi bi-camera me-1 text-primary"></i>Upload Foto Fisik Barang Baru yang Tiba / Terpasang
+              </label>
+              <input type="file" name="foto_barang_file" id="realisasiFotoFile" class="form-control" accept="image/*">
+              <div class="form-text text-muted small mt-1" style="font-size:0.72rem;">
+                Format: <strong>Foto JPG / PNG</strong> dari kamera HP. Foto barang yang baru tiba di kantor cabang atau sudah terpasang di ruangan.
+              </div>
+              <div id="realisasiFotoCurrent" class="mt-2 d-none"></div>
+            </div>
+          </div>
+
+          <div class="col-12">
+            <label class="form-label text-uppercase fw-bold text-muted small" style="font-size:0.72rem;">Catatan Realisasi Pembelian (Nama Toko / Keterangan Toko)</label>
+            <textarea name="catatan_realisasi" id="realisasiCatatan" rows="2" class="form-control" placeholder="Contoh: Dibeli di Toko Surya Elektronik Batulicin, garansi 1 tahun resmi distributor."></textarea>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer bg-light d-flex justify-content-between flex-shrink-0">
+        <button type="button" class="btn btn-secondary px-3" data-bs-dismiss="modal">Batal</button>
+        <button type="submit" class="btn btn-success px-4 fw-bold">
+          <i class="bi bi-check-circle-fill me-1"></i> Simpan Realisasi &amp; Nota Pembelian
+        </button>
+      </div>
+    </form>
   </div>
 </div>
 ';
@@ -529,7 +671,7 @@ function openCreateMemoModal() {
   document.getElementById("memoIsi").value = "Sehubungan dengan adanya pengadaan inventaris/fasilitas, maka kami mengajukan permohonan pengajuan untuk biaya tersebut.";
   document.getElementById("memoEstimasi").value = "";
   document.getElementById("memoTerbilang").value = "";
-  document.getElementById("memoLampiran").value = "1 (satu) Berkas";
+  document.getElementById("memoLampiran").value = "-";
 
   const fileInput = document.getElementById("memoLampiranFile");
   if (fileInput) fileInput.value = "";
@@ -557,7 +699,7 @@ function openEditMemoModal(data) {
   document.getElementById("memoKepada").value = data.kepada || "Direksi";
   document.getElementById("memoDari").value = data.dari_jabatan || "";
   document.getElementById("memoPerihal").value = data.perihal || "";
-  document.getElementById("memoLampiran").value = data.lampiran || "1 (satu) Berkas";
+  document.getElementById("memoLampiran").value = data.lampiran || "-";
   document.getElementById("memoIsi").value = data.isi_memo || "";
   document.getElementById("memoEstimasi").value = data.total_estimasi || 0;
   document.getElementById("memoTerbilang").value = data.terbilang || "";
@@ -572,7 +714,7 @@ function openEditMemoModal(data) {
       const icon = isPdf ? "bi-file-earmark-pdf-fill text-danger" : "bi-image-fill text-primary";
       const fileUrl = (data.lampiran_file.startsWith("http") || data.lampiran_file.startsWith("/")) ? data.lampiran_file : ("" + data.lampiran_file);
       curBox.classList.remove("d-none");
-      curBox.innerHTML = \'<div class="d-flex align-items-center justify-content-between flex-wrap gap-2"><div><i class="bi \' + icon + \' me-1"></i> <a href="\' + fileUrl + \'" target="_blank" class="fw-bold text-decoration-none">Lihat Berkas Lampiran Tersimpan</a></div><small class="text-muted">Pilih file baru jika ingin mengganti</small></div>\';
+      curBox.innerHTML = \'<div class="d-flex align-items-center justify-content-between flex-wrap gap-2"><div><i class="bi \' + icon + \' me-1"></i> <a href="\' + fileUrl + \'" target="_blank" class="fw-bold text-decoration-none">Lihat Berkas Penawaran Tersimpan</a></div><small class="text-muted">Pilih file baru jika ingin mengganti</small></div>\';
     } else {
       curBox.classList.add("d-none");
       curBox.innerHTML = "";
@@ -589,6 +731,51 @@ function openEditMemoModal(data) {
   document.getElementById("modalMemoLabel").innerHTML = \'<i class="bi bi-pencil-square text-warning"></i> Edit Dokumen Memo Internal\';
 
   const modalEl = document.getElementById("modalMemoInternal");
+  if (modalEl) {
+    bootstrap.Modal.getOrCreateInstance(modalEl).show();
+  }
+}
+
+function openRealisasiModal(data) {
+  document.getElementById("realisasiMemoId").value = data.id || 0;
+  document.getElementById("realisasiNomorMemo").value = data.nomor_memo || "";
+  document.getElementById("realisasiCabang").value = data.cabang_nama || "";
+  document.getElementById("realisasiPerihal").value = data.perihal || "";
+  document.getElementById("realisasiTanggalBeli").value = data.tanggal_beli || new Date().toISOString().split("T")[0];
+  document.getElementById("realisasiBiaya").value = data.biaya_realisasi || data.total_estimasi || "";
+  document.getElementById("realisasiCatatan").value = data.catatan_realisasi || "";
+
+  const buktiInput = document.getElementById("realisasiBuktiFile");
+  if (buktiInput) buktiInput.value = "";
+  const curBukti = document.getElementById("realisasiBuktiCurrent");
+  if (curBukti) {
+    if (data.bukti_beli_file) {
+      const isPdf = (data.bukti_beli_file || "").toLowerCase().endsWith(".pdf");
+      const icon = isPdf ? "bi-file-earmark-pdf-fill text-danger" : "bi-receipt text-success";
+      const fileUrl = (data.bukti_beli_file.startsWith("http") || data.bukti_beli_file.startsWith("/")) ? data.bukti_beli_file : ("" + data.bukti_beli_file);
+      curBukti.classList.remove("d-none");
+      curBukti.innerHTML = \'<div class="d-flex align-items-center justify-content-between flex-wrap gap-2"><div><i class="bi \' + icon + \' me-1"></i> <a href="\' + fileUrl + \'" target="_blank" class="fw-bold text-decoration-none">Lihat Nota Toko Tersimpan</a></div><small class="text-muted">Pilih file baru jika ingin mengganti</small></div>\';
+    } else {
+      curBukti.classList.add("d-none");
+      curBukti.innerHTML = "";
+    }
+  }
+
+  const fotoInput = document.getElementById("realisasiFotoFile");
+  if (fotoInput) fotoInput.value = "";
+  const curFoto = document.getElementById("realisasiFotoCurrent");
+  if (curFoto) {
+    if (data.foto_barang_file) {
+      const photoUrl = (data.foto_barang_file.startsWith("http") || data.foto_barang_file.startsWith("/")) ? data.foto_barang_file : ("" + data.foto_barang_file);
+      curFoto.classList.remove("d-none");
+      curFoto.innerHTML = \'<div class="d-flex align-items-center justify-content-between flex-wrap gap-2"><div><i class="bi bi-camera-fill text-primary me-1"></i> <a href="\' + photoUrl + \'" target="_blank" class="fw-bold text-decoration-none">Lihat Foto Fisik Barang</a></div><small class="text-muted">Pilih foto baru jika ingin mengganti</small></div>\';
+    } else {
+      curFoto.classList.add("d-none");
+      curFoto.innerHTML = "";
+    }
+  }
+
+  const modalEl = document.getElementById("modalUploadRealisasi");
   if (modalEl) {
     bootstrap.Modal.getOrCreateInstance(modalEl).show();
   }

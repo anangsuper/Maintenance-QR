@@ -40,11 +40,19 @@ function ensure_memo_schema(): void {
                 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
             ");
 
-            // Migration: pastikan kolom lampiran_file ada jika tabel sudah ada sebelumnya
-            $cols = db()->query("SHOW COLUMNS FROM memo_pengajuan_inventaris LIKE 'lampiran_file'")->fetchAll();
-            if (empty($cols)) {
-                db()->exec("ALTER TABLE memo_pengajuan_inventaris ADD COLUMN lampiran_file VARCHAR(255) DEFAULT '' AFTER lampiran");
-            }
+            // Migration: pastikan kolom pendukung dan realisasi ada jika tabel sudah dibuat
+            $chk = function(string $col, string $def) {
+                $has = db()->query("SHOW COLUMNS FROM memo_pengajuan_inventaris LIKE '{$col}'")->fetchAll();
+                if (empty($has)) {
+                    db()->exec("ALTER TABLE memo_pengajuan_inventaris ADD COLUMN {$col} {$def}");
+                }
+            };
+            $chk('lampiran_file', "VARCHAR(255) DEFAULT '' AFTER lampiran");
+            $chk('bukti_beli_file', "VARCHAR(255) DEFAULT '' AFTER lampiran_file");
+            $chk('foto_barang_file', "VARCHAR(255) DEFAULT '' AFTER bukti_beli_file");
+            $chk('biaya_realisasi', "DECIMAL(15,2) DEFAULT NULL AFTER total_estimasi");
+            $chk('tanggal_beli', "DATE DEFAULT NULL AFTER tanggal_memo");
+            $chk('catatan_realisasi', "TEXT DEFAULT NULL AFTER isi_memo");
         } catch (Throwable $e) {
             // Ignore schema error
         }
@@ -52,7 +60,7 @@ function ensure_memo_schema(): void {
 }
 
 /**
- * URL absolut/relatif file lampiran memo
+ * URL absolut/relatif file lampiran memo / nota
  */
 function memo_file_url(?string $path): string {
     $path = trim((string)$path);
@@ -65,9 +73,9 @@ function memo_file_url(?string $path): string {
 }
 
 /**
- * Upload berkas lampiran memo (PDF, JPG, PNG, WEBP)
+ * Upload berkas memo generik (PDF, JPG, PNG, WEBP)
  */
-function upload_memo_lampiran(string $fileKey = 'lampiran_file'): ?string {
+function upload_memo_file(string $fileKey, string $prefix = 'memo'): ?string {
     if (empty($_FILES[$fileKey]) || empty($_FILES[$fileKey]['tmp_name']) || !is_uploaded_file($_FILES[$fileKey]['tmp_name'])) {
         return null;
     }
@@ -91,7 +99,7 @@ function upload_memo_lampiran(string $fileKey = 'lampiran_file'): ?string {
         @chmod($uploadDir, 0777);
     }
 
-    $safeName = 'memo_' . date('Ymd_His') . '_' . bin2hex(random_bytes(4)) . '.' . $ext;
+    $safeName = $prefix . '_' . date('Ymd_His') . '_' . bin2hex(random_bytes(4)) . '.' . $ext;
     $targetPath = $uploadDir . $safeName;
 
     if (in_array($ext, ['jpg', 'jpeg', 'png', 'webp'], true) && function_exists('compress_and_save_uploaded_image')) {
@@ -106,6 +114,18 @@ function upload_memo_lampiran(string $fileKey = 'lampiran_file'): ?string {
         return 'uploads/memo/' . $safeName;
     }
     return null;
+}
+
+function upload_memo_lampiran(string $fileKey = 'lampiran_file'): ?string {
+    return upload_memo_file($fileKey, 'penawaran');
+}
+
+function upload_memo_bukti(string $fileKey = 'bukti_beli_file'): ?string {
+    return upload_memo_file($fileKey, 'nota');
+}
+
+function upload_memo_foto_barang(string $fileKey = 'foto_barang_file'): ?string {
+    return upload_memo_file($fileKey, 'barang');
 }
 
 /**
@@ -336,4 +356,70 @@ function save_memo_pengajuan(array $data): array {
     }
 
     return ['success' => false, 'error' => 'Mode sistem belum mendukung penyimpanan memo.'];
+}
+
+/**
+ * Simpan realisasi pembelian barang & nota fisik setelah disetujui
+ */
+function save_memo_realisasi(array $data): array {
+    ensure_memo_schema();
+    $id = (int)($data['id'] ?? 0);
+    if ($id <= 0) {
+        return ['success' => false, 'error' => 'ID memo tidak valid.'];
+    }
+
+    $old = get_memo_by_id($id);
+    if (!$old) {
+        return ['success' => false, 'error' => 'Dokumen memo tidak ditemukan.'];
+    }
+
+    $tanggalBeli = !empty($data['tanggal_beli']) ? trim((string)$data['tanggal_beli']) : date('Y-m-d');
+    $biayaRealisasi = (float)($data['biaya_realisasi'] ?? 0);
+    if ($biayaRealisasi <= 0) {
+        $biayaRealisasi = (float)($old['biaya_realisasi'] ?: $old['total_estimasi']);
+    }
+
+    $catatanRealisasi = trim((string)($data['catatan_realisasi'] ?? ($old['catatan_realisasi'] ?? '')));
+    $buktiBeliFile = trim((string)($data['bukti_beli_file'] ?? ''));
+    if ($buktiBeliFile === '') {
+        $buktiBeliFile = (string)($old['bukti_beli_file'] ?? '');
+    }
+
+    $fotoBarangFile = trim((string)($data['foto_barang_file'] ?? ''));
+    if ($fotoBarangFile === '') {
+        $fotoBarangFile = (string)($old['foto_barang_file'] ?? '');
+    }
+
+    $status = !empty($data['status']) ? trim((string)$data['status']) : 'Selesai Dibeli';
+
+    try {
+        $st = db()->prepare("
+            UPDATE memo_pengajuan_inventaris SET
+                tanggal_beli = ?,
+                biaya_realisasi = ?,
+                bukti_beli_file = ?,
+                foto_barang_file = ?,
+                catatan_realisasi = ?,
+                status = ?
+            WHERE id = ?
+        ");
+        $st->execute([
+            $tanggalBeli,
+            $biayaRealisasi,
+            $buktiBeliFile,
+            $fotoBarangFile,
+            $catatanRealisasi,
+            $status,
+            $id
+        ]);
+
+        return [
+            'success' => true,
+            'id' => $id,
+            'bukti_beli_file' => $buktiBeliFile,
+            'foto_barang_file' => $fotoBarangFile
+        ];
+    } catch (Throwable $e) {
+        return ['success' => false, 'error' => 'Database error: ' . $e->getMessage()];
+    }
 }
