@@ -94,6 +94,18 @@ $head = '
   padding: 4px 10px;
   border-radius: 50px;
 }
+#modalMemoInternal .modal-dialog {
+  max-height: calc(100vh - 2rem);
+}
+#modalMemoInternal .modal-content {
+  max-height: calc(100vh - 2rem);
+  display: flex;
+  flex-direction: column;
+}
+#modalMemoInternal .modal-body {
+  overflow-y: auto !important;
+  max-height: calc(100vh - 200px);
+}
 </style>
 ';
 
@@ -243,8 +255,12 @@ $body .= '
 <!-- MODAL: FORM PEMBUATAN / EDIT MEMO INTERNAL -->
 <div class="modal fade" id="modalMemoInternal" tabindex="-1" aria-labelledby="modalMemoLabel" aria-hidden="true">
   <div class="modal-dialog modal-lg modal-dialog-scrollable">
-    <div class="modal-content border-0 shadow-lg" style="border-radius: 16px;">
-      <div class="modal-header bg-dark text-white">
+    <form method="post" action="'.e(module_url('memo_pengajuan.php')).'" class="modal-content border-0 shadow-lg" style="border-radius: 16px;">
+      <input type="hidden" name="_csrf" value="'.e(csrf_token()).'">
+      <input type="hidden" name="action" value="save_memo">
+      <input type="hidden" name="id" id="memoFormId" value="0">
+
+      <div class="modal-header bg-dark text-white flex-shrink-0">
         <div>
           <h5 class="modal-title d-flex align-items-center gap-2" id="modalMemoLabel">
             <i class="bi bi-file-earmark-text-fill text-warning"></i> Form Memo Internal Pengajuan Inventaris
@@ -254,12 +270,7 @@ $body .= '
         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
 
-      <form method="post" action="'.e(module_url('memo_pengajuan.php')).'">
-        <input type="hidden" name="_csrf" value="'.e(csrf_token()).'">
-        <input type="hidden" name="action" value="save_memo">
-        <input type="hidden" name="id" id="memoFormId" value="0">
-
-        <div class="modal-body p-4">
+      <div class="modal-body p-4 custom-scrollbar">
           <div class="row g-3">
             <div class="col-md-6">
               <label class="form-label text-uppercase fw-bold text-muted small" style="font-size:0.72rem;">Kantor Cabang Pemohon <span class="text-danger">*</span></label>
@@ -371,14 +382,13 @@ $body .= '
           </div>
         </div>
 
-        <div class="modal-footer bg-light d-flex justify-content-between">
+        <div class="modal-footer bg-light d-flex justify-content-between flex-shrink-0">
           <button type="button" class="btn btn-secondary px-3" data-bs-dismiss="modal">Batal</button>
           <button type="submit" class="btn btn-primary px-4 fw-bold">
             <i class="bi bi-save me-1"></i> Simpan Dokumen Memo
           </button>
         </div>
       </form>
-    </div>
   </div>
 </div>
 ';
