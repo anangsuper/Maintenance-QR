@@ -580,9 +580,7 @@ $body = '
 
 '.$errorHtml.'
 
-$formAction = htmlspecialchars($_SERVER['REQUEST_URI'] ?? '', ENT_QUOTES, 'UTF-8');
-
-<form method="post" action="'.$formAction.'">
+<form method="post">
   <input type="hidden" name="_csrf" value="'.e(csrf_token()).'">
   <input type="hidden" name="asset_type" value="'.e($selectedType).'">
 
