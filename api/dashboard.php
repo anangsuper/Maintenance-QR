@@ -1317,15 +1317,6 @@ $body = '
     <p class="text-secondary small mb-0">'.$headerDesc.'</p>
   </div>
   <div class="d-flex align-items-center gap-2 flex-wrap">
-    '.(!$isHrdOnly ? '
-    <div class="ops-header-badge" style="background:#ECFDF3; border:1px solid #A6F4C5; color:#16803C;">
-      <span class="status-dot operational"></span>
-      <span>Operasional Normal</span>
-    </div>
-    <div id="wsStatusBadge" class="ops-header-badge" style="background:#ECFDF3; border:1px solid #A6F4C5; color:#16803C; cursor: pointer;" title="Status Koneksi Real-Time WebSocket">
-      <span id="wsStatusDot" class="status-dot operational"></span>
-      <span id="wsStatusText"><i class="bi bi-broadcast me-1"></i>WebSocket Live</span>
-    </div>' : '').'
     <form method="get" class="d-flex align-items-center gap-2">
       <select name="bulan" class="form-select form-select-sm" style="width: 120px;" onchange="this.form.submit()">';
 for ($m = 1; $m <= 12; $m++) {
