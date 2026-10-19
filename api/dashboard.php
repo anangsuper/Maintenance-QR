@@ -1417,28 +1417,37 @@ $headerTechLabel = $isHrdOnly ? 'PENGELOLAAN SARANA PRASARANA' : 'BANKING IT OPE
 $headerTitle = $isHrdOnly ? 'Dashboard Inventaris &amp; Sarana Prasarana' : 'Dashboard IT Operations';
 $headerDesc = $isHrdOnly ? 'Pusat pengelolaan inventaris fisik, memo pengajuan pengadaan, dan cetak kartu label BPR Mitratama Arthabuana.' : 'Pusat komando pemeliharaan aset IT, audit berkala, dan manajemen cetak label kartu inventaris.';
 
-// Period Filter Form (Clean Glass Component terintegrasi di Hero Banner)
-$periodFilterFormHtml = '
-<form method="get" class="d-inline-flex align-items-center gap-1.5 m-0">
-  <div class="input-group input-group-sm" style="max-width: 235px;">
-    <span class="input-group-text bg-white bg-opacity-10 text-white border-0 py-1 px-2" style="font-size:0.75rem;"><i class="bi bi-calendar3"></i></span>
-    <select name="bulan" class="form-select form-select-sm bg-dark text-white border-secondary border-opacity-25" style="font-size:0.78rem; width: 110px;" onchange="this.form.submit()">';
-for ($m = 1; $m <= 12; $m++) {
-    $periodFilterFormHtml .= '<option value="'.$m.'"'.($m === $month ? ' selected' : '').'>'.$monthNames[$m].'</option>';
-}
-$periodFilterFormHtml .= '
-    </select>
-    <select name="tahun" class="form-select form-select-sm bg-dark text-white border-secondary border-opacity-25" style="font-size:0.78rem; width: 80px;" onchange="this.form.submit()">';
-for ($y = date('Y') - 1; $y <= date('Y') + 1; $y++) {
-    $periodFilterFormHtml .= '<option value="'.$y.'"'.($y === $year ? ' selected' : '').'>'.$y.'</option>';
-}
-$periodFilterFormHtml .= '
-    </select>
+// Period Filter Toolbar (Clean Minimalist White Card, High Contrast, Sangat Jelas & Rapi)
+$periodFilterBarHtml = '
+<div class="d-flex flex-column flex-sm-row justify-content-between align-items-sm-center gap-2 mb-4 bg-white p-2.5 px-3 rounded-3 border shadow-xs">
+  <div class="d-flex align-items-center gap-2">
+    <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-2.5 py-1 font-monospace fw-bold" style="font-size:0.72rem; letter-spacing:0.04em; border-radius:6px;">PERIODE AUDIT</span>
+    <span class="text-dark fw-bold small">'.$monthNames[$month].' '.$year.'</span>
+    <span class="text-muted small d-none d-md-inline">· Pemeliharaan aset &amp; kepatuhan cabang</span>
   </div>
-  <input type="hidden" name="cabang" value="'.$cabangId.'">
-  '.($activeTab ? '<input type="hidden" name="tab" value="'.e($activeTab).'">' : '').'
-  <a href="'.e(module_url('dashboard.php', ['bulan'=>$month,'tahun'=>$year,'cabang'=>$cabangId,'refresh'=>1])).'" class="btn btn-sm btn-glass px-2.5 py-1" title="Segarkan Data Google Sheets"><i class="bi bi-arrow-clockwise"></i></a>
-</form>';
+  <form method="get" class="d-flex align-items-center gap-2 m-0 flex-wrap flex-sm-nowrap">
+    <div class="input-group input-group-sm shadow-xs">
+      <span class="input-group-text bg-light text-secondary border-end-0" style="font-size:0.8rem;"><i class="bi bi-calendar3"></i></span>
+      <select name="bulan" class="form-select border-start-0 fw-semibold text-dark" style="min-width: 140px; font-size:0.82rem;" onchange="this.form.submit()">';
+for ($m = 1; $m <= 12; $m++) {
+    $periodFilterBarHtml .= '<option value="'.$m.'"'.($m === $month ? ' selected' : '').'>'.$monthNames[$m].'</option>';
+}
+$periodFilterBarHtml .= '
+      </select>
+      <select name="tahun" class="form-select fw-semibold text-dark" style="min-width: 95px; font-size:0.82rem;" onchange="this.form.submit()">';
+for ($y = date('Y') - 1; $y <= date('Y') + 1; $y++) {
+    $periodFilterBarHtml .= '<option value="'.$y.'"'.($y === $year ? ' selected' : '').'>'.$y.'</option>';
+}
+$periodFilterBarHtml .= '
+      </select>
+    </div>
+    <input type="hidden" name="cabang" value="'.$cabangId.'">
+    '.($activeTab ? '<input type="hidden" name="tab" value="'.e($activeTab).'">' : '').'
+    <a href="'.e(module_url('dashboard.php', ['bulan'=>$month,'tahun'=>$year,'cabang'=>$cabangId,'refresh'=>1])).'" class="btn btn-sm btn-light border text-secondary shadow-xs px-2.5" title="Segarkan Data Google Sheets">
+      <i class="bi bi-arrow-clockwise"></i>
+    </a>
+  </form>
+</div>';
 
 $body = '
 <!-- Flash Messages -->
@@ -1551,7 +1560,6 @@ if (is_hrd() && !is_admin()) {
           <p>'.$roleSub.'</p>
         </div>
         <div class="header-actions d-flex flex-wrap align-items-center justify-content-start justify-content-lg-end gap-2 flex-shrink-0">
-          '.$periodFilterFormHtml.'
           '.(is_it() ? '<a href="'.e(module_url('scanner.php')).'" class="btn-solid-cta"><i class="bi bi-qr-code-scan"></i> Mulai Scan QR</a>' : '').'
           <button type="button" class="btn-glass" data-bs-toggle="modal" data-bs-target="#modalPanduanAplikasi">
             <i class="bi bi-journal-text"></i> Panduan Alur
@@ -1560,6 +1568,9 @@ if (is_hrd() && !is_admin()) {
         </div>
       </div>
     </div>';
+
+    // Toolbar Filter Periode Pemeriksaan (Bulan & Tahun) - Jelas, Bersih, dan Mudah Diakses
+    $body .= $periodFilterBarHtml;
 
     // TOP KPI METRICS LENGKAP IT OPERATIONS & MAINTENANCE
     $body .= '
