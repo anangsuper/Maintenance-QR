@@ -186,24 +186,34 @@ function resolve_kode_cabang_memo(string $cabangNama): string {
     return 'KC';
 }
 
-function generate_nomor_memo(string $cabangNama = 'Batulicin'): string {
+function get_next_memo_sequence(?int $year = null): int {
+    ensure_memo_schema();
+    $y = $year ?: (int)date('Y');
+    if (!is_google_cloud_mode()) {
+        try {
+            $st = db()->query("
+                SELECT MAX(CAST(SUBSTRING_INDEX(nomor_memo, '/', 1) AS UNSIGNED)) as max_num 
+                FROM memo_pengajuan_inventaris 
+                WHERE YEAR(tanggal_memo) = {$y} OR nomor_memo LIKE '%/{$y}'
+            ");
+            $maxNum = $st ? (int)$st->fetchColumn() : 0;
+            return max($maxNum + 1, 1);
+        } catch (Throwable $e) {
+            return 1;
+        }
+    }
+    return 1;
+}
+
+function generate_nomor_memo(string $cabangNama = 'Batulicin', ?int $customSeq = null): string {
     ensure_memo_schema();
     $m = (int)date('n');
     $y = (int)date('Y');
     $romawi = romawi_bulan_memo($m);
     $kdCabang = resolve_kode_cabang_memo($cabangNama);
 
-    $countThisYear = 1;
-    if (!is_google_cloud_mode()) {
-        try {
-            $st = db()->query("SELECT COUNT(*) FROM memo_pengajuan_inventaris WHERE YEAR(tanggal_memo) = {$y}");
-            $countThisYear = ($st ? (int)$st->fetchColumn() : 0) + 1;
-        } catch (Throwable $e) {
-            $countThisYear = 1;
-        }
-    }
-
-    $numStr = str_pad((string)$countThisYear, 3, '0', STR_PAD_LEFT);
+    $seq = $customSeq !== null ? $customSeq : get_next_memo_sequence($y);
+    $numStr = str_pad((string)$seq, 3, '0', STR_PAD_LEFT);
     return "{$numStr}/INT/MI/OPS/BANK-MITRA.{$kdCabang}/{$romawi}/{$y}";
 }
 
@@ -266,6 +276,14 @@ function save_memo_pengajuan(array $data): array {
     $nomor = trim((string)($data['nomor_memo'] ?? ''));
     if ($nomor === '') {
         $nomor = generate_nomor_memo($cabang);
+    } elseif ($id === 0 && !is_google_cloud_mode()) {
+        try {
+            $stCheck = db()->prepare("SELECT COUNT(*) FROM memo_pengajuan_inventaris WHERE nomor_memo = ?");
+            $stCheck->execute([$nomor]);
+            if ((int)$stCheck->fetchColumn() > 0) {
+                $nomor = generate_nomor_memo($cabang);
+            }
+        } catch (Throwable $ignore) {}
     }
     $tgl = trim((string)($data['tanggal_memo'] ?? date('Y-m-d')));
     $kepada = trim((string)($data['kepada'] ?? 'Direksi'));

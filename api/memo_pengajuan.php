@@ -686,8 +686,12 @@ $body .= '
 </div>
 ';
 
+$nextSeqNum = get_next_memo_sequence();
+$nextSeqStr = str_pad((string)$nextSeqNum, 3, '0', STR_PAD_LEFT);
+
 $extraScript = '
 <script>
+const defaultNextSeq = "'.e($nextSeqStr).'";
 function terbilangJs(angka) {
   angka = Math.abs(parseInt(angka) || 0);
   const huruf = ["", "Satu", "Dua", "Tiga", "Empat", "Lima", "Enam", "Tujuh", "Delapan", "Sembilan", "Sepuluh", "Sebelas"];
@@ -741,7 +745,7 @@ function getRomawiMonth(m) {
   return r[m] || "I";
 }
 
-function autoUpdateNomorMemo() {
+function autoUpdateNomorMemo(forceNext = false) {
   const cabangSel = document.getElementById("memoCabangSelect");
   const cabangName = cabangSel ? cabangSel.value : "Batulicin";
   const code = resolveBranchCode(cabangName);
@@ -752,12 +756,14 @@ function autoUpdateNomorMemo() {
 
   document.getElementById("memoDari").value = "Kepala Cabang Kantor " + cabangName;
 
-  // Pertahankan nomor urut jika sudah ada
+  // Gunakan urutan berikutnya jika baru, atau pertahankan jika sudah ada
   const currentNomor = document.getElementById("memoNomor").value;
-  let numSeq = "001";
-  const match = currentNomor.match(/^(\\d+)/);
-  if (match) {
-    numSeq = match[1];
+  let numSeq = typeof defaultNextSeq !== "undefined" ? defaultNextSeq : "001";
+  if (!forceNext && currentNomor) {
+    const match = currentNomor.match(/^(\d+)/);
+    if (match) {
+      numSeq = match[1];
+    }
   }
 
   document.getElementById("memoNomor").value = `${numSeq}/INT/MI/OPS/BANK-MITRA.${code}/${romawi}/${year}`;
@@ -765,6 +771,7 @@ function autoUpdateNomorMemo() {
 
 function openCreateMemoModal() {
   document.getElementById("memoFormId").value = "0";
+  document.getElementById("memoNomor").value = "";
   document.getElementById("memoPerihal").value = "";
   document.getElementById("memoIsi").value = "Sehubungan dengan adanya pengadaan inventaris/fasilitas, maka kami mengajukan permohonan pengajuan untuk biaya tersebut.";
   document.getElementById("memoEstimasi").value = "";
@@ -781,7 +788,7 @@ function openCreateMemoModal() {
 
   document.getElementById("modalMemoLabel").innerHTML = \'<i class="bi bi-file-earmark-plus-fill text-warning"></i> Buat Memo Internal Pengajuan Baru\';
 
-  autoUpdateNomorMemo();
+  autoUpdateNomorMemo(true);
 
   const modalEl = document.getElementById("modalMemoInternal");
   if (modalEl) {
