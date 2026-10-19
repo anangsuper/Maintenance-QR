@@ -873,11 +873,21 @@ function delete_asset(int $id): array {
 
     // MySQL Mode
     try {
-        $st = db()->prepare("DELETE FROM asset_qr_tokens WHERE asset_id = ?");
-        $st->execute([$id]);
-
-        $st = db()->prepare("DELETE FROM maintenance_sessions WHERE asset_id = ?");
-        $st->execute([$id]);
+        $relatedTables = [
+            'asset_qr_tokens',
+            'maintenance_findings',
+            'maintenance_checklists',
+            'maintenance_scan',
+            'asset_mutations'
+        ];
+        foreach ($relatedTables as $tbl) {
+            try {
+                $st = db()->prepare("DELETE FROM {$tbl} WHERE asset_id = ?");
+                $st->execute([$id]);
+            } catch (Throwable $ignored) {
+                // Lanjutkan jika tabel opsional belum ada
+            }
+        }
 
         $st = db()->prepare("DELETE FROM assets WHERE id = ?");
         $st->execute([$id]);
