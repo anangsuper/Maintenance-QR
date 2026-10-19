@@ -74,6 +74,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
         header('Location: ' . module_url('memo_pengajuan.php'));
         exit;
+    } elseif ($action === 'upload_lampiran_only') {
+        $memoId = (int)($_POST['memo_id'] ?? 0);
+        if ($memoId > 0 && !empty($_FILES['lampiran_file']['tmp_name'])) {
+            $uploadedPath = upload_memo_lampiran('lampiran_file');
+            if ($uploadedPath) {
+                try {
+                    $st = db()->prepare("UPDATE memo_pengajuan_inventaris SET lampiran_file = ? WHERE id = ?");
+                    $st->execute([$uploadedPath, $memoId]);
+                    $_SESSION['flash'] = 'Berkas lampiran / surat penawaran berhasil diunggah.';
+                } catch (Throwable $e) {
+                    $error = 'Gagal menyimpan lampiran: ' . $e->getMessage();
+                }
+            } else {
+                $error = 'Format file tidak didukung atau ukuran melebihi batas (maks. 25MB).';
+            }
+        } else {
+            $error = 'Silakan pilih file berkas terlebih dahulu.';
+        }
+        header('Location: ' . module_url('memo_pengajuan.php'));
+        exit;
     }
 }
 
@@ -240,6 +260,21 @@ if (empty($allMemos)) {
             $realisasiBiayaHtml = '<div class="small text-success fw-bold mt-1" style="font-size:0.75rem;"><i class="bi bi-check2-circle me-1"></i>Riil: Rp. '.number_format((float)$m['biaya_realisasi'], 0, ',', '.').',-</div>';
         }
 
+        $berkasBtn = '';
+        $setujuiBtn = '';
+        if ($st === 'Diajukan') {
+            $hasLampiran = !empty($m['lampiran_file']);
+            $berkasBtn = '
+              <button type="button" class="btn btn-sm '.($hasLampiran ? 'btn-outline-secondary bg-white' : 'btn-primary text-white fw-bold').' d-inline-flex align-items-center gap-1 px-2.5 shadow-xs text-nowrap" style="font-size:0.75rem;" onclick=\'openQuickUploadModal('.$memoJson.')\' title="'.($hasLampiran ? 'Lihat / Ganti Berkas Surat Penawaran' : 'Upload Berkas Surat Penawaran / Brosur').'">
+                <i class="bi bi-paperclip"></i> '.($hasLampiran ? 'Berkas' : '+ Berkas').'
+              </button>';
+
+            $setujuiBtn = '
+              <button type="button" class="btn btn-sm btn-outline-success bg-white fw-bold d-inline-flex align-items-center gap-1 px-2.5 shadow-xs text-nowrap" style="font-size:0.75rem;" onclick=\'quickApproveMemo('.$mid.', "'.e($nomor).'")\' title="Setujui Memo ini agar siap dibeli">
+                <i class="bi bi-check-circle-fill text-success"></i> Setujui
+              </button>';
+        }
+
         $realisasiBtn = '';
         if (in_array($st, ['Disetujui', 'Selesai Dibeli'], true)) {
             $hasNota = !empty($m['bukti_beli_file']);
@@ -300,6 +335,8 @@ if (empty($allMemos)) {
           </td>
           <td class="text-end text-nowrap">
             <div class="d-inline-flex align-items-center justify-content-end gap-1.5 flex-nowrap">
+              '.$berkasBtn.'
+              '.$setujuiBtn.'
               '.$daftarkanKartuBtn.'
               '.$realisasiBtn.'
               <div class="btn-group btn-group-sm shadow-xs">
@@ -348,6 +385,50 @@ $body = '
         <a href="'.e(module_url('inventaris_mutation.php')).'" class="btn btn-outline-secondary fw-semibold btn-sm px-3 bg-white d-inline-flex align-items-center gap-1.5">
           <i class="bi bi-arrow-left-right"></i> Mutasi Barang
         </a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SOP Alur Sistematis Pengadaan Inventaris -->
+<div class="card mb-4 border-0 shadow-sm bg-white" style="border-radius: 12px; border-left: 4px solid #2563EB !important;">
+  <div class="card-body py-3 px-4">
+    <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-2">
+      <span class="text-uppercase fw-bold text-primary small" style="font-size:0.75rem; letter-spacing: 0.5px;">
+        <i class="bi bi-diagram-3-fill me-1"></i> Standar Alur Sistematis Pengadaan Inventaris Bank Mitra
+      </span>
+      <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-2 py-1" style="font-size:0.72rem;">5 Tahapan Terintegrasi</span>
+    </div>
+    <div class="row g-2 text-center small pt-1">
+      <div class="col-6 col-md">
+        <div class="p-2 rounded bg-light border h-100">
+          <div class="fw-bold text-dark mb-0.5"><span class="badge bg-secondary me-1">1</span> Pengajuan Memo</div>
+          <div class="text-muted" style="font-size:0.7rem;">Cabang input permohonan &amp; lampirkan penawaran</div>
+        </div>
+      </div>
+      <div class="col-6 col-md">
+        <div class="p-2 rounded bg-light border h-100">
+          <div class="fw-bold text-dark mb-0.5"><span class="badge bg-warning text-dark me-1">2</span> Persetujuan</div>
+          <div class="text-muted" style="font-size:0.7rem;">Diverifikasi Umum &amp; disetujui Direksi Operasional</div>
+        </div>
+      </div>
+      <div class="col-6 col-md">
+        <div class="p-2 rounded bg-light border h-100">
+          <div class="fw-bold text-dark mb-0.5"><span class="badge bg-info text-dark me-1">3</span> Pembelian &amp; Nota</div>
+          <div class="text-muted" style="font-size:0.7rem;">Barang dibeli, upload nota toko &amp; foto fisik</div>
+        </div>
+      </div>
+      <div class="col-6 col-md">
+        <div class="p-2 rounded bg-light border h-100">
+          <div class="fw-bold text-dark mb-0.5"><span class="badge bg-primary me-1">4</span> Cetak BAST</div>
+          <div class="text-muted" style="font-size:0.7rem;">Pemeriksaan kondisi fisik barang baru &amp; BAST</div>
+        </div>
+      </div>
+      <div class="col-6 col-md">
+        <div class="p-2 rounded bg-light border h-100">
+          <div class="fw-bold text-dark mb-0.5"><span class="badge bg-success me-1">5</span> Masuk Inventaris</div>
+          <div class="text-muted" style="font-size:0.7rem;">Otomatis terdaftar ke Kartu Inventaris &amp; QR Code</div>
+        </div>
       </div>
     </div>
   </div>
@@ -684,6 +765,60 @@ $body .= '
     </form>
   </div>
 </div>
+
+<!-- MODAL: QUICK UPLOAD BERKAS PENAWARAN / LAMPIRAN -->
+<div class="modal fade" id="modalQuickUpload" tabindex="-1" aria-labelledby="modalQuickUploadLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <form method="post" action="'.e(module_url('memo_pengajuan.php')).'" enctype="multipart/form-data" class="modal-content border-0 shadow-lg" style="border-radius: 16px;">
+      <input type="hidden" name="_csrf" value="'.e(csrf_token()).'">
+      <input type="hidden" name="action" value="upload_lampiran_only">
+      <input type="hidden" name="memo_id" id="quickUploadMemoId" value="0">
+
+      <div class="modal-header bg-primary text-white flex-shrink-0">
+        <div>
+          <h5 class="modal-title d-flex align-items-center gap-2 mb-0" id="modalQuickUploadLabel">
+            <i class="bi bi-paperclip"></i> Upload Berkas / Surat Penawaran
+          </h5>
+          <p class="text-white text-opacity-85 small mb-0 mt-1" style="font-size:0.75rem;">Lampirkan surat penawaran harga toko, brosur spesifikasi, atau foto barang lama.</p>
+        </div>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+
+      <div class="modal-body p-4">
+        <div class="mb-3">
+          <label class="form-label text-uppercase fw-bold text-muted small" style="font-size:0.72rem;">Dokumen Memo Terkait</label>
+          <div id="quickUploadMemoTitle" class="fw-bold text-dark small bg-light p-2.5 rounded border"></div>
+        </div>
+
+        <div class="p-3 rounded-3 bg-light border">
+          <label class="form-label text-uppercase fw-bold text-dark small mb-1" style="font-size:0.75rem;">
+            <i class="bi bi-file-earmark-arrow-up me-1 text-primary"></i>Pilih File Berkas (PDF / Gambar) <span class="text-danger">*</span>
+          </label>
+          <input type="file" name="lampiran_file" id="quickUploadFileInput" class="form-control" accept=".pdf,image/*" required>
+          <div class="form-text text-muted small mt-1" style="font-size:0.72rem;">
+            Format yang didukung: <strong>PDF, JPG, JPEG, PNG, WEBP</strong> (Maksimal 25MB).
+          </div>
+          <div id="quickUploadCurrentFile" class="mt-2 d-none"></div>
+        </div>
+      </div>
+
+      <div class="modal-footer bg-light d-flex justify-content-between flex-shrink-0">
+        <button type="button" class="btn btn-secondary px-3" data-bs-dismiss="modal">Batal</button>
+        <button type="submit" class="btn btn-primary px-4 fw-bold">
+          <i class="bi bi-cloud-arrow-up-fill me-1"></i> Simpan &amp; Unggah Berkas
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- FORM HIDDEN: QUICK APPROVE STATUS -->
+<form id="formQuickApprove" method="post" action="'.e(module_url('memo_pengajuan.php')).'" class="d-none">
+  <input type="hidden" name="_csrf" value="'.e(csrf_token()).'">
+  <input type="hidden" name="action" value="update_status">
+  <input type="hidden" name="memo_id" id="quickApproveMemoId" value="0">
+  <input type="hidden" name="new_status" value="Disetujui">
+</form>
 ';
 
 $nextSeqNum = get_next_memo_sequence();
@@ -883,6 +1018,39 @@ function openRealisasiModal(data) {
   const modalEl = document.getElementById("modalUploadRealisasi");
   if (modalEl) {
     bootstrap.Modal.getOrCreateInstance(modalEl).show();
+  }
+}
+
+function openQuickUploadModal(data) {
+  document.getElementById("quickUploadMemoId").value = data.id || 0;
+  document.getElementById("quickUploadMemoTitle").innerText = (data.nomor_memo || "") + " - " + (data.perihal || "");
+  const curBox = document.getElementById("quickUploadCurrentFile");
+  const fileInput = document.getElementById("quickUploadFileInput");
+  if (fileInput) fileInput.value = "";
+
+  if (curBox) {
+    if (data.lampiran_file) {
+      const isPdf = (data.lampiran_file || "").toLowerCase().endsWith(".pdf");
+      const icon = isPdf ? "bi-file-earmark-pdf-fill text-danger" : "bi-image-fill text-primary";
+      const fileUrl = (data.lampiran_file.startsWith("http") || data.lampiran_file.startsWith("/")) ? data.lampiran_file : ("" + data.lampiran_file);
+      curBox.classList.remove("d-none");
+      curBox.innerHTML = \'<div class="d-flex align-items-center justify-content-between p-2 rounded bg-white border mt-2 small"><div><i class="bi \' + icon + \' me-1"></i> <a href="\' + fileUrl + \'" target="_blank" class="fw-bold text-decoration-none">Lihat Berkas Aktif</a></div><span class="badge bg-success-subtle text-success">Sudah Ada Berkas</span></div>\';
+    } else {
+      curBox.classList.add("d-none");
+      curBox.innerHTML = "";
+    }
+  }
+
+  const modalEl = document.getElementById("modalQuickUpload");
+  if (modalEl) {
+    bootstrap.Modal.getOrCreateInstance(modalEl).show();
+  }
+}
+
+function quickApproveMemo(id, nomor) {
+  if (confirm("Apakah Anda yakin ingin MENYETUJUI Memo internal nomor " + nomor + "?\\n\\nSetelah disetujui, Bagian Umum / Cabang dapat langsung merealisasikan pembelian dan mengunggah nota toko.")) {
+    document.getElementById("quickApproveMemoId").value = id;
+    document.getElementById("formQuickApprove").submit();
   }
 }
 </script>
