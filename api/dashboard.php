@@ -1312,27 +1312,29 @@ $body = '
 <!-- Page Header -->
 <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3 mb-3">
   <div>
-    <div class="tech-label mb-1">'.$headerTechLabel.'</div>
-    <h1 class="h3 mb-1 fw-bold text-dark">'.$headerTitle.'</h1>
-    <p class="text-secondary small mb-0">'.$headerDesc.'</p>
+    <div class="tech-label mb-0.5">'.$headerTechLabel.'</div>
+    <h1 class="h4 mb-0 fw-bold text-dark">'.$headerTitle.'</h1>
   </div>
   <div class="d-flex align-items-center gap-2 flex-wrap">
     <form method="get" class="d-flex align-items-center gap-2">
-      <select name="bulan" class="form-select form-select-sm" style="width: 120px;" onchange="this.form.submit()">';
+      <div class="input-group input-group-sm shadow-xs">
+        <span class="input-group-text bg-white text-muted border-end-0" style="font-size:0.75rem;"><i class="bi bi-calendar3"></i></span>
+        <select name="bulan" class="form-select border-start-0" style="width: 120px; font-size:0.78rem;" onchange="this.form.submit()">';
 for ($m = 1; $m <= 12; $m++) {
     $body .= '<option value="'.$m.'"'.($m === $month ? ' selected' : '').'>'.$monthNames[$m].'</option>';
 }
 $body .= '
-      </select>
-      <select name="tahun" class="form-select form-select-sm" style="width: 90px;" onchange="this.form.submit()">';
+        </select>
+        <select name="tahun" class="form-select" style="width: 85px; font-size:0.78rem;" onchange="this.form.submit()">';
 for ($y = date('Y') - 1; $y <= date('Y') + 1; $y++) {
     $body .= '<option value="'.$y.'"'.($y === $year ? ' selected' : '').'>'.$y.'</option>';
 }
 $body .= '
-      </select>
+        </select>
+      </div>
       <input type="hidden" name="cabang" value="'.$cabangId.'">
       '.($activeTab ? '<input type="hidden" name="tab" value="'.e($activeTab).'">' : '').'
-      <a href="'.e(module_url('dashboard.php', ['bulan'=>$month,'tahun'=>$year,'cabang'=>$cabangId,'refresh'=>1])).'" class="btn btn-sm btn-light border" title="Segarkan Data Google Sheets"><i class="bi bi-arrow-clockwise"></i></a>
+      <a href="'.e(module_url('dashboard.php', ['bulan'=>$month,'tahun'=>$year,'cabang'=>$cabangId,'refresh'=>1])).'" class="btn btn-sm btn-white bg-white border shadow-xs" title="Segarkan Data Google Sheets"><i class="bi bi-arrow-clockwise"></i></a>
     </form>
   </div>
 </div>';
@@ -1425,29 +1427,35 @@ if (is_hrd() && !is_admin()) {
     }
 
     $body .= '
-    <div class="card border-0 mb-4 overflow-hidden" style="background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(240, 247, 255, 0.95) 100%); border: 1px solid rgba(191, 219, 254, 0.8) !important; border-left: 5px solid #2563eb !important; border-radius: 16px; box-shadow: 0 10px 25px -5px rgba(37, 99, 235, 0.08), 0 8px 10px -6px rgba(37, 99, 235, 0.04);">
+    <div class="card border-0 mb-4 overflow-hidden" style="background: linear-gradient(135deg, #ffffff 0%, #f4f8ff 100%); border: 1px solid #c7d2fe !important; border-left: 5px solid #2563eb !important; border-radius: 14px; box-shadow: 0 4px 16px rgba(37, 99, 235, 0.06);">
       <div class="card-body p-3 p-md-4">
-        <div class="d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-3">
-          <div>
-            <div class="d-flex align-items-center gap-2 mb-1">
-              <span class="badge bg-primary px-2.5 py-1" style="font-size: 0.7rem; letter-spacing: 0.05em; border-radius: 6px;">'.$roleDisplay.'</span>
+        <div class="row align-items-center g-3">
+          <div class="col-xl-6 col-lg-5 col-12">
+            <div class="d-flex align-items-center gap-2 mb-1.5">
+              <span class="badge bg-primary px-2.5 py-1 font-monospace shadow-xs" style="font-size: 0.70rem; letter-spacing: 0.04em; border-radius: 6px;">'.$roleDisplay.'</span>
               <span class="text-muted small">| Halo, <strong>'.e($_SESSION['nama'] ?? 'Petugas').'</strong></span>
             </div>
-            <h4 class="fw-bold text-dark mb-1">'.$roleTitle.'</h4>
-            <p class="text-secondary small mb-0">'.$roleSub.'</p>
+            <h4 class="fw-bold text-dark mb-1" style="font-size: 1.15rem; letter-spacing: -0.01em;">'.$roleTitle.'</h4>
+            <p class="text-secondary small mb-0" style="font-size: 0.82rem; line-height: 1.45;">'.$roleSub.'</p>
           </div>
-          <div class="d-flex flex-wrap gap-2">
-            '.(is_it() ? '<a href="'.e(module_url('scanner.php')).'" class="btn btn-primary fw-bold btn-sm px-3 shadow-sm"><i class="bi bi-qr-code-scan me-1.5"></i> Mulai Scan QR</a>' : '').'
-            <a href="'.e(module_url('dashboard.php', ['tab' => 'komputer', 'bulan' => $month, 'tahun' => $year, 'cabang' => $cabangId])).'" class="btn btn-outline-primary fw-semibold btn-sm px-3 bg-white">
-              <i class="bi bi-pc-display me-1.5"></i> Daftar PC ('.$totalAll.')
-            </a>
-            <a href="'.e(module_url('dashboard.php', ['tab' => 'temuan', 'bulan' => $month, 'tahun' => $year, 'cabang' => $cabangId])).'" class="btn btn-outline-danger fw-semibold btn-sm px-3 bg-white">
-              <i class="bi bi-exclamation-triangle-fill me-1.5"></i> Temuan ('.$totalUnresolvedFindings.')
-            </a>
-            '.(is_admin_or_auditor() ? '<a href="'.e(module_url('audit_trail.php')).'" class="btn btn-outline-secondary fw-semibold btn-sm px-3 bg-white"><i class="bi bi-shield-check me-1.5"></i> Log Audit</a>' : '').'
-            <button type="button" class="btn btn-outline-info fw-semibold btn-sm px-3 bg-white text-dark" data-bs-toggle="modal" data-bs-target="#modalPanduanAplikasi">
-              <i class="bi bi-journal-text text-primary me-1.5"></i> Panduan Alur
-            </button>
+          <div class="col-xl-6 col-lg-7 col-12">
+            <div class="d-flex flex-column align-items-start align-items-lg-end gap-2">
+              <div class="d-flex flex-wrap align-items-center gap-2">
+                '.(is_it() ? '<a href="'.e(module_url('scanner.php')).'" class="btn btn-primary fw-bold btn-sm px-3 shadow-xs d-inline-flex align-items-center gap-1.5"><i class="bi bi-qr-code-scan"></i> Mulai Scan QR</a>' : '').'
+                <button type="button" class="btn btn-light border fw-semibold btn-sm px-3 shadow-xs d-inline-flex align-items-center gap-1.5 text-secondary" data-bs-toggle="modal" data-bs-target="#modalPanduanAplikasi">
+                  <i class="bi bi-journal-text text-primary"></i> Panduan Alur
+                </button>
+              </div>
+              <div class="btn-group btn-group-sm shadow-xs" role="group">
+                <a href="'.e(module_url('dashboard.php', ['tab' => 'komputer', 'bulan' => $month, 'tahun' => $year, 'cabang' => $cabangId])).'" class="btn btn-outline-primary bg-white fw-semibold px-3 '.($activeTab === 'komputer' ? 'active' : '').'">
+                  <i class="bi bi-pc-display me-1"></i> Daftar PC ('.$totalAll.')
+                </a>
+                <a href="'.e(module_url('dashboard.php', ['tab' => 'temuan', 'bulan' => $month, 'tahun' => $year, 'cabang' => $cabangId])).'" class="btn btn-outline-danger bg-white fw-semibold px-3 '.($activeTab === 'temuan' ? 'active' : '').'">
+                  <i class="bi bi-exclamation-triangle-fill me-1"></i> Temuan ('.$totalUnresolvedFindings.')
+                </a>
+                '.(is_admin_or_auditor() ? '<a href="'.e(module_url('audit_trail.php')).'" class="btn btn-outline-secondary bg-white fw-semibold px-3"><i class="bi bi-shield-check me-1"></i> Log Audit</a>' : '').'
+              </div>
+            </div>
           </div>
         </div>
       </div>
