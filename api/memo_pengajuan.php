@@ -499,7 +499,7 @@ $body = '
 </div>
 
 <!-- SOP Alur Sistematis Pengadaan Inventaris -->
-<div class="card mb-4 border-0 shadow-sm bg-white" style="border-radius: 12px; border-left: 4px solid #2563EB !important;">
+<div class="card mb-4 border shadow-xs bg-white" style="border-radius: 12px;">
   <div class="card-body py-3 px-4">
     <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-2">
       <span class="text-uppercase fw-bold text-primary small" style="font-size:0.75rem; letter-spacing: 0.5px;">
@@ -545,33 +545,33 @@ $body = '
 <!-- KPI Mini Stats -->
 <div class="row g-3 mb-4">
   <div class="col-sm-4 col-12">
-    <div class="card p-3 border-0 shadow-sm h-100" style="border-radius: 14px; border-left: 4px solid #3b82f6 !important;">
+    <div class="card p-3 border shadow-xs bg-white h-100" style="border-radius: 12px;">
       <div class="d-flex align-items-center justify-content-between">
         <div>
-          <div class="text-muted small fw-semibold text-uppercase" style="font-size:0.7rem;">Total Memo Tercatat</div>
-          <div class="fs-4 fw-bold text-dark mt-0.5">'.$totalCount.' Dokumen</div>
+          <div class="text-muted small fw-semibold text-uppercase" style="font-size:0.7rem; letter-spacing: 0.04em;">Total Memo Tercatat</div>
+          <div class="fs-4 fw-bold text-dark mt-0.5">'.$totalCount.' <span class="fs-6 fw-normal text-muted">Dokumen</span></div>
         </div>
         <div class="p-2.5 rounded-3 bg-primary-subtle text-primary fs-4"><i class="bi bi-journal-text"></i></div>
       </div>
     </div>
   </div>
   <div class="col-sm-4 col-12">
-    <div class="card p-3 border-0 shadow-sm h-100" style="border-radius: 14px; border-left: 4px solid #f59e0b !important;">
+    <div class="card p-3 border shadow-xs bg-white h-100" style="border-radius: 12px;">
       <div class="d-flex align-items-center justify-content-between">
         <div>
-          <div class="text-muted small fw-semibold text-uppercase" style="font-size:0.7rem;">Status Diajukan</div>
-          <div class="fs-4 fw-bold text-warning mt-0.5">'.$diajukanCount.' Memo</div>
+          <div class="text-muted small fw-semibold text-uppercase" style="font-size:0.7rem; letter-spacing: 0.04em;">Status Diajukan</div>
+          <div class="fs-4 fw-bold text-warning mt-0.5">'.$diajukanCount.' <span class="fs-6 fw-normal text-warning">Memo</span></div>
         </div>
         <div class="p-2.5 rounded-3 bg-warning-subtle text-warning fs-4"><i class="bi bi-hourglass-split"></i></div>
       </div>
     </div>
   </div>
   <div class="col-sm-4 col-12">
-    <div class="card p-3 border-0 shadow-sm h-100" style="border-radius: 14px; border-left: 4px solid #10b981 !important;">
+    <div class="card p-3 border shadow-xs bg-white h-100" style="border-radius: 12px;">
       <div class="d-flex align-items-center justify-content-between">
         <div>
-          <div class="text-muted small fw-semibold text-uppercase" style="font-size:0.7rem;">Disetujui / Selesai</div>
-          <div class="fs-4 fw-bold text-success mt-0.5">'.$disetujuiCount.' Memo</div>
+          <div class="text-muted small fw-semibold text-uppercase" style="font-size:0.7rem; letter-spacing: 0.04em;">Disetujui / Selesai</div>
+          <div class="fs-4 fw-bold text-success mt-0.5">'.$disetujuiCount.' <span class="fs-6 fw-normal text-success">Memo</span></div>
         </div>
         <div class="p-2.5 rounded-3 bg-success-subtle text-success fs-4"><i class="bi bi-check2-circle"></i></div>
       </div>
@@ -580,7 +580,7 @@ $body = '
 </div>
 
 <!-- Search & Filter Card -->
-<div class="card p-3 mb-4 border-0 shadow-sm" style="border-radius: 14px;">
+<div class="card p-3 mb-4 border shadow-xs bg-white" style="border-radius: 12px;">
   <form method="get" class="d-flex flex-wrap gap-2">
     <div class="input-group flex-grow-1">
       <span class="input-group-text bg-white border-end-0 text-muted"><i class="bi bi-search"></i></span>

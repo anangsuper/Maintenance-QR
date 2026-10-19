@@ -779,51 +779,49 @@ h1, h2, h3, h4, h5, h6,
 }
 
 /* Metric Cards - Symmetrical & High Elevation */
+/* Minimalist Clean Metric Cards */
 .card-metric {
-  padding: 22px 24px !important;
-  border-left: 4px solid var(--blue-corporate) !important;
-  border-radius: var(--radius-lg) !important;
+  padding: 18px 20px !important;
+  border: 1px solid #E2E8F0 !important;
+  border-left: 1px solid #E2E8F0 !important;
+  border-radius: 12px !important;
   display: flex !important;
   flex-direction: column !important;
   justify-content: space-between !important;
-  min-height: 116px !important;
+  min-height: 104px !important;
   position: relative !important;
   overflow: hidden !important;
   background: #FFFFFF !important;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04) !important;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
 }
 
 .card-metric::after {
-  content: "";
-  position: absolute;
-  top: 0;
-  right: 0;
-  width: 75px;
-  height: 75px;
-  background: radial-gradient(circle, rgba(37, 99, 235, 0.05) 0%, transparent 70%);
-  pointer-events: none;
+  display: none !important;
 }
 
 .card-metric:hover {
-  transform: translateY(-2px);
-  box-shadow: var(--shadow-hover) !important;
+  transform: translateY(-2px) !important;
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.08) !important;
+  border-color: #CBD5E1 !important;
 }
 
 .metric-value {
-  font-size: 1.95rem !important;
-  font-weight: 700 !important;
-  letter-spacing: -0.03em !important;
+  font-size: 1.75rem !important;
+  font-weight: 800 !important;
+  letter-spacing: -0.025em !important;
   font-feature-settings: "tnum" 1;
-  color: var(--text-primary);
+  color: #0F172A;
   line-height: 1.15;
 }
 
 .metric-label {
-  font-size: 0.73rem !important;
-  font-weight: 700 !important;
+  font-size: 0.72rem !important;
+  font-weight: 600 !important;
   text-transform: uppercase !important;
-  letter-spacing: 0.06em !important;
-  color: var(--text-secondary);
-  margin-top: 5px;
+  letter-spacing: 0.05em !important;
+  color: #64748B;
+  margin-top: 4px;
 }
 
 /* Luxury Button Standards */
@@ -1141,15 +1139,18 @@ h1, h2, h3, h4, h5, h6,
 
 /* ── Card Premium — elevasi saat hover ── */
 .card {
-  transition: box-shadow 0.25s cubic-bezier(.4,0,.2,1), transform 0.25s cubic-bezier(.4,0,.2,1), border-color 0.2s !important;
+  border: 1px solid #E2E8F0 !important;
+  border-radius: 12px !important;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.03) !important;
+  transition: box-shadow 0.2s ease, transform 0.2s ease, border-color 0.2s ease !important;
 }
 .card:hover {
-  box-shadow: 0 8px 28px rgba(15,23,42,0.11), 0 2px 8px rgba(15,23,42,0.05) !important;
-  border-color: #C7D7F0 !important;
+  box-shadow: 0 6px 18px rgba(15, 23, 42, 0.06) !important;
+  border-color: #CBD5E1 !important;
 }
 .card-metric:hover {
-  transform: translateY(-3px) !important;
-  box-shadow: 0 12px 32px rgba(15,23,42,0.13) !important;
+  transform: translateY(-2px) !important;
+  box-shadow: 0 6px 18px rgba(15, 23, 42, 0.07) !important;
 }
 
 /* ── Table — lebih bersih & readable ── */
