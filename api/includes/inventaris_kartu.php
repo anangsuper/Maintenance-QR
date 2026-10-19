@@ -824,9 +824,12 @@ function compress_and_save_uploaded_image(string $tmpPath, string $targetPath, i
                 imagedestroy($src);
                 imagedestroy($dst);
 
-                if ($saved && file_exists($targetPath)) {
+                if ($saved && file_exists($targetPath) && filesize($targetPath) > 0) {
                     @chmod($targetPath, 0666);
                     return true;
+                }
+                if (file_exists($targetPath) && filesize($targetPath) === 0) {
+                    @unlink($targetPath);
                 }
             }
         }
@@ -838,9 +841,12 @@ function compress_and_save_uploaded_image(string $tmpPath, string $targetPath, i
     } else {
         $ok = @copy($tmpPath, $targetPath);
     }
-    if ($ok && file_exists($targetPath)) {
+    if ($ok && file_exists($targetPath) && filesize($targetPath) > 0) {
         @chmod($targetPath, 0666);
         return true;
+    }
+    if (file_exists($targetPath) && filesize($targetPath) === 0) {
+        @unlink($targetPath);
     }
     return false;
 }
