@@ -1,0 +1,9 @@
+{
+  "redirects": [
+    {
+      "source": "/(.*)",
+      "destination": "http://192.168.88.163/$1",
+      "permanent": false
+    }
+  ]
+}
