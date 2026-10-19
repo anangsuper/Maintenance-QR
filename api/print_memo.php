@@ -249,13 +249,13 @@ body {
     <div style="text-indent: 35px; line-height: 1.65;">
       <?= $isi ?>
       <?php if ($totalNominal > 0): ?>
-        dengan estimasi sebesar <strong>Rp. <?= number_format($totalNominal, 0, ',', '.') ?>,-</strong>
+        dengan estimasi biaya sebesar <strong>Rp. <?= number_format($totalNominal, 0, ',', '.') ?>,-</strong>
       <?php endif; ?>
     </div>
 
     <?php if (!empty($terbilang)): ?>
       <p style="margin-top: 12px; font-weight: 700; font-style: italic;">
-        Terbilang : <?= $terbilang ?>
+        Terbilang Estimasi : <?= $terbilang ?>
       </p>
     <?php endif; ?>
 

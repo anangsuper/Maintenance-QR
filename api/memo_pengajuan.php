@@ -255,9 +255,14 @@ if (empty($allMemos)) {
             $lampiranBadge = '<div class="mt-1.5 d-flex flex-wrap gap-1 align-items-center">' . $lampiranBadge . '</div>';
         }
 
-        $realisasiBiayaHtml = '';
-        if (!empty($m['biaya_realisasi']) && (float)$m['biaya_realisasi'] > 0) {
-            $realisasiBiayaHtml = '<div class="small text-success fw-bold mt-1" style="font-size:0.75rem;"><i class="bi bi-check2-circle me-1"></i>Riil: Rp. '.number_format((float)$m['biaya_realisasi'], 0, ',', '.').',-</div>';
+        if ($st === 'Selesai Dibeli' && !empty($m['biaya_realisasi'])) {
+            $costHtml = '
+              <div class="fw-bold text-success" style="font-size:0.85rem;"><i class="bi bi-receipt me-1"></i>Rp. '.number_format((float)$m['biaya_realisasi'], 0, ',', '.').',-</div>
+              <div class="text-muted small" style="font-size:0.72rem;">Estimasi: Rp. '.number_format($total, 0, ',', '.').'</div>';
+        } else {
+            $costHtml = '
+              <div class="fw-bold text-dark" style="font-size:0.85rem;">Rp. '.number_format($total, 0, ',', '.').',-</div>
+              <div class="text-secondary small fst-italic" style="font-size:0.72rem;"><i class="bi bi-hourglass-split me-0.5"></i>Estimasi Pengajuan</div>';
         }
 
         $berkasBtn = '';
@@ -327,8 +332,7 @@ if (empty($allMemos)) {
             '.$lampiranBadge.'
           </td>
           <td class="text-nowrap">
-            <div class="fw-bold text-dark" style="font-size:0.85rem;">Rp. '.number_format($total, 0, ',', '.').',-</div>
-            '.$realisasiBiayaHtml.'
+            '.$costHtml.'
           </td>
           <td class="text-center text-nowrap">
             <span class="status-pill '.$stBadge.'">'.e($st).'</span>
@@ -700,13 +704,17 @@ $body .= '
         </div>
 
         <div class="row g-3">
-          <div class="col-md-6">
+          <div class="col-md-4">
             <label class="form-label text-uppercase fw-bold text-muted small" style="font-size:0.72rem;">Nomor Memo</label>
             <input type="text" id="realisasiNomorMemo" class="form-control font-monospace bg-light fw-bold" readonly>
           </div>
-          <div class="col-md-6">
+          <div class="col-md-4">
             <label class="form-label text-uppercase fw-bold text-muted small" style="font-size:0.72rem;">Kantor Cabang</label>
             <input type="text" id="realisasiCabang" class="form-control bg-light" readonly>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label text-uppercase fw-bold text-muted small" style="font-size:0.72rem;">Estimasi Awal Memo</label>
+            <input type="text" id="realisasiEstimasiAwal" class="form-control bg-light font-monospace text-muted fw-semibold" readonly>
           </div>
           <div class="col-12">
             <label class="form-label text-uppercase fw-bold text-muted small" style="font-size:0.72rem;">Perihal Pengadaan</label>
@@ -718,9 +726,9 @@ $body .= '
             <input type="date" name="tanggal_beli" id="realisasiTanggalBeli" class="form-control" value="'.date('Y-m-d').'" required>
           </div>
           <div class="col-md-6">
-            <label class="form-label text-uppercase fw-bold text-muted small" style="font-size:0.72rem;">Biaya Riil / Realisasi (Rp) <span class="text-danger">*</span></label>
-            <input type="number" name="biaya_realisasi" id="realisasiBiaya" class="form-control fw-bold fs-6" placeholder="Total sesuai nota" required>
-            <div class="form-text small" style="font-size:0.7rem;">Nominal total kuitansi/faktur toko (boleh berbeda dari estimasi awal jika ada diskon/ongkir).</div>
+            <label class="form-label text-uppercase fw-bold text-success small" style="font-size:0.72rem;"><i class="bi bi-receipt me-1"></i>Nilai Riil Nota Pembelian (FIX) (Rp) <span class="text-danger">*</span></label>
+            <input type="number" name="biaya_realisasi" id="realisasiBiaya" class="form-control fw-bold fs-6 border-success" placeholder="Total sesuai nota toko" required>
+            <div class="form-text small" style="font-size:0.7rem;">Nilai total kuitansi/nota toko asli (nilai definitif fix untuk Berita Acara &amp; pencatatan inventaris).</div>
           </div>
 
           <div class="col-12">
@@ -981,6 +989,11 @@ function openRealisasiModal(data) {
   document.getElementById("realisasiNomorMemo").value = data.nomor_memo || "";
   document.getElementById("realisasiCabang").value = data.cabang_nama || "";
   document.getElementById("realisasiPerihal").value = data.perihal || "";
+  const estVal = parseFloat(data.total_estimasi || 0);
+  const estEl = document.getElementById("realisasiEstimasiAwal");
+  if (estEl) {
+    estEl.value = "Rp. " + estVal.toLocaleString("id-ID") + ",-";
+  }
   document.getElementById("realisasiTanggalBeli").value = data.tanggal_beli || new Date().toISOString().split("T")[0];
   document.getElementById("realisasiBiaya").value = data.biaya_realisasi || data.total_estimasi || "";
   document.getElementById("realisasiCatatan").value = data.catatan_realisasi || "";

@@ -38,7 +38,8 @@ $cabang = e($memo['cabang_nama']);
 $isiMemo = e($memo['isi_memo']);
 $catatanRealisasi = e($memo['catatan_realisasi'] ?: '-');
 
-$biayaRealisasi = !empty($memo['biaya_realisasi']) ? (float)$memo['biaya_realisasi'] : (float)$memo['total_estimasi'];
+$biayaEstimasi = (float)($memo['total_estimasi'] ?? 0);
+$biayaRealisasi = !empty($memo['biaya_realisasi']) ? (float)$memo['biaya_realisasi'] : $biayaEstimasi;
 $terbilangBiaya = terbilang_rupiah($biayaRealisasi);
 
 $namaPengaju = e($memo['nama_pengaju']);
@@ -356,11 +357,11 @@ body {
   <table class="table-items">
     <thead>
       <tr>
-        <th style="width: 32px;">No.</th>
+        <th style="width: 30px;">No.</th>
         <th>Uraian / Spesifikasi Barang Pengadaan</th>
-        <th style="width: 110px;">Tgl Realisasi</th>
-        <th style="width: 140px;">Biaya Riil Beli</th>
-        <th style="width: 130px;">Kondisi Fisik</th>
+        <th style="width: 125px;">Estimasi Pengajuan</th>
+        <th style="width: 135px;">Realisasi Nota (Fix)</th>
+        <th style="width: 110px;">Kondisi Fisik</th>
       </tr>
     </thead>
     <tbody>
@@ -373,20 +374,20 @@ body {
             <div class="small mt-0.5 text-secondary fst-italic" style="font-size:0.80rem;"><strong>Catatan Toko:</strong> <?= $catatanRealisasi ?></div>
           <?php endif; ?>
         </td>
-        <td class="text-center"><?= date('d/m/Y', $dateTs) ?></td>
-        <td class="text-end fw-bold">Rp. <?= number_format($biayaRealisasi, 0, ',', '.') ?>,-</td>
-        <td class="text-center fw-bold text-success" style="font-size:0.82rem;">BARU &amp; LENGKAP</td>
+        <td class="text-end text-muted font-monospace">Rp. <?= number_format($biayaEstimasi, 0, ',', '.') ?>,-</td>
+        <td class="text-end fw-bold text-dark font-monospace">Rp. <?= number_format($biayaRealisasi, 0, ',', '.') ?>,-</td>
+        <td class="text-center fw-bold text-success" style="font-size:0.82rem;">BARU &amp; BAIK</td>
       </tr>
       <tr>
-        <td colspan="3" class="text-end fw-bold">TOTAL NILAI PEMBELIAN :</td>
-        <td class="text-end fw-bold">Rp. <?= number_format($biayaRealisasi, 0, ',', '.') ?>,-</td>
-        <td class="text-center small text-muted font-monospace" style="font-size:0.75rem;">Nota Toko <?= $hasNota ? '(&#10003; Ada)' : '(-)' ?></td>
+        <td colspan="3" class="text-end fw-bold">TOTAL REALISASI PEMBELIAN (FIX SESUAI NOTA) :</td>
+        <td class="text-end fw-bold font-monospace" style="font-size:0.92rem;">Rp. <?= number_format($biayaRealisasi, 0, ',', '.') ?>,-</td>
+        <td class="text-center small text-muted font-monospace" style="font-size:0.75rem;">Nota Toko <?= $hasNota ? '(&#10003; Terlampir)' : '(-)' ?></td>
       </tr>
     </tbody>
   </table>
 
   <div class="text-muted fst-italic mb-2" style="font-size:0.84rem;">
-    Terbilang: <strong>// <?= $terbilangBiaya ?> //</strong>
+    Terbilang Nilai Fix Nota: <strong>// <?= $terbilangBiaya ?> //</strong>
   </div>
 
   <!-- Klausul Pernyataan Berita Acara -->
