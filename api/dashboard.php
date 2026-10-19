@@ -953,6 +953,116 @@ $head = '
   box-shadow: 0 2px 6px rgba(15, 23, 42, 0.08), 0 1px 2px rgba(15, 23, 42, 0.04);
 }
 
+/* HERO RICH GRADIENT BANNERS LIKE INVENTARIS_MUTATION.PHP */
+.hero-gradient-header {
+  color: #FFFFFF !important;
+  padding: 24px 28px;
+  border-radius: 18px;
+  margin-bottom: 24px;
+  position: relative;
+  overflow: hidden;
+  border: none !important;
+}
+.hero-gradient-header::after {
+  content: "";
+  position: absolute;
+  top: -50px;
+  right: -50px;
+  width: 240px;
+  height: 240px;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.18) 0%, rgba(255, 255, 255, 0) 70%);
+  border-radius: 50%;
+  pointer-events: none;
+}
+.hero-gradient-blue {
+  background: linear-gradient(135deg, #071E3D 0%, #003B73 50%, #0284C7 100%) !important;
+  box-shadow: 0 10px 25px -5px rgba(0, 59, 115, 0.35);
+}
+.hero-gradient-green {
+  background: linear-gradient(135deg, #064E3B 0%, #047857 50%, #059669 100%) !important;
+  box-shadow: 0 10px 25px -5px rgba(5, 150, 105, 0.35);
+}
+.hero-gradient-header h1, .hero-gradient-header h2, .hero-gradient-header h3, .hero-gradient-header h4 {
+  color: #FFFFFF !important;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  margin: 0;
+}
+.hero-gradient-header p {
+  color: rgba(255, 255, 255, 0.88) !important;
+  margin-top: 4px;
+  margin-bottom: 0;
+  font-size: 0.85rem;
+}
+.hero-gradient-header .tech-label-blue {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #93C5FD;
+}
+.hero-gradient-header .tech-label-green {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #A7F3D0;
+}
+.hero-gradient-header .header-actions .btn-glass {
+  background: rgba(255, 255, 255, 0.18);
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  color: #FFFFFF !important;
+  font-weight: 600;
+  font-size: 0.82rem;
+  padding: 8px 16px;
+  border-radius: 10px;
+  transition: all 0.2s ease;
+  backdrop-filter: blur(4px);
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.hero-gradient-header .header-actions .btn-glass:hover {
+  background: #FFFFFF;
+  color: #071E3D !important;
+  border-color: #FFFFFF;
+  transform: translateY(-1px);
+}
+.hero-gradient-green .header-actions .btn-glass:hover {
+  color: #064E3B !important;
+}
+.hero-gradient-header .header-actions .btn-glass.active-glass {
+  background: rgba(255, 255, 255, 0.38) !important;
+  border-color: #FFFFFF !important;
+  color: #FFFFFF !important;
+  font-weight: 700;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+.hero-gradient-header .header-actions .btn-solid-cta {
+  background: #FFFFFF !important;
+  color: #003B73 !important;
+  border: 1px solid #FFFFFF !important;
+  font-weight: 700;
+  font-size: 0.82rem;
+  padding: 8px 18px;
+  border-radius: 10px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.15);
+  transition: all 0.2s ease;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.hero-gradient-green .header-actions .btn-solid-cta {
+  color: #064E3B !important;
+}
+.hero-gradient-header .header-actions .btn-solid-cta:hover {
+  background: #F8FAFC !important;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.22);
+}
+
 /* Ukuran Standar Kartu ATM (CR80: 85.6mm x 54.0mm) */
 .atm-card {
   width: 85.6mm !important;
@@ -1342,25 +1452,29 @@ $body .= '
 if (is_hrd() && !is_admin()) {
     // BANNER PINTASAN CEPAT RAMAH PENGGUNA KHUSUS SDM & UMUM
     $body .= '
-    <div class="card border-0 mb-4 overflow-hidden shadow-sm" style="background: linear-gradient(135deg, #ffffff 0%, #f0fdf4 100%); border: 1px solid #bbf7d0 !important; border-left: 5px solid #16a34a !important; border-radius: 16px;">
-      <div class="card-body p-3 p-md-4">
-        <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
-          <div>
-            <div class="d-flex align-items-center gap-2 mb-1">
-              <span class="badge bg-success px-2.5 py-1" style="font-size: 0.7rem; letter-spacing: 0.05em; border-radius: 6px;">PORTAL SARPRAS</span>
-              <span class="text-muted small">| Selamat bertugas, <strong>'.e($_SESSION['nama'] ?? 'Petugas').'</strong></span>
-            </div>
-            <h4 class="fw-bold text-dark mb-1">Pusat Inventaris &amp; Pengadaan Barang</h4>
-            <p class="text-secondary small mb-0">Kelola inventaris perabot, memo pengajuan pengadaan, dan cetak kartu label fisik CR80/PVC.</p>
+    <div class="hero-gradient-header hero-gradient-green">
+      <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+        <div>
+          <div class="d-flex align-items-center gap-2 mb-1.5 flex-wrap">
+            <span class="badge bg-white text-success px-2.5 py-1 font-monospace fw-bold shadow-xs" style="font-size: 0.70rem; letter-spacing: 0.04em; border-radius: 6px;">PORTAL SARPRAS</span>
+            <span class="tech-label-green">SARANA PRASARANA &amp; PENGELOLAAN FASILITAS</span>
+            <span class="text-white text-opacity-75 small">| Selamat bertugas, <strong>'.e($_SESSION['nama'] ?? 'Petugas').'</strong></span>
           </div>
-          <div class="d-flex flex-wrap align-items-center gap-2">
-            <button type="button" class="btn btn-success fw-bold btn-sm px-3 shadow-xs d-inline-flex align-items-center gap-1.5 text-nowrap" data-bs-toggle="modal" data-bs-target="#addCardModal">
-              <i class="bi bi-plus-circle-fill"></i> Buat Kartu Baru
-            </button>
-            <a href="'.e(module_url('memo_pengajuan.php')).'" class="btn btn-warning fw-bold btn-sm px-3 shadow-xs text-dark d-inline-flex align-items-center gap-1.5 text-nowrap">
-              <i class="bi bi-file-earmark-text-fill"></i> Memo Pengajuan
-            </a>
-          </div>
+          <h2 class="h3 fw-bold mb-1 d-flex align-items-center gap-2">
+            <i class="bi bi-building-gear"></i> Pusat Inventaris &amp; Pengadaan Barang
+          </h2>
+          <p>Kelola inventaris perabot kantor, memo pengajuan pengadaan, dan cetak kartu label fisik CR80/PVC.</p>
+        </div>
+        <div class="header-actions d-flex flex-wrap align-items-center gap-2 flex-shrink-0">
+          <button type="button" class="btn-solid-cta" data-bs-toggle="modal" data-bs-target="#addCardModal">
+            <i class="bi bi-plus-circle-fill"></i> Buat Kartu Baru
+          </button>
+          <a href="'.e(module_url('memo_pengajuan.php')).'" class="btn-glass">
+            <i class="bi bi-file-earmark-text"></i> Memo Pengajuan
+          </a>
+          <a href="'.e(module_url('inventaris_mutation.php')).'" class="btn-glass">
+            <i class="bi bi-arrow-left-right"></i> Mutasi Barang
+          </a>
         </div>
       </div>
     </div>';
@@ -1427,36 +1541,31 @@ if (is_hrd() && !is_admin()) {
     }
 
     $body .= '
-    <div class="card border-0 mb-4 overflow-hidden" style="background: linear-gradient(135deg, #ffffff 0%, #f4f8ff 100%); border: 1px solid #c7d2fe !important; border-left: 5px solid #2563eb !important; border-radius: 14px; box-shadow: 0 4px 16px rgba(37, 99, 235, 0.06);">
-      <div class="card-body p-3 p-md-4">
-        <div class="row align-items-center g-3">
-          <div class="col-xl-6 col-lg-5 col-12">
-            <div class="d-flex align-items-center gap-2 mb-1.5">
-              <span class="badge bg-primary px-2.5 py-1 font-monospace shadow-xs" style="font-size: 0.70rem; letter-spacing: 0.04em; border-radius: 6px;">'.$roleDisplay.'</span>
-              <span class="text-muted small">| Halo, <strong>'.e($_SESSION['nama'] ?? 'Petugas').'</strong></span>
-            </div>
-            <h4 class="fw-bold text-dark mb-1" style="font-size: 1.15rem; letter-spacing: -0.01em;">'.$roleTitle.'</h4>
-            <p class="text-secondary small mb-0" style="font-size: 0.82rem; line-height: 1.45;">'.$roleSub.'</p>
+    <div class="hero-gradient-header hero-gradient-blue">
+      <div class="d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-3">
+        <div>
+          <div class="d-flex align-items-center gap-2 mb-1.5 flex-wrap">
+            <span class="badge bg-white text-primary px-2.5 py-1 font-monospace fw-bold shadow-xs" style="font-size: 0.70rem; letter-spacing: 0.04em; border-radius: 6px;">'.$roleDisplay.'</span>
+            <span class="tech-label-blue">BANKING IT OPERATIONS COMMAND</span>
+            <span class="text-white text-opacity-75 small">| Halo, <strong>'.e($_SESSION['nama'] ?? 'Petugas').'</strong></span>
           </div>
-          <div class="col-xl-6 col-lg-7 col-12">
-            <div class="d-flex flex-column align-items-start align-items-lg-end gap-2">
-              <div class="d-flex flex-wrap align-items-center gap-2">
-                '.(is_it() ? '<a href="'.e(module_url('scanner.php')).'" class="btn btn-primary fw-bold btn-sm px-3 shadow-xs d-inline-flex align-items-center gap-1.5"><i class="bi bi-qr-code-scan"></i> Mulai Scan QR</a>' : '').'
-                <button type="button" class="btn btn-light border fw-semibold btn-sm px-3 shadow-xs d-inline-flex align-items-center gap-1.5 text-secondary" data-bs-toggle="modal" data-bs-target="#modalPanduanAplikasi">
-                  <i class="bi bi-journal-text text-primary"></i> Panduan Alur
-                </button>
-              </div>
-              <div class="btn-group btn-group-sm shadow-xs" role="group">
-                <a href="'.e(module_url('dashboard.php', ['tab' => 'komputer', 'bulan' => $month, 'tahun' => $year, 'cabang' => $cabangId])).'" class="btn btn-outline-primary bg-white fw-semibold px-3 '.($activeTab === 'komputer' ? 'active' : '').'">
-                  <i class="bi bi-pc-display me-1"></i> Daftar PC ('.$totalAll.')
-                </a>
-                <a href="'.e(module_url('dashboard.php', ['tab' => 'temuan', 'bulan' => $month, 'tahun' => $year, 'cabang' => $cabangId])).'" class="btn btn-outline-danger bg-white fw-semibold px-3 '.($activeTab === 'temuan' ? 'active' : '').'">
-                  <i class="bi bi-exclamation-triangle-fill me-1"></i> Temuan ('.$totalUnresolvedFindings.')
-                </a>
-                '.(is_admin_or_auditor() ? '<a href="'.e(module_url('audit_trail.php')).'" class="btn btn-outline-secondary bg-white fw-semibold px-3"><i class="bi bi-shield-check me-1"></i> Log Audit</a>' : '').'
-              </div>
-            </div>
-          </div>
+          <h2 class="h3 fw-bold mb-1 d-flex align-items-center gap-2">
+            <i class="bi bi-shield-check"></i> '.$roleTitle.'
+          </h2>
+          <p>'.$roleSub.'</p>
+        </div>
+        <div class="header-actions d-flex flex-wrap align-items-center justify-content-start justify-content-lg-end gap-2 flex-shrink-0">
+          '.(is_it() ? '<a href="'.e(module_url('scanner.php')).'" class="btn-solid-cta"><i class="bi bi-qr-code-scan"></i> Mulai Scan QR</a>' : '').'
+          <button type="button" class="btn-glass" data-bs-toggle="modal" data-bs-target="#modalPanduanAplikasi">
+            <i class="bi bi-journal-text"></i> Panduan Alur
+          </button>
+          <a href="'.e(module_url('dashboard.php', ['tab' => 'komputer', 'bulan' => $month, 'tahun' => $year, 'cabang' => $cabangId])).'" class="btn-glass '.($activeTab === 'komputer' ? 'active-glass' : '').'">
+            <i class="bi bi-pc-display"></i> Daftar PC ('.$totalAll.')
+          </a>
+          <a href="'.e(module_url('dashboard.php', ['tab' => 'temuan', 'bulan' => $month, 'tahun' => $year, 'cabang' => $cabangId])).'" class="btn-glass '.($activeTab === 'temuan' ? 'active-glass' : '').'">
+            <i class="bi bi-exclamation-triangle-fill text-warning"></i> Temuan ('.$totalUnresolvedFindings.')
+          </a>
+          '.(is_admin_or_auditor() ? '<a href="'.e(module_url('audit_trail.php')).'" class="btn-glass"><i class="bi bi-shield-lock"></i> Log Audit</a>' : '').'
         </div>
       </div>
     </div>';
@@ -1552,43 +1661,41 @@ if ($activeTab === 'kartu') {
     // --- TAMPILAN TAB KARTU INVENTARIS (DISAMAKAN PERSIS DENGAN WEBSITE QR) ---
     $body .= '
     <!-- Header Kicker & Action Bar -->
-    <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
-      <div>
-        <div class="text-uppercase small fw-bold" style="letter-spacing: 0.08em; color: var(--app-accent); font-size: 0.72rem; margin-bottom: 2px;">OPERATIONS / KARTU INVENTARIS</div>
-        <h2 class="h4 fw-bold text-dark mb-1 d-flex align-items-center gap-2">
-          <i class="bi bi-credit-card-2-front text-primary"></i> Manajemen Kartu Inventaris
-        </h2>
-        <div class="text-muted small">Kelola data kartu inventaris, cetak massal A4, dan cetak kartu pilihan.</div>
-      </div>
-      <div class="d-flex gap-2 flex-wrap align-items-center">
-        <a href="'.e(module_url('memo_pengajuan.php')).'" class="btn btn-warning text-dark fw-bold d-inline-flex align-items-center gap-1 shadow-xs">
-          <i class="bi bi-file-earmark-text-fill"></i> Memo Pengajuan
-        </a>
-        <a href="'.e(module_url('asset_gallery.php', ['sub' => 'inventaris'])).'" class="btn btn-outline-primary d-inline-flex align-items-center gap-1 fw-semibold shadow-xs">
-          <i class="bi bi-images"></i> Galeri Foto Inventaris
-        </a>
-        <button type="button" class="btn btn-primary d-inline-flex align-items-center gap-1 fw-semibold px-3" data-bs-toggle="modal" data-bs-target="#addCardModal">
-          <i class="bi bi-plus-lg"></i> Tambah Data Kartu
-        </button>
-        <a href="'.e(module_url('import_fbd3.php')).'" class="btn btn-outline-success d-inline-flex align-items-center gap-1 fw-semibold">
-          <i class="bi bi-file-earmark-excel"></i> Import FBD3
-        </a>
-        <button type="button" class="btn btn-light border d-inline-flex align-items-center gap-1" data-bs-toggle="modal" data-bs-target="#importAssetModal">
-          <i class="bi bi-box-seam"></i> Pilih dari Aset IT
-        </button>
-        <a href="'.e(module_url('print_inventory_card.php', ['source'=>'inventaris_kartu'])).'" target="_blank" class="btn btn-light border d-inline-flex align-items-center gap-1">
-          <i class="bi bi-printer"></i> Cetak Semua (A4)
-        </a>
-        <div class="dropdown">
-          <button class="btn btn-light border dropdown-toggle d-inline-flex align-items-center gap-1" type="button" data-bs-toggle="dropdown">
-            <i class="bi bi-download"></i> Ekspor
+    <div class="hero-gradient-header hero-gradient-green mb-4">
+      <div class="d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-3">
+        <div>
+          <div class="tech-label-green">OPERATIONS / KARTU INVENTARIS</div>
+          <h2 class="h3 fw-bold mb-1 d-flex align-items-center gap-2">
+            <i class="bi bi-credit-card-2-front"></i> Manajemen Kartu Inventaris &amp; Label QR
+          </h2>
+          <p>Kelola data kartu inventaris, penerbitan QR code, cetak massal A4, dan cetak kartu fisik PVC.</p>
+        </div>
+        <div class="header-actions d-flex flex-wrap align-items-center gap-2 flex-shrink-0">
+          <button type="button" class="btn-solid-cta" data-bs-toggle="modal" data-bs-target="#addCardModal">
+            <i class="bi bi-plus-circle-fill"></i> Tambah Data Kartu
           </button>
-          <ul class="dropdown-menu dropdown-menu-end shadow-sm" style="font-size: 0.85rem;">
-            <li>
-              <a class="dropdown-item" href="'.e(module_url('print_inventory_card.php', ['export'=>'doc'])).'">
-                <i class="bi bi-file-earmark-word-fill text-primary me-2"></i> Dokumen Microsoft Word (.doc)
-              </a>
-            </li>
+          <a href="'.e(module_url('memo_pengajuan.php')).'" class="btn-glass">
+            <i class="bi bi-file-earmark-text"></i> Memo Pengajuan
+          </a>
+          <a href="'.e(module_url('asset_gallery.php', ['sub' => 'inventaris'])).'" class="btn-glass">
+            <i class="bi bi-images"></i> Galeri Foto
+          </a>
+          <a href="'.e(module_url('import_fbd3.php')).'" class="btn-glass">
+            <i class="bi bi-file-earmark-excel"></i> Import FBD3
+          </a>
+          <a href="'.e(module_url('print_inventory_card.php', ['source'=>'inventaris_kartu'])).'" target="_blank" class="btn-glass">
+            <i class="bi bi-printer"></i> Cetak A4
+          </a>
+          <div class="dropdown">
+            <button class="btn-glass dropdown-toggle" type="button" data-bs-toggle="dropdown">
+              <i class="bi bi-download"></i> Ekspor
+            </button>
+            <ul class="dropdown-menu dropdown-menu-end shadow-sm" style="font-size: 0.85rem;">
+              <li>
+                <a class="dropdown-item" href="'.e(module_url('print_inventory_card.php', ['export'=>'doc'])).'">
+                  <i class="bi bi-file-earmark-word-fill text-primary me-2"></i> Dokumen Microsoft Word (.doc)
+                </a>
+              </li>
             <li>
               <a class="dropdown-item" href="'.e(module_url('print_inventory_card.php', ['export'=>'csv'])).'">
                 <i class="bi bi-file-earmark-spreadsheet-fill text-success me-2"></i> Spreadsheet CSV (.csv)

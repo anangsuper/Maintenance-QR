@@ -203,6 +203,109 @@ $head = '
   overflow-y: auto !important;
   max-height: calc(100vh - 200px);
 }
+
+/* HERO RICH GRADIENT BANNERS */
+.hero-gradient-header {
+  color: #FFFFFF !important;
+  padding: 24px 28px;
+  border-radius: 18px;
+  margin-bottom: 24px;
+  position: relative;
+  overflow: hidden;
+  border: none !important;
+}
+.hero-gradient-header::after {
+  content: "";
+  position: absolute;
+  top: -50px;
+  right: -50px;
+  width: 240px;
+  height: 240px;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.18) 0%, rgba(255, 255, 255, 0) 70%);
+  border-radius: 50%;
+  pointer-events: none;
+}
+.hero-gradient-blue {
+  background: linear-gradient(135deg, #071E3D 0%, #003B73 50%, #0284C7 100%) !important;
+  box-shadow: 0 10px 25px -5px rgba(0, 59, 115, 0.35);
+}
+.hero-gradient-green {
+  background: linear-gradient(135deg, #064E3B 0%, #047857 50%, #059669 100%) !important;
+  box-shadow: 0 10px 25px -5px rgba(5, 150, 105, 0.35);
+}
+.hero-gradient-header h1, .hero-gradient-header h2, .hero-gradient-header h3, .hero-gradient-header h4 {
+  color: #FFFFFF !important;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  margin: 0;
+}
+.hero-gradient-header p {
+  color: rgba(255, 255, 255, 0.88) !important;
+  margin-top: 4px;
+  margin-bottom: 0;
+  font-size: 0.85rem;
+}
+.hero-gradient-header .tech-label-blue {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #93C5FD;
+}
+.hero-gradient-header .tech-label-green {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #A7F3D0;
+}
+.hero-gradient-header .header-actions .btn-glass {
+  background: rgba(255, 255, 255, 0.18);
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  color: #FFFFFF !important;
+  font-weight: 600;
+  font-size: 0.82rem;
+  padding: 8px 16px;
+  border-radius: 10px;
+  transition: all 0.2s ease;
+  backdrop-filter: blur(4px);
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.hero-gradient-header .header-actions .btn-glass:hover {
+  background: #FFFFFF;
+  color: #071E3D !important;
+  border-color: #FFFFFF;
+  transform: translateY(-1px);
+}
+.hero-gradient-green .header-actions .btn-glass:hover {
+  color: #064E3B !important;
+}
+.hero-gradient-header .header-actions .btn-solid-cta {
+  background: #FFFFFF !important;
+  color: #003B73 !important;
+  border: 1px solid #FFFFFF !important;
+  font-weight: 700;
+  font-size: 0.82rem;
+  padding: 8px 18px;
+  border-radius: 10px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.15);
+  transition: all 0.2s ease;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.hero-gradient-green .header-actions .btn-solid-cta {
+  color: #064E3B !important;
+}
+.hero-gradient-header .header-actions .btn-solid-cta:hover {
+  background: #F8FAFC !important;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.22);
+}
 </style>
 ';
 
@@ -362,34 +465,32 @@ $body = '
 '.$flashHtml.'
 '.$errorHtml.'
 
-<!-- Header Banner (Clean Theme Bank Mitra) -->
-<div class="card border-0 mb-4 overflow-hidden shadow-sm" style="background: linear-gradient(135deg, #ffffff 0%, #fefce8 100%); border: 1px solid #fef08a !important; border-left: 5px solid #eab308 !important; border-radius: 16px;">
-  <div class="card-body p-3 p-md-4">
-    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
-      <div>
-        <div class="d-flex align-items-center gap-2 mb-1">
-          <span class="badge bg-warning text-dark px-2.5 py-1" style="font-size: 0.7rem; font-weight: 700; letter-spacing: 0.05em; border-radius: 6px;">PENGELOLAAN SARPRAS &amp; SDM</span>
-          <span class="text-muted small">| Dokumen Resmi Pengadaan Inventaris</span>
-        </div>
-        <h3 class="fw-bold text-dark mb-1 d-flex align-items-center gap-2">
-          <i class="bi bi-file-earmark-text-fill text-warning"></i> Memo Internal Pengajuan Inventaris
-        </h3>
-        <p class="text-secondary small mb-0">Format resmi permohonan pengadaan sarana/fasilitas baru dari kantor cabang kepada Direksi dan Bagian Umum &amp; SDM.</p>
+<!-- Header Banner (Rich Gradient Hero) -->
+<div class="hero-gradient-header hero-gradient-blue mb-4">
+  <div class="d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-3">
+    <div>
+      <div class="d-flex align-items-center gap-2 mb-1.5 flex-wrap">
+        <span class="badge bg-white text-primary px-2.5 py-1 font-monospace fw-bold shadow-xs" style="font-size: 0.70rem; letter-spacing: 0.04em; border-radius: 6px;">PENGELOLAAN SARPRAS &amp; SDM</span>
+        <span class="tech-label-blue">DOKUMEN RESMI PENGADAAN INVENTARIS</span>
       </div>
-      <div class="d-flex flex-wrap align-items-center gap-2">
-        <button type="button" class="btn btn-warning text-dark fw-bold btn-sm px-3 shadow-sm d-inline-flex align-items-center gap-2" onclick="openCreateMemoModal()">
-          <i class="bi bi-plus-circle-fill"></i> Buat Memo Baru
-        </button>
-        <a href="'.e(module_url('memo_pengajuan.php', array_filter(['export' => 'csv', 'cabang' => $filterCabang, 'q' => $q]))).'" class="btn btn-outline-success fw-semibold btn-sm px-3 bg-white d-inline-flex align-items-center gap-1.5" title="Unduh rekap data memo dalam format Excel / CSV">
-          <i class="bi bi-file-earmark-excel"></i> Ekspor CSV
-        </a>
-        <a href="'.e(module_url('dashboard.php', ['tab' => 'kartu'])).'" class="btn btn-outline-secondary fw-semibold btn-sm px-3 bg-white d-inline-flex align-items-center gap-1.5">
-          <i class="bi bi-card-heading"></i> Data Kartu
-        </a>
-        <a href="'.e(module_url('inventaris_mutation.php')).'" class="btn btn-outline-secondary fw-semibold btn-sm px-3 bg-white d-inline-flex align-items-center gap-1.5">
-          <i class="bi bi-arrow-left-right"></i> Mutasi Barang
-        </a>
-      </div>
+      <h2 class="h3 fw-bold mb-1 d-flex align-items-center gap-2">
+        <i class="bi bi-file-earmark-text"></i> Memo Internal Pengajuan Inventaris
+      </h2>
+      <p>Format resmi permohonan pengadaan sarana/fasilitas baru dari kantor cabang kepada Direksi dan Bagian Umum &amp; SDM.</p>
+    </div>
+    <div class="header-actions d-flex flex-wrap align-items-center gap-2">
+      <button type="button" class="btn-solid-cta" onclick="openCreateMemoModal()">
+        <i class="bi bi-plus-circle-fill text-primary"></i> Buat Memo Baru
+      </button>
+      <a href="'.e(module_url('memo_pengajuan.php', array_filter(['export' => 'csv', 'cabang' => $filterCabang, 'q' => $q]))).'" class="btn-glass" title="Unduh rekap data memo dalam format Excel / CSV">
+        <i class="bi bi-file-earmark-excel"></i> Ekspor CSV
+      </a>
+      <a href="'.e(module_url('dashboard.php', ['tab' => 'kartu'])).'" class="btn-glass">
+        <i class="bi bi-card-heading"></i> Data Kartu
+      </a>
+      <a href="'.e(module_url('inventaris_mutation.php')).'" class="btn-glass">
+        <i class="bi bi-arrow-left-right"></i> Mutasi Barang
+      </a>
     </div>
   </div>
 </div>
