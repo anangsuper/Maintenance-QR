@@ -204,7 +204,7 @@ $head = '
   max-height: calc(100vh - 200px);
 }
 
-/* HERO RICH GRADIENT BANNERS */
+/* HERO RICH GRADIENT BANNERS (DARK NAVBAR THEME) */
 .hero-gradient-header {
   color: #FFFFFF !important;
   padding: 24px 28px;
@@ -212,7 +212,9 @@ $head = '
   margin-bottom: 24px;
   position: relative;
   overflow: hidden;
-  border: none !important;
+  background: linear-gradient(135deg, #051329 0%, #0A1E38 55%, #162E52 100%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  box-shadow: 0 12px 28px -6px rgba(5, 19, 41, 0.55);
 }
 .hero-gradient-header::after {
   content: "";
@@ -221,17 +223,17 @@ $head = '
   right: -50px;
   width: 240px;
   height: 240px;
-  background: radial-gradient(circle, rgba(255, 255, 255, 0.18) 0%, rgba(255, 255, 255, 0) 70%);
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.12) 0%, rgba(255, 255, 255, 0) 70%);
   border-radius: 50%;
   pointer-events: none;
 }
 .hero-gradient-blue {
-  background: linear-gradient(135deg, #071E3D 0%, #003B73 50%, #0284C7 100%) !important;
-  box-shadow: 0 10px 25px -5px rgba(0, 59, 115, 0.35);
+  background: linear-gradient(135deg, #051329 0%, #0A1E38 55%, #162E52 100%) !important;
+  box-shadow: 0 12px 28px -6px rgba(5, 19, 41, 0.55);
 }
 .hero-gradient-green {
-  background: linear-gradient(135deg, #064E3B 0%, #047857 50%, #059669 100%) !important;
-  box-shadow: 0 10px 25px -5px rgba(5, 150, 105, 0.35);
+  background: linear-gradient(135deg, #051329 0%, #0A1E38 55%, #162E52 100%) !important;
+  box-shadow: 0 12px 28px -6px rgba(5, 19, 41, 0.55);
 }
 .hero-gradient-header h1, .hero-gradient-header h2, .hero-gradient-header h3, .hero-gradient-header h4 {
   color: #FFFFFF !important;
@@ -260,15 +262,15 @@ $head = '
   color: #A7F3D0;
 }
 .hero-gradient-header .header-actions .btn-glass {
-  background: rgba(255, 255, 255, 0.18);
-  border: 1px solid rgba(255, 255, 255, 0.35);
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.22);
   color: #FFFFFF !important;
   font-weight: 600;
   font-size: 0.82rem;
   padding: 8px 16px;
   border-radius: 10px;
   transition: all 0.2s ease;
-  backdrop-filter: blur(4px);
+  backdrop-filter: blur(6px);
   text-decoration: none;
   display: inline-flex;
   align-items: center;
@@ -276,22 +278,22 @@ $head = '
 }
 .hero-gradient-header .header-actions .btn-glass:hover {
   background: #FFFFFF;
-  color: #071E3D !important;
+  color: #0A1E38 !important;
   border-color: #FFFFFF;
   transform: translateY(-1px);
 }
 .hero-gradient-green .header-actions .btn-glass:hover {
-  color: #064E3B !important;
+  color: #0A1E38 !important;
 }
 .hero-gradient-header .header-actions .btn-solid-cta {
   background: #FFFFFF !important;
-  color: #003B73 !important;
+  color: #0A1E38 !important;
   border: 1px solid #FFFFFF !important;
   font-weight: 700;
   font-size: 0.82rem;
   padding: 8px 18px;
   border-radius: 10px;
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
   transition: all 0.2s ease;
   text-decoration: none;
   display: inline-flex;
@@ -299,12 +301,13 @@ $head = '
   gap: 6px;
 }
 .hero-gradient-green .header-actions .btn-solid-cta {
-  color: #064E3B !important;
+  color: #0A1E38 !important;
 }
 .hero-gradient-header .header-actions .btn-solid-cta:hover {
-  background: #F8FAFC !important;
+  background: #F1F5F9 !important;
+  color: #051329 !important;
   transform: translateY(-2px);
-  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.22);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
 }
 </style>
 ';

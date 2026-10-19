@@ -2,6 +2,15 @@
 /**
  * Single Entrypoint Router for Vercel Hobby Plan (1 Serverless Function)
  */
+$isVercelHost = !empty($_SERVER['VERCEL']) || str_ends_with(strtolower((string)($_SERVER['HTTP_HOST'] ?? '')), '.vercel.app');
+if ($isVercelHost) {
+    $targetHost = getenv('PRODUCTION_SERVER_URL') ?: 'http://192.168.88.163';
+    $targetHost = rtrim($targetHost, '/');
+    $fullUri = $_SERVER['REQUEST_URI'] ?? '/';
+    header('Location: ' . $targetHost . $fullUri, true, 302);
+    exit;
+}
+
 $uri = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH);
 $path = trim((string)$uri, '/');
 

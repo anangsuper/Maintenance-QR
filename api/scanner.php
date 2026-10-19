@@ -247,6 +247,39 @@ function triggerScanHapticFeedback() {
   } catch (e) {}
 }
 
+function resolveScanDestination(rawInput) {
+  var text = (rawInput || "").trim();
+  if (!text) return "";
+
+  // 1. Jika teks adalah URL lengkap (misalnya URL dari Vercel lama: https://project.vercel.app/scan.php?t=TOKEN)
+  if (text.startsWith("http://") || text.startsWith("https://")) {
+    try {
+      var parsedUrl = new URL(text);
+      var tokenVal = parsedUrl.searchParams.get("t") || parsedUrl.searchParams.get("token");
+      if (tokenVal) {
+        return "scan.php?t=" + encodeURIComponent(tokenVal.trim());
+      }
+      var pathName = parsedUrl.pathname.replace(/^\/api\//, "/").replace(/^\//, "");
+      if (pathName && pathName.endsWith(".php")) {
+        return pathName + (parsedUrl.search || "");
+      }
+    } catch (e) {}
+  }
+
+  // 2. Jika teks mengandung query scan.php?t= atau ?token=
+  if (text.indexOf("scan.php?t=") !== -1 || text.indexOf("scan.php?") !== -1) {
+    var queryPart = text.split("?")[1] || "";
+    var searchParams = new URLSearchParams(queryPart);
+    var tVal = searchParams.get("t") || searchParams.get("token");
+    if (tVal) {
+      return "scan.php?t=" + encodeURIComponent(tVal.trim());
+    }
+  }
+
+  // 3. Token mentah atau nomor kode inventaris
+  return "scan.php?t=" + encodeURIComponent(text);
+}
+
 function onScanSuccess(decodedText) {
   // 1. Umpan balik audio (beep) & getar (haptic) instan
   playScanAudioFeedback();
@@ -263,12 +296,9 @@ function onScanSuccess(decodedText) {
   } catch (e) {}
 
   setTimeout(function() {
-    if (decodedText.startsWith("http://") || decodedText.startsWith("https://")) {
-      window.location.href = decodedText;
-    } else if (decodedText.includes("scan.php?t=")) {
-      window.location.href = decodedText;
-    } else {
-      window.location.href = "scan.php?t=" + encodeURIComponent(decodedText.trim());
+    var dest = resolveScanDestination(decodedText);
+    if (dest) {
+      window.location.href = dest;
     }
   }, 180);
 }
@@ -277,10 +307,9 @@ function handleManualToken(e) {
   e.preventDefault();
   const val = document.getElementById("manualTokenInput").value.trim();
   if (val) {
-    if (val.startsWith("http://") || val.startsWith("https://") || val.includes("scan.php?t=")) {
-      window.location.href = val;
-    } else {
-      window.location.href = "scan.php?t=" + encodeURIComponent(val);
+    var dest = resolveScanDestination(val);
+    if (dest) {
+      window.location.href = dest;
     }
   }
   return false;
