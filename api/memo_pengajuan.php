@@ -304,8 +304,8 @@ if (empty($allMemos)) {
 
             $bastUrl = module_url('print_bast_pengadaan.php', ['id' => $mid]);
             $bastPengadaanBtn = '
-              <a href="'.e($bastUrl).'" target="_blank" class="btn btn-outline-dark fw-semibold d-inline-flex align-items-center" style="font-size:0.75rem;" title="Cetak Berita Acara Serah Terima &amp; Pemeriksaan Fisik Barang (BAST Pengadaan)">
-                <i class="bi bi-file-earmark-check text-primary me-1"></i> BAST
+              <a href="'.e($bastUrl).'" target="_blank" class="btn btn-outline-dark fw-semibold d-inline-flex align-items-center" style="font-size:0.75rem;" title="Cetak Berita Acara Penerimaan Barang Pengadaan">
+                <i class="bi bi-file-earmark-check text-primary me-1"></i> Berita Acara
               </a>';
         }
 
@@ -420,8 +420,8 @@ $body = '
       </div>
       <div class="col-6 col-md">
         <div class="p-2 rounded bg-light border h-100">
-          <div class="fw-bold text-dark mb-0.5"><span class="badge bg-primary me-1">4</span> Cetak BAST</div>
-          <div class="text-muted" style="font-size:0.7rem;">Pemeriksaan kondisi fisik barang baru &amp; BAST</div>
+          <div class="fw-bold text-dark mb-0.5"><span class="badge bg-primary me-1">4</span> Cetak Berita Acara</div>
+          <div class="text-muted" style="font-size:0.7rem;">Pemeriksaan kondisi fisik barang baru &amp; Berita Acara</div>
         </div>
       </div>
       <div class="col-6 col-md">

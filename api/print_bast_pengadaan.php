@@ -1,6 +1,6 @@
 <?php
 /**
- * Dokumen Resmi Berita Acara Serah Terima (BAST) Pengadaan Barang
+ * Dokumen Resmi Berita Acara Pengadaan Barang
  * PT BPR Mitratama Arthabuana
  */
 
@@ -31,7 +31,7 @@ $bln = $monthNames[(int)date('n', $dateTs)];
 $thn = date('Y', $dateTs);
 
 $nomorMemo = e($memo['nomor_memo']);
-$bastNo = 'BAST-PENG/' . $nomorMemo;
+$docNo = $nomorMemo;
 
 $perihal = e($memo['perihal']);
 $cabang = e($memo['cabang_nama']);
@@ -58,7 +58,7 @@ $hasFoto = !empty($memo['foto_barang_file']);
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>BAST Pengadaan - <?= $bastNo ?></title>
+<title>Berita Acara Pengadaan - <?= $docNo ?></title>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
@@ -77,7 +77,7 @@ body {
   print-color-adjust: exact;
 }
 
-.bast-sheet {
+.doc-sheet {
   max-width: 210mm;
   min-height: 297mm;
   margin: 0 auto;
@@ -228,7 +228,7 @@ body {
   .no-print, .floating-action-bar {
     display: none !important;
   }
-  .bast-sheet {
+  .doc-sheet {
     box-shadow: none !important;
     margin: 0 !important;
     padding: 0 !important;
@@ -261,12 +261,12 @@ body {
     <i class="bi bi-file-earmark-text me-1"></i> Memo Pengajuan
   </a>
   <button type="button" class="btn btn-primary btn-sm fw-bold shadow-lg px-4 py-2" onclick="window.print()">
-    <i class="bi bi-printer-fill me-1"></i> Cetak BAST (A4)
+    <i class="bi bi-printer-fill me-1"></i> Cetak Berita Acara (A4)
   </button>
 </div>
 
-<!-- Lembar Dokumen BAST Resmi (Halaman 1) -->
-<div class="bast-sheet">
+<!-- Lembar Dokumen Berita Acara Resmi (Halaman 1) -->
+<div class="doc-sheet">
   <!-- Kop Surat Resmi Bank Mitra -->
   <div class="d-flex align-items-center justify-content-between">
     <div class="d-flex align-items-center gap-3">
@@ -278,19 +278,19 @@ body {
       </div>
     </div>
     <div class="text-end font-monospace text-muted" style="font-size:0.72rem; line-height: 1.35;">
-      FORMULIR: BAST-PENG-01<br>
-      Tgl: <?= date('d/m/Y', $dateTs) ?>
+      Tanggal Cetak: <?= date('d/m/Y') ?><br>
+      Tanggal Memo: <?= date('d/m/Y', $dateTs) ?>
     </div>
   </div>
 
   <div class="kop-double-line"></div>
 
   <!-- Judul Dokumen -->
-  <div class="doc-heading">BERITA ACARA SERAH TERIMA PENGADAAN BARANG</div>
-  <div class="doc-subheading">Nomor : <?= $bastNo ?></div>
+  <div class="doc-heading">BERITA ACARA PENGADAAN BARANG</div>
+  <div class="doc-subheading">Nomor : <?= $docNo ?></div>
 
   <div class="text-content mb-2">
-    Pada hari ini, <strong><?= $hari ?></strong> tanggal <strong><?= $tgl ?></strong> bulan <strong><?= $bln ?></strong> tahun <strong><?= $thn ?></strong> (<?= date('d/m/Y', $dateTs) ?>), bertempat di Kantor <strong>PT BPR Mitratama Arthabuana</strong>, telah dilaksanakan serah terima dan pemeriksaan fisik barang pengadaan sarana/prasarana inventaris oleh dan antara:
+    Pada hari ini, <strong><?= $hari ?></strong> tanggal <strong><?= $tgl ?></strong> bulan <strong><?= $bln ?></strong> tahun <strong><?= $thn ?></strong> (<?= date('d/m/Y', $dateTs) ?>), bertempat di Kantor <strong>PT BPR Mitratama Arthabuana</strong>, telah dilaksanakan pemeriksaan fisik dan penerimaan barang hasil pengadaan sarana/prasarana inventaris oleh dan antara:
   </div>
 
   <!-- Identitas Para Pihak -->
@@ -316,7 +316,7 @@ body {
     <tr>
       <td></td>
       <td colspan="3" class="fst-italic text-secondary" style="font-size:0.86rem;">
-        Selaku pihak yang menyerahkan barang hasil pengadaan, selanjutnya disebut <strong>PIHAK PERTAMA</strong>.
+        Selaku penanggung jawab pengadaan sarana prasarana, selanjutnya disebut <strong>PIHAK PERTAMA</strong>.
       </td>
     </tr>
   </table>
@@ -343,13 +343,13 @@ body {
     <tr>
       <td></td>
       <td colspan="3" class="fst-italic text-secondary" style="font-size:0.86rem;">
-        Selaku pihak pemohon yang menerima barang hasil pengadaan, selanjutnya disebut <strong>PIHAK KEDUA</strong>.
+        Selaku pemohon / penerima barang inventaris kantor, selanjutnya disebut <strong>PIHAK KEDUA</strong>.
       </td>
     </tr>
   </table>
 
   <div class="text-content mb-1">
-    Kedua belah pihak secara bersama-sama menerangkan bahwa <strong>PIHAK PERTAMA</strong> telah menyerahkan kepada <strong>PIHAK KEDUA</strong>, dan <strong>PIHAK KEDUA</strong> telah menerima serta melakukan pemeriksaan fisik terhadap barang hasil pengadaan berdasarkan Memo No. <strong><?= $nomorMemo ?></strong> dengan rincian:
+    Kedua belah pihak secara bersama-sama menerangkan bahwa barang hasil pengadaan berdasarkan Memo Internal No. <strong><?= $nomorMemo ?></strong> telah diterima dan diperiksa secara langsung dengan rincian:
   </div>
 
   <!-- Rincian Barang Pengadaan -->
@@ -389,18 +389,18 @@ body {
     Terbilang: <strong>// <?= $terbilangBiaya ?> //</strong>
   </div>
 
-  <!-- Klausul Pernyataan BAST -->
+  <!-- Klausul Pernyataan Berita Acara -->
   <div class="text-content mb-2" style="font-size: 0.88rem; line-height: 1.4;">
     Dengan ketentuan dan kesepakatan sebagai berikut:
     <ol class="mb-0 ps-3">
       <li>Barang tersebut telah diterima dalam kondisi 100% baru, lengkap, dan telah diuji/diperiksa fisik berfungsi baik.</li>
-      <li>Pembelian dilengkapi bukti <strong>Nota Toko Resmi <?= $hasNota ? '(&#10003; Terlampir)' : '' ?></strong> dan <strong>Dokumentasi Foto Fisik <?= $hasFoto ? '(&#10003; Terlampir)' : '' ?></strong>.</li>
-      <li>Sejak tanggal BAST ini, barang resmi tercatat sebagai aset inventaris kantor unit <strong><?= $cabang ?></strong> dan wajib didaftarkan ke <strong>Buku Kartu Inventaris Aktif</strong>.</li>
+      <li>Pembelian dilengkapi bukti pertanggungjawaban <strong>Nota Toko Resmi <?= $hasNota ? '(&#10003; Terlampir)' : '' ?></strong> dan <strong>Dokumentasi Foto Fisik <?= $hasFoto ? '(&#10003; Terlampir)' : '' ?></strong>.</li>
+      <li>Sejak tanggal Berita Acara ini, barang resmi tercatat sebagai aset inventaris kantor unit <strong><?= $cabang ?></strong> dan wajib didaftarkan ke <strong>Buku Kartu Inventaris Aktif</strong>.</li>
     </ol>
   </div>
 
   <div class="text-content mb-2" style="font-size: 0.88rem;">
-    Demikian Berita Acara Serah Terima (BAST) ini dibuat dan ditandatangani dalam rangkap secukupnya untuk kelengkapan administrasi dan audit pembukuan.
+    Demikian Berita Acara Pengadaan Barang ini dibuat dan ditandatangani dalam rangkap secukupnya untuk kelengkapan administrasi dan audit pembukuan.
   </div>
 
   <!-- Kolom Tanda Tangan 3 Pihak -->
@@ -434,17 +434,17 @@ body {
 <?php if ($hasFoto || $hasNota): ?>
 <!-- Lembar Lampiran Bukti Fisik & Nota Toko (Halaman 2 Otomatis Saat Print) -->
 <div class="page-break"></div>
-<div class="bast-sheet sheet-page-2 mt-4">
+<div class="doc-sheet sheet-page-2 mt-4">
   <div class="d-flex align-items-center justify-content-between mb-3 border-bottom pb-2">
     <div>
       <div class="fw-bold text-uppercase" style="font-size: 0.95rem; color: #003B73; letter-spacing: 0.04em;">
         LAMPIRAN DOKUMENTASI FISIK &amp; NOTA PEMBELIAN
       </div>
       <div class="text-muted small" style="font-size: 0.80rem;">
-        Referensi Dokumen : <strong><?= $bastNo ?></strong> &middot; Perihal: <strong><?= $perihal ?></strong>
+        Referensi Dokumen : <strong><?= $docNo ?></strong> &middot; Perihal: <strong><?= $perihal ?></strong>
       </div>
     </div>
-    <span class="badge bg-light text-dark border font-monospace px-2.5 py-1" style="font-size: 0.72rem;">LAMPIRAN BAST</span>
+    <span class="badge bg-light text-dark border font-monospace px-2.5 py-1" style="font-size: 0.72rem;">LAMPIRAN DOKUMEN</span>
   </div>
 
   <div class="row g-3">
@@ -493,7 +493,7 @@ body {
   </div>
 
   <div class="text-end text-muted small mt-4 pt-2 border-top font-monospace" style="font-size: 0.70rem;">
-    Dokumen Lampiran BAST Pengadaan &middot; PT BPR Mitratama Arthabuana &middot; Dicetak pada: <?= date('d/m/Y H:i') ?>
+    Dokumen Lampiran Pengadaan Barang &middot; PT BPR Mitratama Arthabuana &middot; Dicetak pada: <?= date('d/m/Y H:i') ?>
   </div>
 </div>
 <?php endif; ?>
