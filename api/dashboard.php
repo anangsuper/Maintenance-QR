@@ -1688,13 +1688,18 @@ if ($activeTab === 'kartu') {
             </button>
             <ul class="dropdown-menu dropdown-menu-end shadow-sm" style="font-size: 0.85rem;">
               <li>
+                <a class="dropdown-item fw-semibold text-success" href="'.e(module_url('print_inventory_card.php', ['export'=>'excel'])).'">
+                  <i class="bi bi-file-earmark-excel-fill text-success me-2"></i> Laporan Excel SDM (.xls)
+                </a>
+              </li>
+              <li>
                 <a class="dropdown-item" href="'.e(module_url('print_inventory_card.php', ['export'=>'doc'])).'">
                   <i class="bi bi-file-earmark-word-fill text-primary me-2"></i> Dokumen Microsoft Word (.doc)
                 </a>
               </li>
               <li>
                 <a class="dropdown-item" href="'.e(module_url('print_inventory_card.php', ['export'=>'csv'])).'">
-                  <i class="bi bi-file-earmark-spreadsheet-fill text-success me-2"></i> Spreadsheet CSV (.csv)
+                  <i class="bi bi-file-earmark-spreadsheet text-secondary me-2"></i> Spreadsheet CSV (.csv)
                 </a>
               </li>
             </ul>
@@ -1820,6 +1825,9 @@ if ($activeTab === 'kartu') {
           <span class="text-secondary small fw-semibold">Aksi untuk kartu inventaris terpilih:</span>
         </div>
         <div class="d-flex align-items-center gap-2 flex-wrap">
+          <button type="button" class="btn btn-sm btn-success fw-semibold shadow-sm d-inline-flex align-items-center gap-1" id="btnExportExcelSelected" onclick="exportExcelSelectedCards()">
+            <i class="bi bi-file-earmark-excel-fill"></i> Ekspor Excel SDM (<span id="countExcel">0</span>)
+          </button>
           <button type="button" class="btn btn-sm btn-primary fw-semibold shadow-sm d-inline-flex align-items-center gap-1" id="btnPrintSelected" onclick="printSelectedCards()">
             <i class="bi bi-printer-fill"></i> Cetak Kartu Pilihan (<span id="countPrint">0</span>)
           </button>
@@ -3067,11 +3075,13 @@ function updateCardCounters() {
   const count = ids.length;
   const countDelSpan = document.getElementById("countDelete");
   const countPrintSpan = document.getElementById("countPrint");
+  const countExcelSpan = document.getElementById("countExcel");
   const countSelectedText = document.getElementById("countSelectedText");
   const selBar = document.getElementById("selectionCardBar");
 
   if (countDelSpan) countDelSpan.innerText = count;
   if (countPrintSpan) countPrintSpan.innerText = count;
+  if (countExcelSpan) countExcelSpan.innerText = count;
   if (countSelectedText) countSelectedText.innerText = count;
 
   if (selBar) {
@@ -3106,6 +3116,15 @@ function deselectAllCards() {
   }
   document.querySelectorAll(".card-checkbox").forEach(cb => cb.checked = false);
   updateCardCounters();
+}
+
+function exportExcelSelectedCards() {
+  const ids = getSelectedCardIds();
+  let targetUrl = "print_inventory_card.php?source=inventaris_kartu&export=excel";
+  if (ids.length > 0) {
+    targetUrl += "&ids=" + encodeURIComponent(ids.join(","));
+  }
+  window.open(targetUrl, "_blank");
 }
 
 function printSelectedCards() {

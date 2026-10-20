@@ -303,22 +303,98 @@ $tglCetakFormatted = date('d-m-Y');
 // Format Nama File PDF: Inventaris_(Nama Cabang)_(tanggal dicetak)
 $pdfFileName = "Inventaris_{$cabangSlug}_{$tglCetakFormatted}";
 
-// 4. Tangani Ekspor CSV
+// 4. Tangani Ekspor Excel SDM (.xls) - Sesuai Format Standar Bank Mitra (7 Kolom)
+if ($exportMode === 'excel' || $exportMode === 'xls') {
+    $excelFileName = "Laporan_SDM_Inventaris_{$cabangSlug}_{$tglCetakFormatted}.xls";
+    header('Content-Type: application/vnd.ms-excel; charset=utf-8');
+    header('Content-Disposition: attachment; filename="' . $excelFileName . '"');
+    header('Cache-Control: max-age=0, no-cache, must-revalidate, proxy-revalidate');
+    header('Pragma: public');
+
+    echo '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">';
+    echo '<head>';
+    echo '<meta http-equiv="Content-Type" content="text/html; charset=utf-8">';
+    echo '<!--[if gte mso 9]><xml><x:ExcelWorkbook><x:ExcelWorksheets><x:ExcelWorksheet><x:Name>SDM Inventaris</x:Name><x:WorksheetOptions><x:DisplayGridlines/></x:WorksheetOptions></x:ExcelWorksheet></x:ExcelWorksheets></x:ExcelWorkbook></xml><![endif]-->';
+    echo '<style>';
+    echo 'body { font-family: Calibri, Arial, sans-serif; font-size: 11pt; color: #000; }';
+    echo 'table { border-collapse: collapse; width: 100%; }';
+    echo 'th { background-color: #8EA9DB; color: #000000; font-weight: bold; border: 1px solid #000000; text-align: center; vertical-align: middle; padding: 6px 10px; font-size: 11pt; }';
+    echo 'td { border: 1px solid #000000; vertical-align: middle; padding: 5px 8px; font-size: 10.5pt; color: #000000; }';
+    echo '.text-center { text-align: center; }';
+    echo '.text-left { text-align: left; }';
+    echo '.num-text { mso-number-format: "\@"; text-align: center; }';
+    echo '.date-text { mso-number-format: "\@"; text-align: center; }';
+    echo '</style>';
+    echo '</head>';
+    echo '<body>';
+    echo '<table border="1">';
+    echo '<thead>';
+    echo '<tr>';
+    echo '<th style="width: 50px;">No.</th>';
+    echo '<th style="width: 140px;">No Sistem</th>';
+    echo '<th style="width: 350px;">Nama Aktiva</th>';
+    echo '<th style="width: 140px;">Tanggal Perolehan</th>';
+    echo '<th style="width: 180px;">Kode Barcode</th>';
+    echo '<th style="width: 260px;">Lokasi</th>';
+    echo '<th style="width: 110px;">Kantor</th>';
+    echo '</tr>';
+    echo '</thead>';
+    echo '<tbody>';
+
+    $no = 0;
+    foreach ($cardsData as $c) {
+        $no++;
+        $rekVal = $c['kode'] ?? '';
+        $namaVal = mb_strtoupper((string)($c['nama'] ?? ''), 'UTF-8');
+        $tglDisplay = format_excel_date($c['tgl_raw'] ?? '');
+        $kodeBarcode = !empty($c['nomor_gabungan']) ? $c['nomor_gabungan'] : get_nomor_asset_gabungan($rekVal, $c['tgl_raw'] ?? '');
+        $lokasiVal = $c['lokasi'] ?? '';
+        $kantorVal = determine_kantor_code($lokasiVal, $rekVal);
+
+        echo '<tr>';
+        echo '<td class="text-center">' . $no . '</td>';
+        echo '<td class="num-text">' . htmlspecialchars($rekVal, ENT_QUOTES, 'UTF-8') . '</td>';
+        echo '<td class="text-left">' . htmlspecialchars($namaVal, ENT_QUOTES, 'UTF-8') . '</td>';
+        echo '<td class="date-text">' . htmlspecialchars($tglDisplay, ENT_QUOTES, 'UTF-8') . '</td>';
+        echo '<td class="num-text">' . htmlspecialchars($kodeBarcode, ENT_QUOTES, 'UTF-8') . '</td>';
+        echo '<td class="text-left">' . htmlspecialchars($lokasiVal, ENT_QUOTES, 'UTF-8') . '</td>';
+        echo '<td class="text-center" style="font-weight: bold;">' . htmlspecialchars($kantorVal, ENT_QUOTES, 'UTF-8') . '</td>';
+        echo '</tr>';
+    }
+
+    echo '</tbody>';
+    echo '</table>';
+    echo '</body>';
+    echo '</html>';
+    exit;
+}
+
+// 5. Tangani Ekspor CSV (Format Standar SDM 7 Kolom)
 if ($exportMode === 'csv') {
+    $csvFileName = "Laporan_SDM_Inventaris_{$cabangSlug}_{$tglCetakFormatted}.csv";
     header('Content-Type: text/csv; charset=utf-8');
-    header('Content-Disposition: attachment; filename="' . $pdfFileName . '.csv"');
+    header('Content-Disposition: attachment; filename="' . $csvFileName . '"');
     $out = fopen('php://output', 'w');
     fprintf($out, chr(0xEF).chr(0xBB).chr(0xBF)); // BOM UTF-8
-    fputcsv($out, ['No', 'ID', 'Nomor Rekening / Kode', 'Nama Barang', 'Tanggal Perolehan', 'Barcode Data (URL)', 'Lokasi']);
+    fputcsv($out, ['No.', 'No Sistem', 'Nama Aktiva', 'Tanggal Perolehan', 'Kode Barcode', 'Lokasi', 'Kantor']);
+    $no = 0;
     foreach ($cardsData as $c) {
+        $no++;
+        $rekVal = $c['kode'] ?? '';
+        $namaVal = mb_strtoupper((string)($c['nama'] ?? ''), 'UTF-8');
+        $tglDisplay = format_excel_date($c['tgl_raw'] ?? '');
+        $kodeBarcode = !empty($c['nomor_gabungan']) ? $c['nomor_gabungan'] : get_nomor_asset_gabungan($rekVal, $c['tgl_raw'] ?? '');
+        $lokasiVal = $c['lokasi'] ?? '';
+        $kantorVal = determine_kantor_code($lokasiVal, $rekVal);
+
         fputcsv($out, [
-            $c['index'],
-            $c['id'],
-            sanitize_csv_cell($c['kode']),
-            sanitize_csv_cell($c['nama']),
-            sanitize_csv_cell($c['tgl']),
-            sanitize_csv_cell($c['barcode_data']),
-            sanitize_csv_cell($c['lokasi'])
+            $no,
+            sanitize_csv_cell($rekVal),
+            sanitize_csv_cell($namaVal),
+            sanitize_csv_cell($tglDisplay),
+            sanitize_csv_cell($kodeBarcode),
+            sanitize_csv_cell($lokasiVal),
+            sanitize_csv_cell($kantorVal)
         ]);
     }
     fclose($out);
@@ -1022,13 +1098,18 @@ unset($_SESSION['flash'], $_SESSION['flash_error']);
           </button>
           <ul class="dropdown-menu dropdown-menu-end shadow-sm" style="font-size: 0.85rem;">
             <li>
+              <a class="dropdown-item fw-semibold text-success" href="<?= e(card_url(['export' => 'excel'])) ?>">
+                <i class="bi bi-file-earmark-excel-fill text-success me-2"></i> Laporan Excel SDM (.xls)
+              </a>
+            </li>
+            <li>
               <a class="dropdown-item" href="<?= e(card_url(['export' => 'doc'])) ?>">
                 <i class="bi bi-file-earmark-word-fill text-primary me-2"></i> Dokumen Microsoft Word (.doc)
               </a>
             </li>
             <li>
               <a class="dropdown-item" href="<?= e(card_url(['export' => 'csv'])) ?>">
-                <i class="bi bi-file-earmark-spreadsheet-fill text-success me-2"></i> Spreadsheet CSV / Excel
+                <i class="bi bi-file-earmark-spreadsheet text-secondary me-2"></i> Spreadsheet CSV (.csv)
               </a>
             </li>
             <li><hr class="dropdown-divider"></li>

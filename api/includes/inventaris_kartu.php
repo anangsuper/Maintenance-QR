@@ -167,6 +167,62 @@ function get_cabang_from_nomor_rekening(?string $noRek): ?array {
 }
 
 /**
+ * Format tanggal khusus pelaporan Excel SDM (dd/mm/yyyy)
+ */
+function format_excel_date(?string $tgl): string {
+    if (empty($tgl) || $tgl === '0000-00-00') {
+        return '';
+    }
+    $clean = trim((string)$tgl);
+    if (preg_match('/^(\d{4})[-\/](\d{1,2})[-\/](\d{1,2})/', $clean, $m)) {
+        return sprintf('%02d/%02d/%04d', (int)$m[3], (int)$m[2], (int)$m[1]);
+    }
+    if (preg_match('/^(\d{1,2})[-\/](\d{1,2})[-\/](\d{4})/', $clean, $m)) {
+        return sprintf('%02d/%02d/%04d', (int)$m[1], (int)$m[2], (int)$m[3]);
+    }
+    $ts = strtotime($clean);
+    return $ts ? date('d/m/Y', $ts) : $clean;
+}
+
+/**
+ * Menentukan kode singkatan Kantor (KPO, HDB, MTP, BATULICIN, TANJUNG) untuk laporan SDM
+ */
+function determine_kantor_code(?string $lokasi, ?string $noRek): string {
+    $lok = strtoupper(trim((string)$lokasi));
+    $rek = trim((string)$noRek);
+
+    // 1. Prioritaskan deteksi cabang dari string lokasi aktual
+    if (str_contains($lok, 'HDB') || str_contains($lok, 'HANDIL')) {
+        return 'HDB';
+    }
+    if (str_contains($lok, 'BTL') || str_contains($lok, 'BATULICIN')) {
+        return 'BATULICIN';
+    }
+    if (str_contains($lok, 'MTP') || str_contains($lok, 'MARTAPURA')) {
+        return 'MTP';
+    }
+    if (str_contains($lok, 'TJG') || str_contains($lok, 'TANJUNG')) {
+        return 'TANJUNG';
+    }
+    if (str_contains($lok, 'KPO') || str_contains($lok, 'PUSAT')) {
+        return 'KPO';
+    }
+
+    // 2. Jika tidak ada di teks lokasi, deteksi dari prefix nomor rekening
+    if (preg_match('/^(\d{2})[\.\-]/', $rek, $m)) {
+        switch ($m[1]) {
+            case '01': return 'KPO';
+            case '02': return 'BATULICIN';
+            case '03': return 'MTP';
+            case '04': return 'TANJUNG';
+            case '05': return 'HDB';
+        }
+    }
+
+    return 'KPO';
+}
+
+/**
  * Mengambil semua data dari tabel inventaris_kartu
  */
 function get_inventaris_kartu_rows(bool $refresh = false): array {

@@ -183,6 +183,21 @@ unset($_SESSION['flash_error']);
 
 // 5. Render Halaman
 $body = '
+<style>
+#modalDisposal .modal-dialog, #modalCatalogPicker .modal-dialog {
+  max-height: calc(100vh - 2rem);
+}
+#modalDisposal .modal-content, #modalCatalogPicker .modal-content {
+  max-height: calc(100vh - 2rem);
+  display: flex;
+  flex-direction: column;
+}
+#modalDisposal .modal-body, #modalCatalogPicker .modal-body {
+  overflow-y: auto !important;
+  max-height: calc(100vh - 180px);
+}
+</style>
+
 <div class="container-fluid py-4 px-md-4">
 
   <!-- Flash Messages -->
@@ -464,10 +479,9 @@ $body .= '
 <!-- ==================================================== -->
 <div class="modal fade" id="modalDisposal" tabindex="-1" aria-labelledby="modalDisposalLabel" aria-hidden="true">
   <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
-    <div class="modal-content border-0 shadow-lg">
-      <form method="POST" action="'.e(module_url('asset_disposal.php')).'" enctype="multipart/form-data" id="formDisposal">
-        <input type="hidden" name="action" value="save">
-        <input type="hidden" name="id" id="dispId" value="0">
+    <form method="POST" action="'.e(module_url('asset_disposal.php')).'" enctype="multipart/form-data" id="formDisposal" class="modal-content border-0 shadow-lg">
+      <input type="hidden" name="action" value="save">
+      <input type="hidden" name="id" id="dispId" value="0">
         
         <div class="modal-header bg-dark text-white border-0 py-3">
           <h5 class="modal-title fw-bold d-flex align-items-center gap-2" id="modalDisposalLabel">
@@ -678,8 +692,7 @@ $body .= '
             <i class="bi bi-check-circle-fill me-1"></i> Simpan &amp; Proses BA-Afkir
           </button>
         </div>
-      </form>
-    </div>
+    </form>
   </div>
 </div>
 

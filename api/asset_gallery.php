@@ -11,18 +11,6 @@ if (!in_array($subTab, ['inventaris', 'unit'], true)) {
     $subTab = 'inventaris';
 }
 
-// Handle aksi pengosongan seluruh foto kartu inventaris jika diminta
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'reset_all_inv_photos') {
-    verify_csrf();
-    if (function_exists('reset_all_inventaris_kartu_photos')) {
-        reset_all_inventaris_kartu_photos();
-    } else {
-        db()->exec("UPDATE inventaris_kartu SET foto = NULL, foto_updated_by = NULL, foto_updated_at = NULL");
-    }
-    $_SESSION['flash'] = '✓ Seluruh foto kartu inventaris berhasil dikosongkan. Anda dapat memperbarui foto masing-masing barang secara mandiri.';
-    header('Location: ' . module_url('asset_gallery.php', ['sub' => 'inventaris']));
-    exit;
-}
 
 // 2. Ambil Master Data Umum
 $standardCabangs = get_standard_cabang_list();
@@ -822,10 +810,7 @@ $body = '
     <p class="text-secondary small mb-0">Arsip foto fisik perangkat IT dan kartu inventaris Core Banking PT BPR Mitratama Arthabuana.</p>
   </div>
   <div class="d-flex align-items-center gap-2 flex-wrap">
-    '.($subTab === 'inventaris' ? '
-    <button type="button" class="btn btn-outline-danger d-inline-flex align-items-center gap-1 fw-semibold shadow-xs" data-bs-toggle="modal" data-bs-target="#confirmResetInvPhotosModal">
-      <i class="bi bi-trash"></i> Kosongkan Semua Foto Kartu
-    </button>' : '').'
+
     <a href="'.e(module_url('dashboard.php', ['tab' => 'kartu'])).'" class="btn btn-outline-primary d-inline-flex align-items-center gap-1 fw-semibold shadow-xs">
       <i class="bi bi-credit-card-2-front"></i> Tabel Kartu
     </a>
@@ -966,30 +951,7 @@ $body = '
   </div>
 </div>
 
-<!-- Modal Konfirmasi Kosongkan Foto Kartu Inventaris -->
-<div class="modal fade" id="confirmResetInvPhotosModal" tabindex="-1" aria-hidden="true">
-  <div class="modal-dialog modal-dialog-centered modal-sm">
-    <div class="modal-content border-0 shadow-lg rounded-4">
-      <div class="modal-header border-0 pb-0">
-        <h6 class="modal-title fw-bold text-danger"><i class="bi bi-exclamation-triangle-fill me-1"></i> Kosongkan Foto?</h6>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-      </div>
-      <div class="modal-body text-center p-3">
-        <p class="small text-secondary mb-3">Tindakan ini akan mengosongkan seluruh foto pada kartu inventaris Bank, sehingga Anda dapat mengunggah foto baru per barang secara mandiri.</p>
-        <form method="post" action="'.e(module_url('asset_gallery.php', ['sub' => 'inventaris'])).'">
-          <input type="hidden" name="_csrf" value="'.e(csrf_token()).'">
-          <input type="hidden" name="action" value="reset_all_inv_photos">
-          <div class="d-grid gap-2">
-            <button type="submit" class="btn btn-danger btn-sm rounded-pill fw-semibold">
-              <i class="bi bi-trash me-1"></i> Ya, Kosongkan Semua Foto
-            </button>
-            <button type="button" class="btn btn-light btn-sm rounded-pill border" data-bs-dismiss="modal">Batal</button>
-          </div>
-        </form>
-      </div>
-    </div>
-  </div>
-</div>
+
 ';
 
 $extraScript = '
