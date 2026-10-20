@@ -125,6 +125,28 @@ function current_user_role(): string {
     return 'teknisi';
 }
 
+function current_user_photo(): ?string {
+    if (!is_logged_in()) {
+        return null;
+    }
+    if (!empty($_SESSION['user_face_photo'])) {
+        return (string)$_SESSION['user_face_photo'];
+    }
+    $uid = current_user_id();
+    if ($uid > 0) {
+        try {
+            $stmt = db()->prepare("SELECT face_photo FROM users WHERE id = ? LIMIT 1");
+            $stmt->execute([$uid]);
+            $photo = $stmt->fetchColumn();
+            if ($photo && is_string($photo) && strlen(trim($photo)) > 20) {
+                $_SESSION['user_face_photo'] = $photo;
+                return $photo;
+            }
+        } catch (Throwable $e) {}
+    }
+    return null;
+}
+
 function request_uri_full(): string {
     $scheme = is_https() ? 'https' : 'http';
     $host = $_SERVER['HTTP_X_FORWARDED_HOST'] ?? $_SERVER['HTTP_HOST'] ?? 'localhost';
@@ -415,6 +437,9 @@ function login_user_session(array $user): void {
     $_SESSION['username'] = (string)($user['username'] ?? 'user');
     $_SESSION['role'] = strtolower((string)($user['role'] ?? 'teknisi'));
     $_SESSION['last_activity'] = time();
+    if (!empty($user['face_photo'])) {
+        $_SESSION['user_face_photo'] = (string)$user['face_photo'];
+    }
     set_auth_cookie($user);
 }
 

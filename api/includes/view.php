@@ -5,6 +5,14 @@ function render_page(string $title, string $content, string $extraHead = '', str
     $role = current_user_role();
     $userName = current_user_name();
     $userInitial = strtoupper(substr($userName, 0, 1) ?: 'U');
+    $userPhoto = function_exists('current_user_photo') ? current_user_photo() : null;
+    if ($userPhoto && (str_starts_with($userPhoto, 'data:image') || str_starts_with($userPhoto, 'http') || str_starts_with($userPhoto, '/'))) {
+        $avatarHtml = '<img src="'.e($userPhoto).'" alt="'.e($userName).'" class="sidebar-user-avatar-img rounded-circle object-fit-cover shadow-xs" style="width: 36px; height: 36px; min-width: 36px; border: 2px solid rgba(140, 87, 255, 0.45); display: inline-block;">';
+        $topbarAvatarHtml = '<img src="'.e($userPhoto).'" alt="'.e($userName).'" class="topbar-user-avatar-img rounded-circle object-fit-cover" style="width: 32px; height: 32px; min-width: 32px; border: 1.5px solid rgba(140, 87, 255, 0.45); display: inline-block;">';
+    } else {
+        $avatarHtml = ''.$avatarHtml.'';
+        $topbarAvatarHtml = ''.$topbarAvatarHtml.'';
+    }
     $isAdmin = is_admin();
     $isLoggedIn = is_logged_in();
 
@@ -123,7 +131,7 @@ function render_page(string $title, string $content, string $extraHead = '', str
       <div class="sidebar-footer">
         <div class="sidebar-user-card d-flex align-items-center justify-content-between">
           <div class="d-flex align-items-center gap-2 overflow-hidden">
-            <div class="sidebar-user-avatar '.($isHrdRole ? 'bg-warning text-dark' : '').'">'.$userInitial.'</div>
+            '.$avatarHtml.'
             <div class="overflow-hidden">
               <div class="sidebar-user-name text-truncate">'.e($userName).'</div>
               <div class="sidebar-user-role text-capitalize">'.e($displayRole).'</div>
@@ -151,7 +159,7 @@ function render_page(string $title, string $content, string $extraHead = '', str
         <div class="d-flex align-items-center justify-content-between">
           <div class="d-flex align-items-center gap-2">
 
-            <div class="sidebar-user-avatar '.($isHrdRole ? 'bg-warning text-dark' : '').'">'.$userInitial.'</div>
+            '.$avatarHtml.'
             <div>
               <div class="text-white small fw-bold">'.e($userName).'</div>
               <div class="text-muted small text-capitalize">'.e($displayRole).'</div>
@@ -219,7 +227,7 @@ function render_page(string $title, string $content, string $extraHead = '', str
 
         <div class="dropdown">
           <button class="topbar-user-btn dropdown-toggle border-0" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-            <span class="topbar-user-avatar">'.$userInitial.'</span>
+            '.$topbarAvatarHtml.'
           </button>
           <ul class="dropdown-menu dropdown-menu-end shadow-sm border mt-2">
             <li class="px-3 py-2 border-bottom">
