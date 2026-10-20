@@ -1298,6 +1298,17 @@ $pageTitle = $card ? e($card['nama_barang']) . ' - Kartu Inventaris' : 'Kartu In
             const video = document.getElementById("bioVideo");
             const statusBox = document.getElementById("bioStatusBox");
 
+            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                if (window.location.protocol === "http:") {
+                    const httpsUrl = "https://" + window.location.host + window.location.pathname + window.location.search;
+                    if (statusBox) {
+                        statusBox.className = "alert alert-warning py-2.5 px-3 small mb-2";
+                        statusBox.innerHTML = '<i class="bi bi-shield-exclamation text-warning me-1"></i> Kamera live memerlukan protokol <strong>HTTPS</strong>.<br><a href="' + httpsUrl + '" class="btn btn-warning btn-sm fw-bold mt-1 text-dark shadow-xs"><i class="bi bi-box-arrow-up-right me-1"></i> Buka via HTTPS agar Kamera Aktif</a>';
+                    }
+                    return;
+                }
+            }
+
             try {
                 if (statusBox && !bioModelsLoaded) {
                     statusBox.className = "alert alert-info py-2 px-3 small fw-semibold mb-2";

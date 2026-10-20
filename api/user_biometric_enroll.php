@@ -402,6 +402,17 @@ $body = '
             </span>
           </div>
 
+          <!-- Banner Beralih ke HTTPS agar Kamera Langsung Aktif -->
+          <div class="alert alert-primary py-2 px-3 small d-flex align-items-center justify-content-between mb-3 border-primary border-opacity-25 bg-primary bg-opacity-10 d-none" id="httpsNoticeBanner">
+            <div>
+              <i class="bi bi-shield-lock-fill text-primary me-1"></i>
+              Buka lewat <strong>HTTPS</strong> agar kamera webcam aktif langsung di browser.
+            </div>
+            <a href="#" id="linkToHttps" class="btn btn-primary btn-sm fw-bold px-3 py-1 shadow-xs text-nowrap ms-2">
+              Buka via HTTPS <i class="bi bi-arrow-right-short"></i>
+            </a>
+          </div>
+
           <!-- Scanner Container -->
           <div class="scanner-container mb-3" id="scannerContainer">
             <video id="videoElement" class="scanner-video" autoplay playsinline webkit-playsinline muted></video>
@@ -663,8 +674,16 @@ async function startCamera() {
 
   // Cek dukungan getUserMedia (pada HTTP / browser tanpa webcam)
   if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+    if (window.location.protocol === "http:") {
+      const httpsUrl = "https://" + window.location.host + window.location.pathname + window.location.search;
+      if (confirm("Browser membatasi akses kamera langsung pada protokol HTTP.\n\nKlik OK untuk beralih ke HTTPS agar kamera aktif live (Pilih 'Advanced/Lanjutan' -> 'Lanjutkan ke 192.168.88.163' jika ada peringatan browser).")) {
+        window.location.href = httpsUrl;
+        return;
+      }
+    }
+    triggerFaceFileInput();
     statusMsg.className = "alert alert-warning py-2.5 px-3 text-center mb-3 small";
-    statusMsg.innerHTML = '<i class="bi bi-exclamation-triangle-fill text-warning me-1"></i> Browser membatasi akses webcam langsung pada protokol HTTP.<br><div class="mt-1">Silakan gunakan tombol <strong>"Ambil / Upload Foto"</strong> di bawah untuk memotret atau memilih foto wajah langsung dari kamera HP atau file Anda.</div>';
+    statusMsg.innerHTML = '<i class="bi bi-camera-fill text-primary me-1"></i> Mengaktifkan kamera perangkat...<br><div class="mt-1 small">Jika ingin tampilan kamera langsung di layar browser, silakan buka melalui <a href="' + ("https://" + window.location.host + window.location.pathname + window.location.search) + '" class="fw-bold text-decoration-underline">HTTPS (klik di sini)</a>.</div>';
     const uploadBtn = document.getElementById("btnUploadFaceFile");
     if (uploadBtn) {
       uploadBtn.classList.remove("btn-outline-primary");
@@ -885,10 +904,27 @@ function captureSnapshot() {
   capturedPhotoBase64 = canvas.toDataURL("image/jpeg", 0.70);
 }
 
+function checkHttpsEnvironment() {
+  if (window.location.protocol === "http:") {
+    const banner = document.getElementById("httpsNoticeBanner");
+    if (banner) {
+      banner.classList.remove("d-none");
+      const link = document.getElementById("linkToHttps");
+      if (link) {
+        link.href = "https://" + window.location.host + window.location.pathname + window.location.search;
+      }
+    }
+  }
+}
+
 // Preload modul di awal agar siap saat kamera aktif
 if (document.readyState === "loading") {
-  document.addEventListener("DOMContentLoaded", () => setTimeout(loadModels, 200));
+  document.addEventListener("DOMContentLoaded", () => {
+    checkHttpsEnvironment();
+    setTimeout(loadModels, 200);
+  });
 } else {
+  checkHttpsEnvironment();
   setTimeout(loadModels, 200);
 }
 
