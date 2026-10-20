@@ -70,17 +70,19 @@ body {
   background: #E2E8F0;
   font-family: "Times New Roman", Times, Georgia, serif;
   color: #000000;
-  padding: 30px 10px;
+  padding: 24px 10px;
   -webkit-print-color-adjust: exact;
   print-color-adjust: exact;
 }
 
 .doc-sheet {
+  width: 210mm;
   max-width: 210mm;
   min-height: 297mm;
+  height: 297mm;
   margin: 0 auto;
   background: #FFFFFF;
-  padding: 14mm 20mm 32mm 20mm;
+  padding: 10mm 16mm 26mm 16mm;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.12);
   border-radius: 4px;
   position: relative;
@@ -89,54 +91,55 @@ body {
 }
 
 .doc-top-logo {
-  width: 105px;
-  max-width: 105px;
+  width: 24mm;
+  max-width: 24mm;
   height: auto;
   object-fit: contain;
   display: block;
-  margin-bottom: 12px;
+  margin-bottom: 2mm;
 }
 
 .doc-title-block {
   text-align: center;
-  margin-bottom: 16px;
+  margin-bottom: 8px;
   border-bottom: 2px solid #000000;
-  padding-bottom: 8px;
+  padding-bottom: 4px;
 }
 
 .doc-heading {
-  font-size: 1.15rem;
+  font-size: 1.05rem;
   font-weight: 800;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.03em;
   text-transform: uppercase;
   margin-bottom: 2px;
 }
 
 .doc-subheading {
-  font-size: 0.95rem;
+  font-size: 0.88rem;
   font-family: "Times New Roman", Times, serif;
   font-weight: 600;
   letter-spacing: 0.02em;
 }
 
 .doc-intro {
-  font-size: 0.96rem;
-  line-height: 1.5;
+  font-size: 0.88rem;
+  line-height: 1.38;
   text-align: justify;
-  margin-bottom: 14px;
+  margin-bottom: 8px;
 }
 
 .table-detail {
   width: 100%;
   border-collapse: collapse;
-  margin-bottom: 14px;
-  font-size: 0.92rem;
+  margin-bottom: 8px;
+  font-size: 0.83rem;
 }
 
 .table-detail th, .table-detail td {
   border: 1px solid #000000;
-  padding: 5px 8px;
+  padding: 3px 6px;
   vertical-align: top;
+  line-height: 1.25;
 }
 
 .table-detail th {
@@ -145,38 +148,38 @@ body {
 }
 
 .doc-clause {
-  font-size: 0.94rem;
-  line-height: 1.5;
+  font-size: 0.83rem;
+  line-height: 1.34;
   text-align: justify;
-  margin-bottom: 14px;
+  margin-bottom: 8px;
 }
 
 .doc-clause ol {
   margin-bottom: 0;
-  padding-left: 20px;
+  padding-left: 18px;
 }
 
 .doc-clause li {
-  margin-bottom: 4px;
+  margin-bottom: 2px;
 }
 
 .photo-gallery-box {
-  margin-bottom: 16px;
+  margin-bottom: 8px;
   page-break-inside: avoid;
 }
 
 .photo-box-item {
   border: 1px dashed #94A3B8;
-  padding: 8px;
+  padding: 4px;
   border-radius: 4px;
   text-align: center;
   background: #F8FAFC;
-  max-width: 320px;
+  max-width: 240px;
   margin: 0 auto;
 }
 
 .photo-box-item img {
-  max-height: 130px;
+  max-height: 70px;
   max-width: 100%;
   object-fit: contain;
   display: block;
@@ -186,15 +189,15 @@ body {
 }
 
 .photo-box-item .photo-label {
-  font-size: 0.76rem;
+  font-size: 0.70rem;
   font-weight: 600;
   color: #475569;
-  margin-top: 5px;
+  margin-top: 2px;
   font-family: -apple-system, sans-serif;
 }
 
 .signature-row {
-  margin-top: 24px;
+  margin-top: 10px;
   display: flex;
   justify-content: space-between;
   text-align: center;
@@ -203,21 +206,22 @@ body {
 
 .sig-col {
   width: 32%;
-  font-size: 0.94rem;
+  font-size: 0.84rem;
+  line-height: 1.25;
 }
 
 .sig-space {
-  height: 58px;
+  height: 42px;
 }
 
 .sig-name {
   font-weight: 700;
   text-decoration: underline;
-  font-size: 0.98rem;
+  font-size: 0.88rem;
 }
 
 .sig-title {
-  font-size: 0.86rem;
+  font-size: 0.78rem;
   color: #111111;
   margin-top: 1px;
 }
@@ -228,7 +232,7 @@ body {
   left: 0;
   width: 100%;
   height: auto;
-  max-height: 48mm;
+  max-height: 32mm;
   object-fit: cover;
   pointer-events: none;
 }
@@ -244,30 +248,40 @@ body {
 }
 
 @media print {
-  body {
+  html, body {
+    width: 210mm !important;
+    height: 297mm !important;
+    max-height: 297mm !important;
     background: #FFFFFF !important;
     padding: 0 !important;
     margin: 0 !important;
+    overflow: hidden !important;
   }
   .doc-sheet {
     box-shadow: none !important;
-    padding: 12mm 18mm 30mm 18mm !important;
-    max-width: 100% !important;
-    width: 100% !important;
+    padding: 10mm 16mm 26mm 16mm !important;
+    width: 210mm !important;
+    max-width: 210mm !important;
     min-height: 297mm !important;
     height: 297mm !important;
+    max-height: 297mm !important;
     border-radius: 0 !important;
+    box-sizing: border-box !important;
+    page-break-after: avoid !important;
+    page-break-inside: avoid !important;
+    overflow: hidden !important;
   }
   .doc-top-logo {
-    width: 28mm !important;
-    max-width: 28mm !important;
-    margin-bottom: 3mm !important;
+    width: 24mm !important;
+    max-width: 24mm !important;
+    margin-bottom: 2mm !important;
   }
   .doc-page-footer {
-    position: fixed !important;
+    position: absolute !important;
     bottom: 0 !important;
     left: 0 !important;
     width: 100% !important;
+    max-height: 26mm !important;
   }
   .floating-action-bar, .no-print {
     display: none !important;

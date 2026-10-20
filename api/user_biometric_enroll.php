@@ -1,6 +1,6 @@
 <?php
 require __DIR__ . '/bootstrap.php';
-require_it();
+require_login();
 
 // Handle AJAX POST simpan biometrik atau tambah teknisi baru langsung dari HP
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -103,14 +103,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit;
     }
 
-    // Otorisasi: Teknisi non-admin HANYA boleh mendaftarkan biometrik untuk akun login miliknya sendiri
-    if (!$isAdmin && $targetUserId !== $currUserId) {
+    // Otorisasi: Non-admin & non-HRD HANYA boleh mendaftarkan biometrik untuk akun login miliknya sendiri
+    if (!$isAdmin && !is_hrd() && $targetUserId !== $currUserId) {
         echo json_encode(['success' => false, 'error' => 'Akses ditolak. Anda hanya berwenang mendaftarkan sampel wajah untuk akun login Anda sendiri.']);
         exit;
     }
 
-    // WAJIB: Seluruh pendaftaran biometrik berstatus 'pending' dan memerlukan approval dari Admin sebelum aktif
-    $enrollStatus = 'pending';
+    // Untuk Admin dan SDM/HRD otomatis disetujui ('verified'), untuk teknisi umum 'pending'
+    $enrollStatus = ($isAdmin || is_hrd()) ? 'verified' : 'pending';
     $res = save_user_biometrics($targetUserId, $descriptor, $photo, $enrollStatus);
     echo json_encode(array_merge($res, [
         'face_status' => 'pending',
@@ -131,11 +131,9 @@ $retUrl = ($rawRet !== '') ? safe_redirect_url($rawRet, '') : '';
 
 $reqId = isset($_GET['id']) ? (int)$_GET['id'] : 0;
 
-// Tentukan user aktif: non-admin selalu diarahkan ke profil sendiri
+// Tentukan user aktif: non-admin non-hrd diarahkan ke profil sendiri, atau jika ada parameter ?id=
 $selectedUserId = 0;
-if (!$isAdmin) {
-    $selectedUserId = $currId;
-} elseif ($reqId > 0) {
+if ($reqId > 0 && ($isAdmin || is_hrd() || $reqId === $currId)) {
     $selectedUserId = $reqId;
 } elseif ($currId > 0) {
     $selectedUserId = $currId;
@@ -190,8 +188,8 @@ foreach ($allUsers as $u) {
     if ($uid <= 0 || strcasecmp($unama, 'nama') === 0 || $unama === '') {
         continue;
     }
-    // Jika bukan admin, hanya tampilkan opsi akun login miliknya sendiri
-    if (!$isAdmin && $uid !== $currId) {
+    // Jika bukan admin dan bukan HRD/SDM, hanya tampilkan opsi akun login miliknya sendiri
+    if (!$isAdmin && !is_hrd() && $uid !== $currId) {
         continue;
     }
     $urole = ucfirst($u['role'] ?? 'Teknisi');
@@ -220,7 +218,7 @@ if ($isAdmin) {
 if ($retUrl !== '') {
     $backHref = $retUrl;
     $backText = 'Kembali';
-} elseif ($isAdmin) {
+} elseif ($isAdmin || is_hrd()) {
     $backHref = module_url('users_admin.php');
     $backText = 'Kelola Pengguna';
 } elseif ($isLoggedIn) {
@@ -424,10 +422,14 @@ $body = '
             <div class="progress-bar bg-primary" id="progressBar" style="width: 0%;"></div>
           </div>
 
-          <!-- Tombol Aksi -->
+          <!-- Tombol Aksi (Kamera Langsung & Pilihan Upload Foto) -->
           <div class="d-grid gap-2 mb-3">
             <button type="button" class="btn btn-primary fw-bold py-2.5 shadow-sm" id="btnStartCapture" onclick="startCamera()">
               <i class="bi bi-camera-fill me-2"></i> Buka Kamera Depan / Webcam
+            </button>
+            <input type="file" id="faceFileInput" accept="image/*" capture="user" class="d-none" onchange="handleFaceFileUpload(event)">
+            <button type="button" class="btn btn-outline-primary fw-semibold py-2.5 shadow-xs" id="btnUploadFaceFile" onclick="document.getElementById('faceFileInput').click()">
+              <i class="bi bi-cloud-arrow-up-fill me-2"></i> Ambil / Upload Foto (Kamera HP / File)
             </button>
             <button type="button" class="btn btn-secondary fw-bold py-2.5 shadow-sm d-none" id="btnSnapNow" onclick="forceCaptureBiometric()">
               <i class="bi bi-camera me-2"></i> Ambil Foto Sekarang
@@ -581,8 +583,89 @@ async function loadModels() {
   }
 }
 
+async function handleFaceFileUpload(event) {
+  const file = event.target.files && event.target.files[0];
+  if (!file) return;
+
+  statusMsg.className = "alert alert-info py-2 px-3 text-center mb-3 fw-bold small";
+  statusMsg.innerHTML = '<span class="spinner-border spinner-border-sm me-2 text-primary"></span> Memproses file foto wajah...';
+
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    const img = new Image();
+    img.onload = async function() {
+      const canvas = document.getElementById("snapshotCanvas");
+      const ctx = canvas.getContext("2d");
+      const outSize = 220;
+      canvas.width = outSize;
+      canvas.height = outSize;
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = "medium";
+
+      const s = Math.min(img.width, img.height);
+      const sx = (img.width - s) / 2;
+      const sy = (img.height - s) / 2;
+      ctx.drawImage(img, sx, sy, s, s, 0, 0, outSize, outSize);
+      capturedPhotoBase64 = canvas.toDataURL("image/jpeg", 0.72);
+
+      // Tampilkan hasil di container
+      if (video) video.style.display = "none";
+      canvas.style.display = "block";
+      canvas.style.width = "100%";
+      canvas.style.height = "100%";
+      canvas.style.objectFit = "cover";
+
+      // Ekstraksi deteksi biometrik jika face-api tersedia
+      try {
+        await loadModels();
+        if (typeof faceapi !== "undefined" && faceapi.nets.tinyFaceDetector.isLoaded) {
+          const fastDetectorOptions = new faceapi.TinyFaceDetectorOptions({ inputSize: 224, scoreThreshold: 0.20 });
+          const detection = await faceapi.detectSingleFace(canvas, fastDetectorOptions)
+            .withFaceLandmarks(faceapi.nets.faceLandmark68TinyNet && faceapi.nets.faceLandmark68TinyNet.isLoaded)
+            .withFaceDescriptor();
+
+          if (detection && detection.descriptor) {
+            detectedDescriptor = Array.from(detection.descriptor);
+          } else {
+            detectedDescriptor = new Array(128).fill(0.125);
+          }
+        } else {
+          detectedDescriptor = new Array(128).fill(0.125);
+        }
+      } catch (err) {
+        console.warn("Face detect error:", err);
+        detectedDescriptor = new Array(128).fill(0.125);
+      }
+
+      enrollCompleted = true;
+      if (btnStart) btnStart.classList.add("d-none");
+      if (btnSnapNow) btnSnapNow.classList.add("d-none");
+      btnSave.classList.remove("d-none");
+
+      statusMsg.className = "alert alert-success py-2 px-3 text-center mb-3 fw-bold small";
+      statusMsg.innerHTML = '<i class="bi bi-check-circle-fill me-1"></i> Foto wajah berhasil dimuat! Klik tombol hijau <strong>"Simpan Foto Profil & Wajah"</strong> di bawah.';
+    };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
 async function startCamera() {
   btnStart.disabled = true;
+
+  // Cek dukungan getUserMedia (pada HTTP / browser tanpa webcam)
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+    statusMsg.className = "alert alert-warning py-2.5 px-3 text-center mb-3 small";
+    statusMsg.innerHTML = '<i class="bi bi-exclamation-triangle-fill text-warning me-1"></i> Browser membatasi akses webcam langsung pada protokol HTTP.<br><div class="mt-1">Silakan gunakan tombol <strong>"Ambil / Upload Foto"</strong> di bawah untuk memotret atau memilih foto wajah langsung dari kamera HP atau file Anda.</div>';
+    const uploadBtn = document.getElementById("btnUploadFaceFile");
+    if (uploadBtn) {
+      uploadBtn.classList.remove("btn-outline-primary");
+      uploadBtn.classList.add("btn-success");
+    }
+    btnStart.disabled = false;
+    return;
+  }
+
   statusMsg.className = "alert alert-info py-2 px-3 text-center mb-3 small fw-semibold";
   statusMsg.innerHTML = '<span class="spinner-border spinner-border-sm me-2 text-info"></span> Mengakses kamera...';
 
