@@ -400,7 +400,7 @@ $body .= '
                           </a>';
                       }
                       if (!empty($row['dokumen_ba_disetujui'])) {
-                          $body .= '<a href="'.e(disposal_file_url($row['dokumen_ba_disetujui'])) ?>" target="_blank" class="btn btn-xs btn-outline-info text-dark fw-bold text-start py-0.5 px-2" style="font-size: 0.72rem;">
+                          $body .= '<a href="'.e(disposal_file_url($row['dokumen_ba_disetujui'])).'" target="_blank" class="btn btn-xs btn-outline-info text-dark fw-bold text-start py-0.5 px-2" style="font-size: 0.72rem;">
                             <i class="bi bi-file-earmark-check me-1 text-info"></i> Scan BA Acc ✓
                           </a>';
                       } else {
