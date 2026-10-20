@@ -408,7 +408,7 @@ if (empty($allMemos)) {
               </a>';
 
             $bastUrl = module_url('print_bast_pengadaan.php', ['id' => $mid]);
-            $menuItems[] = '<li><a class="dropdown-item py-1.5" href="'.e($bastUrl).'" target="_blank"><i class="bi bi-file-earmark-check text-success me-2"></i> Cetak Berita Acara (BAST)</a></li>';
+            $menuItems[] = '<li><a class="dropdown-item py-1.5" href="'.e($bastUrl).'" target="_blank"><i class="bi bi-camera-fill text-primary me-2"></i> Dokumentasi Fisik &amp; Nota</a></li>';
             $menuItems[] = '<li><button class="dropdown-item py-1.5" type="button" onclick=\'openRealisasiModal('.$memoJson.')\'><i class="bi bi-receipt text-warning me-2"></i> Realisasi &amp; Nota Toko</button></li>';
         }
 
