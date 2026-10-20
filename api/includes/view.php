@@ -148,6 +148,10 @@ function render_page(string $title, string $content, string $extraHead = '', str
       <div class="p-3 border-top border-navy-subtle">
         <div class="d-flex align-items-center justify-content-between">
           <div class="d-flex align-items-center gap-2">
+        <!-- Tombol Mode Tampilan Publik -->
+        <button type="button" class="btn btn-sm btn-outline-secondary d-inline-flex align-items-center gap-1.5 px-2.5 py-1 rounded-pill btn-theme-toggle-public" title="Mode Tampilan (Auto/Terang/Gelap)">
+          <i class="bi bi-circle-half theme-toggle-icon-public"></i>
+        </button>
             <div class="sidebar-user-avatar '.($isHrdRole ? 'bg-warning text-dark' : '').'">'.$userInitial.'</div>
             <div>
               <div class="text-white small fw-bold">'.e($userName).'</div>
@@ -202,6 +206,12 @@ function render_page(string $title, string $content, string $extraHead = '', str
         <button type="button" class="btn btn-sm btn-outline-primary d-inline-flex align-items-center gap-1.5 fw-semibold px-2.5 py-1" data-bs-toggle="modal" data-bs-target="#modalPanduanAplikasi" title="Buka Panduan Mudah Penggunaan Aplikasi">
           <i class="bi bi-question-circle-fill"></i>
           <span class="d-none d-md-inline">Panduan</span>
+        </button>
+
+        <!-- Tombol Pengatur Mode Tampilan (Otomatis Ikut Device / Terang / Gelap) -->
+        <button type="button" class="btn btn-sm btn-outline-secondary d-inline-flex align-items-center gap-1.5 px-2.5 py-1 rounded-pill" id="btnThemeToggle" title="Mode Tampilan: Mengikuti Pengaturan Perangkat (Klik untuk ganti Terang/Gelap/Auto)">
+          <i class="bi bi-circle-half" id="themeToggleIcon"></i>
+          <span class="d-none d-xl-inline small fw-semibold" id="themeToggleLabel">Auto</span>
         </button>
 
         '.($isHrdRole
@@ -276,6 +286,17 @@ function render_page(string $title, string $content, string $extraHead = '', str
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>'.e($title).' · IT Operations Bank Mitra</title>
+<script>
+(function() {
+  try {
+    var stored = localStorage.getItem("app_theme");
+    var prefersDark = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
+    var theme = (stored === "dark" || ((!stored || stored === "auto") && prefersDark)) ? "dark" : "light";
+    document.documentElement.setAttribute("data-bs-theme", theme);
+    document.documentElement.setAttribute("data-theme", theme);
+  } catch(e) {}
+})();
+</script>
 <link rel="manifest" href="'.e(module_url('manifest.webmanifest')).'">
 <meta name="theme-color" content="#0D2748">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -339,6 +360,270 @@ table tbody tr {
   --shadow-subtle: 0 1px 3px rgba(15, 23, 42, 0.05), 0 1px 2px rgba(15, 23, 42, 0.03);
   --shadow-card: 0 4px 20px -2px rgba(15, 23, 42, 0.05), 0 2px 6px -1px rgba(15, 23, 42, 0.02);
   --shadow-hover: 0 16px 36px -4px rgba(15, 23, 42, 0.08), 0 6px 12px -2px rgba(15, 23, 42, 0.03);
+}
+
+/* -------------------------------------------------------------
+   DEVICE AUTO DARK MODE & THEME DESIGN TOKENS
+   ------------------------------------------------------------- */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]):not([data-bs-theme="light"]) {
+    --navy-deep: #020617;
+    --navy-primary: #070F1E;
+    --navy-subtle: #111E38;
+    --bg-app: #080F1E;
+    --surface-card: #0F1A30;
+    --border-subtle: #1E2D4A;
+    --border-strong: #334A70;
+    --text-primary: #F8FAFC;
+    --text-secondary: #CBD5E1;
+    --text-muted: #8496B0;
+    --status-success-bg: rgba(16, 185, 129, 0.15);
+    --status-warning-bg: rgba(245, 158, 11, 0.15);
+    --status-danger-bg: rgba(239, 68, 68, 0.15);
+    --status-info-bg: rgba(14, 165, 233, 0.15);
+    --shadow-subtle: 0 1px 3px rgba(0, 0, 0, 0.4);
+    --shadow-card: 0 4px 20px -2px rgba(0, 0, 0, 0.5);
+    --shadow-hover: 0 16px 36px -4px rgba(0, 0, 0, 0.6);
+  }
+}
+
+[data-theme="dark"], [data-bs-theme="dark"] {
+  --navy-deep: #020617;
+  --navy-primary: #070F1E;
+  --navy-subtle: #111E38;
+  --bg-app: #080F1E;
+  --surface-card: #0F1A30;
+  --border-subtle: #1E2D4A;
+  --border-strong: #334A70;
+  --text-primary: #F8FAFC;
+  --text-secondary: #CBD5E1;
+  --text-muted: #8496B0;
+  --status-success-bg: rgba(16, 185, 129, 0.15);
+  --status-warning-bg: rgba(245, 158, 11, 0.15);
+  --status-danger-bg: rgba(239, 68, 68, 0.15);
+  --status-info-bg: rgba(14, 165, 233, 0.15);
+  --shadow-subtle: 0 1px 3px rgba(0, 0, 0, 0.4);
+  --shadow-card: 0 4px 20px -2px rgba(0, 0, 0, 0.5);
+  --shadow-hover: 0 16px 36px -4px rgba(0, 0, 0, 0.6);
+}
+
+/* Dark Mode Global & Component Overrides */
+[data-bs-theme="dark"] body {
+  background-color: var(--bg-app) !important;
+  background-image: radial-gradient(at 50% 0%, #0F1E38 0%, #080F1E 70%, #040810 100%) !important;
+  color: var(--text-primary) !important;
+}
+
+[data-bs-theme="dark"] .app-topbar,
+[data-bs-theme="dark"] .public-topbar {
+  background: rgba(11, 23, 44, 0.95) !important;
+  border-bottom-color: #1E2D4A !important;
+}
+
+[data-bs-theme="dark"] .topbar-search-btn {
+  background: #11203A !important;
+  border-color: #1E2D4A !important;
+  color: #CBD5E1 !important;
+}
+
+[data-bs-theme="dark"] .topbar-search-btn .topbar-kbd {
+  background: #1B2E50 !important;
+  border-color: #2D4370 !important;
+  color: #94A3B8 !important;
+}
+
+[data-bs-theme="dark"] .card {
+  background-color: var(--surface-card) !important;
+  border-color: var(--border-subtle) !important;
+  color: var(--text-primary) !important;
+}
+
+[data-bs-theme="dark"] .card-header,
+[data-bs-theme="dark"] .card-footer {
+  background-color: #0C172B !important;
+  border-color: var(--border-subtle) !important;
+  color: var(--text-primary) !important;
+}
+
+[data-bs-theme="dark"] .card-metric-modern {
+  background: #0F1A30 !important;
+  border-color: #1E2D4A !important;
+  box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.35) !important;
+}
+
+[data-bs-theme="dark"] .card-metric-modern .metric-title-muted {
+  color: #8496B0 !important;
+}
+
+[data-bs-theme="dark"] .card-metric-modern .metric-number-bold {
+  color: #F8FAFC !important;
+}
+
+[data-bs-theme="dark"] .card-status-mint {
+  background: rgba(16, 185, 129, 0.12) !important;
+  border-color: rgba(16, 185, 129, 0.28) !important;
+}
+
+[data-bs-theme="dark"] .card-status-mint .status-heading {
+  color: #34D399 !important;
+}
+
+[data-bs-theme="dark"] .card-status-mint .status-subtext {
+  color: #6EE7B7 !important;
+}
+
+[data-bs-theme="dark"] .browser-mockup-frame {
+  background: #0B1322 !important;
+  border-color: #1E2D4A !important;
+}
+
+[data-bs-theme="dark"] .browser-address-pill {
+  background: #121F36 !important;
+  border-color: #1E2D4A !important;
+  color: #94A3B8 !important;
+}
+
+[data-bs-theme="dark"] .badge-floating-trend {
+  background: #0F1A30 !important;
+  border-color: #1E2D4A !important;
+  box-shadow: 0 10px 25px -4px rgba(0, 0, 0, 0.5) !important;
+}
+
+[data-bs-theme="dark"] .badge-floating-trend .text-dark {
+  color: #F8FAFC !important;
+}
+
+[data-bs-theme="dark"] .trend-chart-box {
+  background: linear-gradient(180deg, rgba(16, 185, 129, 0.08) 0%, rgba(6, 182, 212, 0.06) 100%) !important;
+  border-color: #1E2D4A !important;
+}
+
+[data-bs-theme="dark"] .table {
+  color: var(--text-primary) !important;
+  border-color: var(--border-subtle) !important;
+}
+
+[data-bs-theme="dark"] .table > :not(caption) > * > * {
+  background-color: transparent !important;
+  color: var(--text-primary) !important;
+  border-color: var(--border-subtle) !important;
+}
+
+[data-bs-theme="dark"] .table tbody tr:hover {
+  background-color: rgba(30, 58, 138, 0.2) !important;
+}
+
+[data-bs-theme="dark"] .table thead th {
+  background-color: #0C172B !important;
+  color: #94A3B8 !important;
+  border-color: #1E2D4A !important;
+}
+
+[data-bs-theme="dark"] .form-control,
+[data-bs-theme="dark"] .form-select {
+  background-color: #11203A !important;
+  border-color: #1E2D4A !important;
+  color: #F8FAFC !important;
+}
+
+[data-bs-theme="dark"] .form-control:focus,
+[data-bs-theme="dark"] .form-select:focus {
+  background-color: #142544 !important;
+  border-color: #2563EB !important;
+  color: #FFFFFF !important;
+  box-shadow: 0 0 0 0.25rem rgba(37, 99, 235, 0.25) !important;
+}
+
+[data-bs-theme="dark"] .input-group-text {
+  background-color: #0E1A30 !important;
+  border-color: #1E2D4A !important;
+  color: #8496B0 !important;
+}
+
+[data-bs-theme="dark"] .bg-white {
+  background-color: #0F1A30 !important;
+}
+
+[data-bs-theme="dark"] .bg-light {
+  background-color: #13223B !important;
+}
+
+[data-bs-theme="dark"] .border-bottom,
+[data-bs-theme="dark"] .border-top,
+[data-bs-theme="dark"] .border-start,
+[data-bs-theme="dark"] .border-end,
+[data-bs-theme="dark"] .border {
+  border-color: #1E2D4A !important;
+}
+
+[data-bs-theme="dark"] .text-dark {
+  color: #F8FAFC !important;
+}
+
+[data-bs-theme="dark"] .text-muted {
+  color: #8496B0 !important;
+}
+
+[data-bs-theme="dark"] .dropdown-menu {
+  background-color: #0F1A30 !important;
+  border-color: #1E2D4A !important;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5) !important;
+}
+
+[data-bs-theme="dark"] .dropdown-item {
+  color: #E2E8F0 !important;
+}
+
+[data-bs-theme="dark"] .dropdown-item:hover,
+[data-bs-theme="dark"] .dropdown-item:focus {
+  background-color: #1A2C4E !important;
+  color: #FFFFFF !important;
+}
+
+[data-bs-theme="dark"] .dropdown-divider {
+  border-color: #1E2D4A !important;
+}
+
+[data-bs-theme="dark"] .modal-content {
+  background-color: #0F1A30 !important;
+  border-color: #1E2D4A !important;
+  color: #F8FAFC !important;
+}
+
+[data-bs-theme="dark"] .modal-header,
+[data-bs-theme="dark"] .modal-footer {
+  border-color: #1E2D4A !important;
+}
+
+[data-bs-theme="dark"] .btn-close {
+  filter: invert(1) grayscale(100%) brightness(200%);
+}
+
+[data-bs-theme="dark"] .btn-outline-secondary {
+  border-color: #334A70 !important;
+  color: #CBD5E1 !important;
+}
+
+[data-bs-theme="dark"] .btn-outline-secondary:hover {
+  background-color: #1E2D4A !important;
+  color: #FFFFFF !important;
+}
+
+[data-bs-theme="dark"] .branch-nav-pill {
+  background: #0F1A30 !important;
+  border-color: #1E2D4A !important;
+  color: #CBD5E1 !important;
+}
+
+[data-bs-theme="dark"] .branch-nav-pill:hover {
+  background: #1A2C4E !important;
+  color: #FFFFFF !important;
+}
+
+[data-bs-theme="dark"] .branch-nav-pill.active {
+  background: #1D4ED8 !important;
+  border-color: #2563EB !important;
+  color: #FFFFFF !important;
 }
 
 /* PWA Offline & Network Banner Styles */
@@ -2083,6 +2368,94 @@ label.form-label,
   document.addEventListener("DOMContentLoaded", function() {
     startPageLoading();
     setTimeout(stopPageLoading, 160);
+  });
+})();
+
+// ============================================================
+// AUTOMATIC & INTERACTIVE THEME MANAGER (Follows Device Dark Mode)
+// ============================================================
+(function() {
+  function getSystemTheme() {
+    return window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+  }
+
+  function applyAppTheme(mode, updateStorage) {
+    if (updateStorage) {
+      try { localStorage.setItem("app_theme", mode); } catch(e) {}
+    }
+    var effectiveTheme = mode === "auto" ? getSystemTheme() : mode;
+    document.documentElement.setAttribute("data-bs-theme", effectiveTheme);
+    document.documentElement.setAttribute("data-theme", effectiveTheme);
+
+    var icons = document.querySelectorAll("#themeToggleIcon, .theme-toggle-icon-public");
+    var label = document.getElementById("themeToggleLabel");
+    var btn = document.getElementById("btnThemeToggle");
+
+    var iconClass = "bi-circle-half";
+    var labelText = "Auto";
+    var titleText = "Mode Tampilan: Otomatis Ikut Perangkat (" + (effectiveTheme === "dark" ? "Gelap" : "Terang") + ")";
+
+    if (mode === "dark") {
+      iconClass = "bi-moon-stars-fill text-info";
+      labelText = "Gelap";
+      titleText = "Mode Tampilan: Gelap (Manual)";
+    } else if (mode === "light") {
+      iconClass = "bi-sun-fill text-warning";
+      labelText = "Terang";
+      titleText = "Mode Tampilan: Terang (Manual)";
+    }
+
+    icons.forEach(function(el) {
+      el.className = "bi " + iconClass;
+    });
+    if (label) label.textContent = labelText;
+    if (btn) btn.setAttribute("title", titleText);
+  }
+
+  function cycleTheme() {
+    var stored = "auto";
+    try { stored = localStorage.getItem("app_theme") || "auto"; } catch(e) {}
+    var next = "auto";
+    if (stored === "auto") {
+      var isDark = document.documentElement.getAttribute("data-bs-theme") === "dark";
+      next = isDark ? "light" : "dark";
+    } else if (stored === "dark") {
+      next = "light";
+    } else {
+      next = "auto";
+    }
+    applyAppTheme(next, true);
+  }
+
+  // Real-time device preference listener
+  if (window.matchMedia) {
+    var mql = window.matchMedia("(prefers-color-scheme: dark)");
+    var onSystemChange = function() {
+      var stored = "auto";
+      try { stored = localStorage.getItem("app_theme") || "auto"; } catch(e) {}
+      if (stored === "auto") {
+        applyAppTheme("auto", false);
+      }
+    };
+    if (mql.addEventListener) {
+      mql.addEventListener("change", onSystemChange);
+    } else if (mql.addListener) {
+      mql.addListener(onSystemChange);
+    }
+  }
+
+  document.addEventListener("DOMContentLoaded", function() {
+    var stored = "auto";
+    try { stored = localStorage.getItem("app_theme") || "auto"; } catch(e) {}
+    applyAppTheme(stored, false);
+
+    var btns = document.querySelectorAll("#btnThemeToggle, .btn-theme-toggle-public");
+    btns.forEach(function(b) {
+      b.addEventListener("click", function(e) {
+        e.preventDefault();
+        cycleTheme();
+      });
+    });
   });
 })();
 

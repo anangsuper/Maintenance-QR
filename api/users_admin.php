@@ -789,7 +789,7 @@ $body = '
 
     <!-- Upward Trend Chart with Overlapping Floating Trend Badge (Exact Reference Layout) -->
     <div class="position-relative mt-2 pt-1 mb-2">
-      <div class="w-100 position-relative overflow-hidden rounded-4" style="height: 72px; background: linear-gradient(180deg, rgba(236,253,245,0.45) 0%, rgba(240,253,250,0.85) 100%); border: 1px solid #E2E8F0;">
+      <div class="w-100 position-relative overflow-hidden rounded-4 trend-chart-box" style="height: 72px; border: 1px solid #E2E8F0;">
         <svg viewBox="0 0 1000 72" preserveAspectRatio="none" style="width: 100%; height: 100%;">
           <defs>
             <linearGradient id="chartGrad" x1="0" y1="0" x2="0" y2="1">
