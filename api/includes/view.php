@@ -38,6 +38,7 @@ function render_page(string $title, string $content, string $extraHead = '', str
     $monitoringItems = [];
     if (!$isHrdRole) {
         $monitoringItems = [
+            ['title' => 'Log Ruang Server', 'url' => module_url('server_room_log.php'), 'icon' => 'bi-door-closed-fill', 'active' => in_array($currentPage, ['server_room_log.php', 'server_room_print_qr.php'], true)],
             ['title' => 'Reports & Audit', 'url' => module_url('audit.php'), 'icon' => 'bi-file-earmark-bar-graph', 'active' => ($currentPage === 'audit.php')],
             ['title' => 'Riwayat Bulanan', 'url' => module_url('monthly_history.php'), 'icon' => 'bi-calendar3', 'active' => ($currentPage === 'monthly_history.php')],
         ];
@@ -73,6 +74,7 @@ function render_page(string $title, string $content, string $extraHead = '', str
             ['title' => 'Galeri Foto Inventaris', 'url' => module_url('asset_gallery.php', ['sub' => 'inventaris']), 'icon' => 'bi-images', 'active' => in_array($currentPage, ['asset_gallery.php', 'inventaris_gallery.php'], true)],
             ['title' => 'Mutasi Inventaris', 'url' => module_url('inventaris_mutation.php'), 'icon' => 'bi-arrow-left-right', 'active' => in_array($currentPage, ['inventaris_mutation.php', 'asset_mutations.php', 'print_bast.php'], true)],
             ['title' => 'Penghapusan Aset (Afkir)', 'url' => module_url('asset_disposal.php'), 'icon' => 'bi-trash3', 'active' => in_array($currentPage, ['asset_disposal.php', 'print_bast_disposal.php'], true)],
+            ['title' => 'Log Ruang Server', 'url' => module_url('server_room_log.php'), 'icon' => 'bi-door-closed-fill', 'active' => in_array($currentPage, ['server_room_log.php', 'server_room_print_qr.php'], true)],
         ];
     } else {
         $operationsItems = [
@@ -246,6 +248,7 @@ function render_page(string $title, string $content, string $extraHead = '', str
               <li><a class="dropdown-item py-2" href="'.e(module_url('audit_trail.php')).'"><i class="bi bi-shield-check me-2 text-warning"></i> Log Aktivitas (Audit)</a></li>
             ' : '
               <li><a class="dropdown-item py-2" href="'.e(module_url('assets.php')).'"><i class="bi bi-pc-display me-2 text-primary"></i> Data Komputer</a></li>
+              <li><a class="dropdown-item py-2" href="'.e(module_url('server_room_log.php')).'"><i class="bi bi-door-closed-fill me-2 text-warning"></i> Log Ruang Server</a></li>
               <li><a class="dropdown-item py-2" href="'.e(module_url('scanner.php')).'"><i class="bi bi-qr-code-scan me-2 text-info"></i> Scanner QR</a></li>
               '.($isAdminUser ? '<li><a class="dropdown-item py-2" href="'.e(module_url('audit_trail.php')).'"><i class="bi bi-shield-check me-2 text-warning"></i> Log Aktivitas (Audit)</a></li>' : '').'
             ')).'
