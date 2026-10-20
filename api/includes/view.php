@@ -413,13 +413,14 @@ body {
   color: var(--text-primary) !important;
 }
 
-/* Materio Sleek Vertical Navigation */
-.app-sidebar {
+/* Materio Semi-Dark Vertical Navigation (High-Contrast ThemeSelection Style) */
+.app-sidebar,
+.offcanvas#appMobileSidebar {
   width: 260px !important;
   min-width: 260px !important;
-  background: var(--surface-card) !important;
-  border-right: 1px solid var(--border-subtle) !important;
-  box-shadow: 0 0 15px 0 rgba(76, 78, 100, 0.05) !important;
+  background: #28243D !important;
+  border-right: 1px solid rgba(255, 255, 255, 0.08) !important;
+  box-shadow: 0 0 20px 0 rgba(0, 0, 0, 0.25) !important;
 }
 
 @media (min-width: 992px) {
@@ -431,25 +432,26 @@ body {
 
 .sidebar-brand {
   padding: 18px 20px 16px !important;
-  border-bottom: 1px solid var(--border-subtle) !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+  background: #28243D !important;
 }
 
 .sidebar-section-title {
   font-size: 0.6875rem !important;
-  font-weight: 500 !important;
+  font-weight: 600 !important;
   text-transform: uppercase !important;
   letter-spacing: 0.8px !important;
-  color: var(--text-muted) !important;
+  color: #8A8D93 !important;
   padding: 14px 18px 6px !important;
 }
 
 .sidebar-link {
-  margin: 2px 14px !important;
-  padding: 9px 14px !important;
+  margin: 3px 14px !important;
+  padding: 10px 14px !important;
   border-radius: 8px !important;
   font-weight: 500 !important;
   font-size: 0.90rem !important;
-  color: var(--text-secondary) !important;
+  color: #D8D6DE !important;
   border-left: none !important;
   display: flex !important;
   align-items: center !important;
@@ -459,61 +461,65 @@ body {
 
 .sidebar-link .sidebar-icon {
   font-size: 1.15rem !important;
-  color: var(--text-muted) !important;
+  color: #A8A5B6 !important;
   transition: color 0.2s ease !important;
 }
 
 .sidebar-link:hover {
-  background: var(--materio-primary-subtle) !important;
-  color: var(--materio-primary) !important;
+  background: rgba(255, 255, 255, 0.08) !important;
+  color: #FFFFFF !important;
   transform: translateX(3px) !important;
 }
 
 .sidebar-link:hover .sidebar-icon {
-  color: var(--materio-primary) !important;
+  color: #FFFFFF !important;
 }
 
 .sidebar-link.active {
-  background: var(--materio-primary-gradient) !important;
+  background: linear-gradient(72.47deg, #8C57FF 0%, #7135FF 100%) !important;
   color: #FFFFFF !important;
-  box-shadow: 0px 2px 6px rgba(140, 87, 255, 0.48) !important;
-  font-weight: 600 !important;
+  box-shadow: 0px 4px 14px rgba(140, 87, 255, 0.5) !important;
+  font-weight: 700 !important;
   border-left: none !important;
 }
 
-.sidebar-link.active .sidebar-icon {
+.sidebar-link.active .sidebar-icon,
+.sidebar-link.active .sidebar-text,
+.sidebar-link.active i,
+.sidebar-link.active span {
   color: #FFFFFF !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3) !important;
 }
 
 .sidebar-footer {
   padding: 14px 18px !important;
-  background: var(--surface-card) !important;
-  border-top: 1px solid var(--border-subtle) !important;
+  background: #232035 !important;
+  border-top: 1px solid rgba(255, 255, 255, 0.08) !important;
 }
 
 .sidebar-user-name {
-  color: var(--text-primary) !important;
+  color: #FFFFFF !important;
   font-weight: 600 !important;
 }
 
 .sidebar-user-role {
-  color: var(--text-muted) !important;
+  color: #8A8D93 !important;
 }
 
 .sidebar-user-avatar {
-  background: var(--materio-primary) !important;
+  background: #8C57FF !important;
   color: #FFFFFF !important;
   border-radius: 50% !important;
 }
 
 /* Offcanvas Mobile Sidebar */
 .offcanvas.bg-navy-dark {
-  background-color: var(--surface-card) !important;
-  color: var(--text-primary) !important;
-  border-right: 1px solid var(--border-subtle) !important;
+  background-color: #28243D !important;
+  color: #FFFFFF !important;
+  border-right: 1px solid rgba(255, 255, 255, 0.08) !important;
 }
 .offcanvas .border-navy-subtle {
-  border-color: var(--border-subtle) !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
 }
 
 /* Materio AppBar / Topbar */
@@ -1204,15 +1210,19 @@ h1, h2, h3, h4, h5, h6,
 }
 
 .sidebar-link.active {
-  color: #FFFFFF;
-  background: linear-gradient(90deg, rgba(37, 99, 235, 0.24) 0%, rgba(37, 99, 235, 0.06) 100%);
-  border-left-color: #3B82F6;
-  font-weight: 600;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  background: linear-gradient(72.47deg, #8C57FF 0%, #7135FF 100%) !important;
+  color: #FFFFFF !important;
+  box-shadow: 0px 4px 14px rgba(140, 87, 255, 0.5) !important;
+  border-left: none !important;
+  font-weight: 700 !important;
 }
 
-.sidebar-link.active .sidebar-icon {
-  color: #60A5FA;
+.sidebar-link.active .sidebar-icon,
+.sidebar-link.active .sidebar-text,
+.sidebar-link.active i,
+.sidebar-link.active span {
+  color: #FFFFFF !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3) !important;
 }
 
 .sidebar-icon {
@@ -1931,8 +1941,18 @@ h1, h2, h3, h4, h5, h6,
   border-radius: 10px !important;
 }
 .sidebar-link.active {
-  background: linear-gradient(90deg, rgba(59,130,246,0.22) 0%, rgba(59,130,246,0.07) 100%) !important;
-  border-left-color: #60A5FA !important;
+  background: linear-gradient(72.47deg, #8C57FF 0%, #7135FF 100%) !important;
+  color: #FFFFFF !important;
+  box-shadow: 0px 4px 14px rgba(140, 87, 255, 0.5) !important;
+  border-left: none !important;
+  font-weight: 700 !important;
+}
+.sidebar-link.active .sidebar-icon,
+.sidebar-link.active .sidebar-text,
+.sidebar-link.active i,
+.sidebar-link.active span {
+  color: #FFFFFF !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3) !important;
 }
 
 /* ── Form Label Global ── */
