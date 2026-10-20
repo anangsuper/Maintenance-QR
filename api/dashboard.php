@@ -1480,6 +1480,9 @@ if (is_hrd() && !is_admin()) {
           <a href="'.e(module_url('inventaris_mutation.php')).'" class="btn-glass">
             <i class="bi bi-arrow-left-right"></i> Mutasi Barang
           </a>
+          <a href="'.e(module_url('asset_disposal.php')).'" class="btn-glass">
+            <i class="bi bi-trash3"></i> Penghapusan / Penjualan
+          </a>
         </div>
       </div>
     </div>';

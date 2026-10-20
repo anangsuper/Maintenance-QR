@@ -17,6 +17,7 @@ require_once __DIR__ . '/includes/view.php';
 require_once __DIR__ . '/includes/inventaris_kartu.php';
 require_once __DIR__ . '/includes/mutasi.php';
 require_once __DIR__ . '/includes/memo.php';
+require_once __DIR__ . '/includes/disposal.php';
 require_once __DIR__ . '/helpers/GoogleSheetsBridge.php';
 require_once __DIR__ . '/helpers/fbd3_data_list.php';
 
