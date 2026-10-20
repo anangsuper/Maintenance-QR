@@ -518,6 +518,8 @@ function create_new_user(array $data): array {
                 updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
             );
         ");
+            $mysqlSchemaChecked = true;
+        }
 
         $checkSt = db()->prepare("SELECT id FROM users WHERE LOWER(username) = ? LIMIT 1");
         $checkSt->execute([$username]);
