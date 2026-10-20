@@ -133,6 +133,7 @@ try {
     foreach ($invRows as $ir) {
         $st = (string)($ir['status_inventaris'] ?? '');
         if (str_contains($st, 'Dihapuskan') || str_contains($st, 'Dijual') || str_contains($st, 'Afkir')) continue;
+        $sText = strtolower($ir['nomor_rekening'].' '.$ir['nama_barang'].' '.($ir['lokasi']??'').' '.($ir['ruangan']??'').' '.($ir['pengguna']??'').' '.($ir['golongan']??'').' '.($ir['nomor_seri_inventaris']??''));
         $activeInventaris[] = [
             'id' => (int)$ir['id'],
             'type' => 'inventaris',
@@ -143,6 +144,7 @@ try {
             'pengguna' => (string)($ir['pengguna'] ?? 'Umum / Pool'),
             'sn' => (string)($ir['nomor_seri_inventaris'] ?? ''),
             'merk' => (string)($ir['golongan'] ?? 'Perabot / Fasilitas'),
+            'search_text' => $sText,
         ];
     }
 } catch (Throwable $e) {}
@@ -158,6 +160,7 @@ try {
         ORDER BY a.id DESC
     ");
     while ($cr = $st->fetch(PDO::FETCH_ASSOC)) {
+        $sText = strtolower($cr['kode_inventaris'].' '.($cr['merk']??'').' '.($cr['model']??'').' '.($cr['nama_cabang']??'').' '.($cr['ruangan']??'').' '.($cr['nama_karyawan']??'').' '.($cr['serial_number']??''));
         $activeComputers[] = [
             'id' => (int)$cr['id'],
             'type' => 'komputer',
@@ -168,6 +171,7 @@ try {
             'pengguna' => (string)($cr['nama_karyawan'] ?: 'Staff IT / Operasional'),
             'sn' => (string)($cr['serial_number'] ?? ''),
             'merk' => (string)($cr['merk'] ?? ''),
+            'search_text' => $sText,
         ];
     }
 } catch (Throwable $e) {}
@@ -496,11 +500,56 @@ $body .= '
 
           <!-- 2. Pilih Barang Aset Aktif -->
           <div class="mb-3">
-            <label class="form-label fw-bold text-dark small" for="selectAssetItem">PILIH UNIT BARANG INVENTARIS YANG DIAFKIRKAN <span class="text-danger">*</span></label>
+            <div class="d-flex align-items-center justify-content-between mb-1.5">
+              <label class="form-label fw-bold text-dark small mb-0" for="selectAssetItem">
+                PILIH UNIT BARANG INVENTARIS YANG DIAFKIRKAN <span class="text-danger">*</span>
+              </label>
+              <button type="button" class="btn btn-xs btn-outline-danger fw-bold px-2 py-0.5" onclick="openCatalogModal()">
+                <i class="bi bi-grid-3x3-gap-fill me-1"></i> Buka Katalog Tabel
+              </button>
+            </div>
+
+            <!-- Tombol Utama: Buka Katalog Modal Pencarian -->
+            <button type="button" class="btn btn-danger w-100 mb-2.5 d-flex align-items-center justify-content-center gap-2 py-2 shadow-xs" onclick="openCatalogModal()">
+              <i class="bi bi-grid-3x3-gap-fill fs-5"></i>
+              <span class="fw-bold">Buka Katalog &amp; Cari Barang di Tabel</span>
+              <span class="badge bg-white text-danger fw-bold ms-1" id="badgeTotalItems">0 Barang</span>
+            </button>
+
+            <!-- Box Pencarian Cepat & Filter Cabang -->
+            <div class="p-2.5 rounded-3 bg-light border mb-2">
+              <div class="row g-2">
+                <div class="col-sm-5 col-12">
+                  <label class="form-label text-uppercase fw-bold text-muted small mb-1" style="font-size: 0.68rem;">Filter Cabang</label>
+                  <select id="filterCabangAset" class="form-select form-select-sm" onchange="filterAssetDropdown()">
+                    <option value="">-- Semua Cabang --</option>';
+                    foreach ($cabangMaster as $cb) {
+                        $cName = $cb['nama_cabang'] ?? '';
+                        if ($cName === '') continue;
+                        $body .= '<option value="'.e($cName).'">'.e($cName).'</option>';
+                    }
+$body .= '
+                  </select>
+                </div>
+                <div class="col-sm-7 col-12">
+                  <label class="form-label text-uppercase fw-bold text-muted small mb-1" style="font-size: 0.68rem;">Cari Nama / No. Rekening / Ruangan</label>
+                  <div class="input-group input-group-sm">
+                    <span class="input-group-text bg-white border-end-0 text-muted"><i class="bi bi-search"></i></span>
+                    <input type="text" id="quickSearchAsset" class="form-control border-start-0" placeholder="Ketik kata kunci untuk mencari..." oninput="filterAssetDropdown()" autocomplete="off">
+                    <button class="btn btn-outline-secondary" type="button" onclick="clearQuickSearch()" title="Reset pencarian"><i class="bi bi-x"></i></button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Dropdown Hasil Pencarian -->
             <select class="form-select" id="selectAssetItem" required onchange="onAssetSelected(this)">
-              <option value="">-- Pilih Barang dari Register Aktif --</option>
+              <option value="">-- Pilih Barang dari Hasil Pencarian --</option>
             </select>
-            <div class="form-text small">Hanya menampilkan barang inventaris yang saat ini berstatus aktif di bank.</div>
+            <div class="d-flex justify-content-between align-items-center mt-1">
+              <div class="form-text small" id="lblMatchCount">Memuat daftar barang...</div>
+              <button type="button" class="btn btn-link btn-xs text-danger text-decoration-none p-0 fw-semibold" onclick="clearQuickSearch()" style="font-size: 0.74rem;">Reset Pencarian</button>
+            </div>
           </div>
 
           <!-- Hidden Input Detail Aset Otomatis -->
@@ -668,26 +717,270 @@ $body .= '
   </div>
 </div>
 
+<!-- =================================================== -->
+<!-- MODAL KATALOG PENCARIAN BARANG INVENTARIS LENGKAP -->
+<!-- =================================================== -->
+<div class="modal fade" id="modalCatalogPicker" tabindex="-1" aria-labelledby="modalCatalogPickerLabel" aria-hidden="true" style="z-index: 1070;">
+  <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+    <div class="modal-content border-0 shadow-2xl">
+      <div class="modal-header bg-dark text-white border-0 py-3">
+        <h5 class="modal-title fw-bold d-flex align-items-center gap-2" id="modalCatalogPickerLabel">
+          <i class="bi bi-grid-3x3-gap-fill text-danger"></i> Katalog &amp; Pencarian Barang Inventaris Aktif
+        </h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+
+      <div class="modal-body p-3 p-md-4">
+        <!-- Pencarian & Filter Cabang di Modal -->
+        <div class="row g-2 mb-3">
+          <div class="col-md-7 col-12">
+            <div class="input-group">
+              <span class="input-group-text bg-white border-end-0 text-danger"><i class="bi bi-search"></i></span>
+              <input type="text" id="modalCatalogSearchInput" class="form-control border-start-0" placeholder="Ketik nama barang, nomor rekening, ruangan, penanggung jawab..." oninput="renderCatalogRows()" autocomplete="off">
+              <button class="btn btn-outline-secondary" type="button" onclick="clearCatalogSearch()"><i class="bi bi-x-circle me-1"></i>Reset</button>
+            </div>
+          </div>
+          <div class="col-md-5 col-12">
+            <select id="modalCatalogBranchFilter" class="form-select" onchange="renderCatalogRows()">
+              <option value="">-- Seluruh Kantor Cabang --</option>';
+              foreach ($cabangMaster as $cb) {
+                  $cName = $cb['nama_cabang'] ?? '';
+                  if ($cName === '') continue;
+                  $body .= '<option value="'.e($cName).'">'.e($cName).'</option>';
+              }
+$body .= '
+            </select>
+          </div>
+        </div>
+
+        <!-- Tabel Katalog Barang -->
+        <div class="table-responsive border rounded-3" style="max-height: 460px;">
+          <table class="table table-hover align-middle mb-0" id="tableCatalogAsset" style="font-size: 0.88rem;">
+            <thead class="table-light sticky-top" style="z-index: 2;">
+              <tr>
+                <th style="width: 45px;" class="text-center small font-monospace">NO</th>
+                <th style="width: 170px;">NOMOR REKENING</th>
+                <th>NAMA BARANG &amp; GOLONGAN</th>
+                <th style="width: 180px;">CABANG &amp; RUANGAN</th>
+                <th style="width: 160px;">PENANGGUNG JAWAB</th>
+                <th style="width: 120px;" class="text-center">AKSI</th>
+              </tr>
+            </thead>
+            <tbody id="catalogTableBody">
+              <!-- Render via JavaScript -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="modal-footer bg-light d-flex justify-content-between py-2.5 px-3">
+        <span class="text-muted small" id="modalCatalogCount">Memuat data barang...</span>
+        <button type="button" class="btn btn-secondary px-4 fw-semibold btn-sm" data-bs-dismiss="modal">Tutup</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- DATA ASSETS FOR JAVASCRIPT -->
 <script>
 var gInventaris = '.json_encode($activeInventaris).';
 var gKomputer = '.json_encode($activeComputers).';
+var gCurrentList = gInventaris;
 
 function switchAssetType(type) {
-  var select = document.getElementById("selectAssetItem");
-  select.innerHTML = \'<option value="">-- Pilih Barang dari Register Aktif --</option>\';
+  gCurrentList = (type === "komputer") ? gKomputer : gInventaris;
   
-  var list = (type === "komputer") ? gKomputer : gInventaris;
-  list.forEach(function(item) {
-    var opt = document.createElement("option");
-    opt.value = item.id;
-    opt.text = "[" + item.kode + "] " + item.nama + " (" + item.cabang + ")";
-    opt.dataset.json = JSON.stringify(item);
-    select.appendChild(opt);
-  });
+  // Reset pencarian & filter cabang
+  var searchInput = document.getElementById("quickSearchAsset");
+  if (searchInput) searchInput.value = "";
+  var branchSelect = document.getElementById("filterCabangAset");
+  if (branchSelect) branchSelect.value = "";
 
+  // Update badge total
+  var badge = document.getElementById("badgeTotalItems");
+  if (badge) badge.textContent = gCurrentList.length + " Barang";
+
+  filterAssetDropdown();
   document.getElementById("cardAsetDetail").classList.add("d-none");
   resetAssetHiddenFields();
+}
+
+function filterAssetDropdown() {
+  var select = document.getElementById("selectAssetItem");
+  if (!select) return;
+
+  var branch = (document.getElementById("filterCabangAset") ? document.getElementById("filterCabangAset").value : "").toLowerCase().trim();
+  var query = (document.getElementById("quickSearchAsset") ? document.getElementById("quickSearchAsset").value : "").toLowerCase().trim();
+
+  select.innerHTML = \'<option value="">-- Pilih Barang dari Hasil Pencarian --</option>\';
+
+  var matched = 0;
+  for (var i = 0; i < gCurrentList.length; i++) {
+    var item = gCurrentList[i];
+
+    if (branch !== "" && item.cabang.toLowerCase().trim() !== branch) {
+      continue;
+    }
+    if (query !== "" && item.search_text.indexOf(query) === -1) {
+      continue;
+    }
+
+    matched++;
+    var opt = document.createElement("option");
+    opt.value = item.id;
+    opt.text = "[" + item.kode + "] " + item.nama + " (" + item.cabang + (item.ruangan ? " - " + item.ruangan : "") + ")";
+    opt.dataset.json = JSON.stringify(item);
+    select.appendChild(opt);
+  }
+
+  var lblCount = document.getElementById("lblMatchCount");
+  if (lblCount) {
+    if (query !== "" || branch !== "") {
+      lblCount.innerHTML = \'<strong>\' + matched + \'</strong> dari \' + gCurrentList.length + \' barang cocok dengan pencarian.\';
+    } else {
+      lblCount.textContent = \'Menampilkan seluruh \' + matched + \' barang aktif.\';
+    }
+  }
+}
+
+function clearQuickSearch() {
+  var s = document.getElementById("quickSearchAsset");
+  if (s) s.value = "";
+  var b = document.getElementById("filterCabangAset");
+  if (b) b.value = "";
+  filterAssetDropdown();
+}
+
+function openCatalogModal() {
+  var modalEl = document.getElementById("modalCatalogPicker");
+  if (!modalEl) return;
+
+  // Sync quick search query to catalog modal search
+  var q = document.getElementById("quickSearchAsset") ? document.getElementById("quickSearchAsset").value : "";
+  var br = document.getElementById("filterCabangAset") ? document.getElementById("filterCabangAset").value : "";
+  
+  var modalQ = document.getElementById("modalCatalogSearchInput");
+  if (modalQ) modalQ.value = q;
+  var modalBr = document.getElementById("modalCatalogBranchFilter");
+  if (modalBr) modalBr.value = br;
+
+  renderCatalogRows();
+
+  var myModal = new bootstrap.Modal(modalEl);
+  myModal.show();
+}
+
+function clearCatalogSearch() {
+  var q = document.getElementById("modalCatalogSearchInput");
+  if (q) q.value = "";
+  var b = document.getElementById("modalCatalogBranchFilter");
+  if (b) b.value = "";
+  renderCatalogRows();
+}
+
+function renderCatalogRows() {
+  var tbody = document.getElementById("catalogTableBody");
+  if (!tbody) return;
+
+  var q = (document.getElementById("modalCatalogSearchInput") ? document.getElementById("modalCatalogSearchInput").value : "").toLowerCase().trim();
+  var branch = (document.getElementById("modalCatalogBranchFilter") ? document.getElementById("modalCatalogBranchFilter").value : "").toLowerCase().trim();
+
+  var currentSelectedId = parseInt(document.getElementById("dispAssetId").value) || 0;
+
+  var count = 0;
+  var html = "";
+
+  for (var i = 0; i < gCurrentList.length; i++) {
+    var item = gCurrentList[i];
+
+    if (branch !== "" && item.cabang.toLowerCase().trim() !== branch) {
+      continue;
+    }
+    if (q !== "" && item.search_text.indexOf(q) === -1) {
+      continue;
+    }
+
+    count++;
+    var isSelected = (item.id === currentSelectedId);
+    var rowClass = isSelected ? "table-danger fw-semibold" : "";
+
+    html += \'<tr class="\' + rowClass + \'" style="cursor: pointer;" onclick="selectAssetAndCloseCatalog(\' + item.id + \')">\';
+    html += \'<td class="text-center font-monospace text-muted small">\' + count + \'</td>\';
+    html += \'<td>\';
+    html += \'<div class="fw-bold font-monospace text-danger">\' + escapeHtml(item.kode) + \'</div>\';
+    if (item.sn) {
+      html += \'<div class="small text-muted font-monospace" style="font-size: 0.72rem;">SN: \' + escapeHtml(item.sn) + \'</div>\';
+    }
+    html += \'</td>\';
+    html += \'<td>\';
+    html += \'<div class="fw-bold text-dark">\' + escapeHtml(item.nama) + \'</div>\';
+    html += \'<span class="badge bg-light text-secondary border small mt-0.5">\' + escapeHtml(item.merk || "Fasilitas") + \'</span>\';
+    html += \'</td>\';
+    html += \'<td>\';
+    html += \'<div class="fw-semibold text-dark">\' + escapeHtml(item.cabang) + \'</div>\';
+    html += \'<div class="small text-muted"><i class="bi bi-door-open me-1"></i>\' + escapeHtml(item.ruangan || "-") + \'</div>\';
+    html += \'</td>\';
+    html += \'<td><div class="text-dark small">\' + escapeHtml(item.pengguna || "-") + \'</div></td>\';
+    html += \'<td class="text-center" onclick="event.stopPropagation()">\';
+    html += \'<button type="button" class="btn btn-sm \' + (isSelected ? "btn-danger" : "btn-outline-danger") + \' fw-bold px-3 py-1 shadow-sm" onclick="selectAssetAndCloseCatalog(\' + item.id + \')">\';
+    html += \'<i class="bi \' + (isSelected ? "bi-check-circle-fill" : "bi-check-lg") + \' me-1"></i> \' + (isSelected ? "Terpilih" : "Pilih");
+    html += \'</button>\';
+    html += \'</td>\';
+    html += \'</tr>\';
+  }
+
+  if (count === 0) {
+    html = \'<tr><td colspan="6" class="text-center py-5 text-muted">\' +
+           \'<i class="bi bi-search fs-2 d-block mb-2 opacity-50"></i>\' +
+           \'Tidak ada barang inventaris yang sesuai dengan filter pencarian.<br>\' +
+           \'<button type="button" class="btn btn-link btn-sm mt-2 text-decoration-none" onclick="clearCatalogSearch()">Reset Pencarian</button>\' +
+           \'</td></tr>\';
+  }
+
+  tbody.innerHTML = html;
+  var countEl = document.getElementById("modalCatalogCount");
+  if (countEl) {
+    countEl.textContent = \'Menampilkan \' + count + \' dari \' + gCurrentList.length + \' barang aktif\';
+  }
+}
+
+function selectAssetAndCloseCatalog(assetId) {
+  var item = null;
+  for (var i = 0; i < gCurrentList.length; i++) {
+    if (gCurrentList[i].id === assetId) {
+      item = gCurrentList[i];
+      break;
+    }
+  }
+
+  if (!item) return;
+
+  var select = document.getElementById("selectAssetItem");
+  var found = false;
+  for (var j = 0; j < select.options.length; j++) {
+    if (parseInt(select.options[j].value) === assetId) {
+      select.selectedIndex = j;
+      found = true;
+      break;
+    }
+  }
+
+  if (!found) {
+    var opt = document.createElement("option");
+    opt.value = item.id;
+    opt.text = "[" + item.kode + "] " + item.nama + " (" + item.cabang + (item.ruangan ? " - " + item.ruangan : "") + ")";
+    opt.dataset.json = JSON.stringify(item);
+    select.appendChild(opt);
+    select.value = item.id;
+  }
+
+  onAssetSelected(select);
+
+  var modalEl = document.getElementById("modalCatalogPicker");
+  if (modalEl) {
+    var modal = bootstrap.Modal.getInstance(modalEl);
+    if (modal) modal.hide();
+  }
 }
 
 function onAssetSelected(select) {
@@ -753,6 +1046,16 @@ function openUploadAccModal(id, noBa) {
   document.getElementById("lblAccNomorBa").textContent = noBa;
   var modal = new bootstrap.Modal(document.getElementById("modalUploadAcc"));
   modal.show();
+}
+
+function escapeHtml(text) {
+  if (!text) return "";
+  return String(text)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
 }
 
 // Inisialisasi awal dropdown saat modal siap
