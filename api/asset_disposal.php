@@ -191,6 +191,24 @@ unset($_SESSION['flash']);
 $flashError = $_SESSION['flash_error'] ?? null;
 unset($_SESSION['flash_error']);
 
+// Hitung unit dalam masa tenggang 7 hari
+$countRestorable = 0;
+foreach ($disposalList as $r) {
+    $cCheck = is_disposal_restorable($r);
+    if (!empty($cCheck['can_restore'])) {
+        $countRestorable++;
+    }
+}
+
+// Susun opsi cabang untuk filter toolbar
+$cabangOptionsHtml = '';
+foreach ($cabangMaster as $cb) {
+    $cName = $cb['nama_cabang'] ?? '';
+    if ($cName === '') continue;
+    $sel = ($filters['cabang'] === $cName) ? 'selected' : '';
+    $cabangOptionsHtml .= '<option value="'.e($cName).'" '.$sel.'>'.e($cName).'</option>';
+}
+
 // 5. Render Halaman
 $body = '
 <style>
@@ -208,158 +226,231 @@ $body = '
 }
 </style>
 
-<div class="container-fluid py-4 px-md-4">
+<div class="container-fluid py-3 px-md-3">
 
   <!-- Flash Messages -->
   '.($flashSuccess ? '
-  <div class="alert alert-success alert-dismissible fade show d-flex align-items-center gap-2 shadow-sm border-0" role="alert">
+  <div class="alert alert-success alert-dismissible fade show d-flex align-items-center gap-2 shadow-sm border-0 mb-3" role="alert">
     <i class="bi bi-check-circle-fill fs-5"></i>
     <div>'.e($flashSuccess).'</div>
     <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
   </div>' : '').'
 
   '.($flashError ? '
-  <div class="alert alert-danger alert-dismissible fade show d-flex align-items-center gap-2 shadow-sm border-0" role="alert">
+  <div class="alert alert-danger alert-dismissible fade show d-flex align-items-center gap-2 shadow-sm border-0 mb-3" role="alert">
     <i class="bi bi-exclamation-triangle-fill fs-5"></i>
     <div>'.e($flashError).'</div>
     <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
   </div>' : '').'
 
-  <!-- HERO HEADER BANNER -->
-  <div class="hero-gradient-header hero-gradient-red mb-4 text-white p-4 rounded-4 shadow-sm" style="background: linear-gradient(135deg, #1E293B 0%, #0F172A 100%); border-left: 5px solid #EF4444;">
-    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
-      <div>
-        <div class="d-flex align-items-center gap-2 mb-2 flex-wrap">
-          <span class="badge bg-danger text-white px-2.5 py-1 font-monospace fw-bold" style="font-size: 0.72rem; letter-spacing: 0.05em; border-radius: 6px;">PORTAL SDM &amp; UMUM</span>
-          <span class="text-white text-opacity-75 small">Kepatuhan Aset &amp; Akuntansi Bank Mitra</span>
-        </div>
-        <h2 class="h3 fw-bold mb-1 d-flex align-items-center gap-2">
-          <i class="bi bi-trash3-fill text-danger"></i> Penghapusan &amp; Pemusnahan Aset (BA-Afkir)
-        </h2>
-        <p class="text-white text-opacity-75 mb-0" style="max-width: 750px; font-size: 0.92rem;">
-          Pencatatan resmi Berita Acara pemusnahan fisik (afkir) inventaris perabot kantor maupun perangkat IT yang mengalami kerusakan permanen / aus guna penarikan resmi dari Buku Register Aset Aktif Bank Mitra.
-        </p>
-        <div class="mt-2 text-warning small d-flex align-items-center gap-1.5" style="font-size: 0.82rem;">
-          <i class="bi bi-shield-check text-warning fs-6"></i>
-          <span><strong>Masa Tenggang 7 Hari:</strong> Penghapusan aset yang keliru atau tidak jadi dihapuskan dapat dibatalkan dan dikembalikan ke inventaris aktif maksimal sebelum 7 hari sejak tanggal pencatatan.</span>
+  <!-- BROWSER WINDOW NEO CONTAINER (SAMA SEPERTI USERS_ADMIN) -->
+  <div class="card p-0 shadow-sm border-0 browser-window-card mb-4" style="border-radius: 24px;">
+    <!-- Browser Window Topbar with Traffic Lights -->
+    <div class="card-header bg-white py-3 px-4 border-bottom d-flex align-items-center justify-content-between flex-wrap gap-2" style="border-top-left-radius: 24px; border-top-right-radius: 24px;">
+      <div class="browser-topbar-col-left d-flex align-items-center gap-2">
+        <span class="browser-traffic-dot bg-danger"></span>
+        <span class="browser-traffic-dot bg-warning"></span>
+        <span class="browser-traffic-dot bg-success"></span>
+      </div>
+
+      <div class="browser-topbar-col-center">
+        <div class="browser-address-pill">
+          <i class="bi bi-lock-fill text-danger"></i>
+          <span>bankmitra.id/asset_disposal.php</span>
         </div>
       </div>
-      <div class="d-flex flex-wrap align-items-center gap-2 flex-shrink-0">
-        <button type="button" class="btn btn-danger fw-bold shadow-sm d-flex align-items-center gap-1.5 px-3 py-2" data-bs-toggle="modal" data-bs-target="#modalDisposal" onclick="resetDisposalModal()">
-          <i class="bi bi-plus-circle-fill"></i> Catat Berita Acara Afkir
-        </button>
-        <a href="'.e(module_url('asset_disposal.php', array_merge($_GET, ['export' => 'excel']))).'" class="btn btn-outline-light fw-semibold shadow-sm d-flex align-items-center gap-1.5 px-3 py-2">
-          <i class="bi bi-file-earmark-spreadsheet"></i> Export Excel
-        </a>
+
+      <div class="browser-topbar-col-right">
+        <div class="floating-toast-pill">
+          <div class="floating-toast-icon-amber" style="background: linear-gradient(135deg, #E11D48 0%, #BE123C 100%); box-shadow: 0 4px 10px rgba(225, 29, 72, 0.25);">
+            <i class="bi bi-shield-check"></i>
+          </div>
+          <div class="text-start">
+            <div class="fw-bold text-dark" style="font-size: 0.76rem; line-height: 1.2;">Disposal Compliance</div>
+            <div class="text-muted" style="font-size: 0.68rem;">SDM &amp; Umum · KPO Bank Mitra</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Inner Canvas with Gradient Hero Banner & Modern Metric Cards -->
+    <div class="p-3 p-md-4">
+      <!-- Hero Banner Card with Layered Smooth Waves (Rose/Crimson Theme) -->
+      <div class="card-hero-neo mb-4" style="background: linear-gradient(135deg, #881337 0%, #991B1B 45%, #E11D48 100%) !important; box-shadow: 0 12px 32px -4px rgba(225, 29, 72, 0.3) !important;">
+        <!-- Wave Layer Overlays at Bottom -->
+        <svg class="position-absolute bottom-0 start-0 w-100" style="height: 60px; pointer-events: none; opacity: 0.22;" preserveAspectRatio="none" viewBox="0 0 1200 120">
+          <path d="M0,0 C150,90 400,100 600,40 C800,-20 1050,80 1200,30 L1200,120 L0,120 Z" fill="#FFFFFF"></path>
+        </svg>
+        <svg class="position-absolute bottom-0 start-0 w-100" style="height: 40px; pointer-events: none; opacity: 0.32;" preserveAspectRatio="none" viewBox="0 0 1200 120">
+          <path d="M0,40 C300,10 600,80 900,30 C1050,10 1150,50 1200,60 L1200,120 L0,120 Z" fill="#FFFFFF"></path>
+        </svg>
+
+        <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 position-relative" style="z-index: 2;">
+          <div style="max-width: 650px;">
+            <div class="d-flex align-items-center gap-2 mb-2 flex-wrap">
+              <span class="badge bg-white text-danger px-2.5 py-1 font-monospace fw-bold shadow-xs" style="font-size: 0.70rem; letter-spacing: 0.05em; border-radius: 6px;">PORTAL SDM &amp; UMUM</span>
+              <span class="text-white text-opacity-85 small fw-semibold">Kepatuhan Aset &amp; Akuntansi Bank Mitra</span>
+            </div>
+            <h2 class="display-6 fw-bold mb-1 text-white" style="letter-spacing: -0.025em;">Penghapusan &amp; Pemusnahan Aset</h2>
+            <p class="text-white text-opacity-95 mb-3" style="font-size: 0.95rem; font-weight: 500;">
+              Pencatatan resmi Berita Acara pemusnahan fisik (BA-Afkir) inventaris kantor &amp; perangkat IT yang aus atau rusak permanen guna penarikan resmi dari Buku Register Aset Bank.
+            </p>
+            <div class="d-flex flex-wrap align-items-center gap-2.5">
+              <button type="button" class="btn-hero-pill text-decoration-none d-inline-flex align-items-center gap-2" style="color: #BE123C !important;" data-bs-toggle="modal" data-bs-target="#modalDisposal" onclick="resetDisposalModal()">
+                <i class="bi bi-plus-circle-fill"></i> Catat Berita Acara Afkir
+              </button>
+              <a href="'.e(module_url('asset_disposal.php', array_merge($_GET, ['export' => 'excel']))).'" class="btn btn-outline-light rounded-pill px-3.5 py-2 fw-semibold d-inline-flex align-items-center gap-2 shadow-xs" style="font-size: 0.88rem;">
+                <i class="bi bi-file-earmark-spreadsheet-fill"></i> Export Excel
+              </a>
+            </div>
+          </div>
+
+          <!-- Decorative Right Badges (Themed Shield & Grace Period Clock) -->
+          <div class="d-none d-md-flex align-items-center gap-4">
+            <!-- Shield Marker -->
+            <div class="hero-pin-marker" title="Pemusnahan Terverifikasi Audit">
+              <svg width="44" height="52" viewBox="0 0 44 52" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M22 0L44 8V24C44 38 22 52 22 52C22 52 0 38 0 24V8L22 0Z" fill="#BE123C"/>
+                <path d="M14 26L19 31L30 20" stroke="#FFFFFF" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </div>
+
+            <!-- Glowing Grace Period Badge -->
+            <div class="hero-sun-container" title="Masa Tenggang 7 Hari Aktif">
+              <svg width="68" height="68" viewBox="0 0 68 68" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <circle cx="34" cy="34" r="28" fill="#F43F5E" fill-opacity="0.35"/>
+                <circle cx="34" cy="34" r="20" fill="#F43F5E"/>
+                <path d="M34 22V34L42 38" stroke="#FFFFFF" stroke-width="3" stroke-linecap="round"/>
+              </svg>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 3 Symmetrical Metric Cards (Exact Proportions, Balanced Heights) -->
+      <div class="row g-3 mb-2">
+        <!-- Card 1: Total Aset Dihapuskan -->
+        <div class="col-md-4">
+          <div class="card-metric-modern">
+            <div>
+              <div class="metric-title-muted">Total Aset Diafkirkan</div>
+              <div class="metric-number-bold">'.number_format($kpi['total_unit']).' <span class="fs-6 fw-normal text-muted">Unit</span></div>
+            </div>
+            <div class="small text-muted mt-2 d-flex align-items-center gap-2" style="font-size: 0.78rem;">
+              <span class="text-warning fw-bold"><i class="bi bi-credit-card-2-front-fill"></i> '.$kpi['total_sdm'].' SDM &amp; Umum</span>
+              <span class="text-secondary">·</span>
+              <span class="text-info fw-bold"><i class="bi bi-pc-display"></i> '.$kpi['total_it'].' IT Operations</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Card 2: Masa Tenggang 7 Hari -->
+        <div class="col-md-4">
+          <div class="card-metric-modern">
+            <div>
+              <div class="metric-title-muted">Masa Tenggang 7 Hari</div>
+              <div class="metric-number-bold d-flex align-items-center gap-2">
+                <span class="text-success">'.$countRestorable.'</span>
+                <span class="fs-6 fw-normal text-muted">Unit Bisa Dibatalkan</span>
+              </div>
+            </div>
+            <div class="small text-muted mt-2" style="font-size: 0.78rem;">
+              <span class="text-success fw-bold"><i class="bi bi-arrow-counterclockwise"></i> Kembalikan ke Inventaris</span> jika tidak jadi dihapus
+            </div>
+          </div>
+        </div>
+
+        <!-- Card 3: Status Kepatuhan SOP -->
+        <div class="col-md-4">
+          <div class="card-status-mint">
+            <div>
+              <div class="metric-title-muted" style="color: #047857 !important;">Kepatuhan SOP Afkir Bank Mitra</div>
+              <div class="status-heading mt-1">
+                <span class="pulse-dot-green"></span>
+                <span>100% Berita Acara Terarsip</span>
+              </div>
+            </div>
+            <div class="status-subtext mt-2">
+              <i class="bi bi-check-all me-1"></i> Standar Cetak A4, Approval 3 Pihak &amp; Audit Trail
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Upward Trend Chart with Overlapping Floating Trend Badge -->
+      <div class="position-relative mt-2 pt-1 mb-2">
+        <div class="w-100 position-relative overflow-hidden rounded-4 trend-chart-box" style="height: 72px; border: 1px solid #E2E8F0;">
+          <svg viewBox="0 0 1000 72" preserveAspectRatio="none" style="width: 100%; height: 100%;">
+            <defs>
+              <linearGradient id="chartGradDisposal" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stop-color="#E11D48" stop-opacity="0.25"/>
+                <stop offset="100%" stop-color="#E11D48" stop-opacity="0.0"/>
+              </linearGradient>
+            </defs>
+            <path d="M0,60 Q250,52 500,38 T1000,12 L1000,72 L0,72 Z" fill="url(#chartGradDisposal)"/>
+            <path d="M0,60 Q250,52 500,38 T1000,12" fill="none" stroke="#E11D48" stroke-width="3" stroke-linecap="round"/>
+            <circle cx="994" cy="12" r="5" fill="#E11D48" stroke="#FFFFFF" stroke-width="2"/>
+          </svg>
+          <div class="position-absolute top-0 end-0 p-2 text-muted" style="font-size: 0.72rem; font-weight: 600;">
+            Tren Penghapusan Aset · Periode Aktif
+          </div>
+        </div>
+
+        <!-- Floating Trend Badge Overlapping Left of Chart -->
+        <div class="position-absolute" style="left: 16px; bottom: 10px; z-index: 4;">
+          <div class="badge-floating-trend shadow">
+            <div class="trend-icon-box" style="background: #BE123C; box-shadow: 0 4px 10px rgba(190, 18, 60, 0.3);">
+              <i class="bi bi-shield-check"></i>
+            </div>
+            <div>
+              <div class="fw-bold text-dark" style="font-size: 0.88rem;">+'.$kpi['total_bulan_ini'].' aset diafkirkan bulan ini</div>
+              <div class="text-muted small" style="font-size: 0.74rem;">Dilengkapi foto fisik &amp; dokumen BA 1 halaman A4</div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   </div>
 
-  <!-- TOP KPI METRIC CARDS -->
-  <div class="row g-3 mb-4">
-    <div class="col-sm-6 col-xl-3">
-      <div class="card h-100 border-0 shadow-sm rounded-3 p-3 bg-white">
-        <div class="d-flex align-items-center justify-content-between">
-          <div>
-            <div class="text-muted small fw-semibold">Total Aset Dihapuskan</div>
-            <div class="fs-3 fw-bold text-dark mt-1">'.number_format($kpi['total_unit']).' <span class="fs-6 fw-normal text-muted">Unit</span></div>
-          </div>
-          <div class="p-3 bg-danger bg-opacity-10 text-danger rounded-circle">
-            <i class="bi bi-trash3 fs-4"></i>
-          </div>
+  <!-- DATA TABLE ARSIP BERITA ACARA DENGAN TOOLBAR SYMMETRICAL -->
+  <div class="card p-0 overflow-hidden shadow-sm h-100 border-0 mb-4" style="border-radius: 20px;">
+    <!-- Table Header & Live Search Bar with Symmetrical Responsive Inputs -->
+    <div class="card-header bg-white py-3.5 px-4 border-bottom" style="border-top: 4px solid #E11D48; border-top-left-radius: 20px; border-top-right-radius: 20px;">
+      <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-3">
+        <div class="fw-bold text-dark text-uppercase small d-flex align-items-center gap-2" style="letter-spacing: 0.05em;">
+          <i class="bi bi-archive-fill text-danger fs-5"></i>
+          <span>Daftar Berita Acara Penghapusan Aset (BA-Afkir)</span>
+          <span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 rounded-pill px-2.5 py-1 font-monospace">'.count($disposalList).'</span>
         </div>
-        <div class="text-muted small mt-2" style="font-size: 0.74rem;">Seluruh barang afkir yang telah diproses</div>
+        <div class="small text-muted">
+          Menampilkan <strong class="text-dark">'.count($disposalList).'</strong> dokumen BA-Afkir
+        </div>
       </div>
-    </div>
 
-    <div class="col-sm-6 col-xl-3">
-      <div class="card h-100 border-0 shadow-sm rounded-3 p-3 bg-white">
-        <div class="d-flex align-items-center justify-content-between">
-          <div>
-            <div class="text-muted small fw-semibold">Inventaris SDM &amp; Umum</div>
-            <div class="fs-3 fw-bold text-warning mt-1">'.number_format($kpi['total_sdm']).' <span class="fs-6 fw-normal text-muted">Unit</span></div>
-          </div>
-          <div class="p-3 bg-warning bg-opacity-10 text-warning rounded-circle">
-            <i class="bi bi-credit-card-2-front fs-4"></i>
+      <!-- Filter & Search Toolbar Controls (All 38px High, Perfectly Symmetrical) -->
+      <form method="GET" action="'.e(module_url('asset_disposal.php')).'" class="row g-2 align-items-center m-0">
+        <div class="col-lg-6 col-md-12 p-0 pe-md-1">
+          <div class="input-group">
+            <span class="input-group-text bg-light border-end-0 text-muted" style="border-radius: 9999px 0 0 9999px; height: 38px;"><i class="bi bi-search"></i></span>
+            <input type="text" name="search" class="form-control bg-light border-start-0 ps-0" style="border-radius: 0 9999px 9999px 0; font-size: 0.84rem; height: 38px;" placeholder="Cari No. BA, Nama Aset, No. Rek, Alasan..." value="'.e($filters['search']).'">
           </div>
         </div>
-        <div class="text-muted small mt-2" style="font-size: 0.74rem;">Perabot, AC, brankas, kursi, mebel</div>
-      </div>
-    </div>
-
-    <div class="col-sm-6 col-xl-3">
-      <div class="card h-100 border-0 shadow-sm rounded-3 p-3 bg-white">
-        <div class="d-flex align-items-center justify-content-between">
-          <div>
-            <div class="text-muted small fw-semibold">Perangkat IT / Komputer</div>
-            <div class="fs-3 fw-bold text-info mt-1">'.number_format($kpi['total_it']).' <span class="fs-6 fw-normal text-muted">Unit</span></div>
-          </div>
-          <div class="p-3 bg-info bg-opacity-10 text-info rounded-circle">
-            <i class="bi bi-pc-display fs-4"></i>
-          </div>
-        </div>
-        <div class="text-muted small mt-2" style="font-size: 0.74rem;">PC, laptop, printer, scanner, UPS</div>
-      </div>
-    </div>
-
-    <div class="col-sm-6 col-xl-3">
-      <div class="card h-100 border-0 shadow-sm rounded-3 p-3 bg-white">
-        <div class="d-flex align-items-center justify-content-between">
-          <div>
-            <div class="text-muted small fw-semibold">Diafkirkan Bulan Ini</div>
-            <div class="fs-3 fw-bold text-primary mt-1">'.number_format($kpi['total_bulan_ini']).' <span class="fs-6 fw-normal text-muted">Unit</span></div>
-          </div>
-          <div class="p-3 bg-primary bg-opacity-10 text-primary rounded-circle">
-            <i class="bi bi-calendar-check fs-4"></i>
-          </div>
-        </div>
-        <div class="text-muted small mt-2" style="font-size: 0.74rem;">Bulan berjalan '.date('F Y').'</div>
-      </div>
-    </div>
-  </div>
-
-  <!-- FILTER & SEARCH TOOLBAR -->
-  <div class="card border-0 shadow-sm rounded-3 mb-4 bg-white">
-    <div class="card-body p-3">
-      <form method="GET" action="'.e(module_url('asset_disposal.php')).'" class="row g-2 align-items-center">
-        <div class="col-md-5 col-12">
-          <div class="input-group input-group-sm">
-            <span class="input-group-text bg-light border-end-0 text-muted"><i class="bi bi-search"></i></span>
-            <input type="text" name="search" class="form-control bg-light border-start-0" placeholder="Cari No. BA, Nama Aset, No. Rekening, Alasan..." value="'.e($filters['search']).'">
-          </div>
-        </div>
-        <div class="col-md-4 col-8">
-          <select name="cabang" class="form-select form-select-sm" onchange="this.form.submit()">
-            <option value="all" '.($filters['cabang']==='all'?'selected':'').'>Semua Kantor Cabang</option>';
-            foreach ($cabangMaster as $cb) {
-                $cName = $cb['nama_cabang'] ?? '';
-                if ($cName === '') continue;
-                $sel = ($filters['cabang'] === $cName) ? 'selected' : '';
-                $body .= '<option value="'.e($cName).'" '.$sel.'>'.e($cName).'</option>';
-            }
-$body .= '
+        <div class="col-lg-4 col-md-8 p-0 px-md-1">
+          <select name="cabang" class="form-select form-select-sm" style="border-radius: 9999px; height: 38px; font-size: 0.82rem;" onchange="this.form.submit()">
+            <option value="all" '.($filters['cabang']==='all'?'selected':'').'>Semua Kantor Cabang</option>
+            '.$cabangOptionsHtml.'
           </select>
         </div>
-        <div class="col-md-3 col-4 d-flex gap-1">
-          <button type="submit" class="btn btn-sm btn-dark w-100 fw-semibold">
-            <i class="bi bi-funnel"></i> Filter
+        <div class="col-lg-2 col-md-4 p-0 ps-md-1 d-flex gap-1.5">
+          <button type="submit" class="btn btn-danger btn-sm w-100 fw-bold" style="border-radius: 9999px; height: 38px; font-size: 0.82rem;">
+            <i class="bi bi-funnel me-1"></i> Filter
           </button>
           '.(!empty($filters['search']) || $filters['cabang']!=='all' ? '
-          <a href="'.e(module_url('asset_disposal.php')).'" class="btn btn-sm btn-outline-secondary" title="Reset Filter">
+          <a href="'.e(module_url('asset_disposal.php')).'" class="btn btn-outline-secondary btn-sm" style="border-radius: 9999px; height: 38px; width: 38px; padding: 0; display: inline-flex; align-items: center; justify-content: center;" title="Reset Filter">
             <i class="bi bi-arrow-counterclockwise"></i>
           </a>' : '').'
         </div>
       </form>
-    </div>
-  </div>
-
-  <!-- DATA TABLE ARSIP BERITA ACARA -->
-  <div class="card border-0 shadow-sm rounded-3 bg-white overflow-hidden">
-    <div class="card-header bg-white py-3 border-bottom d-flex align-items-center justify-content-between">
-      <h6 class="mb-0 fw-bold d-flex align-items-center gap-2">
-        <i class="bi bi-archive-fill text-danger"></i> Daftar Berita Acara Penghapusan Aset (BA-Afkir)
-      </h6>
-      <span class="badge bg-light text-secondary border font-monospace" style="font-size: 0.72rem;">Total: '.count($disposalList).' Dokumen</span>
     </div>
 
     <div class="table-responsive">
