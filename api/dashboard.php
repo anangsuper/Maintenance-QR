@@ -787,25 +787,25 @@ if (empty($displayCards)) {
           <td style="width: 90px;" class="text-center">
             <span class="badge px-2 py-1 rounded-pill '.$lokasiBadgeClass.'" style="font-size: 0.75rem; font-weight: 600;">'.e($lokasi).'</span>
           </td>
-          <td class="text-end text-nowrap" style="width: 140px;">
-            <div class="btn-group btn-group-sm">
-              <a class="btn btn-sm btn-light border text-success" target="_blank" href="'.e(module_url('inventaris_mutation.php', ['id'=>$cId])).'" title="Mutasi Fasilitas &amp; Kartu Inventaris" style="padding: 2px 7px;">
-                <i class="bi bi-arrow-left-right"></i>
+          <td class="text-end text-nowrap" style="min-width: 390px;">
+            <div class="btn-group btn-group-sm shadow-xs">
+              <a class="btn btn-sm btn-light border text-success fw-medium" target="_blank" href="'.e(module_url('inventaris_mutation.php', ['id'=>$cId])).'" title="Mutasi Fasilitas &amp; Kartu Inventaris" style="font-size: 0.78rem; padding: 3px 8px;">
+                <i class="bi bi-arrow-left-right me-1"></i>Mutasi
               </a>
-              <a class="btn btn-sm btn-light border text-primary" target="_blank" href="'.e(module_url('kartu_detail.php', ['id'=>$cId])).'" title="Buka Detail Web &amp; Foto" style="padding: 2px 7px;">
-                <i class="bi bi-box-arrow-up-right"></i>
+              <a class="btn btn-sm btn-light border text-primary fw-medium" target="_blank" href="'.e(module_url('kartu_detail.php', ['id'=>$cId])).'" title="Buka Detail Web &amp; Foto" style="font-size: 0.78rem; padding: 3px 8px;">
+                <i class="bi bi-box-arrow-up-right me-1"></i>Detail
               </a>
-              <button type="button" class="btn btn-sm btn-light border" title="Pratinjau Fisik Kartu" onclick=\'openCardPreviewModal('.$jsonPayload.')\' style="padding: 2px 7px;">
-                <i class="bi bi-eye"></i>
+              <button type="button" class="btn btn-sm btn-light border text-info-emphasis fw-medium" title="Pratinjau Fisik Kartu" onclick=\'openCardPreviewModal('.$jsonPayload.')\' style="font-size: 0.78rem; padding: 3px 8px;">
+                <i class="bi bi-eye me-1 text-info"></i>Lihat
               </button>
-              <a class="btn btn-sm btn-light border" target="_blank" href="'.e(module_url('print_inventory_card.php', ['source'=>'inventaris_kartu', 'id'=>$cId])).'" title="Cetak Kartu Ini" style="padding: 2px 7px;">
-                <i class="bi bi-printer"></i>
+              <a class="btn btn-sm btn-light border text-dark fw-medium" target="_blank" href="'.e(module_url('print_inventory_card.php', ['source'=>'inventaris_kartu', 'id'=>$cId])).'" title="Cetak Kartu Ini" style="font-size: 0.78rem; padding: 3px 8px;">
+                <i class="bi bi-printer me-1"></i>Cetak
               </a>
-              <button type="button" class="btn btn-sm btn-light border text-primary" title="Edit Kartu" onclick=\'openCardEditModal('.$jsonPayload.')\' style="padding: 2px 7px;">
-                <i class="bi bi-pencil"></i>
+              <button type="button" class="btn btn-sm btn-light border text-warning-emphasis fw-medium" title="Edit Kartu" onclick=\'openCardEditModal('.$jsonPayload.')\' style="font-size: 0.78rem; padding: 3px 8px;">
+                <i class="bi bi-pencil me-1 text-warning-emphasis"></i>Edit
               </button>
-              <button type="button" class="btn btn-sm btn-light border text-danger" title="Hapus Kartu" onclick="confirmDeleteCard('.$cId.', \''.e(addslashes($rek . ' - ' . $nama)).'\')" style="padding: 2px 7px;">
-                <i class="bi bi-trash"></i>
+              <button type="button" class="btn btn-sm btn-light border text-danger fw-medium" title="Hapus Kartu" onclick="confirmDeleteCard('.$cId.', \''.e(addslashes($rek . ' - ' . $nama)).'\')" style="font-size: 0.78rem; padding: 3px 8px;">
+                <i class="bi bi-trash me-1"></i>Hapus
               </button>
             </div>
           </td>
@@ -851,7 +851,7 @@ foreach (array_slice($allCards, 0, 5) as $qc) {
       <td><span class="badge-chip chip-primary font-monospace">'.e($qGab).'</span></td>
       <td><span class="badge-chip chip-secondary">'.e($qc['lokasi'] ?? 'KPO').'</span></td>
       <td class="text-end">
-        <a class="btn btn-sm btn-light border py-0 px-2" target="_blank" href="'.e(module_url('print_inventory_card.php', ['source'=>'inventaris_kartu', 'id'=>$qId])).'" title="Cetak Kartu"><i class="bi bi-printer"></i></a>
+        <a class="btn btn-sm btn-light border py-1 px-2.5 text-nowrap fw-medium" target="_blank" href="'.e(module_url('print_inventory_card.php', ['source'=>'inventaris_kartu', 'id'=>$qId])).'" title="Cetak Kartu" style="font-size: 0.78rem;"><i class="bi bi-printer me-1"></i>Cetak</a>
       </td>
     </tr>';
 }
@@ -1851,7 +1851,7 @@ if ($activeTab === 'kartu') {
               <th>NAMA BARANG &amp; TGL PEROLEHAN</th>
               <th style="width: 105px;" class="text-center">LABEL QR</th>
               <th style="width: 90px;" class="text-center">LOKASI</th>
-              <th class="text-end" style="width: 140px;">AKSI</th>
+              <th class="text-end text-nowrap" style="min-width: 390px;">AKSI</th>
             </tr>
           </thead>
           <tbody>
