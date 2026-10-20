@@ -102,6 +102,8 @@ function get_user_list(bool $forceRefresh = false): array {
                 updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
             );
         ");
+            $mysqlSchemaChecked = true;
+        }
 
         $cols = table_columns('users');
         if (!in_array('nama_panggilan', $cols, true)) {
