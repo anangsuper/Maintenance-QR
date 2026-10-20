@@ -1174,7 +1174,7 @@ function openRealisasiModal(data) {
       const icon = isPdf ? "bi-file-earmark-pdf-fill text-danger" : "bi-file-earmark-check-fill text-info";
       const docUrl = (data.memo_disetujui_file.startsWith("http") || data.memo_disetujui_file.startsWith("/")) ? data.memo_disetujui_file : ("" + data.memo_disetujui_file);
       curMemoDisetujui.classList.remove("d-none");
-      curMemoDisetujui.innerHTML = '<div class="d-flex align-items-center justify-content-between flex-wrap gap-2"><div><i class="bi ' + icon + ' me-1"></i> <a href="' + docUrl + '" target="_blank" class="fw-bold text-decoration-none">Lihat Berkas Memo Disetujui</a></div><small class="text-muted">Pilih file baru jika ingin mengganti</small></div>';
+      curMemoDisetujui.innerHTML = \'<div class="d-flex align-items-center justify-content-between flex-wrap gap-2"><div><i class="bi \' + icon + \' me-1"></i> <a href="\' + docUrl + \'" target="_blank" class="fw-bold text-decoration-none">Lihat Berkas Memo Disetujui</a></div><small class="text-muted">Pilih file baru jika ingin mengganti</small></div>\';
     } else {
       curMemoDisetujui.classList.add("d-none");
       curMemoDisetujui.innerHTML = "";
