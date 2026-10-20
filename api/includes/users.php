@@ -102,20 +102,17 @@ function get_user_list(bool $forceRefresh = false): array {
                 updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
             );
         ");
-            $mysqlSchemaChecked = true;
-        }
-
-        $cols = table_columns('users');
-        if (!in_array('nama_panggilan', $cols, true)) {
-            try { db()->exec("ALTER TABLE users ADD COLUMN nama_panggilan VARCHAR(50) NULL"); } catch (Throwable $e) {}
             $cols = table_columns('users');
-        }
-        if (!in_array('face_descriptor', $cols, true)) {
-            try { db()->exec("ALTER TABLE users ADD COLUMN face_descriptor TEXT NULL, ADD COLUMN face_photo MEDIUMTEXT NULL, ADD COLUMN face_status VARCHAR(50) DEFAULT 'none'"); } catch (Throwable $e) {}
-            $cols = table_columns('users');
-        } elseif (!in_array('face_status', $cols, true)) {
-            try { db()->exec("ALTER TABLE users ADD COLUMN face_status VARCHAR(50) DEFAULT 'none'"); } catch (Throwable $e) {}
-        }
+            if (!in_array('nama_panggilan', $cols, true)) {
+                try { db()->exec("ALTER TABLE users ADD COLUMN nama_panggilan VARCHAR(50) NULL"); } catch (Throwable $e) {}
+                $cols = table_columns('users');
+            }
+            if (!in_array('face_descriptor', $cols, true)) {
+                try { db()->exec("ALTER TABLE users ADD COLUMN face_descriptor TEXT NULL, ADD COLUMN face_photo MEDIUMTEXT NULL, ADD COLUMN face_status VARCHAR(50) DEFAULT 'none'"); } catch (Throwable $e) {}
+                $cols = table_columns('users');
+            } elseif (!in_array('face_status', $cols, true)) {
+                try { db()->exec("ALTER TABLE users ADD COLUMN face_status VARCHAR(50) DEFAULT 'none'"); } catch (Throwable $e) {}
+            }
             $mysqlSchemaChecked = true;
         }
         $cols = table_columns('users');
