@@ -1,14 +1,15 @@
 <?php
 /**
- * Halaman Pengelolaan Penghapusan & Penjualan Aset Inventaris
+ * Halaman Pengelolaan Penghapusan & Pemusnahan Aset Inventaris (BA-Afkir)
  * PT BPR Mitratama Arthabuana
  * Khusus Bagian SDM & Umum, IT Operations, dan Manajemen
+ * Sesuai Kebijakan Bank: Aset tidak diperjualbelikan, murni penghapusan/pemusnahan barang rusak
  */
 
 require __DIR__ . '/bootstrap.php';
 require_login();
 
-if (!is_admin() && !is_teknisi() && !is_hrd()) {
+if (!is_admin() && !is_it() && !is_hrd()) {
     http_response_code(403);
     die('Akses ditolak. Anda tidak memiliki hak akses untuk modul penghapusan aset.');
 }
@@ -17,13 +18,12 @@ if (!is_admin() && !is_teknisi() && !is_hrd()) {
 if (isset($_GET['export']) && $_GET['export'] === 'excel') {
     $exportFilters = [
         'search' => $_GET['search'] ?? '',
-        'jenis_tindakan' => $_GET['jenis_tindakan'] ?? '',
         'cabang' => $_GET['cabang'] ?? '',
         'tahun' => $_GET['tahun'] ?? '',
     ];
     $exportRows = get_disposal_list($exportFilters);
 
-    $filename = 'Rekap_Penghapusan_Penjualan_Aset_Bank_Mitra_' . date('Ymd_His') . '.csv';
+    $filename = 'Rekap_Penghapusan_Aset_Afkir_Bank_Mitra_' . date('Ymd_His') . '.csv';
     header('Content-Type: text/csv; charset=utf-8');
     header('Content-Disposition: attachment; filename="' . $filename . '"');
     header('Pragma: no-cache');
@@ -34,12 +34,11 @@ if (isset($_GET['export']) && $_GET['export'] === 'excel') {
     fprintf($out, chr(0xEF) . chr(0xBB) . chr(0xBF));
 
     fputcsv($out, [
-        'No', 'Nomor Berita Acara', 'Tanggal', 'Jenis Tindakan', 'Tipe Aset',
+        'No', 'Nomor Berita Acara', 'Tanggal Pemusnahan', 'Tipe Aset',
         'Kode Aset / No. Rek', 'Nama Barang', 'Merk / Model', 'Serial Number',
-        'Kantor Cabang', 'Ruangan', 'Pengguna Terakhir', 'Kondisi Terakhir',
-        'Nilai Penjualan (Rp)', 'Pembeli / Penerima', 'Metode Bayar',
-        'Alasan Penghapusan', 'Petugas Pemeriksa', 'Mengetahui (Kabag SDM)',
-        'Menyetujui (Direktur Ops)'
+        'Kantor Cabang', 'Ruangan', 'Pengguna Terakhir', 'Kondisi Fisik',
+        'Metode Pemusnahan', 'Alasan Penghapusan', 'Petugas Pemeriksa',
+        'Mengetahui (Kabag SDM)', 'Menyetujui (Direktur Ops)'
     ]);
 
     $no = 1;
@@ -48,7 +47,6 @@ if (isset($_GET['export']) && $_GET['export'] === 'excel') {
             $no++,
             $r['nomor_ba'],
             $r['tanggal_disposal'],
-            $r['jenis_tindakan'],
             ($r['asset_type'] === 'inventaris' ? 'Kartu Inventaris SDM' : 'Perangkat IT'),
             $r['kode_aset'],
             $r['nama_aset'],
@@ -58,9 +56,7 @@ if (isset($_GET['export']) && $_GET['export'] === 'excel') {
             $r['lokasi_ruangan'],
             $r['pengguna_terakhir'],
             $r['kondisi_terakhir'],
-            $r['nilai_realisasi_penjualan'],
-            $r['pembeli_penerima'],
-            $r['metode_pembayaran'],
+            $r['metode_pemusnahan'],
             $r['alasan_penghapusan'],
             $r['petugas_nama'],
             $r['nama_mengetahui'],
@@ -107,7 +103,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     if ($action === 'upload_acc') {
         $idAcc = (int)($_POST['id'] ?? 0);
-        $fileUploaded = upload_disposal_file('dokumen_ba_disetujui', 'disposal_ba_acc');
+        $fileUploaded = upload_disposal_file('dokumen_ba_disetujui', 'afkir_ba_acc');
         if ($idAcc > 0 && $fileUploaded) {
             db()->prepare("UPDATE asset_disposals SET dokumen_ba_disetujui = ? WHERE id = ?")->execute([$fileUploaded, $idAcc]);
             $_SESSION['flash'] = 'Berkas scan Berita Acara bertanda tangan berhasil diunggah.';
@@ -123,7 +119,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 $cabangMaster = get_cabang_list();
 $filters = [
     'search' => trim((string)($_GET['search'] ?? '')),
-    'jenis_tindakan' => trim((string)($_GET['jenis_tindakan'] ?? 'all')),
     'cabang' => trim((string)($_GET['cabang'] ?? 'all')),
     'tahun' => trim((string)($_GET['tahun'] ?? date('Y'))),
 ];
@@ -137,7 +132,7 @@ try {
     $invRows = get_inventaris_kartu_rows();
     foreach ($invRows as $ir) {
         $st = (string)($ir['status_inventaris'] ?? '');
-        if (str_contains($st, 'Dihapuskan') || str_contains($st, 'Dijual')) continue;
+        if (str_contains($st, 'Dihapuskan') || str_contains($st, 'Dijual') || str_contains($st, 'Afkir')) continue;
         $activeInventaris[] = [
             'id' => (int)$ir['id'],
             'type' => 'inventaris',
@@ -207,18 +202,18 @@ $body = '
       <div>
         <div class="d-flex align-items-center gap-2 mb-2 flex-wrap">
           <span class="badge bg-danger text-white px-2.5 py-1 font-monospace fw-bold" style="font-size: 0.72rem; letter-spacing: 0.05em; border-radius: 6px;">PORTAL SDM &amp; UMUM</span>
-          <span class="text-white text-opacity-75 small">Kepatuhan Aset &amp; Akuntansi Perbankan</span>
+          <span class="text-white text-opacity-75 small">Kepatuhan Aset &amp; Akuntansi Bank Mitra</span>
         </div>
         <h2 class="h3 fw-bold mb-1 d-flex align-items-center gap-2">
-          <i class="bi bi-trash3-fill text-danger"></i> Penghapusan &amp; Penjualan Aset Inventaris
+          <i class="bi bi-trash3-fill text-danger"></i> Penghapusan &amp; Pemusnahan Aset (BA-Afkir)
         </h2>
         <p class="text-white text-opacity-75 mb-0" style="max-width: 750px; font-size: 0.92rem;">
-          Pencatatan legal berita acara pemusnahan (afkir fisik), penjualan/lelang barang bekas, dan hibah inventaris perabot kantor maupun perangkat IT Bank Mitra sesuai standar audit OJK &amp; SKAI.
+          Pencatatan resmi Berita Acara pemusnahan fisik (afkir) inventaris perabot kantor maupun perangkat IT yang mengalami kerusakan permanen / aus guna penarikan resmi dari Buku Register Aset Aktif Bank Mitra.
         </p>
       </div>
       <div class="d-flex flex-wrap align-items-center gap-2 flex-shrink-0">
         <button type="button" class="btn btn-danger fw-bold shadow-sm d-flex align-items-center gap-1.5 px-3 py-2" data-bs-toggle="modal" data-bs-target="#modalDisposal" onclick="resetDisposalModal()">
-          <i class="bi bi-plus-circle-fill"></i> Catat Berita Acara
+          <i class="bi bi-plus-circle-fill"></i> Catat Berita Acara Afkir
         </button>
         <a href="'.e(module_url('asset_disposal.php', array_merge($_GET, ['export' => 'excel']))).'" class="btn btn-outline-light fw-semibold shadow-sm d-flex align-items-center gap-1.5 px-3 py-2">
           <i class="bi bi-file-earmark-spreadsheet"></i> Export Excel
@@ -233,29 +228,14 @@ $body = '
       <div class="card h-100 border-0 shadow-sm rounded-3 p-3 bg-white">
         <div class="d-flex align-items-center justify-content-between">
           <div>
-            <div class="text-muted small fw-semibold">Total Aset Diproses</div>
+            <div class="text-muted small fw-semibold">Total Aset Dihapuskan</div>
             <div class="fs-3 fw-bold text-dark mt-1">'.number_format($kpi['total_unit']).' <span class="fs-6 fw-normal text-muted">Unit</span></div>
-          </div>
-          <div class="p-3 bg-primary bg-opacity-10 text-primary rounded-circle">
-            <i class="bi bi-boxes fs-4"></i>
-          </div>
-        </div>
-        <div class="text-muted small mt-2" style="font-size: 0.74rem;">Seluruh status penghapusan</div>
-      </div>
-    </div>
-
-    <div class="col-sm-6 col-xl-3">
-      <div class="card h-100 border-0 shadow-sm rounded-3 p-3 bg-white">
-        <div class="d-flex align-items-center justify-content-between">
-          <div>
-            <div class="text-muted small fw-semibold">Pemusnahan / Afkir</div>
-            <div class="fs-3 fw-bold text-danger mt-1">'.number_format($kpi['total_afkir']).' <span class="fs-6 fw-normal text-muted">Unit</span></div>
           </div>
           <div class="p-3 bg-danger bg-opacity-10 text-danger rounded-circle">
             <i class="bi bi-trash3 fs-4"></i>
           </div>
         </div>
-        <div class="text-muted small mt-2" style="font-size: 0.74rem;">Rusak berat / tidak bernilai jual</div>
+        <div class="text-muted small mt-2" style="font-size: 0.74rem;">Seluruh barang afkir yang telah diproses</div>
       </div>
     </div>
 
@@ -263,29 +243,44 @@ $body = '
       <div class="card h-100 border-0 shadow-sm rounded-3 p-3 bg-white">
         <div class="d-flex align-items-center justify-content-between">
           <div>
-            <div class="text-muted small fw-semibold">Penjualan / Lelang</div>
-            <div class="fs-3 fw-bold text-success mt-1">'.number_format($kpi['total_penjualan']).' <span class="fs-6 fw-normal text-muted">Unit</span></div>
+            <div class="text-muted small fw-semibold">Inventaris SDM &amp; Umum</div>
+            <div class="fs-3 fw-bold text-warning mt-1">'.number_format($kpi['total_sdm']).' <span class="fs-6 fw-normal text-muted">Unit</span></div>
           </div>
-          <div class="p-3 bg-success bg-opacity-10 text-success rounded-circle">
-            <i class="bi bi-tag-fill fs-4"></i>
+          <div class="p-3 bg-warning bg-opacity-10 text-warning rounded-circle">
+            <i class="bi bi-credit-card-2-front fs-4"></i>
           </div>
         </div>
-        <div class="text-muted small mt-2" style="font-size: 0.74rem;">Dijual ke pihak ketiga / karyawan</div>
+        <div class="text-muted small mt-2" style="font-size: 0.74rem;">Perabot, AC, brankas, kursi, mebel</div>
       </div>
     </div>
 
     <div class="col-sm-6 col-xl-3">
-      <div class="card h-100 border-0 shadow-sm rounded-3 p-3 bg-white" style="border-bottom: 3px solid #10B981 !important;">
+      <div class="card h-100 border-0 shadow-sm rounded-3 p-3 bg-white">
         <div class="d-flex align-items-center justify-content-between">
           <div>
-            <div class="text-muted small fw-semibold">Kas Masuk Hasil Jual</div>
-            <div class="fs-4 fw-bold text-success mt-1">Rp. '.number_format($kpi['total_pendapatan_penjualan'], 0, ',', '.').'</div>
+            <div class="text-muted small fw-semibold">Perangkat IT / Komputer</div>
+            <div class="fs-3 fw-bold text-info mt-1">'.number_format($kpi['total_it']).' <span class="fs-6 fw-normal text-muted">Unit</span></div>
           </div>
-          <div class="p-3 bg-success bg-opacity-10 text-success rounded-circle">
-            <i class="bi bi-cash-stack fs-4"></i>
+          <div class="p-3 bg-info bg-opacity-10 text-info rounded-circle">
+            <i class="bi bi-pc-display fs-4"></i>
           </div>
         </div>
-        <div class="text-muted small mt-2" style="font-size: 0.74rem;">Pendapatan non-operasional kas bank</div>
+        <div class="text-muted small mt-2" style="font-size: 0.74rem;">PC, laptop, printer, scanner, UPS</div>
+      </div>
+    </div>
+
+    <div class="col-sm-6 col-xl-3">
+      <div class="card h-100 border-0 shadow-sm rounded-3 p-3 bg-white">
+        <div class="d-flex align-items-center justify-content-between">
+          <div>
+            <div class="text-muted small fw-semibold">Diafkirkan Bulan Ini</div>
+            <div class="fs-3 fw-bold text-primary mt-1">'.number_format($kpi['total_bulan_ini']).' <span class="fs-6 fw-normal text-muted">Unit</span></div>
+          </div>
+          <div class="p-3 bg-primary bg-opacity-10 text-primary rounded-circle">
+            <i class="bi bi-calendar-check fs-4"></i>
+          </div>
+        </div>
+        <div class="text-muted small mt-2" style="font-size: 0.74rem;">Bulan berjalan '.date('F Y').'</div>
       </div>
     </div>
   </div>
@@ -294,22 +289,13 @@ $body = '
   <div class="card border-0 shadow-sm rounded-3 mb-4 bg-white">
     <div class="card-body p-3">
       <form method="GET" action="'.e(module_url('asset_disposal.php')).'" class="row g-2 align-items-center">
-        <div class="col-md-4 col-12">
+        <div class="col-md-5 col-12">
           <div class="input-group input-group-sm">
             <span class="input-group-text bg-light border-end-0 text-muted"><i class="bi bi-search"></i></span>
-            <input type="text" name="search" class="form-control bg-light border-start-0" placeholder="Cari No. BA, Nama Aset, No. Rek, Pembeli..." value="'.e($filters['search']).'">
+            <input type="text" name="search" class="form-control bg-light border-start-0" placeholder="Cari No. BA, Nama Aset, No. Rekening, Alasan..." value="'.e($filters['search']).'">
           </div>
         </div>
-        <div class="col-md-3 col-6">
-          <select name="jenis_tindakan" class="form-select form-select-sm" onchange="this.form.submit()">
-            <option value="all" '.($filters['jenis_tindakan']==='all'?'selected':'').'>Semua Jenis Tindakan</option>
-            <option value="Pemusnahan / Afkir Fisik" '.($filters['jenis_tindakan']==='Pemusnahan / Afkir Fisik'?'selected':'').'>Pemusnahan / Afkir Fisik</option>
-            <option value="Penjualan / Lelang Barang Bekas" '.($filters['jenis_tindakan']==='Penjualan / Lelang Barang Bekas'?'selected':'').'>Penjualan / Lelang Barang Bekas</option>
-            <option value="Hibah / Donasi" '.($filters['jenis_tindakan']==='Hibah / Donasi'?'selected':'').'>Hibah / Donasi</option>
-            <option value="Tukar Tambah" '.($filters['jenis_tindakan']==='Tukar Tambah'?'selected':'').'>Tukar Tambah Unit Baru</option>
-          </select>
-        </div>
-        <div class="col-md-3 col-6">
+        <div class="col-md-4 col-8">
           <select name="cabang" class="form-select form-select-sm" onchange="this.form.submit()">
             <option value="all" '.($filters['cabang']==='all'?'selected':'').'>Semua Kantor Cabang</option>';
             foreach ($cabangMaster as $cb) {
@@ -321,11 +307,11 @@ $body = '
 $body .= '
           </select>
         </div>
-        <div class="col-md-2 col-12 d-flex gap-1">
+        <div class="col-md-3 col-4 d-flex gap-1">
           <button type="submit" class="btn btn-sm btn-dark w-100 fw-semibold">
             <i class="bi bi-funnel"></i> Filter
           </button>
-          '.(!empty($filters['search']) || $filters['jenis_tindakan']!=='all' || $filters['cabang']!=='all' ? '
+          '.(!empty($filters['search']) || $filters['cabang']!=='all' ? '
           <a href="'.e(module_url('asset_disposal.php')).'" class="btn btn-sm btn-outline-secondary" title="Reset Filter">
             <i class="bi bi-arrow-counterclockwise"></i>
           </a>' : '').'
@@ -338,7 +324,7 @@ $body .= '
   <div class="card border-0 shadow-sm rounded-3 bg-white overflow-hidden">
     <div class="card-header bg-white py-3 border-bottom d-flex align-items-center justify-content-between">
       <h6 class="mb-0 fw-bold d-flex align-items-center gap-2">
-        <i class="bi bi-archive-fill text-danger"></i> Daftar Berita Acara Penghapusan &amp; Penjualan
+        <i class="bi bi-archive-fill text-danger"></i> Daftar Berita Acara Penghapusan Aset (BA-Afkir)
       </h6>
       <span class="badge bg-light text-secondary border font-monospace" style="font-size: 0.72rem;">Total: '.count($disposalList).' Dokumen</span>
     </div>
@@ -347,12 +333,12 @@ $body .= '
       <table class="table table-hover align-middle mb-0" style="font-size: 0.88rem;">
         <thead class="table-light text-secondary text-uppercase" style="font-size: 0.72rem; letter-spacing: 0.05em;">
           <tr>
-            <th class="ps-3" style="width: 17%;">No. BA &amp; Tanggal</th>
-            <th style="width: 25%;">Identitas Aset</th>
-            <th style="width: 14%;">Lokasi / Cabang</th>
-            <th style="width: 16%;">Tindakan &amp; Nilai</th>
-            <th style="width: 14%;">Dokumentasi</th>
-            <th class="text-end pe-3" style="width: 14%;">Aksi</th>
+            <th class="ps-3" style="width: 18%;">No. BA &amp; Tanggal</th>
+            <th style="width: 28%;">Identitas Aset</th>
+            <th style="width: 16%;">Lokasi / Cabang</th>
+            <th style="width: 18%;">Kondisi &amp; Alasan Afkir</th>
+            <th style="width: 10%;">Dokumentasi</th>
+            <th class="text-end pe-3" style="width: 10%;">Aksi</th>
           </tr>
         </thead>
         <tbody>';
@@ -361,9 +347,9 @@ $body .= '
             $body .= '
             <tr>
               <td colspan="6" class="text-center py-5 text-muted">
-                <i class="bi bi-clipboard-x fs-1 text-secondary opacity-50 d-block mb-2"></i>
-                <div class="fw-semibold">Belum Ada Catatan Berita Acara Penghapusan / Penjualan</div>
-                <p class="small text-muted mb-3">Klik tombol "Catat Berita Acara" di atas untuk memproses afkir fisik atau penjualan aset inventaris.</p>
+                <i class="bi bi-trash3 fs-1 text-secondary opacity-50 d-block mb-2"></i>
+                <div class="fw-semibold">Belum Ada Catatan Berita Acara Penghapusan Aset</div>
+                <p class="small text-muted mb-3">Klik tombol "Catat Berita Acara Afkir" di atas untuk memproses penghapusan inventaris rusak.</p>
                 <button type="button" class="btn btn-sm btn-danger fw-bold px-3 py-1.5" data-bs-toggle="modal" data-bs-target="#modalDisposal" onclick="resetDisposalModal()">
                   <i class="bi bi-plus-circle me-1"></i> Buat Berita Acara Pertama
                 </button>
@@ -371,13 +357,6 @@ $body .= '
             </tr>';
         } else {
             foreach ($disposalList as $row) {
-                $isSell = str_contains($row['jenis_tindakan'], 'Penjualan') || str_contains($row['jenis_tindakan'], 'Lelang');
-                $isScrap = str_contains($row['jenis_tindakan'], 'Afkir') || str_contains($row['jenis_tindakan'], 'Pemusnahan');
-                $isDonate = str_contains($row['jenis_tindakan'], 'Hibah') || str_contains($row['jenis_tindakan'], 'Donasi');
-
-                $badgeClass = $isSell ? 'bg-success text-white' : ($isScrap ? 'bg-danger text-white' : 'bg-primary text-white');
-                $badgeIcon = $isSell ? 'bi-cash-coin' : ($isScrap ? 'bi-trash3' : 'bi-gift');
-
                 $assetBadge = ($row['asset_type'] === 'inventaris') 
                     ? '<span class="badge bg-warning text-dark border border-warning" style="font-size: 0.65rem;"><i class="bi bi-credit-card-2-front"></i> Kartu SDM</span>' 
                     : '<span class="badge bg-info text-dark border border-info" style="font-size: 0.65rem;"><i class="bi bi-pc-display"></i> Perangkat IT</span>';
@@ -396,9 +375,6 @@ $body .= '
                     </div>
                     <div class="fw-bold text-dark">'.e($row['nama_aset']).'</div>
                     '.(!empty($row['merk_model']) && $row['merk_model'] !== '-' ? '<div class="text-muted small">'.e($row['merk_model']).'</div>' : '').'
-                    <div class="text-danger small mt-1" style="font-size: 0.74rem;">
-                      <i class="bi bi-exclamation-circle me-0.5"></i> Kondisi: '.e($row['kondisi_terakhir']).'
-                    </div>
                   </td>
                   <td>
                     <div class="fw-semibold text-dark">'.e($row['cabang']).'</div>
@@ -406,19 +382,14 @@ $body .= '
                     <div class="text-secondary small" style="font-size: 0.72rem;">PJ: '.e($row['pengguna_terakhir'] ?: '-').'</div>
                   </td>
                   <td>
-                    <span class="badge '.$badgeClass.' fw-bold d-inline-flex align-items-center gap-1 px-2 py-1 mb-1" style="font-size: 0.72rem; border-radius: 4px;">
-                      <i class="bi '.$badgeIcon.'"></i> '.e($row['jenis_tindakan']).'
-                    </span>';
-                    if ($isSell && $row['nilai_realisasi_penjualan'] > 0) {
-                        $body .= '
-                        <div class="fw-bold text-success" style="font-size: 0.90rem;">Rp. '.number_format($row['nilai_realisasi_penjualan'], 0, ',', '.').'</div>
-                        <div class="text-muted small" style="font-size: 0.72rem;">Pembeli: '.e($row['pembeli_penerima'] ?: '-').'</div>';
-                    } elseif ($isDonate && !empty($row['pembeli_penerima'])) {
-                        $body .= '<div class="text-muted small" style="font-size: 0.72rem;">Penerima: '.e($row['pembeli_penerima']).'</div>';
-                    }
-                    $body .= '
-                    <div class="text-secondary small mt-1 text-truncate" style="max-width: 220px;" title="'.e($row['alasan_penghapusan']).'">
+                    <div class="text-danger fw-bold small mb-1">
+                      <i class="bi bi-exclamation-triangle-fill me-1"></i>'.e($row['kondisi_terakhir']).'
+                    </div>
+                    <div class="text-secondary small text-truncate" style="max-width: 240px;" title="'.e($row['alasan_penghapusan']).'">
                       '.e($row['alasan_penghapusan']).'
+                    </div>
+                    <div class="badge bg-light text-secondary border mt-1" style="font-size: 0.68rem;">
+                      '.e($row['metode_pemusnahan']).'
                     </div>
                   </td>
                   <td>
@@ -428,13 +399,8 @@ $body .= '
                             <i class="bi bi-camera me-1 text-primary"></i> Foto Fisik
                           </a>';
                       }
-                      if (!empty($row['bukti_transaksi'])) {
-                          $body .= '<a href="'.e(disposal_file_url($row['bukti_transaksi'])).'" target="_blank" class="btn btn-xs btn-outline-success text-start py-0.5 px-2" style="font-size: 0.72rem;">
-                            <i class="bi bi-receipt me-1 text-success"></i> Kwitansi Bayar
-                          </a>';
-                      }
                       if (!empty($row['dokumen_ba_disetujui'])) {
-                          $body .= '<a href="'.e(disposal_file_url($row['dokumen_ba_disetujui'])).'" target="_blank" class="btn btn-xs btn-outline-info text-dark fw-bold text-start py-0.5 px-2" style="font-size: 0.72rem;">
+                          $body .= '<a href="'.e(disposal_file_url($row['dokumen_ba_disetujui'])) ?>" target="_blank" class="btn btn-xs btn-outline-info text-dark fw-bold text-start py-0.5 px-2" style="font-size: 0.72rem;">
                             <i class="bi bi-file-earmark-check me-1 text-info"></i> Scan BA Acc ✓
                           </a>';
                       } else {
@@ -456,7 +422,7 @@ $body .= '
                       <ul class="dropdown-menu dropdown-menu-end shadow-sm">
                         <li>
                           <a class="dropdown-item" href="'.e(module_url('print_bast_disposal.php', ['id' => $row['id']])).'" target="_blank">
-                            <i class="bi bi-file-earmark-pdf me-2 text-primary"></i> Cetak Dokumen BA
+                            <i class="bi bi-file-earmark-pdf me-2 text-primary"></i> Cetak Dokumen BA-Afkir
                           </a>
                         </li>
                         <li>
@@ -489,9 +455,9 @@ $body .= '
 
 </div>
 
-<!-- ========================================== -->
-<!-- MODAL CATAT BERITA ACARA PENGHAPUSAN ASET -->
-<!-- ========================================== -->
+<!-- ==================================================== -->
+<!-- MODAL CATAT BERITA ACARA PENGHAPUSAN ASET (BA-AFKIR) -->
+<!-- ==================================================== -->
 <div class="modal fade" id="modalDisposal" tabindex="-1" aria-labelledby="modalDisposalLabel" aria-hidden="true">
   <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
     <div class="modal-content border-0 shadow-lg">
@@ -501,7 +467,7 @@ $body .= '
         
         <div class="modal-header bg-dark text-white border-0 py-3">
           <h5 class="modal-title fw-bold d-flex align-items-center gap-2" id="modalDisposalLabel">
-            <i class="bi bi-trash3-fill text-danger"></i> Catat Berita Acara Penghapusan / Penjualan Aset
+            <i class="bi bi-trash3-fill text-danger"></i> Catat Berita Acara Penghapusan Aset (BA-Afkir)
           </h5>
           <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
@@ -530,7 +496,7 @@ $body .= '
 
           <!-- 2. Pilih Barang Aset Aktif -->
           <div class="mb-3">
-            <label class="form-label fw-bold text-dark small" for="selectAssetItem">PILIH UNIT BARANG INVENTARIS <span class="text-danger">*</span></label>
+            <label class="form-label fw-bold text-dark small" for="selectAssetItem">PILIH UNIT BARANG INVENTARIS YANG DIAFKIRKAN <span class="text-danger">*</span></label>
             <select class="form-select" id="selectAssetItem" required onchange="onAssetSelected(this)">
               <option value="">-- Pilih Barang dari Register Aktif --</option>
             </select>
@@ -576,128 +542,53 @@ $body .= '
             <div class="col-md-7 col-12">
               <label class="form-label fw-bold text-dark small" for="dispNomorBa">NOMOR BERITA ACARA (AUTO)</label>
               <input type="text" name="nomor_ba" id="dispNomorBa" class="form-control font-monospace bg-light fw-bold" placeholder="Dibuat otomatis oleh sistem...">
-              <div class="form-text small" style="font-size: 0.72rem;">Kosongkan jika ingin digenerate otomatis standar format Bank Mitra.</div>
+              <div class="form-text small" style="font-size: 0.72rem;">Format resmi: 001/BA-AFKIR/SDM-UMUM/BANK-MITRA.KPO/X/2026.</div>
             </div>
             <div class="col-md-5 col-12">
-              <label class="form-label fw-bold text-dark small" for="dispTanggal">TANGGAL PEMERIKSAAN / EKSEKUSI <span class="text-danger">*</span></label>
+              <label class="form-label fw-bold text-dark small" for="dispTanggal">TANGGAL PEMERIKSAAN / AFKIR <span class="text-danger">*</span></label>
               <input type="date" name="tanggal_disposal" id="dispTanggal" class="form-control" value="'.date('Y-m-d').'" required>
             </div>
           </div>
 
-          <!-- 4. Jenis Tindakan Keputusan -->
-          <div class="mb-3">
-            <label class="form-label fw-bold text-dark small">JENIS TINDAKAN KEPUTUSAN <span class="text-danger">*</span></label>
-            <div class="row g-2">
-              <div class="col-md-6 col-12">
-                <div class="form-check border rounded-3 p-2 bg-white h-100">
-                  <input class="form-check-input ms-0 me-2" type="radio" name="jenis_tindakan" id="actAfkir" value="Pemusnahan / Afkir Fisik" checked onchange="toggleActionFields()">
-                  <label class="form-check-label fw-semibold text-danger" for="actAfkir" style="cursor: pointer;">
-                    <i class="bi bi-trash3-fill me-1"></i> Pemusnahan / Afkir Fisik (Scrap)
-                    <div class="text-muted fw-normal small" style="font-size: 0.72rem;">Barang rusak total, tidak ada nilai jual, dihancurkan/dibuang.</div>
-                  </label>
-                </div>
-              </div>
-              <div class="col-md-6 col-12">
-                <div class="form-check border rounded-3 p-2 bg-white h-100">
-                  <input class="form-check-input ms-0 me-2" type="radio" name="jenis_tindakan" id="actJual" value="Penjualan / Lelang Barang Bekas" onchange="toggleActionFields()">
-                  <label class="form-check-label fw-semibold text-success" for="actJual" style="cursor: pointer;">
-                    <i class="bi bi-cash-stack me-1"></i> Penjualan / Lelang Barang Bekas
-                    <div class="text-muted fw-normal small" style="font-size: 0.72rem;">Dijual ke pihak ketiga/pengepul atau lelang karyawan (menghasilkan kas).</div>
-                  </label>
-                </div>
-              </div>
-              <div class="col-md-6 col-12">
-                <div class="form-check border rounded-3 p-2 bg-white h-100">
-                  <input class="form-check-input ms-0 me-2" type="radio" name="jenis_tindakan" id="actHibah" value="Hibah / Donasi" onchange="toggleActionFields()">
-                  <label class="form-check-label fw-semibold text-primary" for="actHibah" style="cursor: pointer;">
-                    <i class="bi bi-gift-fill me-1"></i> Hibah / Donasi Sosial
-                    <div class="text-muted fw-normal small" style="font-size: 0.72rem;">Diserahkan ke yayasan, sekolah, atau pihak lain.</div>
-                  </label>
-                </div>
-              </div>
-              <div class="col-md-6 col-12">
-                <div class="form-check border rounded-3 p-2 bg-white h-100">
-                  <input class="form-check-input ms-0 me-2" type="radio" name="jenis_tindakan" id="actTukar" value="Tukar Tambah" onchange="toggleActionFields()">
-                  <label class="form-check-label fw-semibold text-dark" for="actTukar" style="cursor: pointer;">
-                    <i class="bi bi-arrow-repeat me-1"></i> Tukar Tambah Unit Baru
-                    <div class="text-muted fw-normal small" style="font-size: 0.72rem;">Digunakan sebagai pengurang biaya unit pengadaan baru.</div>
-                  </label>
-                </div>
-              </div>
+          <!-- 4. Kondisi Fisik & Metode Pemusnahan -->
+          <div class="row g-3 mb-3">
+            <div class="col-md-6 col-12">
+              <label class="form-label fw-bold text-dark small" for="dispKondisi">KONDISI FISIK TERAKHIR <span class="text-danger">*</span></label>
+              <select name="kondisi_terakhir" id="dispKondisi" class="form-select form-select-sm" required>
+                <option value="Rusak Berat / Tidak Ekonomis Diperbaiki">Rusak Berat / Tidak Ekonomis Diperbaiki</option>
+                <option value="Mati Total / Tidak Dapat Menyala">Mati Total / Tidak Dapat Menyala</option>
+                <option value="Rangka Fisik Patah / Lapuk / Keropos">Rangka Fisik Patah / Lapuk / Keropos</option>
+                <option value="Usang / Masa Manfaat Habis">Usang / Masa Manfaat Habis</option>
+              </select>
+            </div>
+            <div class="col-md-6 col-12">
+              <label class="form-label fw-bold text-dark small" for="dispMetode">METODE PEMUSNAHAN / PENYINGKIRAN <span class="text-danger">*</span></label>
+              <select name="metode_pemusnahan" id="dispMetode" class="form-select form-select-sm" required>
+                <option value="Dihancurkan / Dibuang Fisik">Dihancurkan / Dibuang Fisik</option>
+                <option value="Dikeluarkan dari Area Lingkungan Bank">Dikeluarkan dari Area Lingkungan Bank</option>
+                <option value="Kanibalisasi Suku Cadang (Untuk Unit Lain)">Kanibalisasi Suku Cadang (Untuk Unit Lain)</option>
+                <option value="Penghapusan Buku Administratif (Write-Off)">Penghapusan Buku Administratif (Write-Off)</option>
+              </select>
             </div>
           </div>
 
-          <!-- Section Khusus Penjualan (Tampil jika pilih Penjualan) -->
-          <div class="card bg-success bg-opacity-10 border-success rounded-3 p-3 mb-3 d-none" id="boxPenjualan">
-            <h6 class="fw-bold text-success mb-2 d-flex align-items-center gap-1.5" style="font-size: 0.86rem;">
-              <i class="bi bi-coin"></i> RINCIAN PENJUALAN / LELANG ASET
-            </h6>
-            <div class="row g-2">
-              <div class="col-md-6 col-12">
-                <label class="form-label small fw-semibold text-dark" for="dispNilaiJual">NILAI REALISASI PENJUALAN (RP) <span class="text-danger">*</span></label>
-                <div class="input-group input-group-sm">
-                  <span class="input-group-text bg-white fw-bold">Rp</span>
-                  <input type="number" name="nilai_realisasi_penjualan" id="dispNilaiJual" class="form-control" placeholder="0" min="0" step="1000">
-                </div>
-              </div>
-              <div class="col-md-6 col-12">
-                <label class="form-label small fw-semibold text-dark" for="dispPembeli">NAMA PEMBELI / PEMENANG LELANG <span class="text-danger">*</span></label>
-                <input type="text" name="pembeli_penerima" id="dispPembeli" class="form-control form-control-sm" placeholder="Contoh: CV Surya Perkasa / Anang (Karyawan)">
-              </div>
-              <div class="col-md-6 col-12 mt-2">
-                <label class="form-label small fw-semibold text-dark" for="dispMetodeBayar">METODE PEMBAYARAN KAS</label>
-                <select name="metode_pembayaran" id="dispMetodeBayar" class="form-select form-select-sm">
-                  <option value="Tunai / Kas Masuk Operasional">Tunai / Kas Masuk Operasional</option>
-                  <option value="Transfer Rekening Operasional Bank Mitra">Transfer Rekening Operasional Bank Mitra</option>
-                  <option value="Potong Gaji Pegawai (Lelang Karyawan)">Potong Gaji Pegawai (Lelang Karyawan)</option>
-                </select>
-              </div>
-              <div class="col-md-6 col-12 mt-2">
-                <label class="form-label small fw-semibold text-dark" for="dispBukti">UPLOAD STRUK / BUKTI BAYAR (OPSIONAL)</label>
-                <input type="file" name="bukti_transaksi" id="dispBukti" class="form-control form-control-sm" accept="image/*,.pdf">
-              </div>
-            </div>
-          </div>
-
-          <!-- Section Khusus Hibah (Tampil jika pilih Hibah) -->
-          <div class="card bg-primary bg-opacity-10 border-primary rounded-3 p-3 mb-3 d-none" id="boxHibah">
-            <h6 class="fw-bold text-primary mb-2 d-flex align-items-center gap-1.5" style="font-size: 0.86rem;">
-              <i class="bi bi-gift"></i> RINCIAN PENERIMA HIBAH / DONASI
-            </h6>
-            <div>
-              <label class="form-label small fw-semibold text-dark" for="dispHibahPenerima">NAMA YAYASAN / SEKOLAH / PIHAK PENERIMA</label>
-              <input type="text" name="pembeli_penerima_hibah" id="dispHibahPenerima" class="form-control form-control-sm" placeholder="Contoh: Panti Asuhan Harapan Ibu / SMK Mitra Mandiri">
-            </div>
-          </div>
-
-          <!-- 5. Kondisi Fisik & Alasan Penghapusan -->
-          <div class="mb-3">
-            <label class="form-label fw-bold text-dark small" for="dispKondisi">KONDISI FISIK TERAKHIR <span class="text-danger">*</span></label>
-            <select name="kondisi_terakhir" id="dispKondisi" class="form-select form-select-sm" required>
-              <option value="Rusak Berat / Tidak Ekonomis Diperbaiki">Rusak Berat / Tidak Ekonomis Diperbaiki</option>
-              <option value="Mati Total / Tidak Dapat Berfungsi">Mati Total / Tidak Dapat Berfungsi</option>
-              <option value="Rangka Fisik Patah / Lapuk / Keropos">Rangka Fisik Patah / Lapuk / Keropos</option>
-              <option value="Usang / Masa Manfaat Habis">Usang / Masa Manfaat Habis</option>
-              <option value="Masih Berfungsi (Layak Lelang / Donasi)">Masih Berfungsi (Layak Lelang / Donasi)</option>
-            </select>
-          </div>
-
+          <!-- 5. Alasan & Pertimbangan Teknis -->
           <div class="mb-3">
             <label class="form-label fw-bold text-dark small" for="dispAlasan">ALASAN &amp; PERTIMBANGAN TEKNIS PENGHAPUSAN <span class="text-danger">*</span></label>
             <div class="d-flex flex-wrap gap-1 mb-2">
-              <button type="button" class="btn btn-xs btn-outline-secondary" onclick="appendAlasan(\'Biaya servis melebihi nilai beli unit baru.\')">+ Biaya Servis Mahal</button>
-              <button type="button" class="btn btn-xs btn-outline-secondary" onclick="appendAlasan(\'Rangka fisik patah dan lapuk sehingga membahayakan keselamatan kerja.\')">+ Rangka Patah</button>
-              <button type="button" class="btn btn-xs btn-outline-secondary" onclick="appendAlasan(\'Komponen elektronik terbakar dan suku cadang sudah tidak diproduksi.\')">+ Sparepart Tidak Ada</button>
-              <button type="button" class="btn btn-xs btn-outline-secondary" onclick="appendAlasan(\'Peremajaan fasilitas kerja kantor cabang baru.\')">+ Peremajaan Fasilitas</button>
+              <button type="button" class="btn btn-xs btn-outline-secondary" onclick="appendAlasan(\'Biaya perbaikan melebihi nilai beli unit baru.\')">+ Biaya Servis Mahal</button>
+              <button type="button" class="btn btn-xs btn-outline-secondary" onclick="appendAlasan(\'Rangka fisik patah dan lapuk sehingga tidak aman dipakai.\')">+ Rangka Patah</button>
+              <button type="button" class="btn btn-xs btn-outline-secondary" onclick="appendAlasan(\'Komponen elektronik vital rusak dan sparepart tidak lagi tersedia.\')">+ Sparepart Tidak Ada</button>
+              <button type="button" class="btn btn-xs btn-outline-secondary" onclick="appendAlasan(\'Masa manfaat ekonomis telah habis dan tidak layak operasi.\')">+ Masa Manfaat Habis</button>
             </div>
-            <textarea name="alasan_penghapusan" id="dispAlasan" class="form-control form-control-sm" rows="3" required placeholder="Jelaskan secara rinci alasan teknis mengapa barang ini dihapus atau dijual..."></textarea>
+            <textarea name="alasan_penghapusan" id="dispAlasan" class="form-control form-control-sm" rows="3" required placeholder="Jelaskan pertimbangan teknis mengapa barang ini dihapus / diafkirkan..."></textarea>
           </div>
 
           <!-- 6. Upload Foto Fisik Barang Terakhir -->
           <div class="mb-3">
-            <label class="form-label fw-bold text-dark small" for="dispFoto">UPLOAD DOKUMENTASI FOTO FISIK ASET TERAKHIR</label>
+            <label class="form-label fw-bold text-dark small" for="dispFoto">UPLOAD FOTO KONDISI FISIK BARANG RUSAK</label>
             <input type="file" name="foto_barang" id="dispFoto" class="form-control form-control-sm" accept="image/*">
-            <div class="form-text small" style="font-size: 0.72rem;">Lampirkan foto kondisi fisik barang sebelum dimusnahkan atau diserahkan ke pembeli.</div>
+            <div class="form-text small" style="font-size: 0.72rem;">Lampirkan bukti foto fisik kerusakan barang sebagai kelengkapan audit.</div>
           </div>
 
           <!-- 7. Penandatangan Berita Acara -->
@@ -735,7 +626,7 @@ $body .= '
         <div class="modal-footer bg-light py-2 px-3 border-0">
           <button type="button" class="btn btn-secondary fw-semibold btn-sm px-3" data-bs-dismiss="modal">Batal</button>
           <button type="submit" class="btn btn-danger fw-bold btn-sm px-4">
-            <i class="bi bi-check-circle-fill me-1"></i> Simpan &amp; Proses Berita Acara
+            <i class="bi bi-check-circle-fill me-1"></i> Simpan &amp; Proses BA-Afkir
           </button>
         </div>
       </form>
@@ -760,7 +651,7 @@ $body .= '
         </div>
         <div class="modal-body p-3">
           <div class="small text-muted mb-2">
-            Unggah dokumen scan Berita Acara resmi yang telah ditandatangani dan distempel basah untuk nomor:
+            Unggah dokumen scan Berita Acara fisik yang telah ditandatangani dan distempel basah untuk nomor:
             <div class="fw-bold font-monospace text-dark" id="lblAccNomorBa">-</div>
           </div>
           <div class="mb-3">
@@ -839,33 +730,6 @@ function resetAssetHiddenFields() {
   document.getElementById("dispPengguna").value = "";
 }
 
-function toggleActionFields() {
-  var isJual = document.getElementById("actJual").checked;
-  var isHibah = document.getElementById("actHibah").checked;
-
-  var boxJual = document.getElementById("boxPenjualan");
-  var boxHibah = document.getElementById("boxHibah");
-  var inputNilaiJual = document.getElementById("dispNilaiJual");
-  var inputPembeli = document.getElementById("dispPembeli");
-
-  if (isJual) {
-    boxJual.classList.remove("d-none");
-    inputNilaiJual.required = true;
-    inputPembeli.required = true;
-  } else {
-    boxJual.classList.add("d-none");
-    inputNilaiJual.required = false;
-    inputPembeli.required = false;
-    inputNilaiJual.value = "";
-  }
-
-  if (isHibah) {
-    boxHibah.classList.remove("d-none");
-  } else {
-    boxHibah.classList.add("d-none");
-  }
-}
-
 function appendAlasan(text) {
   var area = document.getElementById("dispAlasan");
   if (area.value.trim() === "") {
@@ -880,8 +744,6 @@ function resetDisposalModal() {
   document.getElementById("typeInventaris").checked = true;
   switchAssetType("inventaris");
   document.getElementById("dispNomorBa").value = "";
-  document.getElementById("actAfkir").checked = true;
-  toggleActionFields();
   document.getElementById("dispAlasan").value = "";
   document.getElementById("cardAsetDetail").classList.add("d-none");
 }
@@ -900,4 +762,4 @@ document.addEventListener("DOMContentLoaded", function() {
 </script>
 ';
 
-echo render_view('Penghapusan & Penjualan Aset Inventaris', $body);
+echo render_view('Penghapusan Aset (BA-Afkir)', $body);

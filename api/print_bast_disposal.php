@@ -1,6 +1,6 @@
 <?php
 /**
- * Dokumen Resmi Berita Acara Penghapusan & Penjualan Aset Inventaris
+ * Dokumen Resmi Berita Acara Penghapusan & Pemusnahan Aset Inventaris (BA-Afkir)
  * PT BPR Mitratama Arthabuana
  * Standar Template Resmi Bank Mitra
  */
@@ -30,10 +30,6 @@ $hariFormat = $dayNames[date('l', $dateTs)] ?? date('l', $dateTs);
 $tglFormat = date('j', $dateTs) . ' ' . $monthNames[(int)date('n', $dateTs)] . ' ' . date('Y', $dateTs);
 
 $nomorBa = e($disposal['nomor_ba']);
-$jenisTindakan = e($disposal['jenis_tindakan']);
-$isPenjualan = str_contains($disposal['jenis_tindakan'], 'Penjualan') || str_contains($disposal['jenis_tindakan'], 'Lelang');
-$isHibah = str_contains($disposal['jenis_tindakan'], 'Hibah') || str_contains($disposal['jenis_tindakan'], 'Donasi');
-
 $namaAset = e($disposal['nama_aset']);
 $kodeAset = e($disposal['kode_aset']);
 $merkModel = e($disposal['merk_model'] ?: '-');
@@ -43,14 +39,7 @@ $lokasiRuangan = e($disposal['lokasi_ruangan'] ?: '-');
 $penggunaTerakhir = e($disposal['pengguna_terakhir'] ?: '-');
 $kondisiTerakhir = e($disposal['kondisi_terakhir']);
 $alasan = nl2br(e($disposal['alasan_penghapusan']));
-
-$nilaiPenjualan = (float)($disposal['nilai_realisasi_penjualan'] ?? 0);
-$terbilangPenjualan = e($disposal['terbilang_penjualan']);
-if ($nilaiPenjualan > 0 && empty($terbilangPenjualan) && function_exists('terbilang_rupiah')) {
-    $terbilangPenjualan = '://' . terbilang_rupiah($nilaiPenjualan) . '://';
-}
-$pembeliPenerima = e($disposal['pembeli_penerima'] ?: '-');
-$metodeBayar = e($disposal['metode_pembayaran'] ?: 'Kas Masuk Operasional');
+$metodePemusnahan = e($disposal['metode_pemusnahan'] ?: 'Dihancurkan / Dibuang Fisik');
 
 $petugasNama = e($disposal['petugas_nama']);
 $petugasJabatan = e($disposal['petugas_jabatan'] ?: 'Staf Bagian Umum');
@@ -67,7 +56,7 @@ $footerUrl = module_url('bank_mitra_memo_footer.png');
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>BA Penghapusan Aset - <?= $nomorBa ?></title>
+<title>BA Penghapusan Aset (Afkir) - <?= $nomorBa ?></title>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
@@ -151,7 +140,7 @@ body {
 }
 
 .table-detail th {
-  background-color: #F1F5F9;
+  background-color: #F8FAFC;
   font-weight: 700;
 }
 
@@ -172,23 +161,22 @@ body {
 }
 
 .photo-gallery-box {
-  display: flex;
-  gap: 12px;
   margin-bottom: 16px;
   page-break-inside: avoid;
 }
 
 .photo-box-item {
-  flex: 1;
   border: 1px dashed #94A3B8;
-  padding: 6px;
+  padding: 8px;
   border-radius: 4px;
   text-align: center;
   background: #F8FAFC;
+  max-width: 320px;
+  margin: 0 auto;
 }
 
 .photo-box-item img {
-  max-height: 110px;
+  max-height: 130px;
   max-width: 100%;
   object-fit: contain;
   display: block;
@@ -201,7 +189,7 @@ body {
   font-size: 0.76rem;
   font-weight: 600;
   color: #475569;
-  margin-top: 4px;
+  margin-top: 5px;
   font-family: -apple-system, sans-serif;
 }
 
@@ -296,11 +284,6 @@ body {
       <i class="bi bi-file-earmark-check me-1"></i> Scan BA Disetujui
     </a>
   <?php endif; ?>
-  <?php if (!empty($disposal['bukti_transaksi'])): ?>
-    <a href="<?= e(disposal_file_url($disposal['bukti_transaksi'])) ?>" target="_blank" class="btn btn-warning text-dark fw-bold shadow-lg px-3 py-2">
-      <i class="bi bi-receipt me-1"></i> Kwitansi / Bukti Bayar
-    </a>
-  <?php endif; ?>
   <button type="button" class="btn btn-primary fw-bold shadow-lg px-4 py-2" onclick="window.print()">
     <i class="bi bi-printer-fill me-1.5"></i> Cetak Berita Acara
   </button>
@@ -316,20 +299,20 @@ body {
 
   <!-- 2. Judul Dokumen & Nomor Berita Acara -->
   <div class="doc-title-block">
-    <div class="doc-heading">BERITA ACARA PENGHAPUSAN DAN PENJUALAN ASET INVENTARIS</div>
+    <div class="doc-heading">BERITA ACARA PENGHAPUSAN DAN PEMUSNAHAN ASET INVENTARIS</div>
     <div class="doc-subheading">Nomor: <?= $nomorBa ?></div>
   </div>
 
   <!-- 3. Paragraf Pembuka Legal Formal -->
   <div class="doc-intro">
-    Pada hari ini <strong><?= $hariFormat ?></strong>, tanggal <strong><?= $tglFormat ?></strong>, bertempat di Kantor PT BPR Mitratama Arthabuana, telah dilakukan pemeriksaan fisik, verifikasi kelayakan teknis, dan penetapan status atas barang inventaris bank dengan perincian sebagai berikut:
+    Pada hari ini <strong><?= $hariFormat ?></strong>, tanggal <strong><?= $tglFormat ?></strong>, bertempat di Kantor PT BPR Mitratama Arthabuana, telah dilakukan pemeriksaan fisik, verifikasi kelaikan teknis, dan penetapan status afkir/pemusnahan atas barang inventaris bank dengan perincian sebagai berikut:
   </div>
 
-  <!-- 4. Tabel Rincian Barang yang Dihapuskan / Dijual -->
+  <!-- 4. Tabel Rincian Barang yang Dihapuskan -->
   <table class="table-detail">
     <tr>
-      <th style="width: 26%;">Nomor Rekening / Kode Aset</th>
-      <td style="width: 74%; font-family: monospace; font-weight: bold;"><?= $kodeAset ?></td>
+      <th style="width: 28%;">Nomor Rekening / Kode Aset</th>
+      <td style="width: 72%; font-family: monospace; font-weight: bold;"><?= $kodeAset ?></td>
     </tr>
     <tr>
       <th>Nama Barang / Inventaris</th>
@@ -352,64 +335,33 @@ body {
       <td><span style="color: #991B1B; font-weight: 700;"><?= $kondisiTerakhir ?></span></td>
     </tr>
     <tr>
-      <th>Jenis Tindakan Keputusan</th>
-      <td>
-        <strong><?= $jenisTindakan ?></strong>
-      </td>
-    </tr>
-    <?php if ($isPenjualan): ?>
-    <tr style="background-color: #F0FDF4;">
-      <th>Nilai Realisasi Penjualan</th>
-      <td>
-        <strong style="color: #166534; font-size: 1.02rem;">Rp. <?= number_format($nilaiPenjualan, 0, ',', '.') ?>,-</strong>
-        <div style="font-size: 0.88rem; font-style: italic; margin-top: 2px;">Terbilang: <?= $terbilangPenjualan ?></div>
-      </td>
-    </tr>
-    <tr style="background-color: #F0FDF4;">
-      <th>Pihak Pembeli / Pemenang Lelang</th>
-      <td><?= $pembeliPenerima ?> (Metode: <?= $metodeBayar ?>)</td>
-    </tr>
-    <?php elseif ($isHibah): ?>
-    <tr style="background-color: #EFF6FF;">
-      <th>Pihak Penerima Donasi / Hibah</th>
-      <td><?= $pembeliPenerima ?></td>
-    </tr>
-    <?php endif; ?>
-    <tr>
       <th>Alasan / Pertimbangan Teknis</th>
       <td><?= $alasan ?></td>
+    </tr>
+    <tr>
+      <th>Metode Pemusnahan / Penyingkiran</th>
+      <td><strong><?= $metodePemusnahan ?></strong></td>
     </tr>
   </table>
 
   <!-- 5. Klausul Keputusan Penghapusan Aset -->
   <div class="doc-clause">
-    <div style="font-weight: 700; margin-bottom: 3px;">Berdasarkan hasil pemeriksaan tersebut di atas, disepakati bahwa:</div>
+    <div style="font-weight: 700; margin-bottom: 3px;">Berdasarkan hasil pemeriksaan fisik tersebut di atas, disepakati bahwa:</div>
     <ol>
-      <li>Barang inventaris yang bersangkutan telah dinyatakan tidak memenuhi standar kelayakan operasional dan secara resmi <strong>ditarik serta dihapuskan dari Buku Register Aset Aktif PT BPR Mitratama Arthabuana</strong>.</li>
-      <?php if ($isPenjualan): ?>
-      <li>Penerimaan dana hasil penjualan barang inventaris sebesar <strong>Rp. <?= number_format($nilaiPenjualan, 0, ',', '.') ?>,-</strong> disetorkan secara penuh ke Kas / Rekening Operasional Bank Mitra sebagai penerimaan non-operasional lainnya.</li>
-      <?php else: ?>
-      <li>Fisik barang inventaris yang diafkirkan dimusnahkan / disingkirkan dari lingkungan kantor bank guna ketertiban dan kerapian fasilitas kerja.</li>
-      <?php endif; ?>
-      <li>Berita Acara ini dibuat dengan sebenarnya dalam rangkap secukupnya untuk dipergunakan sebagai dokumen pertanggungjawaban legal pembukuan dan kepatuhan audit intern (SKAI).</li>
+      <li>Barang inventaris yang bersangkutan dinyatakan tidak layak pakai / rusak permanen dan secara resmi <strong>ditarik serta dihapuskan dari Buku Register Aset Aktif PT BPR Mitratama Arthabuana</strong>.</li>
+      <li>Fisik barang yang telah diafkirkan dimusnahkan / disingkirkan dari lingkungan kantor bank guna ketertiban, kebersihan, serta keselamatan lingkungan kerja.</li>
+      <li>Barang inventaris bank yang telah dihapuskan ini <strong>tidak diperjualbelikan</strong> dan tidak dapat dialihkan tanpa persetujuan tertulis Manajemen Direksi.</li>
+      <li>Berita Acara ini dibuat dengan sebenarnya dalam rangkap secukupnya untuk dipergunakan sebagai dasar pembukuan penghapusan inventaris (write-off) dan bukti pertanggungjawaban audit intern (SKAI).</li>
     </ol>
   </div>
 
-  <!-- 6. Lampiran Foto Fisik Barang & Kwitansi (Jika Ada) -->
-  <?php if (!empty($disposal['foto_barang']) || !empty($disposal['bukti_transaksi'])): ?>
+  <!-- 6. Lampiran Foto Fisik Barang Rusak (Jika Ada) -->
+  <?php if (!empty($disposal['foto_barang'])): ?>
     <div class="photo-gallery-box">
-      <?php if (!empty($disposal['foto_barang'])): ?>
-        <div class="photo-box-item">
-          <img src="<?= e(disposal_file_url($disposal['foto_barang'])) ?>" alt="Kondisi Fisik Barang">
-          <div class="photo-label"><i class="bi bi-camera"></i> Dokumentasi Fisik Aset Terakhir</div>
-        </div>
-      <?php endif; ?>
-      <?php if (!empty($disposal['bukti_transaksi'])): ?>
-        <div class="photo-box-item">
-          <img src="<?= e(disposal_file_url($disposal['bukti_transaksi'])) ?>" alt="Bukti Kwitansi / Transaksi">
-          <div class="photo-label"><i class="bi bi-receipt"></i> Bukti Setor / Kwitansi Penjualan</div>
-        </div>
-      <?php endif; ?>
+      <div class="photo-box-item">
+        <img src="<?= e(disposal_file_url($disposal['foto_barang'])) ?>" alt="Kondisi Fisik Barang Rusak">
+        <div class="photo-label"><i class="bi bi-camera"></i> Dokumentasi Fisik Kondisi Barang Rusak (Afkir)</div>
+      </div>
     </div>
   <?php endif; ?>
 

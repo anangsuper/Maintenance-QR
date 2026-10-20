@@ -1,7 +1,8 @@
 <?php
 /**
- * Modul Pengelolaan Penghapusan & Penjualan Aset Inventaris (Asset Disposal & Sale)
+ * Modul Pengelolaan Penghapusan & Pemusnahan Aset Inventaris (Asset Disposal / BA-Afkir)
  * PT BPR Mitratama Arthabuana - Bagian SDM & Umum & IT Operations
+ * Sesuai Kebijakan Bank: Aset tidak diperjualbelikan, murni penghapusan/pemusnahan barang rusak
  */
 
 function ensure_disposal_schema(): void {
@@ -28,13 +29,8 @@ function ensure_disposal_schema(): void {
                 pengguna_terakhir VARCHAR(150) DEFAULT '',
                 kondisi_terakhir VARCHAR(100) DEFAULT 'Rusak Berat / Tidak Ekonomis Diperbaiki',
                 alasan_penghapusan TEXT NOT NULL,
-                nilai_perolehan_awal DECIMAL(15,2) DEFAULT 0.00,
-                nilai_realisasi_penjualan DECIMAL(15,2) DEFAULT 0.00,
-                terbilang_penjualan VARCHAR(255) DEFAULT '',
-                pembeli_penerima VARCHAR(150) DEFAULT '',
-                metode_pembayaran VARCHAR(100) DEFAULT 'Tunai / Kas Masuk',
+                metode_pemusnahan VARCHAR(100) DEFAULT 'Dihancurkan / Dibuang Fisik',
                 foto_barang VARCHAR(255) DEFAULT '',
-                bukti_transaksi VARCHAR(255) DEFAULT '',
                 dokumen_ba_disetujui VARCHAR(255) DEFAULT '',
                 petugas_nama VARCHAR(100) NOT NULL DEFAULT 'Staf Bagian Umum',
                 petugas_jabatan VARCHAR(100) DEFAULT 'Staf Bagian Umum',
@@ -58,7 +54,7 @@ function ensure_disposal_schema(): void {
 }
 
 /**
- * Upload file pendukung penghapusan aset (foto fisik, kwitansi bayar, scan BA)
+ * Upload file pendukung penghapusan aset (foto fisik, scan BA disetujui)
  */
 function upload_disposal_file(string $fileKey, string $prefix = 'disposal'): ?string {
     if (empty($_FILES[$fileKey]) || empty($_FILES[$fileKey]['tmp_name']) || !is_uploaded_file($_FILES[$fileKey]['tmp_name'])) {
@@ -76,7 +72,6 @@ function upload_disposal_file(string $fileKey, string $prefix = 'disposal'): ?st
         return null;
     }
 
-    // Limit ukuran file: 10 MB
     if ($file['size'] > 10 * 1024 * 1024) {
         return null;
     }
@@ -112,8 +107,8 @@ function disposal_file_url(?string $path): string {
 }
 
 /**
- * Generate nomor resmi Berita Acara Penghapusan / Penjualan Aset Bank Mitra
- * Contoh: 001/BA-DISPOSAL/SDM-UMUM/BANK-MITRA.KPO/X/2026
+ * Generate nomor resmi Berita Acara Penghapusan & Pemusnahan Aset Bank Mitra
+ * Contoh: 001/BA-AFKIR/SDM-UMUM/BANK-MITRA.KPO/X/2026
  */
 function generate_nomor_ba_disposal(string $cabangCode = 'KPO', ?string $tgl = null): string {
     ensure_disposal_schema();
@@ -143,7 +138,7 @@ function generate_nomor_ba_disposal(string $cabangCode = 'KPO', ?string $tgl = n
         $seq = 1;
     }
 
-    return sprintf('%03d/BA-DISPOSAL/SDM-UMUM/BANK-MITRA.%s/%s/%s', $seq, $cTag, $romawi, $tahun);
+    return sprintf('%03d/BA-AFKIR/SDM-UMUM/BANK-MITRA.%s/%s/%s', $seq, $cTag, $romawi, $tahun);
 }
 
 /**
@@ -158,13 +153,8 @@ function get_disposal_list(array $filters = []): array {
 
         if (!empty($filters['search'])) {
             $s = '%' . trim($filters['search']) . '%';
-            $where[] = '(nomor_ba LIKE ? OR nama_aset LIKE ? OR kode_aset LIKE ? OR pembeli_penerima LIKE ? OR alasan_penghapusan LIKE ?)';
-            $params = array_merge($params, [$s, $s, $s, $s, $s]);
-        }
-
-        if (!empty($filters['jenis_tindakan']) && $filters['jenis_tindakan'] !== 'all') {
-            $where[] = 'jenis_tindakan = ?';
-            $params[] = $filters['jenis_tindakan'];
+            $where[] = '(nomor_ba LIKE ? OR nama_aset LIKE ? OR kode_aset LIKE ? OR alasan_penghapusan LIKE ?)';
+            $params = array_merge($params, [$s, $s, $s, $s]);
         }
 
         if (!empty($filters['cabang']) && $filters['cabang'] !== 'all') {
@@ -208,35 +198,32 @@ function get_disposal_by_id(int $id): ?array {
 }
 
 /**
- * Ringkasan KPI Penghapusan & Penjualan Aset
+ * Ringkasan KPI Penghapusan & Pemusnahan Aset (BA-Afkir)
  */
 function get_disposal_kpi_summary(): array {
     ensure_disposal_schema();
     $summary = [
         'total_unit' => 0,
-        'total_afkir' => 0,
-        'total_penjualan' => 0,
-        'total_hibah' => 0,
-        'total_pendapatan_penjualan' => 0.0,
+        'total_sdm' => 0,
+        'total_it' => 0,
+        'total_bulan_ini' => 0,
     ];
 
     try {
         $rows = db()->query("
             SELECT 
                 COUNT(*) as total_unit,
-                SUM(CASE WHEN jenis_tindakan LIKE '%Afkir%' OR jenis_tindakan LIKE '%Pemusnahan%' THEN 1 ELSE 0 END) as total_afkir,
-                SUM(CASE WHEN jenis_tindakan LIKE '%Penjualan%' OR jenis_tindakan LIKE '%Lelang%' THEN 1 ELSE 0 END) as total_penjualan,
-                SUM(CASE WHEN jenis_tindakan LIKE '%Hibah%' OR jenis_tindakan LIKE '%Donasi%' THEN 1 ELSE 0 END) as total_hibah,
-                SUM(COALESCE(nilai_realisasi_penjualan, 0)) as total_pendapatan
+                SUM(CASE WHEN asset_type = 'inventaris' THEN 1 ELSE 0 END) as total_sdm,
+                SUM(CASE WHEN asset_type = 'komputer' THEN 1 ELSE 0 END) as total_it,
+                SUM(CASE WHEN MONTH(tanggal_disposal) = MONTH(CURRENT_DATE()) AND YEAR(tanggal_disposal) = YEAR(CURRENT_DATE()) THEN 1 ELSE 0 END) as total_bulan_ini
             FROM asset_disposals
         ")->fetch(PDO::FETCH_ASSOC);
 
         if ($rows) {
             $summary['total_unit'] = (int)($rows['total_unit'] ?? 0);
-            $summary['total_afkir'] = (int)($rows['total_afkir'] ?? 0);
-            $summary['total_penjualan'] = (int)($rows['total_penjualan'] ?? 0);
-            $summary['total_hibah'] = (int)($rows['total_hibah'] ?? 0);
-            $summary['total_pendapatan_penjualan'] = (float)($rows['total_pendapatan'] ?? 0);
+            $summary['total_sdm'] = (int)($rows['total_sdm'] ?? 0);
+            $summary['total_it'] = (int)($rows['total_it'] ?? 0);
+            $summary['total_bulan_ini'] = (int)($rows['total_bulan_ini'] ?? 0);
         }
     } catch (Throwable $e) {
         // fallback
@@ -246,7 +233,7 @@ function get_disposal_kpi_summary(): array {
 }
 
 /**
- * Simpan Data Penghapusan / Penjualan Aset
+ * Simpan Data Penghapusan / Pemusnahan Aset
  */
 function save_asset_disposal(array $data, array $files = []): array {
     ensure_disposal_schema();
@@ -255,15 +242,16 @@ function save_asset_disposal(array $data, array $files = []): array {
     $id = (int)($data['id'] ?? 0);
     $assetType = trim((string)($data['asset_type'] ?? 'inventaris'));
     $assetId = (int)($data['asset_id'] ?? 0);
-    $jenisTindakan = trim((string)($data['jenis_tindakan'] ?? 'Pemusnahan / Afkir Fisik'));
+    $jenisTindakan = 'Pemusnahan / Afkir Fisik';
     $tanggal = trim((string)($data['tanggal_disposal'] ?? date('Y-m-d')));
     $alasan = trim((string)($data['alasan_penghapusan'] ?? ''));
+    $metodePemusnahan = trim((string)($data['metode_pemusnahan'] ?? 'Dihancurkan / Dibuang Fisik'));
 
     if (empty($alasan)) {
-        return ['success' => false, 'message' => 'Alasan penghapusan aset wajib diisi.'];
+        return ['success' => false, 'message' => 'Alasan pertimbangan teknis penghapusan aset wajib diisi.'];
     }
 
-    // Ambil detail aset dari database jika belum lengkap
+    // Ambil detail aset dari database
     $kodeAset = trim((string)($data['kode_aset'] ?? ''));
     $namaAset = trim((string)($data['nama_aset'] ?? ''));
     $merkModel = trim((string)($data['merk_model'] ?? ''));
@@ -305,16 +293,6 @@ function save_asset_disposal(array $data, array $files = []): array {
         $nomorBa = generate_nomor_ba_disposal($cabang, $tanggal);
     }
 
-    // Nilai Penjualan & Terbilang
-    $nilaiPerolehanAwal = (float)($data['nilai_perolehan_awal'] ?? 0);
-    $nilaiRealisasiPenjualan = (float)($data['nilai_realisasi_penjualan'] ?? 0);
-    $terbilangPenjualan = trim((string)($data['terbilang_penjualan'] ?? ''));
-    if ($nilaiRealisasiPenjualan > 0 && empty($terbilangPenjualan) && function_exists('terbilang_rupiah')) {
-        $terbilangPenjualan = '://' . terbilang_rupiah($nilaiRealisasiPenjualan) . '://';
-    }
-
-    $pembeliPenerima = trim((string)($data['pembeli_penerima'] ?? ''));
-    $metodePembayaran = trim((string)($data['metode_pembayaran'] ?? 'Tunai / Kas Masuk'));
     $kondisiTerakhir = trim((string)($data['kondisi_terakhir'] ?? 'Rusak Berat / Tidak Ekonomis Diperbaiki'));
     $petugasNama = trim((string)($data['petugas_nama'] ?? (current_user_name() ?: 'Staf Bagian Umum')));
     $petugasJabatan = trim((string)($data['petugas_jabatan'] ?? 'Staf Bagian Umum'));
@@ -325,19 +303,16 @@ function save_asset_disposal(array $data, array $files = []): array {
     $keteranganTambahan = trim((string)($data['keterangan_tambahan'] ?? ''));
 
     // Handle File Uploads
-    $fotoBarang = upload_disposal_file('foto_barang', 'disposal_foto');
-    $buktiTransaksi = upload_disposal_file('bukti_transaksi', 'disposal_bukti');
-    $dokumenBaDisetujui = upload_disposal_file('dokumen_ba_disetujui', 'disposal_ba_acc');
+    $fotoBarang = upload_disposal_file('foto_barang', 'afkir_foto');
+    $dokumenBaDisetujui = upload_disposal_file('dokumen_ba_disetujui', 'afkir_ba_acc');
 
     try {
         if ($id > 0) {
-            // Update mode
             $existing = get_disposal_by_id($id);
             if (!$existing) {
-                return ['success' => false, 'message' => 'Data penghapusan tidak ditemukan.'];
+                return ['success' => false, 'message' => 'Data Berita Acara tidak ditemukan.'];
             }
             if (!$fotoBarang) $fotoBarang = $existing['foto_barang'];
-            if (!$buktiTransaksi) $buktiTransaksi = $existing['bukti_transaksi'];
             if (!$dokumenBaDisetujui) $dokumenBaDisetujui = $existing['dokumen_ba_disetujui'];
 
             $stmt = $pdo->prepare("
@@ -345,9 +320,7 @@ function save_asset_disposal(array $data, array $files = []): array {
                     nomor_ba = ?, tanggal_disposal = ?, jenis_tindakan = ?, asset_type = ?,
                     asset_id = ?, kode_aset = ?, nama_aset = ?, merk_model = ?, serial_number = ?,
                     cabang = ?, lokasi_ruangan = ?, pengguna_terakhir = ?, kondisi_terakhir = ?,
-                    alasan_penghapusan = ?, nilai_perolehan_awal = ?, nilai_realisasi_penjualan = ?,
-                    terbilang_penjualan = ?, pembeli_penerima = ?, metode_pembayaran = ?,
-                    foto_barang = ?, bukti_transaksi = ?, dokumen_ba_disetujui = ?,
+                    alasan_penghapusan = ?, metode_pemusnahan = ?, foto_barang = ?, dokumen_ba_disetujui = ?,
                     petugas_nama = ?, petugas_jabatan = ?, nama_mengetahui = ?, jabatan_mengetahui = ?,
                     nama_menyetujui = ?, jabatan_menyetujui = ?, keterangan_tambahan = ?
                 WHERE id = ?
@@ -356,33 +329,26 @@ function save_asset_disposal(array $data, array $files = []): array {
                 $nomorBa, $tanggal, $jenisTindakan, $assetType,
                 $assetId, $kodeAset, $namaAset, $merkModel, $serialNumber,
                 $cabang, $lokasiRuangan, $penggunaTerakhir, $kondisiTerakhir,
-                $alasan, $nilaiPerolehanAwal, $nilaiRealisasiPenjualan,
-                $terbilangPenjualan, $pembeliPenerima, $metodePembayaran,
-                $fotoBarang, $buktiTransaksi, $dokumenBaDisetujui,
+                $alasan, $metodePemusnahan, $fotoBarang, $dokumenBaDisetujui,
                 $petugasNama, $petugasJabatan, $namaMengetahui, $jabatanMengetahui,
                 $namaMenyetujui, $jabatanMenyetujui, $keteranganTambahan,
                 $id
             ]);
             $disposalId = $id;
         } else {
-            // Insert mode
             $stmt = $pdo->prepare("
                 INSERT INTO asset_disposals (
                     nomor_ba, tanggal_disposal, jenis_tindakan, asset_type,
                     asset_id, kode_aset, nama_aset, merk_model, serial_number,
                     cabang, lokasi_ruangan, pengguna_terakhir, kondisi_terakhir,
-                    alasan_penghapusan, nilai_perolehan_awal, nilai_realisasi_penjualan,
-                    terbilang_penjualan, pembeli_penerima, metode_pembayaran,
-                    foto_barang, bukti_transaksi, dokumen_ba_disetujui,
+                    alasan_penghapusan, metode_pemusnahan, foto_barang, dokumen_ba_disetujui,
                     petugas_nama, petugas_jabatan, nama_mengetahui, jabatan_mengetahui,
                     nama_menyetujui, jabatan_menyetujui, keterangan_tambahan
                 ) VALUES (
                     ?, ?, ?, ?,
                     ?, ?, ?, ?, ?,
                     ?, ?, ?, ?,
-                    ?, ?, ?,
-                    ?, ?, ?,
-                    ?, ?, ?,
+                    ?, ?, ?, ?,
                     ?, ?, ?, ?,
                     ?, ?, ?
                 )
@@ -391,38 +357,31 @@ function save_asset_disposal(array $data, array $files = []): array {
                 $nomorBa, $tanggal, $jenisTindakan, $assetType,
                 $assetId, $kodeAset, $namaAset, $merkModel, $serialNumber,
                 $cabang, $lokasiRuangan, $penggunaTerakhir, $kondisiTerakhir,
-                $alasan, $nilaiPerolehanAwal, $nilaiRealisasiPenjualan,
-                $terbilangPenjualan, $pembeliPenerima, $metodePembayaran,
-                $fotoBarang, $buktiTransaksi, $dokumenBaDisetujui,
+                $alasan, $metodePemusnahan, $fotoBarang, $dokumenBaDisetujui,
                 $petugasNama, $petugasJabatan, $namaMengetahui, $jabatanMengetahui,
                 $namaMenyetujui, $jabatanMenyetujui, $keteranganTambahan
             ]);
             $disposalId = (int)$pdo->lastInsertId();
         }
 
-        // UPDATE STATUS ASLI ASET DI DATABASE (Agar tidak lagi muncul di inventaris aktif)
-        $statusBaru = str_contains($jenisTindakan, 'Penjualan') ? 'Dijual' : 'Dihapuskan';
-        $logKet = sprintf("\n[STATUS: %s | No. BA: %s | Tgl: %s]", $jenisTindakan, $nomorBa, $tanggal);
+        // UPDATE STATUS ASLI ASET DI DATABASE MENJADI DIHAPUSKAN / AFKIR
+        $logKet = sprintf("\n[DIAFKIRKAN / DIHAPUS: No. BA: %s | Tgl: %s | Alasan: %s]", $nomorBa, $tanggal, $alasan);
 
         if ($assetId > 0) {
             if ($assetType === 'inventaris') {
                 $stUp = $pdo->prepare("
                     UPDATE inventaris_kartu 
-                    SET status_inventaris = ?, keterangan = CONCAT(COALESCE(keterangan, ''), ?)
+                    SET status_inventaris = '3 : Dihapuskan', keterangan = CONCAT(COALESCE(keterangan, ''), ?)
                     WHERE id = ?
                 ");
-                $stUp->execute([
-                    ($statusBaru === 'Dijual' ? '3 : Dijual' : '3 : Dihapuskan'),
-                    $logKet,
-                    $assetId
-                ]);
+                $stUp->execute([$logKet, $assetId]);
             } else {
                 $stUp = $pdo->prepare("
                     UPDATE assets 
-                    SET status = ?, keterangan = CONCAT(COALESCE(keterangan, ''), ?)
+                    SET status = 'Dihapuskan', keterangan = CONCAT(COALESCE(keterangan, ''), ?)
                     WHERE id = ?
                 ");
-                $stUp->execute([$statusBaru, $logKet, $assetId]);
+                $stUp->execute([$logKet, $assetId]);
             }
         }
 
@@ -430,12 +389,11 @@ function save_asset_disposal(array $data, array $files = []): array {
         if (function_exists('log_system_audit')) {
             log_system_audit(
                 'ASSET_DISPOSAL',
-                "Pencatatan Berita Acara {$jenisTindakan}: {$namaAset} ({$kodeAset}) - No. BA: {$nomorBa}",
+                "Pencatatan Berita Acara Penghapusan Aset (BA-Afkir): {$namaAset} ({$kodeAset}) - No. BA: {$nomorBa}",
                 [
                     'disposal_id' => $disposalId,
                     'nomor_ba' => $nomorBa,
-                    'jenis_tindakan' => $jenisTindakan,
-                    'nilai_penjualan' => $nilaiRealisasiPenjualan
+                    'jenis_tindakan' => $jenisTindakan
                 ]
             );
         }
@@ -444,16 +402,16 @@ function save_asset_disposal(array $data, array $files = []): array {
             'success' => true,
             'id' => $disposalId,
             'nomor_ba' => $nomorBa,
-            'message' => "Berita Acara {$jenisTindakan} berhasil dicatat dengan Nomor {$nomorBa}."
+            'message' => "Berita Acara Penghapusan Aset (BA-Afkir) berhasil dicatat dengan Nomor {$nomorBa}."
         ];
     } catch (Throwable $e) {
         error_log('save_asset_disposal error: ' . $e->getMessage());
-        return ['success' => false, 'message' => 'Gagal menyimpan data penghapusan aset: ' . $e->getMessage()];
+        return ['success' => false, 'message' => 'Gagal menyimpan Berita Acara: ' . $e->getMessage()];
     }
 }
 
 /**
- * Batalkan / Hapus Data Berita Acara Penghapusan
+ * Batalkan / Hapus Data Berita Acara Penghapusan & Pulihkan Status Aset ke Aktif
  */
 function delete_asset_disposal(int $id, bool $restoreAssetStatus = true): bool {
     ensure_disposal_schema();
@@ -473,7 +431,7 @@ function delete_asset_disposal(int $id, bool $restoreAssetStatus = true): bool {
         $st->execute([$id]);
 
         if (function_exists('log_system_audit')) {
-            log_system_audit('ASSET_DISPOSAL_DELETE', "Penghapusan data BA Disposal No. {$item['nomor_ba']} untuk {$item['nama_aset']}");
+            log_system_audit('ASSET_DISPOSAL_DELETE', "Pembatalan Berita Acara BA-Afkir No. {$item['nomor_ba']} untuk {$item['nama_aset']}");
         }
         return true;
     } catch (Throwable $e) {
