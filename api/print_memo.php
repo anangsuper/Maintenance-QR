@@ -68,6 +68,34 @@ body {
   box-sizing: border-box;
 }
 
+.memo-logo {
+  max-height: 48px;
+  width: auto;
+  object-fit: contain;
+}
+
+.kop-bank-name {
+  font-size: 1.10rem;
+  font-weight: 800;
+  color: #003B73;
+  letter-spacing: 0.04em;
+  font-family: "Plus Jakarta Sans", -apple-system, sans-serif;
+  line-height: 1.2;
+}
+
+.kop-sub-text {
+  font-size: 0.80rem;
+  color: #334155;
+  font-family: "Plus Jakarta Sans", -apple-system, sans-serif;
+  margin-top: 1px;
+}
+
+.kop-address-text {
+  font-size: 0.70rem;
+  color: #64748B;
+  font-family: "Plus Jakarta Sans", -apple-system, sans-serif;
+}
+
 .memo-heading {
   font-size: 1.35rem;
   font-weight: 800;
@@ -187,6 +215,22 @@ body {
 </div>
 
 <div class="memo-sheet">
+  <!-- Kop Surat Bank Mitra dengan Logo -->
+  <div class="d-flex align-items-center justify-content-between mb-3 pb-2 border-bottom">
+    <div class="d-flex align-items-center gap-3">
+      <img src="<?= app_logo_url() ?>" alt="Bank Mitra Logo" class="memo-logo">
+      <div>
+        <div class="kop-bank-name">PT BPR MITRATAMA ARTHABUANA</div>
+        <div class="kop-sub-text">Kantor Pusat Operasional &middot; Bagian Umum &amp; Sarana Prasarana</div>
+        <div class="kop-address-text">Jl. Kapten Piere Tendean No. 170, Banjarmasin &middot; Telp. (0511) 3271222</div>
+      </div>
+    </div>
+    <div class="text-end font-monospace text-muted small" style="font-size: 0.72rem; line-height: 1.35;">
+      <span class="badge bg-light text-dark border px-2 py-0.5 mb-1 d-inline-block"><?= e($memo['cabang_nama'] ?: 'Kantor Pusat Operasional') ?></span><br>
+      <?= $tglFormat ?>
+    </div>
+  </div>
+
   <!-- Judul Utama -->
   <div class="memo-heading">MEMO INTERNAL</div>
   <div class="double-line"></div>
