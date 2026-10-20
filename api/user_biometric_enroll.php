@@ -113,8 +113,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $enrollStatus = ($isAdmin || is_hrd()) ? 'verified' : 'pending';
     $res = save_user_biometrics($targetUserId, $descriptor, $photo, $enrollStatus);
     echo json_encode(array_merge($res, [
-        'face_status' => 'pending',
-        'is_admin' => is_admin(),
+        'face_status' => $enrollStatus,
+        'is_admin' => ($isAdmin || is_hrd()),
         'user_id' => $targetUserId
     ]));
     exit;
@@ -235,7 +235,7 @@ if ($retUrl !== '') {
     $successButtonsHtml .= '<a href="'.e($retUrl).'" class="btn btn-success fw-bold py-2"><i class="bi bi-arrow-return-left me-1"></i> Kembali Lanjutkan Maintenance</a>';
 }
 
-if ($isAdmin) {
+if ($isAdmin || is_hrd()) {
     $successButtonsHtml .= '<a href="'.e(module_url('users_admin.php')).'" class="btn btn-primary fw-semibold py-2"><i class="bi bi-people-fill me-1"></i> Halaman Data Pengguna</a>';
     $successButtonsHtml .= '<a href="'.e(module_url('dashboard.php')).'" class="btn btn-outline-secondary fw-semibold py-2"><i class="bi bi-house me-1"></i> Halaman Utama</a>';
 } elseif ($isLoggedIn) {
@@ -246,8 +246,8 @@ if ($isAdmin) {
 
 $successButtonsHtml .= '<button type="button" class="btn btn-outline-secondary btn-sm" onclick="location.reload()"><i class="bi bi-person-plus me-1"></i> Daftarkan Teknisi Lain</button>';
 
-if ($isAdmin) {
-    $successDescHtml = 'Data foto dan profil teknisi telah disimpan.<br><br>Sebagai Administrator IT, Anda dapat langsung mengonfirmasi akun ini di menu <a href="'.e(module_url('users_admin.php')).'" class="fw-bold text-decoration-none">Kelola Data &rarr; Akun Pengguna / Teknisi</a>.';
+if ($isAdmin || is_hrd()) {
+    $successDescHtml = 'Data foto profil dan verifikasi wajah berhasil disimpan dan <strong>langsung aktif terverifikasi</strong>.<br><br>Anda dapat melihat status akun ini di menu <a href="'.e(module_url('users_admin.php')).'" class="fw-bold text-decoration-none">Kelola Data &rarr; Akun Pengguna / Teknisi</a>.';
 } else {
     $successDescHtml = 'Foto profil dan data verifikasi telah disimpan dengan status: <span class="badge bg-warning text-dark px-2 py-1"><i class="bi bi-hourglass-split me-1"></i> Menunggu Persetujuan Admin</span>.<br><br>Administrator IT akan mengonfirmasi akun Anda agar dapat langsung digunakan saat checklist maintenance.';
 }
@@ -428,7 +428,7 @@ $body = '
               <i class="bi bi-camera-fill me-2"></i> Buka Kamera Depan / Webcam
             </button>
             <input type="file" id="faceFileInput" accept="image/*" capture="user" class="d-none" onchange="handleFaceFileUpload(event)">
-            <button type="button" class="btn btn-outline-primary fw-semibold py-2.5 shadow-xs" id="btnUploadFaceFile" onclick="document.getElementById('faceFileInput').click()">
+            <button type="button" class="btn btn-outline-primary fw-semibold py-2.5 shadow-xs" id="btnUploadFaceFile" onclick="triggerFaceFileInput()">
               <i class="bi bi-cloud-arrow-up-fill me-2"></i> Ambil / Upload Foto (Kamera HP / File)
             </button>
             <button type="button" class="btn btn-secondary fw-bold py-2.5 shadow-sm d-none" id="btnSnapNow" onclick="forceCaptureBiometric()">
@@ -580,6 +580,14 @@ async function loadModels() {
       statusMsg.innerHTML = '<i class="bi bi-camera-video me-1"></i> Posisikan wajah Anda di bingkai foto.';
     }
     return false;
+  }
+}
+
+function triggerFaceFileInput() {
+  const inp = document.getElementById("faceFileInput");
+  if (inp) {
+    inp.value = "";
+    inp.click();
   }
 }
 
@@ -937,8 +945,8 @@ async function saveBiometrics() {
       
       const successDesc = document.getElementById("successDesc");
       if (successDesc) {
-        if (result.is_admin) {
-          successDesc.innerHTML = 'Data foto dan profil teknisi telah disimpan.<br><br>Sebagai Administrator IT, Anda dapat langsung mengonfirmasi akun ini di menu <strong>Kelola Data &rarr; Akun Pengguna / Teknisi</strong>.';
+        if (result.is_admin || result.face_status === 'verified') {
+          successDesc.innerHTML = 'Data foto profil dan identitas wajah telah berhasil disimpan dan <strong>langsung aktif terverifikasi</strong>.';
         } else {
           successDesc.innerHTML = 'Foto profil dan identitas teknisi telah disimpan dengan status: <span class="badge bg-warning text-dark px-2 py-1"><i class="bi bi-hourglass-split me-1"></i> Menunggu Persetujuan Admin</span>.<br><br>Administrator IT akan mengonfirmasi akun Anda agar dapat langsung digunakan saat checklist maintenance.';
         }
