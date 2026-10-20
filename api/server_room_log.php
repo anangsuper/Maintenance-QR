@@ -1,11 +1,11 @@
 <?php
 require __DIR__ . '/bootstrap.php';
-require_login();
 
-$userName = current_user_name();
-$userRole = current_user_role();
-$userId = current_user_id();
-$isAdmin = is_admin();
+$isLoggedIn = is_logged_in();
+$userName = $isLoggedIn ? current_user_name() : 'Pengunjung / Tamu';
+$userRole = $isLoggedIn ? current_user_role() : 'guest';
+$userId = $isLoggedIn ? current_user_id() : null;
+$isAdmin = $isLoggedIn && is_admin();
 
 // Handle Export CSV
 if (isset($_GET['action']) && $_GET['action'] === 'export_csv') {
@@ -1352,4 +1352,4 @@ document.addEventListener("DOMContentLoaded", function() {
 <?php
 $extraScript = ob_get_clean();
 
-render_page('Log Masuk Ruang Server & Data Center', $body, $head, $extraScript);
+render_page('Log Masuk Ruang Server & Data Center', $body, $head, $extraScript, $isLoggedIn);

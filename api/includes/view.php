@@ -2510,7 +2510,7 @@ label.form-label,
 ' : '
 <div>
   '.$publicHeaderHtml.'
-  <main class="app-content-container" style="max-width: 960px;">
+  <main class="app-content-container" style="max-width: 1320px; margin: 0 auto;">
     '.$content.'
   </main>
 </div>

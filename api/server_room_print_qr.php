@@ -1,6 +1,5 @@
 <?php
 require __DIR__ . '/bootstrap.php';
-require_login();
 
 $cabang = trim((string)($_GET['cabang'] ?? 'Kantor Pusat (KPO)'));
 $ruangan = trim((string)($_GET['ruangan'] ?? 'Ruang Server & Data Center Lt. 2'));
