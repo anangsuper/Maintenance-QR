@@ -292,6 +292,13 @@ if ($autoOpenCheckout) {
     }
 }
 
+// JIKA AKSES PUBLIK TANPA LOGIN (MISAL DARI SCAN QR PINTU DI HP):
+// Gunakan template UI khusus publik (mobile-first portal, tanpa sidebar/header admin)
+if (!$isLoggedIn) {
+    require __DIR__ . '/includes/server_room_public_view.php';
+    exit;
+}
+
 // Header styling & Script HTML
 $head = '
 <style>
