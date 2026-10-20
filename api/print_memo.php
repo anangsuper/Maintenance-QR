@@ -206,6 +206,11 @@ body {
       <i class="bi bi-camera me-1 text-primary"></i> Foto Barang
     </a>
   <?php endif; ?>
+  <?php if (!empty($memo['memo_disetujui_file'])): ?>
+    <a href="<?= e(memo_file_url($memo['memo_disetujui_file'])) ?>" target="_blank" class="btn btn-info text-dark fw-bold shadow-lg px-3 py-2">
+      <i class="bi bi-file-earmark-check me-1"></i> Scan Memo Disetujui
+    </a>
+  <?php endif; ?>
   <button type="button" class="btn btn-primary fw-bold shadow-lg px-4 py-2" onclick="window.print()">
     <i class="bi bi-printer-fill me-1.5"></i> Cetak Dokumen Memo
   </button>

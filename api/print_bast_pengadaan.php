@@ -248,6 +248,11 @@ body {
   <a href="<?= e(module_url('print_memo.php', ['id' => $id])) ?>" target="_blank" class="btn btn-outline-dark bg-white btn-sm fw-semibold shadow-lg px-3 py-2">
     <i class="bi bi-file-earmark-text me-1"></i> Dokumen Memo
   </a>
+  <?php if (!empty($memo['memo_disetujui_file'])): ?>
+    <a href="<?= e(memo_file_url($memo['memo_disetujui_file'])) ?>" target="_blank" class="btn btn-outline-info bg-white btn-sm fw-semibold shadow-lg px-3 py-2">
+      <i class="bi bi-file-earmark-check me-1"></i> Scan Memo Disetujui
+    </a>
+  <?php endif; ?>
   <button type="button" class="btn btn-primary btn-sm fw-bold shadow-lg px-4 py-2" onclick="window.print()">
     <i class="bi bi-printer-fill me-1"></i> Cetak Lampiran (A4)
   </button>
