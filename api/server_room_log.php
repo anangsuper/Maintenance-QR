@@ -2,7 +2,6 @@
 require __DIR__ . '/bootstrap.php';
 require_login();
 
-$user = current_user();
 $userName = current_user_name();
 $userRole = current_user_role();
 $userId = current_user_id();
