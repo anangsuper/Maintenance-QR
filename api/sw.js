@@ -2,7 +2,7 @@
  * Service Worker for QR Maintenance IT
  * Handles offline caching, asset caching, and offline fallback
  */
-const CACHE_NAME = 'qr-maintenance-cache-v8';
+const CACHE_NAME = 'qr-maintenance-cache-v9';
 
 const STATIC_ASSETS = [
   './',

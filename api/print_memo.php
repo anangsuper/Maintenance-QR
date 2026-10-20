@@ -1,4 +1,10 @@
 <?php
+/**
+ * Dokumen Resmi Memo Internal Pengajuan Inventaris
+ * PT BPR Mitratama Arthabuana
+ * Sesuai Standar Template Resmi Bank Mitra
+ */
+
 require __DIR__ . '/bootstrap.php';
 require_login();
 
@@ -27,7 +33,9 @@ $isi = nl2br(e($memo['isi_memo']));
 $totalNominal = (float)($memo['total_estimasi'] ?? 0);
 $terbilang = e($memo['terbilang']);
 if (empty($terbilang) && $totalNominal > 0) {
-    $terbilang = '//' . terbilang_rupiah($totalNominal) . '//';
+    $terbilang = '://' . terbilang_rupiah($totalNominal) . '://';
+} elseif (!empty($terbilang) && !str_starts_with($terbilang, '://')) {
+    $terbilang = '://' . trim($terbilang, ' /') . '://';
 }
 
 $namaPengaju = e($memo['nama_pengaju']);
@@ -36,6 +44,9 @@ $namaMengetahui = e($memo['nama_mengetahui'] ?: 'Defie Damayanti');
 $jabatanMengetahui = e($memo['jabatan_mengetahui'] ?: 'Kabag. Umum & SDM');
 $namaMenyetujui = e($memo['nama_menyetujui'] ?: 'Kahar Muzaqir, SH');
 $jabatanMenyetujui = e($memo['jabatan_menyetujui'] ?: 'Direktur Operasional');
+
+$logoUrl = module_url('bank_mitra_memo_logo.png');
+$footerUrl = module_url('bank_mitra_memo_footer.png');
 ?>
 <!doctype html>
 <html lang="id">
@@ -43,13 +54,18 @@ $jabatanMenyetujui = e($memo['jabatan_menyetujui'] ?: 'Direktur Operasional');
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Memo Internal - <?= $nomor ?></title>
-<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Times+New+Roman&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
 <style>
+@page {
+  size: A4 portrait;
+  margin: 0;
+}
+
 body {
   background: #E2E8F0;
-  font-family: "Times New Roman", Times, serif;
+  font-family: "Times New Roman", Times, Georgia, serif;
   color: #000000;
   padding: 30px 10px;
   -webkit-print-color-adjust: exact;
@@ -61,104 +77,119 @@ body {
   min-height: 297mm;
   margin: 0 auto;
   background: #FFFFFF;
-  padding: 25mm 25mm 25mm 25mm;
+  padding: 16mm 22mm 34mm 22mm;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.12);
   border-radius: 4px;
   position: relative;
   box-sizing: border-box;
+  overflow: hidden;
 }
 
-.memo-logo {
-  max-height: 48px;
-  width: auto;
+.memo-top-logo {
+  max-width: 195px;
+  height: auto;
   object-fit: contain;
+  display: block;
+  margin-bottom: 22px;
 }
 
-.kop-bank-name {
-  font-size: 1.10rem;
-  font-weight: 800;
-  color: #003B73;
-  letter-spacing: 0.04em;
-  font-family: "Plus Jakarta Sans", -apple-system, sans-serif;
-  line-height: 1.2;
-}
-
-.kop-sub-text {
-  font-size: 0.80rem;
-  color: #334155;
-  font-family: "Plus Jakarta Sans", -apple-system, sans-serif;
-  margin-top: 1px;
-}
-
-.kop-address-text {
-  font-size: 0.70rem;
-  color: #64748B;
-  font-family: "Plus Jakarta Sans", -apple-system, sans-serif;
+.memo-title-block {
+  margin-bottom: 0;
 }
 
 .memo-heading {
-  font-size: 1.35rem;
+  font-size: 1.30rem;
   font-weight: 800;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
-  margin-bottom: 6px;
-  font-family: "Times New Roman", Times, serif;
+  margin-bottom: 4px;
+  font-family: "Times New Roman", Times, Georgia, serif;
 }
 
-.double-line {
-  border-top: 3px double #000000;
-  margin: 6px 0 16px 0;
-}
-
-.header-table {
+/* Tabel Kotak Grid Header Memo Sesuai Format Bank Mitra */
+.memo-grid-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 1rem;
-  line-height: 1.45;
+  border-top: 2.5px solid #000000;
+  border-bottom: 2.5px solid #000000;
+  margin-bottom: 22px;
+  font-family: "Times New Roman", Times, Georgia, serif;
+  font-size: 0.96rem;
+  line-height: 1.35;
 }
 
-.header-table td {
+.memo-left-cell {
+  width: 44%;
   vertical-align: top;
-  padding: 2px 4px;
+  padding: 10px 12px;
+  border-right: 1.5px solid #000000;
+}
+
+.memo-right-cell {
+  width: 56%;
+  vertical-align: top;
+  padding: 0;
+}
+
+.meta-row {
+  padding: 6px 12px;
+  border-bottom: 1.5px solid #000000;
+}
+
+.meta-row:last-child {
+  border-bottom: none;
 }
 
 .memo-body {
-  font-size: 1.05rem;
+  font-size: 1.02rem;
   line-height: 1.6;
   text-align: justify;
-  margin-top: 20px;
+  font-family: "Times New Roman", Times, Georgia, serif;
 }
 
 .memo-body p {
-  margin-bottom: 14px;
+  margin-bottom: 16px;
 }
 
 .signature-row {
-  margin-top: 55px;
+  margin-top: 48px;
   display: flex;
   justify-content: space-between;
   text-align: center;
   page-break-inside: avoid;
+  font-family: "Times New Roman", Times, Georgia, serif;
 }
 
 .sig-col {
-  width: 30%;
-  font-size: 1rem;
+  width: 32%;
+  font-size: 0.98rem;
 }
 
 .sig-space {
-  height: 75px;
+  height: 64px;
 }
 
 .sig-name {
   font-weight: 700;
   text-decoration: underline;
-  font-size: 1.05rem;
+  font-size: 1.02rem;
 }
 
 .sig-title {
-  font-size: 0.95rem;
+  font-size: 0.90rem;
   color: #111111;
+  margin-top: 2px;
+}
+
+.memo-page-footer {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: auto;
+  max-height: 48mm;
+  object-fit: cover;
+  pointer-events: none;
 }
 
 .floating-action-bar {
@@ -175,11 +206,21 @@ body {
   body {
     background: #FFFFFF !important;
     padding: 0 !important;
+    margin: 0 !important;
   }
   .memo-sheet {
     box-shadow: none !important;
-    padding: 15mm 20mm !important;
+    padding: 14mm 20mm 32mm 20mm !important;
     max-width: 100% !important;
+    width: 100% !important;
+    min-height: 297mm !important;
+    height: 297mm !important;
+    border-radius: 0 !important;
+  }
+  .memo-page-footer {
+    position: fixed !important;
+    bottom: 0 !important;
+    left: 0 !important;
     width: 100% !important;
   }
   .floating-action-bar, .no-print {
@@ -190,6 +231,7 @@ body {
 </head>
 <body>
 
+<!-- Floating Action Bar (Hidden when printed) -->
 <div class="floating-action-bar no-print">
   <?php if (!empty($memo['lampiran_file'])): ?>
     <a href="<?= e(memo_file_url($memo['lampiran_file'])) ?>" target="_blank" class="btn btn-light border fw-semibold shadow-lg px-3 py-2">
@@ -199,11 +241,6 @@ body {
   <?php if (!empty($memo['bukti_beli_file'])): ?>
     <a href="<?= e(memo_file_url($memo['bukti_beli_file'])) ?>" target="_blank" class="btn btn-warning text-dark fw-bold shadow-lg px-3 py-2">
       <i class="bi bi-receipt me-1"></i> Nota Toko
-    </a>
-  <?php endif; ?>
-  <?php if (!empty($memo['foto_barang_file'])): ?>
-    <a href="<?= e(memo_file_url($memo['foto_barang_file'])) ?>" target="_blank" class="btn btn-light border fw-semibold shadow-lg px-3 py-2">
-      <i class="bi bi-camera me-1 text-primary"></i> Foto Barang
     </a>
   <?php endif; ?>
   <?php if (!empty($memo['memo_disetujui_file'])): ?>
@@ -219,101 +256,61 @@ body {
   </a>
 </div>
 
+<!-- Lembar Dokumen Resmi Memo Internal -->
 <div class="memo-sheet">
-  <!-- Kop Surat Bank Mitra dengan Logo -->
-  <div class="d-flex align-items-center justify-content-between mb-3 pb-2 border-bottom">
-    <div class="d-flex align-items-center gap-3">
-      <img src="<?= app_logo_url() ?>" alt="Bank Mitra Logo" class="memo-logo">
-      <div>
-        <div class="kop-bank-name">PT BPR MITRATAMA ARTHABUANA</div>
-        <div class="kop-sub-text">Kantor Pusat Operasional &middot; Bagian Umum &amp; Sarana Prasarana</div>
-        <div class="kop-address-text">Jl. Kapten Piere Tendean No. 170, Banjarmasin &middot; Telp. (0511) 3271222</div>
-      </div>
-    </div>
-    <div class="text-end font-monospace text-muted small" style="font-size: 0.72rem; line-height: 1.35;">
-      <span class="badge bg-light text-dark border px-2 py-0.5 mb-1 d-inline-block"><?= e($memo['cabang_nama'] ?: 'Kantor Pusat Operasional') ?></span><br>
-      <?= $tglFormat ?>
-    </div>
+  <!-- 1. Logo Resmi Bank Mitra di Sudut Kiri Atas -->
+  <img src="<?= $logoUrl ?>" alt="Bank Mitra Logo" class="memo-top-logo">
+
+  <!-- 2. Judul Dokumen -->
+  <div class="memo-title-block">
+    <div class="memo-heading">MEMO INTERNAL</div>
   </div>
 
-  <!-- Judul Utama -->
-  <div class="memo-heading">MEMO INTERNAL</div>
-  <div class="double-line"></div>
-
-  <!-- Header Memo Grid -->
-  <table class="header-table">
+  <!-- 3. Tabel Kotak Grid Header Memo (Format Resmi Bank Mitra) -->
+  <table class="memo-grid-table">
     <tr>
       <!-- Kolom Kiri: Kepada Yth -->
-      <td style="width: 45%;">
+      <td class="memo-left-cell">
         <strong>Kepada Yth : <?= $kepada ?></strong>
       </td>
 
       <!-- Kolom Kanan: DARI, No, PERIHAL, TANGGAL, Lampiran -->
-      <td style="width: 55%; padding-left: 20px;">
-        <table style="width: 100%; border-collapse: collapse;">
-          <tr>
-            <td colspan="2">
-              <strong>DARI :</strong><br>
-              <span style="display: inline-block; margin-left: 8px;">- <?= $dari ?></span>
-            </td>
-          </tr>
-          <tr>
-            <td style="width: 80px; padding-top: 6px;">No:</td>
-            <td style="padding-top: 6px;"><strong><?= $nomor ?></strong></td>
-          </tr>
-          <tr>
-            <td style="vertical-align: top; padding-top: 6px;"><strong>PERIHAL</strong></td>
-            <td style="padding-top: 6px;">: <strong><?= $perihal ?></strong></td>
-          </tr>
-          <tr>
-            <td style="padding-top: 6px;"><strong>TANGGAL</strong></td>
-            <td style="padding-top: 6px;">: <strong><?= $tglFormat ?></strong></td>
-          </tr>
-          <tr>
-            <td style="padding-top: 4px;">Lampiran</td>
-            <td style="padding-top: 4px;">: <?= $lampiran ?>
-              <?php if (!empty($memo['lampiran_file'])): ?>
-                <span class="no-print ms-2 small" style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 0.82rem;">
-                  (<a href="<?= e(memo_file_url($memo['lampiran_file'])) ?>" target="_blank" style="color: #475569; font-weight: 600; text-decoration: underline;"><i class="bi bi-file-earmark-text"></i> Penawaran</a>)
-                </span>
-              <?php endif; ?>
-              <?php if (!empty($memo['bukti_beli_file'])): ?>
-                <span class="no-print ms-1 small" style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 0.82rem;">
-                  (<a href="<?= e(memo_file_url($memo['bukti_beli_file'])) ?>" target="_blank" style="color: #16A34A; font-weight: 600; text-decoration: underline;"><i class="bi bi-receipt"></i> Nota Toko</a>)
-                </span>
-              <?php endif; ?>
-            </td>
-          </tr>
-        </table>
+      <td class="memo-right-cell">
+        <div class="meta-row">
+          <strong>DARI :</strong><br>
+          <span style="display: inline-block; margin-left: 8px;">- <?= $dari ?></span>
+        </div>
+        <div class="meta-row">
+          <strong>No:</strong><br>
+          <span class="font-monospace fw-bold"><?= $nomor ?></span>
+        </div>
+        <div class="meta-row">
+          <strong>PERIHAL : <?= $perihal ?></strong>
+        </div>
+        <div class="meta-row">
+          <strong>TANGGAL :</strong><br>
+          <span><?= $tglFormat ?></span><br>
+          <span style="display: inline-block; margin-top: 4px;">Lampiran : <?= $lampiran ?></span>
+          <?php if (!empty($memo['lampiran_file'])): ?>
+            <span class="no-print ms-2 small" style="font-family: -apple-system, sans-serif; font-size: 0.78rem;">
+              (<a href="<?= e(memo_file_url($memo['lampiran_file'])) ?>" target="_blank" style="color: #475569; font-weight: 600; text-decoration: underline;"><i class="bi bi-file-earmark-text"></i> Berkas Penawaran</a>)
+            </span>
+          <?php endif; ?>
+        </div>
       </td>
     </tr>
   </table>
 
-  <div class="double-line" style="margin-top: 14px; margin-bottom: 22px;"></div>
-
-  <!-- Isi Memo -->
+  <!-- 4. Uraian Isi Memo Permohonan -->
   <div class="memo-body">
     <p>Dengan hormat,</p>
-
-    <div style="text-indent: 35px; line-height: 1.65;">
-      <?= $isi ?>
-      <?php if ($totalNominal > 0): ?>
-        dengan estimasi biaya sebesar <strong>Rp. <?= number_format($totalNominal, 0, ',', '.') ?>,-</strong>
-      <?php endif; ?>
-    </div>
-
-    <?php if (!empty($terbilang)): ?>
-      <p style="margin-top: 12px; font-weight: 700; font-style: italic;">
-        Terbilang Estimasi : <?= $terbilang ?>
-      </p>
-    <?php endif; ?>
-
-    <p style="margin-top: 24px;">
-      Demikian permohonan kami buat dan atas kerjasamanya kami ucapkan terima kasih.
+    <p style="text-indent: 32px;">
+      <?= $isi ?><?php if ($totalNominal > 0 && !str_contains($isi, number_format($totalNominal, 0, ',', '.'))): ?> dengan estimasi biaya sebesar <strong>Rp. <?= number_format($totalNominal, 0, ',', '.') ?>,-</strong> Terbilang <strong><?= $terbilang ?></strong><?php endif; ?>
     </p>
+    <p>Demikian permohonan kami buat dan atas kerjasamanya kami ucapkan terima kasih.</p>
   </div>
 
-  <!-- 3 Kolom Tanda Tangan Resmi Sesuai Format Memo Bank Mitra -->
+  <!-- 5. Kolom Tanda Tangan 3 Pejabat Bank -->
   <div class="signature-row">
     <div class="sig-col">
       <div>Yang mengajukan,</div>
@@ -321,14 +318,12 @@ body {
       <div class="sig-name"><?= $namaPengaju ?></div>
       <div class="sig-title"><?= $jabatanPengaju ?></div>
     </div>
-
     <div class="sig-col">
       <div>Mengetahui,</div>
       <div class="sig-space"></div>
       <div class="sig-name"><?= $namaMengetahui ?></div>
       <div class="sig-title"><?= $jabatanMengetahui ?></div>
     </div>
-
     <div class="sig-col">
       <div>Menyetujui,</div>
       <div class="sig-space"></div>
@@ -337,6 +332,8 @@ body {
     </div>
   </div>
 
+  <!-- 6. Footer Kop Surat Resmi Bank Mitra di Bagian Bawah Kertas -->
+  <img src="<?= $footerUrl ?>" alt="Footer Kop Surat Bank Mitra" class="memo-page-footer">
 </div>
 
 </body>
