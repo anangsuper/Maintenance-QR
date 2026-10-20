@@ -262,7 +262,34 @@ unset($_SESSION['flash_msg']);
 $flashErr = $_SESSION['flash_err'] ?? null;
 unset($_SESSION['flash_err']);
 
-$autoOpenScanModal = (isset($_GET['action']) && in_array($_GET['action'], ['scan', 'checkin_quick'], true));
+$actionGet = trim((string)($_GET['action'] ?? ''));
+$autoOpenCheckin = in_array($actionGet, ['scan', 'checkin_scan', 'checkin_quick'], true);
+$autoOpenCheckout = in_array($actionGet, ['checkout_scan', 'checkout_quick'], true);
+$targetLogId = (int)($_GET['log_id'] ?? 0);
+
+// Cari occupant yang cocok jika autoOpenCheckout
+$autoCheckoutMatch = null;
+if ($autoOpenCheckout) {
+    if ($targetLogId > 0) {
+        foreach ($liveOccupants as $occ) {
+            if ((int)$occ['id'] === $targetLogId) {
+                $autoCheckoutMatch = $occ;
+                break;
+            }
+        }
+    }
+    if (!$autoCheckoutMatch && !empty($liveOccupants)) {
+        foreach ($liveOccupants as $occ) {
+            if ((int)($occ['user_id'] ?? 0) === $userId || strcasecmp($occ['visitor_name'], $userName) === 0) {
+                $autoCheckoutMatch = $occ;
+                break;
+            }
+        }
+        if (!$autoCheckoutMatch && count($liveOccupants) === 1) {
+            $autoCheckoutMatch = $liveOccupants[0];
+        }
+    }
+}
 
 // Header styling & Script HTML
 $head = '
@@ -348,8 +375,13 @@ ob_start();
         <!-- Action Button Group -->
         <div class="d-flex flex-wrap align-items-center gap-2 pt-1">
           <button type="button" class="btn btn-light rounded-pill px-3.5 py-2 fw-bold d-inline-flex align-items-center gap-2 shadow-sm" style="color: #6827EB !important; font-size: 0.88rem;" data-bs-toggle="modal" data-bs-target="#modalCheckin">
-            <i class="bi bi-door-open-fill text-primary"></i> <span>Check-In Masuk Ruang Server</span>
+            <i class="bi bi-door-open-fill text-primary"></i> <span>Check-In Masuk</span>
           </button>
+          <?php if (!empty($liveOccupants)): ?>
+            <button type="button" class="btn btn-danger rounded-pill px-3 py-2 fw-bold d-inline-flex align-items-center gap-2 shadow-sm" style="font-size: 0.88rem;" onclick="handleCheckoutScanAction()">
+              <i class="bi bi-box-arrow-right"></i> <span>Check-Out Keluar (<?= count($liveOccupants) ?> di Dalam)</span>
+            </button>
+          <?php endif; ?>
           <button type="button" class="btn btn-outline-light rounded-pill px-3 py-2 fw-semibold d-inline-flex align-items-center gap-2 shadow-xs" style="font-size: 0.88rem; background: rgba(255, 255, 255, 0.12); border-color: rgba(255, 255, 255, 0.28);" data-bs-toggle="modal" data-bs-target="#modalScanner" onclick="startScannerModal()">
             <i class="bi bi-qr-code-scan"></i> <span>Scanner Barcode Live</span>
           </button>
@@ -885,6 +917,76 @@ ob_start();
 </div>
 
 <!-- ========================================== -->
+<!-- MODAL 3B: PILIH PETUGAS KELUAR (SCAN HP)   -->
+<!-- ========================================== -->
+<div class="modal fade" id="modalSelectCheckout" tabindex="-1" aria-labelledby="modalSelectCheckoutLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
+      <div class="modal-header bg-danger text-white py-3 px-4">
+        <h5 class="modal-title fw-bold d-flex align-items-center gap-2" id="modalSelectCheckoutLabel">
+          <i class="bi bi-box-arrow-right"></i> Pilih Petugas yang Keluar
+        </h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body p-4">
+        <p class="text-muted small mb-3">
+          Terdapat <strong class="text-danger"><?= count($liveOccupants) ?> orang</strong> yang sedang berada di dalam ruang server. Silakan tap nama Anda atau vendor yang akan Check-Out:
+        </p>
+        <div class="d-flex flex-column gap-2">
+          <?php foreach ($liveOccupants as $occ): 
+            $durMin = max(0, round((time() - strtotime($occ['entry_time'])) / 60));
+          ?>
+            <div class="card border rounded-3 p-3 shadow-xs hover-card" style="cursor: pointer; transition: all 0.2s;" onclick="openCheckoutModal(<?= (int)$occ['id'] ?>, <?= htmlspecialchars(json_encode($occ['visitor_name']), ENT_QUOTES, 'UTF-8') ?>, <?= htmlspecialchars(json_encode($occ['log_code']), ENT_QUOTES, 'UTF-8') ?>); bootstrap.Modal.getInstance(document.getElementById('modalSelectCheckout')).hide();">
+              <div class="d-flex align-items-center justify-content-between">
+                <div>
+                  <div class="fw-bold text-dark fs-6 d-flex align-items-center gap-1.5">
+                    <i class="bi bi-person-fill text-danger"></i>
+                    <span><?= e($occ['visitor_name']) ?></span>
+                  </div>
+                  <div class="small text-muted mt-0.5"><?= e($occ['institution'] ?: 'PT BPR Mitratama') ?> &bull; <code><?= e($occ['log_code']) ?></code></div>
+                  <div class="small text-danger fw-semibold mt-1">
+                    <i class="bi bi-clock-history me-1"></i>Masuk jam <?= date('H:i', strtotime($occ['entry_time'])) ?> (<?= $durMin ?> menit lalu)
+                  </div>
+                </div>
+                <button type="button" class="btn btn-sm btn-outline-danger rounded-pill px-3 fw-bold shadow-xs">
+                  Keluar <i class="bi bi-box-arrow-right ms-1"></i>
+                </button>
+              </div>
+            </div>
+          <?php endforeach; ?>
+        </div>
+      </div>
+      <div class="modal-footer bg-light py-2 px-3">
+        <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-3" data-bs-dismiss="modal">Tutup</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ========================================== -->
+<!-- MODAL 3C: TIDAK ADA ORANG DI DALAM         -->
+<!-- ========================================== -->
+<div class="modal fade" id="modalNoOccupants" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0 shadow-lg rounded-4 text-center p-4">
+      <div class="my-2 display-4" style="color: #FFB400;">
+        <i class="bi bi-door-closed-fill"></i>
+      </div>
+      <h5 class="fw-bold text-dark mt-2">Tidak Ada yang Sedang di Dalam</h5>
+      <p class="text-muted small mb-3">
+        Saat ini tidak ada data petugas atau vendor yang tercatat aktif di dalam Ruang Server.
+      </p>
+      <div class="d-flex justify-content-center gap-2">
+        <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-4" data-bs-dismiss="modal">Tutup</button>
+        <button type="button" class="btn btn-sm btn-primary fw-bold rounded-pill px-4" data-bs-dismiss="modal" data-bs-toggle="modal" data-bs-target="#modalCheckin">
+          <i class="bi bi-door-open-fill me-1"></i> Buka Form Check-In (Masuk)
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ========================================== -->
 <!-- MODAL 4: PREVIEW FOTO PENGUNJUNG           -->
 <!-- ========================================== -->
 <div class="modal fade" id="modalPreviewPhoto" tabindex="-1" aria-hidden="true">
@@ -904,7 +1006,8 @@ ob_start();
 <?php
 $body = ob_get_clean();
 
-$extraScript = '
+ob_start();
+?>
 <script>
 function onVisitorTypeChange(type) {
   const inst = document.getElementById("checkinInstitution");
@@ -1023,41 +1126,112 @@ function stopScannerModal() {
   }
 }
 
+const liveOccupantsData = <?= json_encode(array_map(function($o) {
+  return [
+    'id' => (int)$o['id'],
+    'visitor_name' => $o['visitor_name'],
+    'log_code' => $o['log_code'],
+    'user_id' => (int)($o['user_id'] ?? 0)
+  ];
+}, $liveOccupants)) ?>;
+
+function handleCheckoutScanAction() {
+  if (!liveOccupantsData || liveOccupantsData.length === 0) {
+    const m = new bootstrap.Modal(document.getElementById("modalNoOccupants"));
+    m.show();
+    return;
+  }
+
+  // Jika ada log id spesifik atau hanya 1 orang, atau cocok dengan user login
+  let matched = null;
+  const currentUid = <?= (int)$userId ?>;
+  const currentUname = <?= json_encode($userName) ?>;
+
+  matched = liveOccupantsData.find(function(o) {
+    return (currentUid > 0 && o.user_id === currentUid) || (o.visitor_name && o.visitor_name.toLowerCase() === currentUname.toLowerCase());
+  });
+
+  if (!matched && liveOccupantsData.length === 1) {
+    matched = liveOccupantsData[0];
+  }
+
+  if (matched) {
+    openCheckoutModal(matched.id, matched.visitor_name, matched.log_code);
+  } else {
+    // Tampilkan daftar pilihan orang yang keluar
+    const m = new bootstrap.Modal(document.getElementById("modalSelectCheckout"));
+    m.show();
+  }
+}
+
 function onQrCodeDetected(text) {
   stopScannerModal();
   const scanModalEl = document.getElementById("modalScanner");
   const scanModal = bootstrap.Modal.getInstance(scanModalEl);
   if (scanModal) scanModal.hide();
 
-  // Jika QR adalah URL atau scan pintu
-  if (text.includes("server_room") || text.includes("scan") || text.includes("door")) {
+  // 1. Jika QR adalah URL Checkout Keluar (Pintu Keluar HP)
+  if (text.includes("checkout_scan") || text.includes("action=checkout")) {
+    handleCheckoutScanAction();
+    return;
+  }
+
+  // 2. Jika QR adalah URL Check-In Masuk (Pintu Masuk HP)
+  if (text.includes("checkin_scan") || text.includes("server_room") || text.includes("door")) {
     const checkinModal = new bootstrap.Modal(document.getElementById("modalCheckin"));
     checkinModal.show();
-  } else {
-    // Cari apakah ini kode log yang sedang di dalam
-    document.getElementById("manualBarcodeInput").value = text;
-    processManualBarcode(text);
+    return;
   }
+
+  // 3. Jika Barcode ID / Kode Log Petugas (misal SRL-202610-0001)
+  processManualBarcode(text);
 }
 
 function processManualBarcode(overrideText) {
-  const code = overrideText || document.getElementById("manualBarcodeInput").value.trim();
+  const code = (overrideText || document.getElementById("manualBarcodeInput").value).trim();
   if (!code) return;
-  // Buka checkin modal dan masukkan code jika perlu
+
+  // Cek apakah code ini cocok dengan kode log yang sedang di dalam (Live Occupants)
+  const occMatch = liveOccupantsData.find(function(o) {
+    return (o.log_code && o.log_code.toLowerCase() === code.toLowerCase()) || 
+           (o.visitor_name && o.visitor_name.toLowerCase().includes(code.toLowerCase()));
+  });
+
+  if (occMatch) {
+    // Langsung buka Check-Out untuk orang ini!
+    openCheckoutModal(occMatch.id, occMatch.visitor_name, occMatch.log_code);
+    return;
+  }
+
+  // Jika tidak di dalam, buka form checkin dan masukkan nama/identitas
   const checkinModal = new bootstrap.Modal(document.getElementById("modalCheckin"));
+  const nameInp = document.getElementById("inputVisitorName");
+  if (nameInp) nameInp.value = code;
   checkinModal.show();
 }
 
 document.addEventListener("DOMContentLoaded", function() {
-  // Jika parameter URL action=scan (misal dari scan stiker pintu)
-  '.($autoOpenScanModal ? '
+  <?php if ($autoOpenCheckout): ?>
+    setTimeout(function() {
+      <?php if (!empty($autoCheckoutMatch)): ?>
+        openCheckoutModal(<?= (int)$autoCheckoutMatch['id'] ?>, <?= json_encode($autoCheckoutMatch['visitor_name']) ?>, <?= json_encode($autoCheckoutMatch['log_code']) ?>);
+      <?php elseif (!empty($liveOccupants)): ?>
+        const m = new bootstrap.Modal(document.getElementById("modalSelectCheckout"));
+        m.show();
+      <?php else: ?>
+        const m = new bootstrap.Modal(document.getElementById("modalNoOccupants"));
+        m.show();
+      <?php endif; ?>
+    }, 350);
+  <?php elseif ($autoOpenCheckin): ?>
     setTimeout(function() {
       const checkinModal = new bootstrap.Modal(document.getElementById("modalCheckin"));
       checkinModal.show();
-    }, 300);
-  ' : '').'
+    }, 350);
+  <?php endif; ?>
 });
 </script>
-';
+<?php
+$extraScript = ob_get_clean();
 
 render_page('Log Masuk Ruang Server & Data Center', $body, $head, $extraScript);
