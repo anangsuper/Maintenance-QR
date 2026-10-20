@@ -150,10 +150,7 @@ function render_page(string $title, string $content, string $extraHead = '', str
       <div class="p-3 border-top border-navy-subtle">
         <div class="d-flex align-items-center justify-content-between">
           <div class="d-flex align-items-center gap-2">
-        <!-- Tombol Mode Tampilan Publik -->
-        <button type="button" class="btn btn-sm btn-outline-secondary d-inline-flex align-items-center gap-1.5 px-2.5 py-1 rounded-pill btn-theme-toggle-public" title="Mode Tampilan (Auto/Terang/Gelap)">
-          <i class="bi bi-circle-half theme-toggle-icon-public"></i>
-        </button>
+
             <div class="sidebar-user-avatar '.($isHrdRole ? 'bg-warning text-dark' : '').'">'.$userInitial.'</div>
             <div>
               <div class="text-white small fw-bold">'.e($userName).'</div>
@@ -210,11 +207,7 @@ function render_page(string $title, string $content, string $extraHead = '', str
           <span class="d-none d-md-inline">Panduan</span>
         </button>
 
-        <!-- Tombol Pengatur Mode Tampilan (Otomatis Ikut Device / Terang / Gelap) -->
-        <button type="button" class="btn btn-sm btn-outline-secondary d-inline-flex align-items-center gap-1.5 px-2.5 py-1 rounded-pill" id="btnThemeToggle" title="Mode Tampilan: Mengikuti Pengaturan Perangkat (Klik untuk ganti Terang/Gelap/Auto)">
-          <i class="bi bi-circle-half" id="themeToggleIcon"></i>
-          <span class="d-none d-xl-inline small fw-semibold" id="themeToggleLabel">Auto</span>
-        </button>
+
 
         '.($isHrdRole
             ? '<a href="'.e(module_url('dashboard.php', ['tab' => 'kartu'])).'" class="btn btn-sm btn-warning text-dark d-none d-sm-inline-flex align-items-center gap-1 fw-bold px-3 shadow-xs"><i class="bi bi-credit-card-2-front-fill me-1"></i><span>Kartu Inventaris</span></a>'
@@ -291,11 +284,22 @@ function render_page(string $title, string $content, string $extraHead = '', str
 <script>
 (function() {
   try {
-    var stored = localStorage.getItem("app_theme");
-    var prefersDark = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
-    var theme = (stored === "dark" || ((!stored || stored === "auto") && prefersDark)) ? "dark" : "light";
-    document.documentElement.setAttribute("data-bs-theme", theme);
-    document.documentElement.setAttribute("data-theme", theme);
+    try { localStorage.removeItem("app_theme"); } catch(e) {}
+    function syncSystemTheme() {
+      var isDark = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
+      var theme = isDark ? "dark" : "light";
+      document.documentElement.setAttribute("data-bs-theme", theme);
+      document.documentElement.setAttribute("data-theme", theme);
+    }
+    syncSystemTheme();
+    if (window.matchMedia) {
+      var mql = window.matchMedia("(prefers-color-scheme: dark)");
+      if (mql.addEventListener) {
+        mql.addEventListener("change", syncSystemTheme);
+      } else if (mql.addListener) {
+        mql.addListener(syncSystemTheme);
+      }
+    }
   } catch(e) {}
 })();
 </script>
@@ -704,108 +708,108 @@ table tbody tr {
   contain: layout style;
 }
 
-/* BANKING IT OPERATIONS CENTER DESIGN SYSTEM - LUXURY ENTERPRISE EDITION */
+/* MATERIO DESIGN SYSTEM CORE DESIGN TOKENS */
 :root {
-  --navy-deep: #051329;
-  --navy-primary: #0A1E38;
-  --navy-subtle: #162E52;
-  --blue-corporate: #1D4ED8;
-  --blue-accent: #2563EB;
-  --blue-soft: #EFF6FF;
-  --bg-app: #F8FAFC;
+  --navy-deep: #28243D;
+  --navy-primary: #312D4B;
+  --navy-subtle: #3D3759;
+  --blue-corporate: var(--materio-primary, #8C57FF);
+  --blue-accent: var(--materio-primary, #8C57FF);
+  --blue-soft: var(--materio-primary-subtle, rgba(140, 87, 255, 0.12));
+  --bg-app: #F4F5FA;
   --surface-card: #FFFFFF;
-  --border-subtle: #E2E8F0;
-  --border-strong: #CBD5E1;
-  --text-primary: #0F172A;
-  --text-secondary: #475569;
-  --text-muted: #94A3B8;
-  --status-success: #16A34A;
-  --status-success-bg: #F0FDF4;
-  --status-warning: #D97706;
-  --status-warning-bg: #FFFBEB;
-  --status-danger: #DC2626;
-  --status-danger-bg: #FEF2F2;
-  --status-info: #0284C7;
-  --status-info-bg: #F0F9FF;
+  --border-subtle: rgba(76, 78, 100, 0.12);
+  --border-strong: rgba(76, 78, 100, 0.22);
+  --text-primary: #2E263D;
+  --text-secondary: #6D6777;
+  --text-muted: #8A8D93;
+  --status-success: #56CA00;
+  --status-success-bg: rgba(86, 202, 0, 0.12);
+  --status-warning: #FFB400;
+  --status-warning-bg: rgba(255, 180, 0, 0.12);
+  --status-danger: #FF4C51;
+  --status-danger-bg: rgba(255, 76, 81, 0.12);
+  --status-info: #16B1FF;
+  --status-info-bg: rgba(22, 177, 255, 0.12);
   --radius-xs: 6px;
-  --radius-sm: 12px;
-  --radius-md: 16px;
-  --radius-lg: 20px;
-  --radius-xl: 26px;
+  --radius-sm: 8px;
+  --radius-md: 10px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
   --radius-pill: 9999px;
-  --shadow-subtle: 0 1px 3px rgba(15, 23, 42, 0.05), 0 1px 2px rgba(15, 23, 42, 0.03);
-  --shadow-card: 0 4px 20px -2px rgba(15, 23, 42, 0.05), 0 2px 6px -1px rgba(15, 23, 42, 0.02);
-  --shadow-hover: 0 16px 36px -4px rgba(15, 23, 42, 0.08), 0 6px 12px -2px rgba(15, 23, 42, 0.03);
+  --shadow-subtle: 0 1px 3px rgba(76, 78, 100, 0.05);
+  --shadow-card: 0px 2px 10px 0px rgba(76, 78, 100, 0.08);
+  --shadow-hover: 0px 6px 18px 0px rgba(76, 78, 100, 0.14);
 }
 
 /* -------------------------------------------------------------
-   DEVICE AUTO DARK MODE & THEME DESIGN TOKENS
+   DEVICE AUTO DARK MODE & THEME DESIGN TOKENS (MATERIO NEXT.JS)
    ------------------------------------------------------------- */
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]):not([data-bs-theme="light"]) {
-    --navy-deep: #020617;
-    --navy-primary: #070F1E;
-    --navy-subtle: #111E38;
-    --bg-app: #080F1E;
-    --surface-card: #0F1A30;
-    --border-subtle: #1E2D4A;
-    --border-strong: #334A70;
-    --text-primary: #F8FAFC;
-    --text-secondary: #CBD5E1;
-    --text-muted: #8496B0;
-    --status-success-bg: rgba(16, 185, 129, 0.15);
-    --status-warning-bg: rgba(245, 158, 11, 0.15);
-    --status-danger-bg: rgba(239, 68, 68, 0.15);
-    --status-info-bg: rgba(14, 165, 233, 0.15);
-    --shadow-subtle: 0 1px 3px rgba(0, 0, 0, 0.4);
-    --shadow-card: 0 4px 20px -2px rgba(0, 0, 0, 0.5);
-    --shadow-hover: 0 16px 36px -4px rgba(0, 0, 0, 0.6);
+    --navy-deep: #1E1B2E;
+    --navy-primary: #28243D;
+    --navy-subtle: #312D4B;
+    --bg-app: #232333;
+    --surface-card: #2B2C40;
+    --border-subtle: rgba(255, 255, 255, 0.12);
+    --border-strong: rgba(255, 255, 255, 0.22);
+    --text-primary: #E7E3FC;
+    --text-secondary: #B2B0C4;
+    --text-muted: #7E7B92;
+    --status-success-bg: rgba(86, 202, 0, 0.18);
+    --status-warning-bg: rgba(255, 180, 0, 0.18);
+    --status-danger-bg: rgba(255, 76, 81, 0.18);
+    --status-info-bg: rgba(22, 177, 255, 0.18);
+    --shadow-subtle: 0 1px 3px rgba(0, 0, 0, 0.3);
+    --shadow-card: 0px 4px 16px 0px rgba(0, 0, 0, 0.4);
+    --shadow-hover: 0px 8px 24px 0px rgba(0, 0, 0, 0.5);
   }
 }
 
 [data-theme="dark"], [data-bs-theme="dark"] {
-  --navy-deep: #020617;
-  --navy-primary: #070F1E;
-  --navy-subtle: #111E38;
-  --bg-app: #080F1E;
-  --surface-card: #0F1A30;
-  --border-subtle: #1E2D4A;
-  --border-strong: #334A70;
-  --text-primary: #F8FAFC;
-  --text-secondary: #CBD5E1;
-  --text-muted: #8496B0;
-  --status-success-bg: rgba(16, 185, 129, 0.15);
-  --status-warning-bg: rgba(245, 158, 11, 0.15);
-  --status-danger-bg: rgba(239, 68, 68, 0.15);
-  --status-info-bg: rgba(14, 165, 233, 0.15);
-  --shadow-subtle: 0 1px 3px rgba(0, 0, 0, 0.4);
-  --shadow-card: 0 4px 20px -2px rgba(0, 0, 0, 0.5);
-  --shadow-hover: 0 16px 36px -4px rgba(0, 0, 0, 0.6);
+  --navy-deep: #1E1B2E;
+  --navy-primary: #28243D;
+  --navy-subtle: #312D4B;
+  --bg-app: #232333;
+  --surface-card: #2B2C40;
+  --border-subtle: rgba(255, 255, 255, 0.12);
+  --border-strong: rgba(255, 255, 255, 0.22);
+  --text-primary: #E7E3FC;
+  --text-secondary: #B2B0C4;
+  --text-muted: #7E7B92;
+  --status-success-bg: rgba(86, 202, 0, 0.18);
+  --status-warning-bg: rgba(255, 180, 0, 0.18);
+  --status-danger-bg: rgba(255, 76, 81, 0.18);
+  --status-info-bg: rgba(22, 177, 255, 0.18);
+  --shadow-subtle: 0 1px 3px rgba(0, 0, 0, 0.3);
+  --shadow-card: 0px 4px 16px 0px rgba(0, 0, 0, 0.4);
+  --shadow-hover: 0px 8px 24px 0px rgba(0, 0, 0, 0.5);
 }
 
-/* Dark Mode Global & Component Overrides */
+/* Dark Mode Global & Component Overrides (Materio Pure Architecture) */
 [data-bs-theme="dark"] body {
   background-color: var(--bg-app) !important;
-  background-image: radial-gradient(at 50% 0%, #0F1E38 0%, #080F1E 70%, #040810 100%) !important;
+  background-image: none !important;
   color: var(--text-primary) !important;
 }
 
 [data-bs-theme="dark"] .app-topbar,
 [data-bs-theme="dark"] .public-topbar {
-  background: rgba(11, 23, 44, 0.95) !important;
-  border-bottom-color: #1E2D4A !important;
+  background: rgba(43, 44, 64, 0.92) !important;
+  border-bottom-color: rgba(255, 255, 255, 0.12) !important;
 }
 
 [data-bs-theme="dark"] .topbar-search-btn {
-  background: #11203A !important;
-  border-color: #1E2D4A !important;
-  color: #CBD5E1 !important;
+  background: rgba(255, 255, 255, 0.06) !important;
+  border-color: rgba(255, 255, 255, 0.12) !important;
+  color: #B2B0C4 !important;
 }
 
 [data-bs-theme="dark"] .topbar-search-btn .topbar-kbd {
-  background: #1B2E50 !important;
-  border-color: #2D4370 !important;
-  color: #94A3B8 !important;
+  background: rgba(255, 255, 255, 0.12) !important;
+  border-color: rgba(255, 255, 255, 0.18) !important;
+  color: #E7E3FC !important;
 }
 
 [data-bs-theme="dark"] .card {
@@ -816,23 +820,71 @@ table tbody tr {
 
 [data-bs-theme="dark"] .card-header,
 [data-bs-theme="dark"] .card-footer {
-  background-color: #0C172B !important;
+  background-color: transparent !important;
   border-color: var(--border-subtle) !important;
   color: var(--text-primary) !important;
 }
 
 [data-bs-theme="dark"] .card-metric-modern {
-  background: #0F1A30 !important;
-  border-color: #1E2D4A !important;
-  box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.35) !important;
+  background: var(--surface-card) !important;
+  border-color: var(--border-subtle) !important;
+  box-shadow: 0px 4px 16px 0px rgba(0, 0, 0, 0.4) !important;
 }
 
 [data-bs-theme="dark"] .card-metric-modern .metric-title-muted {
-  color: #8496B0 !important;
+  color: #8A8D93 !important;
 }
 
 [data-bs-theme="dark"] .card-metric-modern .metric-number-bold {
-  color: #F8FAFC !important;
+  color: #E7E3FC !important;
+}
+
+[data-bs-theme="dark"] .mutation-card {
+  background-color: var(--surface-card) !important;
+  border-color: var(--border-subtle) !important;
+}
+
+[data-bs-theme="dark"] .mutation-card-header {
+  background-color: rgba(255, 255, 255, 0.03) !important;
+  border-bottom-color: var(--border-subtle) !important;
+}
+
+[data-bs-theme="dark"] .mutation-card-header h5 {
+  color: var(--text-primary) !important;
+}
+
+[data-bs-theme="dark"] .location-box {
+  background-color: rgba(86, 202, 0, 0.08) !important;
+  border-color: rgba(86, 202, 0, 0.35) !important;
+  color: var(--text-primary) !important;
+}
+
+[data-bs-theme="dark"] .info-bast {
+  background-color: rgba(22, 177, 255, 0.08) !important;
+  border-left-color: #16B1FF !important;
+  color: var(--text-primary) !important;
+}
+
+[data-bs-theme="dark"] .btn-cancel-mutation {
+  background-color: rgba(255, 255, 255, 0.08) !important;
+  color: #B2B0C4 !important;
+  border-color: rgba(255, 255, 255, 0.14) !important;
+}
+
+[data-bs-theme="dark"] .browser-window-card {
+  background-color: var(--surface-card) !important;
+  border-color: var(--border-subtle) !important;
+}
+
+[data-bs-theme="dark"] .browser-address-pill {
+  background-color: rgba(255, 255, 255, 0.06) !important;
+  border-color: rgba(255, 255, 255, 0.12) !important;
+  color: #E7E3FC !important;
+}
+
+[data-bs-theme="dark"] .floating-toast-pill {
+  background-color: rgba(255, 255, 255, 0.06) !important;
+  border-color: rgba(255, 255, 255, 0.12) !important;
 }
 
 [data-bs-theme="dark"] .card-status-mint {
@@ -2762,91 +2814,31 @@ label.form-label,
 })();
 
 // ============================================================
-// AUTOMATIC & INTERACTIVE THEME MANAGER (Follows Device Dark Mode)
+// AUTOMATIC THEME SYNC (Follows OS / Device Dark Mode)
 // ============================================================
 (function() {
-  function getSystemTheme() {
-    return window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+  function syncSystemDeviceTheme() {
+    var isDark = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
+    var theme = isDark ? "dark" : "light";
+    document.documentElement.setAttribute("data-bs-theme", theme);
+    document.documentElement.setAttribute("data-theme", theme);
   }
 
-  function applyAppTheme(mode, updateStorage) {
-    if (updateStorage) {
-      try { localStorage.setItem("app_theme", mode); } catch(e) {}
-    }
-    var effectiveTheme = mode === "auto" ? getSystemTheme() : mode;
-    document.documentElement.setAttribute("data-bs-theme", effectiveTheme);
-    document.documentElement.setAttribute("data-theme", effectiveTheme);
+  // Clear any legacy manual override
+  try { localStorage.removeItem("app_theme"); } catch(e) {}
 
-    var icons = document.querySelectorAll("#themeToggleIcon, .theme-toggle-icon-public");
-    var label = document.getElementById("themeToggleLabel");
-    var btn = document.getElementById("btnThemeToggle");
+  syncSystemDeviceTheme();
 
-    var iconClass = "bi-circle-half";
-    var labelText = "Auto";
-    var titleText = "Mode Tampilan: Otomatis Ikut Perangkat (" + (effectiveTheme === "dark" ? "Gelap" : "Terang") + ")";
-
-    if (mode === "dark") {
-      iconClass = "bi-moon-stars-fill text-info";
-      labelText = "Gelap";
-      titleText = "Mode Tampilan: Gelap (Manual)";
-    } else if (mode === "light") {
-      iconClass = "bi-sun-fill text-warning";
-      labelText = "Terang";
-      titleText = "Mode Tampilan: Terang (Manual)";
-    }
-
-    icons.forEach(function(el) {
-      el.className = "bi " + iconClass;
-    });
-    if (label) label.textContent = labelText;
-    if (btn) btn.setAttribute("title", titleText);
-  }
-
-  function cycleTheme() {
-    var stored = "auto";
-    try { stored = localStorage.getItem("app_theme") || "auto"; } catch(e) {}
-    var next = "auto";
-    if (stored === "auto") {
-      var isDark = document.documentElement.getAttribute("data-bs-theme") === "dark";
-      next = isDark ? "light" : "dark";
-    } else if (stored === "dark") {
-      next = "light";
-    } else {
-      next = "auto";
-    }
-    applyAppTheme(next, true);
-  }
-
-  // Real-time device preference listener
   if (window.matchMedia) {
     var mql = window.matchMedia("(prefers-color-scheme: dark)");
-    var onSystemChange = function() {
-      var stored = "auto";
-      try { stored = localStorage.getItem("app_theme") || "auto"; } catch(e) {}
-      if (stored === "auto") {
-        applyAppTheme("auto", false);
-      }
-    };
     if (mql.addEventListener) {
-      mql.addEventListener("change", onSystemChange);
+      mql.addEventListener("change", syncSystemDeviceTheme);
     } else if (mql.addListener) {
-      mql.addListener(onSystemChange);
+      mql.addListener(syncSystemDeviceTheme);
     }
   }
 
-  document.addEventListener("DOMContentLoaded", function() {
-    var stored = "auto";
-    try { stored = localStorage.getItem("app_theme") || "auto"; } catch(e) {}
-    applyAppTheme(stored, false);
-
-    var btns = document.querySelectorAll("#btnThemeToggle, .btn-theme-toggle-public");
-    btns.forEach(function(b) {
-      b.addEventListener("click", function(e) {
-        e.preventDefault();
-        cycleTheme();
-      });
-    });
-  });
+  document.addEventListener("DOMContentLoaded", syncSystemDeviceTheme);
 })();
 
 // PWA Service Worker Registration

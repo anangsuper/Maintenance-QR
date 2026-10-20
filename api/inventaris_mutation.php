@@ -207,10 +207,10 @@ $head = '
 }
 
 .mutation-card {
-  background: #FFFFFF;
-  border-radius: 16px;
-  border: 1px solid #E2E8F0;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+  background: var(--surface-card, #FFFFFF);
+  border-radius: 12px;
+  border: 1px solid var(--border-subtle, #E2E8F0);
+  box-shadow: var(--shadow-card, 0 4px 6px -1px rgba(0, 0, 0, 0.05));
   overflow: hidden;
   height: 100%;
   display: flex;
@@ -218,8 +218,8 @@ $head = '
 }
 .mutation-card-header {
   padding: 16px 20px;
-  background: #F8FAFC;
-  border-bottom: 1px solid #E2E8F0;
+  background: transparent;
+  border-bottom: 1px solid var(--border-subtle, #E2E8F0);
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -228,7 +228,7 @@ $head = '
   font-size: 0.96rem;
   font-weight: 700;
   margin: 0;
-  color: #0F172A;
+  color: var(--text-primary, #0F172A);
   display: flex;
   align-items: center;
   gap: 8px;
