@@ -18,14 +18,16 @@ function render_page(string $title, string $content, string $extraHead = '', str
     $isAdmin = is_admin();
     $isLoggedIn = is_logged_in();
 
-    // Context section
-    $sectionContext = 'OPERATIONS';
-    if (in_array($currentPage, ['audit.php', 'monthly_history.php', 'history.php', 'print_report.php'], true)) {
-        $sectionContext = 'MONITORING';
-    } elseif (in_array($currentPage, ['cabang_admin.php', 'divisi_admin.php', 'users_admin.php', 'user_biometric_enroll.php'], true)) {
-        $sectionContext = 'MANAGEMENT';
-    } elseif (in_array($currentPage, ['qr_admin.php'], true)) {
-        $sectionContext = 'SYSTEM';
+    // Context section / Kategori navbar atas
+    $sectionContext = 'MENU UTAMA';
+    if (in_array($currentPage, ['assets.php', 'asset_add.php', 'asset_edit.php', 'asset_delete.php', 'asset_import.php', 'asset_mutation.php'], true) || ($currentPage === 'dashboard.php' && ($_GET['tab'] ?? '') === 'temuan')) {
+        $sectionContext = 'ASET & OPERASIONAL IT';
+    } elseif (in_array($currentPage, ['memo_pengajuan.php', 'print_memo.php', 'inventaris_mutation.php', 'asset_mutations.php', 'print_bast.php', 'asset_disposal.php', 'print_bast_disposal.php', 'asset_gallery.php', 'inventaris_gallery.php', 'inventory_card.php', 'cetak_kartu.php', 'print_inventory_card.php', 'kartu_detail.php'], true) || ($currentPage === 'dashboard.php' && ($_GET['tab'] ?? '') === 'kartu')) {
+        $sectionContext = 'INVENTARIS & SARPRAS';
+    } elseif (in_array($currentPage, ['server_room_log.php', 'server_room_print_qr.php', 'audit.php', 'monthly_history.php', 'history.php', 'print_report.php', 'audit_trail.php'], true)) {
+        $sectionContext = 'KEAMANAN & AUDIT';
+    } elseif (in_array($currentPage, ['cabang_admin.php', 'divisi_admin.php', 'users_admin.php', 'user_biometric_enroll.php', 'qr_admin.php'], true)) {
+        $sectionContext = 'PENGATURAN & MASTER';
     }
 
     $isAdminUser = is_admin();
@@ -35,69 +37,85 @@ function render_page(string $title, string $content, string $extraHead = '', str
     $brandTag = $isHrdRole ? 'SDM & UMUM' : 'IT OPS';
     $displayRole = $isHrdRole ? 'SDM & Umum' : (($role === 'admin') ? 'Administrator' : ucfirst($role));
 
-    $monitoringItems = [];
-    if (!$isHrdRole) {
-        $monitoringItems = [
-            ['title' => 'Log Ruang Server', 'url' => module_url('server_room_log.php'), 'icon' => 'bi-door-closed-fill', 'active' => in_array($currentPage, ['server_room_log.php', 'server_room_print_qr.php'], true)],
-            ['title' => 'Reports & Audit', 'url' => module_url('audit.php'), 'icon' => 'bi-file-earmark-bar-graph', 'active' => ($currentPage === 'audit.php')],
-            ['title' => 'Riwayat Bulanan', 'url' => module_url('monthly_history.php'), 'icon' => 'bi-calendar3', 'active' => ($currentPage === 'monthly_history.php')],
-        ];
-        if ($isAdminUser || in_array($role, ['auditor', 'skai'], true)) {
-            $monitoringItems[] = ['title' => 'Log Aktivitas (Audit)', 'url' => module_url('audit_trail.php'), 'icon' => 'bi-shield-check', 'active' => ($currentPage === 'audit_trail.php')];
-        }
-    }
+    // ==========================================
+    // SUSUN MENU NAVIGASI SESUAI KATEGORI RESMI
+    // ==========================================
+    $navLinks = [];
 
-    $managementItems = [];
-    if ($isHrdRole || $isAdminUser) {
-        $managementItems[] = ['title' => 'Kantor Cabang', 'url' => module_url('cabang_admin.php'), 'icon' => 'bi-buildings', 'active' => ($currentPage === 'cabang_admin.php')];
-        $managementItems[] = ['title' => 'Divisi / Unit Kerja', 'url' => module_url('divisi_admin.php'), 'icon' => 'bi-diagram-3', 'active' => ($currentPage === 'divisi_admin.php')];
-        $managementItems[] = ['title' => 'Akun Pengguna', 'url' => module_url('users_admin.php'), 'icon' => 'bi-people', 'active' => ($currentPage === 'users_admin.php')];
-    }
-    if (!$isHrdRole) {
-        $managementItems[] = ['title' => 'Wajah Teknisi (HP)', 'url' => module_url('user_biometric_enroll.php'), 'icon' => 'bi-person-bounding-box', 'active' => ($currentPage === 'user_biometric_enroll.php')];
-    }
-
-    $systemItems = [];
-    if (!$isHrdRole) {
-        if ($isHrdUser) {
-            $systemItems[] = ['title' => 'QR Aset Label', 'url' => module_url('qr_admin.php'), 'icon' => 'bi-qr-code', 'active' => ($currentPage === 'qr_admin.php')];
-        }
-
-    }
-
-    // Susun menu operasi (khusus SDM hanya kartu inventaris & galeri foto)
-    $operationsItems = [];
     if ($isHrdRole) {
-        $operationsItems = [
+        // PERAN: SDM & UMUM (SARANA PRASARANA)
+        $navLinks['MENU UTAMA'] = [
             ['title' => 'Kartu Inventaris', 'url' => module_url('dashboard.php', ['tab' => 'kartu']), 'icon' => 'bi-credit-card-2-front', 'active' => ($currentPage === 'dashboard.php' && ($_GET['tab'] ?? '') === 'kartu') || in_array($currentPage, ['inventory_card.php', 'cetak_kartu.php', 'print_inventory_card.php', 'kartu_detail.php'], true)],
+            ['title' => 'Galeri Foto Barang', 'url' => module_url('asset_gallery.php', ['sub' => 'inventaris']), 'icon' => 'bi-images', 'active' => in_array($currentPage, ['asset_gallery.php', 'inventaris_gallery.php'], true)],
+        ];
+        $navLinks['INVENTARIS & SARPRAS'] = [
             ['title' => 'Memo Pengajuan', 'url' => module_url('memo_pengajuan.php'), 'icon' => 'bi-file-earmark-text', 'active' => in_array($currentPage, ['memo_pengajuan.php', 'print_memo.php'], true)],
-            ['title' => 'Galeri Foto Inventaris', 'url' => module_url('asset_gallery.php', ['sub' => 'inventaris']), 'icon' => 'bi-images', 'active' => in_array($currentPage, ['asset_gallery.php', 'inventaris_gallery.php'], true)],
             ['title' => 'Mutasi Inventaris', 'url' => module_url('inventaris_mutation.php'), 'icon' => 'bi-arrow-left-right', 'active' => in_array($currentPage, ['inventaris_mutation.php', 'asset_mutations.php', 'print_bast.php'], true)],
             ['title' => 'Penghapusan Aset (Afkir)', 'url' => module_url('asset_disposal.php'), 'icon' => 'bi-trash3', 'active' => in_array($currentPage, ['asset_disposal.php', 'print_bast_disposal.php'], true)],
+        ];
+        $navLinks['KEAMANAN & KUNJUNGAN'] = [
             ['title' => 'Log Ruang Server', 'url' => module_url('server_room_log.php'), 'icon' => 'bi-door-closed-fill', 'active' => in_array($currentPage, ['server_room_log.php', 'server_room_print_qr.php'], true)],
+        ];
+        $navLinks['PENGATURAN & MASTER'] = [
+            ['title' => 'Kantor Cabang', 'url' => module_url('cabang_admin.php'), 'icon' => 'bi-buildings', 'active' => ($currentPage === 'cabang_admin.php')],
+            ['title' => 'Divisi / Unit Kerja', 'url' => module_url('divisi_admin.php'), 'icon' => 'bi-diagram-3', 'active' => ($currentPage === 'divisi_admin.php')],
+            ['title' => 'Akun Pengguna', 'url' => module_url('users_admin.php'), 'icon' => 'bi-people', 'active' => ($currentPage === 'users_admin.php')],
+        ];
+    } elseif (in_array($role, ['auditor', 'skai'], true)) {
+        // PERAN: AUDITOR / SKAI
+        $navLinks['MENU UTAMA'] = [
+            ['title' => 'Dashboard', 'url' => module_url('dashboard.php'), 'icon' => 'bi-speedometer2', 'active' => ($currentPage === 'dashboard.php' && !in_array($_GET['tab'] ?? '', ['kartu', 'temuan'], true))],
+        ];
+        $navLinks['AUDIT & KEPATUHAN OJK'] = [
+            ['title' => 'Laporan Audit & Checklist', 'url' => module_url('audit.php'), 'icon' => 'bi-clipboard-check', 'active' => ($currentPage === 'audit.php')],
+            ['title' => 'Riwayat Bulanan', 'url' => module_url('monthly_history.php'), 'icon' => 'bi-calendar3', 'active' => ($currentPage === 'monthly_history.php')],
+            ['title' => 'Log Aktivitas (Audit Trail)', 'url' => module_url('audit_trail.php'), 'icon' => 'bi-shield-check', 'active' => ($currentPage === 'audit_trail.php')],
+            ['title' => 'Log Ruang Server', 'url' => module_url('server_room_log.php'), 'icon' => 'bi-door-closed-fill', 'active' => in_array($currentPage, ['server_room_log.php', 'server_room_print_qr.php'], true)],
+        ];
+        $navLinks['REGISTRI ASET & SARPRAS'] = [
+            ['title' => 'Data Komputer & PC', 'url' => module_url('assets.php'), 'icon' => 'bi-pc-display', 'active' => in_array($currentPage, ['assets.php', 'asset_add.php', 'asset_edit.php', 'asset_delete.php', 'asset_import.php'], true)],
+            ['title' => 'Kartu Inventaris', 'url' => module_url('dashboard.php', ['tab' => 'kartu']), 'icon' => 'bi-credit-card-2-front', 'active' => ($currentPage === 'dashboard.php' && ($_GET['tab'] ?? '') === 'kartu')],
+            ['title' => 'Galeri Foto Barang', 'url' => module_url('asset_gallery.php'), 'icon' => 'bi-images', 'active' => in_array($currentPage, ['asset_gallery.php', 'inventaris_gallery.php'], true)],
         ];
     } else {
-        $operationsItems = [
+        // PERAN: IT OPERATIONS / ADMINISTRATOR / TEKNISI
+        $navLinks['MENU UTAMA'] = [
             ['title' => 'Dashboard', 'url' => module_url('dashboard.php'), 'icon' => 'bi-speedometer2', 'active' => ($currentPage === 'dashboard.php' && !in_array($_GET['tab'] ?? '', ['kartu', 'temuan'], true))],
-            ['title' => 'Kartu Inventaris', 'url' => module_url('dashboard.php', ['tab' => 'kartu']), 'icon' => 'bi-credit-card-2-front', 'active' => ($currentPage === 'dashboard.php' && ($_GET['tab'] ?? '') === 'kartu') || in_array($currentPage, ['inventory_card.php', 'cetak_kartu.php', 'print_inventory_card.php', 'kartu_detail.php'], true)],
-            ['title' => 'Galeri Foto', 'url' => module_url('asset_gallery.php'), 'icon' => 'bi-images', 'active' => in_array($currentPage, ['asset_gallery.php', 'inventaris_gallery.php'], true)],
-            ['title' => 'Temuan Kendala', 'url' => module_url('dashboard.php', ['tab' => 'temuan']), 'icon' => 'bi-tools', 'active' => ($currentPage === 'dashboard.php' && ($_GET['tab'] ?? '') === 'temuan')],
-            ['title' => 'Asset Registry', 'url' => module_url('assets.php'), 'icon' => 'bi-pc-display', 'active' => in_array($currentPage, ['assets.php', 'asset_add.php', 'asset_edit.php', 'asset_delete.php', 'asset_import.php'], true)],
-            ['title' => 'Mutasi PC / Aset IT', 'url' => module_url('asset_mutation.php'), 'icon' => 'bi-arrow-left-right', 'active' => in_array($currentPage, ['asset_mutation.php'], true)],
-            ['title' => 'Mutasi Inventaris', 'url' => module_url('inventaris_mutation.php'), 'icon' => 'bi-arrow-left-right', 'active' => in_array($currentPage, ['inventaris_mutation.php', 'asset_mutations.php', 'print_bast.php'], true)],
-            ['title' => 'Memo Pengajuan', 'url' => module_url('memo_pengajuan.php'), 'icon' => 'bi-file-earmark-text', 'active' => in_array($currentPage, ['memo_pengajuan.php', 'print_memo.php'], true)],
-            ['title' => 'Penghapusan Aset (Afkir)', 'url' => module_url('asset_disposal.php'), 'icon' => 'bi-trash3', 'active' => in_array($currentPage, ['asset_disposal.php', 'print_bast_disposal.php'], true)],
-            ['title' => 'Maintenance', 'url' => module_url('audit.php'), 'icon' => 'bi-clipboard-check', 'active' => in_array($currentPage, ['audit.php', 'monthly_history.php', 'history.php', 'maintenance_detail.php'], true)],
+            ['title' => 'Scanner QR & Barcode', 'url' => module_url('scanner.php'), 'icon' => 'bi-qr-code-scan', 'active' => ($currentPage === 'scanner.php')],
         ];
-    }
+        $navLinks['ASET & OPERASIONAL IT'] = [
+            ['title' => 'Data Komputer & PC', 'url' => module_url('assets.php'), 'icon' => 'bi-pc-display', 'active' => in_array($currentPage, ['assets.php', 'asset_add.php', 'asset_edit.php', 'asset_delete.php', 'asset_import.php'], true)],
+            ['title' => 'Mutasi PC / Aset IT', 'url' => module_url('asset_mutation.php'), 'icon' => 'bi-arrow-left-right', 'active' => in_array($currentPage, ['asset_mutation.php'], true)],
+            ['title' => 'Temuan Kendala IT', 'url' => module_url('dashboard.php', ['tab' => 'temuan']), 'icon' => 'bi-tools', 'active' => ($currentPage === 'dashboard.php' && ($_GET['tab'] ?? '') === 'temuan')],
+            ['title' => 'Pemeliharaan Rutin', 'url' => module_url('audit.php'), 'icon' => 'bi-clipboard-check', 'active' => in_array($currentPage, ['audit.php', 'history.php', 'maintenance_detail.php'], true)],
+        ];
+        $navLinks['INVENTARIS & SARPRAS'] = [
+            ['title' => 'Kartu Inventaris', 'url' => module_url('dashboard.php', ['tab' => 'kartu']), 'icon' => 'bi-credit-card-2-front', 'active' => ($currentPage === 'dashboard.php' && ($_GET['tab'] ?? '') === 'kartu') || in_array($currentPage, ['inventory_card.php', 'cetak_kartu.php', 'print_inventory_card.php', 'kartu_detail.php'], true)],
+            ['title' => 'Memo Pengajuan', 'url' => module_url('memo_pengajuan.php'), 'icon' => 'bi-file-earmark-text', 'active' => in_array($currentPage, ['memo_pengajuan.php', 'print_memo.php'], true)],
+            ['title' => 'Mutasi Inventaris', 'url' => module_url('inventaris_mutation.php'), 'icon' => 'bi-arrow-left-right', 'active' => in_array($currentPage, ['inventaris_mutation.php', 'asset_mutations.php', 'print_bast.php'], true)],
+            ['title' => 'Penghapusan Aset (Afkir)', 'url' => module_url('asset_disposal.php'), 'icon' => 'bi-trash3', 'active' => in_array($currentPage, ['asset_disposal.php', 'print_bast_disposal.php'], true)],
+            ['title' => 'Galeri Foto Barang', 'url' => module_url('asset_gallery.php'), 'icon' => 'bi-images', 'active' => in_array($currentPage, ['asset_gallery.php', 'inventaris_gallery.php'], true)],
+        ];
+        $navLinks['KEAMANAN & AUDIT'] = [
+            ['title' => 'Log Ruang Server', 'url' => module_url('server_room_log.php'), 'icon' => 'bi-door-closed-fill', 'active' => in_array($currentPage, ['server_room_log.php', 'server_room_print_qr.php'], true)],
+            ['title' => 'Riwayat Bulanan', 'url' => module_url('monthly_history.php'), 'icon' => 'bi-calendar3', 'active' => ($currentPage === 'monthly_history.php')],
+            ['title' => 'Log Aktivitas (Audit Trail)', 'url' => module_url('audit_trail.php'), 'icon' => 'bi-shield-check', 'active' => ($currentPage === 'audit_trail.php')],
+        ];
 
-    // Sidebar navigation menu
-    $navLinks = [
-        'OPERATIONS' => $operationsItems,
-        'MONITORING' => $monitoringItems,
-        'MANAGEMENT' => $managementItems,
-        'SYSTEM' => $systemItems
-    ];
+        $masterItems = [];
+        if ($isAdminUser) {
+            $masterItems[] = ['title' => 'Kantor Cabang', 'url' => module_url('cabang_admin.php'), 'icon' => 'bi-buildings', 'active' => ($currentPage === 'cabang_admin.php')];
+            $masterItems[] = ['title' => 'Divisi / Unit Kerja', 'url' => module_url('divisi_admin.php'), 'icon' => 'bi-diagram-3', 'active' => ($currentPage === 'divisi_admin.php')];
+            $masterItems[] = ['title' => 'Akun Pengguna', 'url' => module_url('users_admin.php'), 'icon' => 'bi-people', 'active' => ($currentPage === 'users_admin.php')];
+        }
+        $masterItems[] = ['title' => 'Wajah Teknisi (Biometrik)', 'url' => module_url('user_biometric_enroll.php'), 'icon' => 'bi-person-bounding-box', 'active' => ($currentPage === 'user_biometric_enroll.php')];
+        if ($isAdminUser || $isHrdUser) {
+            $masterItems[] = ['title' => 'Cetak Label QR Aset', 'url' => module_url('qr_admin.php'), 'icon' => 'bi-qr-code', 'active' => ($currentPage === 'qr_admin.php')];
+        }
+        if (!empty($masterItems)) {
+            $navLinks['PENGATURAN & MASTER'] = $masterItems;
+        }
+    }
 
     $sidebarMenuHtml = '';
     foreach ($navLinks as $groupName => $items) {
@@ -239,17 +257,28 @@ function render_page(string $title, string $content, string $extraHead = '', str
               <div class="small text-muted text-capitalize"><i class="bi bi-shield-lock me-1"></i>'.e($displayRole).'</div>
             </li>
             '.($isHrdRole ? '
+              <li><h6 class="dropdown-header text-uppercase fw-bold" style="font-size:0.65rem; color:#8c57ff; letter-spacing:0.06em;">Inventaris &amp; Sarpras</h6></li>
               <li><a class="dropdown-item py-2" href="'.e(module_url('dashboard.php', ['tab' => 'kartu'])).'"><i class="bi bi-credit-card-2-front me-2 text-warning"></i> Kartu Inventaris</a></li>
               <li><a class="dropdown-item py-2" href="'.e(module_url('asset_gallery.php', ['sub' => 'inventaris'])).'"><i class="bi bi-images me-2 text-primary"></i> Galeri Foto Barang</a></li>
+              <li><a class="dropdown-item py-2" href="'.e(module_url('memo_pengajuan.php')).'"><i class="bi bi-file-earmark-text me-2 text-info"></i> Memo Pengajuan</a></li>
+              <li><hr class="dropdown-divider my-1"></li>
+              <li><h6 class="dropdown-header text-uppercase fw-bold" style="font-size:0.65rem; color:#8c57ff; letter-spacing:0.06em;">Keamanan &amp; Master</h6></li>
+              <li><a class="dropdown-item py-2" href="'.e(module_url('server_room_log.php')).'"><i class="bi bi-door-closed-fill me-2" style="color:#8c57ff;"></i> Log Ruang Server</a></li>
               <li><a class="dropdown-item py-2" href="'.e(module_url('cabang_admin.php')).'"><i class="bi bi-buildings me-2 text-success"></i> Kantor Cabang</a></li>
             ' : (in_array($role, ['auditor', 'skai'], true) ? '
+              <li><h6 class="dropdown-header text-uppercase fw-bold" style="font-size:0.65rem; color:#8c57ff; letter-spacing:0.06em;">Audit &amp; Kepatuhan</h6></li>
               <li><a class="dropdown-item py-2" href="'.e(module_url('audit.php')).'"><i class="bi bi-file-earmark-bar-graph me-2 text-primary"></i> Laporan Audit</a></li>
               <li><a class="dropdown-item py-2" href="'.e(module_url('monthly_history.php')).'"><i class="bi bi-calendar3 me-2 text-info"></i> Riwayat Bulanan</a></li>
               <li><a class="dropdown-item py-2" href="'.e(module_url('audit_trail.php')).'"><i class="bi bi-shield-check me-2 text-warning"></i> Log Aktivitas (Audit)</a></li>
+              <li><a class="dropdown-item py-2" href="'.e(module_url('server_room_log.php')).'"><i class="bi bi-door-closed-fill me-2" style="color:#8c57ff;"></i> Log Ruang Server</a></li>
             ' : '
-              <li><a class="dropdown-item py-2" href="'.e(module_url('assets.php')).'"><i class="bi bi-pc-display me-2 text-primary"></i> Data Komputer</a></li>
-              <li><a class="dropdown-item py-2" href="'.e(module_url('server_room_log.php')).'"><i class="bi bi-door-closed-fill me-2 text-warning"></i> Log Ruang Server</a></li>
-              <li><a class="dropdown-item py-2" href="'.e(module_url('scanner.php')).'"><i class="bi bi-qr-code-scan me-2 text-info"></i> Scanner QR</a></li>
+              <li><h6 class="dropdown-header text-uppercase fw-bold" style="font-size:0.65rem; color:#8c57ff; letter-spacing:0.06em;">Akses Cepat</h6></li>
+              <li><a class="dropdown-item py-2" href="'.e(module_url('scanner.php')).'"><i class="bi bi-qr-code-scan me-2 text-info"></i> Scanner QR &amp; Barcode</a></li>
+              <li><a class="dropdown-item py-2" href="'.e(module_url('assets.php')).'"><i class="bi bi-pc-display me-2 text-primary"></i> Data Komputer (PC)</a></li>
+              <li><a class="dropdown-item py-2" href="'.e(module_url('dashboard.php', ['tab' => 'kartu'])).'"><i class="bi bi-credit-card-2-front me-2 text-warning"></i> Kartu Inventaris</a></li>
+              <li><hr class="dropdown-divider my-1"></li>
+              <li><h6 class="dropdown-header text-uppercase fw-bold" style="font-size:0.65rem; color:#8c57ff; letter-spacing:0.06em;">Keamanan &amp; Audit</h6></li>
+              <li><a class="dropdown-item py-2" href="'.e(module_url('server_room_log.php')).'"><i class="bi bi-door-closed-fill me-2" style="color:#8c57ff;"></i> Log Ruang Server (OJK)</a></li>
               '.($isAdminUser ? '<li><a class="dropdown-item py-2" href="'.e(module_url('audit_trail.php')).'"><i class="bi bi-shield-check me-2 text-warning"></i> Log Aktivitas (Audit)</a></li>' : '').'
             ')).'
             <li><button class="dropdown-item py-2 text-primary" type="button" data-bs-toggle="modal" data-bs-target="#modalPanduanAplikasi"><i class="bi bi-question-circle-fill me-2"></i> Bantuan & Panduan</button></li>
@@ -594,12 +623,22 @@ body {
 }
 
 .sidebar-section-title {
-  font-size: 0.6875rem !important;
-  font-weight: 600 !important;
+  display: flex !important;
+  align-items: center !important;
+  font-size: 0.68rem !important;
+  font-weight: 700 !important;
   text-transform: uppercase !important;
-  letter-spacing: 0.8px !important;
-  color: #8A8D93 !important;
+  letter-spacing: 0.08em !important;
+  color: rgba(231, 227, 252, 0.42) !important;
   padding: 14px 18px 6px !important;
+  white-space: nowrap !important;
+}
+.sidebar-section-title::after {
+  content: "" !important;
+  flex-grow: 1 !important;
+  height: 1px !important;
+  background: rgba(231, 227, 252, 0.12) !important;
+  margin-left: 10px !important;
 }
 
 .sidebar-link {
