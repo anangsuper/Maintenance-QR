@@ -86,11 +86,12 @@ body {
 }
 
 .memo-top-logo {
-  max-width: 195px;
+  width: 105px;
+  max-width: 105px;
   height: auto;
   object-fit: contain;
   display: block;
-  margin-bottom: 22px;
+  margin-bottom: 12px;
 }
 
 .memo-title-block {
@@ -216,6 +217,11 @@ body {
     min-height: 297mm !important;
     height: 297mm !important;
     border-radius: 0 !important;
+  }
+  .memo-top-logo {
+    width: 28mm !important;
+    max-width: 28mm !important;
+    margin-bottom: 3mm !important;
   }
   .memo-page-footer {
     position: fixed !important;
