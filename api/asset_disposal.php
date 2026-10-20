@@ -295,12 +295,12 @@ $body = '
             <p class="text-white text-opacity-95 mb-3" style="font-size: 0.95rem; font-weight: 500;">
               Pencatatan resmi Berita Acara pemusnahan fisik (BA-Afkir) inventaris kantor &amp; perangkat IT yang aus atau rusak permanen guna penarikan resmi dari Buku Register Aset Bank.
             </p>
-            <div class="d-flex flex-wrap align-items-center gap-2.5">
-              <button type="button" class="btn-hero-pill text-decoration-none d-inline-flex align-items-center gap-2" style="color: #BE123C !important;" data-bs-toggle="modal" data-bs-target="#modalDisposal" onclick="resetDisposalModal()">
-                <i class="bi bi-plus-circle-fill"></i> Catat Berita Acara Afkir
+            <div class="d-flex flex-wrap align-items-center gap-3 mt-3 pt-1" style="gap: 12px !important;">
+              <button type="button" class="btn btn-light rounded-pill px-4 py-2 fw-bold d-inline-flex align-items-center gap-2 shadow-sm text-decoration-none" style="color: #BE123C !important; font-size: 0.88rem;" data-bs-toggle="modal" data-bs-target="#modalDisposal" onclick="resetDisposalModal()">
+                <i class="bi bi-plus-circle-fill" style="color: #BE123C;"></i> <span>Catat Berita Acara Afkir</span>
               </button>
-              <a href="'.e(module_url('asset_disposal.php', array_merge($_GET, ['export' => 'excel']))).'" class="btn btn-outline-light rounded-pill px-3.5 py-2 fw-semibold d-inline-flex align-items-center gap-2 shadow-xs" style="font-size: 0.88rem;">
-                <i class="bi bi-file-earmark-spreadsheet-fill"></i> Export Excel
+              <a href="'.e(module_url('asset_disposal.php', array_merge($_GET, ['export' => 'excel']))).'" class="btn btn-outline-light rounded-pill px-3.5 py-2 fw-semibold d-inline-flex align-items-center gap-2 shadow-xs" style="font-size: 0.88rem; background: rgba(255, 255, 255, 0.12); border-color: rgba(255, 255, 255, 0.28);">
+                <i class="bi bi-file-earmark-spreadsheet-fill"></i> <span>Export Excel</span>
               </a>
             </div>
           </div>

@@ -5,13 +5,15 @@ function render_page(string $title, string $content, string $extraHead = '', str
     $role = current_user_role();
     $userName = current_user_name();
     $userInitial = strtoupper(substr($userName, 0, 1) ?: 'U');
+    $cleanTitle = html_entity_decode($title, ENT_QUOTES, 'UTF-8');
     $userPhoto = function_exists('current_user_photo') ? current_user_photo() : null;
+    $anonymousSvg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none" style="width: 100%; height: 100%; display: block;"><circle cx="32" cy="32" r="31" fill="#28243D" stroke="#8C57FF" stroke-width="2"/><path d="M32 10C21 10 14 17 14 27c0 10 6 21 18 27 12-6 18-17 18-27 0-10-7-17-18-17z" fill="#FFFFFF"/><ellipse cx="20" cy="34" rx="3.5" ry="2" fill="#FFB4BA" opacity="0.7"/><ellipse cx="44" cy="34" rx="3.5" ry="2" fill="#FFB4BA" opacity="0.7"/><path d="M19 21c3-2.5 7-2.5 10-0.5" stroke="#1E1B2E" stroke-width="2" stroke-linecap="round"/><path d="M45 21c-3-2.5-7-2.5-10-0.5" stroke="#1E1B2E" stroke-width="2" stroke-linecap="round"/><ellipse cx="24" cy="26" rx="3.5" ry="2.2" fill="#1E1B2E"/><ellipse cx="40" cy="26" rx="3.5" ry="2.2" fill="#1E1B2E"/><path d="M22 36c4-1 8 2 10 3 2-1 6-4 10-3 3 1 4 3 4 3-3-1-6 0-8 2-2 2-4 2-6 0-2-2-5-3-8-2-1 0-2-3-2-3z" fill="#1E1B2E"/><path d="M30 44h4l-2 8z" fill="#1E1B2E"/><path d="M25 41c2.5 2 11.5 2 14 0" stroke="#8C57FF" stroke-width="1.8" stroke-linecap="round"/></svg>';
     if ($userPhoto && (str_starts_with($userPhoto, 'data:image') || str_starts_with($userPhoto, 'http') || str_starts_with($userPhoto, '/'))) {
-        $avatarHtml = '<img src="'.e($userPhoto).'" alt="'.e($userName).'" class="sidebar-user-avatar-img rounded-circle object-fit-cover shadow-xs" style="width: 36px; height: 36px; min-width: 36px; border: 2px solid rgba(140, 87, 255, 0.45); display: inline-block;">';
+        $avatarHtml = '<img src="'.e($userPhoto).'" alt="'.e($userName).'" class="sidebar-user-avatar-img rounded-circle object-fit-cover shadow-xs" style="width: 38px; height: 38px; min-width: 38px; border: 2px solid rgba(140, 87, 255, 0.45); display: inline-block;">';
         $topbarAvatarHtml = '<img src="'.e($userPhoto).'" alt="'.e($userName).'" class="topbar-user-avatar-img rounded-circle object-fit-cover" style="width: 32px; height: 32px; min-width: 32px; border: 1.5px solid rgba(140, 87, 255, 0.45); display: inline-block;">';
     } else {
-        $avatarHtml = ''.$avatarHtml.'';
-        $topbarAvatarHtml = ''.$topbarAvatarHtml.'';
+        $avatarHtml = '<div class="sidebar-user-avatar d-flex align-items-center justify-content-center overflow-hidden shadow-xs" style="width: 38px; height: 38px; min-width: 38px; border-radius: 50%; padding: 0; background: #28243D;" title="Anonymous User">'.$anonymousSvg.'</div>';
+        $topbarAvatarHtml = '<span class="topbar-user-avatar d-inline-flex align-items-center justify-content-center overflow-hidden" style="width: 32px; height: 32px; min-width: 32px; border-radius: 50%; padding: 0; background: #28243D;" title="Anonymous User">'.$anonymousSvg.'</span>';
     }
     $isAdmin = is_admin();
     $isLoggedIn = is_logged_in();
@@ -180,7 +182,7 @@ function render_page(string $title, string $content, string $extraHead = '', str
         <div class="topbar-context d-none d-sm-flex align-items-center gap-2">
           <span class="tech-label">'.$sectionContext.'</span>
           <span class="text-muted opacity-50">/</span>
-          <span class="topbar-page-title text-truncate">'.e($title).'</span>
+          <span class="topbar-page-title text-truncate">'.e($cleanTitle).'</span>
         </div>
       </div>
 
@@ -439,6 +441,146 @@ body {
   .app-main-viewport {
     margin-left: 260px !important;
     width: calc(100% - 260px) !important;
+  }
+}
+
+/* ============================================================
+   RESPONSIVE LAYOUT ENGINE FOR ALL LAPTOP RESOLUTIONS
+   Supports: 1280x720, 1280x800, 1366x768, 1440x900, 1536x864, 1920x1080
+   ============================================================ */
+@media (min-width: 992px) and (max-width: 1399.98px) {
+  .app-sidebar {
+    width: 235px !important;
+    min-width: 235px !important;
+  }
+  .app-main-viewport {
+    margin-left: 235px !important;
+    width: calc(100% - 235px) !important;
+  }
+  .sidebar-link {
+    margin: 2px 8px !important;
+    padding: 8px 10px !important;
+    font-size: 0.84rem !important;
+    gap: 9px !important;
+  }
+  .sidebar-section-title {
+    padding: 8px 12px 3px !important;
+    font-size: 0.63rem !important;
+  }
+  .sidebar-brand {
+    padding: 14px 14px 12px !important;
+  }
+  .sidebar-footer {
+    padding: 10px 12px !important;
+  }
+}
+
+.topbar-context {
+  max-width: clamp(160px, 22vw, 360px) !important;
+  min-width: 0 !important;
+  flex-shrink: 1 !important;
+}
+.topbar-page-title {
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+  display: inline-block !important;
+  max-width: 100% !important;
+}
+
+@media (max-width: 1240px) {
+  .topbar-search-btn {
+    padding: 6px 10px !important;
+  }
+  .topbar-search-btn .topbar-kbd {
+    display: none !important;
+  }
+  .topbar-status-badge .status-text {
+    display: none !important;
+  }
+  .topbar-status-badge {
+    padding: 6px 8px !important;
+  }
+}
+
+.container-fluid {
+  padding-left: clamp(12px, 1.8vw, 24px) !important;
+  padding-right: clamp(12px, 1.8vw, 24px) !important;
+}
+
+.card-hero-neo,
+.hero-gradient-header {
+  padding: clamp(18px, 2.2vw, 28px) !important;
+  border-radius: clamp(12px, 1.4vw, 18px) !important;
+  margin-bottom: clamp(16px, 1.8vw, 24px) !important;
+}
+
+.card-hero-neo h2,
+.card-hero-neo .display-6,
+.hero-gradient-header h1,
+.hero-gradient-header h2 {
+  font-size: clamp(1.20rem, 2vw, 1.85rem) !important;
+  line-height: 1.25 !important;
+}
+
+.card-hero-neo p,
+.hero-gradient-header p {
+  font-size: clamp(0.80rem, 1vw, 0.94rem) !important;
+  line-height: 1.4 !important;
+  margin-bottom: clamp(10px, 1.2vw, 16px) !important;
+}
+
+.card-hero-neo .btn,
+.card-hero-neo .btn-hero-pill,
+.hero-gradient-header .btn {
+  font-size: clamp(0.78rem, 0.95vw, 0.88rem) !important;
+  padding: clamp(6px, 0.8vw, 9px) clamp(12px, 1.2vw, 18px) !important;
+  margin: 3px 6px 3px 0 !important;
+  white-space: nowrap !important;
+}
+
+.card-hero-neo .d-flex.flex-wrap,
+.hero-btn-group,
+.gap-2\.5 {
+  gap: 12px !important;
+}
+
+@media (max-width: 1199.98px) {
+  .card-hero-neo .d-none.d-lg-flex,
+  .card-hero-neo .d-none.d-md-flex,
+  .hero-gradient-header .hero-sun-container,
+  .hero-gradient-header .hero-pin-marker {
+    display: none !important;
+  }
+}
+
+.card-metric-modern,
+.card-metric {
+  padding: clamp(14px, 1.6vw, 22px) !important;
+}
+.card-metric-modern .metric-number-bold,
+.card-metric .metric-value {
+  font-size: clamp(1.30rem, 1.8vw, 1.85rem) !important;
+}
+.card-metric-modern .metric-title-muted,
+.card-metric .metric-label {
+  font-size: clamp(0.72rem, 0.85vw, 0.82rem) !important;
+}
+
+.table-responsive {
+  overflow-x: auto !important;
+  -webkit-overflow-scrolling: touch !important;
+  scrollbar-width: thin !important;
+}
+
+@media (max-height: 820px) {
+  .modal-dialog {
+    margin-top: 0.75rem !important;
+    margin-bottom: 0.75rem !important;
+  }
+  .modal-body {
+    max-height: calc(100vh - 150px) !important;
+    overflow-y: auto !important;
   }
 }
 
@@ -2161,6 +2303,16 @@ label.form-label,
   background: radial-gradient(circle, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0) 70%);
   border-radius: 50%;
   pointer-events: none;
+}
+
+.card-hero-neo .btn,
+.card-hero-neo .btn-hero-pill {
+  margin: 4px 6px 4px 0 !important;
+}
+
+.gap-2\.5,
+.card-hero-neo .d-flex {
+  gap: 12px !important;
 }
 
 .card-hero-neo .btn-hero-pill {

@@ -1414,7 +1414,7 @@ foreach ($cabangStats as $bCode => $b) {
 
 $isHrdOnly = (is_hrd() && !is_admin());
 $headerTechLabel = $isHrdOnly ? 'PENGELOLAAN SARANA PRASARANA' : 'BANKING IT OPERATIONS COMMAND';
-$headerTitle = $isHrdOnly ? 'Dashboard Inventaris &amp; Sarana Prasarana' : 'Dashboard IT Operations';
+$headerTitle = $isHrdOnly ? 'Dashboard Inventaris & Sarana Prasarana' : 'Dashboard IT Operations';
 $headerDesc = $isHrdOnly ? 'Pusat pengelolaan inventaris fisik, memo pengajuan pengadaan, dan cetak kartu label BPR Mitratama Arthabuana.' : 'Pusat komando pemeliharaan aset IT, audit berkala, dan manajemen cetak label kartu inventaris.';
 
 // Period Filter Toolbar (Clean Minimalist White Card, High Contrast, Sangat Jelas & Rapi)

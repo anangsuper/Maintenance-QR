@@ -545,40 +545,27 @@ $body = '
           <p class="text-white text-opacity-95 mb-3" style="font-size: 0.95rem; font-weight: 500;">
             Format resmi permohonan pengadaan sarana/fasilitas baru dari kantor cabang kepada Direksi dan Bagian Umum &amp; SDM terintegrasi otomatis ke Kartu Inventaris.
           </p>
-          <div class="d-flex flex-wrap align-items-center gap-2.5">
-            <button type="button" class="btn-hero-pill text-decoration-none d-inline-flex align-items-center gap-2" style="color: #EA580C !important;" onclick="openCreateMemoModal()">
-              <i class="bi bi-plus-circle-fill"></i> Buat Memo Baru
+          <div class="d-flex flex-wrap align-items-center gap-3 mt-3 pt-1" style="gap: 12px !important;">
+            <button type="button" class="btn btn-light rounded-pill px-4 py-2 fw-bold d-inline-flex align-items-center gap-2 shadow-sm text-decoration-none" style="color: #EA580C !important; font-size: 0.88rem;" onclick="openCreateMemoModal()">
+              <i class="bi bi-plus-circle-fill" style="color: #EA580C;"></i> <span>Buat Memo Baru</span>
             </button>
-            <a href="'.e(module_url('memo_pengajuan.php', array_filter(['export' => 'csv', 'cabang' => $filterCabang, 'q' => $q]))).'" class="btn btn-outline-light rounded-pill px-3.5 py-2 fw-semibold d-inline-flex align-items-center gap-2 shadow-xs" style="font-size: 0.88rem;">
-              <i class="bi bi-file-earmark-excel-fill"></i> Ekspor CSV
+            <a href="'.e(module_url('memo_pengajuan.php', array_filter(['export' => 'csv', 'cabang' => $filterCabang, 'q' => $q]))).'" class="btn btn-outline-light rounded-pill px-3.5 py-2 fw-semibold d-inline-flex align-items-center gap-2 shadow-xs" style="font-size: 0.88rem; background: rgba(255, 255, 255, 0.12); border-color: rgba(255, 255, 255, 0.28);">
+              <i class="bi bi-file-earmark-excel-fill"></i> <span>Ekspor CSV</span>
             </a>
-            <a href="'.e(module_url('dashboard.php', ['tab' => 'kartu'])).'" class="btn btn-outline-light rounded-pill px-3 py-2 fw-semibold d-inline-flex align-items-center gap-2 shadow-xs" style="font-size: 0.88rem;">
-              <i class="bi bi-credit-card-2-front"></i> Data Kartu
+            <a href="'.e(module_url('dashboard.php', ['tab' => 'kartu'])).'" class="btn btn-outline-light rounded-pill px-3.5 py-2 fw-semibold d-inline-flex align-items-center gap-2 shadow-xs" style="font-size: 0.88rem; background: rgba(255, 255, 255, 0.12); border-color: rgba(255, 255, 255, 0.28);">
+              <i class="bi bi-credit-card-2-front"></i> <span>Data Kartu</span>
             </a>
           </div>
         </div>
 
-        <!-- Decorative Right Badges (Document Pin & Procurement Sun) -->
-        <div class="d-none d-md-flex align-items-center gap-4">
-          <div class="hero-pin-marker" title="Pengadaan Resmi Terverifikasi">
-            <svg width="44" height="52" viewBox="0 0 44 52" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M22 0C9.85 0 0 9.85 0 22C0 36 22 52 22 52C22 52 44 36 44 22C44 9.85 34.15 0 22 0Z" fill="#C2410C"/>
-              <circle cx="22" cy="22" r="9" fill="#FFFFFF"/>
-            </svg>
-          </div>
-
-          <div class="hero-sun-container" title="SOP 5 Tahap Pengadaan">
-            <svg width="68" height="68" viewBox="0 0 68 68" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <circle cx="34" cy="34" r="17" fill="#FDE047"/>
-              <rect x="31" y="2" width="6" height="10" rx="3" fill="#FDE047"/>
-              <rect x="31" y="56" width="6" height="10" rx="3" fill="#FDE047"/>
-              <rect x="2" y="31" width="10" height="6" rx="3" fill="#FDE047"/>
-              <rect x="56" y="31" width="10" height="6" rx="3" fill="#FDE047"/>
-              <rect x="11.5" y="11.5" width="6" height="10" rx="3" transform="rotate(-45 11.5 11.5)" fill="#FDE047"/>
-              <rect x="49.5" y="49.5" width="6" height="10" rx="3" transform="rotate(-45 49.5 49.5)" fill="#FDE047"/>
-              <rect x="49.5" y="11.5" width="10" height="6" rx="3" transform="rotate(-45 49.5 11.5)" fill="#FDE047"/>
-              <rect x="11.5" y="49.5" width="10" height="6" rx="3" transform="rotate(-45 11.5 49.5)" fill="#FDE047"/>
-            </svg>
+        <!-- Decorative Right Badges (Materio Glassmorphic Card Badge) -->
+        <div class="d-none d-lg-flex align-items-center gap-3 pe-2">
+          <div class="p-3 text-center rounded-4 shadow-sm" style="background: rgba(255, 255, 255, 0.14); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.22); min-width: 140px;">
+            <div class="d-inline-flex align-items-center justify-content-center mb-2" style="width: 50px; height: 50px; border-radius: 12px; background: rgba(255, 255, 255, 0.22); box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
+              <i class="bi bi-file-earmark-text-fill text-white fs-3"></i>
+            </div>
+            <div class="text-white fw-bold small mb-0 lh-sm">SOP &amp; Memo</div>
+            <div class="text-white text-opacity-75" style="font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.05em;">Pengadaan Bank</div>
           </div>
         </div>
       </div>
