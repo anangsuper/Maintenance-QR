@@ -52,6 +52,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $_POST['foto_barang_file'] = $uploadedFoto;
             }
         }
+        if (!empty($_FILES['memo_disetujui_file']['tmp_name'])) {
+            $uploadedAcc = upload_memo_disetujui('memo_disetujui_file');
+            if ($uploadedAcc) {
+                $_POST['memo_disetujui_file'] = $uploadedAcc;
+            }
+        }
         $result = save_memo_realisasi($_POST);
         if (!empty($result['success'])) {
             $_SESSION['flash'] = 'Bukti realisasi pembelian & nota toko berhasil disimpan.';
@@ -356,6 +362,12 @@ if (empty($allMemos)) {
         if (!empty($m['foto_barang_file'])) {
             $pUrl = memo_file_url($m['foto_barang_file']);
             $lampiranBadge .= '<a href="'.e($pUrl).'" target="_blank" class="badge bg-primary-subtle text-primary border border-primary-subtle shadow-xs text-decoration-none d-inline-flex align-items-center gap-1 px-2 py-1" style="font-size:0.68rem;" title="Foto Fisik Barang yang Tiba"><i class="bi bi-camera"></i> Foto Fisik</a> ';
+        }
+        if (!empty($m['memo_disetujui_file'])) {
+            $accUrl = memo_file_url($m['memo_disetujui_file']);
+            $isPdf = str_ends_with(strtolower($m['memo_disetujui_file']), '.pdf');
+            $accIcon = $isPdf ? 'bi-file-earmark-pdf-fill text-info' : 'bi-file-earmark-check-fill text-info';
+            $lampiranBadge .= '<a href="'.e($accUrl).'" target="_blank" class="badge bg-info-subtle text-info-emphasis border border-info-subtle shadow-xs text-decoration-none d-inline-flex align-items-center gap-1 px-2 py-1" style="font-size:0.68rem;" title="Berkas Scan Memo yang Sudah Disetujui Direksi"><i class="bi '.$accIcon.'"></i> Memo Disetujui ✓</a> ';
         }
         if ($lampiranBadge !== '') {
             $lampiranBadge = '<div class="mt-1.5 d-flex flex-wrap gap-1 align-items-center">' . $lampiranBadge . '</div>';
@@ -870,6 +882,19 @@ $body .= '
           </div>
 
           <div class="col-12">
+            <div class="p-3 rounded-3 bg-light border">
+              <label class="form-label text-uppercase fw-bold text-dark small mb-1" style="font-size:0.75rem;">
+                <i class="bi bi-file-earmark-check me-1 text-info"></i>Upload Scan Lembar Memo yang Sudah Disetujui / Bertanda Tangan (PDF / Gambar)
+              </label>
+              <input type="file" name="memo_disetujui_file" id="realisasiMemoDisetujuiFile" class="form-control" accept=".pdf,image/*">
+              <div class="form-text text-muted small mt-1" style="font-size:0.72rem;">
+                Format: <strong>PDF, JPG, PNG</strong>. Lembar dokumen cetak memo internal yang telah ditandatangani pejabat cabang &amp; disetujui Direksi.
+              </div>
+              <div id="realisasiMemoDisetujuiCurrent" class="mt-2 d-none"></div>
+            </div>
+          </div>
+
+          <div class="col-12">
             <label class="form-label text-uppercase fw-bold text-muted small" style="font-size:0.72rem;">Catatan Realisasi Pembelian (Nama Toko / Keterangan Toko)</label>
             <textarea name="catatan_realisasi" id="realisasiCatatan" rows="2" class="form-control" placeholder="Contoh: Dibeli di Toko Surya Elektronik Batulicin, garansi 1 tahun resmi distributor."></textarea>
           </div>
@@ -1137,6 +1162,22 @@ function openRealisasiModal(data) {
     } else {
       curFoto.classList.add("d-none");
       curFoto.innerHTML = "";
+    }
+  }
+
+  const memoDisetujuiInput = document.getElementById("realisasiMemoDisetujuiFile");
+  if (memoDisetujuiInput) memoDisetujuiInput.value = "";
+  const curMemoDisetujui = document.getElementById("realisasiMemoDisetujuiCurrent");
+  if (curMemoDisetujui) {
+    if (data.memo_disetujui_file) {
+      const isPdf = data.memo_disetujui_file.toLowerCase().endsWith(".pdf");
+      const icon = isPdf ? "bi-file-earmark-pdf-fill text-danger" : "bi-file-earmark-check-fill text-info";
+      const docUrl = (data.memo_disetujui_file.startsWith("http") || data.memo_disetujui_file.startsWith("/")) ? data.memo_disetujui_file : ("" + data.memo_disetujui_file);
+      curMemoDisetujui.classList.remove("d-none");
+      curMemoDisetujui.innerHTML = '<div class="d-flex align-items-center justify-content-between flex-wrap gap-2"><div><i class="bi ' + icon + ' me-1"></i> <a href="' + docUrl + '" target="_blank" class="fw-bold text-decoration-none">Lihat Berkas Memo Disetujui</a></div><small class="text-muted">Pilih file baru jika ingin mengganti</small></div>';
+    } else {
+      curMemoDisetujui.classList.add("d-none");
+      curMemoDisetujui.innerHTML = "";
     }
   }
 

@@ -50,6 +50,7 @@ function ensure_memo_schema(): void {
             $chk('lampiran_file', "VARCHAR(255) DEFAULT '' AFTER lampiran");
             $chk('bukti_beli_file', "VARCHAR(255) DEFAULT '' AFTER lampiran_file");
             $chk('foto_barang_file', "VARCHAR(255) DEFAULT '' AFTER bukti_beli_file");
+            $chk('memo_disetujui_file', "VARCHAR(255) DEFAULT '' AFTER foto_barang_file");
             $chk('biaya_realisasi', "DECIMAL(15,2) DEFAULT NULL AFTER total_estimasi");
             $chk('tanggal_beli', "DATE DEFAULT NULL AFTER tanggal_memo");
             $chk('catatan_realisasi', "TEXT DEFAULT NULL AFTER isi_memo");
@@ -126,6 +127,10 @@ function upload_memo_bukti(string $fileKey = 'bukti_beli_file'): ?string {
 
 function upload_memo_foto_barang(string $fileKey = 'foto_barang_file'): ?string {
     return upload_memo_file($fileKey, 'barang');
+}
+
+function upload_memo_disetujui(string $fileKey = 'memo_disetujui_file'): ?string {
+    return upload_memo_file($fileKey, 'memo_acc');
 }
 
 /**
@@ -408,6 +413,11 @@ function save_memo_realisasi(array $data): array {
         $fotoBarangFile = (string)($old['foto_barang_file'] ?? '');
     }
 
+    $memoDisetujuiFile = trim((string)($data['memo_disetujui_file'] ?? ''));
+    if ($memoDisetujuiFile === '') {
+        $memoDisetujuiFile = (string)($old['memo_disetujui_file'] ?? '');
+    }
+
     $status = !empty($data['status']) ? trim((string)$data['status']) : 'Selesai Dibeli';
 
     try {
@@ -417,6 +427,7 @@ function save_memo_realisasi(array $data): array {
                 biaya_realisasi = ?,
                 bukti_beli_file = ?,
                 foto_barang_file = ?,
+                memo_disetujui_file = ?,
                 catatan_realisasi = ?,
                 status = ?
             WHERE id = ?
@@ -426,6 +437,7 @@ function save_memo_realisasi(array $data): array {
             $biayaRealisasi,
             $buktiBeliFile,
             $fotoBarangFile,
+            $memoDisetujuiFile,
             $catatanRealisasi,
             $status,
             $id
@@ -435,7 +447,8 @@ function save_memo_realisasi(array $data): array {
             'success' => true,
             'id' => $id,
             'bukti_beli_file' => $buktiBeliFile,
-            'foto_barang_file' => $fotoBarangFile
+            'foto_barang_file' => $fotoBarangFile,
+            'memo_disetujui_file' => $memoDisetujuiFile
         ];
     } catch (Throwable $e) {
         return ['success' => false, 'error' => 'Database error: ' . $e->getMessage()];
