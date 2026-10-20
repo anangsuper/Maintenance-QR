@@ -48,6 +48,7 @@ function ensure_disposal_schema(): void {
                 INDEX (tanggal_disposal)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
         ");
+        $pdo->exec("ALTER TABLE asset_disposals ADD COLUMN IF NOT EXISTS metode_pemusnahan VARCHAR(100) DEFAULT 'Dihancurkan / Dibuang Fisik';");
     } catch (Throwable $e) {
         error_log('ensure_disposal_schema error: ' . $e->getMessage());
     }
