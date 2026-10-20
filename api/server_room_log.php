@@ -265,6 +265,7 @@ unset($_SESSION['flash_err']);
 $actionGet = trim((string)($_GET['action'] ?? ''));
 $autoOpenCheckin = in_array($actionGet, ['scan', 'checkin_scan', 'checkin_quick'], true);
 $autoOpenCheckout = in_array($actionGet, ['checkout_scan', 'checkout_quick'], true);
+$autoViewLogs = in_array($actionGet, ['view_logs', 'logs', 'history'], true);
 $targetLogId = (int)($_GET['log_id'] ?? 0);
 
 // Cari occupant yang cocok jika autoOpenCheckout
@@ -512,8 +513,33 @@ ob_start();
     </div>
   </div>
 
+  <!-- Alert Jika Akses via QR Cek Log HP -->
+  <?php if ($autoViewLogs): ?>
+    <div class="alert border-0 rounded-4 shadow-sm mb-4 p-3 d-flex flex-wrap align-items-center justify-content-between gap-3" style="background: linear-gradient(72.47deg, rgba(140, 87, 255, 0.14) 0%, rgba(104, 39, 235, 0.08) 100%); border-left: 5px solid #8C57FF !important;">
+      <div class="d-flex align-items-center gap-3">
+        <div class="rounded-circle d-flex align-items-center justify-content-center text-white shadow-xs" style="width: 44px; height: 44px; min-width: 44px; background: #8C57FF;">
+          <i class="bi bi-clock-history fs-5"></i>
+        </div>
+        <div>
+          <div class="fw-bold text-dark fs-6">Log Keluar &amp; Masuk Ruang Server (Scan QR HP)</div>
+          <div class="small text-muted">Menampilkan seluruh riwayat akses fisik data center sesuai standar kepatuhan OJK POJK No. 75.</div>
+        </div>
+      </div>
+      <div class="d-flex align-items-center gap-2">
+        <button type="button" class="btn btn-sm btn-primary rounded-pill px-3 py-1.5 fw-bold shadow-xs" data-bs-toggle="modal" data-bs-target="#modalCheckin">
+          <i class="bi bi-door-open-fill me-1"></i> Check-In Masuk
+        </button>
+        <?php if (!empty($liveOccupants)): ?>
+          <button type="button" class="btn btn-sm btn-danger rounded-pill px-3 py-1.5 fw-bold shadow-xs" onclick="handleCheckoutScanAction()">
+            <i class="bi bi-box-arrow-right me-1"></i> Check-Out Keluar
+          </button>
+        <?php endif; ?>
+      </div>
+    </div>
+  <?php endif; ?>
+
   <!-- TABLE & FILTER TOOLBAR -->
-  <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
+  <div class="card border-0 shadow-sm rounded-4 overflow-hidden" id="riwayatLogTable">
     <div class="card-header bg-transparent py-3 px-3 px-md-4 border-bottom d-flex align-items-center justify-content-between flex-wrap gap-2">
       <div>
         <h5 class="fw-bold mb-0 text-dark d-flex align-items-center gap-2" style="font-size: 1.05rem;">
@@ -554,8 +580,94 @@ ob_start();
       </form>
     </div>
 
-    <!-- Table Body -->
-    <div class="table-responsive">
+    <!-- MOBILE (HP) CARD VIEW: Tampil otomatis pada layar HP -->
+    <div class="d-md-none p-3">
+      <?php if (empty($logs)): ?>
+        <div class="text-center py-5 text-muted">
+          <i class="bi bi-door-closed display-6 d-block mb-2 text-secondary opacity-50"></i>
+          <div class="fw-semibold">Belum ada riwayat kunjungan ruang server tercatat.</div>
+          <div class="small text-muted mt-1">Gunakan tombol <strong>Check-In Masuk</strong> untuk mencatat kunjungan baru.</div>
+        </div>
+      <?php else: ?>
+        <div class="d-flex flex-column gap-3">
+          <?php foreach ($logs as $l): 
+            $isInside = ($l['status'] === 'in_room');
+            $enterTs = strtotime($l['entry_time']);
+            $exitTs = !empty($l['exit_time']) ? strtotime($l['exit_time']) : null;
+          ?>
+            <div class="card border rounded-3 p-3 shadow-xs" style="background: <?= $isInside ? '#F0FDF4' : '#FFFFFF' ?>; border-color: <?= $isInside ? '#86EFAC' : 'rgba(76, 78, 100, 0.12)' ?> !important;">
+              <div class="d-flex align-items-center justify-content-between mb-2">
+                <span class="badge font-monospace <?= $isInside ? 'bg-success' : 'bg-primary' ?> text-white px-2 py-1" style="font-size: 0.72rem;">
+                  <?= e($l['log_code']) ?>
+                </span>
+                <?php if ($isInside): ?>
+                  <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-2.5 py-1 fw-bold" style="font-size: 0.72rem;">
+                    <span class="door-badge-pulse me-1"></span>Masih di Dalam
+                  </span>
+                <?php else: ?>
+                  <span class="badge bg-secondary-subtle text-secondary rounded-pill px-2 py-1" style="font-size: 0.72rem;">
+                    <i class="bi bi-check2-circle me-1"></i>Selesai (<?= (int)$l['duration_minutes'] ?> mnt)
+                  </span>
+                <?php endif; ?>
+              </div>
+
+              <div class="d-flex align-items-center gap-2 mb-2">
+                <?php if (!empty($l['photo_in'])): ?>
+                  <img src="<?= e($l['photo_in']) ?>" class="rounded-circle object-fit-cover border" style="width: 36px; height: 36px; min-width: 36px; cursor: pointer;" onclick="previewPhoto(<?= htmlspecialchars(json_encode($l['photo_in']), ENT_QUOTES, 'UTF-8') ?>, <?= htmlspecialchars(json_encode($l['visitor_name']), ENT_QUOTES, 'UTF-8') ?>)">
+                <?php else: ?>
+                  <div class="rounded-circle bg-light d-flex align-items-center justify-content-center text-secondary border" style="width: 36px; height: 36px; min-width: 36px;">
+                    <i class="bi bi-person-fill fs-5"></i>
+                  </div>
+                <?php endif; ?>
+                <div class="overflow-hidden">
+                  <div class="fw-bold text-dark fs-6 text-truncate"><?= e($l['visitor_name']) ?></div>
+                  <div class="small text-muted text-truncate" style="font-size: 0.75rem;"><?= e($l['institution'] ?: 'PT BPR Mitratama') ?> &bull; <span class="badge bg-light text-dark border"><?= e($l['visitor_type']) ?></span></div>
+                </div>
+              </div>
+
+              <div class="small text-muted mb-2" style="font-size: 0.78rem;">
+                <div class="mb-1"><i class="bi bi-tools text-primary me-1.5"></i><strong>Keperluan:</strong> <?= e($l['purpose']) ?></div>
+                <?php if (!empty($l['purpose_detail'])): ?>
+                  <div class="text-secondary ps-3 mb-1" style="font-size: 0.74rem;">&ldquo;<?= e($l['purpose_detail']) ?>&rdquo;</div>
+                <?php endif; ?>
+                <div><i class="bi bi-person-badge text-info me-1.5"></i><strong>Pendamping IT:</strong> <?= e($l['accompanied_by'] ?: 'Mandiri (IT Ops)') ?></div>
+              </div>
+
+              <div class="p-2 rounded-2 bg-light d-flex align-items-center justify-content-between small text-muted mb-2" style="font-size: 0.74rem;">
+                <div>
+                  <i class="bi bi-box-arrow-in-right text-success me-1"></i>Masuk: <strong><?= date('d/m H:i', $enterTs) ?></strong> (<?= e($l['temperature_entry'] ? $l['temperature_entry'].'°C' : '-') ?>)
+                </div>
+                <div>
+                  <i class="bi bi-box-arrow-right text-danger me-1"></i>Keluar: <strong><?= $exitTs ? date('H:i', $exitTs) : '-' ?></strong> (<?= e($l['temperature_exit'] ? $l['temperature_exit'].'°C' : '-') ?>)
+                </div>
+              </div>
+
+              <?php if (!empty($l['notes'])): ?>
+                <div class="small text-muted bg-white p-2 rounded border mb-2" style="font-size: 0.74rem;">
+                  <i class="bi bi-chat-left-text me-1 text-secondary"></i><strong>Catatan:</strong> <?= e($l['notes']) ?>
+                </div>
+              <?php endif; ?>
+
+              <div class="d-flex align-items-center gap-2 pt-1">
+                <?php if ($isInside): ?>
+                  <button type="button" class="btn btn-sm btn-danger rounded-pill flex-grow-1 fw-bold shadow-xs py-1.5" onclick="openCheckoutModal(<?= (int)$l['id'] ?>, <?= htmlspecialchars(json_encode($l['visitor_name']), ENT_QUOTES, 'UTF-8') ?>, <?= htmlspecialchars(json_encode($l['log_code']), ENT_QUOTES, 'UTF-8') ?>)">
+                    <i class="bi bi-box-arrow-right me-1"></i> Check-Out Keluar Sekarang
+                  </button>
+                <?php endif; ?>
+                <?php if (!empty($l['photo_in'])): ?>
+                  <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-3 py-1.5" onclick="previewPhoto(<?= htmlspecialchars(json_encode($l['photo_in']), ENT_QUOTES, 'UTF-8') ?>, <?= htmlspecialchars(json_encode($l['visitor_name']), ENT_QUOTES, 'UTF-8') ?>)">
+                    <i class="bi bi-image me-1"></i> Foto
+                  </button>
+                <?php endif; ?>
+              </div>
+            </div>
+          <?php endforeach; ?>
+        </div>
+      <?php endif; ?>
+    </div>
+
+    <!-- DESKTOP/LAPTOP TABLE VIEW: Tampil pada layar lebar -->
+    <div class="table-responsive d-none d-md-block">
       <table class="table table-hover align-middle mb-0">
         <thead>
           <tr>
@@ -1211,6 +1323,12 @@ function processManualBarcode(overrideText) {
 }
 
 document.addEventListener("DOMContentLoaded", function() {
+  <?php if ($autoViewLogs): ?>
+    setTimeout(function() {
+      const el = document.getElementById("riwayatLogTable");
+      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 350);
+  <?php endif; ?>
   <?php if ($autoOpenCheckout): ?>
     setTimeout(function() {
       <?php if (!empty($autoCheckoutMatch)): ?>
