@@ -86,15 +86,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit;
     }
 
-    if ($action === 'delete') {
-        if (!is_admin() && !is_hrd()) {
-            $_SESSION['flash_error'] = 'Hanya Administrator atau Kabag SDM & Umum yang berhak membatalkan arsip Berita Acara.';
+    if ($action === 'delete' || $action === 'restore') {
+        if (!function_exists('is_admin_or_hrd') || !is_admin_or_hrd()) {
+            $_SESSION['flash_error'] = 'Hanya Administrator atau Bagian SDM & Umum yang berhak membatalkan penghapusan aset.';
         } else {
             $delId = (int)($_POST['id'] ?? 0);
-            if (delete_asset_disposal($delId, true)) {
-                $_SESSION['flash'] = 'Berita Acara berhasil dibatalkan dan status fisik aset telah dipulihkan ke status Aktif.';
+            $disp = get_disposal_by_id($delId);
+            if (!$disp) {
+                $_SESSION['flash_error'] = 'Data Berita Acara penghapusan tidak ditemukan.';
             } else {
-                $_SESSION['flash_error'] = 'Gagal memproses pembatalan Berita Acara.';
+                $check = is_disposal_restorable($disp);
+                if (!$check['can_restore']) {
+                    $_SESSION['flash_error'] = 'Penghapusan aset "' . e($disp['nama_aset']) . '" tidak dapat dibatalkan karena telah melewati batas masa tenggang 7 hari (status penghapusan sudah permanen).';
+                } else {
+                    if (delete_asset_disposal($delId, true, true)) {
+                        $_SESSION['flash'] = '✓ Berhasil dibatalkan! Aset "' . e($disp['nama_aset']) . '" (' . e($disp['kode_aset']) . ') telah dipulihkan kembali ke register inventaris aktif.';
+                    } else {
+                        $_SESSION['flash_error'] = 'Gagal memproses pengembalian aset ke inventaris.';
+                    }
+                }
             }
         }
         header('Location: ' . module_url('asset_disposal.php'));
@@ -229,6 +239,10 @@ $body = '
         <p class="text-white text-opacity-75 mb-0" style="max-width: 750px; font-size: 0.92rem;">
           Pencatatan resmi Berita Acara pemusnahan fisik (afkir) inventaris perabot kantor maupun perangkat IT yang mengalami kerusakan permanen / aus guna penarikan resmi dari Buku Register Aset Aktif Bank Mitra.
         </p>
+        <div class="mt-2 text-warning small d-flex align-items-center gap-1.5" style="font-size: 0.82rem;">
+          <i class="bi bi-shield-check text-warning fs-6"></i>
+          <span><strong>Masa Tenggang 7 Hari:</strong> Penghapusan aset yang keliru atau tidak jadi dihapuskan dapat dibatalkan dan dikembalikan ke inventaris aktif maksimal sebelum 7 hari sejak tanggal pencatatan.</span>
+        </div>
       </div>
       <div class="d-flex flex-wrap align-items-center gap-2 flex-shrink-0">
         <button type="button" class="btn btn-danger fw-bold shadow-sm d-flex align-items-center gap-1.5 px-3 py-2" data-bs-toggle="modal" data-bs-target="#modalDisposal" onclick="resetDisposalModal()">
@@ -380,12 +394,27 @@ $body .= '
                     ? '<span class="badge bg-warning text-dark border border-warning" style="font-size: 0.65rem;"><i class="bi bi-credit-card-2-front"></i> Kartu SDM</span>' 
                     : '<span class="badge bg-info text-dark border border-info" style="font-size: 0.65rem;"><i class="bi bi-pc-display"></i> Perangkat IT</span>';
 
+                $restoreInfo = is_disposal_restorable($row);
+                $canRestore = $restoreInfo['can_restore'];
+                $daysRemaining = $restoreInfo['days_remaining'];
+
                 $body .= '
                 <tr>
                   <td class="ps-3">
                     <div class="font-monospace fw-bold text-dark text-break" style="font-size: 0.82rem;">'.e($row['nomor_ba']).'</div>
                     <div class="text-muted small mt-0.5"><i class="bi bi-calendar3 me-1"></i>'.date('d/m/Y', strtotime($row['tanggal_disposal'])).'</div>
                     <div class="text-secondary small mt-0.5" style="font-size: 0.72rem;">Petugas: '.e($row['petugas_nama']).'</div>
+                    '.($canRestore ? '
+                    <div class="mt-1">
+                      <span class="badge bg-success-subtle text-success border border-success-subtle py-0.5 px-2 fw-semibold" style="font-size: 0.68rem;" title="Aset masih dapat dikembalikan ke inventaris dalam 7 hari">
+                        <i class="bi bi-arrow-counterclockwise me-1"></i>Bisa Batal (Sisa '.$daysRemaining.' hari)
+                      </span>
+                    </div>' : '
+                    <div class="mt-1">
+                      <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle py-0.5 px-2" style="font-size: 0.68rem;" title="Masa tenggang 7 hari telah lewat, status permanen">
+                        <i class="bi bi-lock-fill me-1"></i>Permanen (&gt;7 hari)
+                      </span>
+                    </div>').'
                   </td>
                   <td>
                     <div class="d-flex align-items-center gap-1.5 mb-1">
@@ -430,15 +459,19 @@ $body .= '
                       $body .= '
                     </div>
                   </td>
-                  <td class="text-end pe-3">
-                    <div class="btn-group btn-group-sm">
+                  <td class="text-end pe-3 text-nowrap">
+                    <div class="btn-group btn-group-sm shadow-xs">
                       <a href="'.e(module_url('print_bast_disposal.php', ['id' => $row['id']])).'" target="_blank" class="btn btn-primary fw-semibold" title="Cetak Berita Acara">
                         <i class="bi bi-printer-fill me-1"></i> Cetak
                       </a>
+                      '.($canRestore ? '
+                      <button type="button" class="btn btn-outline-success fw-semibold" onclick="openRestoreModal('.$row['id'].', \''.e(addslashes($row['nama_aset'])).'\', '.$daysRemaining.')" title="Batalkan penghapusan &amp; kembalikan ke inventaris aktif (Masa tenggang sisa '.$daysRemaining.' hari)">
+                        <i class="bi bi-arrow-counterclockwise me-1"></i> Batal Hapus
+                      </button>' : '').'
                       <button type="button" class="btn btn-outline-secondary dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown" aria-expanded="false">
                         <span class="visually-hidden">Toggle Dropdown</span>
                       </button>
-                      <ul class="dropdown-menu dropdown-menu-end shadow-sm">
+                      <ul class="dropdown-menu dropdown-menu-end shadow-sm" style="font-size: 0.85rem;">
                         <li>
                           <a class="dropdown-item" href="'.e(module_url('print_bast_disposal.php', ['id' => $row['id']])).'" target="_blank">
                             <i class="bi bi-file-earmark-pdf me-2 text-primary"></i> Cetak Dokumen BA-Afkir
@@ -451,13 +484,13 @@ $body .= '
                         </li>
                         <li><hr class="dropdown-divider"></li>
                         <li>
-                          <form method="POST" action="'.e(module_url('asset_disposal.php')).'" onsubmit="return confirm(\'PERINGATAN: Membatalkan Berita Acara ini akan mengembalikan status fisik aset menjadi AKTIF di sistem register.\\n\\nApakah Anda yakin ingin membatalkan dokumen ini?\')">
-                            <input type="hidden" name="action" value="delete">
-                            <input type="hidden" name="id" value="'.$row['id'].'">
-                            <button type="submit" class="dropdown-item text-danger">
-                              <i class="bi bi-arrow-counterclockwise me-2"></i> Batalkan &amp; Pulihkan Aset
-                            </button>
-                          </form>
+                          '.($canRestore ? '
+                          <button type="button" class="dropdown-item text-success fw-semibold" onclick="openRestoreModal('.$row['id'].', \''.e(addslashes($row['nama_aset'])).'\', '.$daysRemaining.')">
+                            <i class="bi bi-arrow-counterclockwise me-2 text-success"></i> Kembalikan ke Inventaris (Sisa '.$daysRemaining.' Hari)
+                          </button>' : '
+                          <span class="dropdown-item text-muted disabled" style="cursor: not-allowed;" title="Masa tenggang 7 hari telah berakhir">
+                            <i class="bi bi-lock-fill me-2 text-secondary"></i> Permanen (Lewat 7 Hari)
+                          </span>').'
                         </li>
                       </ul>
                     </div>
@@ -699,6 +732,44 @@ $body .= '
 <!-- ========================================== -->
 <!-- MODAL UPLOAD SCAN BERITA ACARA DISETUJUI -->
 <!-- ========================================== -->
+
+<!-- Modal Konfirmasi Pengembalian Aset (Restore Sebelum 7 Hari) -->
+<div class="modal fade" id="modalRestoreDisposal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <form method="POST" action="'.e(module_url('asset_disposal.php')).'" class="modal-content border-0 shadow-lg rounded-4">
+      <input type="hidden" name="action" value="restore">
+      <input type="hidden" name="id" id="restoreDisposalId" value="0">
+      <div class="modal-header bg-success text-white border-0 py-3">
+        <h6 class="modal-title fw-bold d-flex align-items-center gap-2">
+          <i class="bi bi-arrow-counterclockwise fs-5"></i> Batalkan Penghapusan &amp; Kembalikan Aset
+        </h6>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body p-4 text-center">
+        <div class="mb-3">
+          <div class="d-inline-flex p-3 rounded-circle bg-success bg-opacity-10 text-success">
+            <i class="bi bi-arrow-counterclockwise fs-1"></i>
+          </div>
+        </div>
+        <h5 class="fw-bold text-dark mb-2">Kembalikan ke Inventaris Aktif?</h5>
+        <p class="text-secondary small mb-3">
+          Aset <strong id="restoreDisposalNama" class="text-dark">-</strong> akan dipulihkan status fisiknya menjadi <strong>Aktif</strong> di buku register inventaris Bank Mitra, dan Berita Acara afkir ini akan dibatalkan.
+        </p>
+        <div class="alert alert-success border-0 py-2 px-3 small d-inline-flex align-items-center gap-2 mb-0">
+          <i class="bi bi-clock-history text-success"></i>
+          <span>Masa tenggang tersisa: <strong id="restoreDisposalSisaHari">7</strong> hari</span>
+        </div>
+      </div>
+      <div class="modal-footer bg-light border-0 py-2.5 px-4 justify-content-end gap-2">
+        <button type="button" class="btn btn-sm btn-outline-secondary px-3" data-bs-dismiss="modal">Tutup</button>
+        <button type="submit" class="btn btn-sm btn-success fw-bold px-3">
+          <i class="bi bi-check-circle me-1"></i> Ya, Kembalikan ke Inventaris
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
 <div class="modal fade" id="modalUploadAcc" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered">
     <div class="modal-content border-0 shadow">
@@ -1052,6 +1123,14 @@ function resetDisposalModal() {
   document.getElementById("dispNomorBa").value = "";
   document.getElementById("dispAlasan").value = "";
   document.getElementById("cardAsetDetail").classList.add("d-none");
+}
+
+function openRestoreModal(id, nama, sisaHari) {
+  document.getElementById("restoreDisposalId").value = id;
+  document.getElementById("restoreDisposalNama").textContent = nama;
+  document.getElementById("restoreDisposalSisaHari").textContent = sisaHari;
+  var modal = new bootstrap.Modal(document.getElementById("modalRestoreDisposal"));
+  modal.show();
 }
 
 function openUploadAccModal(id, noBa) {

@@ -412,30 +412,65 @@ function save_asset_disposal(array $data, array $files = []): array {
 }
 
 /**
- * Batalkan / Hapus Data Berita Acara Penghapusan & Pulihkan Status Aset ke Aktif
+ * Cek apakah Berita Acara penghapusan masih dalam masa tenggang 7 hari
  */
-function delete_asset_disposal(int $id, bool $restoreAssetStatus = true): bool {
+function is_disposal_restorable(array|int $disposal): array {
+    if (is_int($disposal)) {
+        $disposal = get_disposal_by_id($disposal);
+    }
+    if (!$disposal) {
+        return ['can_restore' => false, 'days_remaining' => 0, 'days_passed' => 999, 'seconds_left' => 0];
+    }
+    $createdTs = strtotime($disposal['created_at'] ?? ($disposal['tanggal_disposal'] . ' 00:00:00'));
+    $diffSeconds = time() - $createdTs;
+    $daysPassed = floor($diffSeconds / 86400);
+    $daysRemaining = max(0, 7 - $daysPassed);
+    $canRestore = ($diffSeconds <= 7 * 86400);
+
+    return [
+        'can_restore' => $canRestore,
+        'days_remaining' => (int)$daysRemaining,
+        'days_passed' => (int)$daysPassed,
+        'seconds_left' => max(0, (7 * 86400) - $diffSeconds)
+    ];
+}
+
+/**
+ * Batalkan / Hapus Data Berita Acara Penghapusan & Pulihkan Status Aset ke Aktif
+ * Parameter $enforceGracePeriod: memastikan pembatalan hanya diizinkan maksimal 7 hari
+ */
+function delete_asset_disposal(int $id, bool $restoreAssetStatus = true, bool $enforceGracePeriod = true): bool {
     ensure_disposal_schema();
     $item = get_disposal_by_id($id);
     if (!$item) return false;
 
+    if ($enforceGracePeriod) {
+        $check = is_disposal_restorable($item);
+        if (!$check['can_restore']) {
+            return false;
+        }
+    }
+
     try {
         $pdo = db();
         if ($restoreAssetStatus && $item['asset_id'] > 0) {
+            $userLabel = function_exists('current_user_name') ? (current_user_name() ?: 'SDM & Umum') : 'SDM & Umum';
+            $restoreKet = sprintf("\n[BATAL DIHAPUSKAN: Dikembalikan ke Register Inventaris Aktif pada %s oleh %s]", date('d/m/Y H:i'), $userLabel);
             if ($item['asset_type'] === 'inventaris') {
-                $pdo->prepare("UPDATE inventaris_kartu SET status_inventaris = '1 : Aktif' WHERE id = ?")->execute([$item['asset_id']]);
+                $pdo->prepare("UPDATE inventaris_kartu SET status_inventaris = '1 : Aktif', keterangan = CONCAT(COALESCE(keterangan, ''), ?) WHERE id = ?")->execute([$restoreKet, $item['asset_id']]);
             } else {
-                $pdo->prepare("UPDATE assets SET status = 'Aktif' WHERE id = ?")->execute([$item['asset_id']]);
+                $pdo->prepare("UPDATE assets SET status = 'Aktif', keterangan = CONCAT(COALESCE(keterangan, ''), ?) WHERE id = ?")->execute([$restoreKet, $item['asset_id']]);
             }
         }
         $st = $pdo->prepare("DELETE FROM asset_disposals WHERE id = ?");
         $st->execute([$id]);
 
         if (function_exists('log_system_audit')) {
-            log_system_audit('ASSET_DISPOSAL_DELETE', "Pembatalan Berita Acara BA-Afkir No. {$item['nomor_ba']} untuk {$item['nama_aset']}");
+            log_system_audit('ASSET_DISPOSAL_RESTORE', "Pembatalan Berita Acara BA-Afkir No. {$item['nomor_ba']} dan pengembalian aset {$item['nama_aset']} ke inventaris aktif");
         }
         return true;
     } catch (Throwable $e) {
+        error_log('delete_asset_disposal error: ' . $e->getMessage());
         return false;
     }
 }
