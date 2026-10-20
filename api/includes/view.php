@@ -14,7 +14,7 @@ function render_page(string $title, string $content, string $extraHead = '', str
         $sectionContext = 'MONITORING';
     } elseif (in_array($currentPage, ['cabang_admin.php', 'divisi_admin.php', 'users_admin.php', 'user_biometric_enroll.php'], true)) {
         $sectionContext = 'MANAGEMENT';
-    } elseif (in_array($currentPage, ['qr_admin.php', 'system_design.php'], true)) {
+    } elseif (in_array($currentPage, ['qr_admin.php'], true)) {
         $sectionContext = 'SYSTEM';
     }
 
@@ -51,9 +51,7 @@ function render_page(string $title, string $content, string $extraHead = '', str
         if ($isHrdUser) {
             $systemItems[] = ['title' => 'QR Aset Label', 'url' => module_url('qr_admin.php'), 'icon' => 'bi-qr-code', 'active' => ($currentPage === 'qr_admin.php')];
         }
-        if ($isAdminUser) {
-            $systemItems[] = ['title' => 'Dokumen Desain', 'url' => module_url('system_design.php'), 'icon' => 'bi-file-earmark-pdf', 'active' => ($currentPage === 'system_design.php')];
-        }
+
     }
 
     // Susun menu operasi (khusus SDM hanya kartu inventaris & galeri foto)
@@ -291,7 +289,9 @@ function render_page(string $title, string $content, string $extraHead = '', str
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" media="print" onload="this.media='all'">
+<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"></noscript>
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
 <style>
@@ -330,14 +330,15 @@ table tbody tr {
   --status-danger-bg: #FEF2F2;
   --status-info: #0284C7;
   --status-info-bg: #F0F9FF;
-  --radius-xs: 5px;
-  --radius-sm: 8px;
-  --radius-md: 10px;
-  --radius-lg: 14px;
-  --radius-xl: 18px;
+  --radius-xs: 6px;
+  --radius-sm: 12px;
+  --radius-md: 16px;
+  --radius-lg: 20px;
+  --radius-xl: 26px;
+  --radius-pill: 9999px;
   --shadow-subtle: 0 1px 3px rgba(15, 23, 42, 0.05), 0 1px 2px rgba(15, 23, 42, 0.03);
-  --shadow-card: 0 4px 14px -2px rgba(15, 23, 42, 0.06), 0 2px 4px -1px rgba(15, 23, 42, 0.03);
-  --shadow-hover: 0 12px 28px -4px rgba(15, 23, 42, 0.1), 0 4px 8px -2px rgba(15, 23, 42, 0.04);
+  --shadow-card: 0 4px 20px -2px rgba(15, 23, 42, 0.05), 0 2px 6px -1px rgba(15, 23, 42, 0.02);
+  --shadow-hover: 0 16px 36px -4px rgba(15, 23, 42, 0.08), 0 6px 12px -2px rgba(15, 23, 42, 0.03);
 }
 
 /* PWA Offline & Network Banner Styles */
@@ -394,7 +395,7 @@ body, input, button, select, textarea, optgroup,
 .card, .modal, .dropdown-menu, .dropdown-item, .popover,
 .tooltip, .nav, .nav-link, .table, .badge, .badge-chip,
 .alert, .toast, .breadcrumb, .pagination, .page-link {
-  font-family: "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
+  font-family: "Plus Jakarta Sans", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
@@ -411,7 +412,7 @@ body {
 
 h1, h2, h3, h4, h5, h6,
 .h1, .h2, .h3, .h4, .h5, .h6 {
-  font-family: "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
+  font-family: "Plus Jakarta Sans", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
   color: var(--text-primary);
   font-weight: 700;
   letter-spacing: -0.025em;
@@ -1318,6 +1319,244 @@ label.form-label,
   .card { border-radius: 14px !important; }
   .btn { font-size: 0.82rem; }
 }
+
+/* NEO-MODERN SAAS AESTHETIC (VIBRANT GRADIENT HERO, ROUNDED CARDS, SOFT GLOWS) */
+.btn-pill {
+  border-radius: 9999px !important;
+  padding: 8px 22px !important;
+  font-weight: 700 !important;
+}
+
+.browser-mockup-frame {
+  background: #FFFFFF;
+  border: 1px solid #E2E8F0;
+  border-radius: 24px;
+  box-shadow: 0 16px 40px -8px rgba(15, 23, 42, 0.08), 0 4px 12px -2px rgba(15, 23, 42, 0.03);
+  overflow: hidden;
+  position: relative;
+}
+
+.browser-mockup-topbar {
+  background: #FFFFFF;
+  border-bottom: 1px solid #F1F5F9;
+  padding: 12px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.browser-traffic-dots {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.browser-traffic-dot {
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+}
+.browser-dot-amber { background-color: #FBBF24; }
+.browser-dot-cyan  { background-color: #22D3EE; }
+.browser-dot-green { background-color: #10B981; }
+
+.browser-address-pill {
+  background: #F1F5F9;
+  border: 1px solid #E2E8F0;
+  border-radius: 9999px;
+  padding: 5px 18px;
+  font-size: 0.82rem;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  color: #475569;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  max-width: 480px;
+  width: 100%;
+  justify-content: center;
+}
+
+.floating-toast-pill {
+  background: #FFFFFF;
+  border: 1px solid #E2E8F0;
+  border-radius: 16px;
+  box-shadow: 0 10px 25px -4px rgba(15, 23, 42, 0.08);
+  padding: 10px 16px;
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  position: relative;
+  z-index: 5;
+}
+
+.floating-toast-icon-amber {
+  width: 36px;
+  height: 36px;
+  background: linear-gradient(135deg, #F59E0B 0%, #D97706 100%);
+  color: #FFFFFF;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
+  box-shadow: 0 4px 10px rgba(245, 158, 11, 0.25);
+  flex-shrink: 0;
+}
+
+/* Gradient Hero Banner */
+.card-hero-neo {
+  background: linear-gradient(135deg, #059669 0%, #06B6D4 48%, #2563EB 100%) !important;
+  color: #FFFFFF !important;
+  border: none !important;
+  border-radius: 24px !important;
+  padding: 28px 32px !important;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 12px 32px -4px rgba(6, 182, 212, 0.28) !important;
+}
+
+.card-hero-neo::before {
+  content: '';
+  position: absolute;
+  top: -60%;
+  right: -25%;
+  width: 450px;
+  height: 450px;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0) 70%);
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+.card-hero-neo .btn-hero-pill {
+  background: #FFFFFF !important;
+  color: #2563EB !important;
+  border: none !important;
+  border-radius: 9999px !important;
+  padding: 10px 24px !important;
+  font-weight: 700 !important;
+  font-size: 0.88rem !important;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.1) !important;
+  transition: all 0.2s ease !important;
+}
+
+.card-hero-neo .btn-hero-pill:hover {
+  transform: translateY(-2px) !important;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.16) !important;
+  background: #F8FAFC !important;
+}
+
+.hero-sun-icon {
+  width: 60px;
+  height: 60px;
+  background: radial-gradient(circle, #FDE047 0%, #F59E0B 100%);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 0 30px rgba(253, 224, 71, 0.5);
+  position: relative;
+}
+
+/* Modern Metric Cards */
+.card-metric-modern {
+  background: #FFFFFF !important;
+  border: 1px solid #E2E8F0 !important;
+  border-radius: 20px !important;
+  padding: 22px 24px !important;
+  box-shadow: 0 4px 16px -2px rgba(15, 23, 42, 0.04) !important;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.card-metric-modern:hover {
+  transform: translateY(-3px) !important;
+  box-shadow: 0 12px 28px -4px rgba(15, 23, 42, 0.08) !important;
+}
+
+.metric-title-muted {
+  font-size: 0.82rem;
+  color: #64748B;
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+
+.metric-number-bold {
+  font-size: 2rem;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  color: #0F172A;
+  line-height: 1.1;
+}
+
+/* Mint Green Operational Status Card */
+.card-status-mint {
+  background: #ECFDF5 !important;
+  border: 1px solid #A7F3D0 !important;
+  border-radius: 20px !important;
+  padding: 22px 24px !important;
+  box-shadow: 0 4px 16px -2px rgba(16, 185, 129, 0.08) !important;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.card-status-mint .status-heading {
+  color: #065F46;
+  font-weight: 800;
+  font-size: 1.15rem;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.card-status-mint .status-subtext {
+  color: #047857;
+  font-size: 0.88rem;
+  font-weight: 500;
+  margin-top: 6px;
+}
+
+/* Floating Trend Chip */
+.badge-floating-trend {
+  background: #FFFFFF;
+  border: 1px solid #E2E8F0;
+  border-radius: 16px;
+  padding: 10px 16px;
+  box-shadow: 0 10px 25px -4px rgba(15, 23, 42, 0.09);
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.badge-floating-trend .trend-icon-box {
+  width: 36px;
+  height: 36px;
+  background: #047857;
+  color: #FFFFFF;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
+  flex-shrink: 0;
+  box-shadow: 0 4px 10px rgba(4, 120, 87, 0.25);
+}
+
+.pulse-dot-green {
+  width: 9px;
+  height: 9px;
+  background-color: #10B981;
+  border-radius: 50%;
+  display: inline-block;
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.25);
+  animation: pulseDot 2s infinite ease-in-out;
+}
+
 </style>
 
 '.$extraHead.'

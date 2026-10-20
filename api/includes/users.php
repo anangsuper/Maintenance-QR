@@ -1,5 +1,10 @@
 <?php
 function get_user_list(bool $forceRefresh = false): array {
+    static $staticUserCache = null;
+    if (!$forceRefresh && $staticUserCache !== null) {
+        return $staticUserCache;
+    }
+
     if (is_google_cloud_mode()) {
         $client = google_sheets_v4_client();
         if (!$client) return [];
@@ -65,19 +70,23 @@ function get_user_list(bool $forceRefresh = false): array {
         }
 
         if (empty($users)) {
-            return [
+            $staticUserCache = [
                 ['id' => 1, 'nama' => 'Administrator', 'nama_panggilan' => 'Admin', 'username' => 'admin', 'role' => 'admin', 'telepon' => '081234567890', 'status' => 'Aktif'],
                 ['id' => 2, 'nama' => 'Teknisi IT', 'nama_panggilan' => 'Teknisi', 'username' => 'teknisi', 'role' => 'teknisi', 'telepon' => '081234567891', 'status' => 'Aktif'],
             ];
+            return $staticUserCache;
         }
 
+        $staticUserCache = $users;
         return $users;
     }
 
     // MySQL Mode
+    static $mysqlSchemaChecked = false;
     try {
-        db()->exec("
-            CREATE TABLE IF NOT EXISTS users (
+        if (!$mysqlSchemaChecked) {
+            db()->exec("
+                CREATE TABLE IF NOT EXISTS users (
                 id INT AUTO_INCREMENT PRIMARY KEY,
                 nama VARCHAR(150) NOT NULL,
                 nama_panggilan VARCHAR(50) NULL,
@@ -104,8 +113,10 @@ function get_user_list(bool $forceRefresh = false): array {
             $cols = table_columns('users');
         } elseif (!in_array('face_status', $cols, true)) {
             try { db()->exec("ALTER TABLE users ADD COLUMN face_status VARCHAR(50) DEFAULT 'none'"); } catch (Throwable $e) {}
-            $cols = table_columns('users');
         }
+            $mysqlSchemaChecked = true;
+        }
+        $cols = table_columns('users');
         $nameCol = in_array('nama', $cols, true) ? 'nama' : (in_array('name', $cols, true) ? 'name' : 'username');
         $nickCol = in_array('nama_panggilan', $cols, true) ? 'nama_panggilan' : "'' AS nama_panggilan";
         $telCol = in_array('telepon', $cols, true) ? 'telepon' : "'-' AS telepon";
@@ -125,7 +136,7 @@ function get_user_list(bool $forceRefresh = false): array {
             ");
             $users = db()->query("SELECT id, `{$nameCol}` AS nama, {$nickCol}, username, role, {$telCol}, {$stCol}, {$faceDescCol}, {$facePhotoCol}, {$faceStatCol}, created_at FROM users ORDER BY id ASC")->fetchAll();
         }
-        return array_map(function($u) {
+        $result = array_map(function($u) {
             $fDesc = (string)($u['face_descriptor'] ?? '');
             $fStatus = (string)($u['face_status'] ?? '');
             if ($fStatus === '' && $fDesc !== '') {
@@ -137,6 +148,8 @@ function get_user_list(bool $forceRefresh = false): array {
             $u['nama_panggilan'] = trim((string)($u['nama_panggilan'] ?? '')) ?: get_nickname((string)($u['nama'] ?? ''));
             return $u;
         }, $users);
+        $staticUserCache = $result;
+        return $result;
     } catch (Throwable $e) {
         return [
             ['id' => 1, 'nama' => 'Administrator', 'nama_panggilan' => 'Admin', 'username' => 'admin', 'role' => 'admin', 'telepon' => '-', 'status' => 'Aktif', 'face_descriptor' => '', 'face_photo' => '', 'face_status' => 'none'],
@@ -486,9 +499,11 @@ function create_new_user(array $data): array {
     }
 
     // MySQL Mode
+    static $mysqlSchemaChecked = false;
     try {
-        db()->exec("
-            CREATE TABLE IF NOT EXISTS users (
+        if (!$mysqlSchemaChecked) {
+            db()->exec("
+                CREATE TABLE IF NOT EXISTS users (
                 id INT AUTO_INCREMENT PRIMARY KEY,
                 nama VARCHAR(150) NOT NULL,
                 nama_panggilan VARCHAR(50) NULL,

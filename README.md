@@ -305,7 +305,7 @@ Maintenance-QR/
 │   ├── login.php / logout.php            # Halaman login modern, lockout timer, & WebAuthn
 │   ├── webauthn_handler.php              # REST API endpoint autentikasi Passkeys / WebAuthn
 │   ├── user_biometric_enroll.php         # Halaman perekaman biometrik wajah teknisi (HP)
-│   ├── unlock.php / unlock_login.php     # Modul pembukaan akun/IP yang terkunci (Emergency Unlock)
+│   ├── unlock.php                        # Modul pembukaan sesi akun terkunci (Session Unlock)
 │   │
 │   ├── dashboard.php                     # Dashboard analitik utama, tab temuan & kartu inventaris
 │   ├── realtime_dashboard.js             # Client WebSocket realtime & visual live updater
@@ -338,7 +338,6 @@ Maintenance-QR/
 │   ├── print_inventory_card.php          # Cetak Kartu Inventaris ATM CR80 (Word, PDF, 8/10/12 A4)
 │   ├── print_report.php                  # Cetak laporan resmi bulanan formal (PDF ready)
 │   ├── export_csv.php                    # Ekspor seluruh data aset ke spreadsheet CSV
-│   ├── system_design.php                 # Dokumen teknis arsitektur sistem, DFD, & Mermaid ERD
 │   │
 │   ├── sw.js                             # PWA Service Worker (caching & background sync)
 │   ├── pwa-offline-queue.js              # PWA IndexedDB queue & auto-sync engine
