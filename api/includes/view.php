@@ -1417,7 +1417,7 @@ label.form-label,
 }
 
 .card-hero-neo::before {
-  content: '';
+  content: "";
   position: absolute;
   top: -60%;
   right: -25%;
