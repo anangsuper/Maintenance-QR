@@ -312,12 +312,380 @@ function render_page(string $title, string $content, string $extraHead = '', str
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
-<link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap">
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" media="print" onload="this.media=\'all\'">
 <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"></noscript>
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
 <style>
+
+/* =============================================================
+   MATERIO - MUI NEXTJS ADMIN TEMPLATE DESIGN SYSTEM (THEMESELECTION)
+   ============================================================= */
+:root {
+  /* Materio Brand Palette */
+  --materio-primary: #8C57FF;
+  --materio-primary-hover: #7E4EE6;
+  --materio-primary-active: #7135FF;
+  --materio-primary-rgb: 140, 87, 255;
+  --materio-primary-gradient: linear-gradient(72.47deg, #8C57FF 22.16%, #BA9BFB 76.47%);
+  --materio-primary-subtle: rgba(140, 87, 255, 0.12);
+  --materio-primary-border: rgba(140, 87, 255, 0.28);
+  --materio-secondary: #8A8D93;
+  --materio-secondary-subtle: rgba(138, 141, 147, 0.12);
+  --materio-success: #56CA00;
+  --materio-success-subtle: rgba(86, 202, 0, 0.12);
+  --materio-warning: #FFB400;
+  --materio-warning-subtle: rgba(255, 180, 0, 0.12);
+  --materio-error: #FF4C51;
+  --materio-error-subtle: rgba(255, 76, 81, 0.12);
+  --materio-info: #16B1FF;
+  --materio-info-subtle: rgba(22, 177, 255, 0.12);
+
+  /* Light Theme Surface & Spacing */
+  --bg-app: #F4F5FA;
+  --surface-card: #FFFFFF;
+  --border-subtle: rgba(76, 78, 100, 0.12);
+  --border-strong: rgba(76, 78, 100, 0.22);
+  --text-primary: #2E263D;
+  --text-secondary: #6D6777;
+  --text-muted: #8A8D93;
+  --shadow-subtle: 0 1px 3px rgba(76, 78, 100, 0.05);
+  --shadow-card: 0px 2px 10px 0px rgba(76, 78, 100, 0.08);
+  --shadow-hover: 0px 6px 18px 0px rgba(76, 78, 100, 0.14);
+  --radius-xs: 6px;
+  --radius-sm: 8px;
+  --radius-md: 10px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+  --radius-pill: 9999px;
+
+  /* Backward Compatibility Mappings */
+  --blue-accent: var(--materio-primary);
+  --blue-corporate: var(--materio-primary);
+  --navy-deep: #2E263D;
+  --navy-primary: #38304D;
+  --status-success: var(--materio-success);
+  --status-warning: var(--materio-warning);
+  --status-danger: var(--materio-error);
+  --status-info: var(--materio-info);
+}
+
+/* Materio Dark Mode Palette */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]):not([data-bs-theme="light"]) {
+    --bg-app: #232333;
+    --surface-card: #2B2C40;
+    --border-subtle: rgba(255, 255, 255, 0.12);
+    --border-strong: rgba(255, 255, 255, 0.22);
+    --text-primary: #E7E3FC;
+    --text-secondary: #B2B0C4;
+    --text-muted: #7E7B92;
+    --shadow-card: 0px 4px 16px 0px rgba(0, 0, 0, 0.4);
+    --shadow-hover: 0px 8px 24px 0px rgba(0, 0, 0, 0.5);
+  }
+}
+
+[data-theme="dark"], [data-bs-theme="dark"] {
+  --bg-app: #232333;
+  --surface-card: #2B2C40;
+  --border-subtle: rgba(255, 255, 255, 0.12);
+  --border-strong: rgba(255, 255, 255, 0.22);
+  --text-primary: #E7E3FC;
+  --text-secondary: #B2B0C4;
+  --text-muted: #7E7B92;
+  --shadow-card: 0px 4px 16px 0px rgba(0, 0, 0, 0.4);
+  --shadow-hover: 0px 8px 24px 0px rgba(0, 0, 0, 0.5);
+}
+
+/* Typography across all components */
+body, input, button, select, textarea, optgroup,
+.btn, .form-control, .form-select, .form-check-label,
+.card, .modal, .dropdown-menu, .dropdown-item, .popover,
+.tooltip, .nav, .nav-link, .table, .badge, .badge-chip,
+.alert, .toast, .breadcrumb, .pagination, .page-link {
+  font-family: "Public Sans", "Plus Jakarta Sans", system-ui, -apple-system, sans-serif !important;
+}
+
+body {
+  background-color: var(--bg-app) !important;
+  background-image: none !important;
+  color: var(--text-primary) !important;
+}
+
+/* Materio Sleek Vertical Navigation */
+.app-sidebar {
+  width: 260px !important;
+  min-width: 260px !important;
+  background: var(--surface-card) !important;
+  border-right: 1px solid var(--border-subtle) !important;
+  box-shadow: 0 0 15px 0 rgba(76, 78, 100, 0.05) !important;
+}
+
+@media (min-width: 992px) {
+  .app-main-viewport {
+    margin-left: 260px !important;
+    width: calc(100% - 260px) !important;
+  }
+}
+
+.sidebar-brand {
+  padding: 18px 20px 16px !important;
+  border-bottom: 1px solid var(--border-subtle) !important;
+}
+
+.sidebar-section-title {
+  font-size: 0.6875rem !important;
+  font-weight: 500 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.8px !important;
+  color: var(--text-muted) !important;
+  padding: 14px 18px 6px !important;
+}
+
+.sidebar-link {
+  margin: 2px 14px !important;
+  padding: 9px 14px !important;
+  border-radius: 8px !important;
+  font-weight: 500 !important;
+  font-size: 0.90rem !important;
+  color: var(--text-secondary) !important;
+  border-left: none !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 12px !important;
+  transition: all 0.2s ease !important;
+}
+
+.sidebar-link .sidebar-icon {
+  font-size: 1.15rem !important;
+  color: var(--text-muted) !important;
+  transition: color 0.2s ease !important;
+}
+
+.sidebar-link:hover {
+  background: var(--materio-primary-subtle) !important;
+  color: var(--materio-primary) !important;
+  transform: translateX(3px) !important;
+}
+
+.sidebar-link:hover .sidebar-icon {
+  color: var(--materio-primary) !important;
+}
+
+.sidebar-link.active {
+  background: var(--materio-primary-gradient) !important;
+  color: #FFFFFF !important;
+  box-shadow: 0px 2px 6px rgba(140, 87, 255, 0.48) !important;
+  font-weight: 600 !important;
+  border-left: none !important;
+}
+
+.sidebar-link.active .sidebar-icon {
+  color: #FFFFFF !important;
+}
+
+.sidebar-footer {
+  padding: 14px 18px !important;
+  background: var(--surface-card) !important;
+  border-top: 1px solid var(--border-subtle) !important;
+}
+
+.sidebar-user-name {
+  color: var(--text-primary) !important;
+  font-weight: 600 !important;
+}
+
+.sidebar-user-role {
+  color: var(--text-muted) !important;
+}
+
+.sidebar-user-avatar {
+  background: var(--materio-primary) !important;
+  color: #FFFFFF !important;
+  border-radius: 50% !important;
+}
+
+/* Offcanvas Mobile Sidebar */
+.offcanvas.bg-navy-dark {
+  background-color: var(--surface-card) !important;
+  color: var(--text-primary) !important;
+  border-right: 1px solid var(--border-subtle) !important;
+}
+.offcanvas .border-navy-subtle {
+  border-color: var(--border-subtle) !important;
+}
+
+/* Materio AppBar / Topbar */
+.app-topbar, .public-topbar {
+  background-color: rgba(255, 255, 255, 0.88) !important;
+  backdrop-filter: blur(8px) !important;
+  border-bottom: 1px solid var(--border-subtle) !important;
+  box-shadow: 0 2px 10px rgba(76, 78, 100, 0.04) !important;
+}
+[data-bs-theme="dark"] .app-topbar,
+[data-bs-theme="dark"] .public-topbar {
+  background-color: rgba(43, 44, 64, 0.88) !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12) !important;
+}
+
+/* Materio Card Architecture */
+.card {
+  border-radius: 10px !important;
+  border: 1px solid var(--border-subtle) !important;
+  box-shadow: var(--shadow-card) !important;
+  background-color: var(--surface-card) !important;
+  transition: box-shadow 0.2s ease, transform 0.2s ease !important;
+}
+
+.card:hover {
+  box-shadow: var(--shadow-hover) !important;
+}
+
+.card-header {
+  background-color: transparent !important;
+  border-bottom: 1px solid var(--border-subtle) !important;
+  padding: 16px 20px !important;
+  font-weight: 600 !important;
+}
+
+/* Materio Buttons */
+.btn-primary {
+  background-color: var(--materio-primary) !important;
+  border-color: var(--materio-primary) !important;
+  color: #FFFFFF !important;
+  box-shadow: 0px 2px 6px rgba(140, 87, 255, 0.35) !important;
+  border-radius: 8px !important;
+  font-weight: 500 !important;
+  transition: all 0.2s ease !important;
+}
+
+.btn-primary:hover, .btn-primary:focus {
+  background-color: var(--materio-primary-hover) !important;
+  border-color: var(--materio-primary-hover) !important;
+  box-shadow: 0px 4px 10px rgba(140, 87, 255, 0.45) !important;
+  transform: translateY(-1px) !important;
+}
+
+.btn-outline-primary {
+  color: var(--materio-primary) !important;
+  border-color: var(--materio-primary) !important;
+  border-radius: 8px !important;
+  font-weight: 500 !important;
+}
+
+.btn-outline-primary:hover {
+  background-color: var(--materio-primary-subtle) !important;
+  color: var(--materio-primary) !important;
+  border-color: var(--materio-primary) !important;
+}
+
+.btn-success {
+  background-color: var(--materio-success) !important;
+  border-color: var(--materio-success) !important;
+  box-shadow: 0px 2px 6px rgba(86, 202, 0, 0.35) !important;
+  border-radius: 8px !important;
+}
+
+.btn-warning {
+  background-color: var(--materio-warning) !important;
+  border-color: var(--materio-warning) !important;
+  color: #FFFFFF !important;
+  box-shadow: 0px 2px 6px rgba(255, 180, 0, 0.35) !important;
+  border-radius: 8px !important;
+}
+
+.btn-danger {
+  background-color: var(--materio-error) !important;
+  border-color: var(--materio-error) !important;
+  box-shadow: 0px 2px 6px rgba(255, 76, 81, 0.35) !important;
+  border-radius: 8px !important;
+}
+
+/* Materio Chip / Badge Architecture */
+.badge-chip, .badge {
+  border-radius: 16px !important;
+  font-weight: 600 !important;
+  font-size: 0.75rem !important;
+  padding: 4px 10px !important;
+  border: none !important;
+}
+
+.chip-primary, .badge.bg-primary {
+  background-color: var(--materio-primary-subtle) !important;
+  color: var(--materio-primary) !important;
+}
+
+.chip-success, .badge.bg-success {
+  background-color: var(--materio-success-subtle) !important;
+  color: var(--materio-success) !important;
+}
+
+.chip-warning, .badge.bg-warning {
+  background-color: var(--materio-warning-subtle) !important;
+  color: var(--materio-warning) !important;
+}
+
+.chip-danger, .badge.bg-danger {
+  background-color: var(--materio-error-subtle) !important;
+  color: var(--materio-error) !important;
+}
+
+.chip-info, .badge.bg-info {
+  background-color: var(--materio-info-subtle) !important;
+  color: var(--materio-info) !important;
+}
+
+.chip-secondary, .badge.bg-secondary {
+  background-color: var(--materio-secondary-subtle) !important;
+  color: var(--materio-secondary) !important;
+}
+
+/* Materio Tables */
+.table thead th {
+  background-color: #F9FAFC !important;
+  color: var(--text-secondary) !important;
+  font-size: 0.75rem !important;
+  letter-spacing: 0.05em !important;
+  text-transform: uppercase !important;
+  font-weight: 600 !important;
+  border-bottom: 1px solid var(--border-subtle) !important;
+  padding: 12px 16px !important;
+}
+
+[data-bs-theme="dark"] .table thead th {
+  background-color: #31324B !important;
+  color: #B2B0C4 !important;
+}
+
+.table tbody td {
+  padding: 12px 16px !important;
+  vertical-align: middle !important;
+  border-bottom: 1px solid var(--border-subtle) !important;
+}
+
+.table tbody tr:hover td {
+  background-color: rgba(140, 87, 255, 0.04) !important;
+}
+
+/* Materio Inputs */
+.form-control, .form-select {
+  border-radius: 8px !important;
+  border: 1px solid var(--border-strong) !important;
+  font-size: 0.92rem !important;
+  transition: all 0.2s ease !important;
+}
+
+.form-control:focus, .form-select:focus {
+  border-color: var(--materio-primary) !important;
+  box-shadow: 0 0 0 3px var(--materio-primary-subtle) !important;
+}
+
+/* Materio Hero Cards & Accent Gradients */
+.card-hero-neo {
+  border-radius: 12px !important;
+  box-shadow: 0 6px 20px rgba(140, 87, 255, 0.25) !important;
+}
 /* High-Performance Rendering & Hardware Acceleration */
 *, *::before, *::after {
   -webkit-tap-highlight-color: transparent;

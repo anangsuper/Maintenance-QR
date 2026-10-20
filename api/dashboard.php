@@ -1455,78 +1455,191 @@ $body = '
 '.($flashError ? '<div class="alert alert-danger alert-dismissible fade show border-0 shadow-sm mb-3"><i class="bi bi-exclamation-triangle-fill me-2 text-danger"></i>'.e($flashError).'<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>' : '');
 
 if (is_hrd() && !is_admin()) {
-    // BANNER PINTASAN CEPAT RAMAH PENGGUNA KHUSUS SDM & UMUM
+    // BROWSER WINDOW NEO CONTAINER (EMERALD / TEAL THEME UNTUK SDM & SARPRAS)
     $body .= '
-    <div class="hero-gradient-header hero-gradient-green">
-      <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
-        <div>
-          <div class="d-flex align-items-center gap-2 mb-1.5 flex-wrap">
-            <span class="badge bg-white text-success px-2.5 py-1 font-monospace fw-bold shadow-xs" style="font-size: 0.70rem; letter-spacing: 0.04em; border-radius: 6px;">PORTAL SARPRAS</span>
-            <span class="tech-label-green">SARANA PRASARANA &amp; PENGELOLAAN FASILITAS</span>
-            <span class="text-white text-opacity-75 small">| Selamat bertugas, <strong>'.e($_SESSION['nama'] ?? 'Petugas').'</strong></span>
-          </div>
-          <h2 class="h3 fw-bold mb-1 d-flex align-items-center gap-2">
-            <i class="bi bi-building-gear"></i> Pusat Inventaris &amp; Pengadaan Barang
-          </h2>
-          <p>Kelola inventaris perabot kantor, memo pengajuan pengadaan, dan cetak kartu label fisik CR80/PVC.</p>
+    <div class="card p-0 shadow-sm border-0 browser-window-card mb-4" style="border-radius: 24px;">
+      <!-- Browser Window Topbar with Traffic Lights -->
+      <div class="card-header bg-white py-3 px-4 border-bottom d-flex align-items-center justify-content-between flex-wrap gap-2" style="border-top-left-radius: 24px; border-top-right-radius: 24px;">
+        <div class="browser-topbar-col-left d-flex align-items-center gap-2">
+          <span class="browser-traffic-dot bg-danger"></span>
+          <span class="browser-traffic-dot bg-warning"></span>
+          <span class="browser-traffic-dot bg-success"></span>
         </div>
-        <div class="header-actions d-flex flex-wrap align-items-center gap-2 flex-shrink-0">
-          <button type="button" class="btn-solid-cta" data-bs-toggle="modal" data-bs-target="#addCardModal">
-            <i class="bi bi-plus-circle-fill"></i> Buat Kartu Baru
-          </button>
-          <a href="'.e(module_url('memo_pengajuan.php')).'" class="btn-glass">
-            <i class="bi bi-file-earmark-text"></i> Memo Pengajuan
-          </a>
-          <a href="'.e(module_url('inventaris_mutation.php')).'" class="btn-glass">
-            <i class="bi bi-arrow-left-right"></i> Mutasi Barang
-          </a>
-          <a href="'.e(module_url('asset_disposal.php')).'" class="btn-glass">
-            <i class="bi bi-trash3"></i> Penghapusan Aset (Afkir)
-          </a>
+
+        <div class="browser-topbar-col-center">
+          <div class="browser-address-pill">
+            <i class="bi bi-lock-fill text-success"></i>
+            <span>bankmitra.id/dashboard.php?tab=kartu</span>
+          </div>
+        </div>
+
+        <div class="browser-topbar-col-right">
+          <div class="floating-toast-pill">
+            <div class="floating-toast-icon-amber" style="background: linear-gradient(135deg, #059669 0%, #047857 100%); box-shadow: 0 4px 10px rgba(5, 150, 105, 0.25);">
+              <i class="bi bi-building-gear"></i>
+            </div>
+            <div class="text-start">
+              <div class="fw-bold text-dark" style="font-size: 0.76rem; line-height: 1.2;">Sarana &amp; Prasarana</div>
+              <div class="text-muted" style="font-size: 0.68rem;">SDM &amp; Umum · KPO Bank Mitra</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Inner Canvas with Gradient Hero Banner & Modern Metric Cards -->
+      <div class="p-3 p-md-4">
+        <!-- Hero Banner Card with Layered Smooth Waves (Emerald/Forest Theme) -->
+        <div class="card-hero-neo mb-4" style="background: linear-gradient(135deg, #065F46 0%, #059669 45%, #10B981 100%) !important; box-shadow: 0 12px 32px -4px rgba(16, 185, 129, 0.3) !important;">
+          <!-- Wave Layer Overlays at Bottom -->
+          <svg class="position-absolute bottom-0 start-0 w-100" style="height: 60px; pointer-events: none; opacity: 0.22;" preserveAspectRatio="none" viewBox="0 0 1200 120">
+            <path d="M0,0 C150,90 400,100 600,40 C800,-20 1050,80 1200,30 L1200,120 L0,120 Z" fill="#FFFFFF"></path>
+          </svg>
+          <svg class="position-absolute bottom-0 start-0 w-100" style="height: 40px; pointer-events: none; opacity: 0.32;" preserveAspectRatio="none" viewBox="0 0 1200 120">
+            <path d="M0,40 C300,10 600,80 900,30 C1050,10 1150,50 1200,60 L1200,120 L0,120 Z" fill="#FFFFFF"></path>
+          </svg>
+
+          <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 position-relative" style="z-index: 2;">
+            <div style="max-width: 650px;">
+              <div class="d-flex align-items-center gap-2 mb-2 flex-wrap">
+                <span class="badge bg-white text-success px-2.5 py-1 font-monospace fw-bold shadow-xs" style="font-size: 0.70rem; letter-spacing: 0.05em; border-radius: 6px;">PORTAL SARPRAS</span>
+                <span class="text-white text-opacity-85 small fw-semibold">Selamat bertugas, <strong>'.e($_SESSION['nama'] ?? 'Petugas').'</strong></span>
+              </div>
+              <h2 class="display-6 fw-bold mb-1 text-white" style="letter-spacing: -0.025em;">Pusat Inventaris &amp; Pengadaan</h2>
+              <p class="text-white text-opacity-95 mb-3" style="font-size: 0.95rem; font-weight: 500;">
+                Kelola kartu inventaris fisik perabot kantor, permohonan memo pengadaan sarana baru, serta cetak label identitas fisik CR80/PVC.
+              </p>
+              <div class="d-flex flex-wrap align-items-center gap-2.5">
+                <button type="button" class="btn-hero-pill text-decoration-none d-inline-flex align-items-center gap-2" style="color: #065F46 !important;" data-bs-toggle="modal" data-bs-target="#addCardModal">
+                  <i class="bi bi-plus-circle-fill"></i> Buat Kartu Baru
+                </button>
+                <a href="'.e(module_url('memo_pengajuan.php')).'" class="btn btn-outline-light rounded-pill px-3.5 py-2 fw-semibold d-inline-flex align-items-center gap-2 shadow-xs" style="font-size: 0.88rem;">
+                  <i class="bi bi-file-earmark-text-fill"></i> Memo Pengajuan
+                </a>
+                <a href="'.e(module_url('asset_disposal.php')).'" class="btn btn-outline-light rounded-pill px-3.5 py-2 fw-semibold d-inline-flex align-items-center gap-2 shadow-xs" style="font-size: 0.88rem;">
+                  <i class="bi bi-trash3-fill"></i> Penghapusan (Afkir)
+                </a>
+                <a href="'.e(module_url('inventaris_mutation.php')).'" class="btn btn-outline-light rounded-pill px-3 py-2 fw-semibold d-inline-flex align-items-center gap-2 shadow-xs" style="font-size: 0.88rem;">
+                  <i class="bi bi-arrow-left-right"></i> Mutasi Barang
+                </a>
+              </div>
+            </div>
+
+            <!-- Decorative Right Badges -->
+            <div class="d-none d-md-flex align-items-center gap-4">
+              <div class="hero-pin-marker" title="Pusat Data Sarpras Bank Mitra">
+                <svg width="44" height="52" viewBox="0 0 44 52" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M22 0C9.85 0 0 9.85 0 22C0 36 22 52 22 52C22 52 44 36 44 22C44 9.85 34.15 0 22 0Z" fill="#047857"/>
+                  <circle cx="22" cy="22" r="9" fill="#FFFFFF"/>
+                </svg>
+              </div>
+
+              <div class="hero-sun-container" title="Layanan Inventaris Aktif">
+                <svg width="68" height="68" viewBox="0 0 68 68" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <circle cx="34" cy="34" r="17" fill="#FDE047"/>
+                  <rect x="31" y="2" width="6" height="10" rx="3" fill="#FDE047"/>
+                  <rect x="31" y="56" width="6" height="10" rx="3" fill="#FDE047"/>
+                  <rect x="2" y="31" width="10" height="6" rx="3" fill="#FDE047"/>
+                  <rect x="56" y="31" width="10" height="6" rx="3" fill="#FDE047"/>
+                  <rect x="11.5" y="11.5" width="6" height="10" rx="3" transform="rotate(-45 11.5 11.5)" fill="#FDE047"/>
+                  <rect x="49.5" y="49.5" width="6" height="10" rx="3" transform="rotate(-45 49.5 49.5)" fill="#FDE047"/>
+                  <rect x="49.5" y="11.5" width="10" height="6" rx="3" transform="rotate(-45 49.5 11.5)" fill="#FDE047"/>
+                  <rect x="11.5" y="49.5" width="10" height="6" rx="3" transform="rotate(-45 11.5 49.5)" fill="#FDE047"/>
+                </svg>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 3 Symmetrical Metric Cards -->
+        <div class="row g-3 mb-2">
+          <!-- Card 1: Total Kartu Inventaris -->
+          <div class="col-md-4">
+            <div class="card-metric-modern">
+              <div>
+                <div class="metric-title-muted">Kartu Inventaris Aktif</div>
+                <div class="metric-number-bold">'.number_format($totalCardsCount).' <span class="fs-6 fw-normal text-muted">Aset</span></div>
+              </div>
+              <div class="small text-muted mt-2 d-flex align-items-center gap-2" style="font-size: 0.78rem;">
+                <span class="text-success fw-bold"><i class="bi bi-check-circle-fill"></i> Terdaftar Resmi</span>
+                '.($todayCardsCount > 0 ? '<span class="text-secondary">·</span> <span class="text-primary fw-bold">+'.$todayCardsCount.' Hari Ini</span>' : '').'
+              </div>
+            </div>
+          </div>
+
+          <!-- Card 2: Foto Inventaris Bank -->
+          <div class="col-md-4">
+            <a href="'.e(module_url('asset_gallery.php', ['sub' => 'inventaris'])).'" class="text-decoration-none d-block h-100">
+              <div class="card-metric-modern" style="cursor: pointer;">
+                <div>
+                  <div class="metric-title-muted">Dokumentasi Foto Fisik</div>
+                  <div class="metric-number-bold d-flex align-items-center gap-2 text-primary">
+                    <span>'.number_format($totalInvWithPhotoCount).'</span>
+                    <i class="bi bi-camera-fill text-primary" style="font-size: 1.5rem;"></i>
+                  </div>
+                </div>
+                <div class="small text-primary mt-2 fw-semibold" style="font-size: 0.78rem;">
+                  <i class="bi bi-images me-1"></i> Buka Galeri Foto Inventaris &raquo;
+                </div>
+              </div>
+            </a>
+          </div>
+
+          <!-- Card 3: Jaringan Kantor Cabang -->
+          <div class="col-md-4">
+            <a href="'.e(module_url('cabang_admin.php')).'" class="text-decoration-none d-block h-100">
+              <div class="card-status-mint" style="cursor: pointer;">
+                <div>
+                  <div class="metric-title-muted" style="color: #047857 !important;">Jaringan Kantor Bank</div>
+                  <div class="status-heading mt-1">
+                    <span class="pulse-dot-green"></span>
+                    <span>5 Kantor Cabang Terhubung</span>
+                  </div>
+                </div>
+                <div class="status-subtext mt-2">
+                  <i class="bi bi-buildings me-1"></i> Kelola Alamat &amp; Data Cabang &raquo;
+                </div>
+              </div>
+            </a>
+          </div>
+        </div>
+
+        <!-- Upward Trend Chart with Overlapping Floating Trend Badge -->
+        <div class="position-relative mt-2 pt-1 mb-2">
+          <div class="w-100 position-relative overflow-hidden rounded-4 trend-chart-box" style="height: 72px; border: 1px solid #E2E8F0;">
+            <svg viewBox="0 0 1000 72" preserveAspectRatio="none" style="width: 100%; height: 100%;">
+              <defs>
+                <linearGradient id="chartGradHrd" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stop-color="#10B981" stop-opacity="0.25"/>
+                  <stop offset="100%" stop-color="#10B981" stop-opacity="0.0"/>
+                </linearGradient>
+              </defs>
+              <path d="M0,58 Q250,46 500,32 T1000,10 L1000,72 L0,72 Z" fill="url(#chartGradHrd)"/>
+              <path d="M0,58 Q250,46 500,32 T1000,10" fill="none" stroke="#10B981" stroke-width="3" stroke-linecap="round"/>
+              <circle cx="994" cy="10" r="5" fill="#10B981" stroke="#FFFFFF" stroke-width="2"/>
+            </svg>
+            <div class="position-absolute top-0 end-0 p-2 text-muted" style="font-size: 0.72rem; font-weight: 600;">
+              Distribusi Aset Sarpras · Terintegrasi
+            </div>
+          </div>
+
+          <!-- Floating Trend Badge Overlapping Left of Chart -->
+          <div class="position-absolute" style="left: 16px; bottom: 10px; z-index: 4;">
+            <div class="badge-floating-trend shadow">
+              <div class="trend-icon-box" style="background: #047857;">
+                <i class="bi bi-box-seam-fill"></i>
+              </div>
+              <div>
+                <div class="fw-bold text-dark" style="font-size: 0.88rem;">+'.$totalCardsCount.' kartu inventaris aktif</div>
+                <div class="text-muted small" style="font-size: 0.74rem;">Siap cetak label QR &amp; kartu fisik CR80</div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>';
 
-    // TOP KPI KHUSUS SDM & UMUM (HANYA METRIK INVENTARIS)
+    // TABS NAVIGATION: KHUSUS SDM & UMUM
     $body .= '
-    <div class="row g-3 mb-4">
-      <div class="col-sm-4 col-12">
-        <div class="card card-metric h-100">
-          <div class="metric-value text-success d-flex align-items-center justify-content-between">
-            <span>'.$totalCardsCount.'</span>
-            '.($todayCardsCount > 0 ? '<span class="badge bg-success-subtle text-success border border-success-subtle" style="font-size: 0.68rem; font-weight: 700;">+'.$todayCardsCount.' Hari Ini</span>' : '').'
-          </div>
-          <div class="metric-label">Kartu Inventaris Aktif</div>
-          <div class="small text-secondary mt-2" style="font-size: 0.72rem;">Seluruh kantor cabang bank</div>
-        </div>
-      </div>
-      <div class="col-sm-4 col-12">
-        <a href="'.e(module_url('asset_gallery.php', ['sub' => 'inventaris'])).'" class="text-decoration-none d-block h-100">
-          <div class="card card-metric h-100" style="cursor: pointer;">
-            <div class="metric-value text-primary d-flex align-items-center justify-content-between">
-              <span>'.$totalInvWithPhotoCount.'</span>
-              <span class="badge bg-primary-subtle text-primary border border-primary-subtle" style="font-size: 0.68rem; font-weight: 700;"><i class="bi bi-camera me-1"></i>Foto Fisik</span>
-            </div>
-            <div class="metric-label">Foto Inventaris Bank</div>
-            <div class="small text-primary mt-2" style="font-size: 0.72rem;"><i class="bi bi-images me-1"></i>Buka Galeri Inventaris &raquo;</div>
-          </div>
-        </a>
-      </div>
-      <div class="col-sm-4 col-12">
-        <a href="'.e(module_url('cabang_admin.php')).'" class="text-decoration-none d-block h-100">
-          <div class="card card-metric h-100" style="cursor: pointer;">
-            <div class="metric-value text-warning d-flex align-items-center justify-content-between">
-              <span>5</span>
-              <span class="badge bg-warning-subtle text-warning border border-warning-subtle" style="font-size: 0.68rem; font-weight: 700;">Kantor</span>
-            </div>
-            <div class="metric-label">Jaringan Cabang</div>
-            <div class="small text-warning mt-2" style="font-size: 0.72rem;"><i class="bi bi-buildings me-1"></i>Kelola Cabang &raquo;</div>
-          </div>
-        </a>
-      </div>
-    </div>
-
-    <!-- TABS NAVIGATION: KHUSUS SDM & UMUM -->
     <div class="dashboard-main-nav">
       <a class="dashboard-nav-tab active" href="'.e(module_url('dashboard.php', ['tab' => 'kartu'])).'">
         <i class="bi bi-credit-card-2-front"></i> Kartu Inventaris &amp; Label QR

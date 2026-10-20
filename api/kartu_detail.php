@@ -591,7 +591,68 @@ $pageTitle = $card ? e($card['nama_barang']) . ' - Kartu Inventaris' : 'Kartu In
 
             <!-- Kartu Paspor Inventaris Resmi -->
             <div class="card card-custom mb-4">
-                <div class="p-3 p-md-4 border-bottom bg-light bg-opacity-75 d-flex flex-wrap align-items-center justify-content-between gap-2">
+                <!-- TAMPILAN KHUSUS SMARTPHONE / MOBILE (1X BUKA LANGSUNG TERLIHAT FOTO & DETAIL) -->
+                <div class="d-md-none p-3 border-bottom bg-white">
+                    <div class="row g-3 align-items-center mb-2">
+                        <!-- Foto Barang (Kiri 42%) -->
+                        <div class="col-5">
+                            <div class="item-photo-wrapper shadow-xs mb-0 <?= $photoUrl ? 'has-image' : '' ?>" style="max-height: 140px; aspect-ratio: 1/1; cursor: pointer; border-radius: 12px;" onclick="<?= $photoUrl ? "viewFullImage('" . e(addslashes($photoUrl)) . "', '" . e(addslashes($card['nama_barang'])) . "')" : "" ?>" title="Klik untuk memperbesar">
+                                <?php if ($photoUrl): ?>
+                                    <img src="<?= e($photoUrl) ?>" alt="Foto <?= e($card['nama_barang']) ?>" style="width: 100%; height: 100%; object-fit: cover; border-radius: 12px;">
+                                    <div class="position-absolute bottom-0 end-0 p-1 bg-dark bg-opacity-75 text-white rounded-start" style="font-size: 0.65rem;">
+                                        <i class="bi bi-arrows-fullscreen"></i>
+                                    </div>
+                                <?php else: ?>
+                                    <div class="text-center p-2">
+                                        <i class="bi bi-camera text-muted fs-3 d-block mb-1"></i>
+                                        <div class="text-muted fw-semibold" style="font-size: 0.68rem;">Belum Ada Foto</div>
+                                    </div>
+                                <?php endif; ?>
+                            </div>
+                        </div>
+
+                        <!-- Ringkasan Identitas Utama (Kanan 58%) -->
+                        <div class="col-7">
+                            <div class="d-flex align-items-center justify-content-between mb-1">
+                                <span class="badge bg-success rounded-pill px-2 py-0.5 font-mono" style="font-size: 0.70rem;"><?= e($statusVal) ?></span>
+                                <span class="badge bg-primary bg-opacity-10 text-primary rounded-pill font-mono" style="font-size: 0.68rem;">#<?= (int)$card['id'] ?></span>
+                            </div>
+                            <h2 class="h6 fw-bold text-dark mb-1 lh-sm" style="font-size: 0.95rem;"><?= e($card['nama_barang']) ?></h2>
+                            <div class="font-mono text-primary fw-bold small mb-1" style="font-size: 0.78rem;"><?= e($rek) ?></div>
+                            <div class="small text-muted mb-0.5" style="font-size: 0.72rem;">
+                                <i class="bi bi-door-open-fill text-warning me-1"></i><strong><?= e($ruanganVal) ?></strong>
+                            </div>
+                            <div class="small text-secondary" style="font-size: 0.70rem;">
+                                <i class="bi bi-building me-1"></i><?= e($namaCabang) ?>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Strip Detail Ringkas: Golongan, Seri, Tanggal -->
+                    <div class="p-2 bg-light rounded-3 border mb-2 d-flex flex-wrap justify-content-between gap-1" style="font-size: 0.72rem;">
+                        <div><span class="text-muted">No. Seri:</span> <span class="font-mono text-danger fw-bold"><?= e($nomorSeriInv) ?></span></div>
+                        <div><span class="text-muted">Tanggal:</span> <strong class="text-dark"><?= e($tglFormatted) ?></strong></div>
+                    </div>
+
+                    <!-- Tombol Aksi Cepat Mobile -->
+                    <div class="d-flex align-items-center gap-1.5 pt-1">
+                        <button class="btn btn-primary btn-sm rounded-pill px-3 py-1.5 flex-fill fw-bold shadow-xs" type="button" data-bs-toggle="collapse" data-bs-target="#collapseUploadPhoto" aria-expanded="false" style="font-size: 0.78rem;">
+                            <i class="bi bi-camera me-1"></i> <?= $photoUrl ? 'Ganti Foto' : 'Ambil Foto' ?>
+                        </button>
+                        <a href="<?= module_url('inventaris_mutation.php', ['id' => $card['id']]) ?>" class="btn btn-outline-success btn-sm rounded-pill px-2.5 py-1.5 fw-semibold" style="font-size: 0.78rem;">
+                            <i class="bi bi-arrow-left-right me-1"></i> Mutasi
+                        </a>
+                        <button type="button" class="btn btn-outline-primary btn-sm rounded-pill px-2.5 py-1.5 fw-semibold" data-bs-toggle="modal" data-bs-target="#modalEditDataKartu" style="font-size: 0.78rem;">
+                            <i class="bi bi-pencil me-1"></i> Edit
+                        </button>
+                        <a href="<?= module_url('print_inventory_card.php', ['source' => 'inventaris_kartu', 'id' => $card['id']]) ?>" target="_blank" class="btn btn-dark btn-sm rounded-pill px-2.5 py-1.5" style="font-size: 0.78rem;" title="Cetak CR80">
+                            <i class="bi bi-printer"></i>
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Desktop Header Bar -->
+                <div class="p-3 p-md-4 border-bottom bg-light bg-opacity-75 d-none d-md-flex flex-wrap align-items-center justify-content-between gap-2">
                     <div class="d-flex align-items-center gap-2">
                         <span class="badge badge-gold px-3 py-1.5 rounded-pill text-uppercase">
                             <i class="bi bi-shield-check me-1"></i> Data Master Inventaris
@@ -618,7 +679,7 @@ $pageTitle = $card ? e($card['nama_barang']) . ' - Kartu Inventaris' : 'Kartu In
                         
                         <!-- Kolom Foto Barang & Biometric Action (Kiri: 5 Kolom) -->
                         <div class="col-lg-5 col-md-5 text-center">
-                            <div class="item-photo-wrapper mb-2 shadow-xs <?= $photoUrl ? 'has-image' : '' ?>" id="photoWrapper">
+                            <div class="item-photo-wrapper mb-2 shadow-xs d-none d-md-flex <?= $photoUrl ? 'has-image' : '' ?>" id="photoWrapper">
                                 <img id="previewImg" src="<?= $photoUrl ? e($photoUrl) : '' ?>" alt="Foto <?= e($card['nama_barang']) ?>" class="<?= $photoUrl ? '' : 'd-none' ?>" onclick="viewFullImage(this.src, '<?= e(addslashes($card['nama_barang'])) ?>')" title="Klik untuk memperbesar">
                                 
                                 <div id="emptyPhotoPlaceholder" class="text-center p-4 <?= $photoUrl ? 'd-none' : '' ?>">
@@ -658,7 +719,8 @@ $pageTitle = $card ? e($card['nama_barang']) . ' - Kartu Inventaris' : 'Kartu In
                                 </div>
                             <?php endif; ?>
 
-                            <!-- Form Upload Foto Barang dengan Validasi Wajah -->
+                            <!-- Form Upload Foto Barang dengan Validasi Wajah (Collapsible on Mobile, Open on Desktop) -->
+                            <div class="collapse d-md-block" id="collapseUploadPhoto">
                             <div class="bg-light p-3 rounded-3 border text-start shadow-xs">
                                 <form method="post" enctype="multipart/form-data" id="uploadPhotoForm">
                                     <input type="hidden" name="_csrf" value="<?= e(csrf_token()) ?>">
@@ -699,6 +761,7 @@ $pageTitle = $card ? e($card['nama_barang']) . ' - Kartu Inventaris' : 'Kartu In
                                         </div>
                                     <?php endif; ?>
                                 </form>
+                            </div>
                             </div>
                         </div>
 

@@ -85,27 +85,53 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $error = $res['error'] ?? 'Gagal memperbarui data pengguna.';
             }
         }
-    } elseif ($action === 'approve_face') {
+    } elseif ($action === 'approve_face' || $action === 'verify_face') {
         $id = (int)($_POST['user_id'] ?? 0);
+        $targetUser = get_user_by_id($id);
+        $targetNama = $targetUser['nama'] ?? "#{$id}";
         $res = update_user_face_status($id, 'verified');
         if (!empty($res['success'])) {
             get_user_list(true);
-            $_SESSION['flash'] = "Biometrik wajah pengguna #{$id} telah berhasil DIVERIFIKASI & DISETUJUI.";
+            if (function_exists('record_audit_log')) {
+                record_audit_log('FACE_VERIFIED', 'PENGGUNA', current_user_id(), current_user_name(), "Biometrik wajah pengguna '{$targetNama}' telah diverifikasi & disetujui.");
+            }
+            $_SESSION['flash'] = "Biometrik wajah pengguna {$targetNama} (#{$id}) telah berhasil DIVERIFIKASI & DISETUJUI.";
             header('Location: ' . module_url('users_admin.php'));
             exit;
         } else {
             $error = $res['error'] ?? 'Gagal memverifikasi biometrik wajah.';
         }
-    } elseif ($action === 'reject_face') {
+    } elseif ($action === 'unverify_face') {
         $id = (int)($_POST['user_id'] ?? 0);
-        $res = update_user_face_status($id, 'rejected');
+        $targetUser = get_user_by_id($id);
+        $targetNama = $targetUser['nama'] ?? "#{$id}";
+        $res = update_user_face_status($id, 'pending');
         if (!empty($res['success'])) {
             get_user_list(true);
-            $_SESSION['flash'] = "Biometrik wajah pengguna #{$id} telah ditolak/dihapus.";
+            if (function_exists('record_audit_log')) {
+                record_audit_log('FACE_UNVERIFIED', 'PENGGUNA', current_user_id(), current_user_name(), "Status verifikasi biometrik wajah pengguna '{$targetNama}' dikembalikan ke menunggu.");
+            }
+            $_SESSION['flash'] = "Status biometrik wajah pengguna {$targetNama} (#{$id}) dikembalikan ke Menunggu Verifikasi.";
             header('Location: ' . module_url('users_admin.php'));
             exit;
         } else {
-            $error = $res['error'] ?? 'Gagal menolak biometrik wajah.';
+            $error = $res['error'] ?? 'Gagal membatalkan status verifikasi biometrik wajah.';
+        }
+    } elseif ($action === 'delete_face' || $action === 'reject_face') {
+        $id = (int)($_POST['user_id'] ?? 0);
+        $targetUser = get_user_by_id($id);
+        $targetNama = $targetUser['nama'] ?? "#{$id}";
+        $res = update_user_face_status($id, 'deleted');
+        if (!empty($res['success'])) {
+            get_user_list(true);
+            if (function_exists('record_audit_log')) {
+                record_audit_log('FACE_DELETED', 'PENGGUNA', current_user_id(), current_user_name(), "Data biometrik wajah pengguna '{$targetNama}' telah dihapus.");
+            }
+            $_SESSION['flash'] = "Data biometrik wajah pengguna {$targetNama} (#{$id}) telah berhasil DIHAPUS dari sistem.";
+            header('Location: ' . module_url('users_admin.php'));
+            exit;
+        } else {
+            $error = $res['error'] ?? 'Gagal menghapus biometrik wajah.';
         }
     } elseif ($action === 'delete') {
         $id = (int)($_POST['user_id'] ?? 0);
@@ -321,46 +347,104 @@ foreach ($users as $u) {
         </div>';
     }
 
+    $hasFace = ($uPhoto !== '' || $fDesc !== '');
+    $isFaceVerified = ($fStat === 'verified' || $fStat === 'terverifikasi');
+    $isFacePending = ($fStat === 'pending' || $fStat === 'menunggu');
+
     // Avatar Profil (Symmetrical 42px size)
     if ($uPhoto !== '') {
+        $avatarStatusDot = $isFaceVerified
+            ? '<span class="position-absolute bottom-0 end-0 badge rounded-pill bg-success p-0 border border-white" style="width: 10px; height: 10px;" title="Biometrik Terverifikasi"></span>'
+            : ($isFacePending ? '<span class="position-absolute bottom-0 end-0 badge rounded-pill bg-warning p-0 border border-white" style="width: 10px; height: 10px;" title="Menunggu Verifikasi Admin"></span>' : '');
+
         $avatarHtml = '
-        <div class="flex-shrink-0 position-relative js-preview-face cursor-pointer" data-photo="'.e($uPhoto).'" data-nama="'.e($uNama).'" data-username="'.e($uUsername).'" data-role="'.e($uRole).'" title="Klik untuk melihat foto wajah petugas">
+        <div class="flex-shrink-0 position-relative js-preview-face cursor-pointer" data-photo="'.e($uPhoto).'" data-nama="'.e($uNama).'" data-username="'.e($uUsername).'" data-role="'.e($uRole).'" data-id="'.$uId.'" data-stat="'.e($fStat).'" data-enroll-url="'.e(module_url('user_biometric_enroll.php', ['id'=>$uId])).'" title="Klik untuk melihat & kelola foto wajah">
           <img src="'.e($uPhoto).'" class="rounded-circle border border-2 border-white shadow-xs" style="width: 42px; height: 42px; object-fit: cover;" alt="Foto '.e($uNama).'">
-          <span class="position-absolute bottom-0 end-0 badge rounded-pill bg-success p-0 border border-white" style="width: 10px; height: 10px;" title="Biometrik Terverifikasi"></span>
+          '.$avatarStatusDot.'
         </div>';
     } else {
         $initial = strtoupper(substr($uNama ?: $uUsername, 0, 1));
         $avatarHtml = '<div class="rounded-circle d-flex align-items-center justify-content-center fw-bold text-white shadow-xs flex-shrink-0" style="width: 42px; height: 42px; font-size: 1rem; background: linear-gradient(135deg, #06B6D4 0%, #2563EB 100%);">'.$initial.'</div>';
     }
 
-    // Biometric Status (Uniform Height Layout to ensure 100% Symmetrical Table Rows)
-    if ($fDesc === '') {
+    // Biometric Status (Uniform Height Layout with Interactive Trigger)
+    if (!$hasFace) {
         $bioBadge = '
         <div class="d-inline-flex align-items-center justify-content-center gap-1">
-          <span class="badge-chip chip-secondary" style="font-size: 0.72rem; border-radius: 9999px;"><i class="bi bi-dash-circle text-muted"></i> Belum Ada</span>
+          <a href="'.e(module_url('user_biometric_enroll.php', ['id'=>$uId])).'" class="badge-chip chip-secondary text-decoration-none" style="font-size: 0.72rem; border-radius: 9999px;" title="Klik untuk mendaftarkan wajah biometrik"><i class="bi bi-camera text-muted me-1"></i> Belum Ada</a>
         </div>';
-    } elseif ($fStat === 'verified' || $fStat === 'terverifikasi') {
-        $bioPhotoThumb = ($uPhoto !== '') ? '<img src="'.e($uPhoto).'" class="rounded-circle border shadow-xs js-preview-face cursor-pointer me-1" style="width: 26px; height: 26px; object-fit: cover;" data-photo="'.e($uPhoto).'" data-nama="'.e($uNama).'" data-username="'.e($uUsername).'" data-role="'.e($uRole).'" title="Klik untuk memperbesar foto">' : '';
+    } elseif ($isFaceVerified) {
+        $bioPhotoThumb = ($uPhoto !== '') ? '<img src="'.e($uPhoto).'" class="rounded-circle border shadow-xs js-preview-face cursor-pointer me-1" style="width: 26px; height: 26px; object-fit: cover;" data-photo="'.e($uPhoto).'" data-nama="'.e($uNama).'" data-username="'.e($uUsername).'" data-role="'.e($uRole).'" data-id="'.$uId.'" data-stat="'.e($fStat).'" data-enroll-url="'.e(module_url('user_biometric_enroll.php', ['id'=>$uId])).'" title="Klik untuk pratinjau & kelola wajah">' : '';
         $bioBadge = '
         <div class="d-inline-flex align-items-center justify-content-center gap-1">
           '.$bioPhotoThumb.'
-          <span class="badge-chip chip-success" style="font-size: 0.72rem; border-radius: 9999px;"><i class="bi bi-shield-check"></i> Terverifikasi</span>
+          <span class="badge-chip chip-success js-preview-face cursor-pointer" style="font-size: 0.72rem; border-radius: 9999px;" data-photo="'.e($uPhoto).'" data-nama="'.e($uNama).'" data-username="'.e($uUsername).'" data-role="'.e($uRole).'" data-id="'.$uId.'" data-stat="'.e($fStat).'" data-enroll-url="'.e(module_url('user_biometric_enroll.php', ['id'=>$uId])).'" title="Biometrik Wajah Terverifikasi (Klik untuk opsi verifikasi/hapus)"><i class="bi bi-shield-check"></i> Terverifikasi</span>
         </div>';
-    } elseif ($fStat === 'pending' || $fStat === 'menunggu') {
-        $bioPhotoThumb = ($uPhoto !== '') ? '<img src="'.e($uPhoto).'" class="rounded-circle border border-warning shadow-xs js-preview-face cursor-pointer me-1" style="width: 26px; height: 26px; object-fit: cover;" data-photo="'.e($uPhoto).'" data-nama="'.e($uNama).'" data-username="'.e($uUsername).'" data-role="'.e($uRole).'" title="Klik untuk memperbesar foto">' : '';
+    } elseif ($isFacePending) {
+        $bioPhotoThumb = ($uPhoto !== '') ? '<img src="'.e($uPhoto).'" class="rounded-circle border border-warning shadow-xs js-preview-face cursor-pointer me-1" style="width: 26px; height: 26px; object-fit: cover;" data-photo="'.e($uPhoto).'" data-nama="'.e($uNama).'" data-username="'.e($uUsername).'" data-role="'.e($uRole).'" data-id="'.$uId.'" data-stat="'.e($fStat).'" data-enroll-url="'.e(module_url('user_biometric_enroll.php', ['id'=>$uId])).'" title="Klik untuk pratinjau & setujui">' : '';
         $bioBadge = '
         <div class="d-inline-flex align-items-center justify-content-center gap-1">
           '.$bioPhotoThumb.'
-          <span class="badge-chip chip-warning" style="font-size: 0.72rem; border-radius: 9999px;"><i class="bi bi-hourglass-split"></i> Menunggu</span>
+          <span class="badge-chip chip-warning js-preview-face cursor-pointer" style="font-size: 0.72rem; border-radius: 9999px;" data-photo="'.e($uPhoto).'" data-nama="'.e($uNama).'" data-username="'.e($uUsername).'" data-role="'.e($uRole).'" data-id="'.$uId.'" data-stat="'.e($fStat).'" data-enroll-url="'.e(module_url('user_biometric_enroll.php', ['id'=>$uId])).'" title="Menunggu Verifikasi Admin (Klik untuk setujui)"><i class="bi bi-hourglass-split"></i> Menunggu</span>
         </div>';
     } else {
-        $bioBadge = '<span class="badge-chip chip-danger" style="font-size: 0.72rem; border-radius: 9999px;"><i class="bi bi-x-circle"></i> Ditolak</span>';
+        $bioPhotoThumb = ($uPhoto !== '') ? '<img src="'.e($uPhoto).'" class="rounded-circle border border-danger shadow-xs js-preview-face cursor-pointer me-1" style="width: 26px; height: 26px; object-fit: cover;" data-photo="'.e($uPhoto).'" data-nama="'.e($uNama).'" data-username="'.e($uUsername).'" data-role="'.e($uRole).'" data-id="'.$uId.'" data-stat="'.e($fStat).'" data-enroll-url="'.e(module_url('user_biometric_enroll.php', ['id'=>$uId])).'" title="Klik untuk pratinjau">' : '';
+        $bioBadge = '
+        <div class="d-inline-flex align-items-center justify-content-center gap-1">
+          '.$bioPhotoThumb.'
+          <span class="badge-chip chip-danger js-preview-face cursor-pointer" style="font-size: 0.72rem; border-radius: 9999px;" data-photo="'.e($uPhoto).'" data-nama="'.e($uNama).'" data-username="'.e($uUsername).'" data-role="'.e($uRole).'" data-id="'.$uId.'" data-stat="'.e($fStat).'" data-enroll-url="'.e(module_url('user_biometric_enroll.php', ['id'=>$uId])).'"><i class="bi bi-x-circle"></i> Ditolak</span>
+        </div>';
     }
 
     $isUserAdmin = in_array($uRole, ['admin', 'administrator'], true);
     $canManageUser = is_admin() || !$isUserAdmin;
 
-    // Delete Button with Guard Checks (Uniform 32x32px Button)
+    // 1. Biometric Enrollment / Photo Shortcut (Uniform 32x32px Button)
+    $enrollBtnHtml = '<a class="btn btn-outline-secondary btn-sm action-btn-sq" href="'.e(module_url('user_biometric_enroll.php', ['id'=>$uId])).'" title="Daftarkan / Foto Ulang Wajah Biometrik"><i class="bi bi-camera"></i></a>';
+
+    // 2. Verifikasi Wajah Button (Uniform 32x32px Button)
+    $verifyBtnHtml = '';
+    if ($hasFace) {
+        if (!$isFaceVerified) {
+            $verifyConfirm = json_encode("Verifikasi dan setujui biometrik wajah {$uNama}?");
+            $verifyBtnHtml = '
+            <form method="post" class="d-inline m-0" onsubmit="return confirm(' . htmlspecialchars($verifyConfirm, ENT_QUOTES, 'UTF-8') . ')">
+              <input type="hidden" name="_csrf" value="'.e(csrf_token()).'">
+              <input type="hidden" name="action" value="approve_face">
+              <input type="hidden" name="user_id" value="'.$uId.'">
+              <button type="submit" class="btn btn-outline-success btn-sm action-btn-sq" title="Verifikasi Muka (Setujui Wajah)"><i class="bi bi-shield-check"></i></button>
+            </form>';
+        } else {
+            $unverifyConfirm = json_encode("Batalkan status verifikasi wajah {$uNama}?");
+            $verifyBtnHtml = '
+            <form method="post" class="d-inline m-0" onsubmit="return confirm(' . htmlspecialchars($unverifyConfirm, ENT_QUOTES, 'UTF-8') . ')">
+              <input type="hidden" name="_csrf" value="'.e(csrf_token()).'">
+              <input type="hidden" name="action" value="unverify_face">
+              <input type="hidden" name="user_id" value="'.$uId.'">
+              <button type="submit" class="btn btn-outline-secondary btn-sm action-btn-sq text-success border-success" title="Wajah Terverifikasi (Klik untuk batalkan verifikasi)"><i class="bi bi-patch-check-fill"></i></button>
+            </form>';
+        }
+    }
+
+    // 3. Hapus Muka Button (Uniform 32x32px Button)
+    $delFaceBtnHtml = '';
+    if ($hasFace) {
+        $delFaceConfirm = json_encode("Apakah Anda yakin ingin MENGHAPUS data biometrik wajah {$uNama}? Foto dan sampel biometrik akan dihapus.");
+        $delFaceBtnHtml = '
+        <form method="post" class="d-inline m-0" onsubmit="return confirm(' . htmlspecialchars($delFaceConfirm, ENT_QUOTES, 'UTF-8') . ')">
+          <input type="hidden" name="_csrf" value="'.e(csrf_token()).'">
+          <input type="hidden" name="action" value="delete_face">
+          <input type="hidden" name="user_id" value="'.$uId.'">
+          <button type="submit" class="btn btn-outline-danger btn-sm action-btn-sq" title="Hapus Muka (Reset Biometrik Wajah)"><i class="bi bi-person-x"></i></button>
+        </form>';
+    }
+
+    // 4. Edit User Button (Uniform 32x32px Button)
+    $editBtnHtml = $canManageUser
+        ? '<a class="btn btn-outline-primary btn-sm action-btn-sq '.($isBeingEdited ? 'active' : '').'" href="'.e(module_url('users_admin.php', ['edit'=>$uId])).'" title="Edit Profil / Password"><i class="bi bi-pencil-square"></i></a>'
+        : '<span class="action-btn-sq-placeholder"></span>';
+
+    // 5. Delete User Button with Guard Checks (Uniform 32x32px Button)
     $delBtnHtml = '';
     if ($uId !== current_user_id()) {
         if ($canManageUser) {
@@ -378,14 +462,6 @@ foreach ($users as $u) {
     } else {
         $delBtnHtml = '<span class="action-btn-sq-placeholder" title="Akun Anda yang sedang aktif"><i class="bi bi-person-check-fill text-primary"></i></span>';
     }
-
-    // Edit Button (Uniform 32x32px Button)
-    $editBtnHtml = $canManageUser
-        ? '<a class="btn btn-outline-primary btn-sm action-btn-sq '.($isBeingEdited ? 'active' : '').'" href="'.e(module_url('users_admin.php', ['edit'=>$uId])).'" title="Edit Profil / Password"><i class="bi bi-pencil-square"></i></a>'
-        : '<span class="action-btn-sq-placeholder"></span>';
-
-    // Biometric Enrollment Shortcut (Uniform 32x32px Button)
-    $enrollBtnHtml = '<a class="btn btn-outline-secondary btn-sm action-btn-sq" href="'.e(module_url('user_biometric_enroll.php', ['id'=>$uId])).'" title="Daftarkan / Perbarui Wajah Biometrik"><i class="bi bi-camera"></i></a>';
 
     $rowClass = $isBeingEdited ? 'table-warning border-start border-4 border-warning' : '';
 
@@ -411,6 +487,8 @@ foreach ($users as $u) {
       <td class="text-center align-middle">
         <div class="d-inline-flex align-items-center justify-content-center gap-1.5">
           '.$enrollBtnHtml.'
+          '.$verifyBtnHtml.'
+          '.$delFaceBtnHtml.'
           '.$editBtnHtml.'
           '.$delBtnHtml.'
         </div>
@@ -448,12 +526,35 @@ if ($editUser) {
 
     $editPhotoBox = '';
     if ($editPhoto !== '') {
+        $isEditVerified = ($editFaceStat === 'verified' || $editFaceStat === 'terverifikasi');
+        $isEditPending = ($editFaceStat === 'pending' || $editFaceStat === 'menunggu');
+
+        $editStatusBadge = $isEditVerified
+            ? '<span class="badge bg-success" style="font-size: 0.72rem; border-radius: 9999px;"><i class="bi bi-shield-check me-1"></i> Terverifikasi</span>'
+            : ($isEditPending
+                ? '<span class="badge bg-warning text-dark" style="font-size: 0.72rem; border-radius: 9999px;"><i class="bi bi-hourglass-split me-1"></i> Menunggu Verifikasi</span>'
+                : '<span class="badge bg-danger" style="font-size: 0.72rem; border-radius: 9999px;"><i class="bi bi-x-circle me-1"></i> Ditolak</span>');
+
+        $verifySideBtn = !$isEditVerified
+            ? '<button type="submit" form="sideVerifyFaceForm" class="btn btn-xs btn-success py-1 px-2.5 btn-pill" style="font-size: 0.75rem;"><i class="bi bi-shield-check me-1"></i> Verifikasi Muka</button>'
+            : '<button type="submit" form="sideUnverifyFaceForm" class="btn btn-xs btn-outline-warning py-1 px-2.5 btn-pill" style="font-size: 0.75rem;"><i class="bi bi-arrow-counterclockwise me-1"></i> Batal Verifikasi</button>';
+
         $editPhotoBox = '
-        <div class="p-3 mb-3 bg-light rounded-4 border d-flex align-items-center gap-3">
-          <img src="'.e($editPhoto).'" class="rounded-circle border shadow-xs js-preview-face cursor-pointer" style="width: 48px; height: 48px; object-fit: cover;" data-photo="'.e($editPhoto).'" data-nama="'.e($editNama).'" data-username="'.e($editUsername).'" data-role="'.e($editRole).'" title="Perbesar foto">
-          <div class="flex-grow-1 min-w-0">
-            <div class="fw-bold text-dark small">Biometrik: '.ucfirst($editFaceStat).'</div>
-            <a href="'.e(module_url('user_biometric_enroll.php', ['id'=>(int)$editUser['id']])).'" class="small text-primary text-decoration-none fw-semibold"><i class="bi bi-camera me-1"></i> Perbarui Foto Wajah</a>
+        <div class="p-3 mb-3 bg-light rounded-4 border">
+          <div class="d-flex align-items-center gap-3 mb-2.5">
+            <img src="'.e($editPhoto).'" class="rounded-circle border shadow-xs js-preview-face cursor-pointer" style="width: 48px; height: 48px; object-fit: cover;" data-photo="'.e($editPhoto).'" data-nama="'.e($editNama).'" data-username="'.e($editUsername).'" data-role="'.e($editRole).'" data-id="'.(int)$editUser['id'].'" data-stat="'.e($editFaceStat).'" data-enroll-url="'.e(module_url('user_biometric_enroll.php', ['id'=>(int)$editUser['id']])).'" title="Perbesar foto & kelola biometrik">
+            <div class="flex-grow-1 min-w-0">
+              <div class="fw-bold text-dark small d-flex align-items-center gap-1.5">
+                <span>Biometrik:</span>
+                '.$editStatusBadge.'
+              </div>
+              <div class="text-muted small" style="font-size: 0.72rem;">Sampel wajah terdaftar di basis data</div>
+            </div>
+          </div>
+          <div class="d-flex flex-wrap align-items-center gap-1.5 pt-2 border-top">
+            '.$verifySideBtn.'
+            <button type="submit" form="sideDeleteFaceForm" class="btn btn-xs btn-outline-danger py-1 px-2.5 btn-pill" style="font-size: 0.75rem;"><i class="bi bi-trash me-1"></i> Hapus Muka</button>
+            <a href="'.e(module_url('user_biometric_enroll.php', ['id'=>(int)$editUser['id']])).'" class="btn btn-xs btn-outline-primary py-1 px-2.5 btn-pill ms-auto" style="font-size: 0.75rem;"><i class="bi bi-camera me-1"></i> Foto Ulang</a>
           </div>
         </div>';
     } else {
@@ -644,6 +745,29 @@ if ($editUser) {
       </div>
 
       <button type="submit" class="btn btn-primary w-100 fw-bold py-2.5 btn-pill shadow-sm"><i class="bi bi-person-plus-fill me-1.5"></i> Buat Akun Pengguna</button>
+    </form>';
+}
+
+$sideFaceForms = '';
+if ($editUser && $editPhoto !== '') {
+    $confirmVerify = json_encode("Verifikasi dan setujui biometrik wajah {$editNama}?");
+    $confirmUnverify = json_encode("Batalkan status verifikasi biometrik wajah {$editNama}?");
+    $confirmDelFace = json_encode("Apakah Anda yakin ingin MENGHAPUS data biometrik wajah {$editNama}? Foto dan sampel biometrik akan dihapus secara permanen.");
+    $sideFaceForms = '
+    <form id="sideVerifyFaceForm" method="post" class="d-none" onsubmit="return confirm(' . htmlspecialchars($confirmVerify, ENT_QUOTES, 'UTF-8') . ')">
+      <input type="hidden" name="_csrf" value="'.e(csrf_token()).'">
+      <input type="hidden" name="action" value="approve_face">
+      <input type="hidden" name="user_id" value="'.(int)$editUser['id'].'">
+    </form>
+    <form id="sideUnverifyFaceForm" method="post" class="d-none" onsubmit="return confirm(' . htmlspecialchars($confirmUnverify, ENT_QUOTES, 'UTF-8') . ')">
+      <input type="hidden" name="_csrf" value="'.e(csrf_token()).'">
+      <input type="hidden" name="action" value="unverify_face">
+      <input type="hidden" name="user_id" value="'.(int)$editUser['id'].'">
+    </form>
+    <form id="sideDeleteFaceForm" method="post" class="d-none" onsubmit="return confirm(' . htmlspecialchars($confirmDelFace, ENT_QUOTES, 'UTF-8') . ')">
+      <input type="hidden" name="_csrf" value="'.e(csrf_token()).'">
+      <input type="hidden" name="action" value="delete_face">
+      <input type="hidden" name="user_id" value="'.(int)$editUser['id'].'">
     </form>';
 }
 
@@ -891,7 +1015,7 @@ $body = '
               <th style="width: 140px;" class="text-center">PERAN</th>
               <th style="width: 160px;" class="text-center">BIOMETRIK</th>
               <th style="width: 100px;" class="text-center">STATUS</th>
-              <th style="width: 120px;" class="text-center">AKSI</th>
+              <th style="width: 160px;" class="text-center">AKSI</th>
             </tr>
           </thead>
           <tbody id="userTableBody">
@@ -919,41 +1043,77 @@ $body = '
     <div class="card p-0 overflow-hidden shadow-sm border-0 sticky-form" style="border-radius: 20px;">
       '.$formCardHeader.'
       '.$formContent.'
+      '.$sideFaceForms.'
     </div>
   </div>
 </div>';
 
 // Modal Pratinjau Foto Wajah Petugas (High Elevation & Symmetrical Centered Layout)
+$csrfTokenEscaped = e(csrf_token());
 $modalHtml = <<<HTML
 <div class="modal fade" id="modalPreviewFace" tabindex="-1" aria-labelledby="modalPreviewFaceLabel" aria-hidden="true">
-  <div class="modal-dialog modal-dialog-centered" style="max-width: 400px;">
+  <div class="modal-dialog modal-dialog-centered" style="max-width: 440px;">
     <div class="modal-content border-0 shadow-lg" style="border-radius: 24px; overflow: hidden;">
       <div class="modal-header py-3 px-4 bg-dark text-white border-0" style="background: linear-gradient(135deg, #051329 0%, #0A1E38 100%) !important;">
         <h6 class="modal-title fs-6 fw-bold mb-0 d-flex align-items-center gap-2" id="modalPreviewFaceLabel">
-          <i class="bi bi-person-bounding-box text-primary"></i> Foto Sampel Biometrik
+          <i class="bi bi-person-bounding-box text-primary"></i> Kelola Biometrik Wajah
         </h6>
         <button type="button" class="btn-close btn-close-white btn-sm" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
       <div class="modal-body text-center p-4">
         <div class="position-relative d-inline-block mb-3">
-          <img id="previewFaceImg" src="" alt="Foto Wajah Petugas" class="rounded-circle shadow-sm border border-4 border-white" style="width: 150px; height: 150px; object-fit: cover; box-shadow: 0 4px 18px rgba(37,99,235,0.2) !important;">
-          <span class="position-absolute bottom-0 end-0 badge rounded-pill bg-success p-2 border border-2 border-white" title="Biometrik Terdaftar">
-            <i class="bi bi-shield-check fs-6"></i>
-          </span>
+          <img id="previewFaceImg" src="" alt="Foto Wajah Petugas" class="rounded-circle shadow-sm border border-4 border-white" style="width: 140px; height: 140px; object-fit: cover; box-shadow: 0 4px 18px rgba(37,99,235,0.2) !important;">
         </div>
         <h5 class="fw-bold mb-1 text-dark" id="previewFaceNama">-</h5>
         <div class="text-muted small font-monospace mb-2" id="previewFaceUser">@-</div>
-        <div id="previewFaceRoleBadge" class="mb-3"></div>
+        <div class="d-flex align-items-center justify-content-center gap-2 mb-3">
+          <div id="previewFaceRoleBadge"></div>
+          <div id="previewFaceStatusPill"></div>
+        </div>
         <div class="p-3 bg-light rounded-4 text-muted small border text-start" style="font-size: 0.78rem; line-height: 1.5;">
           <div class="d-flex align-items-center gap-1.5 fw-bold text-dark mb-1">
-            <i class="bi bi-shield-lock-fill text-primary"></i> Basis Data Biometrik Terverifikasi
+            <i class="bi bi-shield-lock-fill text-primary"></i> Autentikasi Biometrik Petugas
           </div>
-          Vektor wajah disimpan secara terenkripsi untuk memvalidasi presensi petugas &amp; kepemilikan checklist kartu pemeliharaan.
+          Vektor wajah disimpan secara terenkripsi untuk validasi presensi &amp; kepemilikan checklist kartu pemeliharaan.
         </div>
       </div>
-      <div class="modal-footer py-2.5 px-4 bg-light border-0 justify-content-between">
-        <a id="btnPreviewEnrollAgain" href="#" class="btn btn-outline-primary btn-sm btn-pill fw-semibold"><i class="bi bi-camera me-1"></i> Foto Ulang</a>
-        <button type="button" class="btn btn-secondary btn-sm px-4 btn-pill fw-semibold" data-bs-dismiss="modal">Tutup</button>
+      <div class="modal-footer py-3 px-4 bg-light border-0 d-flex flex-wrap align-items-center justify-content-between gap-2">
+        <div class="d-flex align-items-center gap-1.5">
+          <!-- Form Verifikasi Wajah Modal -->
+          <form method="post" id="formModalVerifyFace" class="m-0" onsubmit="return confirm('Verifikasi dan setujui biometrik wajah petugas ini?')">
+            <input type="hidden" name="_csrf" value="{$csrfTokenEscaped}">
+            <input type="hidden" name="action" value="approve_face">
+            <input type="hidden" name="user_id" id="modalUserIdVerify" value="0">
+            <button type="submit" id="btnModalVerifyFace" class="btn btn-success btn-sm btn-pill fw-semibold">
+              <i class="bi bi-shield-check me-1"></i> Verifikasi Muka
+            </button>
+          </form>
+
+          <!-- Form Batal Verifikasi Modal -->
+          <form method="post" id="formModalUnverifyFace" class="m-0" onsubmit="return confirm('Batalkan status verifikasi biometrik wajah petugas ini?')">
+            <input type="hidden" name="_csrf" value="{$csrfTokenEscaped}">
+            <input type="hidden" name="action" value="unverify_face">
+            <input type="hidden" name="user_id" id="modalUserIdUnverify" value="0">
+            <button type="submit" id="btnModalUnverifyFace" class="btn btn-outline-warning btn-sm btn-pill fw-semibold" style="display: none;">
+              <i class="bi bi-arrow-counterclockwise me-1"></i> Batal Verifikasi
+            </button>
+          </form>
+
+          <!-- Form Hapus Muka Modal -->
+          <form method="post" id="formModalDeleteFace" class="m-0" onsubmit="return confirm('Apakah Anda yakin ingin MENGHAPUS data biometrik wajah petugas ini? Foto dan sampel biometrik akan dihapus secara permanen.')">
+            <input type="hidden" name="_csrf" value="{$csrfTokenEscaped}">
+            <input type="hidden" name="action" value="delete_face">
+            <input type="hidden" name="user_id" id="modalUserIdDelete" value="0">
+            <button type="submit" id="btnModalDeleteFace" class="btn btn-outline-danger btn-sm btn-pill fw-semibold">
+              <i class="bi bi-trash me-1"></i> Hapus Muka
+            </button>
+          </form>
+        </div>
+
+        <div class="d-flex align-items-center gap-2">
+          <a id="btnPreviewEnrollAgain" href="#" class="btn btn-outline-primary btn-sm btn-pill fw-semibold"><i class="bi bi-camera me-1"></i> Foto Ulang</a>
+          <button type="button" class="btn btn-secondary btn-sm px-3 btn-pill fw-semibold" data-bs-dismiss="modal">Tutup</button>
+        </div>
       </div>
     </div>
   </div>
@@ -1061,17 +1221,29 @@ $modalHtml = <<<HTML
 </style>
 
 <script>
-function previewFacePhoto(imgSrc, nama, username, role) {
+function previewFacePhoto(imgSrc, nama, username, role, userId, faceStat, enrollUrl) {
   if (!imgSrc) return;
   var imgEl = document.getElementById("previewFaceImg");
   var namaEl = document.getElementById("previewFaceNama");
   var userEl = document.getElementById("previewFaceUser");
   var badgeEl = document.getElementById("previewFaceRoleBadge");
+  var statusPillEl = document.getElementById("previewFaceStatusPill");
+  var modalUserIdVerify = document.getElementById("modalUserIdVerify");
+  var modalUserIdUnverify = document.getElementById("modalUserIdUnverify");
+  var modalUserIdDelete = document.getElementById("modalUserIdDelete");
+  var btnVerifyFace = document.getElementById("btnModalVerifyFace");
+  var btnUnverifyFace = document.getElementById("btnModalUnverifyFace");
+  var btnDeleteFace = document.getElementById("btnModalDeleteFace");
+  var btnEnrollAgain = document.getElementById("btnPreviewEnrollAgain");
 
   if (imgEl) imgEl.src = imgSrc;
   if (namaEl) namaEl.innerText = nama || "-";
   if (userEl) userEl.innerText = "@" + (username || "-");
-  
+  if (modalUserIdVerify) modalUserIdVerify.value = userId || "0";
+  if (modalUserIdUnverify) modalUserIdUnverify.value = userId || "0";
+  if (modalUserIdDelete) modalUserIdDelete.value = userId || "0";
+  if (btnEnrollAgain && enrollUrl) btnEnrollAgain.href = enrollUrl;
+
   var roleBadge = '<span class="badge bg-secondary">' + (role || "Pengguna") + '</span>';
   var roleStr = (role || "").toLowerCase();
   if (roleStr === "admin" || roleStr === "administrator") {
@@ -1084,6 +1256,28 @@ function previewFacePhoto(imgSrc, nama, username, role) {
     roleBadge = '<span class="badge bg-info text-dark" style="border-radius: 9999px;"><i class="bi bi-tools me-1"></i> Teknisi IT</span>';
   }
   if (badgeEl) badgeEl.innerHTML = roleBadge;
+
+  var fStatStr = (faceStat || "").toLowerCase();
+  var isVerified = (fStatStr === "verified" || fStatStr === "terverifikasi");
+  if (statusPillEl) {
+    if (isVerified) {
+      statusPillEl.innerHTML = '<span class="badge bg-success" style="border-radius: 9999px;"><i class="bi bi-shield-check me-1"></i> Terverifikasi</span>';
+    } else if (fStatStr === "pending" || fStatStr === "menunggu") {
+      statusPillEl.innerHTML = '<span class="badge bg-warning text-dark" style="border-radius: 9999px;"><i class="bi bi-hourglass-split me-1"></i> Menunggu Verifikasi</span>';
+    } else {
+      statusPillEl.innerHTML = '<span class="badge bg-danger" style="border-radius: 9999px;"><i class="bi bi-x-circle me-1"></i> Ditolak</span>';
+    }
+  }
+
+  if (btnVerifyFace) {
+    btnVerifyFace.style.display = isVerified ? "none" : "inline-flex";
+  }
+  if (btnUnverifyFace) {
+    btnUnverifyFace.style.display = isVerified ? "inline-flex" : "none";
+  }
+  if (btnDeleteFace) {
+    btnDeleteFace.style.display = "inline-flex";
+  }
 
   var modalEl = document.getElementById("modalPreviewFace");
   if (modalEl) {
@@ -1129,7 +1323,10 @@ document.addEventListener("DOMContentLoaded", function() {
     var nama = trigger.getAttribute("data-nama") || "";
     var username = trigger.getAttribute("data-username") || "";
     var role = trigger.getAttribute("data-role") || "";
-    previewFacePhoto(photo, nama, username, role);
+    var userId = trigger.getAttribute("data-id") || "0";
+    var stat = trigger.getAttribute("data-stat") || "";
+    var enrollUrl = trigger.getAttribute("data-enroll-url") || "#";
+    previewFacePhoto(photo, nama, username, role, userId, stat, enrollUrl);
   });
 
   // Client-Side Instant Live Search & Multi-Filter

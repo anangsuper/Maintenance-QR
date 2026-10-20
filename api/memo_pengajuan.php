@@ -474,76 +474,236 @@ if (empty($allMemos)) {
     }
 }
 
+$cabangFilterOptionsHtml = '';
+foreach ($cabangList as $c) {
+    $cName = $c['nama_cabang'] ?? '';
+    if ($cName === '') continue;
+    $sel = ($filterCabang === $cName) ? 'selected' : '';
+    $cabangFilterOptionsHtml .= '<option value="'.e($cName).'" '.$sel.'>'.e($cName).'</option>';
+}
+
+$totalNominalRealisasi = 0;
+foreach ($allMemos as $m) {
+    if (!empty($m['biaya_realisasi'])) {
+        $totalNominalRealisasi += (float)$m['biaya_realisasi'];
+    }
+}
+
 $body = '
 '.$flashHtml.'
 '.$errorHtml.'
 
-<!-- Header Banner (Rich Gradient Hero) -->
-<div class="hero-gradient-header hero-gradient-blue mb-4">
-  <div class="d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-3">
-    <div>
-      <div class="d-flex align-items-center gap-2 mb-1.5 flex-wrap">
-        <span class="badge bg-white text-primary px-2.5 py-1 font-monospace fw-bold shadow-xs" style="font-size: 0.70rem; letter-spacing: 0.04em; border-radius: 6px;">PENGELOLAAN SARPRAS &amp; SDM</span>
-        <span class="tech-label-blue">DOKUMEN RESMI PENGADAAN INVENTARIS</span>
-      </div>
-      <h2 class="h3 fw-bold mb-1 d-flex align-items-center gap-2">
-        <i class="bi bi-file-earmark-text"></i> Memo Internal Pengajuan Inventaris
-      </h2>
-      <p>Format resmi permohonan pengadaan sarana/fasilitas baru dari kantor cabang kepada Direksi dan Bagian Umum &amp; SDM.</p>
+<!-- BROWSER WINDOW NEO CONTAINER (WARM AMBER / ORANGE THEME UNTUK MEMO & PENGADAAN) -->
+<div class="card p-0 shadow-sm border-0 browser-window-card mb-4" style="border-radius: 24px;">
+  <!-- Browser Window Topbar with Traffic Lights -->
+  <div class="card-header bg-white py-3 px-4 border-bottom d-flex align-items-center justify-content-between flex-wrap gap-2" style="border-top-left-radius: 24px; border-top-right-radius: 24px;">
+    <div class="browser-topbar-col-left d-flex align-items-center gap-2">
+      <span class="browser-traffic-dot bg-danger"></span>
+      <span class="browser-traffic-dot bg-warning"></span>
+      <span class="browser-traffic-dot bg-success"></span>
     </div>
-    <div class="header-actions d-flex flex-wrap align-items-center gap-2">
-      <button type="button" class="btn-solid-cta" onclick="openCreateMemoModal()">
-        <i class="bi bi-plus-circle-fill text-primary"></i> Buat Memo Baru
-      </button>
-      <a href="'.e(module_url('memo_pengajuan.php', array_filter(['export' => 'csv', 'cabang' => $filterCabang, 'q' => $q]))).'" class="btn-glass" title="Unduh rekap data memo dalam format Excel / CSV">
-        <i class="bi bi-file-earmark-excel"></i> Ekspor CSV
-      </a>
-      <a href="'.e(module_url('dashboard.php', ['tab' => 'kartu'])).'" class="btn-glass">
-        <i class="bi bi-card-heading"></i> Data Kartu
-      </a>
-      <a href="'.e(module_url('inventaris_mutation.php')).'" class="btn-glass">
-        <i class="bi bi-arrow-left-right"></i> Mutasi Barang
-      </a>
+
+    <div class="browser-topbar-col-center">
+      <div class="browser-address-pill">
+        <i class="bi bi-lock-fill text-warning"></i>
+        <span>bankmitra.id/memo_pengajuan.php</span>
+      </div>
+    </div>
+
+    <div class="browser-topbar-col-right">
+      <div class="floating-toast-pill">
+        <div class="floating-toast-icon-amber" style="background: linear-gradient(135deg, #EA580C 0%, #C2410C 100%); box-shadow: 0 4px 10px rgba(234, 88, 12, 0.25);">
+          <i class="bi bi-file-earmark-text"></i>
+        </div>
+        <div class="text-start">
+          <div class="fw-bold text-dark" style="font-size: 0.76rem; line-height: 1.2;">Procurement &amp; Memo</div>
+          <div class="text-muted" style="font-size: 0.68rem;">Approval &amp; Realisasi Aset</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Inner Canvas with Gradient Hero Banner & Modern Metric Cards -->
+  <div class="p-3 p-md-4">
+    <!-- Hero Banner Card with Layered Smooth Waves (Amber/Orange Theme) -->
+    <div class="card-hero-neo mb-4" style="background: linear-gradient(135deg, #C2410C 0%, #EA580C 45%, #F59E0B 100%) !important; box-shadow: 0 12px 32px -4px rgba(234, 88, 12, 0.3) !important;">
+      <!-- Wave Layer Overlays at Bottom -->
+      <svg class="position-absolute bottom-0 start-0 w-100" style="height: 60px; pointer-events: none; opacity: 0.22;" preserveAspectRatio="none" viewBox="0 0 1200 120">
+        <path d="M0,0 C150,90 400,100 600,40 C800,-20 1050,80 1200,30 L1200,120 L0,120 Z" fill="#FFFFFF"></path>
+      </svg>
+      <svg class="position-absolute bottom-0 start-0 w-100" style="height: 40px; pointer-events: none; opacity: 0.32;" preserveAspectRatio="none" viewBox="0 0 1200 120">
+        <path d="M0,40 C300,10 600,80 900,30 C1050,10 1150,50 1200,60 L1200,120 L0,120 Z" fill="#FFFFFF"></path>
+      </svg>
+
+      <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 position-relative" style="z-index: 2;">
+        <div style="max-width: 650px;">
+          <div class="d-flex align-items-center gap-2 mb-2 flex-wrap">
+            <span class="badge bg-white text-dark px-2.5 py-1 font-monospace fw-bold shadow-xs" style="font-size: 0.70rem; letter-spacing: 0.05em; border-radius: 6px;">PENGELOLAAN SARPRAS &amp; SDM</span>
+            <span class="text-white text-opacity-85 small fw-semibold">Dokumen Resmi Pengadaan Inventaris Bank Mitra</span>
+          </div>
+          <h2 class="display-6 fw-bold mb-1 text-white" style="letter-spacing: -0.025em;">Memo Internal Pengadaan</h2>
+          <p class="text-white text-opacity-95 mb-3" style="font-size: 0.95rem; font-weight: 500;">
+            Format resmi permohonan pengadaan sarana/fasilitas baru dari kantor cabang kepada Direksi dan Bagian Umum &amp; SDM terintegrasi otomatis ke Kartu Inventaris.
+          </p>
+          <div class="d-flex flex-wrap align-items-center gap-2.5">
+            <button type="button" class="btn-hero-pill text-decoration-none d-inline-flex align-items-center gap-2" style="color: #EA580C !important;" onclick="openCreateMemoModal()">
+              <i class="bi bi-plus-circle-fill"></i> Buat Memo Baru
+            </button>
+            <a href="'.e(module_url('memo_pengajuan.php', array_filter(['export' => 'csv', 'cabang' => $filterCabang, 'q' => $q]))).'" class="btn btn-outline-light rounded-pill px-3.5 py-2 fw-semibold d-inline-flex align-items-center gap-2 shadow-xs" style="font-size: 0.88rem;">
+              <i class="bi bi-file-earmark-excel-fill"></i> Ekspor CSV
+            </a>
+            <a href="'.e(module_url('dashboard.php', ['tab' => 'kartu'])).'" class="btn btn-outline-light rounded-pill px-3 py-2 fw-semibold d-inline-flex align-items-center gap-2 shadow-xs" style="font-size: 0.88rem;">
+              <i class="bi bi-credit-card-2-front"></i> Data Kartu
+            </a>
+          </div>
+        </div>
+
+        <!-- Decorative Right Badges (Document Pin & Procurement Sun) -->
+        <div class="d-none d-md-flex align-items-center gap-4">
+          <div class="hero-pin-marker" title="Pengadaan Resmi Terverifikasi">
+            <svg width="44" height="52" viewBox="0 0 44 52" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M22 0C9.85 0 0 9.85 0 22C0 36 22 52 22 52C22 52 44 36 44 22C44 9.85 34.15 0 22 0Z" fill="#C2410C"/>
+              <circle cx="22" cy="22" r="9" fill="#FFFFFF"/>
+            </svg>
+          </div>
+
+          <div class="hero-sun-container" title="SOP 5 Tahap Pengadaan">
+            <svg width="68" height="68" viewBox="0 0 68 68" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <circle cx="34" cy="34" r="17" fill="#FDE047"/>
+              <rect x="31" y="2" width="6" height="10" rx="3" fill="#FDE047"/>
+              <rect x="31" y="56" width="6" height="10" rx="3" fill="#FDE047"/>
+              <rect x="2" y="31" width="10" height="6" rx="3" fill="#FDE047"/>
+              <rect x="56" y="31" width="10" height="6" rx="3" fill="#FDE047"/>
+              <rect x="11.5" y="11.5" width="6" height="10" rx="3" transform="rotate(-45 11.5 11.5)" fill="#FDE047"/>
+              <rect x="49.5" y="49.5" width="6" height="10" rx="3" transform="rotate(-45 49.5 49.5)" fill="#FDE047"/>
+              <rect x="49.5" y="11.5" width="10" height="6" rx="3" transform="rotate(-45 49.5 11.5)" fill="#FDE047"/>
+              <rect x="11.5" y="49.5" width="10" height="6" rx="3" transform="rotate(-45 11.5 49.5)" fill="#FDE047"/>
+            </svg>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 3 Symmetrical Metric Cards (Exact Proportions, Balanced Heights) -->
+    <div class="row g-3 mb-2">
+      <!-- Card 1: Total Memo Tercatat -->
+      <div class="col-md-4">
+        <div class="card-metric-modern">
+          <div>
+            <div class="metric-title-muted">Total Memo Pengajuan</div>
+            <div class="metric-number-bold">'.number_format($totalCount).' <span class="fs-6 fw-normal text-muted">Dokumen</span></div>
+          </div>
+          <div class="small text-muted mt-2 d-flex align-items-center gap-2" style="font-size: 0.78rem;">
+            <span class="text-warning fw-bold"><i class="bi bi-hourglass-split"></i> '.$diajukanCount.' Diajukan</span>
+            <span class="text-secondary">·</span>
+            <span class="text-success fw-bold"><i class="bi bi-check2-circle"></i> '.$disetujuiCount.' Disetujui/Selesai</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Card 2: Realisasi Anggaran Pengadaan -->
+      <div class="col-md-4">
+        <div class="card-metric-modern">
+          <div>
+            <div class="metric-title-muted">Realisasi Belanja Pengadaan</div>
+            <div class="metric-number-bold d-flex align-items-center gap-2">
+              <span class="text-dark" style="font-size: 1.45rem;">Rp. '.number_format($totalNominalRealisasi, 0, ',', '.').'</span>
+            </div>
+          </div>
+          <div class="small text-muted mt-2" style="font-size: 0.78rem;">
+            <span class="text-success fw-bold"><i class="bi bi-receipt"></i> Nota Toko Terverifikasi</span> · Transparan &amp; Siap Audit
+          </div>
+        </div>
+      </div>
+
+      <!-- Card 3: Status Alur SOP -->
+      <div class="col-md-4">
+        <div class="card-status-mint">
+          <div>
+            <div class="metric-title-muted" style="color: #047857 !important;">Kepatuhan Standar Pengadaan</div>
+            <div class="status-heading mt-1">
+              <span class="pulse-dot-green"></span>
+              <span>SOP 5 Tahap Aktif</span>
+            </div>
+          </div>
+          <div class="status-subtext mt-2">
+            <i class="bi bi-check-circle me-1"></i> Terintegrasi Otomatis ke Kartu Inventaris &amp; Label QR
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Upward Trend Chart with Overlapping Floating Trend Badge -->
+    <div class="position-relative mt-2 pt-1 mb-2">
+      <div class="w-100 position-relative overflow-hidden rounded-4 trend-chart-box" style="height: 72px; border: 1px solid #E2E8F0;">
+        <svg viewBox="0 0 1000 72" preserveAspectRatio="none" style="width: 100%; height: 100%;">
+          <defs>
+            <linearGradient id="chartGradMemo" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#EA580C" stop-opacity="0.25"/>
+              <stop offset="100%" stop-color="#EA580C" stop-opacity="0.0"/>
+            </linearGradient>
+          </defs>
+          <path d="M0,60 Q250,48 500,32 T1000,10 L1000,72 L0,72 Z" fill="url(#chartGradMemo)"/>
+          <path d="M0,60 Q250,48 500,32 T1000,10" fill="none" stroke="#EA580C" stroke-width="3" stroke-linecap="round"/>
+          <circle cx="994" cy="10" r="5" fill="#EA580C" stroke="#FFFFFF" stroke-width="2"/>
+        </svg>
+        <div class="position-absolute top-0 end-0 p-2 text-muted" style="font-size: 0.72rem; font-weight: 600;">
+          Aktivitas Pengadaan · Buku Kas Sarpras
+        </div>
+      </div>
+
+      <!-- Floating Trend Badge Overlapping Left of Chart -->
+      <div class="position-absolute" style="left: 16px; bottom: 10px; z-index: 4;">
+        <div class="badge-floating-trend shadow">
+          <div class="trend-icon-box" style="background: #C2410C; box-shadow: 0 4px 10px rgba(194, 65, 12, 0.3);">
+            <i class="bi bi-file-earmark-check-fill"></i>
+          </div>
+          <div>
+            <div class="fw-bold text-dark" style="font-size: 0.88rem;">+'.$disetujuiCount.' memo berhasil diproses</div>
+            <div class="text-muted small" style="font-size: 0.74rem;">Dilengkapi arsip nota toko &amp; BAST Pengadaan</div>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 </div>
 
 <!-- SOP Alur Sistematis Pengadaan Inventaris -->
-<div class="card mb-4 border shadow-xs bg-white" style="border-radius: 12px;">
+<div class="card mb-4 border shadow-xs bg-white" style="border-radius: 16px;">
   <div class="card-body py-3 px-4">
     <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-2">
-      <span class="text-uppercase fw-bold text-primary small" style="font-size:0.75rem; letter-spacing: 0.5px;">
-        <i class="bi bi-diagram-3-fill me-1"></i> Standar Alur Sistematis Pengadaan Inventaris Bank Mitra
+      <span class="text-uppercase fw-bold text-dark small" style="font-size:0.75rem; letter-spacing: 0.5px;">
+        <i class="bi bi-diagram-3-fill text-warning me-1"></i> Standar Alur Sistematis Pengadaan Inventaris Bank Mitra
       </span>
-      <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-2 py-1" style="font-size:0.72rem;">5 Tahapan Terintegrasi</span>
+      <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle px-2 py-1" style="font-size:0.72rem;">5 Tahapan Terintegrasi</span>
     </div>
     <div class="row g-2 text-center small pt-1">
       <div class="col-6 col-md">
-        <div class="p-2 rounded bg-light border h-100">
+        <div class="p-2.5 rounded-3 bg-light border h-100">
           <div class="fw-bold text-dark mb-0.5"><span class="badge bg-secondary me-1">1</span> Pengajuan Memo</div>
           <div class="text-muted" style="font-size:0.7rem;">Cabang input permohonan &amp; lampirkan penawaran</div>
         </div>
       </div>
       <div class="col-6 col-md">
-        <div class="p-2 rounded bg-light border h-100">
+        <div class="p-2.5 rounded-3 bg-light border h-100">
           <div class="fw-bold text-dark mb-0.5"><span class="badge bg-warning text-dark me-1">2</span> Persetujuan</div>
           <div class="text-muted" style="font-size:0.7rem;">Diverifikasi Umum &amp; disetujui Direksi Operasional</div>
         </div>
       </div>
       <div class="col-6 col-md">
-        <div class="p-2 rounded bg-light border h-100">
+        <div class="p-2.5 rounded-3 bg-light border h-100">
           <div class="fw-bold text-dark mb-0.5"><span class="badge bg-info text-dark me-1">3</span> Pembelian &amp; Nota</div>
           <div class="text-muted" style="font-size:0.7rem;">Barang dibeli, upload nota toko &amp; foto fisik</div>
         </div>
       </div>
       <div class="col-6 col-md">
-        <div class="p-2 rounded bg-light border h-100">
+        <div class="p-2.5 rounded-3 bg-light border h-100">
           <div class="fw-bold text-dark mb-0.5"><span class="badge bg-primary me-1">4</span> Cetak Berita Acara</div>
           <div class="text-muted" style="font-size:0.7rem;">Pemeriksaan kondisi fisik barang baru &amp; Berita Acara</div>
         </div>
       </div>
       <div class="col-6 col-md">
-        <div class="p-2 rounded bg-light border h-100">
+        <div class="p-2.5 rounded-3 bg-light border h-100">
           <div class="fw-bold text-dark mb-0.5"><span class="badge bg-success me-1">5</span> Masuk Inventaris</div>
           <div class="text-muted" style="font-size:0.7rem;">Otomatis terdaftar ke Kartu Inventaris &amp; QR Code</div>
         </div>
@@ -552,72 +712,45 @@ $body = '
   </div>
 </div>
 
-<!-- KPI Mini Stats -->
-<div class="row g-3 mb-4">
-  <div class="col-sm-4 col-12">
-    <div class="card p-3 border shadow-xs bg-white h-100" style="border-radius: 12px;">
-      <div class="d-flex align-items-center justify-content-between">
-        <div>
-          <div class="text-muted small fw-semibold text-uppercase" style="font-size:0.7rem; letter-spacing: 0.04em;">Total Memo Tercatat</div>
-          <div class="fs-4 fw-bold text-dark mt-0.5">'.$totalCount.' <span class="fs-6 fw-normal text-muted">Dokumen</span></div>
-        </div>
-        <div class="p-2.5 rounded-3 bg-primary-subtle text-primary fs-4"><i class="bi bi-journal-text"></i></div>
+<!-- Table Card dengan Toolbar Symmetrical -->
+<div class="card p-0 overflow-hidden shadow-sm h-100 border-0 mb-4" style="border-radius: 20px;">
+  <!-- Table Header & Live Search Bar with Symmetrical Responsive Inputs -->
+  <div class="card-header bg-white py-3.5 px-4 border-bottom" style="border-top: 4px solid #EA580C; border-top-left-radius: 20px; border-top-right-radius: 20px;">
+    <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-3">
+      <div class="fw-bold text-dark text-uppercase small d-flex align-items-center gap-2" style="letter-spacing: 0.05em;">
+        <i class="bi bi-journal-text text-warning fs-5"></i>
+        <span>Daftar Arsip Memo Internal</span>
+        <span class="badge bg-warning bg-opacity-10 text-dark border border-warning border-opacity-25 rounded-pill px-2.5 py-1 font-monospace">'.count($allMemos).'</span>
+      </div>
+      <div class="small text-muted">
+        Menampilkan <strong class="text-dark">'.count($allMemos).'</strong> dokumen memo
       </div>
     </div>
-  </div>
-  <div class="col-sm-4 col-12">
-    <div class="card p-3 border shadow-xs bg-white h-100" style="border-radius: 12px;">
-      <div class="d-flex align-items-center justify-content-between">
-        <div>
-          <div class="text-muted small fw-semibold text-uppercase" style="font-size:0.7rem; letter-spacing: 0.04em;">Status Diajukan</div>
-          <div class="fs-4 fw-bold text-warning mt-0.5">'.$diajukanCount.' <span class="fs-6 fw-normal text-warning">Memo</span></div>
+
+    <!-- Filter & Search Toolbar Controls (All 38px High, Perfectly Symmetrical) -->
+    <form method="get" class="row g-2 align-items-center m-0">
+      <div class="col-lg-6 col-md-12 p-0 pe-md-1">
+        <div class="input-group">
+          <span class="input-group-text bg-light border-end-0 text-muted" style="border-radius: 9999px 0 0 9999px; height: 38px;"><i class="bi bi-search"></i></span>
+          <input type="text" name="q" class="form-control bg-light border-start-0 ps-0" style="border-radius: 0 9999px 9999px 0; font-size: 0.84rem; height: 38px;" placeholder="Cari nomor memo, perihal pengadaan, cabang, pengaju..." value="'.e($q).'">
         </div>
-        <div class="p-2.5 rounded-3 bg-warning-subtle text-warning fs-4"><i class="bi bi-hourglass-split"></i></div>
       </div>
-    </div>
-  </div>
-  <div class="col-sm-4 col-12">
-    <div class="card p-3 border shadow-xs bg-white h-100" style="border-radius: 12px;">
-      <div class="d-flex align-items-center justify-content-between">
-        <div>
-          <div class="text-muted small fw-semibold text-uppercase" style="font-size:0.7rem; letter-spacing: 0.04em;">Disetujui / Selesai</div>
-          <div class="fs-4 fw-bold text-success mt-0.5">'.$disetujuiCount.' <span class="fs-6 fw-normal text-success">Memo</span></div>
-        </div>
-        <div class="p-2.5 rounded-3 bg-success-subtle text-success fs-4"><i class="bi bi-check2-circle"></i></div>
+      <div class="col-lg-4 col-md-8 p-0 px-md-1">
+        <select name="cabang" class="form-select form-select-sm" style="border-radius: 9999px; height: 38px; font-size: 0.82rem;" onchange="this.form.submit()">
+          <option value="">Semua Kantor Cabang</option>
+          '.$cabangFilterOptionsHtml.'
+        </select>
       </div>
-    </div>
-  </div>
-</div>
-
-<!-- Search & Filter Card -->
-<div class="card p-3 mb-4 border shadow-xs bg-white" style="border-radius: 12px;">
-  <form method="get" class="d-flex flex-wrap gap-2">
-    <div class="input-group flex-grow-1">
-      <span class="input-group-text bg-white border-end-0 text-muted"><i class="bi bi-search"></i></span>
-      <input type="text" name="q" class="form-control border-start-0 ps-0" placeholder="Cari nomor memo, perihal pengadaan, kantor cabang, nama pengaju..." value="'.e($q).'">
-    </div>
-    <select name="cabang" class="form-select" style="max-width: 200px;">
-      <option value="">-- Semua Cabang --</option>';
-
-foreach ($cabangList as $c) {
-    $cName = $c['nama_cabang'] ?? '';
-    $sel = ($filterCabang === $cName) ? 'selected' : '';
-    $body .= '<option value="'.e($cName).'" '.$sel.'>'.e($cName).'</option>';
-}
-
-$body .= '
-    </select>
-    <button type="submit" class="btn btn-primary px-3 fw-semibold">Filter</button>
-    '.(($q || $filterCabang) ? '<a href="'.e(module_url('memo_pengajuan.php')).'" class="btn btn-light border px-3">Reset</a>' : '').'
-  </form>
-</div>
-
-<!-- Table Card -->
-<div class="card p-0 overflow-hidden shadow-sm border-0 mb-4" style="border-radius: 14px;">
-  <div class="card-header bg-white py-3 px-4 d-flex justify-content-between align-items-center border-bottom">
-    <div class="fw-bold text-dark text-uppercase small" style="letter-spacing: 0.05em;">
-      <i class="bi bi-journal-text text-primary me-2"></i>Daftar Arsip Memo Internal ('.count($allMemos).')
-    </div>
+      <div class="col-lg-2 col-md-4 p-0 ps-md-1 d-flex gap-1.5">
+        <button type="submit" class="btn btn-warning btn-sm w-100 fw-bold text-dark" style="border-radius: 9999px; height: 38px; font-size: 0.82rem;">
+          <i class="bi bi-funnel me-1"></i> Filter
+        </button>
+        '.(($q || $filterCabang) ? '
+        <a href="'.e(module_url('memo_pengajuan.php')).'" class="btn btn-outline-secondary btn-sm" style="border-radius: 9999px; height: 38px; width: 38px; padding: 0; display: inline-flex; align-items: center; justify-content: center;" title="Reset Filter">
+          <i class="bi bi-arrow-counterclockwise"></i>
+        </a>' : '').'
+      </div>
+    </form>
   </div>
 <style>
 @media (min-width: 992px) {
