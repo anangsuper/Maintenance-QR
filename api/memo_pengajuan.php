@@ -371,33 +371,27 @@ if (empty($allMemos)) {
               <div class="text-secondary small fst-italic" style="font-size:0.72rem;"><i class="bi bi-hourglass-split me-0.5"></i>Estimasi Pengajuan</div>';
         }
 
-        $berkasBtn = '';
-        $setujuiBtn = '';
+        $primaryActionBtn = '';
+        $menuItems = [];
+
+        // 1. Opsi Cetak Dokumen Memo (selalu tersedia)
+        $menuItems[] = '<li><a class="dropdown-item py-1.5" href="'.$printUrl.'" target="_blank"><i class="bi bi-printer text-primary me-2"></i> Cetak Dokumen Memo</a></li>';
+
         if ($st === 'Diajukan') {
             $hasLampiran = !empty($m['lampiran_file']);
-            $berkasBtn = '
-              <button type="button" class="btn btn-sm '.($hasLampiran ? 'btn-outline-secondary bg-white' : 'btn-primary text-white fw-bold').' d-inline-flex align-items-center gap-1 px-2.5 shadow-xs text-nowrap" style="font-size:0.75rem;" onclick=\'openQuickUploadModal('.$memoJson.')\' title="'.($hasLampiran ? 'Lihat / Ganti Berkas Surat Penawaran' : 'Upload Berkas Surat Penawaran / Brosur').'">
-                <i class="bi bi-paperclip"></i> '.($hasLampiran ? 'Berkas' : '+ Berkas').'
+            $primaryActionBtn = '
+              <button type="button" class="btn btn-sm btn-success fw-bold d-inline-flex align-items-center gap-1 px-2.5 py-1 shadow-xs text-nowrap" style="font-size:0.75rem;" onclick=\'quickApproveMemo('.$mid.', "'.e($nomor).'")\' title="Setujui Memo ini agar siap dibeli">
+                <i class="bi bi-check-circle-fill"></i> Setujui
               </button>';
 
-            $setujuiBtn = '
-              <button type="button" class="btn btn-sm btn-outline-success bg-white fw-bold d-inline-flex align-items-center gap-1 px-2.5 shadow-xs text-nowrap" style="font-size:0.75rem;" onclick=\'quickApproveMemo('.$mid.', "'.e($nomor).'")\' title="Setujui Memo ini agar siap dibeli">
-                <i class="bi bi-check-circle-fill text-success"></i> Setujui
-              </button>';
-        }
-
-        $realisasiBtn = '';
-        if (in_array($st, ['Disetujui', 'Selesai Dibeli'], true)) {
+            $menuItems[] = '<li><button class="dropdown-item py-1.5" type="button" onclick=\'openQuickUploadModal('.$memoJson.')\'><i class="bi bi-paperclip text-secondary me-2"></i> '.($hasLampiran ? 'Lihat / Ganti Penawaran' : '+ Upload Surat Penawaran').'</button></li>';
+        } elseif ($st === 'Disetujui') {
             $hasNota = !empty($m['bukti_beli_file']);
-            $realisasiBtn = '
-              <button type="button" class="btn btn-sm '.($hasNota ? 'btn-outline-success bg-white' : 'btn-warning text-dark fw-bold').' d-inline-flex align-items-center gap-1 px-2.5 shadow-xs text-nowrap" style="font-size:0.75rem;" onclick=\'openRealisasiModal('.$memoJson.')\' title="'.($hasNota ? 'Lihat / Edit Bukti Pembelian & Nota Toko' : 'Upload Bukti Pembelian & Nota Toko').'">
+            $primaryActionBtn = '
+              <button type="button" class="btn btn-sm btn-warning text-dark fw-bold d-inline-flex align-items-center gap-1 px-2.5 py-1 shadow-xs text-nowrap" style="font-size:0.75rem;" onclick=\'openRealisasiModal('.$memoJson.')\' title="'.($hasNota ? 'Lihat / Edit Bukti Pembelian & Nota Toko' : 'Upload Bukti Pembelian & Nota Toko').'">
                 <i class="bi bi-receipt"></i> '.($hasNota ? 'Nota Toko' : '+ Nota Toko').'
               </button>';
-        }
-
-        $daftarkanKartuBtn = '';
-        $bastPengadaanBtn = '';
-        if ($st === 'Selesai Dibeli') {
+        } elseif ($st === 'Selesai Dibeli') {
             $cardUrl = module_url('dashboard.php', [
                 'tab' => 'kartu',
                 'add' => '1',
@@ -408,30 +402,48 @@ if (empty($allMemos)) {
                 'harga' => (!empty($m['biaya_realisasi']) ? (int)$m['biaya_realisasi'] : (int)$total),
                 'ket' => 'Pengadaan via Memo No. ' . $nomor . (!empty($m['catatan_realisasi']) ? ' (' . $m['catatan_realisasi'] . ')' : '')
             ]);
-            $daftarkanKartuBtn = '
-              <a href="'.e($cardUrl).'" class="btn btn-sm btn-success fw-bold d-inline-flex align-items-center gap-1 px-2.5 shadow-xs text-nowrap" style="font-size:0.75rem;" title="Daftarkan langsung barang ini ke Kartu Inventaris Aktif">
+            $primaryActionBtn = '
+              <a href="'.e($cardUrl).'" class="btn btn-sm btn-success fw-bold d-inline-flex align-items-center gap-1 px-2.5 py-1 shadow-xs text-nowrap" style="font-size:0.75rem;" title="Daftarkan langsung barang ini ke Kartu Inventaris Aktif">
                 <i class="bi bi-credit-card-2-front"></i> Daftarkan Kartu
               </a>';
 
             $bastUrl = module_url('print_bast_pengadaan.php', ['id' => $mid]);
-            $bastPengadaanBtn = '
-              <a href="'.e($bastUrl).'" target="_blank" class="btn btn-outline-dark fw-semibold d-inline-flex align-items-center" style="font-size:0.75rem;" title="Cetak Berita Acara Penerimaan Barang Pengadaan">
-                <i class="bi bi-file-earmark-check text-primary me-1"></i> Berita Acara
-              </a>';
+            $menuItems[] = '<li><a class="dropdown-item py-1.5" href="'.e($bastUrl).'" target="_blank"><i class="bi bi-file-earmark-check text-success me-2"></i> Cetak Berita Acara (BAST)</a></li>';
+            $menuItems[] = '<li><button class="dropdown-item py-1.5" type="button" onclick=\'openRealisasiModal('.$memoJson.')\'><i class="bi bi-receipt text-warning me-2"></i> Realisasi &amp; Nota Toko</button></li>';
         }
+
+        // 2. Opsi Edit Data Memo
+        $menuItems[] = '<li><hr class="dropdown-divider my-1"></li>';
+        $menuItems[] = '<li><button class="dropdown-item py-1.5" type="button" onclick=\'openEditMemoModal('.$memoJson.')\'><i class="bi bi-pencil text-secondary me-2"></i> Edit Data Memo</button></li>';
+
+        $actionHtml = '
+          <div class="d-inline-flex align-items-center justify-content-end gap-1.5 flex-nowrap">
+            '.$primaryActionBtn.'
+            <a href="'.$printUrl.'" target="_blank" class="btn btn-sm btn-outline-primary px-2 py-1 shadow-xs" style="font-size:0.75rem;" title="Cetak Dokumen Memo Internal">
+              <i class="bi bi-printer"></i>
+            </a>
+            <div class="dropdown d-inline-block">
+              <button class="btn btn-sm btn-light border px-2 py-1 shadow-xs dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false" title="Menu Opsi Lainnya">
+                <i class="bi bi-three-dots-vertical"></i>
+              </button>
+              <ul class="dropdown-menu dropdown-menu-end shadow border py-1" style="font-size:0.80rem; min-width: 190px;">
+                '.implode('', $menuItems).'
+              </ul>
+            </div>
+          </div>';
 
         $tableRows .= '
         <tr>
           <td class="text-center font-monospace text-muted small">'.$no++.'</td>
           <td>
-            <a href="'.$printUrl.'" target="_blank" class="fw-bold text-dark font-monospace text-decoration-none text-nowrap d-inline-block" style="font-size:0.82rem;" title="Lihat &amp; Cetak Dokumen Memo">
+            <a href="'.$printUrl.'" target="_blank" class="fw-bold text-dark font-monospace text-decoration-none d-block text-break" style="font-size:0.78rem; line-height: 1.3;" title="Lihat &amp; Cetak Dokumen Memo">
               <i class="bi bi-file-earmark-pdf-fill text-danger me-1"></i>'.$nomor.'
             </a>
-            <div class="small text-muted mt-0.5" style="font-size:0.75rem;"><i class="bi bi-calendar3 me-1"></i>'.$tgl.'</div>
+            <div class="small text-muted mt-0.5" style="font-size:0.72rem;"><i class="bi bi-calendar3 me-1"></i>'.$tgl.'</div>
           </td>
           <td>
-            <span class="badge bg-light text-dark border px-2 py-0.5 small mb-1">'.$cabang.'</span>
-            <div class="small text-secondary">'.$pengaju.'</div>
+            <span class="badge bg-light text-dark border px-2 py-0.5 small mb-1 text-wrap d-inline-block" style="max-width: 140px; font-size:0.72rem;">'.$cabang.'</span>
+            <div class="small text-secondary" style="font-size:0.72rem; line-height: 1.25;">'.$pengaju.'</div>
           </td>
           <td>
             <strong class="text-dark small d-block">'.$perihal.'</strong>
@@ -444,21 +456,7 @@ if (empty($allMemos)) {
             <span class="status-pill '.$stBadge.'">'.e($st).'</span>
           </td>
           <td class="text-end text-nowrap">
-            <div class="d-inline-flex align-items-center justify-content-end gap-1.5 flex-nowrap">
-              '.$berkasBtn.'
-              '.$setujuiBtn.'
-              '.$daftarkanKartuBtn.'
-              '.$realisasiBtn.'
-              <div class="btn-group btn-group-sm shadow-xs">
-                <a href="'.$printUrl.'" target="_blank" class="btn btn-outline-primary fw-semibold d-inline-flex align-items-center" style="font-size:0.75rem;" title="Cetak Dokumen Memo Internal">
-                  <i class="bi bi-printer me-1"></i> Memo
-                </a>
-                '.$bastPengadaanBtn.'
-                <button type="button" class="btn btn-light border d-inline-flex align-items-center" style="font-size:0.75rem;" title="Edit Memo" onclick=\'openEditMemoModal('.$memoJson.')\'>
-                  <i class="bi bi-pencil"></i>
-                </button>
-              </div>
-            </div>
+            '.$actionHtml.'
           </td>
         </tr>';
     }
@@ -609,17 +607,27 @@ $body .= '
       <i class="bi bi-journal-text text-primary me-2"></i>Daftar Arsip Memo Internal ('.count($allMemos).')
     </div>
   </div>
-  <div class="table-responsive">
-    <table class="table table-hover align-middle mb-0">
+<style>
+@media (min-width: 992px) {
+  .table-fit-container {
+    overflow-x: visible !important;
+  }
+}
+.table-fit-container .table td, .table-fit-container .table th {
+  vertical-align: middle;
+}
+</style>
+  <div class="table-responsive table-fit-container" style="overflow-x: auto;">
+    <table class="table table-hover align-middle mb-0 w-100" style="table-layout: auto;">
       <thead class="table-light">
         <tr>
-          <th style="min-width: 45px; width: 45px;" class="text-center font-monospace">NO</th>
-          <th style="min-width: 220px; width: 220px;">NOMOR MEMO &amp; TANGGAL</th>
-          <th style="min-width: 170px; width: 170px;">CABANG &amp; PENGAJU</th>
-          <th style="min-width: 200px;">PERIHAL PERMOHONAN</th>
-          <th style="min-width: 160px; width: 170px;">ESTIMASI &amp; REALISASI</th>
-          <th style="min-width: 130px; width: 130px;" class="text-center">STATUS</th>
-          <th style="min-width: 330px; width: 330px;" class="text-end">AKSI</th>
+          <th style="width: 38px;" class="text-center font-monospace">NO</th>
+          <th style="width: 19%;">NOMOR MEMO &amp; TANGGAL</th>
+          <th style="width: 15%;">CABANG &amp; PENGAJU</th>
+          <th style="width: 25%;">PERIHAL PERMOHONAN</th>
+          <th style="width: 14%;">ESTIMASI &amp; REALISASI</th>
+          <th style="width: 9%;" class="text-center">STATUS</th>
+          <th style="width: 18%;" class="text-end">AKSI</th>
         </tr>
       </thead>
       <tbody>
