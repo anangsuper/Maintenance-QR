@@ -41,20 +41,43 @@ $dataSuccess = null;
 $dataError = null;
 
 // =========================================================================
-// 0. HANDLE HAPUS / KOSONGKAN FOTO KARTU
+// 0. HANDLE HAPUS / KOSONGKAN FOTO KARTU DENGAN OTORISASI BIOMETRIK / ADMIN
 // =========================================================================
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'delete_foto' && $card) {
     verify_csrf();
-    try {
-        db()->prepare("UPDATE inventaris_kartu SET foto = NULL, foto_updated_by = NULL, foto_updated_at = NULL WHERE id = ?")->execute([(int)$card['id']]);
-        $card['foto'] = null;
-        $card['foto_updated_by'] = null;
-        $card['foto_updated_at'] = null;
-        $_SESSION['flash'] = '✓ Foto kartu inventaris berhasil dihapus/dikosongkan.';
-        header('Location: ' . module_url('kartu_detail.php', ['id' => (int)$card['id']]));
-        exit;
-    } catch (Throwable $e) {
-        $uploadError = 'Gagal menghapus foto: ' . $e->getMessage();
+
+    $faceVerified = (string)($_POST['face_verified'] ?? '0');
+    $verifierName = trim((string)($_POST['verifier_name'] ?? ''));
+    $verifierUserId = (int)($_POST['verifier_user_id'] ?? 0);
+    $verifierConfidence = (int)($_POST['verifier_confidence'] ?? 0);
+
+    $isAuthorized = false;
+    $verifierLabel = '';
+
+    if ($faceVerified === '1' && !empty($verifierName)) {
+        $isAuthorized = true;
+        $verifierLabel = $verifierName . ($verifierConfidence > 0 ? " ({$verifierConfidence}% Cocok - Scan Wajah)" : " (Scan Wajah)");
+    } elseif (is_logged_in() && (is_admin() || is_hrd())) {
+        $isAuthorized = true;
+        $staffRole = is_admin() ? 'Sesi Admin' : 'Sesi SDM & Umum';
+        $staffName = current_user_name() ?: (is_admin() ? 'Administrator' : 'Staf SDM & Umum');
+        $verifierLabel = $staffName . " ({$staffRole})";
+    }
+
+    if (!$isAuthorized) {
+        $uploadError = "Penghapusan foto barang ditolak! Wajib diverifikasi melalui pemindaian biometrik wajah staf/teknisi atau otorisasi sesi Admin.";
+    } else {
+        try {
+            db()->prepare("UPDATE inventaris_kartu SET foto = NULL, foto_updated_by = NULL, foto_updated_at = NULL WHERE id = ?")->execute([(int)$card['id']]);
+            $card['foto'] = null;
+            $card['foto_updated_by'] = null;
+            $card['foto_updated_at'] = null;
+            $_SESSION['flash'] = '✓ Foto kartu inventaris berhasil dikosongkan dengan otorisasi: ' . e($verifierLabel) . '.';
+            header('Location: ' . module_url('kartu_detail.php', ['id' => (int)$card['id']]));
+            exit;
+        } catch (Throwable $e) {
+            $uploadError = 'Gagal menghapus foto: ' . $e->getMessage();
+        }
     }
 }
 
@@ -106,8 +129,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                 $fileName = 'kartu_' . $card['id'] . '_' . date('Ymd_His') . '_' . bin2hex(random_bytes(3)) . '.jpg';
                 $targetPath = $uploadDir . $fileName;
 
-                // Kompresi gambar otomatis (max 1600px, quality 82, file size ~150-250KB)
-                if (compress_and_save_uploaded_image($file['tmp_name'], $targetPath, 1600, 82)) {
+                // Kompresi & auto-crop gambar rasio 4:5 (max 1200x1500px, quality 82, file size ~150-250KB)
+                if (compress_and_save_uploaded_image($file['tmp_name'], $targetPath, 1600, 82, true)) {
                     $relativePhoto = 'uploads/assets/' . $fileName;
                     
                     // Simpan ke database HANYA untuk ID kartu ini
@@ -156,10 +179,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     $nomorSeri = trim((string)($_POST['nomor_seri_inventaris'] ?? ''));
     $keterangan = trim((string)($_POST['keterangan'] ?? ''));
 
-    // Jika user menambahkan ruangan baru secara kustom, masukkan ke master_ruangan
-    $finalRuangan = $ruanganSelect;
-    if (!empty($ruanganCustom)) {
-        $finalRuangan = add_master_ruangan($ruanganCustom);
+    // Lokasi barang: utamakan custom input, atau select
+    $finalRuangan = !empty($ruanganCustom) ? $ruanganCustom : $ruanganSelect;
+    if (empty($finalRuangan)) {
+        $finalRuangan = 'KPO/Lt-4/SDM';
     }
 
     $updated = update_inventaris_kartu_data((int)$card['id'], [
@@ -167,6 +190,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
         'jenis_inventaris' => $jenisInv,
         'golongan' => $golongan,
         'ruangan' => $finalRuangan,
+        'lokasi' => $finalRuangan,
         'sumber_perolehan' => $sumberPerolehan,
         'status_inventaris' => $statusInv,
         'keterangan' => $keterangan,
@@ -287,7 +311,75 @@ $pageTitle = $card ? e($card['nama_barang']) . ' - Kartu Inventaris' : 'Kartu In
         .header-brand {
             background: linear-gradient(135deg, #001B30 0%, #003B66 100%);
             color: #ffffff;
-            border-bottom: 3px solid var(--app-gold);
+            border-bottom: 2px solid #D4AF37;
+            box-shadow: 0 4px 15px rgba(0, 27, 48, 0.25);
+        }
+        .status-pulse-dot {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #10B981;
+            box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+            animation: statusPulseGreen 1.8s infinite;
+        }
+        @keyframes statusPulseGreen {
+            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+            70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(16, 185, 129, 0); }
+            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+        }
+        .btn-navy-primary {
+            background: linear-gradient(135deg, #002B49 0%, #003B66 100%) !important;
+            color: #FFFFFF !important;
+            border: 1px solid #001B30 !important;
+            box-shadow: 0 2px 6px rgba(0, 43, 73, 0.2) !important;
+            transition: all 0.2s ease;
+        }
+        .btn-navy-primary:hover {
+            background: linear-gradient(135deg, #001B30 0%, #002B49 100%) !important;
+            color: #FFFFFF !important;
+            box-shadow: 0 4px 12px rgba(0, 43, 73, 0.35) !important;
+            transform: translateY(-1px);
+        }
+        .btn-outline-neutral {
+            color: #334155 !important;
+            border: 1.5px solid #94A3B8 !important;
+            background: #FFFFFF !important;
+            transition: all 0.2s ease;
+        }
+        .btn-outline-neutral:hover {
+            background: #1E293B !important;
+            color: #FFFFFF !important;
+            border-color: #1E293B !important;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 10px rgba(15, 23, 42, 0.12) !important;
+        }
+        .copy-btn {
+            font-size: 0.70rem;
+            border: 1px solid #CBD5E1;
+            background: #F8FAFC;
+            color: #475569;
+            padding: 2px 8px;
+            line-height: 1.3;
+            border-radius: 20px;
+            transition: all 0.15s ease;
+            cursor: pointer;
+        }
+        .copy-btn:hover {
+            background: #E2E8F0;
+            color: #0F172A;
+            border-color: #94A3B8;
+        }
+        .photo-dropzone {
+            border: 2px dashed #CBD5E1;
+            border-radius: 12px;
+            background: #FFFFFF;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .photo-dropzone:hover {
+            border-color: #002B49;
+            background: #F8FAFC;
         }
         .card-custom {
             border: 1px solid #E2E8F0;
@@ -320,12 +412,15 @@ $pageTitle = $card ? e($card['nama_barang']) . ' - Kartu Inventaris' : 'Kartu In
             border-radius: 14px;
             overflow: hidden;
             background: #F1F5F9;
-            aspect-ratio: 4 / 3;
+            aspect-ratio: 4 / 5;
             display: flex;
             align-items: center;
             justify-content: center;
             border: 2px dashed #CBD5E1;
             transition: all 0.2s ease;
+            width: 100%;
+            max-width: 320px;
+            margin: 0 auto;
         }
         .item-photo-wrapper.has-image {
             border: 1px solid #E2E8F0;
@@ -474,7 +569,9 @@ $pageTitle = $card ? e($card['nama_barang']) . ' - Kartu Inventaris' : 'Kartu In
             }
             .item-photo-wrapper {
                 border-radius: 12px;
-                max-height: 240px;
+                aspect-ratio: 4 / 5;
+                max-width: 280px;
+                margin: 0 auto;
             }
             .qr-card-box {
                 margin: 0 auto;
@@ -573,17 +670,35 @@ $pageTitle = $card ? e($card['nama_barang']) . ' - Kartu Inventaris' : 'Kartu In
 
             <?php
                 $rek = (string)$card['nomor_rekening'];
+                $kodeInventaris = format_kode_inventaris($rek);
                 $tglFormatted = format_indo_date($card['tanggal_perolehan']);
-                $nomorGabungan = get_nomor_asset_gabungan($rek, $card['tanggal_perolehan']);
-                $cBranch = get_cabang_from_nomor_rekening($rek);
+                $nomorGabungan = get_nomor_asset_gabungan($kodeInventaris, $card['tanggal_perolehan']);
+                $cBranch = get_cabang_from_nomor_rekening($kodeInventaris);
                 $kdCabang = $cBranch ? $cBranch['code'] : '01';
-                $namaCabang = $cBranch ? strtoupper($cBranch['name']) : 'KANTOR PUSAT OPERASIONAL';
+                if ($kdCabang === '01') {
+                    $namaCabang = 'KANTOR PUSAT OPERASIONAL (KPO)';
+                } else {
+                    $namaCabang = 'KANTOR CABANG ' . strtoupper($cBranch['name'] ?? '');
+                }
                 
                 // Nilai-nilai master inventaris
                 $nomorSeriInv = !empty($card['nomor_seri_inventaris']) ? $card['nomor_seri_inventaris'] : generate_default_nomor_seri($card);
                 $jenisInvVal = !empty($card['jenis_inventaris']) ? $card['jenis_inventaris'] : '3 : PERALATAN KANTOR';
                 $golonganVal = !empty($card['golongan']) ? $card['golongan'] : '02 : GOLONGAN I';
-                $ruanganVal = !empty($card['ruangan']) ? $card['ruangan'] : (!empty($card['lokasi']) ? $card['lokasi'] : '05 : LANTAI I GEDUNG DEPAN');
+                
+                // Ruangan / Lokasi Fisik Barang
+                $ruanganVal = '';
+                if (!empty($card['ruangan'])) {
+                    $ruanganVal = trim($card['ruangan']);
+                } elseif (!empty($card['lokasi']) && $card['lokasi'] !== 'Kantor Pusat (KPO)' && $card['lokasi'] !== 'KPO / Operasional') {
+                    $ruanganVal = trim($card['lokasi']);
+                } elseif (!empty($matchedAsset['spesifikasi']) && preg_match('/Lokasi:\s*([^\|]+)/i', $matchedAsset['spesifikasi'], $mLok)) {
+                    $ruanganVal = trim($mLok[1]);
+                } else {
+                    $cabPrefix = ($kdCabang === '01') ? 'KPO' : 'KC-' . ($cBranch ? strtoupper(substr($cBranch['name'], 0, 3)) : 'CAB');
+                    $ruanganVal = "{$cabPrefix}/Lt-4/SDM";
+                }
+                $lokasiBarangVal = $ruanganVal;
                 $sumberVal = !empty($card['sumber_perolehan']) ? $card['sumber_perolehan'] : '02 : MODAL DISETOR';
                 $statusVal = !empty($card['status_inventaris']) ? $card['status_inventaris'] : '1 : Aktif';
                 $keteranganVal = !empty($card['keterangan']) ? $card['keterangan'] : $card['nama_barang'];
@@ -596,7 +711,7 @@ $pageTitle = $card ? e($card['nama_barang']) . ' - Kartu Inventaris' : 'Kartu In
                     <div class="row g-3 align-items-center mb-2">
                         <!-- Foto Barang (Kiri 42%) -->
                         <div class="col-5">
-                            <div class="item-photo-wrapper shadow-xs mb-0 <?= $photoUrl ? 'has-image' : '' ?>" style="max-height: 140px; aspect-ratio: 1/1; cursor: pointer; border-radius: 12px;" onclick="<?= $photoUrl ? "viewFullImage('" . e(addslashes($photoUrl)) . "', '" . e(addslashes($card['nama_barang'])) . "')" : "" ?>" title="Klik untuk memperbesar">
+                            <div class="item-photo-wrapper shadow-xs mb-0 <?= $photoUrl ? 'has-image' : '' ?>" style="max-height: 175px; aspect-ratio: 4 / 5; cursor: pointer; border-radius: 12px;" onclick="<?= $photoUrl ? "viewFullImage('" . e(addslashes($photoUrl)) . "', '" . e(addslashes($card['nama_barang'])) . "')" : "" ?>" title="Klik untuk memperbesar">
                                 <?php if ($photoUrl): ?>
                                     <img src="<?= e($photoUrl) ?>" alt="Foto <?= e($card['nama_barang']) ?>" style="width: 100%; height: 100%; object-fit: cover; border-radius: 12px;">
                                     <div class="position-absolute bottom-0 end-0 p-1 bg-dark bg-opacity-75 text-white rounded-start" style="font-size: 0.65rem;">
@@ -614,16 +729,13 @@ $pageTitle = $card ? e($card['nama_barang']) . ' - Kartu Inventaris' : 'Kartu In
                         <!-- Ringkasan Identitas Utama (Kanan 58%) -->
                         <div class="col-7">
                             <div class="d-flex align-items-center justify-content-between mb-1">
-                                <span class="badge bg-success rounded-pill px-2 py-0.5 font-mono" style="font-size: 0.70rem;"><?= e($statusVal) ?></span>
+                                <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 rounded-pill px-2 py-0.5 d-inline-flex align-items-center gap-1.5 fw-bold" style="font-size: 0.70rem;"><span class="status-pulse-dot"></span><span><?= e($cleanStatus) ?></span></span>
                                 <span class="badge bg-primary bg-opacity-10 text-primary rounded-pill font-mono" style="font-size: 0.68rem;">#<?= (int)$card['id'] ?></span>
                             </div>
                             <h2 class="h6 fw-bold text-dark mb-1 lh-sm" style="font-size: 0.95rem;"><?= e($card['nama_barang']) ?></h2>
-                            <div class="font-mono text-primary fw-bold small mb-1" style="font-size: 0.78rem;"><?= e($rek) ?></div>
+                            <div class="font-mono text-primary fw-bold small mb-1" style="font-size: 0.78rem;"><?= e($kodeInventaris) ?></div>
                             <div class="small text-muted mb-0.5" style="font-size: 0.72rem;">
-                                <i class="bi bi-door-open-fill text-warning me-1"></i><strong><?= e($ruanganVal) ?></strong>
-                            </div>
-                            <div class="small text-secondary" style="font-size: 0.70rem;">
-                                <i class="bi bi-building me-1"></i><?= e($namaCabang) ?>
+                                <i class="bi bi-geo-alt-fill text-warning me-1"></i><strong><?= e($lokasiBarangVal) ?></strong>
                             </div>
                         </div>
                     </div>
@@ -662,14 +774,14 @@ $pageTitle = $card ? e($card['nama_barang']) . ' - Kartu Inventaris' : 'Kartu In
                         </span>
                     </div>
                     <div class="d-flex align-items-center gap-2">
-                        <a href="<?= module_url('inventaris_mutation.php', ['id' => $card['id']]) ?>" class="btn btn-outline-success btn-sm rounded-pill px-3 fw-semibold shadow-xs">
-                            <i class="bi bi-arrow-left-right me-1"></i> Mutasi Barang Inventaris
+                        <a href="<?= module_url('inventaris_mutation.php', ['id' => $card['id']]) ?>" class="btn btn-outline-neutral btn-sm rounded-pill px-3 fw-semibold">
+                            <i class="bi bi-arrow-left-right me-1"></i> Mutasi Barang
                         </a>
-                        <button type="button" class="btn btn-outline-primary btn-sm rounded-pill px-3 fw-semibold shadow-xs" data-bs-toggle="modal" data-bs-target="#modalEditDataKartu">
-                            <i class="bi bi-pencil-square me-1"></i> Edit Data Inventaris
+                        <button type="button" class="btn btn-outline-neutral btn-sm rounded-pill px-3 fw-semibold" data-bs-toggle="modal" data-bs-target="#modalEditDataKartu">
+                            <i class="bi bi-pencil-square me-1"></i> Edit Data
                         </button>
-                        <a href="<?= module_url('print_inventory_card.php', ['source' => 'inventaris_kartu', 'id' => $card['id']]) ?>" target="_blank" class="btn btn-dark btn-sm rounded-pill px-3 fw-semibold shadow-xs">
-                            <i class="bi bi-printer me-1"></i> Cetak CR80
+                        <a href="<?= module_url('print_inventory_card.php', ['source' => 'inventaris_kartu', 'id' => $card['id']]) ?>" target="_blank" class="btn btn-navy-primary btn-sm rounded-pill px-3.5 fw-bold shadow-xs">
+                            <i class="bi bi-printer-fill text-warning me-1"></i> Cetak CR80
                         </a>
                     </div>
                 </div>
@@ -679,7 +791,7 @@ $pageTitle = $card ? e($card['nama_barang']) . ' - Kartu Inventaris' : 'Kartu In
                         
                         <!-- Kolom Foto Barang & Biometric Action (Kiri: 5 Kolom) -->
                         <div class="col-lg-5 col-md-5 text-center">
-                            <div class="item-photo-wrapper mb-2 shadow-xs d-none d-md-flex <?= $photoUrl ? 'has-image' : '' ?>" id="photoWrapper">
+                            <div class="item-photo-wrapper mb-2 shadow-xs d-none d-md-flex position-relative <?= $photoUrl ? 'has-image' : '' ?>" id="photoWrapper">
                                 <img id="previewImg" src="<?= $photoUrl ? e($photoUrl) : '' ?>" alt="Foto <?= e($card['nama_barang']) ?>" class="<?= $photoUrl ? '' : 'd-none' ?>" onclick="viewFullImage(this.src, '<?= e(addslashes($card['nama_barang'])) ?>')" title="Klik untuk memperbesar">
                                 
                                 <div id="emptyPhotoPlaceholder" class="text-center p-4 <?= $photoUrl ? 'd-none' : '' ?>">
@@ -691,173 +803,248 @@ $pageTitle = $card ? e($card['nama_barang']) . ' - Kartu Inventaris' : 'Kartu In
                                 <div id="previewBadge" class="preview-alert-badge d-none">
                                     <i class="bi bi-eye me-1"></i> Pratinjau Terkompresi Siap Simpan
                                 </div>
+
+                                <?php if ($photoUrl): ?>
+                                    <button type="button" class="btn btn-danger btn-xs position-absolute top-0 end-0 m-2 rounded-circle shadow-sm" style="width: 28px; height: 28px; padding: 0; display: inline-flex; align-items: center; justify-content: center; z-index: 3;" data-bs-toggle="modal" data-bs-target="#modalConfirmDeletePhoto" onclick="event.stopPropagation(); openDeletePhotoConfirmModal(event);" title="Kosongkan Foto">
+                                        <i class="bi bi-trash3-fill" style="font-size: 0.75rem;"></i>
+                                    </button>
+                                <?php endif; ?>
                             </div>
 
-                            <!-- Label Verifikator Terakhir & Tombol Hapus Foto -->
+                            <!-- Info Badge Verifikasi Wajah (2 Baris Rapi & Terstruktur) -->
                             <?php if (!empty($card['foto'])): ?>
-                                <div class="mb-3 d-flex flex-wrap align-items-center justify-content-between gap-2">
-                                    <?php if (!empty($card['foto_updated_by'])): ?>
-                                        <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 rounded-pill px-2.5 py-1 text-wrap" style="font-size: 0.70rem;">
-                                            <i class="bi bi-patch-check-fill me-1"></i> Foto Diverifikasi: <strong><?= e($card['foto_updated_by']) ?></strong>
-                                            <?php if (!empty($card['foto_updated_at'])): ?>
-                                                (<?= date('d/m/Y H:i', strtotime($card['foto_updated_at'])) ?>)
-                                            <?php endif; ?>
-                                        </span>
-                                    <?php else: ?>
-                                        <span class="badge bg-info bg-opacity-10 text-info border border-info border-opacity-25 rounded-pill px-2.5 py-1" style="font-size: 0.70rem;">
-                                            <i class="bi bi-camera me-1"></i> Foto Tersimpan
-                                        </span>
-                                    <?php endif; ?>
-
-                                    <form method="post" onsubmit="return confirm('Apakah Anda yakin ingin menghapus/mengosongkan foto kartu inventaris ini?');" class="d-inline">
-                                        <input type="hidden" name="_csrf" value="<?= e(csrf_token()) ?>">
-                                        <input type="hidden" name="action" value="delete_foto">
-                                        <button type="submit" class="btn btn-outline-danger btn-xs py-1 px-2.5 rounded-pill" style="font-size: 0.72rem;">
-                                            <i class="bi bi-trash me-1"></i> Kosongkan Foto
-                                        </button>
-                                    </form>
+                                <?php 
+                                    $rawVerifier = (string)($card['foto_updated_by'] ?? '');
+                                    $isFaceScan = str_contains($rawVerifier, 'Scan Wajah');
+                                    $verifierCleanName = preg_replace('/\s*\(.*?\)/', '', $rawVerifier) ?: 'Petugas IT';
+                                    $verifierTime = !empty($card['foto_updated_at']) ? date('d/m/Y H:i', strtotime($card['foto_updated_at'])) : '-';
+                                ?>
+                                <div class="bg-success bg-opacity-10 border border-success border-opacity-25 rounded-3 p-2.5 mb-2 text-start">
+                                    <div class="d-flex align-items-center gap-1.5 text-success fw-bold" style="font-size: 0.78rem;">
+                                        <i class="bi bi-patch-check-fill fs-6 text-success"></i>
+                                        <span>Foto Terverifikasi <?= $isFaceScan ? '(Scan Wajah)' : '(Sesi Resmi)' ?></span>
+                                    </div>
+                                    <div class="text-secondary small mt-0.5" style="font-size: 0.70rem;">
+                                        Oleh <strong class="text-dark"><?= e($verifierCleanName) ?></strong> &bull; <?= e($verifierTime) ?>
+                                    </div>
                                 </div>
                             <?php endif; ?>
 
-                            <!-- Form Upload Foto Barang dengan Validasi Wajah (Collapsible on Mobile, Open on Desktop) -->
-                            <div class="collapse d-md-block" id="collapseUploadPhoto">
-                            <div class="bg-light p-3 rounded-3 border text-start shadow-xs">
-                                <form method="post" enctype="multipart/form-data" id="uploadPhotoForm">
-                                    <input type="hidden" name="_csrf" value="<?= e(csrf_token()) ?>">
-                                    <input type="hidden" name="action" value="upload_foto">
-                                    
-                                    <!-- Hidden Inputs untuk Biometrik Wajah -->
-                                    <input type="hidden" name="face_verified" id="bioVerified" value="0">
-                                    <input type="hidden" name="verifier_user_id" id="bioUserId" value="">
-                                    <input type="hidden" name="verifier_name" id="bioUserName" value="">
-                                    <input type="hidden" name="verifier_confidence" id="bioConfidence" value="">
-                                    <input type="hidden" name="verifier_photo" id="bioPhotoSnap" value="">
-
-                                    <div class="d-flex justify-content-between align-items-center mb-1">
-                                        <label class="form-label small fw-bold text-secondary mb-0">
-                                            <i class="bi bi-image me-1"></i> 1. Pilih / Jepret Foto:
-                                        </label>
-                                        <span id="compressBadge" class="badge bg-primary bg-opacity-10 text-primary d-none" style="font-size: 0.68rem;">
-                                            <i class="bi bi-shield-check me-1"></i> Terkompres Cerdas
-                                        </span>
-                                    </div>
-                                    <input type="file" id="fotoBarangInput" name="foto_barang" class="form-control form-control-sm mb-2" accept="image/*" capture="environment" required>
-
-                                    <label class="form-label small fw-bold text-secondary mb-1">
-                                        <i class="bi bi-person-bounding-box me-1"></i> 2. Otorisasi Perubahan Foto:
-                                    </label>
-                                    <button type="button" id="btnMulaiScanWajah" class="btn btn-primary btn-sm w-100 rounded-pill fw-bold py-2 shadow-xs d-flex align-items-center justify-content-center gap-2" onclick="startFaceAuthProcess()">
-                                        <i class="bi bi-person-bounding-box fs-5"></i>
-                                        <span>Scan Wajah & Simpan Foto</span>
-                                    </button>
-
-                                    <?php if (is_logged_in() && (is_admin() || is_hrd())): ?>
-                                        <div class="mt-2 text-center">
-                                            <button type="button" class="btn btn-outline-primary btn-sm w-100 rounded-pill fw-semibold py-1.5 shadow-xs d-flex align-items-center justify-content-center gap-1.5" onclick="submitAsAuthorizedStaff()" style="font-size: 0.76rem;">
-                                                <i class="bi bi-shield-check text-success"></i>
-                                                <span>Simpan via Sesi <?= e(is_admin() ? 'Admin' : 'SDM & Umum') ?> (<?= e(current_user_name()) ?>)</span>
-                                            </button>
-                                            <div class="form-text text-muted mt-1" style="font-size: 0.68rem;">Tanpa pemindaian biometrik wajah kamera</div>
-                                        </div>
-                                    <?php endif; ?>
-                                </form>
+                            <!-- Tombol Aksi Foto (Perbarui Foto & Kosongkan Foto Sejajar) -->
+                            <div class="d-flex align-items-center justify-content-center gap-2 mb-2">
+                                <button class="btn btn-outline-primary btn-sm rounded-pill px-3 py-1.5 fw-semibold shadow-2xs" type="button" data-bs-toggle="collapse" data-bs-target="#collapseUploadPhoto" aria-expanded="<?= empty($card['foto']) ? 'true' : 'false' ?>" id="btnToggleUpload">
+                                    <i class="bi bi-camera me-1"></i> <?= !empty($card['foto']) ? 'Perbarui Foto' : 'Pilih Foto' ?>
+                                </button>
+                                <?php if (!empty($card['foto'])): ?>
+                                    <form method="post" id="deletePhotoForm" class="d-inline">
+                                        <input type="hidden" name="_csrf" value="<?= e(csrf_token()) ?>">
+                                        <input type="hidden" name="action" value="delete_foto">
+                                        <input type="hidden" name="face_verified" id="delBioVerified" value="0">
+                                        <input type="hidden" name="verifier_user_id" id="delBioUserId" value="">
+                                        <input type="hidden" name="verifier_name" id="delBioUserName" value="">
+                                        <input type="hidden" name="verifier_confidence" id="delBioConfidence" value="">
+                                        <button type="button" class="btn btn-outline-danger btn-sm rounded-pill px-3 py-1.5 fw-semibold shadow-2xs" data-bs-toggle="modal" data-bs-target="#modalConfirmDeletePhoto" onclick="openDeletePhotoConfirmModal(event)">
+                                            <i class="bi bi-trash3 me-1"></i> Kosongkan
+                                        </button>
+                                    </form>
+                                <?php endif; ?>
                             </div>
+
+                            <!-- Form Upload Foto Barang (Collapsible: tertutup jika sudah ada foto) -->
+                            <div class="collapse <?= empty($card['foto']) ? 'show' : '' ?> text-start" id="collapseUploadPhoto">
+                                <div class="bg-light p-3 rounded-3 border shadow-xs mb-3">
+                                    <form method="post" enctype="multipart/form-data" id="uploadPhotoForm">
+                                        <input type="hidden" name="_csrf" value="<?= e(csrf_token()) ?>">
+                                        <input type="hidden" name="action" value="upload_foto">
+                                        
+                                        <!-- Hidden Inputs untuk Biometrik Wajah -->
+                                        <input type="hidden" name="face_verified" id="bioVerified" value="0">
+                                        <input type="hidden" name="verifier_user_id" id="bioUserId" value="">
+                                        <input type="hidden" name="verifier_name" id="bioUserName" value="">
+                                        <input type="hidden" name="verifier_confidence" id="bioConfidence" value="">
+                                        <input type="hidden" name="verifier_photo" id="bioPhotoSnap" value="">
+
+                                        <div class="d-flex justify-content-between align-items-center mb-1.5">
+                                            <label class="form-label small fw-bold text-secondary mb-0">
+                                                <i class="bi bi-image me-1"></i> 1. Pilih / Jepret Foto:
+                                            </label>
+                                            <span id="compressBadge" class="badge bg-primary bg-opacity-10 text-primary d-none" style="font-size: 0.68rem;">
+                                                <i class="bi bi-shield-check me-1"></i> Kompres Cerdas
+                                            </span>
+                                        </div>
+
+                                        <!-- Modern Dashed Dropzone -->
+                                        <div class="photo-dropzone p-3 text-center mb-2" id="dropzoneBox" onclick="document.getElementById('fotoBarangInput').click()">
+                                            <input type="file" id="fotoBarangInput" name="foto_barang" class="d-none" accept="image/*" capture="environment" required onchange="handleFileSelect(this)">
+                                            <div id="dropzoneEmpty">
+                                                <div class="d-inline-flex align-items-center justify-content-center p-2 bg-primary bg-opacity-10 text-primary rounded-circle mb-1">
+                                                    <i class="bi bi-camera fs-4"></i>
+                                                </div>
+                                                <div class="small fw-bold text-dark">Klik untuk Pilih / Jepret Foto</div>
+                                                <div class="text-muted" style="font-size: 0.68rem;">Format JPG/PNG, dikompres otomatis hemat memori</div>
+                                            </div>
+                                            <div id="dropzoneSelected" class="d-none">
+                                                <div class="small fw-bold text-success mb-1">
+                                                    <i class="bi bi-check-circle-fill me-1"></i> <span id="selectedFileName">Foto Terpilih</span>
+                                                </div>
+                                                <span class="badge bg-light text-secondary border px-2 py-0.5" id="selectedFileSize" style="font-size: 0.68rem;"></span>
+                                                <div class="small text-primary mt-1" style="font-size: 0.68rem;"><i class="bi bi-arrow-repeat me-1"></i>Klik untuk ganti foto</div>
+                                            </div>
+                                        </div>
+
+                                        <label class="form-label small fw-bold text-secondary mb-1">
+                                            <i class="bi bi-person-bounding-box me-1"></i> 2. Otorisasi Perubahan Foto:
+                                        </label>
+                                        <button type="button" id="btnMulaiScanWajah" class="btn btn-primary btn-sm w-100 rounded-pill fw-bold py-2 shadow-xs d-flex align-items-center justify-content-center gap-2" onclick="startFaceAuthProcess()">
+                                            <i class="bi bi-person-bounding-box fs-5"></i>
+                                            <span>Scan Wajah &amp; Simpan Foto</span>
+                                        </button>
+
+                                        <?php if (is_logged_in() && (is_admin() || is_hrd())): ?>
+                                            <div class="mt-2 text-center">
+                                                <button type="button" class="btn btn-outline-primary btn-sm w-100 rounded-pill fw-semibold py-1.5 shadow-xs d-flex align-items-center justify-content-center gap-1.5" onclick="submitAsAuthorizedStaff()" style="font-size: 0.76rem;">
+                                                    <i class="bi bi-shield-check text-success"></i>
+                                                    <span>Simpan via Sesi <?= e(is_admin() ? 'Admin' : 'SDM & Umum') ?> (<?= e(current_user_name()) ?>)</span>
+                                                </button>
+                                                <div class="form-text text-muted mt-1" style="font-size: 0.68rem;">Tanpa pemindaian biometrik wajah kamera</div>
+                                            </div>
+                                        <?php endif; ?>
+                                    </form>
+                                </div>
                             </div>
                         </div>
 
                         <!-- Kolom Detail Data Master Inventaris Sesuai Core System Bank (Kanan: 7 Kolom) -->
                         <div class="col-lg-7 col-md-7">
                             
-                            <!-- Header Nama Barang -->
+                            <!-- Header Nama Barang dengan Pulse Dot Status -->
                             <div class="p-3 bg-light rounded-3 border mb-3">
                                 <div class="d-flex justify-content-between align-items-center mb-1">
                                     <span class="label-cell text-primary">NAMA BARANG</span>
-                                    <span class="badge bg-success rounded-pill px-2.5 py-1 font-mono"><?= e($statusVal) ?></span>
+                                    <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 rounded-pill px-2.5 py-1 d-inline-flex align-items-center gap-1.5 fw-bold font-mono">
+                                        <span class="status-pulse-dot"></span>
+                                        <span><?= e($cleanStatus) ?></span>
+                                    </span>
                                 </div>
                                 <h3 class="h5 fw-bold text-dark mb-0"><?= e($card['nama_barang']) ?></h3>
                             </div>
 
-                            <!-- Tabel Identitas Core Banking (Sesuai Form Master Gambar 1) -->
-                            <div class="table-responsive rounded-3 border bg-white">
+                            <!-- Header Rincian Data Master & Tombol Edit -->
+                            <div class="d-flex align-items-center justify-content-between mb-2">
+                                <span class="label-cell text-primary mb-0"><i class="bi bi-card-checklist me-1"></i> RINCIAN DATA MASTER</span>
+                                <button type="button" class="btn btn-outline-secondary btn-xs rounded-pill px-2.5 py-1 fw-semibold shadow-2xs" data-bs-toggle="modal" data-bs-target="#modalEditDataKartu">
+                                    <i class="bi bi-pencil-square me-1"></i> Ubah Data
+                                </button>
+                            </div>
+
+                            <!-- Tabel Identitas Core Banking (Bersih & Elegan dengan Badge Nilai) -->
+                            <div class="table-responsive rounded-3 border bg-white mb-3">
                                 <table class="table table-sm table-striped bank-data-table mb-0">
                                     <tbody>
                                         <tr>
-                                            <td class="text-secondary small fw-bold" style="width: 38%;">Kantor Bank</td>
-                                            <td class="fw-bold font-mono text-dark"><?= e($kdCabang) ?> : <?= e($namaCabang) ?></td>
-                                        </tr>
-                                        <tr>
-                                            <td class="text-secondary small fw-bold">Sub Kantor</td>
-                                            <td class="fw-bold font-mono text-dark">00 : KAS INDUK</td>
-                                        </tr>
-                                        <tr>
-                                            <td class="text-secondary small fw-bold">Nomor Rekening</td>
-                                            <td class="fw-bold font-mono text-primary fs-6"><?= e($rek) ?></td>
+                                            <td class="text-secondary small fw-bold" style="width: 38%;">Kode Inventaris</td>
+                                            <td>
+                                                <div class="d-flex align-items-center justify-content-between gap-2">
+                                                    <span class="fw-bold font-mono text-primary fs-6"><?= e($kodeInventaris) ?></span>
+                                                    <button type="button" class="copy-btn" onclick="copyText('<?= e($kodeInventaris) ?>', this)" title="Salin Kode Inventaris">
+                                                        <i class="bi bi-clipboard me-1"></i>Salin
+                                                    </button>
+                                                </div>
+                                            </td>
                                         </tr>
                                         <tr>
                                             <td class="text-secondary small fw-bold">Nomor Seri Inventaris</td>
-                                            <td class="fw-bold font-mono text-danger"><?= e($nomorSeriInv) ?></td>
+                                            <td>
+                                                <div class="d-flex align-items-center justify-content-between gap-2">
+                                                    <span class="fw-bold font-mono text-dark"><?= e($nomorSeriInv) ?></span>
+                                                    <button type="button" class="copy-btn" onclick="copyText('<?= e($nomorSeriInv) ?>', this)" title="Salin Nomor Seri">
+                                                        <i class="bi bi-clipboard me-1"></i>Salin
+                                                    </button>
+                                                </div>
+                                            </td>
                                         </tr>
-                                        <tr class="table-primary bg-opacity-25">
-                                            <td class="text-primary small fw-bold">Jenis Inventaris</td>
-                                            <td class="fw-bold text-primary"><?= e($jenisInvVal) ?></td>
+                                        <tr>
+                                            <td class="text-secondary small fw-bold">Jenis Inventaris</td>
+                                            <td>
+                                                <div class="d-flex align-items-center justify-content-between gap-2">
+                                                    <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 rounded-pill px-2.5 py-1 font-mono fw-semibold">
+                                                        <?= e($jenisInvVal) ?>
+                                                    </span>
+                                                    <button type="button" class="btn btn-xs btn-link text-muted p-0 text-decoration-none" data-bs-toggle="modal" data-bs-target="#modalEditDataKartu" title="Ubah Jenis">
+                                                        <i class="bi bi-pencil-fill" style="font-size: 0.72rem;"></i>
+                                                    </button>
+                                                </div>
+                                            </td>
                                         </tr>
-                                        <tr class="table-warning bg-opacity-25">
-                                            <td class="text-dark small fw-bold">Ruangan</td>
-                                            <td class="fw-bold text-dark"><i class="bi bi-door-open-fill text-warning me-1"></i><?= e($ruanganVal) ?></td>
+                                        <tr>
+                                            <td class="text-secondary small fw-bold">Ruangan</td>
+                                            <td>
+                                                <div class="d-flex align-items-center justify-content-between gap-2">
+                                                    <span class="badge bg-warning bg-opacity-15 text-dark border border-warning border-opacity-40 rounded-pill px-2.5 py-1 fw-semibold font-mono">
+                                                        <i class="bi bi-geo-alt-fill text-warning me-1"></i><?= e($ruanganVal) ?>
+                                                    </span>
+                                                    <button type="button" class="btn btn-xs btn-link text-muted p-0 text-decoration-none" data-bs-toggle="modal" data-bs-target="#modalEditDataKartu" title="Ubah Ruangan">
+                                                        <i class="bi bi-pencil-fill" style="font-size: 0.72rem;"></i>
+                                                    </button>
+                                                </div>
+                                            </td>
                                         </tr>
-                                        <tr class="table-info bg-opacity-25">
-                                            <td class="text-dark small fw-bold">Golongan</td>
-                                            <td class="fw-bold text-dark"><?= e($golonganVal) ?></td>
+                                        <tr>
+                                            <td class="text-secondary small fw-bold">Golongan</td>
+                                            <td>
+                                                <div class="d-flex align-items-center justify-content-between gap-2">
+                                                    <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 rounded-pill px-2.5 py-1 font-mono fw-semibold">
+                                                        <?= e($golonganVal) ?>
+                                                    </span>
+                                                    <button type="button" class="btn btn-xs btn-link text-muted p-0 text-decoration-none" data-bs-toggle="modal" data-bs-target="#modalEditDataKartu" title="Ubah Golongan">
+                                                        <i class="bi bi-pencil-fill" style="font-size: 0.72rem;"></i>
+                                                    </button>
+                                                </div>
+                                            </td>
                                         </tr>
                                         <tr>
                                             <td class="text-secondary small fw-bold">Sumber Perolehan</td>
-                                            <td class="fw-bold text-dark"><?= e($sumberVal) ?></td>
+                                            <td class="fw-semibold text-dark"><?= e($sumberVal) ?></td>
                                         </tr>
                                         <tr>
                                             <td class="text-secondary small fw-bold">Tanggal Perolehan</td>
-                                            <td class="fw-bold text-dark"><?= e($tglFormatted) ?></td>
+                                            <td class="fw-semibold text-dark"><?= e($tglFormatted) ?></td>
                                         </tr>
                                         <tr>
                                             <td class="text-secondary small fw-bold">Keterangan / Rincian</td>
-                                            <td class="text-muted small"><?= e($keteranganVal) ?></td>
+                                            <td class="text-muted small"><?= e($keteranganVal ?: '-') ?></td>
                                         </tr>
                                     </tbody>
                                 </table>
                             </div>
 
-                            <div class="mt-3 text-end">
-                                <button type="button" class="btn btn-outline-secondary btn-sm rounded-pill px-3" data-bs-toggle="modal" data-bs-target="#modalEditDataKartu">
-                                    <i class="bi bi-gear-fill me-1"></i> Ubah Jenis, Ruangan, atau Golongan
-                                </button>
-                            </div>
-
                         </div>
-
                     </div>
                 </div>
 
                 <!-- Footer Kartu: QR Code Resmi Web Internal -->
                 <div class="p-3 p-md-4 bg-light border-top">
-                    <div class="d-flex flex-column flex-sm-row align-items-center justify-content-between gap-3 text-center text-sm-start">
-                        <div class="d-flex align-items-center gap-3">
+                    <div class="d-flex flex-column flex-md-row align-items-center justify-content-between gap-3 text-center text-md-start">
+                        <div class="d-flex align-items-center gap-3 flex-wrap flex-sm-nowrap">
                             <div class="qr-card-box shadow-xs">
                                 <div id="cardQrCode"></div>
                             </div>
                             <div>
-                                <h6 class="fw-bold mb-1 text-dark">Barcode & QR Code Resmi Bank</h6>
-                                <p class="text-secondary small mb-1" style="max-width: 480px; font-size: 0.78rem;">
-                                    Hasil pemindaian stiker fisik inventaris diarahkan langsung ke halaman ini di server lokal BPR Mitratama.
+                                <h6 class="fw-bold mb-1 text-dark d-flex align-items-center gap-1.5 justify-content-center justify-content-md-start">
+                                    <i class="bi bi-qr-code text-primary"></i> Barcode &amp; QR Code Resmi Bank
+                                </h6>
+                                <p class="text-secondary small mb-2" style="max-width: 480px; font-size: 0.78rem;">
+                                    Hasil scan stiker fisik inventaris mengarah langsung ke paspor aset ini di server lokal BPR Mitratama.
                                 </p>
-                                <div class="small font-mono text-muted text-break" style="font-size: 0.72rem;">
-                                    <?= e($canonicalQrUrl) ?>
+                                <!-- Kotak Tautan QR Code Share Link Modern -->
+                                <div class="input-group input-group-sm" style="max-width: 480px;">
+                                    <span class="input-group-text bg-white text-muted border-end-0" style="font-size: 0.75rem;"><i class="bi bi-link-45deg"></i></span>
+                                    <input type="text" class="form-control form-control-sm font-mono bg-white text-muted border-start-0 border-end-0" value="<?= e($canonicalQrUrl) ?>" id="inputCardUrl" readonly style="font-size: 0.74rem;">
+                                    <button class="btn btn-primary px-3 fw-semibold shadow-2xs d-inline-flex align-items-center gap-1" type="button" onclick="copyCardUrlDirect(this)">
+                                        <i class="bi bi-clipboard"></i> <span>Salin Tautan</span>
+                                    </button>
                                 </div>
                             </div>
-                        </div>
-
-                        <div>
-                            <button type="button" class="btn btn-light border btn-sm px-3 rounded-pill fw-semibold shadow-xs" onclick="copyCardLink()">
-                                <i class="bi bi-share me-1"></i> Salin Tautan
-                            </button>
                         </div>
                     </div>
                 </div>
@@ -888,8 +1075,8 @@ $pageTitle = $card ? e($card['nama_barang']) . ' - Kartu Inventaris' : 'Kartu In
                             <strong class="d-block text-dark"><?= e($matchedKaryawan ?: '-') ?></strong>
                         </div>
                         <div class="col-sm-3 col-6">
-                            <span>Divisi / Lokasi:</span>
-                            <strong class="d-block text-dark"><?= e($matchedDivisi ?: '-') ?></strong>
+                            <span>Ruangan:</span>
+                            <strong class="d-block text-dark"><?= e($ruanganVal ?: '-') ?></strong>
                         </div>
                         <div class="col-sm-3 col-6">
                             <span>Alamat IP:</span>
@@ -932,10 +1119,11 @@ $pageTitle = $card ? e($card['nama_barang']) . ' - Kartu Inventaris' : 'Kartu In
                     <div class="modal-body p-4 bg-light">
                         <div class="row g-3">
                             
-                            <!-- Nomor Rekening (Read Only) -->
+                            <!-- Kode Inventaris (Read Only) -->
                             <div class="col-md-6">
-                                <label class="form-label small fw-bold text-secondary">Nomor Rekening</label>
-                                <input type="text" class="form-control form-control-sm font-mono bg-white" value="<?= e($card['nomor_rekening']) ?>" readonly>
+                                <label class="form-label small fw-bold text-secondary">Kode Inventaris</label>
+                                <input type="text" class="form-control form-control-sm font-mono bg-white fw-bold text-primary" value="<?= e($kodeInventaris) ?>" readonly>
+                                <div class="form-text text-muted" style="font-size: 0.70rem;">Format resmi perbankan: <code>00.0.00000</code></div>
                             </div>
 
                             <!-- Nomor Seri Inventaris -->
@@ -969,26 +1157,19 @@ $pageTitle = $card ? e($card['nama_barang']) . ' - Kartu Inventaris' : 'Kartu In
                                 </select>
                             </div>
 
-                            <!-- Ruangan (Dinamis / Bisa Tambah Baru) -->
+                            <!-- Ruangan -->
                             <div class="col-md-6">
-                                <label class="form-label small fw-bold text-secondary">Ruangan Penempatan</label>
-                                <select name="ruangan_select" id="ruanganSelect" class="form-select form-select-sm">
+                                <label class="form-label small fw-bold text-secondary">Ruangan</label>
+                                <div class="input-group input-group-sm">
+                                    <span class="input-group-text bg-light text-muted"><i class="bi bi-geo-alt-fill text-warning"></i></span>
+                                    <input type="text" name="ruangan_custom" id="ruanganInput" class="form-control font-mono" list="listLokasiPresets" value="<?= e($ruanganVal) ?>" placeholder="Contoh: 33 : RUANG KADIV KREDIT LT 4">
+                                </div>
+                                <datalist id="listLokasiPresets">
                                     <?php foreach ($masterRuangan as $r): ?>
-                                        <?php $rLabel = sprintf('%02d : %s', (int)$r['kode_ruangan'], $r['nama_ruangan']); ?>
-                                        <option value="<?= e($rLabel) ?>" <?= ($ruanganVal === $rLabel || strcasecmp($ruanganVal, $r['nama_ruangan']) === 0) ? 'selected' : '' ?>>
-                                            <?= e($rLabel) ?>
-                                        </option>
+                                        <option value="<?= e(trim(($r['kode_ruangan'] ?? '') . ' : ' . ($r['nama_ruangan'] ?? ''))) ?>"><?= e($r['nama_ruangan']) ?></option>
                                     <?php endforeach; ?>
-                                </select>
-                            </div>
-
-                            <!-- Ruangan Baru (Jika belum ada di list) -->
-                            <div class="col-md-6">
-                                <label class="form-label small fw-bold text-primary">
-                                    <i class="bi bi-plus-circle me-1"></i> Tambah Ruangan Baru (Opsional)
-                                </label>
-                                <input type="text" name="ruangan_custom" class="form-control form-control-sm" placeholder="Ketik nama ruangan baru di sini..." style="border-color: #38bdf8;">
-                                <div class="form-text text-muted" style="font-size: 0.70rem;">Jika diisi, akan otomatis tersimpan ke daftar master ruangan bank.</div>
+                                </datalist>
+                                <div class="form-text text-muted" style="font-size: 0.70rem;">Pilih dari daftar master ruangan (contoh: <code>33 : RUANG KADIV KREDIT LT 4</code>).</div>
                             </div>
 
                             <!-- Sumber Perolehan -->
@@ -1035,6 +1216,46 @@ $pageTitle = $card ? e($card['nama_barang']) . ' - Kartu Inventaris' : 'Kartu In
         </div>
     </div>
     <?php endif; ?>
+
+    <!-- ===================================================================== -->
+    <!-- MODAL KONFIRMASI OTORISASI HAPUS FOTO                                 -->
+    <!-- ===================================================================== -->
+    <div class="modal fade" id="modalConfirmDeletePhoto" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-sm">
+            <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
+                <div class="modal-header bg-danger text-white border-0 py-2.5 px-3">
+                    <div class="d-flex align-items-center gap-2">
+                        <i class="bi bi-shield-exclamation fs-5"></i>
+                        <h6 class="modal-title fw-bold mb-0">Otorisasi Hapus Foto</h6>
+                    </div>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-3 text-center">
+                    <div class="text-danger mb-2">
+                        <i class="bi bi-trash-fill fs-1"></i>
+                    </div>
+                    <h6 class="fw-bold text-dark mb-1">Kosongkan Foto Barang?</h6>
+                    <p class="text-muted small mb-3" style="font-size: 0.75rem;">
+                        Foto dokumentasi fisik <strong><?= e($card['nama_barang']) ?></strong> akan dikosongkan. Sesuai standar kepatuhan bank, penghapusan foto wajib melalui verifikasi scan wajah staf atau otorisasi admin.
+                    </p>
+                    <div class="d-grid gap-2">
+                        <button type="button" class="btn btn-primary btn-sm rounded-pill fw-bold py-2 shadow-xs d-flex align-items-center justify-content-center gap-2" onclick="startFaceDeleteProcess()">
+                            <i class="bi bi-person-bounding-box fs-5"></i>
+                            <span>Scan Wajah untuk Hapus</span>
+                        </button>
+                        <?php if (is_logged_in() && (is_admin() || is_hrd())): ?>
+                            <button type="button" class="btn btn-outline-secondary btn-xs py-1.5 rounded-pill fw-semibold" onclick="submitDeleteAsAuthorizedStaff()">
+                                <i class="bi bi-shield-check text-success me-1"></i> Hapus via Sesi <?= e(is_admin() ? 'Admin' : 'SDM & Umum') ?> (<?= e(current_user_name()) ?>)
+                            </button>
+                        <?php endif; ?>
+                        <button type="button" class="btn btn-light btn-xs py-1.5 rounded-pill text-muted border" data-bs-dismiss="modal">
+                            Batal
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <!-- ===================================================================== -->
     <!-- MODAL BIOMETRIK SCAN WAJAH (FACE RECOGNITION AI)                      -->
@@ -1167,29 +1388,47 @@ $pageTitle = $card ? e($card['nama_barang']) . ' - Kartu Inventaris' : 'Kartu In
         const compressBadge = document.getElementById('compressBadge');
         const photoWrapper = document.getElementById('photoWrapper');
 
+        // Kompresi & Auto-Crop Cerdas Rasio 4:5 (Width 4 : Height 5)
         function compressImageClientSide(file, maxDimension, quality, callback) {
             const reader = new FileReader();
             reader.onload = function(e) {
                 const img = new Image();
                 img.onload = function() {
-                    let w = img.width;
-                    let h = img.height;
+                    const targetRatio = 4 / 5; // 0.8
+                    let cropW = img.width;
+                    let cropH = img.height;
+                    let sx = 0;
+                    let sy = 0;
 
-                    if (w > maxDimension || h > maxDimension) {
-                        if (w >= h) {
-                            h = Math.round((h / w) * maxDimension);
-                            w = maxDimension;
-                        } else {
-                            w = Math.round((w / h) * maxDimension);
-                            h = maxDimension;
-                        }
+                    if (img.width / img.height > targetRatio) {
+                        // Foto lebih lebar dari 4:5 -> potong sisi kiri & kanan (center crop)
+                        cropW = Math.round(img.height * targetRatio);
+                        cropH = img.height;
+                        sx = Math.round((img.width - cropW) / 2);
+                        sy = 0;
+                    } else {
+                        // Foto lebih tinggi dari 4:5 -> potong sisi atas & bawah (center crop)
+                        cropW = img.width;
+                        cropH = Math.round(img.width / targetRatio);
+                        sx = 0;
+                        sy = Math.round((img.height - cropH) / 2);
+                    }
+
+                    // Skala resolusi output dengan rasio tepat 4:5 (maksimal 1200 x 1500)
+                    let outW = 1200;
+                    let outH = 1500;
+                    if (cropW < outW) {
+                        outW = cropW;
+                        outH = Math.round(outW / targetRatio);
                     }
 
                     const canvas = document.createElement('canvas');
-                    canvas.width = w;
-                    canvas.height = h;
+                    canvas.width = outW;
+                    canvas.height = outH;
                     const ctx = canvas.getContext('2d');
-                    ctx.drawImage(img, 0, 0, w, h);
+                    ctx.imageSmoothingEnabled = true;
+                    ctx.imageSmoothingQuality = 'high';
+                    ctx.drawImage(img, sx, sy, cropW, cropH, 0, 0, outW, outH);
 
                     canvas.toBlob(function(blob) {
                         callback(blob, canvas.toDataURL('image/jpeg', quality));
@@ -1247,14 +1486,57 @@ $pageTitle = $card ? e($card['nama_barang']) . ' - Kartu Inventaris' : 'Kartu In
             });
         }
 
-        // 2. Tombol Otorisasi Wajah
+        // 2. Tombol Otorisasi Wajah (Upload / Hapus)
+        window.faceAuthMode = 'upload';
+
         function startFaceAuthProcess() {
+            window.faceAuthMode = 'upload';
             if (!fileInput || !fileInput.files || fileInput.files.length === 0) {
                 alert('Silakan pilih file foto barang atau jepret kamera terlebih dahulu sebelum melakukan verifikasi wajah!');
                 fileInput.focus();
                 return;
             }
             openBiometricModal();
+        }
+
+        function openDeletePhotoConfirmModal(event) {
+            if (event && typeof event.preventDefault === 'function') {
+                event.preventDefault();
+            }
+            var modalEl = document.getElementById("modalConfirmDeletePhoto");
+            if (modalEl) {
+                try {
+                    var m = (typeof bootstrap !== 'undefined' && bootstrap.Modal)
+                        ? (bootstrap.Modal.getOrCreateInstance ? bootstrap.Modal.getOrCreateInstance(modalEl) : new bootstrap.Modal(modalEl))
+                        : null;
+                    if (m) m.show();
+                } catch(e) {
+                    console.warn("Modal error:", e);
+                }
+            }
+        }
+
+        function startFaceDeleteProcess() {
+            var modalEl = document.getElementById("modalConfirmDeletePhoto");
+            if (modalEl) {
+                try {
+                    var m = (typeof bootstrap !== 'undefined' && bootstrap.Modal)
+                        ? (bootstrap.Modal.getInstance ? bootstrap.Modal.getInstance(modalEl) : null)
+                        : null;
+                    if (m) m.hide();
+                } catch(e) {}
+            }
+            window.faceAuthMode = 'delete';
+            openBiometricModal();
+        }
+
+        function submitDeleteAsAuthorizedStaff() {
+            if (!confirm('Konfirmasi: Anda login sebagai Admin/SDM. Lanjutkan menghapus foto inventaris ini?')) {
+                return;
+            }
+            document.getElementById("delBioVerified").value = "1";
+            document.getElementById("delBioUserName").value = <?= json_encode(current_user_name() ?: 'Admin / SDM') ?>;
+            document.getElementById("deletePhotoForm").submit();
         }
 
         function submitAsAuthorizedStaff() {
@@ -1281,8 +1563,8 @@ $pageTitle = $card ? e($card['nama_barang']) . ' - Kartu Inventaris' : 'Kartu In
             if (bioModelsLoaded) return true;
             if (bioModelsLoading) return true;
             bioModelsLoading = true;
+            const statusBox = document.getElementById("bioStatusBox");
             try {
-                const statusBox = document.getElementById("bioStatusBox");
                 if (statusBox && !bioCompleted) {
                     statusBox.className = "alert alert-info py-2 px-3 small fw-semibold mb-2";
                     statusBox.innerHTML = '<span class="spinner-border spinner-border-sm me-2 text-primary"></span> Menyiapkan modul AI pengenal wajah...';
@@ -1308,7 +1590,6 @@ $pageTitle = $card ? e($card['nama_barang']) . ' - Kartu Inventaris' : 'Kartu In
             } catch (err) {
                 console.error("Gagal load face-api:", err);
                 bioModelsLoading = false;
-                const statusBox = document.getElementById("bioStatusBox");
                 if (statusBox) {
                     statusBox.className = "alert alert-danger py-2 px-3 small mb-2";
                     statusBox.innerHTML = '<i class="bi bi-x-circle me-1"></i> Gagal memuat modul AI. Periksa jaringan internet.';
@@ -1462,6 +1743,37 @@ $pageTitle = $card ? e($card['nama_barang']) . ' - Kartu Inventaris' : 'Kartu In
             if (conf > 99) conf = 99;
             if (conf < 75) conf = 75;
 
+            const matchedNameEl = document.getElementById("bioMatchedName");
+            const matchConfEl = document.getElementById("bioMatchConfidence");
+            const successOverlay = document.getElementById("bioSuccessOverlay");
+            const statusBox = document.getElementById("bioStatusBox");
+
+            // JIKA DALAM MODE HAPUS FOTO
+            if (window.faceAuthMode === 'delete') {
+                document.getElementById("delBioVerified").value = "1";
+                document.getElementById("delBioUserId").value = user.id;
+                document.getElementById("delBioUserName").value = user.nama;
+                document.getElementById("delBioConfidence").value = conf;
+
+                if (matchedNameEl) matchedNameEl.textContent = user.nama;
+                if (matchConfEl) matchConfEl.textContent = conf + "% Cocok (Otorisasi Hapus Diterima)";
+                if (successOverlay) successOverlay.classList.remove("d-none");
+
+                if (statusBox) {
+                    statusBox.className = "alert alert-success py-2 px-3 small fw-bold mb-2";
+                    statusBox.innerHTML = '<i class="bi bi-check-circle-fill me-1"></i> Otorisasi Hapus Diterima: <strong>' + user.nama + '</strong>! Mengosongkan foto...';
+                }
+
+                if (bioVideoStream) {
+                    try { bioVideoStream.getTracks().forEach(t => t.stop()); } catch(e) {}
+                }
+
+                setTimeout(() => {
+                    document.getElementById("deletePhotoForm").submit();
+                }, 600);
+                return;
+            }
+
             document.getElementById("bioVerified").value = "1";
             document.getElementById("bioUserId").value = user.id;
             document.getElementById("bioUserName").value = user.nama;
@@ -1470,15 +1782,9 @@ $pageTitle = $card ? e($card['nama_barang']) . ' - Kartu Inventaris' : 'Kartu In
             const snap = captureBioSnapshot(videoEl);
             document.getElementById("bioPhotoSnap").value = snap;
 
-            const matchedNameEl = document.getElementById("bioMatchedName");
             if (matchedNameEl) matchedNameEl.textContent = user.nama;
-            const matchConfEl = document.getElementById("bioMatchConfidence");
             if (matchConfEl) matchConfEl.textContent = conf + "% Cocok (Otorisasi Diterima)";
-            
-            const successOverlay = document.getElementById("bioSuccessOverlay");
             if (successOverlay) successOverlay.classList.remove("d-none");
-
-            const statusBox = document.getElementById("bioStatusBox");
             if (statusBox) {
                 statusBox.className = "alert alert-success py-2 px-3 small fw-bold mb-2";
                 statusBox.innerHTML = '<i class="bi bi-check-circle-fill me-1"></i> Wajah Terverifikasi: <strong>' + user.nama + '</strong>! Menyimpan foto...';
@@ -1627,6 +1933,59 @@ $pageTitle = $card ? e($card['nama_barang']) . ' - Kartu Inventaris' : 'Kartu In
             document.getElementById('imageModalSrc').src = src;
             document.getElementById('imageModalTitle').innerText = title || 'Foto Barang';
             new bootstrap.Modal(document.getElementById('imageModal')).show();
+        }
+
+                function copyText(text, btnEl) {
+            function onSuccess() {
+                if (!btnEl) return;
+                const oldHtml = btnEl.innerHTML;
+                btnEl.innerHTML = '<i class="bi bi-check2 text-success me-1"></i>Tersalin!';
+                btnEl.classList.add('border-success', 'text-success');
+                setTimeout(() => {
+                    btnEl.innerHTML = oldHtml;
+                    btnEl.classList.remove('border-success', 'text-success');
+                }, 1500);
+            }
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(text).then(onSuccess).catch(() => fallback(text, onSuccess));
+            } else {
+                fallback(text, onSuccess);
+            }
+            function fallback(t, cb) {
+                const ta = document.createElement('textarea');
+                ta.value = t;
+                ta.style.position = 'fixed';
+                ta.style.opacity = '0';
+                document.body.appendChild(ta);
+                ta.select();
+                try {
+                    document.execCommand('copy');
+                    cb();
+                } catch(e) {
+                    alert('Tersalin: ' + t);
+                }
+                document.body.removeChild(ta);
+            }
+        }
+
+        function copyCardUrlDirect(btnEl) {
+            const input = document.getElementById('inputCardUrl');
+            const url = input ? input.value : window.location.href;
+            copyText(url, btnEl);
+        }
+
+        function handleFileSelect(input) {
+            if (!input || !input.files || input.files.length === 0) return;
+            const f = input.files[0];
+            const emptyBox = document.getElementById('dropzoneEmpty');
+            const selectedBox = document.getElementById('dropzoneSelected');
+            const nameEl = document.getElementById('selectedFileName');
+            const sizeEl = document.getElementById('selectedFileSize');
+
+            if (emptyBox) emptyBox.classList.add('d-none');
+            if (selectedBox) selectedBox.classList.remove('d-none');
+            if (nameEl) nameEl.textContent = f.name;
+            if (sizeEl) sizeEl.textContent = (f.size / 1024).toFixed(1) + ' KB';
         }
 
         function copyCardLink() {

@@ -62,35 +62,67 @@ if ($currentMonthLog) {
       </div>
     </div>';
 } else {
-    $btnStartAction = '
-    <div class="d-flex flex-column flex-sm-row gap-2">
-      <a class="btn btn-success btn-lg fw-semibold py-3 px-4 shadow-sm flex-fill" href="'.e(module_url('scan.php', ['t' => $token, 'action' => 'start'])).'">
-        <i class="bi bi-play-circle-fill me-2"></i> Mulai Checklist (Bulan Ini)
-      </a>
-      <a class="btn btn-outline-warning text-dark fw-semibold py-3 px-3 shadow-sm d-flex align-items-center justify-content-center" href="'.e(module_url('scan.php', ['t' => $token, 'action' => 'susulan'])).'" title="Isi pemeliharaan susulan untuk bulan lain">
-        <i class="bi bi-clock-history me-1"></i> Susulan
-      </a>
-    </div>
-    <div class="text-center mt-2"><small class="text-muted"><i class="bi bi-check2-circle text-success me-1"></i>Cukup pilih/masukkan nama petugas saat mengisi checklist (tidak wajib login).</small></div>';
+    $stAsetRaw = trim((string)($asset['status'] ?? 'Aktif')) ?: 'Aktif';
+    $stAsetLower = strtolower($stAsetRaw);
+    $isAsetAktif = ($stAsetLower === 'aktif' || $stAsetLower === '');
 
-    $statusCardHtml = '
-    <div class="card shadow-sm mb-4 p-3 p-md-4 rounded-3" style="background-color: #FEF2F2; border: 1px solid #FECACA; border-left: 4px solid #DC2626;">
-      <div class="d-flex align-items-center justify-content-between mb-2">
-        <span class="text-danger fw-semibold fs-6"><i class="bi bi-exclamation-circle me-1"></i> Status Pemeliharaan Bulan Ini:</span>
-        <span class="badge bg-danger px-3 py-2 fs-6"><i class="bi bi-x-circle-fill me-1"></i> Belum Maintenance</span>
-      </div>
-      <h5 class="fw-bold text-dark mb-1">Periode: '.$monthName.' '.$year.'</h5>
-      <p class="small mb-3" style="color: #334155 !important;">Perangkat ini belum dilakukan pemeliharaan hardware & OS untuk bulan ini.</p>
-      
-      '.$btnStartAction.'
-    </div>';
+    if (!$isAsetAktif) {
+        // Perangkat Tidak Terpakai / Nonaktif / Afkir: Tampilkan info status netral & bebas maintenance
+        $statusCardHtml = '
+        <div class="card shadow-sm mb-4 p-3 p-md-4 rounded-3" style="background-color: #F8FAFC; border: 1px solid #CBD5E1; border-left: 4px solid #64748B;">
+          <div class="d-flex align-items-center justify-content-between mb-2 flex-wrap gap-2">
+            <span class="text-secondary fw-semibold fs-6"><i class="bi bi-info-circle me-1"></i> Status Operasional Aset:</span>
+            <span class="badge bg-secondary px-3 py-2 fs-6"><i class="bi bi-slash-circle me-1"></i> '.e(ucfirst($stAsetRaw)).' &bull; Bebas Maint</span>
+          </div>
+          <h5 class="fw-bold text-dark mb-1">Perangkat Bebas Jadwal Pemeliharaan Bulanan</h5>
+          <p class="small mb-3" style="color: #475569 !important;">
+            Perangkat ini berstatus <strong>'.e(ucfirst($stAsetRaw)).'</strong> (misalnya komputer lama yang sudah diganti unit baru atau dinonaktifkan).
+            Data spesifikasi teknis, riwayat inspeksi lampau, dan foto unit tetap tersimpan aman di database inventaris, namun <strong>unit ini tidak masuk target pemeliharaan bulanan teknisi</strong>.
+          </p>
+          <div class="d-flex flex-wrap gap-2">
+            <a class="btn btn-outline-secondary fw-semibold py-2 px-3 shadow-xs" href="'.e(module_url('scan.php', ['t' => $token, 'action' => 'start'])).'">
+              <i class="bi bi-clipboard-plus me-1"></i> Catat Pemeliharaan Khusus (Opsional)
+            </a>
+            '.(is_logged_in() ? '<a class="btn btn-outline-primary fw-semibold py-2 px-3 shadow-xs" href="'.e(module_url('asset_edit.php', ['id' => $assetId])).'"><i class="bi bi-pencil-square me-1"></i> Ubah Status / Aktifkan Kembali</a>' : '').'
+          </div>
+        </div>';
+    } else {
+        $btnStartAction = '
+        <div class="d-flex flex-column flex-sm-row gap-2">
+          <a class="btn btn-success btn-lg fw-semibold py-3 px-4 shadow-sm flex-fill" href="'.e(module_url('scan.php', ['t' => $token, 'action' => 'start'])).'">
+            <i class="bi bi-play-circle-fill me-2"></i> Mulai Checklist (Bulan Ini)
+          </a>
+          <a class="btn btn-outline-warning text-dark fw-semibold py-3 px-3 shadow-sm d-flex align-items-center justify-content-center" href="'.e(module_url('scan.php', ['t' => $token, 'action' => 'susulan'])).'" title="Isi pemeliharaan susulan untuk bulan lain">
+            <i class="bi bi-clock-history me-1"></i> Susulan
+          </a>
+        </div>
+        <div class="text-center mt-2"><small class="text-muted"><i class="bi bi-check2-circle text-success me-1"></i>Cukup pilih/masukkan nama petugas saat mengisi checklist (tidak wajib login).</small></div>';
+
+        $statusCardHtml = '
+        <div class="card shadow-sm mb-4 p-3 p-md-4 rounded-3" style="background-color: #FEF2F2; border: 1px solid #FECACA; border-left: 4px solid #DC2626;">
+          <div class="d-flex align-items-center justify-content-between mb-2">
+            <span class="text-danger fw-semibold fs-6"><i class="bi bi-exclamation-circle me-1"></i> Status Pemeliharaan Bulan Ini:</span>
+            <span class="badge bg-danger px-3 py-2 fs-6"><i class="bi bi-x-circle-fill me-1"></i> Belum Maintenance</span>
+          </div>
+          <h5 class="fw-bold text-dark mb-1">Periode: '.$monthName.' '.$year.'</h5>
+          <p class="small mb-3" style="color: #334155 !important;">Perangkat ini belum dilakukan pemeliharaan hardware & OS untuk bulan ini.</p>
+          
+          '.$btnStartAction.'
+        </div>';
+    }
 }
 
 // Deteksi bulan-bulan lampau yang belum dilakukan pemeliharaan (missed months)
+// HANYA dicek untuk perangkat yang berstatus Aktif
+$stAsetCheck = strtolower(trim((string)($asset['status'] ?? 'Aktif')));
+$isAsetAktifCheck = ($stAsetCheck === 'aktif' || $stAsetCheck === '');
+
 $missedPastMonths = [];
-for ($mIdx = 1; $mIdx < $month; $mIdx++) {
-    if (empty($cardMatrix[$mIdx]['is_done'])) {
-        $missedPastMonths[$mIdx] = $monthNames[$mIdx] ?? ('Bulan ' . $mIdx);
+if ($isAsetAktifCheck) {
+    for ($mIdx = 1; $mIdx < $month; $mIdx++) {
+        if (empty($cardMatrix[$mIdx]['is_done'])) {
+            $missedPastMonths[$mIdx] = $monthNames[$mIdx] ?? ('Bulan ' . $mIdx);
+        }
     }
 }
 $missedBannerHtml = '';
@@ -759,7 +791,7 @@ $verifiedBadge = !empty($asset['foto_updated_by']) ? '
 if ($fotoUnitSrc !== '') {
     $fotoCardHtml = '
     <div class="col-12 col-md-4 col-lg-3 text-center mb-3 mb-md-0">
-      <div class="position-relative rounded-3 overflow-hidden border shadow-xs bg-dark bg-opacity-10 d-flex align-items-center justify-content-center" style="cursor: pointer; min-height: 175px; max-height: 210px;" onclick="openScanPhotoModal(\''.e($fotoUnitSrc).'\', \''.e(addslashes(asset_title($asset))).'\', \''.e(addslashes($asset['kode_inventaris'] ?? '')).'\')" title="Klik untuk memperbesar foto unit">
+      <div class="position-relative rounded-3 overflow-hidden border shadow-xs bg-dark bg-opacity-10 d-flex align-items-center justify-content-center" style="cursor: pointer; aspect-ratio: 4 / 5; max-height: 240px; margin: 0 auto;" onclick="openScanPhotoModal(\''.e($fotoUnitSrc).'\', \''.e(addslashes(asset_title($asset))).'\', \''.e(addslashes($asset['kode_inventaris'] ?? '')).'\')" title="Klik untuk memperbesar foto unit">
         <img src="'.e($fotoUnitSrc).'" alt="Foto Fisik '.e(asset_title($asset)).'" class="w-100 h-100 object-fit-cover" style="max-height: 210px; min-height: 175px; display: block;" onerror="this.onerror=null; this.parentElement.innerHTML=\'<div class=\\\'p-4 text-muted small\\\'><i class=\\\'bi bi-image fs-1 d-block mb-1 text-secondary opacity-50\\\'></i>Gagal memuat foto</div>\';">
         <div class="position-absolute bottom-0 start-0 w-100 bg-dark bg-opacity-75 text-white py-1 px-2 small text-center" style="font-size: 0.72rem; backdrop-filter: blur(2px);">
           <i class="bi bi-zoom-in me-1"></i> Perbesar Foto
@@ -787,6 +819,58 @@ if ($fotoUnitSrc !== '') {
     $specColClass = 'col-12 col-md-8 col-lg-9';
 }
 
+$replInfo = function_exists('get_asset_replacement_info') ? get_asset_replacement_info($asset) : ['replaces' => null, 'replaced_by' => null, 'date' => null];
+$crossLinkBannerHtml = '';
+
+if (!empty($replInfo['replaces'])) {
+    $oldA = $replInfo['replaces'];
+    $oldToken = !empty($oldA['qr_token']) ? $oldA['qr_token'] : get_static_qr_token((int)$oldA['id']);
+    $oldTitle = asset_title($oldA);
+    $oldUser = !empty($oldA['karyawan_nama']) && $oldA['karyawan_nama'] !== '-' ? $oldA['karyawan_nama'] : '';
+    $rawDate = $replInfo['date'] ?? '';
+    $dateText = $rawDate ? (strtotime($rawDate) ? format_id_date($rawDate) : $rawDate) : date('d/m/Y');
+    
+    $crossLinkBannerHtml = '
+    <div class="alert alert-primary bg-primary bg-opacity-10 border-primary border-opacity-25 rounded-3 py-2.5 px-3 mb-3 d-flex align-items-center justify-content-between flex-wrap gap-2 shadow-xs">
+      <div class="d-flex align-items-center gap-2">
+        <i class="bi bi-arrow-repeat text-primary fs-4 flex-shrink-0"></i>
+        <div>
+          <div class="fw-bold text-primary small"><i class="bi bi-link-45deg me-1"></i>Unit ini menggantikan: <span class="text-dark">'.e($oldA['kode_inventaris'] ?? '#'.$oldA['id']).'</span></div>
+          <div class="text-dark small">
+            '.e($oldTitle).($oldUser ? ' &middot; Pengguna: <strong>'.e($oldUser).'</strong>' : '').'
+            '.($dateText ? '<span class="text-muted"> &bull; Diganti pada: <strong>'.e($dateText).'</strong></span>' : '').'
+          </div>
+        </div>
+      </div>
+      <a href="'.e(module_url('scan.php', ['t' => $oldToken])).'" class="btn btn-sm btn-outline-primary py-1 px-2.5 fw-semibold font-monospace shadow-xs" style="font-size:0.75rem;">
+        <i class="bi bi-clock-history me-1"></i>Lihat Komputer Lama &rarr;
+      </a>
+    </div>';
+} elseif (!empty($replInfo['replaced_by'])) {
+    $newA = $replInfo['replaced_by'];
+    $newToken = !empty($newA['qr_token']) ? $newA['qr_token'] : get_static_qr_token((int)$newA['id']);
+    $newTitle = asset_title($newA);
+    $rawDate = $replInfo['date'] ?? '';
+    $dateText = $rawDate ? (strtotime($rawDate) ? format_id_date($rawDate) : $rawDate) : date('d/m/Y');
+
+    $crossLinkBannerHtml = '
+    <div class="alert alert-warning bg-warning bg-opacity-10 border-warning border-opacity-50 rounded-3 py-2.5 px-3 mb-3 d-flex align-items-center justify-content-between flex-wrap gap-2 shadow-xs">
+      <div class="d-flex align-items-center gap-2">
+        <i class="bi bi-arrow-right-circle-fill text-warning fs-4 flex-shrink-0"></i>
+        <div>
+          <div class="fw-bold text-dark small"><i class="bi bi-link-45deg me-1"></i>Telah diganti oleh: <span class="text-primary fw-bold">'.e($newA['kode_inventaris'] ?? '#'.$newA['id']).'</span></div>
+          <div class="text-dark small">
+            '.e($newTitle).'
+            '.($dateText ? '<span class="text-muted"> &bull; Pada tanggal <strong>'.e($dateText).'</strong></span>' : '').'
+          </div>
+        </div>
+      </div>
+      <a href="'.e(module_url('scan.php', ['t' => $newToken])).'" class="btn btn-sm btn-dark py-1 px-2.5 fw-semibold font-monospace shadow-xs" style="font-size:0.75rem;">
+        <i class="bi bi-box-arrow-up-right me-1"></i>Buka Unit Baru &rarr;
+      </a>
+    </div>';
+}
+
 $body = '
 <div class="row justify-content-center">
   <div class="col-md-11 col-lg-10">
@@ -807,6 +891,8 @@ $body = '
           <i class="bi bi-check-circle-fill me-1"></i> '.e($asset['status'] ?? 'Aktif').'
         </span>
       </div>
+
+      '.$crossLinkBannerHtml.'
 
       <div class="row g-3 align-items-center">
         '.$fotoCardHtml.'
@@ -1187,27 +1273,39 @@ function handleScanPhotoSelect(event) {
   reader.onload = function(e) {
     const tempImg = new Image();
     tempImg.onload = function() {
-      // Kompresi Canvas Cerdas Client-Side
-      const maxDim = 1600;
-      let w = tempImg.width;
-      let h = tempImg.height;
-      if (w > maxDim || h > maxDim) {
-        if (w > h) {
-          h = Math.round((h * maxDim) / w);
-          w = maxDim;
-        } else {
-          w = Math.round((w * maxDim) / h);
-          h = maxDim;
-        }
+      // Kompresi & Auto-Crop Cerdas Rasio 4:5 Client-Side
+      const targetRatio = 4 / 5;
+      let cropW = tempImg.width;
+      let cropH = tempImg.height;
+      let sx = 0;
+      let sy = 0;
+
+      if (tempImg.width / tempImg.height > targetRatio) {
+        cropW = Math.round(tempImg.height * targetRatio);
+        cropH = tempImg.height;
+        sx = Math.round((tempImg.width - cropW) / 2);
+        sy = 0;
+      } else {
+        cropW = tempImg.width;
+        cropH = Math.round(tempImg.width / targetRatio);
+        sx = 0;
+        sy = Math.round((tempImg.height - cropH) / 2);
+      }
+
+      let outW = 1200;
+      let outH = 1500;
+      if (cropW < outW) {
+        outW = cropW;
+        outH = Math.round(outW / targetRatio);
       }
 
       const canvas = document.createElement("canvas");
-      canvas.width = w;
-      canvas.height = h;
+      canvas.width = outW;
+      canvas.height = outH;
       const ctx = canvas.getContext("2d");
       ctx.imageSmoothingEnabled = true;
       ctx.imageSmoothingQuality = "high";
-      ctx.drawImage(tempImg, 0, 0, w, h);
+      ctx.drawImage(tempImg, sx, sy, cropW, cropH, 0, 0, outW, outH);
 
       // Export JPEG Quality 0.82
       const compressedDataUrl = canvas.toDataURL("image/jpeg", 0.82);

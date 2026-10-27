@@ -133,6 +133,47 @@ function get_nomor_asset_gabungan(string $noRek, ?string $tgl): string {
 }
 
 /**
+ * Format Resmi Kode Inventaris Bank BPR Mitratama: 00.0.00000
+ * Contoh: 01.5.00495 (Cabang 01, Kelompok Aktiva 5, No Urut 00495)
+ */
+function format_kode_inventaris(?string $raw): string {
+    $raw = trim((string)$raw);
+    if ($raw === '') {
+        return '';
+    }
+
+    // Jika sudah memiliki pemisah titik
+    $parts = explode('.', $raw);
+    if (count($parts) === 3) {
+        $p1 = str_pad($parts[0], 2, '0', STR_PAD_LEFT);
+        $p2 = $parts[1];
+        $p3 = $parts[2];
+        if (strlen($p2) === 2 && strlen($p3) === 4) {
+            $p3 = $p2[1] . $p3;
+            $p2 = $p2[0];
+        }
+        $p3 = str_pad($p3, 5, '0', STR_PAD_LEFT);
+        return "{$p1}.{$p2}.{$p3}";
+    }
+
+    // Ekstrak hanya digit angka
+    $digits = preg_replace('/[^0-9]/', '', $raw);
+    if (strlen($digits) >= 8) {
+        $p1 = substr($digits, 0, 2);
+        $p2 = substr($digits, 2, 1);
+        $p3 = substr($digits, 3, 5);
+        return "{$p1}.{$p2}.{$p3}";
+    } elseif (strlen($digits) >= 3) {
+        $p1 = substr($digits, 0, 2);
+        $p2 = substr($digits, 2, 1);
+        $p3 = str_pad(substr($digits, 3), 5, '0', STR_PAD_LEFT);
+        return "{$p1}.{$p2}.{$p3}";
+    }
+
+    return $raw;
+}
+
+/**
  * Pemetaan Resmi 5 Kantor Cabang Standar
  * 01: Kantor Pusat (KPO)
  * 02: Batulicin
@@ -293,21 +334,25 @@ function get_inventaris_kartu_rows(bool $refresh = false): array {
     // 2. Mode MySQL
     try {
         $pdo = db();
-        $pdo->exec("
-            CREATE TABLE IF NOT EXISTS inventaris_kartu (
-                id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-                nomor_rekening VARCHAR(100) NOT NULL,
-                nama_barang VARCHAR(255) NOT NULL,
-                tanggal_perolehan DATE NOT NULL,
-                barcode_data TEXT NOT NULL,
-                lokasi VARCHAR(150) NULL DEFAULT 'Kantor Pusat (KPO)',
-                created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-                PRIMARY KEY (id)
-            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-        ");
-
-        $st = $pdo->query("SELECT * FROM inventaris_kartu ORDER BY id DESC");
-        $rows = $st ? $st->fetchAll() : [];
+        try {
+            $st = $pdo->query("SELECT * FROM inventaris_kartu ORDER BY id DESC");
+            $rows = $st ? $st->fetchAll() : [];
+        } catch (Throwable $e) {
+            $pdo->exec("
+                CREATE TABLE IF NOT EXISTS inventaris_kartu (
+                    id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+                    nomor_rekening VARCHAR(100) NOT NULL,
+                    nama_barang VARCHAR(255) NOT NULL,
+                    tanggal_perolehan DATE NOT NULL,
+                    barcode_data TEXT NOT NULL,
+                    lokasi VARCHAR(150) NULL DEFAULT 'Kantor Pusat (KPO)',
+                    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                    PRIMARY KEY (id)
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+            ");
+            $st = $pdo->query("SELECT * FROM inventaris_kartu ORDER BY id DESC");
+            $rows = $st ? $st->fetchAll() : [];
+        }
 
         if (empty($rows)) {
             $defaults = default_inventaris_kartu_rows();
@@ -597,29 +642,8 @@ function ensure_inventaris_kartu_columns(): void {
     static $done = false;
     if ($done) return;
     $done = true;
-    try {
-        db()->exec("
-            ALTER TABLE inventaris_kartu 
-            ADD COLUMN IF NOT EXISTS nomor_seri_inventaris VARCHAR(100) NULL,
-            ADD COLUMN IF NOT EXISTS jenis_inventaris VARCHAR(100) NULL,
-            ADD COLUMN IF NOT EXISTS golongan VARCHAR(100) NULL,
-            ADD COLUMN IF NOT EXISTS ruangan VARCHAR(150) NULL,
-            ADD COLUMN IF NOT EXISTS pengguna VARCHAR(150) NULL DEFAULT 'Umum / Pool',
-            ADD COLUMN IF NOT EXISTS sumber_perolehan VARCHAR(100) NULL,
-            ADD COLUMN IF NOT EXISTS status_inventaris VARCHAR(50) DEFAULT '1 : Aktif',
-            ADD COLUMN IF NOT EXISTS keterangan TEXT NULL,
-            ADD COLUMN IF NOT EXISTS foto TEXT NULL,
-            ADD COLUMN IF NOT EXISTS foto_updated_by VARCHAR(150) NULL,
-            ADD COLUMN IF NOT EXISTS foto_updated_at DATETIME NULL;
-        ");
-
-        // Pembersihan foto massal otomatis satu kali agar user dapat mengunggah foto mandiri
-        $cleanupFlag = dirname(__DIR__) . '/uploads/.reset_inv_photos_v1';
-        if (!file_exists($cleanupFlag)) {
-            db()->exec("UPDATE inventaris_kartu SET foto = NULL, foto_updated_by = NULL, foto_updated_at = NULL");
-            @touch($cleanupFlag);
-        }
-    } catch (Throwable $ignore) {}
+    // Kolom-kolom inventaris sudah tersedia di skema database produksi.
+    // Menghindari ALTER TABLE pada setiap HTTP request untuk menjaga kecepatan dan menghindari lock MySQL.
 }
 
 /**
@@ -679,16 +703,20 @@ function get_master_status_inventaris(): array {
  */
 function get_master_ruangan_list(): array {
     try {
-        db()->exec("
-            CREATE TABLE IF NOT EXISTS master_ruangan (
-                id INT AUTO_INCREMENT PRIMARY KEY,
-                kode_ruangan VARCHAR(20) NOT NULL,
-                nama_ruangan VARCHAR(150) NOT NULL,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                UNIQUE KEY uq_ruangan (kode_ruangan, nama_ruangan)
-            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-        ");
-        $rows = db()->query("SELECT * FROM master_ruangan ORDER BY kode_ruangan ASC, id ASC")->fetchAll();
+        try {
+            $rows = db()->query("SELECT * FROM master_ruangan ORDER BY kode_ruangan ASC, id ASC")->fetchAll();
+        } catch (Throwable $e) {
+            db()->exec("
+                CREATE TABLE IF NOT EXISTS master_ruangan (
+                    id INT AUTO_INCREMENT PRIMARY KEY,
+                    kode_ruangan VARCHAR(20) NOT NULL,
+                    nama_ruangan VARCHAR(150) NOT NULL,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    UNIQUE KEY uq_ruangan (kode_ruangan, nama_ruangan)
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+            ");
+            $rows = db()->query("SELECT * FROM master_ruangan ORDER BY kode_ruangan ASC, id ASC")->fetchAll();
+        }
         if (empty($rows)) {
             $defaultRooms = [
                 ['01', 'RUANG DIREKSI / DIREKTUR UTAMA'],
@@ -751,6 +779,7 @@ function update_inventaris_kartu_data(int $id, array $data): bool {
                 jenis_inventaris = ?,
                 golongan = ?,
                 ruangan = ?,
+                lokasi = ?,
                 sumber_perolehan = ?,
                 status_inventaris = ?,
                 keterangan = ?
@@ -761,6 +790,7 @@ function update_inventaris_kartu_data(int $id, array $data): bool {
             $data['jenis_inventaris'] ?? null,
             $data['golongan'] ?? null,
             $data['ruangan'] ?? null,
+            $data['lokasi'] ?? ($data['ruangan'] ?? null),
             $data['sumber_perolehan'] ?? null,
             $data['status_inventaris'] ?? '1 : Aktif',
             $data['keterangan'] ?? null,
@@ -811,7 +841,7 @@ function generate_default_nomor_seri(array $card): string {
  * Kompres dan simpan gambar aset dengan kualitas tajam tapi ukuran file hemat (~150-280KB)
  * Menjaga performa server agar tidak kehabisan storage
  */
-function compress_and_save_uploaded_image(string $tmpPath, string $targetPath, int $maxDimension = 1600, int $quality = 82): bool {
+function compress_and_save_uploaded_image(string $tmpPath, string $targetPath, int $maxDimension = 1600, int $quality = 82, bool $crop4by5 = false): bool {
     if (!file_exists($tmpPath)) return false;
 
     // Pastikan direktori tujuan tersedia
@@ -854,16 +884,38 @@ function compress_and_save_uploaded_image(string $tmpPath, string $targetPath, i
                     } catch (Throwable $ignore) {}
                 }
 
-                // Hitung skala baru (maksimum 1600px pada sisi terpanjang)
-                $newW = $w;
-                $newH = $h;
-                if ($w > $maxDimension || $h > $maxDimension) {
-                    if ($w >= $h) {
-                        $newW = $maxDimension;
-                        $newH = (int)round(($h / $w) * $maxDimension);
+                $srcX = 0;
+                $srcY = 0;
+                $cropW = $w;
+                $cropH = $h;
+
+                if ($crop4by5) {
+                    $targetRatio = 4 / 5; // 0.8
+                    if ($w / $h > $targetRatio) {
+                        $cropW = (int)round($h * $targetRatio);
+                        $cropH = $h;
+                        $srcX = (int)round(($w - $cropW) / 2);
+                        $srcY = 0;
                     } else {
-                        $newH = $maxDimension;
-                        $newW = (int)round(($w / $h) * $maxDimension);
+                        $cropW = $w;
+                        $cropH = (int)round($w / $targetRatio);
+                        $srcX = 0;
+                        $srcY = (int)round(($h - $cropH) / 2);
+                    }
+                    $newW = min(1200, $cropW);
+                    $newH = (int)round($newW / $targetRatio);
+                } else {
+                    // Hitung skala baru (maksimum 1600px pada sisi terpanjang)
+                    $newW = $w;
+                    $newH = $h;
+                    if ($w > $maxDimension || $h > $maxDimension) {
+                        if ($w >= $h) {
+                            $newW = $maxDimension;
+                            $newH = (int)round(($h / $w) * $maxDimension);
+                        } else {
+                            $newH = $maxDimension;
+                            $newW = (int)round(($w / $h) * $maxDimension);
+                        }
                     }
                 }
 
@@ -873,7 +925,7 @@ function compress_and_save_uploaded_image(string $tmpPath, string $targetPath, i
                 $white = imagecolorallocate($dst, 255, 255, 255);
                 imagefilledrectangle($dst, 0, 0, $newW, $newH, $white);
 
-                imagecopyresampled($dst, $src, 0, 0, 0, 0, $newW, $newH, $w, $h);
+                imagecopyresampled($dst, $src, 0, 0, $srcX, $srcY, $newW, $newH, $cropW, $cropH);
 
                 // Simpan sebagai JPEG terkompresi kualitas 82 (sangat tajam & ringan)
                 $saved = @imagejpeg($dst, $targetPath, $quality);

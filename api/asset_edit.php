@@ -164,7 +164,48 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 if ($successData) {
     $printUrl = module_url('print_qr.php', ['asset_id' => $successData['asset_id']]);
 
-    $body = '
+    $replInfo = function_exists('get_asset_replacement_info') ? get_asset_replacement_info($asset) : ['replaces' => null, 'replaced_by' => null, 'date' => null];
+$crossLinkBannerHtml = '';
+
+if (!empty($replInfo['replaces'])) {
+    $oldA = $replInfo['replaces'];
+    $oldTitle = asset_title($oldA);
+    $rawDate = $replInfo['date'] ?? '';
+    $dateText = $rawDate ? (strtotime($rawDate) ? format_id_date($rawDate) : $rawDate) : date('d/m/Y');
+    $crossLinkBannerHtml = '
+    <div class="alert alert-primary bg-primary bg-opacity-10 border-primary border-opacity-25 rounded-3 py-2.5 px-3 mb-4 d-flex align-items-center justify-content-between flex-wrap gap-2 shadow-xs">
+      <div class="d-flex align-items-center gap-2">
+        <i class="bi bi-arrow-repeat text-primary fs-4 flex-shrink-0"></i>
+        <div>
+          <div class="fw-bold text-primary small"><i class="bi bi-link-45deg me-1"></i>Unit ini menggantikan: <span class="text-dark">'.e($oldA['kode_inventaris'] ?? '#'.$oldA['id']).'</span></div>
+          <div class="text-secondary small">'.e($oldTitle).' &bull; Diganti pada: <strong>'.e($dateText).'</strong></div>
+        </div>
+      </div>
+      <a href="'.e(module_url('asset_edit.php', ['id' => (int)$oldA['id']])).'" class="btn btn-sm btn-outline-primary py-1 px-2.5 fw-semibold">
+        <i class="bi bi-pencil me-1"></i>Lihat Data Komputer Lama
+      </a>
+    </div>';
+} elseif (!empty($replInfo['replaced_by'])) {
+    $newA = $replInfo['replaced_by'];
+    $newTitle = asset_title($newA);
+    $rawDate = $replInfo['date'] ?? '';
+    $dateText = $rawDate ? (strtotime($rawDate) ? format_id_date($rawDate) : $rawDate) : date('d/m/Y');
+    $crossLinkBannerHtml = '
+    <div class="alert alert-warning bg-warning bg-opacity-10 border-warning border-opacity-50 rounded-3 py-2.5 px-3 mb-4 d-flex align-items-center justify-content-between flex-wrap gap-2 shadow-xs">
+      <div class="d-flex align-items-center gap-2">
+        <i class="bi bi-arrow-right-circle-fill text-warning fs-4 flex-shrink-0"></i>
+        <div>
+          <div class="fw-bold text-dark small"><i class="bi bi-link-45deg me-1"></i>Telah diganti oleh: <span class="text-primary fw-bold">'.e($newA['kode_inventaris'] ?? '#'.$newA['id']).'</span></div>
+          <div class="text-secondary small">'.e($newTitle).' &bull; Pada tanggal <strong>'.e($dateText).'</strong></div>
+        </div>
+      </div>
+      <a href="'.e(module_url('asset_edit.php', ['id' => (int)$newA['id']])).'" class="btn btn-sm btn-dark py-1 px-2.5 fw-semibold">
+        <i class="bi bi-pencil me-1"></i>Buka Data Komputer Baru
+      </a>
+    </div>';
+}
+
+$body = '
     <div class="row justify-content-center">
       <div class="col-lg-8">
         <div class="card p-4 border-0 shadow-sm">
@@ -286,10 +327,15 @@ $body = '
         <h1 class="h4 mb-1">Edit Perangkat #'.(int)$asset['id'].' · '.e(normalize_kode_inventaris($asset['kode_inventaris'] ?? '')).'</h1>
         <div class="text-secondary small">Perbarui konfigurasi spesifikasi, penempatan kantor, atau status operasional perangkat.</div>
       </div>
-      <a class="btn btn-light border btn-sm d-inline-flex align-items-center gap-1" href="'.e(module_url('assets.php')).'"><i class="bi bi-arrow-left"></i> Kembali ke Aset</a>
+      <div class="d-flex align-items-center gap-2 flex-wrap">
+        <a class="btn btn-warning btn-sm text-dark fw-bold d-inline-flex align-items-center gap-1 shadow-xs" href="'.e(module_url('asset_add.php', ['replace_id' => (int)$asset['id']])).'" title="Klik untuk mengganti komputer lama ini dengan unit baru"><i class="bi bi-arrow-repeat"></i> Ganti ke Unit Baru</a>
+        <a class="btn btn-light border btn-sm d-inline-flex align-items-center gap-1" href="'.e(module_url('assets.php')).'"><i class="bi bi-arrow-left"></i> Kembali ke Aset</a>
+      </div>
     </div>
 
     '.$errorHtml.'
+
+    '.$crossLinkBannerHtml.'
 
     <div class="card p-4 mb-4">
       <form method="post" id="formEditAsset" enctype="multipart/form-data">
@@ -344,13 +390,16 @@ $body = '
           </div>
 
           <div class="col-md-6">
-            <label class="form-label text-secondary small fw-semibold">Status Aset</label>
+            <label class="form-label text-secondary small fw-semibold">Status Operasional Aset</label>
             <select class="form-select" name="status">
-              <option value="Aktif"'.($curStatus === 'Aktif' ? ' selected' : '').'>Aktif (Digunakan)</option>
+              <option value="Aktif"'.(strtolower($curStatus) === 'aktif' || $curStatus === '' ? ' selected' : '').'>Aktif (Wajib Maintenance Bulanan)</option>
+              <option value="Tidak Terpakai"'.(in_array(strtolower($curStatus), ['tidak terpakai', 'diganti baru', 'pensiun'], true) ? ' selected' : '').'>Tidak Terpakai / Diganti Unit Baru (Bebas Maintenance)</option>
               <option value="Backup"'.($curStatus === 'Backup' ? ' selected' : '').'>Backup / Cadangan</option>
               <option value="Perbaikan"'.($curStatus === 'Perbaikan' ? ' selected' : '').'>Sedang Dalam Perbaikan</option>
-              <option value="Nonaktif"'.($curStatus === 'Nonaktif' ? ' selected' : '').'>Nonaktif</option>
+              <option value="Nonaktif"'.($curStatus === 'Nonaktif' ? ' selected' : '').'>Nonaktif (Bebas Maintenance)</option>
+              <option value="Afkir"'.(in_array(strtolower($curStatus), ['afkir', 'disposal', 'rusak total'], true) ? ' selected' : '').'>Afkir / Dihapuskan (Bebas Maintenance)</option>
             </select>
+            <div class="form-text small text-muted"><i class="bi bi-info-circle me-1 text-primary"></i>Komputer lama yang <strong>Tidak Terpakai / Diganti Unit Baru</strong> tetap tersimpan di riwayat data inventaris (spesifikasi, foto, histori), namun <strong>otomatis tidak masuk target pemeliharaan bulanan</strong>.</div>
           </div>
         </div>
 
@@ -704,28 +753,44 @@ document.addEventListener("DOMContentLoaded", function() {
     });
   }
 
-  // Kompresi Gambar Cerdas di Browser (Canvas Client-side)
+  // Kompresi Gambar Cerdas di Browser (Canvas Client-side Rasio 4:5)
   function compressImageClientSide(file, maxDimension, quality, callback) {
     const reader = new FileReader();
     reader.onload = function(e) {
       const img = new Image();
       img.onload = function() {
-        let w = img.width;
-        let h = img.height;
-        if (w > maxDimension || h > maxDimension) {
-          if (w >= h) {
-            h = Math.round((h / w) * maxDimension);
-            w = maxDimension;
-          } else {
-            w = Math.round((w / h) * maxDimension);
-            h = maxDimension;
-          }
+        const targetRatio = 4 / 5;
+        let cropW = img.width;
+        let cropH = img.height;
+        let sx = 0;
+        let sy = 0;
+
+        if (img.width / img.height > targetRatio) {
+          cropW = Math.round(img.height * targetRatio);
+          cropH = img.height;
+          sx = Math.round((img.width - cropW) / 2);
+          sy = 0;
+        } else {
+          cropW = img.width;
+          cropH = Math.round(img.width / targetRatio);
+          sx = 0;
+          sy = Math.round((img.height - cropH) / 2);
         }
+
+        let outW = 1200;
+        let outH = 1500;
+        if (cropW < outW) {
+          outW = cropW;
+          outH = Math.round(outW / targetRatio);
+        }
+
         const canvas = document.createElement("canvas");
-        canvas.width = w;
-        canvas.height = h;
+        canvas.width = outW;
+        canvas.height = outH;
         const ctx = canvas.getContext("2d");
-        ctx.drawImage(img, 0, 0, w, h);
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = "high";
+        ctx.drawImage(img, sx, sy, cropW, cropH, 0, 0, outW, outH);
         canvas.toBlob(function(blob) {
           callback(blob, canvas.toDataURL("image/jpeg", quality));
         }, "image/jpeg", quality);

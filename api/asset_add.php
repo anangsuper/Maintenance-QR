@@ -45,6 +45,9 @@ if (empty($divisis)) {
 $error = '';
 $successData = null;
 
+$replaceId = max(0, (int)($_GET['replace_id'] ?? $_POST['replace_id'] ?? 0));
+$replaceAsset = $replaceId > 0 ? get_asset_by_id($replaceId) : null;
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     verify_csrf();
 
@@ -95,9 +98,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'printer' => $printer,
             'foto' => $fotoUnit ?: '',
         ];
+        if ($replaceId > 0 && $replaceAsset) {
+            $payload['replaces_asset_id'] = $replaceId;
+            $payload['replacement_date'] = date('Y-m-d');
+        }
 
         $res = create_new_asset($payload);
         if (!empty($res['success'])) {
+            $newAssetId = (int)$res['asset_id'];
+            if ($replaceId > 0 && $replaceAsset) {
+                $oldKet = trim((string)($replaceAsset['keterangan'] ?? ''));
+                $noteGanti = 'Diganti unit baru #' . $newAssetId . ' (' . $kode . ' - ' . $merk . ' ' . $model . ') tgl ' . date('d/m/Y');
+                update_asset($replaceId, [
+                    'status' => 'Tidak Terpakai',
+                    'replaced_by_id' => $newAssetId,
+                    'replacement_date' => date('Y-m-d'),
+                    'keterangan' => $oldKet !== '' ? ($oldKet . ' | ' . $noteGanti) : $noteGanti
+                ]);
+            }
             $cabangNama = '';
             foreach ($cabangs as $c) {
                 if ((int)($c['id'] ?? 0) === $idCab) {
@@ -172,12 +190,23 @@ if ($successData) {
     exit;
 }
 
+$preKatId = $replaceAsset ? (int)($replaceAsset['id_kategori'] ?? 0) : 0;
+$preCabId = $replaceAsset ? (int)($replaceAsset['id_cabang'] ?? 0) : 0;
+$preDivId = $replaceAsset ? (int)($replaceAsset['id_divisi'] ?? 0) : 0;
+$preKarName = $replaceAsset ? ($replaceAsset['karyawan_nama'] ?? '') : '';
+if ($preKarName === '-') $preKarName = '';
+$preIp = $replaceAsset ? ($replaceAsset['ip_address'] ?? $replaceAsset['ip'] ?? '') : '';
+if ($preIp === '-') $preIp = '';
+$prePrinter = $replaceAsset ? ($replaceAsset['printer'] ?? '') : '';
+if ($prePrinter === '-') $prePrinter = '';
+
 // Opsi Dropdown Kategori
 $optKat = '';
 foreach ($kategoris as $kat) {
     $kId = (int)($kat['id'] ?? 0);
     $kNama = $kat['nama_kategori'] ?? $kat['nama'] ?? 'Kategori #' . $kId;
-    $optKat .= '<option value="'.$kId.'">'.e($kNama).'</option>';
+    $sel = ($kId === $preKatId) ? ' selected' : '';
+    $optKat .= '<option value="'.$kId.'"'.$sel.'>'.e($kNama).'</option>';
 }
 
 // Opsi Dropdown Cabang
@@ -185,7 +214,8 @@ $optCab = '';
 foreach ($cabangs as $cab) {
     $cId = (int)($cab['id'] ?? 0);
     $cNama = $cab['nama_cabang'] ?? $cab['nama'] ?? 'Cabang #' . $cId;
-    $optCab .= '<option value="'.$cId.'">'.e($cNama).'</option>';
+    $sel = ($cId === $preCabId) ? ' selected' : '';
+    $optCab .= '<option value="'.$cId.'"'.$sel.'>'.e($cNama).'</option>';
 }
 
 // Opsi Dropdown Divisi
@@ -193,7 +223,8 @@ $optDiv = '';
 foreach ($divisis as $div) {
     $dId = (int)($div['id'] ?? 0);
     $dNama = $div['nama_divisi'] ?? $div['nama'] ?? 'Divisi #' . $dId;
-    $optDiv .= '<option value="'.$dId.'">'.e($dNama).'</option>';
+    $sel = ($dId === $preDivId) ? ' selected' : '';
+    $optDiv .= '<option value="'.$dId.'"'.$sel.'>'.e($dNama).'</option>';
 }
 
 // Daftar saran Karyawan untuk Datalist
@@ -225,9 +256,22 @@ $body = '
 
     '.$errorHtml.'
 
+    '.($replaceAsset ? '
+    <div class="alert alert-primary bg-primary bg-opacity-10 border-primary border-opacity-25 rounded-3 p-3 mb-4 d-flex align-items-center gap-3 shadow-xs">
+      <div class="fs-2 text-primary flex-shrink-0"><i class="bi bi-arrow-repeat"></i></div>
+      <div>
+        <h6 class="fw-bold text-primary mb-1">Mode Pergantian Komputer (Ganti Unit Baru)</h6>
+        <div class="small text-secondary">
+          Mengganti komputer lama <strong>'.e($replaceAsset['kode_inventaris']).' - '.e($replaceAsset['merk'].' '.$replaceAsset['model']).'</strong> milik <strong>'.e($preKarName ?: 'Umum').'</strong>.<br>
+          Lokasi cabang, divisi, pengguna, dan IP otomatis disalin. Saat disimpan, komputer lama otomatis diubah statusnya menjadi <strong>"Tidak Terpakai"</strong> (bebas maintenance bulanan, histori tetap utuh).
+        </div>
+      </div>
+    </div>' : '').'
+
     <div class="card p-4 mb-4">
       <form method="post" id="formAddAsset" enctype="multipart/form-data">
         <input type="hidden" name="_csrf" value="'.e(csrf_token()).'">
+        <input type="hidden" name="replace_id" value="'.$replaceId.'">
 
         <!-- Section 1: Identitas Perangkat -->
         <div class="d-flex align-items-center gap-2 border-bottom pb-2 mb-3">
@@ -278,13 +322,16 @@ $body = '
           </div>
 
           <div class="col-md-6">
-            <label class="form-label text-secondary small fw-semibold">Status Aset</label>
+            <label class="form-label text-secondary small fw-semibold">Status Operasional Aset</label>
             <select class="form-select" name="status">
-              <option value="Aktif" selected>Aktif (Digunakan)</option>
+              <option value="Aktif" selected>Aktif (Wajib Maintenance Bulanan)</option>
+              <option value="Tidak Terpakai">Tidak Terpakai / Diganti Unit Baru (Bebas Maintenance)</option>
               <option value="Backup">Backup / Cadangan</option>
               <option value="Perbaikan">Sedang Dalam Perbaikan</option>
-              <option value="Nonaktif">Nonaktif</option>
+              <option value="Nonaktif">Nonaktif (Bebas Maintenance)</option>
+              <option value="Afkir">Afkir / Dihapuskan (Bebas Maintenance)</option>
             </select>
+            <div class="form-text small text-muted"><i class="bi bi-info-circle me-1 text-primary"></i>Untuk unit komputer baru pengganti, biarkan <strong>Aktif</strong> agar otomatis masuk dalam checklist pemeliharaan bulanan.</div>
           </div>
         </div>
 
@@ -324,7 +371,7 @@ $body = '
             <label class="form-label text-secondary small fw-semibold">Pengguna / Pemilik Komputer</label>
             <div class="input-group">
               <span class="input-group-text bg-white"><i class="bi bi-person text-muted"></i></span>
-              <input type="text" class="form-control" name="nama_karyawan" id="inputNamaKaryawan" list="listKaryawan" placeholder="Pilih atau ketik nama staf..." autocomplete="off">
+              <input type="text" class="form-control" name="nama_karyawan" id="inputNamaKaryawan" list="listKaryawan" value="'.e($preKarName).'" placeholder="Pilih atau ketik nama staf..." autocomplete="off">
             </div>
             <datalist id="listKaryawan">
               '.$datalistKaryawan.'
@@ -353,13 +400,13 @@ $body = '
         <div class="row g-3 mb-4">
           <div class="col-md-6">
             <label class="form-label text-secondary small fw-semibold"><i class="bi bi-hdd-network me-1 text-success"></i>Alamat IP (IP Address)</label>
-            <input type="text" class="form-control font-monospace" name="ip_address" placeholder="Contoh: 192.168.1.50 (atau DHCP)">
+            <input type="text" class="form-control font-monospace" name="ip_address" value="'.e($preIp).'" placeholder="Contoh: 192.168.1.50 (atau DHCP)">
             <div class="form-text small text-muted">Tercetak otomatis pada Kartu Kontrol & scan teknisi.</div>
           </div>
 
           <div class="col-md-6">
             <label class="form-label text-secondary small fw-semibold"><i class="bi bi-printer me-1 text-info"></i>Printer Terhubung</label>
-            <input type="text" class="form-control" name="printer" placeholder="Contoh: Epson L3110, HP LaserJet, atau -">
+            <input type="text" class="form-control" name="printer" value="'.e($prePrinter).'" placeholder="Contoh: Epson L3110, HP LaserJet, atau -">
             <div class="form-text small text-muted">Printer yang tersambung di unit komputer ini.</div>
           </div>
 
@@ -608,28 +655,44 @@ document.addEventListener("DOMContentLoaded", function() {
     });
   }
 
-  // Kompresi Gambar Cerdas di Browser (Canvas Client-side)
+  // Kompresi Gambar Cerdas di Browser (Canvas Client-side Rasio 4:5)
   function compressImageClientSide(file, maxDimension, quality, callback) {
     const reader = new FileReader();
     reader.onload = function(e) {
       const img = new Image();
       img.onload = function() {
-        let w = img.width;
-        let h = img.height;
-        if (w > maxDimension || h > maxDimension) {
-          if (w >= h) {
-            h = Math.round((h / w) * maxDimension);
-            w = maxDimension;
-          } else {
-            w = Math.round((w / h) * maxDimension);
-            h = maxDimension;
-          }
+        const targetRatio = 4 / 5;
+        let cropW = img.width;
+        let cropH = img.height;
+        let sx = 0;
+        let sy = 0;
+
+        if (img.width / img.height > targetRatio) {
+          cropW = Math.round(img.height * targetRatio);
+          cropH = img.height;
+          sx = Math.round((img.width - cropW) / 2);
+          sy = 0;
+        } else {
+          cropW = img.width;
+          cropH = Math.round(img.width / targetRatio);
+          sx = 0;
+          sy = Math.round((img.height - cropH) / 2);
         }
+
+        let outW = 1200;
+        let outH = 1500;
+        if (cropW < outW) {
+          outW = cropW;
+          outH = Math.round(outW / targetRatio);
+        }
+
         const canvas = document.createElement("canvas");
-        canvas.width = w;
-        canvas.height = h;
+        canvas.width = outW;
+        canvas.height = outH;
         const ctx = canvas.getContext("2d");
-        ctx.drawImage(img, 0, 0, w, h);
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = "high";
+        ctx.drawImage(img, sx, sy, cropW, cropH, 0, 0, outW, outH);
         canvas.toBlob(function(blob) {
           callback(blob, canvas.toDataURL("image/jpeg", quality));
         }, "image/jpeg", quality);
