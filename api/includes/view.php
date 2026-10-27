@@ -362,16 +362,8 @@ function render_page(string $title, string $content, string $extraHead = '', str
 <meta name="apple-mobile-web-app-title" content="QR Maint">
 <link rel="apple-touch-icon" href="'.e(module_url('pwa_icons.php', ['size' => 192])).'">
 <link rel="icon" type="image/png" href="'.app_logo_url().'">
-<link rel="dns-prefetch" href="https://cdn.jsdelivr.net">
-<link rel="dns-prefetch" href="https://fonts.googleapis.com">
-<link rel="dns-prefetch" href="https://fonts.gstatic.com">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" media="print" onload="this.media=\'all\'">
-<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"></noscript>
-<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+<link href="'.e(module_url('assets/vendor/bootstrap.min.css')).'" rel="stylesheet">
+<link rel="stylesheet" href="'.e(module_url('assets/vendor/bootstrap-icons.min.css')).'">
 <style>
 
 /* =============================================================
@@ -2843,7 +2835,7 @@ label.form-label,
   </div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="'.e(module_url('assets/vendor/bootstrap.bundle.min.js')).'"></script>
 <script>
 (function(){
   // Keyboard Shortcut: Ctrl + K or / to open Global Search
@@ -2963,6 +2955,7 @@ label.form-label,
   var pageNavLoader = document.getElementById("page-nav-loader");
   var progressTimer = null;
   var progressVal = 0;
+  var safetyHideTimer = null;
 
   function setProgress(val) {
     if (!progressBar) return;
@@ -2974,24 +2967,36 @@ label.form-label,
 
   function startPageLoading() {
     if (progressTimer) clearInterval(progressTimer);
-    setProgress(18);
+    if (safetyHideTimer) clearTimeout(safetyHideTimer);
+    setProgress(20);
     if (pageNavLoader) pageNavLoader.style.display = "flex";
 
     progressTimer = setInterval(function() {
       if (progressVal < 50) {
-        setProgress(progressVal + 12);
+        setProgress(progressVal + 14);
       } else if (progressVal < 80) {
-        setProgress(progressVal + 6);
+        setProgress(progressVal + 7);
       } else if (progressVal < 94) {
-        setProgress(progressVal + 1.5);
+        setProgress(progressVal + 2);
       }
-    }, 150);
+    }, 120);
+
+    // Safety timeout: loader otomatis padam setelah 2.5 detik jika halaman tidak kunjung berpindah
+    // Mencegah badge "Memuat..." macet/stuck di layar
+    safetyHideTimer = setTimeout(stopPageLoading, 2500);
   }
 
   function stopPageLoading() {
     if (progressTimer) {
       clearInterval(progressTimer);
       progressTimer = null;
+    }
+    if (safetyHideTimer) {
+      clearTimeout(safetyHideTimer);
+      safetyHideTimer = null;
+    }
+    if (pageNavLoader) {
+      pageNavLoader.style.display = "none";
     }
     if (progressBar) {
       setProgress(100);
@@ -3000,15 +3005,12 @@ label.form-label,
         setTimeout(function() {
           progressBar.classList.remove("active");
           progressBar.style.width = "0%";
-          if (pageNavLoader) pageNavLoader.style.display = "none";
-        }, 220);
-      }, 140);
-    } else {
-      if (pageNavLoader) pageNavLoader.style.display = "none";
+        }, 150);
+      }, 100);
     }
   }
 
-  // Tangkap klik pada seluruh link internal ke halaman lain
+  // Tangkap klik pada link internal ke halaman lain
   document.addEventListener("click", function(e) {
     var a = e.target.closest("a");
     if (!a || !a.href) return;
@@ -3016,9 +3018,12 @@ label.form-label,
     if (a.target && a.target !== "_self") return;
     if (a.hasAttribute("download")) return;
     if (a.href.indexOf("javascript:") === 0) return;
-    if (a.getAttribute("data-bs-toggle") || a.getAttribute("data-bs-target")) return;
+    if (a.getAttribute("data-bs-toggle") || a.getAttribute("data-bs-target") || a.getAttribute("data-bs-dismiss")) return;
+    var rawHref = a.getAttribute("href") || "";
+    if (rawHref === "#" || rawHref === "" || rawHref.indexOf("javascript:") === 0) return;
     if (a.origin !== location.origin) return;
-    if (a.pathname === location.pathname && a.search === location.search && a.hash) return;
+    // Abaikan jika menuju halaman yang sama persis (hash anchor atau link refresh)
+    if (a.pathname === location.pathname && a.search === location.search) return;
     if (e.ctrlKey || e.metaKey || e.shiftKey || e.which === 2) return;
 
     startPageLoading();
@@ -3032,16 +3037,15 @@ label.form-label,
     startPageLoading();
   }, { passive: true });
 
-  // Tangani saat halaman selesai dimuat atau kembali dari cache history browser
-  window.addEventListener("pageshow", function() {
-    stopPageLoading();
-  });
-
-  // Animasi awal saat halaman pertama kali selesai dirender
-  document.addEventListener("DOMContentLoaded", function() {
-    startPageLoading();
-    setTimeout(stopPageLoading, 160);
-  });
+  // Matikan loader saat halaman selesai siap (DOMContentLoaded / pageshow / load)
+  stopPageLoading();
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", stopPageLoading);
+  }
+  window.addEventListener("pageshow", stopPageLoading);
+  window.addEventListener("load", stopPageLoading);
+  window.addEventListener("focus", stopPageLoading);
+  document.addEventListener("visibilitychange", function() { if (!document.hidden) stopPageLoading(); });
 })();
 
 // ============================================================
@@ -3211,7 +3215,7 @@ label.form-label,
 // PWA Service Worker Registration
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", function() {
-    navigator.serviceWorker.register("'.e(module_url('sw.js')).'")
+    navigator.serviceWorker.register("'.e(module_url('sw.js', ['v' => 22])).'")
       .then(function(reg) {
         // Success
       })
