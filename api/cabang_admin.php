@@ -1,6 +1,6 @@
 <?php
 require __DIR__ . '/bootstrap.php';
-require_admin_or_hrd();
+require_admin();
 
 $error = '';
 $success = '';

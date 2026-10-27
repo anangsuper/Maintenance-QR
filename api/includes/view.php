@@ -57,8 +57,6 @@ function render_page(string $title, string $content, string $extraHead = '', str
             ['title' => 'Log Ruang Server', 'url' => module_url('server_room_log.php'), 'icon' => 'bi-door-closed-fill', 'active' => in_array($currentPage, ['server_room_log.php', 'server_room_print_qr.php'], true)],
         ];
         $navLinks['PENGATURAN & MASTER'] = [
-            ['title' => 'Kantor Cabang', 'url' => module_url('cabang_admin.php'), 'icon' => 'bi-buildings', 'active' => ($currentPage === 'cabang_admin.php')],
-            ['title' => 'Divisi / Unit Kerja', 'url' => module_url('divisi_admin.php'), 'icon' => 'bi-diagram-3', 'active' => ($currentPage === 'divisi_admin.php')],
             ['title' => 'Akun Pengguna', 'url' => module_url('users_admin.php'), 'icon' => 'bi-people', 'active' => ($currentPage === 'users_admin.php')],
         ];
     } elseif (in_array($role, ['auditor', 'skai'], true)) {
@@ -167,12 +165,15 @@ function render_page(string $title, string $content, string $extraHead = '', str
     </aside>
 
     <!-- Offcanvas Mobile Drawer -->
-    <div class="offcanvas offcanvas-start bg-navy-dark text-white" tabindex="-1" id="appMobileSidebar" aria-labelledby="appMobileSidebarLabel">
-      <div class="offcanvas-header border-bottom border-navy-subtle py-2 px-3">
+    <div class="offcanvas offcanvas-start bg-navy-dark text-white d-lg-none" tabindex="-1" id="appMobileSidebar" aria-labelledby="appMobileSidebarLabel" data-bs-theme="dark">
+      <div class="offcanvas-header border-bottom border-navy-subtle py-2 px-3 d-flex align-items-center justify-content-between">
         <a href="'.e(module_url('dashboard.php')).'" class="d-flex align-items-center gap-2 text-decoration-none">
           <img src="'.app_logo_url().'" alt="Bank Mitra Logo" class="sidebar-brand-img" style="height: 48px; width: auto; max-width: 170px; object-fit: contain;">
         </a>
-        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+        <button type="button" class="btn btn-sm btn-outline-light py-1.5 px-3 d-inline-flex align-items-center gap-1.5 rounded-pill" data-bs-dismiss="offcanvas" aria-label="Close" title="Tutup / Sembunyikan Menu">
+          <i class="bi bi-x-lg"></i>
+          <span style="font-size: 0.8rem; font-weight: 700;">Tutup</span>
+        </button>
       </div>
       <div class="offcanvas-body custom-scrollbar p-3">
         '.$sidebarMenuHtml.'
@@ -189,14 +190,47 @@ function render_page(string $title, string $content, string $extraHead = '', str
           </div>
           <a href="'.e(module_url('logout.php')).'" class="btn btn-sm btn-outline-danger" title="Logout"><i class="bi bi-box-arrow-right"></i></a>
         </div>
+        <button type="button" class="btn btn-sm btn-outline-secondary w-100 mt-3 py-1.5 text-white-50 border-secondary d-flex align-items-center justify-content-center gap-1.5" data-bs-dismiss="offcanvas" title="Sembunyikan Menu">
+          <i class="bi bi-x-circle"></i> Sembunyikan Menu
+        </button>
       </div>
     </div>';
 
     // Topbar HTML
+    $userMenuDropdownItems = '';
+    if ($isHrdRole) {
+        $userMenuDropdownItems = '
+              <li><h6 class="dropdown-header text-uppercase fw-bold" style="font-size:0.65rem; color:#8c57ff; letter-spacing:0.06em;">Inventaris &amp; Sarpras</h6></li>
+              <li><a class="dropdown-item py-2" href="'.e(module_url('dashboard.php', ['tab' => 'kartu'])).'"><i class="bi bi-credit-card-2-front me-2 text-warning"></i> Kartu Inventaris</a></li>
+              <li><a class="dropdown-item py-2" href="'.e(module_url('asset_gallery.php', ['sub' => 'inventaris'])).'"><i class="bi bi-images me-2 text-primary"></i> Galeri Foto Barang</a></li>
+              <li><a class="dropdown-item py-2" href="'.e(module_url('memo_pengajuan.php')).'"><i class="bi bi-file-earmark-text me-2 text-info"></i> Memo Pengajuan</a></li>
+              <li><hr class="dropdown-divider my-1"></li>
+              <li><h6 class="dropdown-header text-uppercase fw-bold" style="font-size:0.65rem; color:#8c57ff; letter-spacing:0.06em;">Keamanan &amp; Master</h6></li>
+              <li><a class="dropdown-item py-2" href="'.e(module_url('server_room_log.php')).'"><i class="bi bi-door-closed-fill me-2" style="color:#8c57ff;"></i> Log Ruang Server</a></li>
+              <li><a class="dropdown-item py-2" href="'.e(module_url('users_admin.php')).'"><i class="bi bi-people me-2 text-success"></i> Akun Pengguna</a></li>';
+    } elseif (in_array($role, ['auditor', 'skai'], true)) {
+        $userMenuDropdownItems = '
+              <li><h6 class="dropdown-header text-uppercase fw-bold" style="font-size:0.65rem; color:#8c57ff; letter-spacing:0.06em;">Audit &amp; Kepatuhan</h6></li>
+              <li><a class="dropdown-item py-2" href="'.e(module_url('audit.php')).'"><i class="bi bi-file-earmark-bar-graph me-2 text-primary"></i> Laporan Audit</a></li>
+              <li><a class="dropdown-item py-2" href="'.e(module_url('monthly_history.php')).'"><i class="bi bi-calendar3 me-2 text-info"></i> Riwayat Bulanan</a></li>
+              <li><a class="dropdown-item py-2" href="'.e(module_url('audit_trail.php')).'"><i class="bi bi-shield-check me-2 text-warning"></i> Log Aktivitas (Audit)</a></li>
+              <li><a class="dropdown-item py-2" href="'.e(module_url('server_room_log.php')).'"><i class="bi bi-door-closed-fill me-2" style="color:#8c57ff;"></i> Log Ruang Server</a></li>';
+    } else {
+        $userMenuDropdownItems = '
+              <li><h6 class="dropdown-header text-uppercase fw-bold" style="font-size:0.65rem; color:#8c57ff; letter-spacing:0.06em;">Akses Cepat</h6></li>
+              <li><a class="dropdown-item py-2" href="'.e(module_url('scanner.php')).'"><i class="bi bi-qr-code-scan me-2 text-info"></i> Scanner QR &amp; Barcode</a></li>
+              <li><a class="dropdown-item py-2" href="'.e(module_url('assets.php')).'"><i class="bi bi-pc-display me-2 text-primary"></i> Data Komputer (PC)</a></li>
+              <li><a class="dropdown-item py-2" href="'.e(module_url('dashboard.php', ['tab' => 'kartu'])).'"><i class="bi bi-credit-card-2-front me-2 text-warning"></i> Kartu Inventaris</a></li>
+              <li><hr class="dropdown-divider my-1"></li>
+              <li><h6 class="dropdown-header text-uppercase fw-bold" style="font-size:0.65rem; color:#8c57ff; letter-spacing:0.06em;">Keamanan &amp; Audit</h6></li>
+              <li><a class="dropdown-item py-2" href="'.e(module_url('server_room_log.php')).'"><i class="bi bi-door-closed-fill me-2" style="color:#8c57ff;"></i> Log Ruang Server (OJK)</a></li>'
+              . ($isAdminUser ? '<li><a class="dropdown-item py-2" href="'.e(module_url('audit_trail.php')).'"><i class="bi bi-shield-check me-2 text-warning"></i> Log Aktivitas (Audit)</a></li>' : '');
+    }
+
     $topbarHtml = '
     <header class="app-topbar d-flex align-items-center justify-content-between px-3 px-md-4">
-      <div class="d-flex align-items-center gap-3">
-        <button class="btn btn-sm btn-outline-secondary d-lg-none" type="button" data-bs-toggle="offcanvas" data-bs-target="#appMobileSidebar" aria-controls="appMobileSidebar">
+      <div class="d-flex align-items-center gap-2 gap-md-3">
+        <button class="btn btn-sm btn-outline-secondary d-inline-flex align-items-center justify-content-center shadow-xs" id="sidebarToggleBtn" type="button" aria-controls="appMobileSidebar" title="Sembunyikan / Tampilkan Menu (Ctrl + B)" style="width: 36px; height: 36px;">
           <i class="bi bi-list fs-5"></i>
         </button>
         <div class="topbar-context d-none d-sm-flex align-items-center gap-2">
@@ -256,31 +290,7 @@ function render_page(string $title, string $content, string $extraHead = '', str
               <div class="fw-bold text-dark">'.e($userName).'</div>
               <div class="small text-muted text-capitalize"><i class="bi bi-shield-lock me-1"></i>'.e($displayRole).'</div>
             </li>
-            '.($isHrdRole ? '
-              <li><h6 class="dropdown-header text-uppercase fw-bold" style="font-size:0.65rem; color:#8c57ff; letter-spacing:0.06em;">Inventaris &amp; Sarpras</h6></li>
-              <li><a class="dropdown-item py-2" href="'.e(module_url('dashboard.php', ['tab' => 'kartu'])).'"><i class="bi bi-credit-card-2-front me-2 text-warning"></i> Kartu Inventaris</a></li>
-              <li><a class="dropdown-item py-2" href="'.e(module_url('asset_gallery.php', ['sub' => 'inventaris'])).'"><i class="bi bi-images me-2 text-primary"></i> Galeri Foto Barang</a></li>
-              <li><a class="dropdown-item py-2" href="'.e(module_url('memo_pengajuan.php')).'"><i class="bi bi-file-earmark-text me-2 text-info"></i> Memo Pengajuan</a></li>
-              <li><hr class="dropdown-divider my-1"></li>
-              <li><h6 class="dropdown-header text-uppercase fw-bold" style="font-size:0.65rem; color:#8c57ff; letter-spacing:0.06em;">Keamanan &amp; Master</h6></li>
-              <li><a class="dropdown-item py-2" href="'.e(module_url('server_room_log.php')).'"><i class="bi bi-door-closed-fill me-2" style="color:#8c57ff;"></i> Log Ruang Server</a></li>
-              <li><a class="dropdown-item py-2" href="'.e(module_url('cabang_admin.php')).'"><i class="bi bi-buildings me-2 text-success"></i> Kantor Cabang</a></li>
-            ' : (in_array($role, ['auditor', 'skai'], true) ? '
-              <li><h6 class="dropdown-header text-uppercase fw-bold" style="font-size:0.65rem; color:#8c57ff; letter-spacing:0.06em;">Audit &amp; Kepatuhan</h6></li>
-              <li><a class="dropdown-item py-2" href="'.e(module_url('audit.php')).'"><i class="bi bi-file-earmark-bar-graph me-2 text-primary"></i> Laporan Audit</a></li>
-              <li><a class="dropdown-item py-2" href="'.e(module_url('monthly_history.php')).'"><i class="bi bi-calendar3 me-2 text-info"></i> Riwayat Bulanan</a></li>
-              <li><a class="dropdown-item py-2" href="'.e(module_url('audit_trail.php')).'"><i class="bi bi-shield-check me-2 text-warning"></i> Log Aktivitas (Audit)</a></li>
-              <li><a class="dropdown-item py-2" href="'.e(module_url('server_room_log.php')).'"><i class="bi bi-door-closed-fill me-2" style="color:#8c57ff;"></i> Log Ruang Server</a></li>
-            ' : '
-              <li><h6 class="dropdown-header text-uppercase fw-bold" style="font-size:0.65rem; color:#8c57ff; letter-spacing:0.06em;">Akses Cepat</h6></li>
-              <li><a class="dropdown-item py-2" href="'.e(module_url('scanner.php')).'"><i class="bi bi-qr-code-scan me-2 text-info"></i> Scanner QR &amp; Barcode</a></li>
-              <li><a class="dropdown-item py-2" href="'.e(module_url('assets.php')).'"><i class="bi bi-pc-display me-2 text-primary"></i> Data Komputer (PC)</a></li>
-              <li><a class="dropdown-item py-2" href="'.e(module_url('dashboard.php', ['tab' => 'kartu'])).'"><i class="bi bi-credit-card-2-front me-2 text-warning"></i> Kartu Inventaris</a></li>
-              <li><hr class="dropdown-divider my-1"></li>
-              <li><h6 class="dropdown-header text-uppercase fw-bold" style="font-size:0.65rem; color:#8c57ff; letter-spacing:0.06em;">Keamanan &amp; Audit</h6></li>
-              <li><a class="dropdown-item py-2" href="'.e(module_url('server_room_log.php')).'"><i class="bi bi-door-closed-fill me-2" style="color:#8c57ff;"></i> Log Ruang Server (OJK)</a></li>
-              '.($isAdminUser ? '<li><a class="dropdown-item py-2" href="'.e(module_url('audit_trail.php')).'"><i class="bi bi-shield-check me-2 text-warning"></i> Log Aktivitas (Audit)</a></li>' : '').'
-            ')).'
+            '.$userMenuDropdownItems.'
             <li><button class="dropdown-item py-2 text-primary" type="button" data-bs-toggle="modal" data-bs-target="#modalPanduanAplikasi"><i class="bi bi-question-circle-fill me-2"></i> Bantuan & Panduan</button></li>
             <li><hr class="dropdown-divider"></li>
             <li><a class="dropdown-item py-2 text-danger" href="'.e(module_url('logout.php')).'"><i class="bi bi-box-arrow-right me-2"></i> Keluar</a></li>
@@ -358,7 +368,6 @@ function render_page(string $title, string $content, string $extraHead = '', str
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" media="print" onload="this.media=\'all\'">
 <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"></noscript>
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -1357,16 +1366,36 @@ h1, h2, h3, h4, h5, h6,
 }
 
 @media (min-width: 992px) {
+  .app-sidebar {
+    transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  }
   .app-main-viewport {
     margin-left: 256px;
     width: calc(100% - 256px);
+    transition: margin-left 0.25s cubic-bezier(0.16, 1, 0.3, 1), width 0.25s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  }
+  body.sidebar-collapsed .app-sidebar {
+    transform: translateX(-100%) !important;
+  }
+  body.sidebar-collapsed .app-main-viewport {
+    margin-left: 0 !important;
+    width: 100% !important;
   }
 }
 
 @media (max-width: 991.98px) {
+  .app-sidebar {
+    display: none !important;
+  }
   .app-main-viewport {
-    margin-left: 0;
-    width: 100%;
+    margin-left: 0 !important;
+    width: 100% !important;
+  }
+  .app-topbar {
+    transition: transform 0.25s ease-in-out !important;
+  }
+  .app-topbar.topbar-hidden {
+    transform: translateY(-100%) !important;
   }
 }
 
@@ -3013,6 +3042,142 @@ label.form-label,
     startPageLoading();
     setTimeout(stopPageLoading, 160);
   });
+})();
+
+// ============================================================
+// MOBILE SMART NAVBAR AUTO-HIDE ON SCROLL & AUTO-CLOSE MENU
+// ============================================================
+(function() {
+  function initMobileNavbarBehavior() {
+    var lastScrollY = window.pageYOffset || document.documentElement.scrollTop;
+    var topbar = document.querySelector(".app-topbar");
+    var ticking = false;
+
+    // Auto-hide topbar saat scroll ke bawah di layar HP (agar layar maksimal & tidak tertutup)
+    window.addEventListener("scroll", function() {
+      if (!ticking) {
+        window.requestAnimationFrame(function() {
+          if (window.innerWidth < 992 && topbar) {
+            var currentScrollY = window.pageYOffset || document.documentElement.scrollTop;
+            if (currentScrollY > 30 && currentScrollY > lastScrollY + 5) {
+              // Scroll ke bawah di HP -> sembunyikan navbar atas agar layar lega
+              topbar.classList.add("topbar-hidden");
+            } else if (currentScrollY < lastScrollY - 5 || currentScrollY <= 15) {
+              // Scroll ke atas di HP -> tampilkan kembali navbar atas
+              topbar.classList.remove("topbar-hidden");
+            }
+            lastScrollY = currentScrollY <= 0 ? 0 : currentScrollY;
+          } else if (topbar) {
+            topbar.classList.remove("topbar-hidden");
+          }
+          ticking = false;
+        });
+        ticking = true;
+      }
+    }, { passive: true });
+
+    // Helper untuk menutup drawer menu mobile secara bersih & pasti tertutup
+    var mobileDrawer = document.getElementById("appMobileSidebar");
+    function closeMobileDrawer() {
+      if (!mobileDrawer) return;
+      if (window.bootstrap && bootstrap.Offcanvas) {
+        var inst = bootstrap.Offcanvas.getInstance(mobileDrawer);
+        if (inst) inst.hide();
+      }
+      mobileDrawer.classList.remove("show");
+      document.body.classList.remove("modal-open");
+      var backdrops = document.querySelectorAll(".offcanvas-backdrop");
+      backdrops.forEach(function(b) { b.remove(); });
+    }
+
+    if (mobileDrawer) {
+      // Auto-close menu drawer di HP saat link menu ditekan
+      mobileDrawer.addEventListener("click", function(e) {
+        var link = e.target.closest("a");
+        if (link) {
+          closeMobileDrawer();
+        }
+      });
+
+      // Pastikan tombol Tutup [X] & Sembunyikan Menu selalu menutup drawer
+      var closeBtns = mobileDrawer.querySelectorAll("[data-bs-dismiss]");
+      closeBtns.forEach(function(btn) {
+        btn.addEventListener("click", function(e) {
+          e.preventDefault();
+          closeMobileDrawer();
+        });
+      });
+    }
+
+    // Tombol Toggle Menu (Hamburger):
+    // - Di HP (< 992px): Buka / Tutup Drawer Menu
+    // - Di Laptop/PC (>= 992px): Sembunyikan / Lebarkan Sidebar Kiri
+    var toggleBtn = document.getElementById("sidebarToggleBtn");
+    if (toggleBtn) {
+      toggleBtn.addEventListener("click", function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        if (window.innerWidth >= 992) {
+          document.body.classList.toggle("sidebar-collapsed");
+          try {
+            localStorage.setItem("sidebar_collapsed", document.body.classList.contains("sidebar-collapsed") ? "1" : "0");
+          } catch(err) {}
+        } else if (mobileDrawer) {
+          if (window.bootstrap && bootstrap.Offcanvas) {
+            var bsOff = bootstrap.Offcanvas.getOrCreateInstance(mobileDrawer);
+            bsOff.toggle();
+          } else {
+            if (mobileDrawer.classList.contains("show")) {
+              closeMobileDrawer();
+            } else {
+              mobileDrawer.classList.add("show");
+              document.body.classList.add("modal-open");
+            }
+          }
+        }
+      });
+    }
+
+    // Shortcut keyboard Ctrl + B untuk menyembunyikan / menampilkan menu
+    document.addEventListener("keydown", function(e) {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "b") {
+        e.preventDefault();
+        if (window.innerWidth < 992) {
+          if (mobileDrawer) {
+            if (window.bootstrap && bootstrap.Offcanvas) {
+              var bsOffcanvas = bootstrap.Offcanvas.getOrCreateInstance(mobileDrawer);
+              bsOffcanvas.toggle();
+            } else {
+              if (mobileDrawer.classList.contains("show")) {
+                closeMobileDrawer();
+              } else {
+                mobileDrawer.classList.add("show");
+                document.body.classList.add("modal-open");
+              }
+            }
+          }
+        } else {
+          document.body.classList.toggle("sidebar-collapsed");
+          try {
+            localStorage.setItem("sidebar_collapsed", document.body.classList.contains("sidebar-collapsed") ? "1" : "0");
+          } catch(err) {}
+        }
+      }
+    });
+
+    // Pulihkan status sidebar di laptop / PC
+    try {
+      if (window.innerWidth >= 992 && localStorage.getItem("sidebar_collapsed") === "1") {
+        document.body.classList.add("sidebar-collapsed");
+      }
+    } catch(err) {}
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", initMobileNavbarBehavior);
+  } else {
+    initMobileNavbarBehavior();
+  }
 })();
 
 // ============================================================
