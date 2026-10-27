@@ -14,6 +14,71 @@ if (!is_admin() && !is_it() && !is_hrd()) {
     die('Akses ditolak. Anda tidak memiliki hak akses untuk modul penghapusan aset.');
 }
 
+// 0. API Endpoint: Ambil Daftar Aset Aktif secara Asinkron (Lazy-Load)
+if (isset($_GET['action']) && $_GET['action'] === 'get_active_assets') {
+    header('Content-Type: application/json; charset=utf-8');
+    header('Cache-Control: private, max-age=60');
+
+    $activeInventaris = [];
+    try {
+        $st = db()->query("
+            SELECT id, nomor_rekening, nama_barang, lokasi, ruangan, pengguna, nomor_seri_inventaris, golongan, status_inventaris
+            FROM inventaris_kartu
+            WHERE (status_inventaris IS NULL OR (
+                status_inventaris NOT LIKE '%Dihapuskan%'
+                AND status_inventaris NOT LIKE '%Dijual%'
+                AND status_inventaris NOT LIKE '%Afkir%'
+            ))
+            ORDER BY id DESC
+        ");
+        while ($ir = $st->fetch(PDO::FETCH_ASSOC)) {
+            $activeInventaris[] = [
+                'id' => (int)$ir['id'],
+                'type' => 'inventaris',
+                'kode' => (string)($ir['nomor_rekening'] ?? ''),
+                'nama' => (string)($ir['nama_barang'] ?? ''),
+                'cabang' => (string)(!empty($ir['lokasi']) ? $ir['lokasi'] : 'Kantor Pusat (KPO)'),
+                'ruangan' => (string)($ir['ruangan'] ?? ''),
+                'pengguna' => (string)(!empty($ir['pengguna']) ? $ir['pengguna'] : 'Umum / Pool'),
+                'sn' => (string)($ir['nomor_seri_inventaris'] ?? ''),
+                'merk' => (string)(!empty($ir['golongan']) ? $ir['golongan'] : 'Perabot / Fasilitas'),
+            ];
+        }
+    } catch (Throwable $e) {}
+
+    $activeComputers = [];
+    try {
+        $st = db()->query("
+            SELECT a.id, a.kode_inventaris, a.merk, a.model, a.serial_number, a.ruangan, c.nama_cabang, k.nama_karyawan
+            FROM assets a
+            LEFT JOIN cabang c ON a.id_cabang = c.id
+            LEFT JOIN karyawan k ON a.id_karyawan = k.id
+            WHERE a.status = 'Aktif'
+            ORDER BY a.id DESC
+        ");
+        while ($cr = $st->fetch(PDO::FETCH_ASSOC)) {
+            $activeComputers[] = [
+                'id' => (int)$cr['id'],
+                'type' => 'komputer',
+                'kode' => (string)($cr['kode_inventaris'] ?? ''),
+                'nama' => trim(($cr['merk'] ?? '') . ' ' . ($cr['model'] ?? '')),
+                'cabang' => (string)(!empty($cr['nama_cabang']) ? $cr['nama_cabang'] : 'Kantor Pusat (KPO)'),
+                'ruangan' => (string)($cr['ruangan'] ?? ''),
+                'pengguna' => (string)(!empty($cr['nama_karyawan']) ? $cr['nama_karyawan'] : 'Staff IT / Operasional'),
+                'sn' => (string)($cr['serial_number'] ?? ''),
+                'merk' => (string)($cr['merk'] ?? ''),
+            ];
+        }
+    } catch (Throwable $e) {}
+
+    echo json_encode([
+        'success' => true,
+        'inventaris' => $activeInventaris,
+        'komputer' => $activeComputers,
+    ]);
+    exit;
+}
+
 // 1. Ekspor ke Format Excel (CSV UTF-8 BOM)
 if (isset($_GET['export']) && $_GET['export'] === 'excel') {
     $exportFilters = [
@@ -135,56 +200,6 @@ $filters = [
 
 $disposalList = get_disposal_list($filters);
 $kpi = get_disposal_kpi_summary();
-
-// 4. Ambil Daftar Aset Aktif untuk Modal Dropdown (Non-Komputer & IT)
-$activeInventaris = [];
-try {
-    $invRows = get_inventaris_kartu_rows();
-    foreach ($invRows as $ir) {
-        $st = (string)($ir['status_inventaris'] ?? '');
-        if (str_contains($st, 'Dihapuskan') || str_contains($st, 'Dijual') || str_contains($st, 'Afkir')) continue;
-        $sText = strtolower($ir['nomor_rekening'].' '.$ir['nama_barang'].' '.($ir['lokasi']??'').' '.($ir['ruangan']??'').' '.($ir['pengguna']??'').' '.($ir['golongan']??'').' '.($ir['nomor_seri_inventaris']??''));
-        $activeInventaris[] = [
-            'id' => (int)$ir['id'],
-            'type' => 'inventaris',
-            'kode' => (string)$ir['nomor_rekening'],
-            'nama' => (string)$ir['nama_barang'],
-            'cabang' => (string)($ir['lokasi'] ?: 'Kantor Pusat (KPO)'),
-            'ruangan' => (string)($ir['ruangan'] ?? ''),
-            'pengguna' => (string)($ir['pengguna'] ?? 'Umum / Pool'),
-            'sn' => (string)($ir['nomor_seri_inventaris'] ?? ''),
-            'merk' => (string)($ir['golongan'] ?? 'Perabot / Fasilitas'),
-            'search_text' => $sText,
-        ];
-    }
-} catch (Throwable $e) {}
-
-$activeComputers = [];
-try {
-    $st = db()->query("
-        SELECT a.id, a.kode_inventaris, a.merk, a.model, a.serial_number, a.ruangan, c.nama_cabang, k.nama_karyawan 
-        FROM assets a 
-        LEFT JOIN cabang c ON a.id_cabang = c.id 
-        LEFT JOIN karyawan k ON a.id_karyawan = k.id 
-        WHERE a.status = 'Aktif' 
-        ORDER BY a.id DESC
-    ");
-    while ($cr = $st->fetch(PDO::FETCH_ASSOC)) {
-        $sText = strtolower($cr['kode_inventaris'].' '.($cr['merk']??'').' '.($cr['model']??'').' '.($cr['nama_cabang']??'').' '.($cr['ruangan']??'').' '.($cr['nama_karyawan']??'').' '.($cr['serial_number']??''));
-        $activeComputers[] = [
-            'id' => (int)$cr['id'],
-            'type' => 'komputer',
-            'kode' => (string)$cr['kode_inventaris'],
-            'nama' => trim(($cr['merk'] ?? '') . ' ' . ($cr['model'] ?? '')),
-            'cabang' => (string)($cr['nama_cabang'] ?: 'Kantor Pusat (KPO)'),
-            'ruangan' => (string)($cr['ruangan'] ?? ''),
-            'pengguna' => (string)($cr['nama_karyawan'] ?: 'Staff IT / Operasional'),
-            'sn' => (string)($cr['serial_number'] ?? ''),
-            'merk' => (string)($cr['merk'] ?? ''),
-            'search_text' => $sText,
-        ];
-    }
-} catch (Throwable $e) {}
 
 $flashSuccess = $_SESSION['flash'] ?? null;
 unset($_SESSION['flash']);
@@ -958,13 +973,67 @@ $body .= '
 
 <!-- DATA ASSETS FOR JAVASCRIPT -->
 <script>
-var gInventaris = '.json_encode($activeInventaris).';
-var gKomputer = '.json_encode($activeComputers).';
-var gCurrentList = gInventaris;
+var gInventaris = [];
+var gKomputer = [];
+var gCurrentList = [];
+var gAssetsLoaded = false;
+var gIsLoadingAssets = false;
+var gLoadCallbacks = [];
+
+function loadActiveAssets(callback) {
+  if (gAssetsLoaded) {
+    if (callback) callback();
+    return;
+  }
+  if (callback) gLoadCallbacks.push(callback);
+  if (gIsLoadingAssets) return;
+  gIsLoadingAssets = true;
+
+  var lblCount = document.getElementById("lblMatchCount");
+  if (lblCount) lblCount.innerHTML = "<span class=\"spinner-border spinner-border-sm text-danger me-1\"></span>Memuat daftar barang aktif...";
+
+  fetch("asset_disposal.php?action=get_active_assets")
+    .then(function(res) {
+      if (!res.ok) throw new Error("HTTP " + res.status);
+      return res.json();
+    })
+    .then(function(data) {
+      gInventaris = data.inventaris || [];
+      gKomputer = data.komputer || [];
+      var curType = document.querySelector("input[name=\"asset_type\"]:checked");
+      var t = curType ? curType.value : "inventaris";
+      gCurrentList = (t === "komputer") ? gKomputer : gInventaris;
+      gAssetsLoaded = true;
+      gIsLoadingAssets = false;
+
+      var badge = document.getElementById("badgeTotalItems");
+      if (badge) badge.textContent = gCurrentList.length + " Barang";
+
+      filterAssetDropdown();
+
+      while (gLoadCallbacks.length > 0) {
+        var cb = gLoadCallbacks.shift();
+        try { cb(); } catch(e) { console.error(e); }
+      }
+    })
+    .catch(function(err) {
+      gIsLoadingAssets = false;
+      console.error("Gagal memuat katalog aset:", err);
+      if (lblCount) lblCount.innerHTML = "<span class=\"text-danger\"><i class=\"bi bi-exclamation-triangle me-1\"></i>Gagal memuat data. Coba lagi.</span>";
+    });
+}
 
 function switchAssetType(type) {
-  gCurrentList = (type === "komputer") ? gKomputer : gInventaris;
-  
+  if (gAssetsLoaded) {
+    gCurrentList = (type === "komputer") ? gKomputer : gInventaris;
+  } else {
+    gCurrentList = [];
+    loadActiveAssets(function() {
+      switchAssetType(type);
+    });
+    return;
+  }
+
   // Reset pencarian & filter cabang
   var searchInput = document.getElementById("quickSearchAsset");
   if (searchInput) searchInput.value = "";
@@ -984,36 +1053,47 @@ function filterAssetDropdown() {
   var select = document.getElementById("selectAssetItem");
   if (!select) return;
 
+  if (!gAssetsLoaded) {
+    select.innerHTML = "<option value=\"\">-- Sedang memuat daftar barang... --</option>";
+    return;
+  }
+
   var branch = (document.getElementById("filterCabangAset") ? document.getElementById("filterCabangAset").value : "").toLowerCase().trim();
   var query = (document.getElementById("quickSearchAsset") ? document.getElementById("quickSearchAsset").value : "").toLowerCase().trim();
 
-  select.innerHTML = \'<option value="">-- Pilih Barang dari Hasil Pencarian --</option>\';
+  select.innerHTML = "<option value=\"\">-- Pilih Barang dari Hasil Pencarian --</option>";
 
   var matched = 0;
+  var MAX_OPTIONS = 150;
   for (var i = 0; i < gCurrentList.length; i++) {
     var item = gCurrentList[i];
 
     if (branch !== "" && item.cabang.toLowerCase().trim() !== branch) {
       continue;
     }
-    if (query !== "" && item.search_text.indexOf(query) === -1) {
-      continue;
+    if (query !== "") {
+      var sText = (item.kode + " " + item.nama + " " + item.cabang + " " + (item.ruangan || "") + " " + (item.pengguna || "") + " " + (item.sn || "") + " " + (item.merk || "")).toLowerCase();
+      if (sText.indexOf(query) === -1) {
+        continue;
+      }
     }
 
     matched++;
-    var opt = document.createElement("option");
-    opt.value = item.id;
-    opt.text = "[" + item.kode + "] " + item.nama + " (" + item.cabang + (item.ruangan ? " - " + item.ruangan : "") + ")";
-    opt.dataset.json = JSON.stringify(item);
-    select.appendChild(opt);
+    if (matched <= MAX_OPTIONS) {
+      var opt = document.createElement("option");
+      opt.value = item.id;
+      opt.text = "[" + item.kode + "] " + item.nama + " (" + item.cabang + (item.ruangan ? " - " + item.ruangan : "") + ")";
+      opt.dataset.json = JSON.stringify(item);
+      select.appendChild(opt);
+    }
   }
 
   var lblCount = document.getElementById("lblMatchCount");
   if (lblCount) {
     if (query !== "" || branch !== "") {
-      lblCount.innerHTML = \'<strong>\' + matched + \'</strong> dari \' + gCurrentList.length + \' barang cocok dengan pencarian.\';
+      lblCount.innerHTML = "<strong>" + matched + "</strong> dari " + gCurrentList.length + " barang cocok" + (matched > MAX_OPTIONS ? " (ditampilkan " + MAX_OPTIONS + " teratas)" : "") + ".";
     } else {
-      lblCount.textContent = \'Menampilkan seluruh \' + matched + \' barang aktif.\';
+      lblCount.textContent = "Menampilkan seluruh " + Math.min(matched, MAX_OPTIONS) + " barang aktif" + (matched > MAX_OPTIONS ? " (terbatas " + MAX_OPTIONS + ")" : "") + ".";
     }
   }
 }
@@ -1030,19 +1110,24 @@ function openCatalogModal() {
   var modalEl = document.getElementById("modalCatalogPicker");
   if (!modalEl) return;
 
-  // Sync quick search query to catalog modal search
-  var q = document.getElementById("quickSearchAsset") ? document.getElementById("quickSearchAsset").value : "";
-  var br = document.getElementById("filterCabangAset") ? document.getElementById("filterCabangAset").value : "";
-  
-  var modalQ = document.getElementById("modalCatalogSearchInput");
-  if (modalQ) modalQ.value = q;
-  var modalBr = document.getElementById("modalCatalogBranchFilter");
-  if (modalBr) modalBr.value = br;
-
-  renderCatalogRows();
-
-  var myModal = new bootstrap.Modal(modalEl);
+  var myModal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
+  var tbody = document.getElementById("catalogTableBody");
+  if (tbody && !gAssetsLoaded) {
+    tbody.innerHTML = "<tr><td colspan=\"6\" class=\"text-center py-5 text-muted\"><div class=\"spinner-border spinner-border-sm text-danger me-2\"></div>Memuat katalog barang aktif...</td></tr>";
+  }
   myModal.show();
+
+  loadActiveAssets(function() {
+    var q = document.getElementById("quickSearchAsset") ? document.getElementById("quickSearchAsset").value : "";
+    var br = document.getElementById("filterCabangAset") ? document.getElementById("filterCabangAset").value : "";
+
+    var modalQ = document.getElementById("modalCatalogSearchInput");
+    if (modalQ) modalQ.value = q;
+    var modalBr = document.getElementById("modalCatalogBranchFilter");
+    if (modalBr) modalBr.value = br;
+
+    renderCatalogRows();
+  });
 }
 
 function clearCatalogSearch() {
@@ -1057,12 +1142,18 @@ function renderCatalogRows() {
   var tbody = document.getElementById("catalogTableBody");
   if (!tbody) return;
 
+  if (!gAssetsLoaded) {
+    tbody.innerHTML = "<tr><td colspan=\"6\" class=\"text-center py-5 text-muted\"><div class=\"spinner-border spinner-border-sm text-danger me-2\"></div>Memuat katalog barang aktif...</td></tr>";
+    return;
+  }
+
   var q = (document.getElementById("modalCatalogSearchInput") ? document.getElementById("modalCatalogSearchInput").value : "").toLowerCase().trim();
   var branch = (document.getElementById("modalCatalogBranchFilter") ? document.getElementById("modalCatalogBranchFilter").value : "").toLowerCase().trim();
 
   var currentSelectedId = parseInt(document.getElementById("dispAssetId").value) || 0;
 
-  var count = 0;
+  var matched = 0;
+  var MAX_DISPLAY = 60;
   var html = "";
 
   for (var i = 0; i < gCurrentList.length; i++) {
@@ -1071,51 +1162,62 @@ function renderCatalogRows() {
     if (branch !== "" && item.cabang.toLowerCase().trim() !== branch) {
       continue;
     }
-    if (q !== "" && item.search_text.indexOf(q) === -1) {
+    if (q !== "") {
+      var sText = (item.kode + " " + item.nama + " " + item.cabang + " " + (item.ruangan || "") + " " + (item.pengguna || "") + " " + (item.sn || "") + " " + (item.merk || "")).toLowerCase();
+      if (sText.indexOf(q) === -1) {
+        continue;
+      }
+    }
+
+    matched++;
+    if (matched > MAX_DISPLAY) {
       continue;
     }
 
-    count++;
     var isSelected = (item.id === currentSelectedId);
     var rowClass = isSelected ? "table-danger fw-semibold" : "";
 
-    html += \'<tr class="\' + rowClass + \'" style="cursor: pointer;" onclick="selectAssetAndCloseCatalog(\' + item.id + \')">\';
-    html += \'<td class="text-center font-monospace text-muted small">\' + count + \'</td>\';
-    html += \'<td>\';
-    html += \'<div class="fw-bold font-monospace text-danger">\' + escapeHtml(item.kode) + \'</div>\';
+    html += "<tr class=\"" + rowClass + "\" style=\"cursor: pointer;\" onclick=\"selectAssetAndCloseCatalog(" + item.id + ")\">";
+    html += "<td class=\"text-center font-monospace text-muted small\">" + matched + "</td>";
+    html += "<td>";
+    html += "<div class=\"fw-bold font-monospace text-danger\">" + escapeHtml(item.kode) + "</div>";
     if (item.sn) {
-      html += \'<div class="small text-muted font-monospace" style="font-size: 0.72rem;">SN: \' + escapeHtml(item.sn) + \'</div>\';
+      html += "<div class=\"small text-muted font-monospace\" style=\"font-size: 0.72rem;\">SN: " + escapeHtml(item.sn) + "</div>";
     }
-    html += \'</td>\';
-    html += \'<td>\';
-    html += \'<div class="fw-bold text-dark">\' + escapeHtml(item.nama) + \'</div>\';
-    html += \'<span class="badge bg-light text-secondary border small mt-0.5">\' + escapeHtml(item.merk || "Fasilitas") + \'</span>\';
-    html += \'</td>\';
-    html += \'<td>\';
-    html += \'<div class="fw-semibold text-dark">\' + escapeHtml(item.cabang) + \'</div>\';
-    html += \'<div class="small text-muted"><i class="bi bi-door-open me-1"></i>\' + escapeHtml(item.ruangan || "-") + \'</div>\';
-    html += \'</td>\';
-    html += \'<td><div class="text-dark small">\' + escapeHtml(item.pengguna || "-") + \'</div></td>\';
-    html += \'<td class="text-center" onclick="event.stopPropagation()">\';
-    html += \'<button type="button" class="btn btn-sm \' + (isSelected ? "btn-danger" : "btn-outline-danger") + \' fw-bold px-3 py-1 shadow-sm" onclick="selectAssetAndCloseCatalog(\' + item.id + \')">\';
-    html += \'<i class="bi \' + (isSelected ? "bi-check-circle-fill" : "bi-check-lg") + \' me-1"></i> \' + (isSelected ? "Terpilih" : "Pilih");
-    html += \'</button>\';
-    html += \'</td>\';
-    html += \'</tr>\';
+    html += "</td>";
+    html += "<td>";
+    html += "<div class=\"fw-bold text-dark\">" + escapeHtml(item.nama) + "</div>";
+    html += "<span class=\"badge bg-light text-secondary border small mt-0.5\">" + escapeHtml(item.merk || "Fasilitas") + "</span>";
+    html += "</td>";
+    html += "<td>";
+    html += "<div class=\"fw-semibold text-dark\">" + escapeHtml(item.cabang) + "</div>";
+    html += "<div class=\"small text-muted\"><i class=\"bi bi-door-open me-1\"></i>" + escapeHtml(item.ruangan || "-") + "</div>";
+    html += "</td>";
+    html += "<td><div class=\"text-dark small\">" + escapeHtml(item.pengguna || "-") + "</div></td>";
+    html += "<td class=\"text-center\" onclick=\"event.stopPropagation()\">";
+    html += "<button type=\"button\" class=\"btn btn-sm " + (isSelected ? "btn-danger" : "btn-outline-danger") + " fw-bold px-3 py-1 shadow-sm\" onclick=\"selectAssetAndCloseCatalog(" + item.id + ")\">";
+    html += "<i class=\"bi " + (isSelected ? "bi-check-circle-fill" : "bi-check-lg") + " me-1\"></i> " + (isSelected ? "Terpilih" : "Pilih");
+    html += "</button>";
+    html += "</td>";
+    html += "</tr>";
   }
 
-  if (count === 0) {
-    html = \'<tr><td colspan="6" class="text-center py-5 text-muted">\' +
-           \'<i class="bi bi-search fs-2 d-block mb-2 opacity-50"></i>\' +
-           \'Tidak ada barang inventaris yang sesuai dengan filter pencarian.<br>\' +
-           \'<button type="button" class="btn btn-link btn-sm mt-2 text-decoration-none" onclick="clearCatalogSearch()">Reset Pencarian</button>\' +
-           \'</td></tr>\';
+  if (matched === 0) {
+    html = "<tr><td colspan=\"6\" class=\"text-center py-5 text-muted\">" +
+           "<i class=\"bi bi-search fs-2 d-block mb-2 opacity-50\"></i>" +
+           "Tidak ada barang inventaris yang sesuai dengan filter pencarian.<br>" +
+           "<button type=\"button\" class=\"btn btn-link btn-sm mt-2 text-decoration-none\" onclick=\"clearCatalogSearch()\">Reset Pencarian</button>" +
+           "</td></tr>";
+  } else if (matched > MAX_DISPLAY) {
+    html += "<tr><td colspan=\"6\" class=\"text-center py-2.5 bg-light text-muted small border-top\">" +
+            "<i class=\"bi bi-info-circle me-1\"></i> Menampilkan " + MAX_DISPLAY + " barang teratas dari " + matched + " hasil yang cocok. " +
+            "Ketik nama atau nomor rekening di kotak pencarian untuk mempersempit.</td></tr>";
   }
 
   tbody.innerHTML = html;
   var countEl = document.getElementById("modalCatalogCount");
   if (countEl) {
-    countEl.textContent = \'Menampilkan \' + count + \' dari \' + gCurrentList.length + \' barang aktif\';
+    countEl.textContent = "Menampilkan " + Math.min(matched, MAX_DISPLAY) + " dari " + matched + " barang aktif";
   }
 }
 
@@ -1241,9 +1343,33 @@ function escapeHtml(text) {
     .replace(/\'/g, "&#039;");
 }
 
-// Inisialisasi awal dropdown saat modal siap
+// Pre-fetch asset catalog silently in background after window loads
+window.addEventListener("load", function() {
+  setTimeout(function() {
+    loadActiveAssets();
+  }, 600);
+});
+
+// Listener saat modal disposal dibuka
 document.addEventListener("DOMContentLoaded", function() {
-  switchAssetType("inventaris");
+  var modalDispEl = document.getElementById("modalDisposal");
+  if (modalDispEl) {
+    modalDispEl.addEventListener("show.bs.modal", function() {
+      loadActiveAssets(function() {
+        filterAssetDropdown();
+      });
+    });
+  }
+  var selItem = document.getElementById("selectAssetItem");
+  if (selItem) {
+    selItem.addEventListener("focus", function() {
+      if (!gAssetsLoaded) {
+        loadActiveAssets(function() {
+          filterAssetDropdown();
+        });
+      }
+    });
+  }
 });
 </script>
 ';

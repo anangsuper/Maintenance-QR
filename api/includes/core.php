@@ -49,7 +49,14 @@ if (!headers_sent()) {
 }
 
 if (session_status() !== PHP_SESSION_ACTIVE) {
-    $idleTimeout = (int)cfg('session_timeout', envv('SESSION_TIMEOUT', '7200')); // Idle timeout 2 jam
+    if (getenv('VERCEL') || !empty($_SERVER['VERCEL']) || str_ends_with(strtolower((string)($_SERVER['HTTP_HOST'] ?? '')), '.vercel.app')) {
+        $tmpSession = sys_get_temp_dir();
+        if (is_dir($tmpSession) && is_writable($tmpSession)) {
+            @session_save_path($tmpSession);
+        }
+    }
+
+    $idleTimeout = (int)cfg('session_timeout', envv('SESSION_TIMEOUT', '1800')); // Idle timeout 30 menit (1800 detik)
     ini_set('session.gc_maxlifetime', (string)$idleTimeout);
 
     $isHttps = is_https();
@@ -149,13 +156,54 @@ function db(): PDO {
     $user = cfg('db_user', envv('DB_USER', envv('MYSQLUSER', 'root')));
     $pass = cfg('db_pass', envv('DB_PASS', envv('MYSQLPASSWORD', '')));
 
-    $dsn = "mysql:host={$host};port={$port};dbname={$name};charset=utf8mb4";
-    $pdo = new PDO($dsn, $user, $pass, [
+    $dbUrl = envv('DATABASE_URL', envv('MYSQL_URL', ''));
+    if ($dbUrl && (str_starts_with($dbUrl, 'mysql://') || str_starts_with($dbUrl, 'mysql2://'))) {
+        $parsed = parse_url($dbUrl);
+        if (!empty($parsed['host'])) $host = $parsed['host'];
+        if (!empty($parsed['port'])) $port = (string)$parsed['port'];
+        if (!empty($parsed['user'])) $user = urldecode($parsed['user']);
+        if (!empty($parsed['pass'])) $pass = urldecode($parsed['pass']);
+        if (!empty($parsed['path'])) $name = ltrim(urldecode($parsed['path']), '/');
+    }
+
+    $ssl = cfg('db_ssl', envv('DB_SSL', envv('MYSQL_SSL', '')));
+    $options = [
         PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
         PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
         PDO::ATTR_EMULATE_PREPARES => false,
-    ]);
-    return $pdo;
+    ];
+    if ($ssl === 'true' || $ssl === '1' || $ssl === 'require' || envv('DATABASE_URL') || str_contains($host, 'aivencloud') || str_contains($host, 'tidbcloud') || str_contains($host, 'railway') || str_contains($host, 'planetscale')) {
+        $options[PDO::MYSQL_ATTR_SSL_VERIFY_SERVER_CERT] = false;
+    }
+
+    $dsn = "mysql:host={$host};port={$port};dbname={$name};charset=utf8mb4";
+    try {
+        $pdo = new PDO($dsn, $user, $pass, $options);
+        // Sinkronisasi timezone database dengan PHP (WITA / UTC+8 untuk Bank Mitra)
+        try {
+            $pdo->exec("SET time_zone = '+08:00'");
+        } catch (Throwable $eTz) {}
+        return $pdo;
+    } catch (PDOException $e) {
+        if (!empty($_SERVER['VERCEL']) || str_ends_with(strtolower((string)($_SERVER['HTTP_HOST'] ?? '')), '.vercel.app')) {
+            http_response_code(500);
+            echo '<!DOCTYPE html><html lang="id"><head><meta charset="utf-8"><title>Koneksi Database Vercel</title>';
+            echo '<meta name="viewport" content="width=device-width, initial-scale=1">';
+            echo '<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">';
+            echo '</head><body class="bg-light p-4"><div class="container" style="max-width: 680px; margin-top: 50px;">';
+            echo '<div class="card shadow-sm border-0 rounded-4 p-4 text-center">';
+            echo '<div class="text-warning mb-3" style="font-size: 3rem;">⚠️</div>';
+            echo '<h4 class="fw-bold mb-2">Konfigurasi Database Diperlukan</h4>';
+            echo '<p class="text-muted">Aplikasi telah berhasil berjalan di <strong>Vercel Serverless</strong>, namun belum terhubung ke database cloud (MySQL) atau Google Sheets API.</p>';
+            echo '<div class="alert alert-primary text-start fs-6"><p class="mb-2 fw-semibold">Silakan tambahkan Environment Variables di Dashboard Vercel Anda (Settings &rarr; Environment Variables):</p>';
+            echo '<ul class="mb-0"><li><strong>Opsi 1 (MySQL Cloud):</strong> <code>DB_HOST</code>, <code>DB_USER</code>, <code>DB_PASS</code>, <code>DB_NAME</code>, <code>DB_PORT</code> (atau <code>DATABASE_URL</code>)</li>';
+            echo '<li><strong>Opsi 2 (Google Sheets Serverless):</strong> <code>GOOGLE_SPREADSHEET_ID</code>, <code>GOOGLE_CLIENT_EMAIL</code>, <code>GOOGLE_PRIVATE_KEY</code></li></ul></div>';
+            echo '<div class="text-secondary small text-start"><em>Pesan Teknis: ' . htmlspecialchars($e->getMessage()) . '</em></div>';
+            echo '</div></div></body></html>';
+            exit;
+        }
+        throw $e;
+    }
 }
 
 
@@ -324,7 +372,7 @@ function app_logo_data_uri(): string {
 }
 
 function app_logo_url(): string {
-    return app_logo_data_uri();
+    return module_url('logo.png');
 }
 
 /**
