@@ -253,13 +253,16 @@ $body = '
   </div>
 </div>';
 
-$script = '<script src="' . e(module_url('html5-qrcode.min.js')) . '"></script>
+$html5QrcodeUrl = module_url('html5-qrcode.min.js');
+
+$script = '<script src="' . e($html5QrcodeUrl) . '"></script>
 <script>
 let html5QrCode = null;
 let currentCameraTrack = null;
 let isTorchOn = false;
 let currentFacingMode = "environment";
 let isScanLocked = false;
+let isCameraStarting = false;
 
 function playScanAudioFeedback() {
   try {
@@ -328,7 +331,7 @@ function onScanSuccess(decodedText) {
 
   const statusEl = document.getElementById("scannerStatus");
   if (statusEl) {
-    statusEl.innerHTML = \'<span class="text-success fw-bold"><i class="bi bi-check-circle-fill me-1"></i> QR Berhasil Terbaca! Membuka data aset...</span>\';
+    statusEl.innerHTML = '<span class="text-success fw-bold"><i class="bi bi-check-circle-fill me-1"></i> QR Berhasil Terbaca! Membuka data aset...</span>';
   }
 
   const laser = document.getElementById("scanLaserLine");
@@ -368,7 +371,7 @@ function handleGalleryScan(inputEl) {
   const file = inputEl.files[0];
   const statusEl = document.getElementById("scannerStatus");
   if (statusEl) {
-    statusEl.innerHTML = \'<span class="text-info"><span class="spinner-border spinner-border-sm me-1"></span> Menganalisis gambar dari galeri...</span>\';
+    statusEl.innerHTML = '<span class="text-info"><span class="spinner-border spinner-border-sm me-1"></span> Menganalisis gambar dari galeri...</span>';
   }
 
   if (!html5QrCode) {
@@ -381,7 +384,7 @@ function handleGalleryScan(inputEl) {
     })
     .catch(function(err) {
       if (statusEl) {
-        statusEl.innerHTML = \'<span class="text-warning"><i class="bi bi-exclamation-circle me-1"></i> QR tidak ditemukan dalam gambar. Coba ambil foto lebih jelas/tegak.</span>\';
+        statusEl.innerHTML = '<span class="text-warning"><i class="bi bi-exclamation-circle me-1"></i> QR tidak ditemukan dalam gambar. Coba ambil foto lebih jelas/tegak.</span>';
       }
     });
 }
@@ -399,10 +402,8 @@ function applyCameraCapabilities() {
     
     // Check Torch capability
     const torchBtn = document.getElementById("btnToggleTorch");
-    if (torchBtn) {
-      if (caps.torch) {
-        torchBtn.classList.remove("d-none");
-      }
+    if (torchBtn && caps.torch) {
+      torchBtn.classList.remove("d-none");
     }
 
     // Check Zoom capability
@@ -428,10 +429,10 @@ function toggleCameraTorch() {
       if (btn) {
         if (isTorchOn) {
           btn.classList.add("active");
-          btn.innerHTML = \'<i class="bi bi-lightning-fill"></i> Flash ON\';
+          btn.innerHTML = '<i class="bi bi-lightning-fill"></i> Flash ON';
         } else {
           btn.classList.remove("active");
-          btn.innerHTML = \'<i class="bi bi-lightning"></i> Flash\';
+          btn.innerHTML = '<i class="bi bi-lightning"></i> Flash';
         }
       }
     }).catch(function(e) {
@@ -480,7 +481,7 @@ function switchCamera() {
   if (!html5QrCode) return;
   const statusEl = document.getElementById("scannerStatus");
   if (statusEl) {
-    statusEl.innerHTML = \'<span class="spinner-border spinner-border-sm me-1 text-primary"></span> Membalik kamera...\';
+    statusEl.innerHTML = '<span class="spinner-border spinner-border-sm me-1 text-primary"></span> Membalik kamera...';
   }
 
   currentFacingMode = (currentFacingMode === "environment") ? "user" : "environment";
@@ -494,8 +495,6 @@ function switchCamera() {
     startCameraScanner();
   });
 }
-
-let isCameraStarting = false;
 
 function startCameraScanner() {
   if (isCameraStarting) return;
@@ -543,7 +542,7 @@ function startCameraScanner() {
   }
 
   if (statusEl) {
-    statusEl.innerHTML = '<span class="spinner-border spinner-border-sm me-1 text-primary"></span> Menghubungkan ke kamera...</span>';
+    statusEl.innerHTML = '<span class="spinner-border spinner-border-sm me-1 text-primary"></span> Menghubungkan ke kamera...';
   }
 
   const qrConfig = {
@@ -615,7 +614,7 @@ function requestStartCamera() {
   if (manualBox) manualBox.classList.add("d-none");
   const statusEl = document.getElementById("scannerStatus");
   if (statusEl) {
-    statusEl.innerHTML = '<span class="spinner-border spinner-border-sm me-1 text-primary"></span> Meminta izin kamera ke browser...</span>';
+    statusEl.innerHTML = '<span class="spinner-border spinner-border-sm me-1 text-primary"></span> Meminta izin kamera ke browser...';
   }
   isCameraStarting = false;
   startCameraScanner();
@@ -626,7 +625,6 @@ if (document.readyState === "loading") {
 } else {
   startCameraScanner();
 }
-
 </script>';
 
 render_page('Pindai QR Komputer', $body, $head, $script, false);
