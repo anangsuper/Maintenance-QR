@@ -20,7 +20,7 @@ function render_page(string $title, string $content, string $extraHead = '', str
 
     // Context section / Kategori navbar atas
     $sectionContext = 'MENU UTAMA';
-    if (in_array($currentPage, ['assets.php', 'asset_add.php', 'asset_edit.php', 'asset_delete.php', 'asset_import.php', 'asset_mutation.php'], true) || ($currentPage === 'dashboard.php' && ($_GET['tab'] ?? '') === 'temuan')) {
+    if (in_array($currentPage, ['assets.php', 'floor_plan.php', 'asset_add.php', 'asset_edit.php', 'asset_delete.php', 'asset_import.php', 'asset_mutation.php'], true) || ($currentPage === 'dashboard.php' && ($_GET['tab'] ?? '') === 'temuan')) {
         $sectionContext = 'ASET & OPERASIONAL IT';
     } elseif (in_array($currentPage, ['memo_pengajuan.php', 'print_memo.php', 'inventaris_mutation.php', 'asset_mutations.php', 'print_bast.php', 'asset_disposal.php', 'print_bast_disposal.php', 'asset_gallery.php', 'inventaris_gallery.php', 'inventory_card.php', 'cetak_kartu.php', 'print_inventory_card.php', 'kartu_detail.php'], true) || ($currentPage === 'dashboard.php' && ($_GET['tab'] ?? '') === 'kartu')) {
         $sectionContext = 'INVENTARIS & SARPRAS';
@@ -46,6 +46,7 @@ function render_page(string $title, string $content, string $extraHead = '', str
         // PERAN: SDM & UMUM (SARANA PRASARANA)
         $navLinks['MENU UTAMA'] = [
             ['title' => 'Kartu Inventaris', 'url' => module_url('dashboard.php', ['tab' => 'kartu']), 'icon' => 'bi-credit-card-2-front', 'active' => ($currentPage === 'dashboard.php' && ($_GET['tab'] ?? '') === 'kartu') || in_array($currentPage, ['inventory_card.php', 'cetak_kartu.php', 'print_inventory_card.php', 'kartu_detail.php'], true)],
+            ['title' => 'Denah Meja Kantor', 'url' => module_url('floor_plan.php'), 'icon' => 'bi-layout-text-window-reverse', 'active' => ($currentPage === 'floor_plan.php')],
             ['title' => 'Galeri Foto Barang', 'url' => module_url('asset_gallery.php', ['sub' => 'inventaris']), 'icon' => 'bi-images', 'active' => in_array($currentPage, ['asset_gallery.php', 'inventaris_gallery.php'], true)],
         ];
         $navLinks['INVENTARIS & SARPRAS'] = [
@@ -57,6 +58,8 @@ function render_page(string $title, string $content, string $extraHead = '', str
             ['title' => 'Log Ruang Server', 'url' => module_url('server_room_log.php'), 'icon' => 'bi-door-closed-fill', 'active' => in_array($currentPage, ['server_room_log.php', 'server_room_print_qr.php'], true)],
         ];
         $navLinks['PENGATURAN & MASTER'] = [
+            ['title' => 'Kantor Cabang', 'url' => module_url('cabang_admin.php'), 'icon' => 'bi-buildings', 'active' => ($currentPage === 'cabang_admin.php')],
+            ['title' => 'Divisi / Unit Kerja', 'url' => module_url('divisi_admin.php'), 'icon' => 'bi-diagram-3', 'active' => ($currentPage === 'divisi_admin.php')],
             ['title' => 'Akun Pengguna', 'url' => module_url('users_admin.php'), 'icon' => 'bi-people', 'active' => ($currentPage === 'users_admin.php')],
         ];
     } elseif (in_array($role, ['auditor', 'skai'], true)) {
@@ -72,6 +75,7 @@ function render_page(string $title, string $content, string $extraHead = '', str
         ];
         $navLinks['REGISTRI ASET & SARPRAS'] = [
             ['title' => 'Data Komputer & PC', 'url' => module_url('assets.php'), 'icon' => 'bi-pc-display', 'active' => in_array($currentPage, ['assets.php', 'asset_add.php', 'asset_edit.php', 'asset_delete.php', 'asset_import.php'], true)],
+            ['title' => 'Denah Meja Kantor', 'url' => module_url('floor_plan.php'), 'icon' => 'bi-layout-text-window-reverse', 'active' => ($currentPage === 'floor_plan.php')],
             ['title' => 'Kartu Inventaris', 'url' => module_url('dashboard.php', ['tab' => 'kartu']), 'icon' => 'bi-credit-card-2-front', 'active' => ($currentPage === 'dashboard.php' && ($_GET['tab'] ?? '') === 'kartu')],
             ['title' => 'Galeri Foto Barang', 'url' => module_url('asset_gallery.php'), 'icon' => 'bi-images', 'active' => in_array($currentPage, ['asset_gallery.php', 'inventaris_gallery.php'], true)],
         ];
@@ -83,6 +87,7 @@ function render_page(string $title, string $content, string $extraHead = '', str
         ];
         $navLinks['ASET & OPERASIONAL IT'] = [
             ['title' => 'Data Komputer & PC', 'url' => module_url('assets.php'), 'icon' => 'bi-pc-display', 'active' => in_array($currentPage, ['assets.php', 'asset_add.php', 'asset_edit.php', 'asset_delete.php', 'asset_import.php'], true)],
+            ['title' => 'Denah Meja Kantor', 'url' => module_url('floor_plan.php'), 'icon' => 'bi-layout-text-window-reverse', 'active' => ($currentPage === 'floor_plan.php')],
             ['title' => 'Mutasi PC / Aset IT', 'url' => module_url('asset_mutation.php'), 'icon' => 'bi-arrow-left-right', 'active' => in_array($currentPage, ['asset_mutation.php'], true)],
             ['title' => 'Temuan Kendala IT', 'url' => module_url('dashboard.php', ['tab' => 'temuan']), 'icon' => 'bi-tools', 'active' => ($currentPage === 'dashboard.php' && ($_GET['tab'] ?? '') === 'temuan')],
             ['title' => 'Pemeliharaan Rutin', 'url' => module_url('audit.php'), 'icon' => 'bi-clipboard-check', 'active' => in_array($currentPage, ['audit.php', 'history.php', 'maintenance_detail.php'], true)],
@@ -165,15 +170,12 @@ function render_page(string $title, string $content, string $extraHead = '', str
     </aside>
 
     <!-- Offcanvas Mobile Drawer -->
-    <div class="offcanvas offcanvas-start bg-navy-dark text-white d-lg-none" tabindex="-1" id="appMobileSidebar" aria-labelledby="appMobileSidebarLabel" data-bs-theme="dark">
-      <div class="offcanvas-header border-bottom border-navy-subtle py-2 px-3 d-flex align-items-center justify-content-between">
+    <div class="offcanvas offcanvas-start bg-navy-dark text-white" tabindex="-1" id="appMobileSidebar" aria-labelledby="appMobileSidebarLabel">
+      <div class="offcanvas-header border-bottom border-navy-subtle py-2 px-3">
         <a href="'.e(module_url('dashboard.php')).'" class="d-flex align-items-center gap-2 text-decoration-none">
           <img src="'.app_logo_url().'" alt="Bank Mitra Logo" class="sidebar-brand-img" style="height: 48px; width: auto; max-width: 170px; object-fit: contain;">
         </a>
-        <button type="button" class="btn btn-sm btn-outline-light py-1.5 px-3 d-inline-flex align-items-center gap-1.5 rounded-pill" data-bs-dismiss="offcanvas" aria-label="Close" title="Tutup / Sembunyikan Menu">
-          <i class="bi bi-x-lg"></i>
-          <span style="font-size: 0.8rem; font-weight: 700;">Tutup</span>
-        </button>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas" aria-label="Close"></button>
       </div>
       <div class="offcanvas-body custom-scrollbar p-3">
         '.$sidebarMenuHtml.'
@@ -190,47 +192,14 @@ function render_page(string $title, string $content, string $extraHead = '', str
           </div>
           <a href="'.e(module_url('logout.php')).'" class="btn btn-sm btn-outline-danger" title="Logout"><i class="bi bi-box-arrow-right"></i></a>
         </div>
-        <button type="button" class="btn btn-sm btn-outline-secondary w-100 mt-3 py-1.5 text-white-50 border-secondary d-flex align-items-center justify-content-center gap-1.5" data-bs-dismiss="offcanvas" title="Sembunyikan Menu">
-          <i class="bi bi-x-circle"></i> Sembunyikan Menu
-        </button>
       </div>
     </div>';
 
     // Topbar HTML
-    $userMenuDropdownItems = '';
-    if ($isHrdRole) {
-        $userMenuDropdownItems = '
-              <li><h6 class="dropdown-header text-uppercase fw-bold" style="font-size:0.65rem; color:#8c57ff; letter-spacing:0.06em;">Inventaris &amp; Sarpras</h6></li>
-              <li><a class="dropdown-item py-2" href="'.e(module_url('dashboard.php', ['tab' => 'kartu'])).'"><i class="bi bi-credit-card-2-front me-2 text-warning"></i> Kartu Inventaris</a></li>
-              <li><a class="dropdown-item py-2" href="'.e(module_url('asset_gallery.php', ['sub' => 'inventaris'])).'"><i class="bi bi-images me-2 text-primary"></i> Galeri Foto Barang</a></li>
-              <li><a class="dropdown-item py-2" href="'.e(module_url('memo_pengajuan.php')).'"><i class="bi bi-file-earmark-text me-2 text-info"></i> Memo Pengajuan</a></li>
-              <li><hr class="dropdown-divider my-1"></li>
-              <li><h6 class="dropdown-header text-uppercase fw-bold" style="font-size:0.65rem; color:#8c57ff; letter-spacing:0.06em;">Keamanan &amp; Master</h6></li>
-              <li><a class="dropdown-item py-2" href="'.e(module_url('server_room_log.php')).'"><i class="bi bi-door-closed-fill me-2" style="color:#8c57ff;"></i> Log Ruang Server</a></li>
-              <li><a class="dropdown-item py-2" href="'.e(module_url('users_admin.php')).'"><i class="bi bi-people me-2 text-success"></i> Akun Pengguna</a></li>';
-    } elseif (in_array($role, ['auditor', 'skai'], true)) {
-        $userMenuDropdownItems = '
-              <li><h6 class="dropdown-header text-uppercase fw-bold" style="font-size:0.65rem; color:#8c57ff; letter-spacing:0.06em;">Audit &amp; Kepatuhan</h6></li>
-              <li><a class="dropdown-item py-2" href="'.e(module_url('audit.php')).'"><i class="bi bi-file-earmark-bar-graph me-2 text-primary"></i> Laporan Audit</a></li>
-              <li><a class="dropdown-item py-2" href="'.e(module_url('monthly_history.php')).'"><i class="bi bi-calendar3 me-2 text-info"></i> Riwayat Bulanan</a></li>
-              <li><a class="dropdown-item py-2" href="'.e(module_url('audit_trail.php')).'"><i class="bi bi-shield-check me-2 text-warning"></i> Log Aktivitas (Audit)</a></li>
-              <li><a class="dropdown-item py-2" href="'.e(module_url('server_room_log.php')).'"><i class="bi bi-door-closed-fill me-2" style="color:#8c57ff;"></i> Log Ruang Server</a></li>';
-    } else {
-        $userMenuDropdownItems = '
-              <li><h6 class="dropdown-header text-uppercase fw-bold" style="font-size:0.65rem; color:#8c57ff; letter-spacing:0.06em;">Akses Cepat</h6></li>
-              <li><a class="dropdown-item py-2" href="'.e(module_url('scanner.php')).'"><i class="bi bi-qr-code-scan me-2 text-info"></i> Scanner QR &amp; Barcode</a></li>
-              <li><a class="dropdown-item py-2" href="'.e(module_url('assets.php')).'"><i class="bi bi-pc-display me-2 text-primary"></i> Data Komputer (PC)</a></li>
-              <li><a class="dropdown-item py-2" href="'.e(module_url('dashboard.php', ['tab' => 'kartu'])).'"><i class="bi bi-credit-card-2-front me-2 text-warning"></i> Kartu Inventaris</a></li>
-              <li><hr class="dropdown-divider my-1"></li>
-              <li><h6 class="dropdown-header text-uppercase fw-bold" style="font-size:0.65rem; color:#8c57ff; letter-spacing:0.06em;">Keamanan &amp; Audit</h6></li>
-              <li><a class="dropdown-item py-2" href="'.e(module_url('server_room_log.php')).'"><i class="bi bi-door-closed-fill me-2" style="color:#8c57ff;"></i> Log Ruang Server (OJK)</a></li>'
-              . ($isAdminUser ? '<li><a class="dropdown-item py-2" href="'.e(module_url('audit_trail.php')).'"><i class="bi bi-shield-check me-2 text-warning"></i> Log Aktivitas (Audit)</a></li>' : '');
-    }
-
     $topbarHtml = '
     <header class="app-topbar d-flex align-items-center justify-content-between px-3 px-md-4">
-      <div class="d-flex align-items-center gap-2 gap-md-3">
-        <button class="btn btn-sm btn-outline-secondary d-inline-flex align-items-center justify-content-center shadow-xs" id="sidebarToggleBtn" type="button" aria-controls="appMobileSidebar" title="Sembunyikan / Tampilkan Menu (Ctrl + B)" style="width: 36px; height: 36px;">
+      <div class="d-flex align-items-center gap-3">
+        <button class="btn btn-sm btn-outline-secondary d-lg-none" type="button" data-bs-toggle="offcanvas" data-bs-target="#appMobileSidebar" aria-controls="appMobileSidebar">
           <i class="bi bi-list fs-5"></i>
         </button>
         <div class="topbar-context d-none d-sm-flex align-items-center gap-2">
@@ -259,12 +228,6 @@ function render_page(string $title, string $content, string $extraHead = '', str
           <span class="badge bg-dark text-white pwa-queue-badge">0</span>
         </button>
 
-        <!-- Tombol Pindai di HP -->
-        <button type="button" class="btn btn-sm btn-outline-success d-inline-flex align-items-center gap-1.5 fw-semibold px-2.5 py-1" data-bs-toggle="modal" data-bs-target="#modalMobileScannerQr" title="Buka Scanner QR di Smartphone (HP)">
-          <i class="bi bi-phone-fill"></i>
-          <span class="d-none d-md-inline">Pindai di HP</span>
-        </button>
-
         <!-- Tombol Panduan Cepat Mudah Dipahami -->
         <button type="button" class="btn btn-sm btn-outline-primary d-inline-flex align-items-center gap-1.5 fw-semibold px-2.5 py-1" data-bs-toggle="modal" data-bs-target="#modalPanduanAplikasi" title="Buka Panduan Mudah Penggunaan Aplikasi">
           <i class="bi bi-question-circle-fill"></i>
@@ -290,7 +253,31 @@ function render_page(string $title, string $content, string $extraHead = '', str
               <div class="fw-bold text-dark">'.e($userName).'</div>
               <div class="small text-muted text-capitalize"><i class="bi bi-shield-lock me-1"></i>'.e($displayRole).'</div>
             </li>
-            '.$userMenuDropdownItems.'
+            '.($isHrdRole ? '
+              <li><h6 class="dropdown-header text-uppercase fw-bold" style="font-size:0.65rem; color:#8c57ff; letter-spacing:0.06em;">Inventaris &amp; Sarpras</h6></li>
+              <li><a class="dropdown-item py-2" href="'.e(module_url('dashboard.php', ['tab' => 'kartu'])).'"><i class="bi bi-credit-card-2-front me-2 text-warning"></i> Kartu Inventaris</a></li>
+              <li><a class="dropdown-item py-2" href="'.e(module_url('asset_gallery.php', ['sub' => 'inventaris'])).'"><i class="bi bi-images me-2 text-primary"></i> Galeri Foto Barang</a></li>
+              <li><a class="dropdown-item py-2" href="'.e(module_url('memo_pengajuan.php')).'"><i class="bi bi-file-earmark-text me-2 text-info"></i> Memo Pengajuan</a></li>
+              <li><hr class="dropdown-divider my-1"></li>
+              <li><h6 class="dropdown-header text-uppercase fw-bold" style="font-size:0.65rem; color:#8c57ff; letter-spacing:0.06em;">Keamanan &amp; Master</h6></li>
+              <li><a class="dropdown-item py-2" href="'.e(module_url('server_room_log.php')).'"><i class="bi bi-door-closed-fill me-2" style="color:#8c57ff;"></i> Log Ruang Server</a></li>
+              <li><a class="dropdown-item py-2" href="'.e(module_url('cabang_admin.php')).'"><i class="bi bi-buildings me-2 text-success"></i> Kantor Cabang</a></li>
+            ' : (in_array($role, ['auditor', 'skai'], true) ? '
+              <li><h6 class="dropdown-header text-uppercase fw-bold" style="font-size:0.65rem; color:#8c57ff; letter-spacing:0.06em;">Audit &amp; Kepatuhan</h6></li>
+              <li><a class="dropdown-item py-2" href="'.e(module_url('audit.php')).'"><i class="bi bi-file-earmark-bar-graph me-2 text-primary"></i> Laporan Audit</a></li>
+              <li><a class="dropdown-item py-2" href="'.e(module_url('monthly_history.php')).'"><i class="bi bi-calendar3 me-2 text-info"></i> Riwayat Bulanan</a></li>
+              <li><a class="dropdown-item py-2" href="'.e(module_url('audit_trail.php')).'"><i class="bi bi-shield-check me-2 text-warning"></i> Log Aktivitas (Audit)</a></li>
+              <li><a class="dropdown-item py-2" href="'.e(module_url('server_room_log.php')).'"><i class="bi bi-door-closed-fill me-2" style="color:#8c57ff;"></i> Log Ruang Server</a></li>
+            ' : '
+              <li><h6 class="dropdown-header text-uppercase fw-bold" style="font-size:0.65rem; color:#8c57ff; letter-spacing:0.06em;">Akses Cepat</h6></li>
+              <li><a class="dropdown-item py-2" href="'.e(module_url('scanner.php')).'"><i class="bi bi-qr-code-scan me-2 text-info"></i> Scanner QR &amp; Barcode</a></li>
+              <li><a class="dropdown-item py-2" href="'.e(module_url('assets.php')).'"><i class="bi bi-pc-display me-2 text-primary"></i> Data Komputer (PC)</a></li>
+              <li><a class="dropdown-item py-2" href="'.e(module_url('dashboard.php', ['tab' => 'kartu'])).'"><i class="bi bi-credit-card-2-front me-2 text-warning"></i> Kartu Inventaris</a></li>
+              <li><hr class="dropdown-divider my-1"></li>
+              <li><h6 class="dropdown-header text-uppercase fw-bold" style="font-size:0.65rem; color:#8c57ff; letter-spacing:0.06em;">Keamanan &amp; Audit</h6></li>
+              <li><a class="dropdown-item py-2" href="'.e(module_url('server_room_log.php')).'"><i class="bi bi-door-closed-fill me-2" style="color:#8c57ff;"></i> Log Ruang Server (OJK)</a></li>
+              '.($isAdminUser ? '<li><a class="dropdown-item py-2" href="'.e(module_url('audit_trail.php')).'"><i class="bi bi-shield-check me-2 text-warning"></i> Log Aktivitas (Audit)</a></li>' : '').'
+            ')).'
             <li><button class="dropdown-item py-2 text-primary" type="button" data-bs-toggle="modal" data-bs-target="#modalPanduanAplikasi"><i class="bi bi-question-circle-fill me-2"></i> Bantuan & Panduan</button></li>
             <li><hr class="dropdown-divider"></li>
             <li><a class="dropdown-item py-2 text-danger" href="'.e(module_url('logout.php')).'"><i class="bi bi-box-arrow-right me-2"></i> Keluar</a></li>
@@ -357,8 +344,17 @@ function render_page(string $title, string $content, string $extraHead = '', str
 <meta name="apple-mobile-web-app-title" content="QR Maint">
 <link rel="apple-touch-icon" href="'.e(module_url('pwa_icons.php', ['size' => 192])).'">
 <link rel="icon" type="image/png" href="'.app_logo_url().'">
-<link href="'.e(module_url('assets/vendor/bootstrap.min.css')).'" rel="stylesheet">
-<link rel="stylesheet" href="'.e(module_url('assets/vendor/bootstrap-icons.min.css')).'">
+<link rel="dns-prefetch" href="https://cdn.jsdelivr.net">
+<link rel="dns-prefetch" href="https://fonts.googleapis.com">
+<link rel="dns-prefetch" href="https://fonts.gstatic.com">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" media="print" onload="this.media=\'all\'">
+<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"></noscript>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
 <style>
 
 /* =============================================================
@@ -1353,36 +1349,16 @@ h1, h2, h3, h4, h5, h6,
 }
 
 @media (min-width: 992px) {
-  .app-sidebar {
-    transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1) !important;
-  }
   .app-main-viewport {
     margin-left: 256px;
     width: calc(100% - 256px);
-    transition: margin-left 0.25s cubic-bezier(0.16, 1, 0.3, 1), width 0.25s cubic-bezier(0.16, 1, 0.3, 1) !important;
-  }
-  body.sidebar-collapsed .app-sidebar {
-    transform: translateX(-100%) !important;
-  }
-  body.sidebar-collapsed .app-main-viewport {
-    margin-left: 0 !important;
-    width: 100% !important;
   }
 }
 
 @media (max-width: 991.98px) {
-  .app-sidebar {
-    display: none !important;
-  }
   .app-main-viewport {
-    margin-left: 0 !important;
-    width: 100% !important;
-  }
-  .app-topbar {
-    transition: transform 0.25s ease-in-out !important;
-  }
-  .app-topbar.topbar-hidden {
-    transform: translateY(-100%) !important;
+    margin-left: 0;
+    width: 100%;
   }
 }
 
@@ -1813,6 +1789,21 @@ h1, h2, h3, h4, h5, h6,
   border-color: transparent !important;
   box-shadow: 0 3px 10px rgba(37, 99, 235, 0.3);
   transform: translateY(-1px);
+}
+
+.btn-check:checked + .btn-outline-primary,
+.btn-check:checked + label.btn,
+.btn-outline-primary.active {
+  background: linear-gradient(135deg, #8C57FF 0%, #6827EB 100%) !important;
+  color: #FFFFFF !important;
+  border-color: #6827EB !important;
+  box-shadow: 0 4px 14px rgba(104, 39, 235, 0.35) !important;
+}
+
+.btn-check:checked + .btn-outline-primary i,
+.btn-check:checked + label.btn i,
+.btn-outline-primary.active i {
+  color: #FFFFFF !important;
 }
 
 /* Form Controls */
@@ -2571,66 +2562,6 @@ label.form-label,
   </div>
 </div>
 
-<!-- Modal Pindai Scanner di Smartphone (HP) -->
-<div class="modal fade" id="modalMobileScannerQr" tabindex="-1" aria-labelledby="modalMobileScannerQrLabel" aria-hidden="true">
-  <div class="modal-dialog modal-dialog-centered" style="max-width: 440px;">
-    <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
-      <div class="modal-header py-3 px-4 text-white" style="background: linear-gradient(135deg, #0A192F 0%, #0F2D59 100%);">
-        <div class="d-flex align-items-center gap-2">
-          <div class="rounded-circle d-flex align-items-center justify-content-center text-info" style="width: 38px; height: 38px; background: rgba(56, 189, 248, 0.15);">
-            <i class="bi bi-phone-fill fs-5"></i>
-          </div>
-          <div>
-            <h6 class="modal-title fw-bold mb-0 text-white" id="modalMobileScannerQrLabel">Pemindai QR Smartphone (HP)</h6>
-            <div class="text-white-50" style="font-size: 0.72rem;">Akses Langsung Lapangan Tanpa Login</div>
-          </div>
-        </div>
-        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-      </div>
-      <div class="modal-body p-4 text-center bg-white">
-        <p class="text-secondary small mb-3">
-          Arahkan kamera HP Anda ke QR Code di bawah untuk membuka aplikasi scanner di HP:
-        </p>
-        <div class="d-inline-flex justify-content-center align-items-center p-3 bg-white rounded-3 border shadow-sm mb-3" style="min-width: 210px; min-height: 210px;">
-          <img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&amp;data='.urlencode(module_url('scanner.php')).'" alt="QR Scanner HP" style="width: 190px; height: 190px;">
-        </div>
-        <div class="input-group mb-2">
-          <input type="text" class="form-control form-control-sm text-center font-monospace bg-light" id="inputHpScannerUrl" value="'.e(module_url('scanner.php')).'" readonly>
-          <button class="btn btn-outline-primary btn-sm px-3 fw-semibold" type="button" onclick="copyHpScannerLink()">
-            <i class="bi bi-clipboard me-1"></i> Salin Link
-          </button>
-        </div>
-        <script>
-        function copyHpScannerLink() {
-          var input = document.getElementById("inputHpScannerUrl");
-          if (input) {
-            navigator.clipboard.writeText(input.value).then(function() {
-              alert("Tautan scanner berhasil disalin: " + input.value);
-            }).catch(function() {
-              input.select();
-              document.execCommand("copy");
-              alert("Tautan scanner berhasil disalin: " + input.value);
-            });
-          }
-        }
-        </script>
-        <div class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 px-2.5 py-1.5 small mb-1">
-          <i class="bi bi-check2-circle me-1"></i> Kamera langsung aktif otomatis &bull; Bebas login
-        </div>
-        <div class="text-muted" style="font-size: 0.72rem;">
-          Tautan langsung: <a href="'.e(module_url('scanner.php')).'" class="fw-semibold text-primary">'.e(module_url('scanner.php')).'</a>
-        </div>
-      </div>
-      <div class="modal-footer py-2 px-3 bg-light border-top justify-content-between">
-        <a href="'.e(module_url('scanner.php')).'" target="_blank" class="btn btn-sm btn-outline-secondary">
-          <i class="bi bi-box-arrow-up-right me-1"></i> Buka di Tab Baru
-        </a>
-        <button type="button" class="btn btn-sm btn-primary px-3 fw-semibold" data-bs-dismiss="modal">Tutup</button>
-      </div>
-    </div>
-  </div>
-</div>
-
 <!-- Modal Panduan Penggunaan Sistem (Ramah Pemula & Mudah Dipahami) -->
 <div class="modal fade" id="modalPanduanAplikasi" tabindex="-1" aria-labelledby="modalPanduanAplikasiLabel" aria-hidden="true">
   <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
@@ -2890,7 +2821,7 @@ label.form-label,
   </div>
 </div>
 
-<script src="'.e(module_url('assets/vendor/bootstrap.bundle.min.js')).'"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script>
 (function(){
   // Keyboard Shortcut: Ctrl + K or / to open Global Search
@@ -2956,12 +2887,6 @@ label.form-label,
       document.addEventListener(evt, resetIdleTimers, { passive: true });
     });
     resetIdleTimers();
-    // Anti-Sleep LAN Heartbeat (Menjaga router NAT & kartu jaringan LAN tetap aktif saat idle)
-    setInterval(function() {
-      if (typeof navigator !== "undefined" && navigator.onLine !== false) {
-        fetch("realtime_sync.php?action=ws_status", { cache: "no-store", keepalive: false }).catch(function(){});
-      }
-    }, 45000);
   }
 
   // =========================================================================
@@ -3016,7 +2941,6 @@ label.form-label,
   var pageNavLoader = document.getElementById("page-nav-loader");
   var progressTimer = null;
   var progressVal = 0;
-  var safetyHideTimer = null;
 
   function setProgress(val) {
     if (!progressBar) return;
@@ -3028,36 +2952,24 @@ label.form-label,
 
   function startPageLoading() {
     if (progressTimer) clearInterval(progressTimer);
-    if (safetyHideTimer) clearTimeout(safetyHideTimer);
-    setProgress(20);
+    setProgress(18);
     if (pageNavLoader) pageNavLoader.style.display = "flex";
 
     progressTimer = setInterval(function() {
       if (progressVal < 50) {
-        setProgress(progressVal + 14);
+        setProgress(progressVal + 12);
       } else if (progressVal < 80) {
-        setProgress(progressVal + 7);
+        setProgress(progressVal + 6);
       } else if (progressVal < 94) {
-        setProgress(progressVal + 2);
+        setProgress(progressVal + 1.5);
       }
-    }, 120);
-
-    // Safety timeout: loader otomatis padam setelah 2.5 detik jika halaman tidak kunjung berpindah
-    // Mencegah badge "Memuat..." macet/stuck di layar
-    safetyHideTimer = setTimeout(stopPageLoading, 2500);
+    }, 150);
   }
 
   function stopPageLoading() {
     if (progressTimer) {
       clearInterval(progressTimer);
       progressTimer = null;
-    }
-    if (safetyHideTimer) {
-      clearTimeout(safetyHideTimer);
-      safetyHideTimer = null;
-    }
-    if (pageNavLoader) {
-      pageNavLoader.style.display = "none";
     }
     if (progressBar) {
       setProgress(100);
@@ -3066,12 +2978,15 @@ label.form-label,
         setTimeout(function() {
           progressBar.classList.remove("active");
           progressBar.style.width = "0%";
-        }, 150);
-      }, 100);
+          if (pageNavLoader) pageNavLoader.style.display = "none";
+        }, 220);
+      }, 140);
+    } else {
+      if (pageNavLoader) pageNavLoader.style.display = "none";
     }
   }
 
-  // Tangkap klik pada link internal ke halaman lain
+  // Tangkap klik pada seluruh link internal ke halaman lain
   document.addEventListener("click", function(e) {
     var a = e.target.closest("a");
     if (!a || !a.href) return;
@@ -3079,12 +2994,9 @@ label.form-label,
     if (a.target && a.target !== "_self") return;
     if (a.hasAttribute("download")) return;
     if (a.href.indexOf("javascript:") === 0) return;
-    if (a.getAttribute("data-bs-toggle") || a.getAttribute("data-bs-target") || a.getAttribute("data-bs-dismiss")) return;
-    var rawHref = a.getAttribute("href") || "";
-    if (rawHref === "#" || rawHref === "" || rawHref.indexOf("javascript:") === 0) return;
+    if (a.getAttribute("data-bs-toggle") || a.getAttribute("data-bs-target")) return;
     if (a.origin !== location.origin) return;
-    // Abaikan jika menuju halaman yang sama persis (hash anchor atau link refresh)
-    if (a.pathname === location.pathname && a.search === location.search) return;
+    if (a.pathname === location.pathname && a.search === location.search && a.hash) return;
     if (e.ctrlKey || e.metaKey || e.shiftKey || e.which === 2) return;
 
     startPageLoading();
@@ -3098,151 +3010,16 @@ label.form-label,
     startPageLoading();
   }, { passive: true });
 
-  // Matikan loader saat halaman selesai siap (DOMContentLoaded / pageshow / load)
-  stopPageLoading();
-  if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", stopPageLoading);
-  }
-  window.addEventListener("pageshow", stopPageLoading);
-  window.addEventListener("load", stopPageLoading);
-  window.addEventListener("focus", stopPageLoading);
-  document.addEventListener("visibilitychange", function() { if (!document.hidden) stopPageLoading(); });
-})();
+  // Tangani saat halaman selesai dimuat atau kembali dari cache history browser
+  window.addEventListener("pageshow", function() {
+    stopPageLoading();
+  });
 
-// ============================================================
-// MOBILE SMART NAVBAR AUTO-HIDE ON SCROLL & AUTO-CLOSE MENU
-// ============================================================
-(function() {
-  function initMobileNavbarBehavior() {
-    var lastScrollY = window.pageYOffset || document.documentElement.scrollTop;
-    var topbar = document.querySelector(".app-topbar");
-    var ticking = false;
-
-    // Auto-hide topbar saat scroll ke bawah di layar HP (agar layar maksimal & tidak tertutup)
-    window.addEventListener("scroll", function() {
-      if (!ticking) {
-        window.requestAnimationFrame(function() {
-          if (window.innerWidth < 992 && topbar) {
-            var currentScrollY = window.pageYOffset || document.documentElement.scrollTop;
-            if (currentScrollY > 30 && currentScrollY > lastScrollY + 5) {
-              // Scroll ke bawah di HP -> sembunyikan navbar atas agar layar lega
-              topbar.classList.add("topbar-hidden");
-            } else if (currentScrollY < lastScrollY - 5 || currentScrollY <= 15) {
-              // Scroll ke atas di HP -> tampilkan kembali navbar atas
-              topbar.classList.remove("topbar-hidden");
-            }
-            lastScrollY = currentScrollY <= 0 ? 0 : currentScrollY;
-          } else if (topbar) {
-            topbar.classList.remove("topbar-hidden");
-          }
-          ticking = false;
-        });
-        ticking = true;
-      }
-    }, { passive: true });
-
-    // Helper untuk menutup drawer menu mobile secara bersih & pasti tertutup
-    var mobileDrawer = document.getElementById("appMobileSidebar");
-    function closeMobileDrawer() {
-      if (!mobileDrawer) return;
-      if (window.bootstrap && bootstrap.Offcanvas) {
-        var inst = bootstrap.Offcanvas.getInstance(mobileDrawer);
-        if (inst) inst.hide();
-      }
-      mobileDrawer.classList.remove("show");
-      document.body.classList.remove("modal-open");
-      var backdrops = document.querySelectorAll(".offcanvas-backdrop");
-      backdrops.forEach(function(b) { b.remove(); });
-    }
-
-    if (mobileDrawer) {
-      // Auto-close menu drawer di HP saat link menu ditekan
-      mobileDrawer.addEventListener("click", function(e) {
-        var link = e.target.closest("a");
-        if (link) {
-          closeMobileDrawer();
-        }
-      });
-
-      // Pastikan tombol Tutup [X] & Sembunyikan Menu selalu menutup drawer
-      var closeBtns = mobileDrawer.querySelectorAll("[data-bs-dismiss]");
-      closeBtns.forEach(function(btn) {
-        btn.addEventListener("click", function(e) {
-          e.preventDefault();
-          closeMobileDrawer();
-        });
-      });
-    }
-
-    // Tombol Toggle Menu (Hamburger):
-    // - Di HP (< 992px): Buka / Tutup Drawer Menu
-    // - Di Laptop/PC (>= 992px): Sembunyikan / Lebarkan Sidebar Kiri
-    var toggleBtn = document.getElementById("sidebarToggleBtn");
-    if (toggleBtn) {
-      toggleBtn.addEventListener("click", function(e) {
-        e.preventDefault();
-        e.stopPropagation();
-        if (window.innerWidth >= 992) {
-          document.body.classList.toggle("sidebar-collapsed");
-          try {
-            localStorage.setItem("sidebar_collapsed", document.body.classList.contains("sidebar-collapsed") ? "1" : "0");
-          } catch(err) {}
-        } else if (mobileDrawer) {
-          if (window.bootstrap && bootstrap.Offcanvas) {
-            var bsOff = bootstrap.Offcanvas.getOrCreateInstance(mobileDrawer);
-            bsOff.toggle();
-          } else {
-            if (mobileDrawer.classList.contains("show")) {
-              closeMobileDrawer();
-            } else {
-              mobileDrawer.classList.add("show");
-              document.body.classList.add("modal-open");
-            }
-          }
-        }
-      });
-    }
-
-    // Shortcut keyboard Ctrl + B untuk menyembunyikan / menampilkan menu
-    document.addEventListener("keydown", function(e) {
-      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "b") {
-        e.preventDefault();
-        if (window.innerWidth < 992) {
-          if (mobileDrawer) {
-            if (window.bootstrap && bootstrap.Offcanvas) {
-              var bsOffcanvas = bootstrap.Offcanvas.getOrCreateInstance(mobileDrawer);
-              bsOffcanvas.toggle();
-            } else {
-              if (mobileDrawer.classList.contains("show")) {
-                closeMobileDrawer();
-              } else {
-                mobileDrawer.classList.add("show");
-                document.body.classList.add("modal-open");
-              }
-            }
-          }
-        } else {
-          document.body.classList.toggle("sidebar-collapsed");
-          try {
-            localStorage.setItem("sidebar_collapsed", document.body.classList.contains("sidebar-collapsed") ? "1" : "0");
-          } catch(err) {}
-        }
-      }
-    });
-
-    // Pulihkan status sidebar di laptop / PC
-    try {
-      if (window.innerWidth >= 992 && localStorage.getItem("sidebar_collapsed") === "1") {
-        document.body.classList.add("sidebar-collapsed");
-      }
-    } catch(err) {}
-  }
-
-  if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", initMobileNavbarBehavior);
-  } else {
-    initMobileNavbarBehavior();
-  }
+  // Animasi awal saat halaman pertama kali selesai dirender
+  document.addEventListener("DOMContentLoaded", function() {
+    startPageLoading();
+    setTimeout(stopPageLoading, 160);
+  });
 })();
 
 // ============================================================
@@ -3273,59 +3050,18 @@ label.form-label,
   document.addEventListener("DOMContentLoaded", syncSystemDeviceTheme);
 })();
 
-// Purge old service workers & clear caches cleanly
+// PWA Service Worker Registration
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", function() {
-    try {
-      navigator.serviceWorker.getRegistrations().then(function(regs) {
-        for (var r of regs) { r.unregister(); }
-      }).catch(function() {});
-      if (window.caches) {
-        caches.keys().then(function(keys) {
-          for (var k of keys) { caches.delete(k); }
-        }).catch(function() {});
-      }
-    } catch(e) {}
+    navigator.serviceWorker.register("'.e(module_url('sw.js')).'")
+      .then(function(reg) {
+        // Success
+      })
+      .catch(function(err) {
+        console.warn("SW registration error:", err);
+      });
   });
 }
-
-// ============================================================
-// ANTI-IDLE HEARTBEAT & TAB RESUME AUTO-REFRESH
-// Menjaga koneksi router NAT & socket TCP tetap hidup saat idle
-// ============================================================
-(function() {
-  var lastActiveTime = Date.now();
-
-  function sendKeepAlivePing() {
-    try {
-      fetch("realtime_sync.php?action=ws_status&_t=" + Date.now(), { 
-        cache: "no-store",
-        priority: "low"
-      }).catch(function() {});
-    } catch(e) {}
-  }
-
-  // Ping ringan setiap 25 detik untuk mencegah router NAT timeout
-  setInterval(sendKeepAlivePing, 25000);
-
-  // Saat tab aktif kembali setelah diminimize / idle lama
-  document.addEventListener("visibilitychange", function() {
-    if (document.visibilityState === "visible") {
-      var idleSec = Math.round((Date.now() - lastActiveTime) / 1000);
-      lastActiveTime = Date.now();
-      if (idleSec > 60) {
-        sendKeepAlivePing();
-      }
-    } else {
-      lastActiveTime = Date.now();
-    }
-  });
-
-  window.addEventListener("focus", function() {
-    lastActiveTime = Date.now();
-    sendKeepAlivePing();
-  });
-})();
 </script>
 <script src="'.e(module_url('pwa-offline-queue.js')).'"></script>
 '.$extraScript.'
