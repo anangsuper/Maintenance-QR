@@ -316,18 +316,10 @@ function render_page(string $title, string $content, string $extraHead = '', str
 <meta name="apple-mobile-web-app-title" content="QR Maint">
 <link rel="apple-touch-icon" href="'.e(module_url('pwa_icons.php', ['size' => 192])).'">
 <link rel="icon" type="image/png" href="'.app_logo_url().'">
-<link rel="dns-prefetch" href="https://cdn.jsdelivr.net">
-<link rel="dns-prefetch" href="https://fonts.googleapis.com">
-<link rel="dns-prefetch" href="https://fonts.gstatic.com">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" media="print" onload="this.media=\'all\'">
-<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"></noscript>
-<script src="https://unpkg.com/@tailwindcss/browser@4.3.3/dist/index.global.js" integrity="sha384-2ql948lIdLcGEE0/qxNiudyTjgauA3RDJERu5xW75kFCvSl5a9odyQYCb6tEjnmB" crossorigin="anonymous"></script>
-<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+<!-- Local Vendor Assets (Zero External CDN Dependency / 100% Offline LAN Compatible) -->
+<link href="'.e(module_url('assets/vendor/bootstrap.min.css')).'" rel="stylesheet">
+<link rel="stylesheet" href="'.e(module_url('assets/vendor/bootstrap-icons.min.css')).'">
+<script src="'.e(module_url('assets/vendor/tailwindcss-browser.js')).'"></script>
 <style>
 /* =============================================================
    QR MAINTENANCE DESIGN SYSTEM (KOMBAI TEAL PALETTE)
@@ -3408,19 +3400,52 @@ label.form-label,
   }
 })();
 
-// PWA Service Worker Registration
+// Unregister service workers to avoid stale cache issues on LAN
 if ("serviceWorker" in navigator) {
-  window.addEventListener("load", function() {
-    navigator.serviceWorker.register("'.e(module_url('sw.js')).'")
-      .then(function(reg) {
-        // Success
-      })
-      .catch(function(err) {
-        console.warn("SW registration error:", err);
-      });
+  navigator.serviceWorker.getRegistrations().then(function(registrations) {
+    for (var reg of registrations) { reg.unregister(); }
   });
 }
+
+// ============================================================
+// ANTI-IDLE HEARTBEAT & TAB RESUME AUTO-REFRESH
+// Menjaga koneksi router NAT & socket TCP tetap hidup saat idle di jaringan LAN
+// ============================================================
+(function() {
+  var lastActiveTime = Date.now();
+
+  function sendKeepAlivePing() {
+    try {
+      fetch("realtime_sync.php?action=ws_status&_t=" + Date.now(), { 
+        cache: "no-store",
+        priority: "low"
+      }).catch(function() {});
+    } catch(e) {}
+  }
+
+  // Ping ringan setiap 25 detik untuk mencegah router NAT timeout
+  setInterval(sendKeepAlivePing, 25000);
+
+  // Saat tab aktif kembali setelah diminimize / idle lama
+  document.addEventListener("visibilitychange", function() {
+    if (document.visibilityState === "visible") {
+      var idleSec = Math.round((Date.now() - lastActiveTime) / 1000);
+      lastActiveTime = Date.now();
+      if (idleSec > 60) {
+        sendKeepAlivePing();
+      }
+    } else {
+      lastActiveTime = Date.now();
+    }
+  });
+
+  window.addEventListener("focus", function() {
+    lastActiveTime = Date.now();
+    sendKeepAlivePing();
+  });
+})();
 </script>
+<script src="'.e(module_url('assets/vendor/bootstrap.bundle.min.js')).'"></script>
 <script src="'.e(module_url('pwa-offline-queue.js')).'"></script>
 '.$extraScript.'
 </body>

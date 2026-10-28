@@ -5,9 +5,11 @@ require_login();
 // Pastikan struktur tabel kartu inventaris terupdate
 ensure_inventaris_kartu_columns();
 
+$isHrdOnly = (is_hrd() && !is_admin());
+
 // 1. Tentukan Sub-Tab Aktif ('inventaris' atau 'unit')
 $subTab = trim((string)($_GET['sub'] ?? 'inventaris'));
-if (!in_array($subTab, ['inventaris', 'unit'], true)) {
+if ($isHrdOnly || !in_array($subTab, ['inventaris', 'unit'], true)) {
     $subTab = 'inventaris';
 }
 
@@ -306,21 +308,37 @@ if ($subTab === 'inventaris') {
         </div>';
     }
 
-    // Branch Nav Pills
-    $branchPillsHtml = '<div class="branch-nav-bar custom-scrollbar mb-3">';
+    // Branch Nav Pills (Enhanced UI & Contrast)
+    $branchPillsHtml = '';
+    if (!$isHrdOnly) {
+        $branchPillsHtml = '
+    <div class="card p-3 border shadow-sm bg-white rounded-3 mb-3">
+      <div class="d-flex align-items-center justify-content-between mb-2 pb-1 border-bottom">
+        <div class="fw-bold text-dark small d-flex align-items-center gap-2">
+          <i class="bi bi-geo-alt-fill text-primary fs-6"></i>
+          <span>Filter Berdasarkan Kantor Cabang:</span>
+        </div>
+        <span class="badge bg-light text-secondary border">5 Cabang Operasional</span>
+      </div>
+      <div class="branch-nav-bar custom-scrollbar">';
+    
     $allActive = ($cabangCode === '');
     $branchPillsHtml .= '<a class="branch-nav-pill '.($allActive ? 'active' : '').'" href="'.e(gallery_query(['cabang' => null, 'page' => 1])).'">
-      <i class="bi bi-grid-fill me-1"></i> Semua Cabang <span class="badge bg-secondary text-white rounded-pill ms-1">'.$totalAll.'</span>
+      <i class="bi bi-grid-fill me-1"></i>
+      <span class="branch-name">Semua Cabang</span>
+      <span class="badge '.($allActive ? 'bg-white text-primary fw-bold' : 'bg-secondary text-white').' rounded-pill ms-2">'.$totalAll.'</span>
     </a>';
     foreach ($branchStats as $code => $bs) {
         $isActive = ($cabangCode === $code);
         $branchPillsHtml .= '<a class="branch-nav-pill '.($isActive ? 'active' : '').'" href="'.e(gallery_query(['cabang' => $code, 'page' => 1])).'">
-          <i class="bi '.e($bs['icon']).' me-1" style="color: '.e($bs['color']).'"></i> '.e($code).' '.e($bs['name']).'
-          <span class="badge '.($isActive ? 'bg-primary' : 'bg-light text-dark border').' rounded-pill ms-1">'.$bs['count'].'</span>
-          '.($bs['photos'] > 0 ? '<span class="badge bg-success text-white rounded-pill ms-0.5" title="'.$bs['photos'].' berfoto"><i class="bi bi-camera me-0.5"></i>'.$bs['photos'].'</span>' : '').'
+          <span class="branch-code-badge '.($isActive ? 'bg-white text-primary' : 'bg-light text-secondary border').' me-1.5">'.$code.'</span>
+          <span class="branch-name">'.e($bs['name']).'</span>
+          <span class="badge '.($isActive ? 'bg-white text-primary fw-bold' : 'bg-light text-dark border').' rounded-pill ms-2">'.$bs['count'].'</span>
+          '.($bs['photos'] > 0 ? '<span class="badge bg-success text-white rounded-pill ms-2" title="'.$bs['photos'].' berfoto"><i class="bi bi-camera-fill me-1"></i>'.$bs['photos'].' foto</span>' : '').'
         </a>';
     }
-    $branchPillsHtml .= '</div>';
+    $branchPillsHtml .= '</div></div>';
+    }
 
     // Dropdown Jenis Inventaris
     $optJenisHtml = '<option value="all">Semua Jenis Inventaris</option>';
@@ -328,92 +346,114 @@ if ($subTab === 'inventaris') {
         $optJenisHtml .= '<option value="'.$jKey.'"'.($jenisFilter === (string)$jKey ? ' selected' : '').'>'.e($jVal).'</option>';
     }
 
-    // Toolbar Filter
+    // Toolbar Filter (Enhanced Clear Labels)
     $filterToolbarHtml = '
-    <div class="card p-3 border-0 shadow-sm bg-white rounded-3 mb-4">
-      <form method="GET" action="'.e(module_url('asset_gallery.php')).'" class="row g-2 align-items-center">
+    <div class="card p-3 border shadow-sm bg-white rounded-3 mb-4">
+      <form method="GET" action="'.e(module_url('asset_gallery.php')).'" class="row g-3 align-items-end">
         <input type="hidden" name="sub" value="inventaris">
         '.($cabangCode !== '' ? '<input type="hidden" name="cabang" value="'.e($cabangCode).'">' : '').'
         <div class="col-12 col-md-5">
-          <div class="input-group input-group-sm">
+          <label class="form-label fw-bold text-secondary small mb-1 d-flex align-items-center gap-1">
+            <i class="bi bi-search text-primary"></i> Pencarian Kata Kunci
+          </label>
+          <div class="input-group">
             <span class="input-group-text bg-light border-end-0 text-muted"><i class="bi bi-search"></i></span>
-            <input type="text" name="q" class="form-control bg-light border-start-0" placeholder="Cari nama barang, no rekening, ruangan, SN..." value="'.e($search).'">
-            '.($search !== '' ? '<a href="'.e(gallery_query(['q' => null, 'page' => 1])).'" class="btn btn-outline-secondary"><i class="bi bi-x"></i></a>' : '').'
+            <input type="text" name="q" class="form-control border-start-0 ps-0" placeholder="Ketik nama barang, no rekening, ruangan, SN..." value="'.e($search).'">
+            '.($search !== '' ? '<a href="'.e(gallery_query(['q' => null, 'page' => 1])).'" class="btn btn-outline-secondary" title="Hapus"><i class="bi bi-x-lg"></i></a>' : '').'
           </div>
         </div>
-        <div class="col-6 col-md-3">
-          <select name="photo" class="form-select form-select-sm" onchange="this.form.submit()">
+        <div class="col-12 col-sm-6 col-md-3">
+          <label class="form-label fw-bold text-secondary small mb-1 d-flex align-items-center gap-1">
+            <i class="bi bi-camera text-primary"></i> Status Foto Fisik
+          </label>
+          <select name="photo" class="form-select" onchange="this.form.submit()">
             <option value="all"'.($photoFilter === 'all' ? ' selected' : '').'>Semua Status Foto ('.$totalAll.')</option>
-            <option value="with_photo"'.($photoFilter === 'with_photo' ? ' selected' : '').'>Hanya Yang Ada Foto ('.$totalWithPhoto.')</option>
-            <option value="no_photo"'.($photoFilter === 'no_photo' ? ' selected' : '').'>Belum Difoto ('.$totalNoPhoto.')</option>
+            <option value="with_photo"'.($photoFilter === 'with_photo' ? ' selected' : '').'>✅ Sudah Ada Foto ('.$totalWithPhoto.')</option>
+            <option value="no_photo"'.($photoFilter === 'no_photo' ? ' selected' : '').'>⚠️ Belum Difoto ('.$totalNoPhoto.')</option>
           </select>
         </div>
-        <div class="col-6 col-md-3">
-          <select name="jenis" class="form-select form-select-sm" onchange="this.form.submit()">
+        <div class="col-12 col-sm-6 col-md-3">
+          <label class="form-label fw-bold text-secondary small mb-1 d-flex align-items-center gap-1">
+            <i class="bi bi-tags text-primary"></i> Kategori / Jenis
+          </label>
+          <select name="jenis" class="form-select" onchange="this.form.submit()">
             '.$optJenisHtml.'
           </select>
         </div>
         <div class="col-12 col-md-1 d-flex gap-1">
-          <button type="submit" class="btn btn-sm btn-primary w-100 fw-semibold">
-            <i class="bi bi-funnel"></i>
+          <button type="submit" class="btn btn-primary w-100 fw-bold d-flex align-items-center justify-content-center gap-1" title="Terapkan Filter">
+            <i class="bi bi-funnel-fill"></i>
+            <span class="d-md-none">Filter</span>
           </button>
           '.($search !== '' || $photoFilter !== 'all' || $jenisFilter !== 'all' ? '
-          <a href="'.e(module_url('asset_gallery.php', array_filter(['sub' => 'inventaris', 'cabang' => $cabangCode]))).'" class="btn btn-sm btn-light border text-danger" title="Reset Filter">
-            <i class="bi bi-x-lg"></i>
+          <a href="'.e(module_url('asset_gallery.php', array_filter(['sub' => 'inventaris', 'cabang' => $cabangCode]))).'" class="btn btn-outline-danger d-flex align-items-center justify-content-center px-2" title="Reset Semua Filter">
+            <i class="bi bi-arrow-counterclockwise"></i>
           </a>' : '').'
         </div>
       </form>
     </div>';
 
     $pctPhoto = $totalAll > 0 ? round(($totalWithPhoto / $totalAll) * 100, 1) : 0;
+    $statColClass = $isHrdOnly ? 'col-12 col-md-4' : 'col-12 col-sm-6 col-xl-3';
     $statsCardsHtml = '
     <div class="row g-3 mb-4">
-      <div class="col-12 col-sm-6 col-xl-3">
-        <div class="card p-3 border-0 shadow-sm bg-white rounded-3 h-100 border-start border-primary border-4">
+      <div class="' . $statColClass . '">
+        <div class="card p-3 border shadow-sm bg-white rounded-3 h-100 stat-card-hover" style="border-left: 5px solid #003B73 !important;">
           <div class="d-flex align-items-center justify-content-between">
             <div>
-              <div class="text-muted small fw-bold text-uppercase" style="font-size: 0.7rem;">Total Kartu Inventaris</div>
-              <div class="h4 fw-bold mb-0 text-dark">'.$totalAll.' <span class="fs-6 fw-normal text-muted">Item</span></div>
+              <div class="text-uppercase fw-bold text-secondary mb-1" style="font-size: 0.72rem; letter-spacing: 0.05em;">Total Kartu Inventaris</div>
+              <div class="h3 fw-bold mb-0 text-dark">'.$totalAll.' <span class="fs-6 fw-semibold text-muted">Item</span></div>
+              <div class="small text-muted mt-1" style="font-size: 0.75rem;">Seluruh data Core Banking</div>
             </div>
-            <div class="rounded-3 bg-primary bg-opacity-10 p-2 text-primary fs-3"><i class="bi bi-boxes"></i></div>
-          </div>
-        </div>
-      </div>
-      <div class="col-12 col-sm-6 col-xl-3">
-        <div class="card p-3 border-0 shadow-sm bg-white rounded-3 h-100 border-start border-success border-4">
-          <div class="d-flex align-items-center justify-content-between">
-            <div>
-              <div class="text-muted small fw-bold text-uppercase" style="font-size: 0.7rem;">Sudah Ada Foto Fisik</div>
-              <div class="h4 fw-bold mb-0 text-success">'.$totalWithPhoto.' <span class="fs-6 fw-normal text-muted">('.$pctPhoto.'%)</span></div>
-            </div>
-            <div class="rounded-3 bg-success bg-opacity-10 p-2 text-success fs-3"><i class="bi bi-camera-fill"></i></div>
-          </div>
-        </div>
-      </div>
-      <div class="col-12 col-sm-6 col-xl-3">
-        <div class="card p-3 border-0 shadow-sm bg-white rounded-3 h-100 border-start border-warning border-4">
-          <div class="d-flex align-items-center justify-content-between">
-            <div>
-              <div class="text-muted small fw-bold text-uppercase" style="font-size: 0.7rem;">Belum Difoto</div>
-              <div class="h4 fw-bold mb-0 text-warning">'.$totalNoPhoto.' <span class="fs-6 fw-normal text-muted">Item</span></div>
-            </div>
-            <div class="rounded-3 bg-warning bg-opacity-10 p-2 text-warning fs-3"><i class="bi bi-exclamation-circle"></i></div>
-          </div>
-        </div>
-      </div>
-      <div class="col-12 col-sm-6 col-xl-3">
-        <div class="card p-3 border-0 shadow-sm bg-white rounded-3 h-100 border-start border-info border-4">
-          <div class="d-flex align-items-center justify-content-between">
-            <div>
-              <div class="text-muted small fw-bold text-uppercase" style="font-size: 0.7rem;">Sebaran Kantor Cabang</div>
-              <div class="h4 fw-bold mb-0 text-dark">5 <span class="fs-6 fw-normal text-muted">Cabang</span></div>
-            </div>
-            <div class="rounded-3 bg-info bg-opacity-10 p-2 text-info fs-3">
-              <i class="bi bi-buildings"></i>
+            <div class="rounded-circle d-flex align-items-center justify-content-center text-primary shadow-xs" style="width: 50px; height: 50px; background: #EFF6FF;">
+              <i class="bi bi-boxes fs-3"></i>
             </div>
           </div>
         </div>
       </div>
+      <div class="' . $statColClass . '">
+        <div class="card p-3 border shadow-sm bg-white rounded-3 h-100 stat-card-hover" style="border-left: 5px solid #10B981 !important;">
+          <div class="d-flex align-items-center justify-content-between">
+            <div>
+              <div class="text-uppercase fw-bold text-secondary mb-1" style="font-size: 0.72rem; letter-spacing: 0.05em;">Sudah Ada Foto Fisik</div>
+              <div class="h3 fw-bold mb-0 text-success">'.$totalWithPhoto.' <span class="badge bg-success-subtle text-success border border-success-subtle fs-7 fw-bold rounded-pill ms-1">'.$pctPhoto.'%</span></div>
+              <div class="small text-success mt-1 fw-semibold" style="font-size: 0.75rem;"><i class="bi bi-check-circle-fill me-1"></i>Terverifikasi ada foto</div>
+            </div>
+            <div class="rounded-circle d-flex align-items-center justify-content-center text-success shadow-xs" style="width: 50px; height: 50px; background: #ECFDF5;">
+              <i class="bi bi-camera-fill fs-3"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="' . $statColClass . '">
+        <div class="card p-3 border shadow-sm bg-white rounded-3 h-100 stat-card-hover" style="border-left: 5px solid #D97706 !important;">
+          <div class="d-flex align-items-center justify-content-between">
+            <div>
+              <div class="text-uppercase fw-bold text-secondary mb-1" style="font-size: 0.72rem; letter-spacing: 0.05em;">Belum Ada Foto Fisik</div>
+              <div class="h3 fw-bold mb-0" style="color: #B45309;">'.$totalNoPhoto.' <span class="fs-6 fw-semibold text-muted">Item</span></div>
+              <div class="small mt-1 fw-semibold" style="font-size: 0.75rem; color: #D97706;"><i class="bi bi-exclamation-triangle-fill me-1"></i>Perlu foto dokumentasi</div>
+            </div>
+            <div class="rounded-circle d-flex align-items-center justify-content-center shadow-xs" style="width: 50px; height: 50px; background: #FEF3C7; color: #D97706;">
+              <i class="bi bi-camera-slash-fill fs-3"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+      '.(!$isHrdOnly ? '
+      <div class="col-12 col-sm-6 col-xl-3">
+        <div class="card p-3 border shadow-sm bg-white rounded-3 h-100 stat-card-hover" style="border-left: 5px solid #6366F1 !important;">
+          <div class="d-flex align-items-center justify-content-between">
+            <div>
+              <div class="text-uppercase fw-bold text-secondary mb-1" style="font-size: 0.72rem; letter-spacing: 0.05em;">Sebaran Kantor Cabang</div>
+              <div class="h3 fw-bold mb-0 text-dark">5 <span class="fs-6 fw-semibold text-muted">Cabang</span></div>
+              <div class="small text-muted mt-1" style="font-size: 0.75rem;">Pusat &amp; 4 Jaringan Kas</div>
+            </div>
+            <div class="rounded-circle d-flex align-items-center justify-content-center shadow-xs" style="width: 50px; height: 50px; background: #EEF2FF; color: #6366F1 !important;">
+              <i class="bi bi-buildings-fill fs-3"></i>
+            </div>
+          </div>
+        </div>
+      </div>' : '').'
     </div>';
 
 } else {
@@ -597,11 +637,23 @@ if ($subTab === 'inventaris') {
         </div>';
     }
 
-    // Branch Nav Pills
-    $branchPillsHtml = '<div class="branch-nav-bar custom-scrollbar mb-3">';
+    // Branch Nav Pills (Enhanced UI & Contrast)
+    $branchPillsHtml = '
+    <div class="card p-3 border shadow-sm bg-white rounded-3 mb-3">
+      <div class="d-flex align-items-center justify-content-between mb-2 pb-1 border-bottom">
+        <div class="fw-bold text-dark small d-flex align-items-center gap-2">
+          <i class="bi bi-geo-alt-fill text-primary fs-6"></i>
+          <span>Filter Berdasarkan Kantor Cabang:</span>
+        </div>
+        <span class="badge bg-light text-secondary border">'.count($cabangs).' Cabang Terdaftar</span>
+      </div>
+      <div class="branch-nav-bar custom-scrollbar">';
+    
     $allActive = ($cabangId === 0);
     $branchPillsHtml .= '<a class="branch-nav-pill '.($allActive ? 'active' : '').'" href="'.e(gallery_query(['cabang' => null, 'page' => 1])).'">
-      Semua Cabang <span class="badge bg-secondary text-white rounded-pill ms-1">'.$totalAll.'</span>
+      <i class="bi bi-grid-fill me-1.5"></i>
+      <span class="branch-name">Semua Cabang</span>
+      <span class="badge '.($allActive ? 'bg-white text-primary fw-bold' : 'bg-secondary text-white').' rounded-pill ms-2">'.$totalAll.'</span>
     </a>';
     foreach ($cabangs as $c) {
         $cId = (int)($c['id'] ?? 0);
@@ -609,11 +661,11 @@ if ($subTab === 'inventaris') {
         $isActive = ($cId === $cabangId);
         $cCount = $branchPhotoCounts[$cId] ?? 0;
         $branchPillsHtml .= '<a class="branch-nav-pill '.($isActive ? 'active' : '').'" href="'.e(gallery_query(['cabang' => $cId, 'page' => 1])).'">
-          '.e($cNama).'
-          '.($cCount > 0 ? '<span class="badge bg-success text-white rounded-pill ms-1"><i class="bi bi-camera me-1"></i>'.$cCount.'</span>' : '').'
+          <span class="branch-name">'.e($cNama).'</span>
+          '.($cCount > 0 ? '<span class="badge bg-success text-white rounded-pill ms-2" title="'.$cCount.' unit berfoto"><i class="bi bi-camera-fill me-1"></i>'.$cCount.' foto</span>' : '').'
         </a>';
     }
-    $branchPillsHtml .= '</div>';
+    $branchPillsHtml .= '</div></div>';
 
     // Toolbar Filter
     $optDivHtml = '<option value="0">Semua Divisi</option>';
@@ -624,36 +676,46 @@ if ($subTab === 'inventaris') {
     }
 
     $filterToolbarHtml = '
-    <div class="card p-3 border-0 shadow-sm bg-white rounded-3 mb-4">
-      <form method="GET" action="'.e(module_url('asset_gallery.php')).'" class="row g-2 align-items-center">
+    <div class="card p-3 border shadow-sm bg-white rounded-3 mb-4">
+      <form method="GET" action="'.e(module_url('asset_gallery.php')).'" class="row g-3 align-items-end">
         <input type="hidden" name="sub" value="unit">
         <input type="hidden" name="cabang" value="'.e($cabangId).'">
         <div class="col-12 col-md-5">
-          <div class="input-group input-group-sm">
+          <label class="form-label fw-bold text-secondary small mb-1 d-flex align-items-center gap-1">
+            <i class="bi bi-search text-primary"></i> Pencarian Unit IT
+          </label>
+          <div class="input-group">
             <span class="input-group-text bg-light border-end-0 text-muted"><i class="bi bi-search"></i></span>
-            <input type="text" name="q" class="form-control bg-light border-start-0" placeholder="Cari merk, model, pengguna, SN..." value="'.e($search).'">
-            '.($search !== '' ? '<a href="'.e(gallery_query(['q' => null, 'page' => 1])).'" class="btn btn-outline-secondary"><i class="bi bi-x"></i></a>' : '').'
+            <input type="text" name="q" class="form-control border-start-0 ps-0" placeholder="Cari merk, model, pengguna, SN..." value="'.e($search).'">
+            '.($search !== '' ? '<a href="'.e(gallery_query(['q' => null, 'page' => 1])).'" class="btn btn-outline-secondary" title="Hapus"><i class="bi bi-x-lg"></i></a>' : '').'
           </div>
         </div>
-        <div class="col-6 col-md-3">
-          <select name="photo" class="form-select form-select-sm" onchange="this.form.submit()">
+        <div class="col-12 col-sm-6 col-md-3">
+          <label class="form-label fw-bold text-secondary small mb-1 d-flex align-items-center gap-1">
+            <i class="bi bi-camera text-primary"></i> Status Foto Fisik
+          </label>
+          <select name="photo" class="form-select" onchange="this.form.submit()">
             <option value="all"'.($photoFilter === 'all' ? ' selected' : '').'>Semua Status Foto ('.$totalAll.')</option>
-            <option value="with_photo"'.($photoFilter === 'with_photo' ? ' selected' : '').'>Hanya Yang Ada Foto ('.$totalWithPhoto.')</option>
-            <option value="no_photo"'.($photoFilter === 'no_photo' ? ' selected' : '').'>Belum Difoto ('.$totalNoPhoto.')</option>
+            <option value="with_photo"'.($photoFilter === 'with_photo' ? ' selected' : '').'>✅ Sudah Ada Foto ('.$totalWithPhoto.')</option>
+            <option value="no_photo"'.($photoFilter === 'no_photo' ? ' selected' : '').'>⚠️ Belum Ada Foto ('.$totalNoPhoto.')</option>
           </select>
         </div>
-        <div class="col-6 col-md-3">
-          <select name="divisi" class="form-select form-select-sm" onchange="this.form.submit()">
+        <div class="col-12 col-sm-6 col-md-3">
+          <label class="form-label fw-bold text-secondary small mb-1 d-flex align-items-center gap-1">
+            <i class="bi bi-diagram-3 text-primary"></i> Divisi / Unit Kerja
+          </label>
+          <select name="divisi" class="form-select" onchange="this.form.submit()">
             '.$optDivHtml.'
           </select>
         </div>
         <div class="col-12 col-md-1 d-flex gap-1">
-          <button type="submit" class="btn btn-sm btn-primary w-100 fw-semibold">
-            <i class="bi bi-funnel"></i>
+          <button type="submit" class="btn btn-primary w-100 fw-bold d-flex align-items-center justify-content-center gap-1" title="Terapkan Filter">
+            <i class="bi bi-funnel-fill"></i>
+            <span class="d-md-none">Filter</span>
           </button>
           '.($search !== '' || $photoFilter !== 'all' || $divisiId > 0 ? '
-          <a href="'.e(module_url('asset_gallery.php', array_filter(['sub' => 'unit', 'cabang' => $cabangId]))).'" class="btn btn-sm btn-light border text-danger" title="Reset Filter">
-            <i class="bi bi-x-lg"></i>
+          <a href="'.e(module_url('asset_gallery.php', array_filter(['sub' => 'unit', 'cabang' => $cabangId]))).'" class="btn btn-outline-danger d-flex align-items-center justify-content-center px-2" title="Reset Semua Filter">
+            <i class="bi bi-arrow-counterclockwise"></i>
           </a>' : '').'
         </div>
       </form>
@@ -663,47 +725,57 @@ if ($subTab === 'inventaris') {
     $statsCardsHtml = '
     <div class="row g-3 mb-4">
       <div class="col-12 col-sm-6 col-xl-3">
-        <div class="card p-3 border-0 shadow-sm bg-white rounded-3 h-100 border-start border-primary border-4">
+        <div class="card p-3 border shadow-sm bg-white rounded-3 h-100 stat-card-hover" style="border-left: 5px solid #003B73 !important;">
           <div class="d-flex align-items-center justify-content-between">
             <div>
-              <div class="text-muted small fw-bold text-uppercase" style="font-size: 0.7rem;">Total Perangkat IT</div>
-              <div class="h4 fw-bold mb-0 text-dark">'.$totalAll.' <span class="fs-6 fw-normal text-muted">Unit</span></div>
+              <div class="text-uppercase fw-bold text-secondary mb-1" style="font-size: 0.72rem; letter-spacing: 0.05em;">Total Perangkat IT</div>
+              <div class="h3 fw-bold mb-0 text-dark">'.$totalAll.' <span class="fs-6 fw-semibold text-muted">Unit</span></div>
+              <div class="small text-muted mt-1" style="font-size: 0.75rem;">PC, Laptop, Printer &amp; Server</div>
             </div>
-            <div class="rounded-3 bg-primary bg-opacity-10 p-2 text-primary fs-3"><i class="bi bi-pc-display"></i></div>
+            <div class="rounded-circle d-flex align-items-center justify-content-center text-primary shadow-xs" style="width: 50px; height: 50px; background: #EFF6FF;">
+              <i class="bi bi-pc-display fs-3"></i>
+            </div>
           </div>
         </div>
       </div>
       <div class="col-12 col-sm-6 col-xl-3">
-        <div class="card p-3 border-0 shadow-sm bg-white rounded-3 h-100 border-start border-success border-4">
+        <div class="card p-3 border shadow-sm bg-white rounded-3 h-100 stat-card-hover" style="border-left: 5px solid #10B981 !important;">
           <div class="d-flex align-items-center justify-content-between">
             <div>
-              <div class="text-muted small fw-bold text-uppercase" style="font-size: 0.7rem;">Sudah Ada Foto</div>
-              <div class="h4 fw-bold mb-0 text-success">'.$totalWithPhoto.' <span class="fs-6 fw-normal text-muted">('.$pctPhoto.'%)</span></div>
+              <div class="text-uppercase fw-bold text-secondary mb-1" style="font-size: 0.72rem; letter-spacing: 0.05em;">Sudah Ada Foto</div>
+              <div class="h3 fw-bold mb-0 text-success">'.$totalWithPhoto.' <span class="badge bg-success-subtle text-success border border-success-subtle fs-7 fw-bold rounded-pill ms-1">'.$pctPhoto.'%</span></div>
+              <div class="small text-success mt-1 fw-semibold" style="font-size: 0.75rem;"><i class="bi bi-check-circle-fill me-1"></i>Terverifikasi ada foto</div>
             </div>
-            <div class="rounded-3 bg-success bg-opacity-10 p-2 text-success fs-3"><i class="bi bi-camera-fill"></i></div>
+            <div class="rounded-circle d-flex align-items-center justify-content-center text-success shadow-xs" style="width: 50px; height: 50px; background: #ECFDF5;">
+              <i class="bi bi-camera-fill fs-3"></i>
+            </div>
           </div>
         </div>
       </div>
       <div class="col-12 col-sm-6 col-xl-3">
-        <div class="card p-3 border-0 shadow-sm bg-white rounded-3 h-100 border-start border-warning border-4">
+        <div class="card p-3 border shadow-sm bg-white rounded-3 h-100 stat-card-hover" style="border-left: 5px solid #D97706 !important;">
           <div class="d-flex align-items-center justify-content-between">
             <div>
-              <div class="text-muted small fw-bold text-uppercase" style="font-size: 0.7rem;">Belum Ada Foto</div>
-              <div class="h4 fw-bold mb-0 text-warning">'.$totalNoPhoto.' <span class="fs-6 fw-normal text-muted">Unit</span></div>
+              <div class="text-uppercase fw-bold text-secondary mb-1" style="font-size: 0.72rem; letter-spacing: 0.05em;">Belum Ada Foto</div>
+              <div class="h3 fw-bold mb-0" style="color: #B45309;">'.$totalNoPhoto.' <span class="fs-6 fw-semibold text-muted">Unit</span></div>
+              <div class="small mt-1 fw-semibold" style="font-size: 0.75rem; color: #D97706;"><i class="bi bi-exclamation-triangle-fill me-1"></i>Perlu foto fisik unit</div>
             </div>
-            <div class="rounded-3 bg-warning bg-opacity-10 p-2 text-warning fs-3"><i class="bi bi-exclamation-circle"></i></div>
+            <div class="rounded-circle d-flex align-items-center justify-content-center shadow-xs" style="width: 50px; height: 50px; background: #FEF3C7; color: #D97706;">
+              <i class="bi bi-camera-slash-fill fs-3"></i>
+            </div>
           </div>
         </div>
       </div>
       <div class="col-12 col-sm-6 col-xl-3">
-        <div class="card p-3 border-0 shadow-sm bg-white rounded-3 h-100 border-start border-info border-4">
+        <div class="card p-3 border shadow-sm bg-white rounded-3 h-100 stat-card-hover" style="border-left: 5px solid #6366F1 !important;">
           <div class="d-flex align-items-center justify-content-between">
             <div>
-              <div class="text-muted small fw-bold text-uppercase" style="font-size: 0.7rem;">Kantor Cabang</div>
-              <div class="h4 fw-bold mb-0 text-dark">'.count($cabangs).' <span class="fs-6 fw-normal text-muted">Cabang</span></div>
+              <div class="text-uppercase fw-bold text-secondary mb-1" style="font-size: 0.72rem; letter-spacing: 0.05em;">Kantor Cabang</div>
+              <div class="h3 fw-bold mb-0 text-dark">'.count($cabangs).' <span class="fs-6 fw-semibold text-muted">Cabang</span></div>
+              <div class="small text-muted mt-1" style="font-size: 0.75rem;">Sebaran perangkat operasional</div>
             </div>
-            <div class="rounded-3 bg-info bg-opacity-10 p-2 text-info fs-3">
-              <i class="bi bi-buildings"></i>
+            <div class="rounded-circle d-flex align-items-center justify-content-center shadow-xs" style="width: 50px; height: 50px; background: #EEF2FF; color: #6366F1 !important;">
+              <i class="bi bi-buildings-fill fs-3"></i>
             </div>
           </div>
         </div>
@@ -751,52 +823,98 @@ $extraHead = '
 .gallery-card:hover .gallery-hover-overlay {
   opacity: 1 !important;
 }
+
+/* Branch Filter Navigation Pills */
 .branch-nav-bar {
   display: flex;
-  gap: 8px;
+  gap: 10px;
   overflow-x: auto;
-  padding-bottom: 6px;
+  padding: 4px 2px 8px 2px;
   white-space: nowrap;
 }
 .branch-nav-pill {
-  padding: 8px 16px;
-  font-size: 0.82rem;
+  padding: 8px 18px;
+  font-size: 0.85rem;
   font-weight: 600;
   border-radius: 9999px;
   background: #ffffff;
-  border: 1px solid #E2E8F0;
-  color: #475569;
+  border: 1.5px solid #CBD5E1;
+  color: #334155;
   text-decoration: none;
   display: inline-flex;
   align-items: center;
-  transition: all 0.15s ease;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
 }
 .branch-nav-pill:hover {
   background: #F8FAFC;
-  border-color: #CBD5E1;
+  border-color: #94A3B8;
   color: #0F172A;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.08);
 }
 .branch-nav-pill.active {
-  background: #0284C7;
-  border-color: #0284C7;
+  background: #003B73 !important;
+  border-color: #003B73 !important;
   color: #ffffff !important;
-  box-shadow: 0 2px 4px rgba(2, 132, 199, 0.25);
+  box-shadow: 0 4px 12px rgba(0, 59, 115, 0.3) !important;
 }
-.branch-nav-pill.active i {
+.branch-nav-pill.active i,
+.branch-nav-pill.active .branch-name {
   color: #ffffff !important;
 }
-.hover-primary:hover {
-  color: #0284C7 !important;
+.branch-code-badge {
+  font-family: monospace;
+  font-weight: 700;
+  font-size: 0.72rem;
+  padding: 2px 6px;
+  border-radius: 4px;
 }
+
+/* Stat Cards Hover */
+.stat-card-hover {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.stat-card-hover:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.06) !important;
+}
+
+/* Sub-Tab Switcher Buttons */
 .gallery-tab-btn {
-  padding: 8px 20px;
-  font-size: 0.88rem;
+  padding: 10px 22px;
+  font-size: 0.92rem;
   font-weight: 600;
-  border-radius: 9999px;
+  border-radius: 12px;
   text-decoration: none;
   display: inline-flex;
   align-items: center;
-  transition: all 0.15s ease;
+  transition: all 0.2s ease;
+  border: 1px solid transparent;
+}
+.active-tab-inventaris {
+  background: #003B73 !important;
+  color: #ffffff !important;
+  box-shadow: 0 4px 12px rgba(0, 59, 115, 0.25);
+}
+.active-tab-unit {
+  background: #0284C7 !important;
+  color: #ffffff !important;
+  box-shadow: 0 4px 12px rgba(2, 132, 199, 0.25);
+}
+.inactive-tab {
+  background: #F8FAFC;
+  color: #475569;
+  border-color: #E2E8F0;
+}
+.inactive-tab:hover {
+  background: #EEF2F6;
+  color: #0F172A;
+  border-color: #CBD5E1;
+}
+
+.hover-primary:hover {
+  color: #0284C7 !important;
 }
 </style>
 ';
@@ -823,17 +941,20 @@ $body = '
   </div>
 </div>
 
-<!-- Sub-Tab Switcher Bar (1 Halaman, 2 Sub) -->
-<div class="d-flex gap-2 mb-4 p-1 bg-light rounded-pill border d-inline-flex shadow-xs">
-  <a href="'.e(gallery_query(['sub' => 'inventaris', 'page' => 1, 'q' => null, 'cabang' => null, 'photo' => 'all'])).'" class="gallery-tab-btn '.($subTab === 'inventaris' ? 'bg-primary text-white shadow-xs' : 'text-secondary hover-primary').'">
-    <i class="bi bi-collection me-1.5"></i> Galeri Foto Inventaris (Bank)
-    <span class="badge '.($subTab === 'inventaris' ? 'bg-white text-primary' : 'bg-secondary text-white').' rounded-pill ms-1.5" style="font-size: 0.72rem;">'.$totalInvCount.'</span>
+'.(!$isHrdOnly ? '
+<!-- Sub-Tab Switcher Bar (High Contrast Segmented Control) -->
+<div class="d-flex flex-wrap align-items-center gap-2 mb-4 p-1.5 bg-white rounded-4 border shadow-sm d-inline-flex">
+  <a href="'.e(gallery_query(['sub' => 'inventaris', 'page' => 1, 'q' => null, 'cabang' => null, 'photo' => 'all'])).'" class="gallery-tab-btn '.($subTab === 'inventaris' ? 'active-tab-inventaris' : 'inactive-tab').'">
+    <i class="bi bi-collection-fill me-2 fs-5"></i>
+    <span class="fw-bold">Galeri Foto Inventaris (Bank Core)</span>
+    <span class="badge '.($subTab === 'inventaris' ? 'bg-white text-primary fw-bold' : 'bg-secondary text-white').' rounded-pill ms-2">'.$totalInvCount.'</span>
   </a>
-  <a href="'.e(gallery_query(['sub' => 'unit', 'page' => 1, 'q' => null, 'cabang' => null, 'photo' => 'all'])).'" class="gallery-tab-btn '.($subTab === 'unit' ? 'bg-primary text-white shadow-xs' : 'text-secondary hover-primary').'">
-    <i class="bi bi-pc-display me-1.5"></i> Galeri Unit Perangkat (IT)
-    <span class="badge '.($subTab === 'unit' ? 'bg-white text-primary' : 'bg-secondary text-white').' rounded-pill ms-1.5" style="font-size: 0.72rem;">'.$totalUnitCount.'</span>
+  <a href="'.e(gallery_query(['sub' => 'unit', 'page' => 1, 'q' => null, 'cabang' => null, 'photo' => 'all'])).'" class="gallery-tab-btn '.($subTab === 'unit' ? 'active-tab-unit' : 'inactive-tab').'">
+    <i class="bi bi-pc-display-horizontal me-2 fs-5"></i>
+    <span class="fw-bold">Galeri Unit Perangkat (IT Ops)</span>
+    <span class="badge '.($subTab === 'unit' ? 'bg-white text-dark fw-bold' : 'bg-secondary text-white').' rounded-pill ms-2">'.$totalUnitCount.'</span>
   </a>
-</div>
+</div>' : '').'
 
 <!-- Stats Card Row -->
 '.$statsCardsHtml.'
@@ -955,7 +1076,7 @@ $body = '
 ';
 
 $extraScript = '
-<script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+<script src="'.e(module_url('assets/vendor/qrcode.min.js')).'"></script>
 <script>
 // Lightbox Kartu Inventaris
 function openInvGalleryLightbox(data) {
