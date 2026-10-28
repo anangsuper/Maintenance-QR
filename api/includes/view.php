@@ -2901,6 +2901,12 @@ label.form-label,
       document.addEventListener(evt, resetIdleTimers, { passive: true });
     });
     resetIdleTimers();
+    // Anti-Sleep LAN Heartbeat (Menjaga router NAT & kartu jaringan LAN tetap aktif saat idle)
+    setInterval(function() {
+      if (typeof navigator !== "undefined" && navigator.onLine !== false) {
+        fetch("realtime_sync.php?action=ws_status", { cache: "no-store", keepalive: false }).catch(function(){});
+      }
+    }, 45000);
   }
 
   // =========================================================================

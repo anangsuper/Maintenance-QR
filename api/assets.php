@@ -139,6 +139,7 @@ $statAktif = 0;
 $statDoneMaint = 0;
 $statPendingMaint = 0;
 $statRepair = 0;
+$statTidakTerpakai = 0;
 
 foreach ($rawAssets as $a) {
     if ($cabangId > 0 && (int)($a['id_cabang'] ?? 0) !== $cabangId) continue;
@@ -147,8 +148,11 @@ foreach ($rawAssets as $a) {
     $statTotal++;
     $aid = (int)($a['id'] ?? 0);
     $stAset = strtolower(trim((string)($a['status'] ?? 'Aktif')));
-    if ($stAset === 'aktif' || $stAset === '') {
+    $isAsetAktif = ($stAset === 'aktif' || $stAset === '');
+    if ($isAsetAktif) {
         $statAktif++;
+    } elseif (in_array($stAset, ['tidak terpakai', 'nonaktif', 'afkir', 'disposal', 'pensiun', 'rusak total', 'diganti baru'], true)) {
+        $statTidakTerpakai++;
     }
 
     $mInfo = $maintStatusMap[$aid] ?? null;
@@ -157,7 +161,8 @@ foreach ($rawAssets as $a) {
         if (in_array($mInfo['status'], ['Temuan', 'Perlu Perbaikan', 'Proses'], true)) {
             $statRepair++;
         }
-    } else {
+    } elseif ($isAsetAktif) {
+        // HANYA unit aktif yang belum diperiksa yang dihitung ke target/tunggakan maintenance!
         $statPendingMaint++;
     }
 }
@@ -191,7 +196,12 @@ $filteredAssets = array_filter($rawAssets, function($a) use ($search, $cabangId,
         $stVal = $isDone ? ($mInfo['status'] ?? 'Selesai') : 'Belum Maintenance';
 
         if ($maintStatus === 'done' && !$isDone) return false;
-        if ($maintStatus === 'pending' && $isDone) return false;
+        if ($maintStatus === 'pending') {
+            $stAsetRaw = strtolower(trim((string)($a['status'] ?? 'Aktif')));
+            $isAsetAktif = ($stAsetRaw === 'aktif' || $stAsetRaw === '');
+            // Aset tidak terpakai/nonaktif otomatis dikeluarkan dari to-do list belum diperiksa
+            if (!$isAsetAktif || $isDone) return false;
+        }
         if ($maintStatus === 'repair' && (!in_array($stVal, ['Temuan', 'Perlu Perbaikan', 'Proses'], true))) return false;
     }
 
@@ -238,6 +248,9 @@ $pageAssets = array_slice($filteredAssets, $offset, $perPage);
 // Flash message
 $flash = $_SESSION['flash'] ?? '';
 unset($_SESSION['flash']);
+if (session_status() === PHP_SESSION_ACTIVE) {
+    session_write_close();
+}
 $flashHtml = $flash ? '<div class="alert alert-success alert-dismissible fade show border-0 shadow-sm mb-4"><i class="bi bi-check-circle-fill me-2"></i>'.e($flash).'<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>' : '';
 
 // Helper Query URL untuk Pagination & Filter
@@ -436,6 +449,12 @@ $todoTabsHtml = '
        class="btn btn-sm rounded-pill px-3 fw-bold '.($maintStatus === 'done' ? 'btn-success text-white shadow' : 'btn-outline-success').'" style="'.($maintStatus !== 'done' ? 'background-color: #F0FDF4; border-color: #86EFAC;' : '').'">
       <i class="bi bi-check-circle-fill me-1"></i> Selesai ('.$statDoneMaint.')
     </a>
+
+    <!-- 5. Tidak Terpakai / Bebas Maintenance -->
+    <a href="'.e(filter_query(['status' => 'Tidak Terpakai', 'maint' => null, 'page' => 1])).'" 
+       class="btn btn-sm rounded-pill px-3 fw-bold '.($statusAset === 'Tidak Terpakai' ? 'btn-secondary text-white shadow' : 'btn-outline-secondary').'">
+      <i class="bi bi-slash-circle me-1"></i> Tidak Terpakai (Histori)
+    </a>
   </div>
 </div>';
 
@@ -465,21 +484,31 @@ foreach ($pageAssets as $a) {
     $token = !empty($a['qr_token']) ? $a['qr_token'] : get_static_qr_token($aid);
 
     // Status Badge Komputer
-    $statusDotClass = match (strtolower($stAset)) {
-        'aktif' => 'operational',
+    $stAsetLower = strtolower($stAset);
+    $isAsetAktif = ($stAsetLower === 'aktif' || $stAsetLower === '');
+    $isAsetTidakTerpakai = in_array($stAsetLower, ['tidak terpakai', 'nonaktif', 'afkir', 'disposal', 'pensiun', 'rusak total', 'diganti baru'], true);
+
+    $statusDotClass = match ($stAsetLower) {
+        'aktif', '' => 'operational',
         'perbaikan' => 'warning',
         'backup' => 'repair',
-        'nonaktif' => 'offline',
+        'tidak terpakai', 'nonaktif' => 'offline',
+        'afkir', 'disposal' => 'offline',
         default => 'offline',
     };
-    $statusChipClass = match (strtolower($stAset)) {
-        'aktif' => 'chip-success',
+    $statusChipClass = match ($stAsetLower) {
+        'aktif', '' => 'chip-success',
         'perbaikan' => 'chip-warning',
         'backup' => 'chip-primary',
+        'tidak terpakai' => 'chip-secondary',
         'nonaktif' => 'chip-secondary',
+        'afkir', 'disposal' => 'chip-danger',
         default => 'chip-secondary',
     };
-    $statusBadge = '<span class="badge-chip '.$statusChipClass.'"><span class="status-dot '.$statusDotClass.'"></span> '.e(ucfirst($stAset)).'</span>';
+    $statusLabelText = ($stAsetLower === 'tidak terpakai') ? 'Tidak Terpakai' : ucfirst($stAset);
+    $statusBadge = '<span class="badge-chip '.$statusChipClass.'"><span class="status-dot '.$statusDotClass.'"></span> '.e($statusLabelText).'</span>';
+
+
 
     // Status Maintenance Bulan Berjalan
     $mInfo = $maintStatusMap[$aid] ?? null;
@@ -496,6 +525,9 @@ foreach ($pageAssets as $a) {
             $isDoneMaint = true;
             $maintBadge = '<span class="badge-chip chip-success" title="Selesai pada '.$mInfo['date'].' oleh '.$mInfo['tech'].'"><i class="bi bi-check2"></i> Selesai ('.$mInfo['date'].')</span>';
         }
+    } elseif (!$isAsetAktif) {
+        // Aset Tidak Terpakai / Nonaktif / Afkir: BEBAS DARI TARGET PEMELIHARAAN BULANAN
+        $maintBadge = '<span class="badge-chip chip-secondary text-muted" title="Unit ini berstatus '.e(ucfirst($stAset)).' (bebas dari pemeliharaan bulanan)"><i class="bi bi-slash-circle me-1"></i> Tidak Dimaintenance</span>';
     } else {
         $maintBadge = '<span class="badge-chip chip-warning"><i class="bi bi-clock"></i> Belum Diperiksa</span>';
     }
@@ -505,6 +537,16 @@ foreach ($pageAssets as $a) {
     $cardUrl = module_url('print_card.php', ['id' => $aid, 'layout' => 'single']);
     $editUrl = module_url('asset_edit.php', ['id' => $aid]);
     $deleteUrl = module_url('asset_delete.php', ['id' => $aid, 'redirect' => $_SERVER['REQUEST_URI'] ?? module_url('assets.php')]);
+
+    // Cross-link penggantian unit
+    $replacesId = (int)($a['replaces_asset_id'] ?? 0);
+    $replacedById = (int)($a['replaced_by_id'] ?? 0);
+    $crossLinkTag = '';
+    if ($replacesId > 0) {
+        $crossLinkTag = '<div class="mt-1"><a href="'.e(module_url('asset_edit.php', ['id' => $replacesId])).'" class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 text-decoration-none fw-semibold py-0.5 px-1.5" style="font-size:0.68rem;" title="Unit ini menggantikan komputer lama #'.$replacesId.'"><i class="bi bi-arrow-return-right me-0.5"></i>Ganti #'.$replacesId.'</a></div>';
+    } elseif ($replacedById > 0) {
+        $crossLinkTag = '<div class="mt-1"><a href="'.e(module_url('asset_edit.php', ['id' => $replacedById])).'" class="badge bg-warning bg-opacity-10 text-warning-emphasis border border-warning border-opacity-50 text-decoration-none fw-semibold py-0.5 px-1.5" style="font-size:0.68rem;" title="Komputer ini telah diganti oleh unit baru #'.$replacedById.'"><i class="bi bi-arrow-right-short me-0.5"></i>Diganti #'.$replacedById.'</a></div>';
+    }
 
     // Data untuk Modal Pratinjau Stiker QR (Quick QR Preview)
     $qrModalJson = '';
@@ -527,8 +569,10 @@ foreach ($pageAssets as $a) {
     $quickActionBtn = '';
     if ($isRepairIssue && $scanUrl) {
         $quickActionBtn = '<a class="btn btn-sm btn-danger py-1 px-2 fw-semibold text-nowrap" href="'.e($scanUrl . '&action=tindak_lanjut').'" title="Tindak Lanjuti Kendala"><i class="bi bi-tools me-1"></i> Perbaiki</a>';
-    } elseif (!$isDoneMaint && $scanUrl) {
+    } elseif (!$isDoneMaint && $isAsetAktif && $scanUrl) {
         $quickActionBtn = '<a class="btn btn-sm btn-primary py-1 px-2 fw-semibold text-nowrap" href="'.e($scanUrl . '&action=start').'" title="Mulai Checklist Pemeliharaan"><i class="bi bi-clipboard-check me-1"></i> Periksa</a>';
+    } elseif (!$isAsetAktif) {
+        $quickActionBtn = '<span class="badge bg-light text-muted border py-1 px-2" style="font-size:0.72rem;" title="Unit Bebas Maintenance">Bebas Maint</span>';
     }
 
     $tableRows .= '
@@ -540,6 +584,7 @@ foreach ($pageAssets as $a) {
       <td>
         <div class="fw-bold text-dark fs-6 font-monospace">'.e($kode).'</div>
         <small class="text-muted" style="font-size: 0.72rem;">ID: #'.$aid.'</small>
+        '.$crossLinkTag.'
       </td>
       <td>
         <div class="d-flex align-items-center">
@@ -583,6 +628,7 @@ foreach ($pageAssets as $a) {
             </button>
             <ul class="dropdown-menu dropdown-menu-end shadow-sm border py-1" style="font-size: 0.82rem; min-width: 170px;">
               '.($scanUrl ? '<li><a class="dropdown-item py-1.5" href="'.e($scanUrl).'"><i class="bi bi-qr-code-scan me-2 text-info"></i> Buka / Scan</a></li>' : '').'
+              <li><a class="dropdown-item py-1.5 text-primary fw-semibold" href="'.e(module_url('asset_add.php', ['replace_id' => $aid])).'"><i class="bi bi-arrow-repeat me-2"></i> Ganti Unit Baru</a></li>
               <li><a class="dropdown-item py-1.5" href="'.e(module_url('asset_mutation.php', ['id' => $aid, 'type' => 'komputer'])).'"><i class="bi bi-arrow-left-right me-2 text-primary"></i> Mutasi Aset</a></li>
               <li><a class="dropdown-item py-1.5" target="_blank" href="'.e($cardUrl).'"><i class="bi bi-printer me-2 text-secondary"></i> Cetak Kartu</a></li>
               <li><a class="dropdown-item py-1.5" href="'.e($editUrl).'"><i class="bi bi-pencil me-2 text-warning"></i> Edit Data</a></li>
@@ -735,7 +781,7 @@ $body = '
       <div class="card card-metric h-100" style="border-left-color: #D97706 !important;">
         <div class="metric-value text-warning">'.$statPendingMaint.'</div>
         <div class="metric-label">Belum Diperiksa</div>
-        <div class="small text-muted mt-2" style="font-size: 0.72rem;">Menunggu inspeksi</div>
+        <div class="small text-muted mt-2" style="font-size: 0.72rem;">Unit aktif wajib inspeksi</div>
       </div>
     </a>
   </div>
@@ -775,14 +821,27 @@ $body = '
       </select>
     </div>
     <div class="col-lg-2 col-md-3 col-sm-6">
+      <label class="form-label text-secondary small fw-semibold mb-1">Status Operasional Aset</label>
+      <select class="form-select form-select-sm" name="status">
+        <option value="">Semua Status Operasional</option>
+        <option value="Aktif"'.($statusAset === 'Aktif' ? ' selected' : '').'>Aktif (Wajib Maint)</option>
+        <option value="Tidak Terpakai"'.($statusAset === 'Tidak Terpakai' ? ' selected' : '').'>Tidak Terpakai (Histori)</option>
+        <option value="Backup"'.($statusAset === 'Backup' ? ' selected' : '').'>Backup / Cadangan</option>
+        <option value="Perbaikan"'.($statusAset === 'Perbaikan' ? ' selected' : '').'>Sedang Perbaikan</option>
+        <option value="Nonaktif"'.($statusAset === 'Nonaktif' ? ' selected' : '').'>Nonaktif</option>
+        <option value="Afkir"'.($statusAset === 'Afkir' ? ' selected' : '').'>Afkir / Dihapuskan</option>
+      </select>
+    </div>
+    <div class="col-lg-2 col-md-3 col-sm-6">
       <label class="form-label text-secondary small fw-semibold mb-1">Status Maintenance</label>
       <select class="form-select form-select-sm" name="maint">
-        <option value="all">Semua Status</option>
+        <option value="all">Semua Status Maint</option>
         <option value="done"'.($maintStatus === 'done' ? ' selected' : '').'>Selesai</option>
-        <option value="pending"'.($maintStatus === 'pending' ? ' selected' : '').'>Belum Selesai</option>
+        <option value="pending"'.($maintStatus === 'pending' ? ' selected' : '').'>Belum Diperiksa (Aktif)</option>
         <option value="repair"'.($maintStatus === 'repair' ? ' selected' : '').'>Ada Temuan</option>
       </select>
     </div>
+
     <div class="col-lg-2 col-md-3 col-sm-6">
       <label class="form-label text-secondary small fw-semibold mb-1">Periode Bulan</label>
       <select class="form-select form-select-sm" name="bulan">
@@ -1125,7 +1184,7 @@ $extraHead = '
 $logoDataUri = app_logo_url();
 
 $extraScript = '
-<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="' . e(module_url('assets/vendor/qrcode.min.js')) . '"></script>
 <script>
 var appLogoUri = '.json_encode($logoDataUri).';
 var currentModalData = null;

@@ -454,6 +454,9 @@ $logoUri = app_logo_data_uri();
 $flash = $_SESSION['flash'] ?? '';
 $flashError = $_SESSION['flash_error'] ?? '';
 unset($_SESSION['flash'], $_SESSION['flash_error']);
+if (session_status() === PHP_SESSION_ACTIVE) {
+    session_write_close();
+}
 
 // 3. Tab Bar Navigasi Cepat Cabang
 $branchTabs = '<a class="branch-nav-pill '.($cabangId === 0 ? 'active' : '').'" href="'.e(module_url('dashboard.php', ['bulan'=>$month,'tahun'=>$year,'cabang'=>0,'status_aset'=>$statusAset,'status_maint'=>$statusMaint])).'">Semua Cabang</a>';
@@ -857,7 +860,7 @@ foreach (array_slice($allCards, 0, 5) as $qc) {
 }
 
 $head = '
-<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="' . e(module_url('assets/vendor/qrcode.min.js')) . '"></script>
 <style>
 .branch-nav-bar {
   display: flex;

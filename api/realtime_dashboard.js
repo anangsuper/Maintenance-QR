@@ -263,10 +263,29 @@
   }
 
   function syncDashboardMetrics(triggerAnimation = false) {
+    if (document.hidden) return; // Hemat resource & cegah lag jika tab sedang di latar belakang
+    if (typeof navigator !== 'undefined' && navigator.onLine === false) return; // Jangan request jika offline
+    try {
+      const lastStr = localStorage.getItem('app_last_active');
+      if (lastStr) {
+        const last = parseInt(lastStr, 10);
+        if (!isNaN(last) && (Date.now() - last > 30 * 60 * 1000)) {
+          return; // Jangan kirim request fetch sync jika sesi sudah kedaluwarsa!
+        }
+      }
+    } catch (e) {}
     const url = `realtime_sync.php?action=sync&since=${lastEventId}&bulan=${currentMonth}&tahun=${currentYear}&cabang=${currentCabang}`;
     
-    fetch(url)
-      .then(resp => resp.json())
+    // Gunakan AbortController dengan batas timeout 2.5 detik agar tidak pernah menggantung saat koneksi seluler/wifi sleep
+    const abortCtrl = (typeof AbortController !== 'undefined') ? new AbortController() : null;
+    const fetchTimeout = abortCtrl ? setTimeout(() => abortCtrl.abort(), 2500) : null;
+    const fetchOpts = abortCtrl ? { signal: abortCtrl.signal } : {};
+
+    fetch(url, fetchOpts)
+      .then(resp => {
+        if (fetchTimeout) clearTimeout(fetchTimeout);
+        return resp.json();
+      })
       .then(res => {
         if (!res || !res.metrics) return;
 
@@ -343,8 +362,38 @@
     if (fallbackPollTimer) return;
     fallbackPollTimer = setInterval(() => {
       syncDashboardMetrics(false);
-    }, 12000);
+    }, 25000);
   }
+
+  // Sinkronisasi saat user membuka/berpindah kembali ke tab ini
+  let tabHiddenTimestamp = 0;
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) {
+      tabHiddenTimestamp = Date.now();
+    } else {
+      const wasAway = tabHiddenTimestamp > 0 && (Date.now() - tabHiddenTimestamp > 45000);
+      tabHiddenTimestamp = 0;
+      if (!isWsConnected) {
+        try {
+          const lastStr = localStorage.getItem('app_last_active');
+          if (lastStr && (Date.now() - parseInt(lastStr, 10) > 30 * 60 * 1000)) {
+            return;
+          }
+        } catch (e) {}
+        // Jika tab sempat ditinggal/disembunyikan lebih dari 45 detik:
+        // Tunda background poll 3 detik agar navigasi / klik user diutamakan 100% tanpa berebut soket jaringan
+        if (wasAway) {
+          setTimeout(() => {
+            if (!document.hidden && !isWsConnected) {
+              syncDashboardMetrics(false);
+            }
+          }, 3000);
+        } else {
+          syncDashboardMetrics(false);
+        }
+      }
+    }
+  });
 
   function stopFallbackPolling() {
     if (fallbackPollTimer) {
@@ -353,9 +402,18 @@
     }
   }
 
+  let wsFailCount = 0;
+
   function connectWebSocket() {
     if (reconnectTimer) clearTimeout(reconnectTimer);
     if (pingTimer) clearInterval(pingTimer);
+
+    // Bypass WebSocket port 8080 jika diakses lewat HTTPS / Domain publik agar tidak terjadi timeout 7-10 detik
+    if (location.protocol === 'https:' || (location.hostname !== 'localhost' && !/^\d+\.\d+\.\d+\.\d+$/.test(location.hostname))) {
+      updateStatusUI(false, 'poll');
+      startFallbackPolling();
+      return;
+    }
 
     const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
     const host = location.hostname || 'localhost';
@@ -364,7 +422,18 @@
     try {
       socket = new WebSocket(wsUrl);
 
+      // Batas waktu handshake 2.5 detik agar browser tidak hang jika port 8080 diblokir operator/firewall
+      let wsConnectTimeout = setTimeout(() => {
+        if (socket && socket.readyState === WebSocket.CONNECTING) {
+          try { socket.close(); } catch(e){}
+          updateStatusUI(false, 'poll');
+          startFallbackPolling();
+        }
+      }, 2500);
+
       socket.onopen = function () {
+        if (wsConnectTimeout) clearTimeout(wsConnectTimeout);
+        wsFailCount = 0;
         isWsConnected = true;
         updateStatusUI(true, 'ws');
         stopFallbackPolling();
@@ -399,16 +468,21 @@
       };
 
       socket.onclose = function () {
+        if (wsConnectTimeout) clearTimeout(wsConnectTimeout);
         isWsConnected = false;
         updateStatusUI(false, 'fallback');
         startFallbackPolling();
 
         if (pingTimer) clearInterval(pingTimer);
 
-        // Try reconnecting in 8 seconds
-        reconnectTimer = setTimeout(() => {
-          connectWebSocket();
-        }, 8000);
+        wsFailCount++;
+        if (wsFailCount <= 2) {
+          reconnectTimer = setTimeout(() => {
+            connectWebSocket();
+          }, 15000);
+        } else {
+          updateStatusUI(false, 'poll');
+        }
       };
     } catch (e) {
       isWsConnected = false;

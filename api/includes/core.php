@@ -46,6 +46,7 @@ if (!headers_sent()) {
     header('X-Content-Type-Options: nosniff');
     header('X-XSS-Protection: 1; mode=block');
     header('Referrer-Policy: strict-origin-when-cross-origin');
+    header('Connection: close');
 }
 
 if (session_status() !== PHP_SESSION_ACTIVE) {
@@ -189,7 +190,7 @@ function db(): PDO {
             http_response_code(500);
             echo '<!DOCTYPE html><html lang="id"><head><meta charset="utf-8"><title>Koneksi Database Vercel</title>';
             echo '<meta name="viewport" content="width=device-width, initial-scale=1">';
-            echo '<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">';
+            echo '<link href="assets/vendor/bootstrap.min.css" rel="stylesheet">';
             echo '</head><body class="bg-light p-4"><div class="container" style="max-width: 680px; margin-top: 50px;">';
             echo '<div class="card shadow-sm border-0 rounded-4 p-4 text-center">';
             echo '<div class="text-warning mb-3" style="font-size: 3rem;">⚠️</div>';
