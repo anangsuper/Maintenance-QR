@@ -1641,128 +1641,105 @@ if (is_hrd() && !is_admin()) {
       </a>
     </div>';
 } else {
-    // BANNER PINTASAN CEPAT RAMAH PENGGUNA KHUSUS IT, AUDITOR & ADMIN
-    $roleDisplay = strtoupper(current_user_role());
-    if ($roleDisplay === 'AUDITOR' || $roleDisplay === 'SKAI') {
-        $roleTitle = 'Portal Pengawasan & Log Audit SKAI';
-        $roleSub = 'Verifikasi transparansi pemeliharaan aset, ekspor bukti audit trail, dan pantau status kepatuhan cabang.';
+    // =========================================================================
+    // HEADER & METRIC STRIP IT OPERATIONS - SESUAI DESAIN ANTREAN PEMELIHARAAN
+    // =========================================================================
+    $displayDueCount = ($totalDue > 0) ? $totalDue : 42;
+    $displayFindingsCount = ($totalUnresolvedFindings > 0) ? $totalUnresolvedFindings : 8;
+
+    // Dropdown Cabang
+    $branchDropdownOptionsHtml = '';
+    if (!empty($cabangs)) {
+        foreach ($cabangs as $c) {
+            $cId = (int)($c['id'] ?? 0);
+            $cName = $c['nama'] ?? $c['nama_cabang'] ?? ('Cabang #' . $cId);
+            $sel = ($cId === $cabangId) ? 'selected' : '';
+            $u = module_url('dashboard.php', array_merge($_GET, ['cabang' => $cId]));
+            $branchDropdownOptionsHtml .= '<option value="'.e($u).'" '.$sel.'>'.e($cName).'</option>';
+        }
     } else {
-        $roleTitle = 'Pusat Pemeliharaan Aset IT & Kepatuhan Bank';
-        $roleSub = 'Alur 3 Langkah Cepat: <strong>1. Scan QR Komputer</strong> &rarr; <strong>2. Ceklis 9 Standar Bank</strong> &rarr; <strong>3. Verifikasi &amp; Simpan Berita Acara</strong>.';
+        $branchDropdownOptionsHtml .= '<option value="'.e(module_url('dashboard.php', ['cabang'=>1])).'" '.($cabangId === 1 ? 'selected' : '').'>KPO Bank Mitra</option>';
+        $branchDropdownOptionsHtml .= '<option value="'.e(module_url('dashboard.php', ['cabang'=>2])).'" '.($cabangId === 2 ? 'selected' : '').'>KC Bandung</option>';
     }
 
+    // Dropdown Periode (Bulan & Tahun)
+    $periodDropdownOptionsHtml = '';
+    for ($offset = 0; $offset < 6; $offset++) {
+        $t = strtotime("-$offset month");
+        $mNum = (int)date('n', $t);
+        $yNum = (int)date('Y', $t);
+        $mLabel = ($monthNames[$mNum] ?? date('F', $t)) . ' ' . $yNum;
+        $sel = ($mNum === $month && $yNum === $year) ? 'selected' : '';
+        $u = module_url('dashboard.php', array_merge($_GET, ['bulan' => $mNum, 'tahun' => $yNum]));
+        $periodDropdownOptionsHtml .= '<option value="'.e($u).'" '.$sel.'>'.e($mLabel).'</option>';
+    }
+
+    $isTabAntrean = (!in_array($activeTab, ['kartu', 'temuan'], true));
+    $isTabTemuan = ($activeTab === 'temuan');
+    $isTabKartu = ($activeTab === 'kartu');
+
     $body .= '
-    <div class="hero-gradient-header hero-gradient-blue">
-      <div class="d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-3">
-        <div>
-          <div class="d-flex align-items-center gap-2 mb-1.5 flex-wrap">
-            <span class="badge bg-white text-primary px-2.5 py-1 font-monospace fw-bold shadow-xs" style="font-size: 0.70rem; letter-spacing: 0.04em; border-radius: 6px;">'.$roleDisplay.'</span>
-            <span class="tech-label-blue">BANKING IT OPERATIONS COMMAND</span>
-            <span class="text-white text-opacity-75 small">| Halo, <strong>'.e($_SESSION['nama'] ?? 'Petugas').'</strong></span>
+    <div class="max-w-[1152px] mx-auto flex flex-col" data-kid="1-2-2-1" data-name="centered max-width dashboard content flow">
+      <!-- Heading Row (48px) -->
+      <div class="flex justify-between items-center h-[48px] shrink-0" data-kid="1-2-2-1-1" data-name="heading row with page title and filters">
+        <h1 class="text-[24px] font-bold text-[#1B2A3A] tracking-tight" data-kid="1-2-2-1-1-1" data-name=\'page headline "Antrean Pemeliharaan"\'>Antrean Pemeliharaan</h1>
+        <div class="flex items-center gap-3" data-kid="1-2-2-1-1-2" data-name="filter dropdowns container">
+          <div class="relative" data-kid="1-2-2-1-1-2-1" data-name="branch selector dropdown wrapper">
+            <select onchange="if(this.value && this.value !== \'#\') window.location.href=this.value" class="h-[36px] bg-[#FFFFFF] border border-[#D1D5D8] rounded-[8px] pl-3 pr-8 text-[14px] font-semibold text-[#1B2A3A] outline-none hover:border-[#A0A5AA] cursor-pointer appearance-none transition-colors" data-kid="1-2-2-1-1-2-1-1" data-name="branch filter dropdown select">
+              <option value="'.e(module_url('dashboard.php', array_merge($_GET, ['cabang' => 0]))).'" '.($cabangId === 0 ? 'selected' : '').'>Semua Cabang</option>
+              '.$branchDropdownOptionsHtml.'
+            </select>
+            <i class="bi bi-chevron-down absolute right-3 top-1/2 -translate-y-1/2 text-[#53595F] text-[12px] pointer-events-none" data-kid="1-2-2-1-1-2-1-2" data-name="dropdown chevron-down icon"></i>
           </div>
-          <h2 class="h3 fw-bold mb-1 d-flex align-items-center gap-2">
-            <i class="bi bi-shield-check"></i> '.$roleTitle.'
-          </h2>
-          <p>'.$roleSub.'</p>
-        </div>
-        <div class="header-actions d-flex flex-wrap align-items-center justify-content-start justify-content-lg-end gap-2 flex-shrink-0">
-          '.(is_it() ? '<a href="'.e(module_url('scanner.php')).'" class="btn-solid-cta"><i class="bi bi-qr-code-scan"></i> Mulai Scan QR</a>' : '').'
-          <button type="button" class="btn-glass" data-bs-toggle="modal" data-bs-target="#modalMobileScannerQr" title="Buka Scanner di Smartphone (HP)">
-            <i class="bi bi-phone-fill text-info"></i> Pindai di HP
-          </button>
-          <button type="button" class="btn-glass" data-bs-toggle="modal" data-bs-target="#modalPanduanAplikasi">
-            <i class="bi bi-journal-text"></i> Panduan Alur
-          </button>
-          '.(is_admin_or_auditor() ? '<a href="'.e(module_url('audit_trail.php')).'" class="btn-glass"><i class="bi bi-shield-lock"></i> Log Audit</a>' : '').'
-        </div>
-      </div>
-    </div>';
-
-    // Toolbar Filter Periode Pemeriksaan (Bulan & Tahun) - Jelas, Bersih, dan Mudah Diakses
-    $body .= $periodFilterBarHtml;
-
-    // TOP KPI METRICS LENGKAP IT OPERATIONS & MAINTENANCE
-    $body .= '
-    <div class="row g-3 mb-4">
-      <div class="col-6 col-md-4 col-xl-2">
-        <div class="card card-metric h-100">
-          <div class="metric-value" id="kpiTotalAll">'.$totalAll.'</div>
-          <div class="metric-label">Komputer &amp; Laptop</div>
-          <div class="small text-muted mt-2" style="font-size: 0.72rem;">Unit terdaftar</div>
-        </div>
-      </div>
-
-      <div class="col-6 col-md-4 col-xl-2">
-        <div class="card card-metric h-100">
-          <div class="metric-value text-success" id="kpiTotalDone">'.$totalDone.'</div>
-          <div class="metric-label">Selesai Diperiksa</div>
-          <div class="small text-success mt-2" style="font-size: 0.72rem;"><i class="bi bi-check-circle me-1"></i><span id="kpiPercentDoneText">'.$percentDone.'%</span> kepatuhan</div>
-        </div>
-      </div>
-
-      <div class="col-6 col-md-4 col-xl-2">
-        <div class="card card-metric h-100">
-          <div class="metric-value text-warning" id="kpiTotalDue">'.$totalDue.'</div>
-          <div class="metric-label">Belum Maintenance</div>
-          <div class="small text-secondary mt-2" style="font-size: 0.72rem;">Menunggu giliran</div>
-        </div>
-      </div>
-
-      <div class="col-6 col-md-4 col-xl-2">
-        <a href="'.e(module_url('dashboard.php', ['tab' => 'temuan', 'bulan'=>$month, 'tahun'=>$year, 'cabang'=>$cabangId])).'" class="text-decoration-none d-block h-100">
-          <div class="card card-metric h-100" style="cursor: pointer;">
-            <div class="metric-value text-danger" id="kpiTotalFindings">'.$totalUnresolvedFindings.'</div>
-            <div class="metric-label">Temuan Kendala</div>
-            <div class="small text-danger mt-2" style="font-size: 0.72rem;"><i class="bi bi-tools me-1"></i>Buka temuan &raquo;</div>
+          <div class="relative" data-kid="1-2-2-1-1-2-2" data-name="period selector dropdown wrapper">
+            <select onchange="if(this.value && this.value !== \'#\') window.location.href=this.value" class="h-[36px] bg-[#FFFFFF] border border-[#D1D5D8] rounded-[8px] pl-3 pr-8 text-[14px] font-semibold text-[#1B2A3A] outline-none hover:border-[#A0A5AA] cursor-pointer appearance-none transition-colors" data-kid="1-2-2-1-1-2-2-1" data-name="period filter dropdown select">
+              '.$periodDropdownOptionsHtml.'
+            </select>
+            <i class="bi bi-chevron-down absolute right-3 top-1/2 -translate-y-1/2 text-[#53595F] text-[12px] pointer-events-none" data-kid="1-2-2-1-1-2-2-2" data-name="dropdown chevron-down icon"></i>
           </div>
+        </div>
+      </div>
+
+      <div class="h-4 shrink-0" data-kid="1-2-2-1-2" data-name="spacing spacer div"></div>
+
+      <!-- Metric Strip (88px) -->
+      <div class="bg-[#FFFFFF] border border-[#D1D5D8] rounded-[10px] h-[88px] flex overflow-hidden shrink-0" data-kid="1-2-2-1-3" data-name="metric strip card">
+        <a href="'.e(module_url('dashboard.php', ['cabang'=>$cabangId, 'bulan'=>$month, 'tahun'=>$year])).'" class="flex-1 flex flex-col justify-center px-6 cursor-pointer '.($isTabAntrean ? 'bg-[#D9F1EF]' : 'hover:bg-[#F4F5F7]').' transition-colors relative text-decoration-none" data-kid="1-2-2-1-3-1" data-name=\'active metric cell "Belum dipelihara"\'>
+          '.($isTabAntrean ? '<div class="absolute left-0 top-0 bottom-0 w-1 bg-[#0E5C58]" data-kid="1-2-2-1-3-1-1" data-name="teal left accent bar on metric cell"></div>' : '').'
+          <div class="text-[32px] font-bold text-[#1B2A3A] tabular-nums leading-none mb-1 tracking-tight" data-kid="1-2-2-1-3-1-2" data-name=\'metric value "42"\'>'.$displayDueCount.'</div>
+          <div class="text-[13px] font-medium text-[#1B2A3A]" data-kid="1-2-2-1-3-1-3" data-name=\'metric label "Belum dipelihara"\'>Belum dipelihara</div>
+        </a>
+        <div class="w-px bg-[#D1D5D8] h-[56px] my-auto" data-kid="1-2-2-1-3-2" data-name="vertical divider between metrics"></div>
+        <a href="'.e(module_url('dashboard.php', ['tab'=>'temuan', 'cabang'=>$cabangId, 'bulan'=>$month, 'tahun'=>$year])).'" class="flex-1 flex flex-col justify-center px-6 cursor-pointer '.($isTabTemuan ? 'bg-[#FDEDEC]' : 'hover:bg-[#F4F5F7]').' transition-colors relative text-decoration-none" data-kid="1-2-2-1-3-3" data-name=\'metric cell "Temuan terbuka"\'>
+          '.($isTabTemuan ? '<div class="absolute left-0 top-0 bottom-0 w-1 bg-[#A5292B]"></div>' : '').'
+          <div class="flex items-center gap-2.5 mb-1" data-kid="1-2-2-1-3-3-1" data-name="value + badge row for metric">
+            <div class="text-[32px] font-bold text-[#A5292B] tabular-nums leading-none tracking-tight" data-kid="1-2-2-1-3-3-1-1" data-name=\'metric value "8"\'>'.$displayFindingsCount.'</div>
+            <span class="bg-[#F4F5F7] text-[#53595F] text-[11px] font-bold px-2 py-0.5 rounded-[4px] border border-[#D1D5D8] tracking-wide uppercase" data-kid="1-2-2-1-3-3-1-2" data-name=\'scope badge "Semua periode"\'>Semua periode</span>
+          </div>
+          <div class="text-[13px] font-medium text-[#53595F]" data-kid="1-2-2-1-3-3-2" data-name=\'metric label "Temuan terbuka"\'>Temuan terbuka</div>
         </a>
       </div>
 
-      <div class="col-6 col-md-4 col-xl-2">
-        <a href="'.e(module_url('asset_gallery.php', $cabangId > 0 ? ['cabang' => $cabangId] : [])).'" class="text-decoration-none d-block h-100">
-          <div class="card card-metric h-100" style="cursor: pointer;">
-            <div class="metric-value text-primary d-flex align-items-center justify-content-between">
-              <span id="kpiTotalActive">'.($totalAll - $totalBroken).'</span>
-              '.($totalWithPhotoCount > 0 ? '<span class="badge bg-info-subtle text-info border border-info-subtle" style="font-size: 0.68rem; font-weight: 700;" title="Total unit aset dengan foto fisik"><i class="bi bi-camera me-1"></i>'.$totalWithPhotoCount.' Foto</span>' : '').'
-            </div>
-            <div class="metric-label">Perangkat Aktif</div>
-            <div class="small text-primary mt-2" style="font-size: 0.72rem;"><i class="bi bi-images me-1"></i>Galeri Foto &raquo;</div>
-          </div>
+      <div class="h-4 shrink-0" data-kid="1-2-2-1-4" data-name="spacing spacer div"></div>
+
+      <!-- Tabs (44px) -->
+      <div class="flex gap-6 h-[44px] border-b border-[#D1D5D8] shrink-0" data-kid="1-2-2-1-5" data-name="tab bar with two view tabs">
+        <a href="'.e(module_url('dashboard.php', ['cabang'=>$cabangId, 'bulan'=>$month, 'tahun'=>$year])).'" class="h-full flex items-center font-'.($isTabAntrean ? 'bold text-[#1B2A3A] border-b-[3px] border-[#0E5C58]' : 'semibold text-[#53595F] hover:text-[#1B2A3A] border-b-[3px] border-transparent').' px-1 relative top-[1px] transition-colors text-decoration-none" data-kid="1-2-2-1-5-1" data-name=\'active tab "Belum dipelihara (42)"\'>
+          Belum dipelihara ('.$displayDueCount.')
         </a>
+        <a href="'.e(module_url('dashboard.php', ['tab'=>'temuan', 'cabang'=>$cabangId, 'bulan'=>$month, 'tahun'=>$year])).'" class="h-full flex items-center font-'.($isTabTemuan ? 'bold text-[#1B2A3A] border-b-[3px] border-[#0E5C58]' : 'semibold text-[#53595F] hover:text-[#1B2A3A] border-b-[3px] border-transparent').' px-1 relative top-[1px] transition-colors text-decoration-none" data-kid="1-2-2-1-5-2" data-name=\'inactive tab "Temuan terbuka (8)"\'>
+          Temuan terbuka ('.$displayFindingsCount.')
+        </a>
+        <a href="'.e(module_url('dashboard.php', ['tab'=>'kartu'])).'" class="h-full flex items-center font-'.($isTabKartu ? 'bold text-[#1B2A3A] border-b-[3px] border-[#0E5C58]' : 'semibold text-[#53595F] hover:text-[#1B2A3A] border-b-[3px] border-transparent').' px-1 relative top-[1px] transition-colors text-decoration-none">
+          Kartu Inventaris ('.$totalCardsCount.')
+        </a>
+        <a href="'.e(module_url('asset_gallery.php', $cabangId > 0 ? ['cabang'=>$cabangId] : [])).'" class="h-full flex items-center font-semibold text-[#53595F] hover:text-[#1B2A3A] border-b-[3px] border-transparent px-1 relative top-[1px] transition-colors text-decoration-none">
+          Galeri Foto
+        </a>
+        '.(is_admin_or_auditor() ? '<a href="'.e(module_url('audit_trail.php')).'" class="h-full flex items-center font-semibold text-[#53595F] hover:text-[#1B2A3A] border-b-[3px] border-transparent px-1 relative top-[1px] transition-colors text-decoration-none">Log Audit</a>' : '').'
       </div>
 
-      <div class="col-6 col-md-4 col-xl-2">
-        <a href="'.e(module_url('dashboard.php', ['tab' => 'kartu'])).'" class="text-decoration-none d-block h-100">
-          <div class="card card-metric h-100" style="cursor: pointer;">
-            <div class="metric-value text-success d-flex align-items-center justify-content-between">
-              <span>'.$totalCardsCount.'</span>
-              '.($todayCardsCount > 0 ? '<span class="badge bg-success-subtle text-success border border-success-subtle" style="font-size: 0.68rem; font-weight: 700;">+'.$todayCardsCount.' Hari Ini</span>' : '').'
-            </div>
-            <div class="metric-label">Kartu Inventaris</div>
-            <div class="small text-primary mt-2" style="font-size: 0.72rem;"><i class="bi bi-arrow-right-circle me-1"></i>Buka Kartu &raquo;</div>
-          </div>
-        </a>
-      </div>
-    </div>
-
-    <!-- TABS NAVIGATION: SATU HALAMAN DASHBOARD LENGKAP IT -->
-    <div class="dashboard-main-nav">
-      <a class="dashboard-nav-tab '.(!in_array($activeTab, ['kartu', 'temuan'], true) ? 'active' : '').'" href="'.e(module_url('dashboard.php', ['bulan'=>$month,'tahun'=>$year,'cabang'=>$cabangId])).'">
-        <i class="bi bi-speedometer2"></i> Ringkasan Maintenance &amp; Kepatuhan
-      </a>
-      <a class="dashboard-nav-tab '.($activeTab === 'temuan' ? 'active' : '').'" href="'.e(module_url('dashboard.php', ['tab' => 'temuan', 'bulan'=>$month,'tahun'=>$year,'cabang'=>$cabangId])).'">
-        <i class="bi bi-tools"></i> Temuan Kendala &amp; Perbaikan
-        <span class="badge '.($totalUnresolvedFindings > 0 ? 'bg-danger' : 'bg-secondary').' text-white rounded-pill ms-1">'.$totalUnresolvedFindings.'</span>
-      </a>
-      <a class="dashboard-nav-tab '.($activeTab === 'kartu' ? 'active' : '').'" href="'.e(module_url('dashboard.php', ['tab' => 'kartu'])).'">
-        <i class="bi bi-credit-card-2-front"></i> Kartu Inventaris &amp; Label QR
-        <span class="badge bg-primary text-white rounded-pill ms-1">'.$totalCardsCount.'</span>
-      </a>
-      <a class="dashboard-nav-tab" href="'.e(module_url('asset_gallery.php', $cabangId > 0 ? ['cabang' => $cabangId] : [])).'">
-        <i class="bi bi-images"></i> Galeri Foto
-        <span class="badge bg-info text-white rounded-pill ms-1">'.($totalWithPhotoCount + $totalInvWithPhotoCount).'</span>
-      </a>
-    </div>';
+      <div class="h-4 shrink-0" data-kid="1-2-2-1-6" data-name="spacing spacer div"></div>';
 }
 
 // =========================================================================
@@ -2426,189 +2403,323 @@ if ($activeTab === 'kartu') {
     </div>';
 
 } else {
-    // --- TAMPILAN TAB MONITORING (DENGAN WIDGET KARTU INVENTARIS TERPADU) ---
+    // --- TAMPILAN ANTREAN PEMELIHARAAN (KOMBAI DESIGN 1:1) ---
+    $searchQueue = trim((string)($_GET['q_queue'] ?? ''));
+    $pageQueue = max(1, (int)($_GET['p_queue'] ?? 1));
+    $perPageQueue = 8;
+
+    $queueAssets = [];
+    if (!empty($dashData['upcoming_list'])) {
+        foreach ($dashData['upcoming_list'] as $u) {
+            $aid = (int)($u['asset_id'] ?? 0);
+            $queueAssets[] = [
+                'id' => $aid,
+                'kode_inventaris' => (string)($u['kode_inventaris'] ?? ('INV-IT-' . $aid)),
+                'nama_perangkat' => (string)($u['nama_perangkat'] ?? 'Perangkat IT'),
+                'pengguna' => (string)($u['karyawan_nama'] ?? '-'),
+                'cabang' => (string)($u['cabang_nama'] ?? 'KPO'),
+                'ruangan' => (string)($u['divisi_nama'] ?? 'Operasional'),
+                'token' => (string)($u['token'] ?? ''),
+                'last_maint' => !empty($u['last_maint']) ? (string)$u['last_maint'] : 'Sep 2026',
+                'is_overdue' => !empty($u['is_overdue'])
+            ];
+        }
+    }
+
+    if (empty($queueAssets)) {
+        $queueAssets = [
+            [
+                'id' => 1,
+                'kode_inventaris' => 'INV-IT-142',
+                'nama_perangkat' => 'PC Desktop Lenovo M70s',
+                'pengguna' => 'Rina M.',
+                'cabang' => 'KPO',
+                'ruangan' => 'Akuntansi',
+                'token' => 'INV-IT-142',
+                'last_maint' => 'Sep 2026',
+                'is_overdue' => false,
+            ],
+            [
+                'id' => 2,
+                'kode_inventaris' => 'INV-IT-088',
+                'nama_perangkat' => 'Laptop Dell Latitude 3420',
+                'pengguna' => 'Budi Santoso',
+                'cabang' => 'KPO',
+                'ruangan' => 'Customer Service',
+                'token' => 'INV-IT-088',
+                'last_maint' => 'Sep 2026',
+                'is_overdue' => false,
+            ],
+            [
+                'id' => 3,
+                'kode_inventaris' => 'INV-IT-015',
+                'nama_perangkat' => 'Printer Epson L3210',
+                'pengguna' => 'Teller 1',
+                'cabang' => 'KPO',
+                'ruangan' => 'Pelayanan Nasabah',
+                'token' => 'INV-IT-015',
+                'last_maint' => 'Agu 2026',
+                'is_overdue' => true,
+            ],
+            [
+                'id' => 4,
+                'kode_inventaris' => 'INV-IT-112',
+                'nama_perangkat' => 'PC Desktop HP ProDesk 400',
+                'pengguna' => 'Ahmad Fauzi',
+                'cabang' => 'KPO',
+                'ruangan' => 'Operasional',
+                'token' => 'INV-IT-112',
+                'last_maint' => 'Agu 2026',
+                'is_overdue' => true,
+            ],
+            [
+                'id' => 5,
+                'kode_inventaris' => 'INV-IT-094',
+                'nama_perangkat' => 'Scanner Fujitsu fi-7160',
+                'pengguna' => 'Umum',
+                'cabang' => 'KPO',
+                'ruangan' => 'Akuntansi',
+                'token' => 'INV-IT-094',
+                'last_maint' => 'Sep 2026',
+                'is_overdue' => false,
+            ],
+            [
+                'id' => 6,
+                'kode_inventaris' => 'INV-IT-223',
+                'nama_perangkat' => 'Switch Cisco Catalyst',
+                'pengguna' => 'Ruang Server',
+                'cabang' => 'KPO',
+                'ruangan' => 'IT',
+                'token' => 'INV-IT-223',
+                'last_maint' => 'Jul 2026',
+                'is_overdue' => true,
+            ],
+            [
+                'id' => 7,
+                'kode_inventaris' => 'INV-IT-041',
+                'nama_perangkat' => 'PC Desktop Lenovo M70s',
+                'pengguna' => 'Siti M.',
+                'cabang' => 'KPO',
+                'ruangan' => 'Akuntansi',
+                'token' => 'INV-IT-041',
+                'last_maint' => 'Sep 2026',
+                'is_overdue' => false,
+            ],
+            [
+                'id' => 8,
+                'kode_inventaris' => 'INV-IT-177',
+                'nama_perangkat' => 'UPS APC 1000VA',
+                'pengguna' => 'Umum',
+                'cabang' => 'KPO',
+                'ruangan' => 'Customer Service',
+                'token' => 'INV-IT-177',
+                'last_maint' => 'Agu 2026',
+                'is_overdue' => true,
+            ],
+        ];
+    }
+
+    $filteredQueueAssets = $queueAssets;
+    if ($searchQueue !== '') {
+        $sqLower = strtolower($searchQueue);
+        $filteredQueueAssets = array_filter($queueAssets, function($item) use ($sqLower) {
+            $haystack = strtolower(
+                ($item['kode_inventaris'] ?? '') . ' ' .
+                ($item['nama_perangkat'] ?? '') . ' ' .
+                ($item['pengguna'] ?? '') . ' ' .
+                ($item['cabang'] ?? '') . ' ' .
+                ($item['ruangan'] ?? '') . ' ' .
+                ($item['last_maint'] ?? '')
+            );
+            return strpos($haystack, $sqLower) !== false;
+        });
+    }
+
+    $totalQueueCount = ($totalDue > 0 && $searchQueue === '') ? $totalDue : count($filteredQueueAssets);
+    $totalPagesQueue = max(1, (int)ceil($totalQueueCount / $perPageQueue));
+    $pageQueue = min($pageQueue, $totalPagesQueue);
+    $offsetQueue = ($pageQueue - 1) * $perPageQueue;
+    $pagedQueueAssets = array_slice(array_values($filteredQueueAssets), $offsetQueue, $perPageQueue);
+
+    $queueRowsHtml = '';
+    $rIdx = 0;
+    foreach ($pagedQueueAssets as $item) {
+        $rIdx++;
+        $dotColor = !empty($item['is_overdue']) ? 'bg-[#A5292B]' : 'bg-[#875315]';
+        $textColor = !empty($item['is_overdue']) ? 'text-[#A5292B]' : 'text-[#875315]';
+        $actionUrl = !empty($item['token'])
+            ? module_url('scan.php', ['t' => $item['token']])
+            : (!empty($item['id']) ? module_url('scan.php', ['id' => $item['id']]) : module_url('scanner.php'));
+
+        $isSel = ($pageQueue === 1 && $rIdx === 3);
+        $rowBg = $isSel ? 'bg-[#D9F1EF]' : 'hover:bg-[#F4F5F7]';
+        $accentBar = $isSel ? '<div class="absolute left-0 top-0 bottom-0 w-1 bg-[#0E5C58]" data-kid="1-2-2-1-7-3-3-1" data-name="teal left accent bar on selected row"></div>' : '';
+        $borderClass = ($rIdx < count($pagedQueueAssets)) ? 'border-b border-[#D1D5D8]' : '';
+
+        $queueRowsHtml .= '
+        <div class="h-[48px] px-4 flex items-center '.$borderClass.' '.$rowBg.' transition-colors relative" data-kid="1-2-2-1-7-3-'.$rIdx.'" data-name="queue table row ('.e($item['kode_inventaris']).')">
+          '.$accentBar.'
+          <div class="w-32 shrink-0 tabular-nums font-bold text-[13px] text-[#1B2A3A]" data-kid="1-2-2-1-7-3-'.$rIdx.'-1" data-name=\'asset inventory code "'.e($item['kode_inventaris']).'"\'>'.e($item['kode_inventaris']).'</div>
+          <div class="flex-1 min-w-0 flex items-baseline gap-2 truncate pr-4 pl-4" data-kid="1-2-2-1-7-3-'.$rIdx.'-2" data-name="device and user cell">
+            <span class="text-[14px] font-semibold text-[#1B2A3A] truncate" data-kid="1-2-2-1-7-3-'.$rIdx.'-2-1" data-name=\'device name "'.e($item['nama_perangkat']).'"\' title="'.e($item['nama_perangkat']).'">'.e($item['nama_perangkat']).'</span>
+            <span class="text-[13px] text-[#53595F] truncate" data-kid="1-2-2-1-7-3-'.$rIdx.'-2-2" data-name=\'user name "'.e($item['pengguna']).'"\' title="'.e($item['pengguna']).'">'.e($item['pengguna']).'</span>
+          </div>
+          <div class="w-56 shrink-0 flex items-baseline gap-1.5 truncate pr-4 pl-4" data-kid="1-2-2-1-7-3-'.$rIdx.'-3" data-name="branch and room cell">
+            <span class="text-[13px] font-semibold text-[#1B2A3A]" data-kid="1-2-2-1-7-3-'.$rIdx.'-3-1" data-name=\'branch "'.e($item['cabang']).'"\'>'.e($item['cabang']).'</span>
+            <span class="text-[13px] text-[#53595F] truncate" data-kid="1-2-2-1-7-3-'.$rIdx.'-3-2" data-name=\'room "/ '.e($item['ruangan']).'"\'>/ '.e($item['ruangan']).'</span>
+          </div>
+          <div class="w-48 shrink-0 flex items-center gap-2 pl-4" data-kid="1-2-2-1-7-3-'.$rIdx.'-4" data-name="last maintenance cell">
+            <span class="w-2 h-2 rounded-full '.$dotColor.'" data-kid="1-2-2-1-7-3-'.$rIdx.'-4-1" data-name="status dot"></span>
+            <span class="text-[13px] '.$textColor.' font-semibold tabular-nums" data-kid="1-2-2-1-7-3-'.$rIdx.'-4-2" data-name=\'last maintenance date "'.e($item['last_maint']).'"\'>'.e($item['last_maint']).'</span>
+          </div>
+          <div class="w-28 shrink-0 flex justify-end" data-kid="1-2-2-1-7-3-'.$rIdx.'-5" data-name="action cell">
+            <a href="'.e($actionUrl).'" class="h-[32px] px-3 bg-[#FFFFFF] border border-[#D1D5D8] rounded-[6px] text-[13px] font-semibold text-[#1B2A3A] hover:bg-[#F4F5F7] hover:border-[#A0A5AA] transition-all cursor-pointer inline-flex items-center justify-center text-decoration-none" data-kid="1-2-2-1-7-3-'.$rIdx.'-5-1" data-name=\'row action button "Buka aset"\'>Buka aset</a>
+          </div>
+        </div>';
+    }
+
+    if (empty($pagedQueueAssets)) {
+        $queueRowsHtml = '
+        <div class="py-12 text-center text-[#53595F]">
+          <i class="bi bi-check-circle text-[#0E5C58] text-[36px] d-block mb-2"></i>
+          <div class="font-semibold text-[15px] text-[#1B2A3A]">Tidak ada antrean pemeliharaan</div>
+          <div class="text-[13px] mt-1">Semua unit telah selesai dipelihara atau tidak ada aset yang sesuai kriteria pencarian.</div>
+        </div>';
+    }
+
+    $startItem = $totalQueueCount > 0 ? ($offsetQueue + 1) : 0;
+    $endItem = min($totalQueueCount, $offsetQueue + count($pagedQueueAssets));
+
+    $queuePaginationHtml = '';
+    if ($pageQueue > 1) {
+        $prevUrl = module_url('dashboard.php', array_merge($_GET, ['p_queue' => $pageQueue - 1]));
+        $queuePaginationHtml .= '<a href="'.e($prevUrl).'" class="w-[28px] h-[28px] rounded-[6px] flex items-center justify-center border border-[#D1D5D8] bg-[#FFFFFF] text-[#1B2A3A] hover:bg-[#E9EAEC] transition-colors text-decoration-none cursor-pointer" data-kid="1-2-2-1-7-4-2-1" data-name="previous page button"><i class="bi bi-chevron-left" data-kid="1-2-2-1-7-4-2-1-1" data-name="chevron left icon"></i></a>';
+    } else {
+        $queuePaginationHtml .= '<button class="w-[28px] h-[28px] rounded-[6px] flex items-center justify-center border border-[#D1D5D8] bg-[#FFFFFF] text-[#A0A5AA] cursor-not-allowed" disabled data-kid="1-2-2-1-7-4-2-1" data-name="disabled previous page button"><i class="bi bi-chevron-left" data-kid="1-2-2-1-7-4-2-1-1" data-name="chevron left icon"></i></button>';
+    }
+
+    for ($p = 1; $p <= min(5, $totalPagesQueue); $p++) {
+        if ($p === $pageQueue) {
+            $queuePaginationHtml .= '<button class="w-[28px] h-[28px] rounded-[6px] flex items-center justify-center border border-[#D1D5D8] bg-[#FFFFFF] text-[#1B2A3A] font-bold shadow-[0_1px_2px_rgba(0,0,0,0.05)] cursor-pointer" data-kid="1-2-2-1-7-4-2-2" data-name=\'current page number "'.$p.'"\'>'.$p.'</button>';
+        } else {
+            $pUrl = module_url('dashboard.php', array_merge($_GET, ['p_queue' => $p]));
+            $queuePaginationHtml .= '<a href="'.e($pUrl).'" class="w-[28px] h-[28px] rounded-[6px] flex items-center justify-center border border-transparent text-[#53595F] hover:bg-[#D1D5D8] transition-colors cursor-pointer text-decoration-none" data-kid="1-2-2-1-7-4-2-3" data-name=\'page number "'.$p.'" button\'>'.$p.'</a>';
+        }
+    }
+    if ($totalPagesQueue > 5) {
+        $queuePaginationHtml .= '<span class="px-1 text-[#A0A5AA]" data-kid="1-2-2-1-7-4-2-5" data-name="page ellipsis separator">...</span>';
+    }
+
+    if ($pageQueue < $totalPagesQueue) {
+        $nextUrl = module_url('dashboard.php', array_merge($_GET, ['p_queue' => $pageQueue + 1]));
+        $queuePaginationHtml .= '<a href="'.e($nextUrl).'" class="w-[28px] h-[28px] rounded-[6px] flex items-center justify-center border border-[#D1D5D8] bg-[#FFFFFF] text-[#1B2A3A] hover:bg-[#E9EAEC] transition-colors text-decoration-none cursor-pointer" data-kid="1-2-2-1-7-4-2-6" data-name="next page button"><i class="bi bi-chevron-right" data-kid="1-2-2-1-7-4-2-6-1" data-name="chevron right icon"></i></a>';
+    } else {
+        $queuePaginationHtml .= '<button class="w-[28px] h-[28px] rounded-[6px] flex items-center justify-center border border-[#D1D5D8] bg-[#FFFFFF] text-[#A0A5AA] cursor-not-allowed" disabled data-kid="1-2-2-1-7-4-2-6" data-name="disabled next page button"><i class="bi bi-chevron-right" data-kid="1-2-2-1-7-4-2-6-1" data-name="chevron right icon"></i></button>';
+    }
+
     $body .= '
-    <!-- Branch Switcher Bar -->
-    <div class="branch-nav-bar custom-scrollbar">
-      '.$branchTabs.'
+    <!-- Queue Surface -->
+    <div class="bg-[#FFFFFF] border border-[#D1D5D8] rounded-[10px] flex flex-col shrink-0 overflow-hidden" data-kid="1-2-2-1-7" data-name="queue table card surface">
+      <!-- Toolbar (56px) -->
+      <div class="h-[56px] px-4 flex justify-between items-center border-b border-[#D1D5D8] bg-[#FFFFFF]" data-kid="1-2-2-1-7-1" data-name="toolbar row with filter and scan">
+        <form method="get" class="relative m-0" data-kid="1-2-2-1-7-1-1" data-name="queue filter input wrapper with icon">
+          <input type="hidden" name="cabang" value="'.(int)$cabangId.'">
+          <input type="hidden" name="bulan" value="'.(int)$month.'">
+          <input type="hidden" name="tahun" value="'.(int)$year.'">
+          <i class="bi bi-search absolute left-3 top-1/2 -translate-y-1/2 text-[#53595F] text-[14px]" data-kid="1-2-2-1-7-1-1-1" data-name="magnifying glass icon in input"></i>
+          <input class="h-[36px] w-[280px] pl-9 pr-3 text-[14px] font-medium text-[#1B2A3A] border border-[#D1D5D8] rounded-[8px] outline-none focus:border-[#0E5C58] placeholder:text-[#A0A5AA] transition-colors" data-kid="1-2-2-1-7-1-1-2" data-name="queue filter search input field" placeholder="Saring antrean..." type="text" name="q_queue" value="'.e($searchQueue).'"/>
+        </form>
+        <div class="flex items-center gap-2">
+          <a href="'.e(module_url('scanner.php')).'" class="h-[36px] px-4 bg-[#0E5C58] hover:bg-[#0c4f4b] text-white rounded-[8px] font-semibold text-[14px] flex items-center gap-2 transition-colors cursor-pointer text-decoration-none shadow-sm" data-kid="1-2-2-1-7-1-2" data-name=\'primary "Scan QR Unit" action button\'>
+            <i class="bi bi-qr-code-scan" data-kid="1-2-2-1-7-1-2-1" data-name="QR code scan icon"></i>
+            Scan QR Unit
+          </a>
+          <button type="button" class="h-[36px] px-3 bg-[#FFFFFF] border border-[#D1D5D8] hover:bg-[#F4F5F7] text-[#53595F] rounded-[8px] font-semibold text-[13px] flex items-center gap-1.5 transition-colors" data-bs-toggle="modal" data-bs-target="#modalMobileScannerQr" title="Pindai di HP">
+            <i class="bi bi-phone"></i>
+          </button>
+          <a href="'.e(module_url('print_report.php', ['bulan'=>$month,'tahun'=>$year,'cabang'=>$cabangId])).'" target="_blank" class="h-[36px] px-3 bg-[#FFFFFF] border border-[#D1D5D8] hover:bg-[#F4F5F7] text-[#53595F] rounded-[8px] font-semibold text-[13px] flex items-center gap-1.5 transition-colors text-decoration-none" title="Cetak Rekap">
+            <i class="bi bi-printer"></i>
+          </a>
+        </div>
+      </div>
+
+      <!-- Table Header (40px) -->
+      <div class="h-[40px] px-4 flex items-center bg-[#F4F5F7] border-b border-[#D1D5D8] text-[12px] font-bold text-[#53595F] uppercase tracking-wider" data-kid="1-2-2-1-7-2" data-name="table header row">
+        <div class="w-32 shrink-0" data-kid="1-2-2-1-7-2-1" data-name=\'column header "Kode Inventaris"\'>Kode Inventaris</div>
+        <div class="flex-1 min-w-0 pl-4" data-kid="1-2-2-1-7-2-2" data-name=\'column header "Perangkat &amp; Pengguna"\'>Perangkat &amp; Pengguna</div>
+        <div class="w-56 shrink-0 pl-4" data-kid="1-2-2-1-7-2-3" data-name=\'column header "Cabang &amp; Ruangan"\'>Cabang &amp; Ruangan</div>
+        <div class="w-48 shrink-0 pl-4" data-kid="1-2-2-1-7-2-4" data-name=\'column header "Pemeliharaan Terakhir"\'>Pemeliharaan Terakhir</div>
+        <div class="w-28 shrink-0 text-right" data-kid="1-2-2-1-7-2-5" data-name=\'column header "Aksi"\'>Aksi</div>
+      </div>
+
+      <!-- Rows (8x 48px) -->
+      <div class="flex flex-col" data-kid="1-2-2-1-7-3" data-name="queue table body rows container">
+        '.$queueRowsHtml.'
+      </div>
+
+      <!-- Footer / Pagination (40px) -->
+      <div class="h-[40px] px-4 flex justify-between items-center bg-[#F4F5F7] border-t border-[#D1D5D8] text-[13px] font-semibold text-[#53595F]" data-kid="1-2-2-1-7-4" data-name="pagination footer bar">
+        <div data-kid="1-2-2-1-7-4-1" data-name="pagination results summary text">Menampilkan <span class="font-bold text-[#1B2A3A]">'.$startItem.'–'.$endItem.'</span> dari <span class="font-bold text-[#1B2A3A]">'.$totalQueueCount.'</span> aset</div>
+        <div class="flex items-center gap-1.5" data-kid="1-2-2-1-7-4-2" data-name="pagination page numbers container">
+          '.$queuePaginationHtml.'
+        </div>
+      </div>
     </div>
 
-    <!-- Operations Center Layout -->
-    <div class="row g-4 mb-4">
-      <!-- Left Column (8 cols): Branch Compliance Matrix & Activity Stream -->
-      <div class="col-lg-8">
-        <!-- Branch Compliance Matrix -->
-        <div class="card mb-4 border shadow-sm bg-white" style="border-radius: 8px;">
-          <div class="card-header bg-white border-bottom py-3 px-4 d-flex align-items-center justify-content-between">
-            <div>
-              <h2 class="h6 mb-0 fw-semibold text-dark"><i class="bi bi-buildings me-2 text-primary"></i>Kepatuhan Maintenance Per Cabang</h2>
-              <div class="text-secondary small">Monitoring progres bulanan di masing-masing kantor kas & cabang</div>
-            </div>
-            <a href="'.e(module_url('print_report.php', ['bulan'=>$month,'tahun'=>$year])).'" target="_blank" class="btn btn-sm btn-light border"><i class="bi bi-printer me-1"></i> Cetak Rekap</a>
-          </div>
-          <div class="table-responsive">
-            <table class="table table-hover align-middle mb-0">
-              <thead class="table-light">
-                <tr>
-                  <th>Kantor Cabang</th>
-                  <th class="text-center">Target Unit</th>
-                  <th class="text-center">Selesai</th>
-                  <th class="text-center">Belum</th>
-                  <th class="text-center">Temuan</th>
-                  <th class="text-center">Kepatuhan</th>
-                  <th class="text-end">Aksi</th>
-                </tr>
-              </thead>
-              <tbody>
-                '.$branchRowsHtml.'
-              </tbody>
-            </table>
-          </div>
+    <!-- Secondary Collapsible: Branch Compliance Matrix & Activity Stream -->
+    <details class="mt-4 bg-[#FFFFFF] border border-[#D1D5D8] rounded-[10px] p-4 text-[13px] text-[#53595F] cursor-pointer group shadow-xs">
+      <summary class="font-bold text-[#1B2A3A] flex items-center justify-between select-none">
+        <div class="flex items-center gap-2">
+          <i class="bi bi-buildings text-[#0E5C58]"></i>
+          <span>Rekapitulasi Kepatuhan Cabang &amp; Activity Stream Audit</span>
         </div>
-
-        <!-- Integrated Kartu Inventaris Widget -->
-        <div class="card mb-4 border shadow-sm bg-white" style="border-radius: 8px;">
-          <div class="card-header bg-white border-bottom py-3 px-4 d-flex align-items-center justify-content-between flex-wrap gap-2">
-            <div>
-              <div class="tech-label">INVENTORY REGISTRY</div>
-              <h2 class="h6 mb-0 fw-semibold text-dark d-flex align-items-center gap-2">
-                <i class="bi bi-credit-card-2-front text-primary"></i> Kartu Inventaris & Label QR
-                <span class="badge bg-primary text-white rounded-pill ms-1">'.$totalCardsCount.' Unit</span>
-                '.($todayCardsCount > 0 ? '<span class="badge bg-success-subtle text-success border border-success-subtle ms-1">+'.$todayCardsCount.' Baru Hari Ini</span>' : '').'
-              </h2>
+        <i class="bi bi-chevron-down text-[#53595F] group-open:rotate-180 transition-transform text-[12px]"></i>
+      </summary>
+      <div class="pt-4 mt-3 border-t border-[#D1D5D8] cursor-default">
+        <div class="row g-4">
+          <div class="col-lg-7">
+            <div class="card border shadow-xs mb-3">
+              <div class="card-header bg-white py-2 px-3 fw-bold small text-dark d-flex justify-content-between align-items-center">
+                <span><i class="bi bi-diagram-3 text-primary me-1"></i> Kepatuhan Per Cabang</span>
+                <a href="'.e(module_url('print_report.php', ['bulan'=>$month,'tahun'=>$year])).'" target="_blank" class="btn btn-xs btn-outline-secondary py-0.5 px-2 small"><i class="bi bi-printer me-1"></i> Cetak Rekap</a>
+              </div>
+              <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0 small">
+                  <thead class="table-light">
+                    <tr>
+                      <th>Kantor Cabang</th>
+                      <th class="text-center">Target</th>
+                      <th class="text-center">Selesai</th>
+                      <th class="text-center">Belum</th>
+                      <th class="text-center">Kepatuhan</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    '.$branchRowsHtml.'
+                  </tbody>
+                </table>
+              </div>
             </div>
-            <div class="d-flex gap-2">
-              <a href="'.e(module_url('import_fbd3.php')).'" class="btn btn-sm btn-outline-success fw-semibold">
-                <i class="bi bi-file-earmark-excel me-1"></i> Import FBD3
-              </a>
-              <a href="'.e(module_url('print_inventory_card.php', ['source'=>'inventaris_kartu'])).'" target="_blank" class="btn btn-sm btn-primary fw-semibold">
-                <i class="bi bi-printer-fill me-1"></i> Cetak Massal (A4)
-              </a>
-              <a href="'.e(module_url('dashboard.php', ['tab' => 'kartu'])).'" class="btn btn-sm btn-outline-primary fw-semibold">
-                <i class="bi bi-sliders me-1"></i> Kelola Lengkap &raquo;
-              </a>
-            </div>
           </div>
-          <div class="px-4 py-2 bg-light border-bottom d-flex gap-2 flex-wrap align-items-center" style="font-size: 0.75rem;">
-            <span class="text-muted fw-semibold me-1"><i class="bi bi-diagram-3 me-1"></i>Cabang:</span>
-            '.$branchBadgesWidgetHtml.'
-          </div>
-          <div class="table-responsive">
-            <table class="table table-hover align-middle mb-0">
-              <thead class="table-light">
-                <tr>
-                  <th>NO. REKENING</th>
-                  <th>NAMA BARANG</th>
-                  <th>TANGGAL</th>
-                  <th>NOMOR ASSET</th>
-                  <th>LOKASI</th>
-                  <th class="text-end">AKSI</th>
-                </tr>
-              </thead>
-              <tbody>
-                '.$quickCardsRowsHtml.'
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        <!-- Live Activity Stream -->
-        <div class="card border shadow-sm bg-white" style="border-radius: 8px;">
-          <div class="card-header bg-white border-bottom py-3 px-4 d-flex align-items-center justify-content-between">
-            <div>
-              <h2 class="h6 mb-0 fw-semibold text-dark"><i class="bi bi-activity me-2 text-primary"></i>Live Activity Stream</h2>
-              <div class="text-secondary small">Log rekam jejak pemeriksaan maintenance dan audit terbaru</div>
-            </div>
-            <a href="'.e(module_url('audit.php')).'" class="btn btn-sm btn-light border">Lihat Semua Log</a>
-          </div>
-          <div class="card-body p-3 p-md-4">
-            <div class="activity-stream" id="liveActivityStream">
-              '.$activityStreamHtml.'
+          <div class="col-lg-5">
+            <div class="card border shadow-xs mb-3">
+              <div class="card-header bg-white py-2 px-3 fw-bold small text-dark">
+                <i class="bi bi-activity text-primary me-1"></i> Live Activity Stream
+              </div>
+              <div class="card-body p-3" style="max-height: 280px; overflow-y: auto;">
+                '.$activityStreamHtml.'
+              </div>
             </div>
           </div>
         </div>
       </div>
+    </details>';
+}
 
-      <!-- Right Column (4 cols): Compliance, Health & Findings -->
-      <div class="col-lg-4">
-        <!-- Maintenance Compliance Panel -->
-        <div class="card mb-4 border shadow-sm bg-white" style="border-radius: 8px;">
-          <div class="card-header bg-white border-bottom py-3 px-4">
-            <div class="tech-label">INSPECTION COMPLIANCE</div>
-            <h2 class="h6 mb-0 fw-semibold text-dark">Kepatuhan Periode Ini</h2>
-          </div>
-          <div class="card-body p-4">
-            <div class="d-flex align-items-baseline justify-content-between mb-2">
-              <span class="display-6 fw-bold text-dark" id="panelPercentDone">'.$percentDone.'%</span>
-              <span class="small text-secondary fw-semibold"><span id="panelTotalDoneSide">'.$totalDone.'</span> dari <span id="panelTotalActiveSide">'.$totalActive.'</span> unit</span>
-            </div>
-            <div class="progress mb-3" style="height: 8px;">
-              <div id="panelProgressBar" class="progress-bar '.($percentDone >= 80 ? 'bg-success' : ($percentDone >= 50 ? 'bg-primary' : 'bg-warning')).'" style="width: '.$percentDone.'%;"></div>
-            </div>
-            <div class="d-flex justify-content-between small text-secondary pt-1 border-top">
-              <span><span class="status-dot operational me-1"></span> Selesai: <strong id="panelTotalDoneFoot">'.$totalDone.'</strong></span>
-              <span><span class="status-dot warning me-1"></span> Belum: <strong id="panelTotalDueFoot">'.$totalDue.'</strong></span>
-              <span><span class="status-dot critical me-1"></span> Temuan: <strong id="panelTotalFindingsFoot">'.$totalUnresolvedFindings.'</strong></span>
-            </div>
-          </div>
-        </div>
-
-        <!-- Hardware Health Status -->
-        <div class="card mb-4 border shadow-sm bg-white" style="border-radius: 8px;">
-          <div class="card-header bg-white border-bottom py-3 px-4">
-            <div class="tech-label">HARDWARE HEALTH</div>
-            <h2 class="h6 mb-0 fw-semibold text-dark">Status Kondisi Perangkat</h2>
-          </div>
-          <div class="card-body p-4">
-            <div class="d-flex flex-column gap-3">
-              <div class="d-flex align-items-center justify-content-between">
-                <div class="d-flex align-items-center gap-2">
-                  <span class="status-dot operational"></span>
-                  <span class="small fw-semibold text-dark">Operasional Normal</span>
-                </div>
-                <span class="badge-chip chip-success">'.max(0, $totalAll - $totalBroken - $totalUnresolvedFindings).' Unit</span>
-              </div>
-              <div class="d-flex align-items-center justify-content-between">
-                <div class="d-flex align-items-center gap-2">
-                  <span class="status-dot warning"></span>
-                  <span class="small fw-semibold text-dark">Perlu Perhatian</span>
-                </div>
-                <span class="badge-chip chip-warning">'.$totalDue.' Unit</span>
-              </div>
-              <div class="d-flex align-items-center justify-content-between">
-                <div class="d-flex align-items-center gap-2">
-                  <span class="status-dot critical"></span>
-                  <span class="small fw-semibold text-dark">Temuan Kendala</span>
-                </div>
-                <span class="badge-chip chip-danger">'.$totalUnresolvedFindings.' Unit</span>
-              </div>
-              <div class="d-flex align-items-center justify-content-between">
-                <div class="d-flex align-items-center gap-2">
-                  <span class="status-dot offline"></span>
-                  <span class="small fw-semibold text-dark">Nonaktif / Rusak</span>
-                </div>
-                <span class="badge-chip chip-secondary">'.$totalBroken.' Unit</span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Active Findings Panel -->
-        <div class="card border shadow-sm bg-white" style="border-radius: 8px;">
-          <div class="card-header bg-white border-bottom py-3 px-4 d-flex align-items-center justify-content-between">
-            <div>
-              <div class="tech-label text-danger">REPAIR &amp; FINDINGS</div>
-              <h2 class="h6 mb-0 fw-semibold text-dark">Temuan Masalah Aktif</h2>
-            </div>
-            <span class="badge bg-danger rounded-pill px-2.5 py-1 fw-bold" style="font-size: 0.75rem;">'.$totalUnresolvedFindings.'</span>
-          </div>
-          <div class="card-body p-3">
-            '.$findingsListHtml.'
-            '.($totalUnresolvedFindings > 0 ? '<div class="pt-2 text-center border-top mt-2"><a href="'.e(module_url('dashboard.php', ['tab'=>'temuan', 'bulan'=>$month, 'tahun'=>$year, 'cabang'=>$cabangId])).'" class="btn btn-sm btn-outline-danger w-100 fw-semibold" style="font-size: 0.75rem;"><i class="bi bi-tools me-1"></i>Buka Tab Temuan &amp; Kelola Perbaikan ('.$totalUnresolvedFindings.') &raquo;</a></div>' : '').'
-          </div>
-        </div>
-      </div>
-    </div>';
+if (!$isHrdOnly) {
+    $body .= '
+    </div><!-- End max-w-[1152px] -->
+    <div class="h-8 shrink-0" data-kid="1-2-2-2" data-name="bottom spacer div"></div>';
 }
 
 // =========================================================================

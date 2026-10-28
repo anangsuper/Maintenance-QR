@@ -64,105 +64,83 @@ function render_page(string $title, string $content, string $extraHead = '', str
         ];
     } elseif (in_array($role, ['auditor', 'skai'], true)) {
         // PERAN: AUDITOR / SKAI
-        $navLinks['MENU UTAMA'] = [
-            ['title' => 'Dashboard', 'url' => module_url('dashboard.php'), 'icon' => 'bi-speedometer2', 'active' => ($currentPage === 'dashboard.php' && !in_array($_GET['tab'] ?? '', ['kartu', 'temuan'], true))],
-        ];
-        $navLinks['AUDIT & KEPATUHAN OJK'] = [
-            ['title' => 'Laporan Audit & Checklist', 'url' => module_url('audit.php'), 'icon' => 'bi-clipboard-check', 'active' => ($currentPage === 'audit.php')],
-            ['title' => 'Riwayat Bulanan', 'url' => module_url('monthly_history.php'), 'icon' => 'bi-calendar3', 'active' => ($currentPage === 'monthly_history.php')],
-            ['title' => 'Log Aktivitas (Audit Trail)', 'url' => module_url('audit_trail.php'), 'icon' => 'bi-shield-check', 'active' => ($currentPage === 'audit_trail.php')],
-            ['title' => 'Log Ruang Server', 'url' => module_url('server_room_log.php'), 'icon' => 'bi-door-closed-fill', 'active' => in_array($currentPage, ['server_room_log.php', 'server_room_print_qr.php'], true)],
-        ];
-        $navLinks['REGISTRI ASET & SARPRAS'] = [
+        $navLinks['OPERASIONAL'] = [
+            ['title' => 'Dashboard IT Ops', 'url' => module_url('dashboard.php'), 'icon' => 'bi-grid-1x2', 'active' => ($currentPage === 'dashboard.php' && !in_array($_GET['tab'] ?? '', ['kartu', 'temuan'], true))],
             ['title' => 'Data Komputer & PC', 'url' => module_url('assets.php'), 'icon' => 'bi-pc-display', 'active' => in_array($currentPage, ['assets.php', 'asset_add.php', 'asset_edit.php', 'asset_delete.php', 'asset_import.php'], true)],
-            ['title' => 'Denah Meja Kantor', 'url' => module_url('floor_plan.php'), 'icon' => 'bi-layout-text-window-reverse', 'active' => ($currentPage === 'floor_plan.php')],
-            ['title' => 'Kartu Inventaris', 'url' => module_url('dashboard.php', ['tab' => 'kartu']), 'icon' => 'bi-credit-card-2-front', 'active' => ($currentPage === 'dashboard.php' && ($_GET['tab'] ?? '') === 'kartu')],
-            ['title' => 'Galeri Foto Barang', 'url' => module_url('asset_gallery.php'), 'icon' => 'bi-images', 'active' => in_array($currentPage, ['asset_gallery.php', 'inventaris_gallery.php'], true)],
+            ['title' => 'Temuan Kendala IT', 'url' => module_url('dashboard.php', ['tab' => 'temuan']), 'icon' => 'bi-exclamation-triangle', 'active' => ($currentPage === 'dashboard.php' && ($_GET['tab'] ?? '') === 'temuan')],
+            ['title' => 'Log Ruang Server', 'url' => module_url('server_room_log.php'), 'icon' => 'bi-door-closed', 'active' => in_array($currentPage, ['server_room_log.php', 'server_room_print_qr.php'], true)],
         ];
-    } else {
-        // PERAN: IT OPERATIONS / ADMINISTRATOR / TEKNISI
-        $navLinks['MENU UTAMA'] = [
-            ['title' => 'Dashboard', 'url' => module_url('dashboard.php'), 'icon' => 'bi-speedometer2', 'active' => ($currentPage === 'dashboard.php' && !in_array($_GET['tab'] ?? '', ['kartu', 'temuan'], true))],
-            ['title' => 'Scanner QR & Barcode', 'url' => module_url('scanner.php'), 'icon' => 'bi-qr-code-scan', 'active' => ($currentPage === 'scanner.php')],
-        ];
-        $navLinks['ASET & OPERASIONAL IT'] = [
-            ['title' => 'Data Komputer & PC', 'url' => module_url('assets.php'), 'icon' => 'bi-pc-display', 'active' => in_array($currentPage, ['assets.php', 'asset_add.php', 'asset_edit.php', 'asset_delete.php', 'asset_import.php'], true)],
-            ['title' => 'Denah Meja Kantor', 'url' => module_url('floor_plan.php'), 'icon' => 'bi-layout-text-window-reverse', 'active' => ($currentPage === 'floor_plan.php')],
-            ['title' => 'Mutasi PC / Aset IT', 'url' => module_url('asset_mutation.php'), 'icon' => 'bi-arrow-left-right', 'active' => in_array($currentPage, ['asset_mutation.php'], true)],
-            ['title' => 'Temuan Kendala IT', 'url' => module_url('dashboard.php', ['tab' => 'temuan']), 'icon' => 'bi-tools', 'active' => ($currentPage === 'dashboard.php' && ($_GET['tab'] ?? '') === 'temuan')],
-            ['title' => 'Pemeliharaan Rutin', 'url' => module_url('audit.php'), 'icon' => 'bi-clipboard-check', 'active' => in_array($currentPage, ['audit.php', 'history.php', 'maintenance_detail.php'], true)],
-        ];
-        $navLinks['INVENTARIS & SARPRAS'] = [
-            ['title' => 'Kartu Inventaris', 'url' => module_url('dashboard.php', ['tab' => 'kartu']), 'icon' => 'bi-credit-card-2-front', 'active' => ($currentPage === 'dashboard.php' && ($_GET['tab'] ?? '') === 'kartu') || in_array($currentPage, ['inventory_card.php', 'cetak_kartu.php', 'print_inventory_card.php', 'kartu_detail.php'], true)],
-            ['title' => 'Memo Pengajuan', 'url' => module_url('memo_pengajuan.php'), 'icon' => 'bi-file-earmark-text', 'active' => in_array($currentPage, ['memo_pengajuan.php', 'print_memo.php'], true)],
-            ['title' => 'Mutasi Inventaris', 'url' => module_url('inventaris_mutation.php'), 'icon' => 'bi-arrow-left-right', 'active' => in_array($currentPage, ['inventaris_mutation.php', 'asset_mutations.php', 'print_bast.php'], true)],
-            ['title' => 'Penghapusan Aset (Afkir)', 'url' => module_url('asset_disposal.php'), 'icon' => 'bi-trash3', 'active' => in_array($currentPage, ['asset_disposal.php', 'print_bast_disposal.php'], true)],
-            ['title' => 'Galeri Foto Barang', 'url' => module_url('asset_gallery.php'), 'icon' => 'bi-images', 'active' => in_array($currentPage, ['asset_gallery.php', 'inventaris_gallery.php'], true)],
-        ];
-        $navLinks['KEAMANAN & AUDIT'] = [
-            ['title' => 'Log Ruang Server', 'url' => module_url('server_room_log.php'), 'icon' => 'bi-door-closed-fill', 'active' => in_array($currentPage, ['server_room_log.php', 'server_room_print_qr.php'], true)],
-            ['title' => 'Riwayat Bulanan', 'url' => module_url('monthly_history.php'), 'icon' => 'bi-calendar3', 'active' => ($currentPage === 'monthly_history.php')],
-            ['title' => 'Log Aktivitas (Audit Trail)', 'url' => module_url('audit_trail.php'), 'icon' => 'bi-shield-check', 'active' => ($currentPage === 'audit_trail.php')],
+        $navLinks['ASET & SARPRAS'] = [
+            ['title' => 'Pengadaan & Memo', 'url' => module_url('memo_pengajuan.php'), 'icon' => 'bi-file-earmark-text', 'active' => in_array($currentPage, ['memo_pengajuan.php', 'print_memo.php'], true)],
+            ['title' => 'Mutasi Aset', 'url' => module_url('inventaris_mutation.php'), 'icon' => 'bi-arrow-left-right', 'active' => in_array($currentPage, ['inventaris_mutation.php', 'asset_mutation.php', 'asset_mutations.php', 'print_bast.php'], true)],
+            ['title' => 'Penghapusan Aset', 'url' => module_url('asset_disposal.php'), 'icon' => 'bi-trash', 'active' => in_array($currentPage, ['asset_disposal.php', 'print_bast_disposal.php'], true)],
         ];
 
         $masterItems = [];
         if ($isAdminUser) {
+            $masterItems[] = ['title' => 'Denah Meja Kantor', 'url' => module_url('floor_plan.php'), 'icon' => 'bi-layout-text-window-reverse', 'active' => ($currentPage === 'floor_plan.php')];
+            $masterItems[] = ['title' => 'Kartu Inventaris', 'url' => module_url('dashboard.php', ['tab' => 'kartu']), 'icon' => 'bi-credit-card-2-front', 'active' => ($currentPage === 'dashboard.php' && ($_GET['tab'] ?? '') === 'kartu')];
             $masterItems[] = ['title' => 'Kantor Cabang', 'url' => module_url('cabang_admin.php'), 'icon' => 'bi-buildings', 'active' => ($currentPage === 'cabang_admin.php')];
             $masterItems[] = ['title' => 'Divisi / Unit Kerja', 'url' => module_url('divisi_admin.php'), 'icon' => 'bi-diagram-3', 'active' => ($currentPage === 'divisi_admin.php')];
             $masterItems[] = ['title' => 'Akun Pengguna', 'url' => module_url('users_admin.php'), 'icon' => 'bi-people', 'active' => ($currentPage === 'users_admin.php')];
-        }
-        $masterItems[] = ['title' => 'Wajah Teknisi (Biometrik)', 'url' => module_url('user_biometric_enroll.php'), 'icon' => 'bi-person-bounding-box', 'active' => ($currentPage === 'user_biometric_enroll.php')];
-        if ($isAdminUser || $isHrdUser) {
-            $masterItems[] = ['title' => 'Cetak Label QR Aset', 'url' => module_url('qr_admin.php'), 'icon' => 'bi-qr-code', 'active' => ($currentPage === 'qr_admin.php')];
+            $masterItems[] = ['title' => 'Cetak Label QR', 'url' => module_url('qr_admin.php'), 'icon' => 'bi-qr-code', 'active' => ($currentPage === 'qr_admin.php')];
         }
         if (!empty($masterItems)) {
             $navLinks['PENGATURAN & MASTER'] = $masterItems;
         }
     }
-
     $sidebarMenuHtml = '';
+    $sectionIdx = 0;
     foreach ($navLinks as $groupName => $items) {
         if (empty($items)) {
             continue;
         }
-        $sidebarMenuHtml .= '<div class="sidebar-section-title">'.$groupName.'</div>';
-        $sidebarMenuHtml .= '<ul class="nav flex-column mb-3">';
+        $sidebarMenuHtml .= '<div class="text-[11px] font-bold text-[#53595F] uppercase tracking-wider mb-2 px-3 ' . ($sectionIdx > 0 ? 'mt-6' : '') . '">' . e($groupName) . '</div>';
+        $sidebarMenuHtml .= '<div class="flex flex-col gap-1 mb-1">';
         foreach ($items as $item) {
-            $activeClass = $item['active'] ? 'active' : '';
+            $isActive = !empty($item['active']);
+            $linkClass = $isActive
+                ? 'flex items-center h-[40px] px-3 rounded-[8px] bg-[#D9F1EF] text-[#1B2A3A] font-semibold text-[14px] text-decoration-none'
+                : 'flex items-center h-[40px] px-3 rounded-[8px] text-[#53595F] hover:bg-[#F4F5F7] hover:text-[#1B2A3A] font-medium text-[14px] transition-colors text-decoration-none';
+            $iconColor = $isActive ? 'text-[#0E5C58]' : '';
             $sidebarMenuHtml .= '
-            <li class="nav-item">
-              <a class="sidebar-link '.$activeClass.'" href="'.e($item['url']).'">
-                <i class="bi '.e($item['icon']).' sidebar-icon"></i>
-                <span class="sidebar-text">'.e($item['title']).'</span>
-              </a>
-            </li>';
+              <a class="' . $linkClass . '" href="' . e($item['url']) . '">
+                <i class="bi ' . e($item['icon']) . ' ' . $iconColor . ' w-7"></i>
+                <span class="truncate">' . e($item['title']) . '</span>
+              </a>';
         }
-        $sidebarMenuHtml .= '</ul>';
+        $sidebarMenuHtml .= '</div>';
+        $sectionIdx++;
     }
 
     $sidebarHtml = '
-    <aside class="app-sidebar d-none d-lg-flex flex-column" id="appDesktopSidebar">
-      <div class="sidebar-brand py-2 px-3">
-        <a href="'.e(module_url('dashboard.php')).'" class="d-flex align-items-center justify-content-between text-decoration-none">
-          <img src="'.app_logo_url().'" alt="Bank Mitra Logo" class="sidebar-brand-img" style="height: 54px; width: auto; max-width: 175px; object-fit: contain;">
-          <span class="badge '.($isHrdRole ? 'bg-warning text-dark border-warning' : 'bg-primary bg-opacity-25 text-white border-primary border-opacity-50').' border" style="font-size: 0.62rem; letter-spacing: 0.05em; font-weight: 700;">'.$brandTag.'</span>
+    <aside class="w-[240px] bg-[#FFFFFF] border-r border-[#D1D5D8] flex flex-col shrink-0 app-sidebar" id="appDesktopSidebar">
+      <!-- Logo Area (64px) -->
+      <div class="h-[64px] flex items-center px-5 border-b border-[#D1D5D8] sidebar-brand">
+        <a href="' . e(module_url('dashboard.php')) . '" class="flex items-center text-decoration-none">
+          <i class="bi bi-shield-check text-[#0E5C58] text-[22px] mr-2.5"></i>
+          <span class="font-bold text-[15px] tracking-tight text-[#1B2A3A]">QR Maintenance</span>
         </a>
       </div>
 
-      <div class="sidebar-content flex-grow-1 custom-scrollbar">
-        '.$sidebarMenuHtml.'
+      <!-- Nav Links -->
+      <div class="flex-1 overflow-y-auto py-5 px-3 flex flex-col gap-1 custom-scrollbar">
+        ' . $sidebarMenuHtml . '
       </div>
 
-      <div class="sidebar-footer">
-        <div class="sidebar-user-card d-flex align-items-center justify-content-between">
-          <div class="d-flex align-items-center gap-2 overflow-hidden">
-            '.$avatarHtml.'
+      <!-- User footer -->
+      <div class="p-3 border-t border-[#D1D5D8] bg-[#FFFFFF]">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-2 overflow-hidden">
+            <div class="w-[34px] h-[34px] rounded-[8px] bg-[#0E5C58] text-white flex items-center justify-center font-bold text-[12px] shrink-0">
+              ' . $userInitial . '
+            </div>
             <div class="overflow-hidden">
-              <div class="sidebar-user-name text-truncate">'.e($userName).'</div>
-              <div class="sidebar-user-role text-capitalize">'.e($displayRole).'</div>
+              <div class="text-[13px] font-semibold text-[#1B2A3A] truncate">' . e($userName) . '</div>
+              <div class="text-[11px] text-[#53595F] truncate text-capitalize">' . e($displayRole) . '</div>
             </div>
           </div>
-          <a href="'.e(module_url('logout.php')).'" class="sidebar-logout-btn" title="Keluar / Logout">
+          <a href="' . e(module_url('logout.php')) . '" class="text-[#53595F] hover:text-[#A5292B] p-1.5 transition-colors" title="Keluar / Logout">
             <i class="bi bi-box-arrow-right"></i>
           </a>
         </div>
@@ -170,123 +148,77 @@ function render_page(string $title, string $content, string $extraHead = '', str
     </aside>
 
     <!-- Offcanvas Mobile Drawer -->
-    <div class="offcanvas offcanvas-start bg-navy-dark text-white" tabindex="-1" id="appMobileSidebar" aria-labelledby="appMobileSidebarLabel">
-      <div class="offcanvas-header border-bottom border-navy-subtle py-2 px-3">
-        <a href="'.e(module_url('dashboard.php')).'" class="d-flex align-items-center gap-2 text-decoration-none">
-          <img src="'.app_logo_url().'" alt="Bank Mitra Logo" class="sidebar-brand-img" style="height: 48px; width: auto; max-width: 170px; object-fit: contain;">
+    <div class="offcanvas offcanvas-start bg-white text-dark" tabindex="-1" id="appMobileSidebar" aria-labelledby="appMobileSidebarLabel" style="width: 260px;">
+      <div class="offcanvas-header border-b border-[#D1D5D8] py-3 px-4">
+        <a href="' . e(module_url('dashboard.php')) . '" class="flex items-center text-decoration-none">
+          <i class="bi bi-shield-check text-[#0E5C58] text-[22px] mr-2.5"></i>
+          <span class="font-bold text-[15px] tracking-tight text-[#1B2A3A]">QR Maintenance</span>
         </a>
-        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+        <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
       </div>
       <div class="offcanvas-body custom-scrollbar p-3">
-        '.$sidebarMenuHtml.'
+        ' . $sidebarMenuHtml . '
       </div>
-      <div class="p-3 border-top border-navy-subtle">
-        <div class="d-flex align-items-center justify-content-between">
-          <div class="d-flex align-items-center gap-2">
-
-            '.$avatarHtml.'
+      <div class="p-3 border-t border-[#D1D5D8] bg-[#F4F5F7]">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <div class="w-[32px] h-[32px] rounded-[8px] bg-[#0E5C58] text-white flex items-center justify-center font-bold text-[12px]">
+              ' . $userInitial . '
+            </div>
             <div>
-              <div class="text-white small fw-bold">'.e($userName).'</div>
-              <div class="text-muted small text-capitalize">'.e($displayRole).'</div>
+              <div class="text-[13px] font-semibold text-[#1B2A3A]">' . e($userName) . '</div>
+              <div class="text-[11px] text-[#53595F] text-capitalize">' . e($displayRole) . '</div>
             </div>
           </div>
-          <a href="'.e(module_url('logout.php')).'" class="btn btn-sm btn-outline-danger" title="Logout"><i class="bi bi-box-arrow-right"></i></a>
+          <a href="' . e(module_url('logout.php')) . '" class="btn btn-sm btn-outline-danger" title="Logout"><i class="bi bi-box-arrow-right"></i></a>
         </div>
       </div>
     </div>';
 
     // Topbar HTML
     $topbarHtml = '
-    <header class="app-topbar d-flex align-items-center justify-content-between px-3 px-md-4">
-      <div class="d-flex align-items-center gap-3">
+    <header class="h-[64px] bg-[#FFFFFF] border-b border-[#D1D5D8] flex items-center justify-between px-6 shrink-0 sticky top-0 z-10 app-topbar">
+      <div class="flex items-center gap-3">
         <button class="btn btn-sm btn-outline-secondary d-lg-none" type="button" data-bs-toggle="offcanvas" data-bs-target="#appMobileSidebar" aria-controls="appMobileSidebar">
           <i class="bi bi-list fs-5"></i>
         </button>
-        <div class="topbar-context d-none d-sm-flex align-items-center gap-2">
-          <span class="tech-label">'.$sectionContext.'</span>
-          <span class="text-muted opacity-50">/</span>
-          <span class="topbar-page-title text-truncate">'.e($cleanTitle).'</span>
-        </div>
+        <div class="font-semibold text-[15px] text-[#1B2A3A] text-truncate">' . e($cleanTitle) . '</div>
       </div>
 
-      <div class="d-flex align-items-center gap-2 gap-md-3">
-        <button type="button" class="topbar-search-btn" data-bs-toggle="modal" data-bs-target="#globalSearchModal" title="Cari cepat aset, serial number, atau teknisi (Ctrl + K)">
-          <i class="bi bi-search text-muted"></i>
-          <span class="d-none d-md-inline text-muted me-2">Cari aset, serial number...</span>
-          <kbd class="d-none d-md-inline-block topbar-kbd">Ctrl K</kbd>
+      <div class="flex items-center gap-4">
+        <button type="button" class="flex items-center gap-2 h-[36px] px-3 bg-[#F4F5F7] border border-[#D1D5D8] rounded-[8px] text-[#53595F] text-[13px] hover:bg-[#e9eaec] transition-colors cursor-pointer" data-bs-toggle="modal" data-bs-target="#globalSearchModal" title="Cari aset (Ctrl+K)">
+          <i class="bi bi-search"></i>
+          <span class="d-none d-sm-inline">Cari aset...</span>
+          <kbd class="ml-2 font-mono text-[10px] font-semibold bg-[#FFFFFF] border border-[#D1D5D8] rounded-[4px] px-1.5 py-0.5 text-[#53595F] d-none d-md-inline-block">Ctrl+K</kbd>
         </button>
-
-        <div class="topbar-status-badge d-none d-md-flex align-items-center gap-2">
-          <span class="status-pulse-dot"></span>
-          <span class="status-text">Sistem Operasional</span>
-        </div>
-
-        <!-- Tombol Antrean Offline PWA (Muncul otomatis jika ada data tersimpan di HP) -->
-        <button type="button" class="btn btn-sm btn-warning d-none pwa-queue-btn align-items-center gap-1 fw-bold px-2 py-1 shadow-sm" data-bs-toggle="modal" data-bs-target="#modalPWAQueue" title="Antrean Pemeliharaan Offline">
-          <i class="bi bi-cloud-arrow-up-fill"></i>
-          <span class="d-none d-sm-inline">Antrean:</span>
-          <span class="badge bg-dark text-white pwa-queue-badge">0</span>
+        <div class="w-px h-6 bg-[#D1D5D8] d-none d-sm-block"></div>
+        <button type="button" class="flex items-center gap-1.5 text-[13px] font-semibold text-[#875315] hover:opacity-80 transition-opacity pwa-queue-btn border-0 bg-transparent cursor-pointer" data-bs-toggle="modal" data-bs-target="#modalPWAQueue" title="Antrean Pemeliharaan Offline">
+          <i class="bi bi-cloud-slash"></i>
+          <span class="pwa-queue-text">2 tertunda</span>
         </button>
-
-        <!-- Tombol Panduan Cepat Mudah Dipahami -->
-        <button type="button" class="btn btn-sm btn-outline-primary d-inline-flex align-items-center gap-1.5 fw-semibold px-2.5 py-1" data-bs-toggle="modal" data-bs-target="#modalPanduanAplikasi" title="Buka Panduan Mudah Penggunaan Aplikasi">
-          <i class="bi bi-question-circle-fill"></i>
-          <span class="d-none d-md-inline">Panduan</span>
+        <button type="button" class="text-[#53595F] hover:text-[#1B2A3A] ml-2 text-[18px] transition-colors border-0 bg-transparent cursor-pointer" data-bs-toggle="modal" data-bs-target="#modalPanduanAplikasi" title="Bantuan & Panduan">
+          <i class="bi bi-question-circle"></i>
         </button>
-
-
-
-        '.($isHrdRole
-            ? '<a href="'.e(module_url('dashboard.php', ['tab' => 'kartu'])).'" class="btn btn-sm btn-warning text-dark d-none d-sm-inline-flex align-items-center gap-1 fw-bold px-3 shadow-xs"><i class="bi bi-credit-card-2-front-fill me-1"></i><span>Kartu Inventaris</span></a>'
-            : (in_array($role, ['auditor', 'skai'], true)
-                ? '<a href="'.e(module_url('audit_trail.php')).'" class="btn btn-sm btn-outline-secondary d-none d-sm-inline-flex align-items-center gap-1 fw-semibold px-3"><i class="bi bi-shield-check me-1"></i><span>Log Aktivitas</span></a>'
-                : '<a href="'.e(module_url('asset_add.php')).'" class="btn btn-sm btn-primary d-none d-sm-inline-flex align-items-center gap-1 fw-semibold px-3"><i class="bi bi-plus-lg me-1"></i><span>Tambah Aset</span></a>'
-            )
-        ).'
-
         <div class="dropdown">
-          <button class="topbar-user-btn dropdown-toggle border-0" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-            '.$topbarAvatarHtml.'
-          </button>
+          <div class="w-[36px] h-[36px] rounded-[8px] bg-[#0E5C58] text-white flex items-center justify-center font-bold text-[13px] ml-2 cursor-pointer shadow-[0_1px_2px_rgba(0,0,0,0.1)]" data-bs-toggle="dropdown" aria-expanded="false" title="Akun Pengguna">
+            ' . $userInitial . '
+          </div>
           <ul class="dropdown-menu dropdown-menu-end shadow-sm border mt-2">
             <li class="px-3 py-2 border-bottom">
-              <div class="fw-bold text-dark">'.e($userName).'</div>
-              <div class="small text-muted text-capitalize"><i class="bi bi-shield-lock me-1"></i>'.e($displayRole).'</div>
+              <div class="fw-bold text-[#1B2A3A]">' . e($userName) . '</div>
+              <div class="small text-muted text-capitalize"><i class="bi bi-shield-lock me-1"></i>' . e($displayRole) . '</div>
             </li>
-            '.($isHrdRole ? '
-              <li><h6 class="dropdown-header text-uppercase fw-bold" style="font-size:0.65rem; color:#8c57ff; letter-spacing:0.06em;">Inventaris &amp; Sarpras</h6></li>
-              <li><a class="dropdown-item py-2" href="'.e(module_url('dashboard.php', ['tab' => 'kartu'])).'"><i class="bi bi-credit-card-2-front me-2 text-warning"></i> Kartu Inventaris</a></li>
-              <li><a class="dropdown-item py-2" href="'.e(module_url('asset_gallery.php', ['sub' => 'inventaris'])).'"><i class="bi bi-images me-2 text-primary"></i> Galeri Foto Barang</a></li>
-              <li><a class="dropdown-item py-2" href="'.e(module_url('memo_pengajuan.php')).'"><i class="bi bi-file-earmark-text me-2 text-info"></i> Memo Pengajuan</a></li>
-              <li><hr class="dropdown-divider my-1"></li>
-              <li><h6 class="dropdown-header text-uppercase fw-bold" style="font-size:0.65rem; color:#8c57ff; letter-spacing:0.06em;">Keamanan &amp; Master</h6></li>
-              <li><a class="dropdown-item py-2" href="'.e(module_url('server_room_log.php')).'"><i class="bi bi-door-closed-fill me-2" style="color:#8c57ff;"></i> Log Ruang Server</a></li>
-              <li><a class="dropdown-item py-2" href="'.e(module_url('cabang_admin.php')).'"><i class="bi bi-buildings me-2 text-success"></i> Kantor Cabang</a></li>
-            ' : (in_array($role, ['auditor', 'skai'], true) ? '
-              <li><h6 class="dropdown-header text-uppercase fw-bold" style="font-size:0.65rem; color:#8c57ff; letter-spacing:0.06em;">Audit &amp; Kepatuhan</h6></li>
-              <li><a class="dropdown-item py-2" href="'.e(module_url('audit.php')).'"><i class="bi bi-file-earmark-bar-graph me-2 text-primary"></i> Laporan Audit</a></li>
-              <li><a class="dropdown-item py-2" href="'.e(module_url('monthly_history.php')).'"><i class="bi bi-calendar3 me-2 text-info"></i> Riwayat Bulanan</a></li>
-              <li><a class="dropdown-item py-2" href="'.e(module_url('audit_trail.php')).'"><i class="bi bi-shield-check me-2 text-warning"></i> Log Aktivitas (Audit)</a></li>
-              <li><a class="dropdown-item py-2" href="'.e(module_url('server_room_log.php')).'"><i class="bi bi-door-closed-fill me-2" style="color:#8c57ff;"></i> Log Ruang Server</a></li>
-            ' : '
-              <li><h6 class="dropdown-header text-uppercase fw-bold" style="font-size:0.65rem; color:#8c57ff; letter-spacing:0.06em;">Akses Cepat</h6></li>
-              <li><a class="dropdown-item py-2" href="'.e(module_url('scanner.php')).'"><i class="bi bi-qr-code-scan me-2 text-info"></i> Scanner QR &amp; Barcode</a></li>
-              <li><a class="dropdown-item py-2" href="'.e(module_url('assets.php')).'"><i class="bi bi-pc-display me-2 text-primary"></i> Data Komputer (PC)</a></li>
-              <li><a class="dropdown-item py-2" href="'.e(module_url('dashboard.php', ['tab' => 'kartu'])).'"><i class="bi bi-credit-card-2-front me-2 text-warning"></i> Kartu Inventaris</a></li>
-              <li><hr class="dropdown-divider my-1"></li>
-              <li><h6 class="dropdown-header text-uppercase fw-bold" style="font-size:0.65rem; color:#8c57ff; letter-spacing:0.06em;">Keamanan &amp; Audit</h6></li>
-              <li><a class="dropdown-item py-2" href="'.e(module_url('server_room_log.php')).'"><i class="bi bi-door-closed-fill me-2" style="color:#8c57ff;"></i> Log Ruang Server (OJK)</a></li>
-              '.($isAdminUser ? '<li><a class="dropdown-item py-2" href="'.e(module_url('audit_trail.php')).'"><i class="bi bi-shield-check me-2 text-warning"></i> Log Aktivitas (Audit)</a></li>' : '').'
-            ')).'
-            <li><button class="dropdown-item py-2 text-primary" type="button" data-bs-toggle="modal" data-bs-target="#modalPanduanAplikasi"><i class="bi bi-question-circle-fill me-2"></i> Bantuan & Panduan</button></li>
-            <li><hr class="dropdown-divider"></li>
-            <li><a class="dropdown-item py-2 text-danger" href="'.e(module_url('logout.php')).'"><i class="bi bi-box-arrow-right me-2"></i> Keluar</a></li>
+            <li><a class="dropdown-item py-2" href="' . e(module_url('dashboard.php')) . '"><i class="bi bi-grid-1x2 me-2 text-[#0E5C58]"></i> Dashboard IT Ops</a></li>
+            <li><a class="dropdown-item py-2" href="' . e(module_url('scanner.php')) . '"><i class="bi bi-qr-code-scan me-2 text-[#0E5C58]"></i> Scan QR Unit</a></li>
+            <li><a class="dropdown-item py-2" href="' . e(module_url('assets.php')) . '"><i class="bi bi-pc-display me-2 text-[#0E5C58]"></i> Data Komputer &amp; PC</a></li>
+            <li><a class="dropdown-item py-2" href="' . e(module_url('dashboard.php', ['tab' => 'kartu'])) . '"><i class="bi bi-credit-card-2-front me-2 text-warning"></i> Kartu Inventaris</a></li>
+            <li><hr class="dropdown-divider my-1"></li>
+            <li><a class="dropdown-item py-2 text-danger" href="' . e(module_url('logout.php')) . '"><i class="bi bi-box-arrow-right me-2"></i> Keluar</a></li>
           </ul>
         </div>
       </div>
     </header>';
 
-    // Public header if nav is disabled
     $publicHeaderHtml = '
     <header class="public-topbar py-2 px-3 px-md-4 bg-white border-bottom shadow-sm d-flex align-items-center justify-content-between">
       <a href="'.e(module_url('dashboard.php')).'" class="d-flex align-items-center gap-3 text-decoration-none">
@@ -296,6 +228,11 @@ function render_page(string $title, string $content, string $extraHead = '', str
         </div>
       </a>
       <div class="d-flex align-items-center gap-2">
+        <!-- Tombol Beralih Mode Gelap / Terang -->
+        <button type="button" class="theme-toggle-btn shadow-xs" onclick="toggleAppTheme()" title="Beralih Mode Gelap / Terang" aria-label="Toggle Mode Tampilan">
+          <i class="bi bi-moon-stars-fill theme-toggle-icon fs-6"></i>
+        </button>
+
         <!-- Tombol Antrean Offline PWA -->
         <button type="button" class="btn btn-sm btn-warning d-none pwa-queue-btn align-items-center gap-1 fw-bold px-2 py-1 shadow-sm" data-bs-toggle="modal" data-bs-target="#modalPWAQueue" title="Antrean Pemeliharaan Offline">
           <i class="bi bi-cloud-arrow-up-fill"></i>
@@ -318,22 +255,15 @@ function render_page(string $title, string $content, string $extraHead = '', str
 <script>
 (function() {
   try {
-    try { localStorage.removeItem("app_theme"); } catch(e) {}
-    function syncSystemTheme() {
-      var isDark = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
-      var theme = isDark ? "dark" : "light";
-      document.documentElement.setAttribute("data-bs-theme", theme);
-      document.documentElement.setAttribute("data-theme", theme);
+    var storedTheme = localStorage.getItem("app_theme");
+    var theme = "light";
+    if (storedTheme === "dark" || storedTheme === "light") {
+      theme = storedTheme;
+    } else if (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) {
+      theme = "dark";
     }
-    syncSystemTheme();
-    if (window.matchMedia) {
-      var mql = window.matchMedia("(prefers-color-scheme: dark)");
-      if (mql.addEventListener) {
-        mql.addEventListener("change", syncSystemTheme);
-      } else if (mql.addListener) {
-        mql.addListener(syncSystemTheme);
-      }
-    }
+    document.documentElement.setAttribute("data-bs-theme", theme);
+    document.documentElement.setAttribute("data-theme", theme);
   } catch(e) {}
 })();
 </script>
@@ -353,13 +283,105 @@ function render_page(string $title, string $content, string $extraHead = '', str
 <link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" media="print" onload="this.media=\'all\'">
 <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"></noscript>
+<script src="https://unpkg.com/@tailwindcss/browser@4.3.3/dist/index.global.js" integrity="sha384-2ql948lIdLcGEE0/qxNiudyTjgauA3RDJERu5xW75kFCvSl5a9odyQYCb6tEjnmB" crossorigin="anonymous"></script>
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
 <style>
-
 /* =============================================================
-   MATERIO - MUI NEXTJS ADMIN TEMPLATE DESIGN SYSTEM (THEMESELECTION)
+   QR MAINTENANCE DESIGN SYSTEM (KOMBAI TEAL PALETTE)
    ============================================================= */
+:root {
+  --primary: #0E5C58;
+  --primary-hover: #0c4f4b;
+  --primary-light: #D9F1EF;
+  --bg-app: #F4F5F7;
+  --surface-card: #FFFFFF;
+  --border-subtle: #D1D5D8;
+  --border-strong: #A0A5AA;
+  --text-primary: #1B2A3A;
+  --text-secondary: #53595F;
+  --text-muted: #A0A5AA;
+  --status-warning: #875315;
+  --status-danger: #A5292B;
+
+  --materio-primary: #0E5C58;
+  --materio-primary-hover: #0c4f4b;
+  --materio-primary-active: #093c39;
+  --materio-primary-rgb: 14, 92, 88;
+  --materio-primary-gradient: linear-gradient(72.47deg, #0E5C58 22.16%, #16803C 76.47%);
+  --materio-primary-subtle: #D9F1EF;
+  --materio-primary-border: rgba(14, 92, 88, 0.28);
+}
+
+body {
+  font-family: "Plus Jakarta Sans", sans-serif !important;
+  background-color: #F4F5F7 !important;
+  color: #1B2A3A !important;
+  margin: 0;
+}
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #D1D5D8;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #A0A5AA;
+}
+
+.app-sidebar {
+  width: 240px !important;
+  min-width: 240px !important;
+  background: #FFFFFF !important;
+  border-right: 1px solid #D1D5D8 !important;
+  box-shadow: none !important;
+}
+
+.app-main-viewport {
+  margin-left: 240px !important;
+  width: calc(100% - 240px) !important;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background-color: #F4F5F7 !important;
+}
+
+@media (max-width: 991.98px) {
+  .app-sidebar {
+    display: none !important;
+  }
+  .app-main-viewport {
+    margin-left: 0 !important;
+    width: 100% !important;
+  }
+}
+
+.app-content-container {
+  flex: 1;
+  padding: 24px !important;
+  background-color: #F4F5F7 !important;
+}
+
+.btn-primary {
+  background-color: #0E5C58 !important;
+  border-color: #0E5C58 !important;
+  color: #FFFFFF !important;
+  border-radius: 8px !important;
+  font-weight: 600 !important;
+}
+.btn-primary:hover, .btn-primary:focus {
+  background-color: #0c4f4b !important;
+  border-color: #0c4f4b !important;
+}
+
 :root {
   /* Materio Brand Palette */
   --materio-primary: #8C57FF;
@@ -434,6 +456,56 @@ function render_page(string $title, string $content, string $extraHead = '', str
   --text-muted: #7E7B92;
   --shadow-card: 0px 4px 16px 0px rgba(0, 0, 0, 0.4);
   --shadow-hover: 0px 8px 24px 0px rgba(0, 0, 0, 0.5);
+}
+
+[data-theme="light"], [data-bs-theme="light"] {
+  --bg-app: #F4F5FA;
+  --surface-card: #FFFFFF;
+  --border-subtle: rgba(76, 78, 100, 0.12);
+  --border-strong: rgba(76, 78, 100, 0.22);
+  --text-primary: #2E263D;
+  --text-secondary: #6D6777;
+  --text-muted: #8A8D93;
+  --shadow-subtle: 0 1px 3px rgba(76, 78, 100, 0.05);
+  --shadow-card: 0px 2px 10px 0px rgba(76, 78, 100, 0.08);
+  --shadow-hover: 0px 6px 18px 0px rgba(76, 78, 100, 0.14);
+}
+
+/* Materio Theme Toggle Button */
+.theme-toggle-btn {
+  width: 36px;
+  height: 36px;
+  min-width: 36px;
+  border-radius: 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--border-subtle);
+  background-color: var(--surface-card);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  padding: 0;
+  flex-shrink: 0;
+}
+.theme-toggle-btn:hover {
+  background-color: var(--materio-secondary-subtle);
+  color: var(--materio-primary);
+  border-color: var(--materio-primary-border);
+  transform: translateY(-1px);
+}
+[data-bs-theme="dark"] .theme-toggle-btn {
+  background-color: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.14);
+  color: #FFB400;
+}
+[data-bs-theme="dark"] .theme-toggle-btn:hover {
+  background-color: rgba(255, 180, 0, 0.16);
+  border-color: rgba(255, 180, 0, 0.35);
+  color: #FFC033;
+}
+[data-bs-theme="dark"] .dropdown-menu .text-dark {
+  color: #E7E3FC !important;
 }
 
 /* Typography across all components */
@@ -1238,6 +1310,166 @@ table tbody tr {
   color: #FFFFFF !important;
 }
 
+/* Comprehensive Dark Mode Components (Buttons, Tables, Headers, Badges) */
+[data-bs-theme="dark"] .btn-secondary,
+[data-bs-theme="dark"] .btn-light {
+  background-color: #1A2844 !important;
+  border-color: #2D3F63 !important;
+  color: #E2E8F0 !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3) !important;
+}
+
+[data-bs-theme="dark"] .btn-secondary:hover,
+[data-bs-theme="dark"] .btn-light:hover {
+  background-color: #24365A !important;
+  border-color: #435B88 !important;
+  color: #FFFFFF !important;
+}
+
+[data-bs-theme="dark"] .btn-secondary i,
+[data-bs-theme="dark"] .btn-light i,
+[data-bs-theme="dark"] .btn-light .bi {
+  color: #CBD5E1 !important;
+}
+
+[data-bs-theme="dark"] .btn-secondary:hover i,
+[data-bs-theme="dark"] .btn-light:hover i,
+[data-bs-theme="dark"] .btn-light:hover .bi {
+  color: #FFFFFF !important;
+}
+
+[data-bs-theme="dark"] .btn-group > .btn-light {
+  border-color: #2D3F63 !important;
+}
+
+[data-bs-theme="dark"] .btn-outline-primary {
+  background-color: rgba(140, 87, 255, 0.12) !important;
+  border-color: rgba(140, 87, 255, 0.45) !important;
+  color: #C2A4FF !important;
+}
+
+[data-bs-theme="dark"] .btn-outline-primary:hover {
+  background-color: #8C57FF !important;
+  border-color: #8C57FF !important;
+  color: #FFFFFF !important;
+}
+
+[data-bs-theme="dark"] .btn-outline-primary i,
+[data-bs-theme="dark"] .btn-outline-primary .bi {
+  color: #C2A4FF !important;
+}
+
+[data-bs-theme="dark"] .btn-outline-primary:hover i,
+[data-bs-theme="dark"] .btn-outline-primary:hover .bi {
+  color: #FFFFFF !important;
+}
+
+[data-bs-theme="dark"] .btn-outline-success {
+  background-color: rgba(86, 202, 0, 0.1) !important;
+  border-color: rgba(86, 202, 0, 0.35) !important;
+  color: #6EDB10 !important;
+}
+
+[data-bs-theme="dark"] .btn-outline-success:hover {
+  background-color: #56CA00 !important;
+  border-color: #56CA00 !important;
+  color: #FFFFFF !important;
+}
+
+[data-bs-theme="dark"] .bg-white {
+  background-color: var(--surface-card, #2B2C40) !important;
+}
+
+[data-bs-theme="dark"] .bg-light {
+  background-color: rgba(255, 255, 255, 0.05) !important;
+  color: var(--text-primary, #E7E3FC) !important;
+}
+
+[data-bs-theme="dark"] .text-dark {
+  color: #E7E3FC !important;
+}
+
+[data-bs-theme="dark"] .text-body {
+  color: #E7E3FC !important;
+}
+
+[data-bs-theme="dark"] .text-secondary {
+  color: #B2B0C4 !important;
+}
+
+[data-bs-theme="dark"] .text-muted {
+  color: #9E9BB2 !important;
+}
+
+[data-bs-theme="dark"] .border,
+[data-bs-theme="dark"] .border-top,
+[data-bs-theme="dark"] .border-bottom,
+[data-bs-theme="dark"] .border-start,
+[data-bs-theme="dark"] .border-end {
+  border-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+[data-bs-theme="dark"] .table-light,
+[data-bs-theme="dark"] thead.table-light,
+[data-bs-theme="dark"] thead.table-light th,
+[data-bs-theme="dark"] .table thead.table-light th {
+  background-color: #121F36 !important;
+  color: #94A3B8 !important;
+  border-color: #1E2D4A !important;
+}
+
+[data-bs-theme="dark"] .table {
+  --bs-table-bg: transparent;
+  --bs-table-color: var(--text-primary);
+  border-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+[data-bs-theme="dark"] .table tbody tr:hover td {
+  background-color: rgba(255, 255, 255, 0.04) !important;
+}
+
+[data-bs-theme="dark"] .finding-card-item {
+  background: #1E293B !important;
+  border-color: rgba(239, 68, 68, 0.4) !important;
+  border-left-color: #EF4444 !important;
+  color: #F8FAFC !important;
+}
+
+[data-bs-theme="dark"] .badge-chip {
+  background-color: rgba(255, 255, 255, 0.08) !important;
+  color: #E2E8F0 !important;
+}
+
+[data-bs-theme="dark"] .chip-primary {
+  background-color: rgba(140, 87, 255, 0.18) !important;
+  color: #C2A4FF !important;
+}
+
+[data-bs-theme="dark"] .chip-secondary {
+  background-color: rgba(255, 255, 255, 0.08) !important;
+  color: #CBD5E1 !important;
+}
+
+[data-bs-theme="dark"] .dashboard-main-nav {
+  background: #142036 !important;
+  border-color: #1E2D4A !important;
+}
+
+[data-bs-theme="dark"] .dashboard-nav-tab {
+  color: #94A3B8 !important;
+}
+
+[data-bs-theme="dark"] .dashboard-nav-tab:hover {
+  color: #FFFFFF !important;
+  background: rgba(255, 255, 255, 0.08) !important;
+}
+
+[data-bs-theme="dark"] .dashboard-nav-tab.active {
+  background: #1E2D4A !important;
+  color: #60A5FA !important;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4) !important;
+}
+
 /* PWA Offline & Network Banner Styles */
 .pwa-network-banner {
   position: fixed;
@@ -1764,20 +1996,22 @@ h1, h2, h3, h4, h5, h6,
   transform: translateY(-1px);
 }
 
-.btn-secondary, .btn-light {
+:root:not([data-bs-theme="dark"]) .btn-secondary,
+:root:not([data-bs-theme="dark"]) .btn-light {
   background-color: #FFFFFF !important;
   border-color: var(--border-subtle) !important;
   color: var(--text-primary) !important;
   box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
 }
 
-.btn-secondary:hover, .btn-light:hover {
+:root:not([data-bs-theme="dark"]) .btn-secondary:hover,
+:root:not([data-bs-theme="dark"]) .btn-light:hover {
   background-color: #F8FAFC !important;
   border-color: var(--border-strong) !important;
   transform: translateY(-1px);
 }
 
-.btn-outline-primary {
+:root:not([data-bs-theme="dark"]) .btn-outline-primary {
   color: var(--blue-corporate) !important;
   border-color: #BFDBFE !important;
   background-color: #FFFFFF !important;
@@ -2505,11 +2739,11 @@ label.form-label,
 </div>
 
 '.($showNav ? '
-<div class="app-layout-wrapper">
+<div class="app-layout-wrapper flex h-screen w-full overflow-hidden bg-[#F4F5F7]">
   '.$sidebarHtml.'
-  <div class="app-main-viewport">
+  <div class="app-main-viewport flex-1 flex flex-col min-w-0 bg-[#F4F5F7] h-screen overflow-hidden">
     '.$topbarHtml.'
-    <main class="app-content-container">
+    <main class="app-content-container flex-1 overflow-y-auto p-6">
       '.$content.'
     </main>
   </div>
@@ -3023,31 +3257,101 @@ label.form-label,
 })();
 
 // ============================================================
-// AUTOMATIC THEME SYNC (Follows OS / Device Dark Mode)
+// THEME SWITCHER (Dark Mode / Light Mode with localStorage)
 // ============================================================
 (function() {
-  function syncSystemDeviceTheme() {
+  function getPreferredTheme() {
+    try {
+      var stored = localStorage.getItem("app_theme");
+      if (stored === "dark" || stored === "light") return stored;
+    } catch(e) {}
     var isDark = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
-    var theme = isDark ? "dark" : "light";
-    document.documentElement.setAttribute("data-bs-theme", theme);
-    document.documentElement.setAttribute("data-theme", theme);
+    return isDark ? "dark" : "light";
   }
 
-  // Clear any legacy manual override
-  try { localStorage.removeItem("app_theme"); } catch(e) {}
+  function applyTheme(theme, save) {
+    document.documentElement.setAttribute("data-bs-theme", theme);
+    document.documentElement.setAttribute("data-theme", theme);
+    if (save) {
+      try { localStorage.setItem("app_theme", theme); } catch(e) {}
+    }
+    updateThemeUI(theme);
+  }
 
-  syncSystemDeviceTheme();
+  function updateThemeUI(theme) {
+    var isDark = theme === "dark";
+    var toggleButtons = document.querySelectorAll(".theme-toggle-btn");
+    toggleButtons.forEach(function(btn) {
+      btn.setAttribute("title", isDark ? "Beralih ke Mode Terang" : "Beralih ke Mode Gelap");
+      btn.setAttribute("aria-label", isDark ? "Mode Terang" : "Mode Gelap");
+      var icon = btn.querySelector(".theme-toggle-icon");
+      if (icon) {
+        if (isDark) {
+          icon.className = "bi bi-sun-fill text-warning fs-6 theme-toggle-icon";
+        } else {
+          icon.className = "bi bi-moon-stars-fill text-secondary fs-6 theme-toggle-icon";
+        }
+      }
+    });
+
+    var dropdownIcons = document.querySelectorAll(".theme-toggle-dropdown-icon");
+    dropdownIcons.forEach(function(icon) {
+      icon.className = (isDark ? "bi bi-sun-fill text-warning" : "bi bi-moon-stars-fill text-secondary") + " me-2 theme-toggle-dropdown-icon";
+    });
+
+    var modeBadges = document.querySelectorAll(".theme-mode-badge");
+    modeBadges.forEach(function(badge) {
+      badge.textContent = isDark ? "Gelap" : "Terang";
+      badge.className = "badge " + (isDark ? "bg-warning-subtle text-warning border border-warning-subtle" : "bg-primary-subtle text-primary border border-primary-subtle") + " px-2 py-0.5 rounded-pill theme-mode-badge";
+    });
+
+    var toggleLabels = document.querySelectorAll(".theme-toggle-label");
+    toggleLabels.forEach(function(label) {
+      label.textContent = isDark ? "Mode Terang" : "Mode Gelap";
+    });
+  }
+
+  window.toggleAppTheme = function() {
+    var current = document.documentElement.getAttribute("data-bs-theme") || "light";
+    var next = (current === "dark") ? "light" : "dark";
+    applyTheme(next, true);
+  };
+
+  window.setAppTheme = function(theme) {
+    if (theme === "dark" || theme === "light") {
+      applyTheme(theme, true);
+    } else {
+      try { localStorage.removeItem("app_theme"); } catch(e) {}
+      var isDark = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
+      applyTheme(isDark ? "dark" : "light", false);
+    }
+  };
 
   if (window.matchMedia) {
     var mql = window.matchMedia("(prefers-color-scheme: dark)");
+    var onSystemChange = function(e) {
+      try {
+        if (!localStorage.getItem("app_theme")) {
+          applyTheme(e.matches ? "dark" : "light", false);
+        }
+      } catch(err) {}
+    };
     if (mql.addEventListener) {
-      mql.addEventListener("change", syncSystemDeviceTheme);
+      mql.addEventListener("change", onSystemChange);
     } else if (mql.addListener) {
-      mql.addListener(syncSystemDeviceTheme);
+      mql.addListener(onSystemChange);
     }
   }
 
-  document.addEventListener("DOMContentLoaded", syncSystemDeviceTheme);
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", function() {
+      var current = document.documentElement.getAttribute("data-bs-theme") || getPreferredTheme();
+      updateThemeUI(current);
+    });
+  } else {
+    var current = document.documentElement.getAttribute("data-bs-theme") || getPreferredTheme();
+    updateThemeUI(current);
+  }
 })();
 
 // PWA Service Worker Registration

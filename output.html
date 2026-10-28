@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="kombai-design-canvas" content="true">
+  <title>Dashboard IT Ops · QR Maintenance</title>
+  
+  <script src="https://unpkg.com/@tailwindcss/browser@4.3.3/dist/index.global.js" integrity="sha384-2ql948lIdLcGEE0/qxNiudyTjgauA3RDJERu5xW75kFCvSl5a9odyQYCb6tEjnmB" crossorigin="anonymous"></script>
+  
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
+    @import url('https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css');
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      background-color: #F4F5F7;
+      color: #1B2A3A;
+    }
+    .tabular-nums {
+      font-variant-numeric: tabular-nums;
+    }
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #D1D5D8;
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #A0A5AA;
+    }
+  </style>
+</head>
+<body>
+  <div id="root">
+    <div class="flex h-screen w-full overflow-hidden bg-[#F4F5F7]" data-kid="1" data-name="full-screen app layout container">
+      <!-- Navigation (240px) -->
+      <aside class="w-[240px] bg-[#FFFFFF] border-r border-[#D1D5D8] flex flex-col shrink-0" data-kid="1-1" data-name="sidebar navigation panel">
+        <!-- Logo Area (64px) -->
+        <div class="h-[64px] flex items-center px-5 border-b border-[#D1D5D8]" data-kid="1-1-1" data-name="sidebar logo bar with border">
+          <i class="bi bi-shield-check text-[#0E5C58] text-[22px] mr-2.5" data-kid="1-1-1-1" data-name="shield check logo icon"></i>
+          <span class="font-bold text-[15px] tracking-tight text-[#1B2A3A]" data-kid="1-1-1-2" data-name='app title "QR Maintenance"'>QR Maintenance</span>
+        </div>
+        <!-- Nav Links -->
+        <div class="flex-1 overflow-y-auto py-5 px-3 flex flex-col gap-1" data-kid="1-1-2" data-name="scrollable navigation link list">
+          <div class="text-[11px] font-bold text-[#53595F] uppercase tracking-wider mb-2 px-3" data-kid="1-1-2-1" data-name='nav section label "Operasional"'>Operasional</div>
+          <a class="flex items-center h-[40px] px-3 rounded-[8px] bg-[#D9F1EF] text-[#1B2A3A] font-semibold text-[14px]" data-kid="1-1-2-2" data-name="active Dashboard IT Ops nav link" href="api/dashboard.php">
+            <i class="bi bi-grid-1x2 text-[#0E5C58] w-7" data-kid="1-1-2-2-1" data-name="dashboard grid icon"></i>
+            Dashboard IT Ops
+          </a>
+          <a class="flex items-center h-[40px] px-3 rounded-[8px] text-[#53595F] hover:bg-[#F4F5F7] hover:text-[#1B2A3A] font-medium text-[14px] transition-colors" data-kid="1-1-2-3" data-name="Data Komputer &amp; PC nav link" href="api/assets.php">
+            <i class="bi bi-pc-display w-7" data-kid="1-1-2-3-1" data-name="computer display icon"></i>
+            Data Komputer &amp; PC
+          </a>
+          <a class="flex items-center h-[40px] px-3 rounded-[8px] text-[#53595F] hover:bg-[#F4F5F7] hover:text-[#1B2A3A] font-medium text-[14px] transition-colors" data-kid="1-1-2-4" data-name="Temuan Kendala IT nav link" href="api/dashboard.php?tab=temuan">
+            <i class="bi bi-exclamation-triangle w-7" data-kid="1-1-2-4-1" data-name="warning triangle icon"></i>
+            Temuan Kendala IT
+          </a>
+          <a class="flex items-center h-[40px] px-3 rounded-[8px] text-[#53595F] hover:bg-[#F4F5F7] hover:text-[#1B2A3A] font-medium text-[14px] transition-colors" data-kid="1-1-2-5" data-name="Log Ruang Server nav link" href="api/server_room_log.php">
+            <i class="bi bi-door-closed w-7" data-kid="1-1-2-5-1" data-name="closed server door icon"></i>
+            Log Ruang Server
+          </a>
+          <div class="text-[11px] font-bold text-[#53595F] uppercase tracking-wider mt-6 mb-2 px-3" data-kid="1-1-2-6" data-name='nav section label "Aset &amp; Sarpras"'>Aset &amp; Sarpras</div>
+          <a class="flex items-center h-[40px] px-3 rounded-[8px] text-[#53595F] hover:bg-[#F4F5F7] hover:text-[#1B2A3A] font-medium text-[14px] transition-colors" data-kid="1-1-2-7" data-name="Pengadaan &amp; Memo nav link" href="api/memo_pengajuan.php">
+            <i class="bi bi-file-earmark-text w-7" data-kid="1-1-2-7-1" data-name="text document icon"></i>
+            Pengadaan &amp; Memo
+          </a>
+          <a class="flex items-center h-[40px] px-3 rounded-[8px] text-[#53595F] hover:bg-[#F4F5F7] hover:text-[#1B2A3A] font-medium text-[14px] transition-colors" data-kid="1-1-2-8" data-name="Mutasi Aset nav link" href="api/inventaris_mutation.php">
+            <i class="bi bi-arrow-left-right w-7" data-kid="1-1-2-8-1" data-name="left-right swap arrow icon"></i>
+            Mutasi Aset
+          </a>
+          <a class="flex items-center h-[40px] px-3 rounded-[8px] text-[#53595F] hover:bg-[#F4F5F7] hover:text-[#1B2A3A] font-medium text-[14px] transition-colors" data-kid="1-1-2-9" data-name="Penghapusan Aset nav link" href="api/asset_disposal.php">
+            <i class="bi bi-trash w-7" data-kid="1-1-2-9-1" data-name="trash can icon"></i>
+            Penghapusan Aset
+          </a>
+        </div>
+      </aside>
+
+      <!-- Main Viewport (1200px equivalent) -->
+      <main class="flex-1 flex flex-col min-w-0 bg-[#F4F5F7]" data-kid="1-2" data-name="main content viewport">
+        <!-- Topbar (64px) -->
+        <header class="h-[64px] bg-[#FFFFFF] border-b border-[#D1D5D8] flex items-center justify-between px-6 shrink-0 sticky top-0 z-10" data-kid="1-2-1" data-name="top header bar with search">
+          <div class="font-semibold text-[15px] text-[#1B2A3A]" data-kid="1-2-1-1" data-name='page title "Dashboard IT Ops"'>Dashboard IT Ops</div>
+          <div class="flex items-center gap-4" data-kid="1-2-1-2" data-name="top bar action controls container">
+            <button class="flex items-center gap-2 h-[36px] px-3 bg-[#F4F5F7] border border-[#D1D5D8] rounded-[8px] text-[#53595F] text-[13px] hover:bg-[#e9eaec] transition-colors" data-kid="1-2-1-2-1" data-name="global search input button (Ctrl+K)">
+              <i class="bi bi-search" data-kid="1-2-1-2-1-1" data-name="magnifying glass search icon"></i>
+              <span data-kid="1-2-1-2-1-2" data-name='search placeholder text "Cari aset..."'>Cari aset...</span>
+              <kbd class="ml-2 font-mono text-[10px] font-semibold bg-[#FFFFFF] border border-[#D1D5D8] rounded-[4px] px-1.5 py-0.5 text-[#53595F]" data-kid="1-2-1-2-1-3" data-name="Ctrl+K keyboard shortcut hint badge">Ctrl+K</kbd>
+            </button>
+            <div class="w-px h-6 bg-[#D1D5D8]" data-kid="1-2-1-2-2" data-name="vertical divider between actions"></div>
+            <button class="flex items-center gap-1.5 text-[13px] font-semibold text-[#875315] hover:opacity-80 transition-opacity" data-kid="1-2-1-2-3" data-name='offline/pending status badge "2 tertunda"'>
+              <i class="bi bi-cloud-slash" data-kid="1-2-1-2-3-1" data-name="cloud slash icon"></i>
+              2 tertunda
+            </button>
+            <button class="text-[#53595F] hover:text-[#1B2A3A] ml-2 text-[18px] transition-colors" data-kid="1-2-1-2-4" data-name="help/question mark button">
+              <i class="bi bi-question-circle" data-kid="1-2-1-2-4-1" data-name="question circle help icon"></i>
+            </button>
+            <div class="w-[36px] h-[36px] rounded-[8px] bg-[#0E5C58] text-white flex items-center justify-center font-bold text-[13px] ml-2 cursor-pointer shadow-[0_1px_2px_rgba(0,0,0,0.1)]" data-kid="1-2-1-2-5" data-name="AI avatar user chip">
+              AI
+            </div>
+          </div>
+        </header>
+
+        <!-- Content Area -->
+        <div class="flex-1 overflow-y-auto p-6" data-kid="1-2-2" data-name="scrollable content area with padding">
+          <div class="max-w-[1152px] mx-auto flex flex-col" data-kid="1-2-2-1" data-name="centered max-width dashboard content flow">
+            <!-- Heading Row (48px) -->
+            <div class="flex justify-between items-center h-[48px] shrink-0" data-kid="1-2-2-1-1" data-name="heading row with page title and filters">
+              <h1 class="text-[24px] font-bold text-[#1B2A3A] tracking-tight" data-kid="1-2-2-1-1-1" data-name='page headline "Antrean Pemeliharaan"'>Antrean Pemeliharaan</h1>
+              <div class="flex items-center gap-3" data-kid="1-2-2-1-1-2" data-name="filter dropdowns container">
+                <div class="relative" data-kid="1-2-2-1-1-2-1" data-name="branch selector dropdown wrapper">
+                  <select class="h-[36px] bg-[#FFFFFF] border border-[#D1D5D8] rounded-[8px] pl-3 pr-8 text-[14px] font-semibold text-[#1B2A3A] outline-none hover:border-[#A0A5AA] cursor-pointer appearance-none transition-colors" data-kid="1-2-2-1-1-2-1-1" data-name="branch filter dropdown select">
+                    <option data-kid="1-2-2-1-1-2-1-1-1" data-name='option "Semua Cabang"'>Semua Cabang</option>
+                    <option data-kid="1-2-2-1-1-2-1-1-2" data-name='option "KPO Bank Mitra" (selected)' selected="">KPO Bank Mitra</option>
+                    <option data-kid="1-2-2-1-1-2-1-1-3" data-name='option "KC Bandung"'>KC Bandung</option>
+                  </select>
+                  <i class="bi bi-chevron-down absolute right-3 top-1/2 -translate-y-1/2 text-[#53595F] text-[12px] pointer-events-none" data-kid="1-2-2-1-1-2-1-2" data-name="dropdown chevron-down icon"></i>
+                </div>
+                <div class="relative" data-kid="1-2-2-1-1-2-2" data-name="period selector dropdown wrapper">
+                  <select class="h-[36px] bg-[#FFFFFF] border border-[#D1D5D8] rounded-[8px] pl-3 pr-8 text-[14px] font-semibold text-[#1B2A3A] outline-none hover:border-[#A0A5AA] cursor-pointer appearance-none transition-colors" data-kid="1-2-2-1-1-2-2-1" data-name="period filter dropdown select">
+                    <option data-kid="1-2-2-1-1-2-2-1-1" data-name='option "Oktober 2026" (selected)' selected="">Oktober 2026</option>
+                    <option data-kid="1-2-2-1-1-2-2-1-2" data-name='option "September 2026"'>September 2026</option>
+                  </select>
+                  <i class="bi bi-chevron-down absolute right-3 top-1/2 -translate-y-1/2 text-[#53595F] text-[12px] pointer-events-none" data-kid="1-2-2-1-1-2-2-2" data-name="dropdown chevron-down icon"></i>
+                </div>
+              </div>
+            </div>
+
+            <div class="h-4 shrink-0" data-kid="1-2-2-1-2" data-name="spacing spacer div"></div>
+
+            <!-- Metric Strip (88px) -->
+            <div class="bg-[#FFFFFF] border border-[#D1D5D8] rounded-[10px] h-[88px] flex overflow-hidden shrink-0" data-kid="1-2-2-1-3" data-name="metric strip card">
+              <div class="flex-1 flex flex-col justify-center px-6 cursor-pointer bg-[#D9F1EF] transition-colors relative" data-kid="1-2-2-1-3-1" data-name='active metric cell "Belum dipelihara"'>
+                <div class="absolute left-0 top-0 bottom-0 w-1 bg-[#0E5C58]" data-kid="1-2-2-1-3-1-1" data-name="teal left accent bar on metric cell"></div>
+                <div class="text-[32px] font-bold text-[#1B2A3A] tabular-nums leading-none mb-1 tracking-tight" data-kid="1-2-2-1-3-1-2" data-name='metric value "42"'>42</div>
+                <div class="text-[13px] font-medium text-[#1B2A3A]" data-kid="1-2-2-1-3-1-3" data-name='metric label "Belum dipelihara"'>Belum dipelihara</div>
+              </div>
+              <div class="w-px bg-[#D1D5D8] h-[56px] my-auto" data-kid="1-2-2-1-3-2" data-name="vertical divider between metrics"></div>
+              <div class="flex-1 flex flex-col justify-center px-6 cursor-pointer hover:bg-[#F4F5F7] transition-colors" data-kid="1-2-2-1-3-3" data-name='metric cell "Temuan terbuka"'>
+                <div class="flex items-center gap-2.5 mb-1" data-kid="1-2-2-1-3-3-1" data-name="value + badge row for metric">
+                  <div class="text-[32px] font-bold text-[#A5292B] tabular-nums leading-none tracking-tight" data-kid="1-2-2-1-3-3-1-1" data-name='metric value "8"'>8</div>
+                  <span class="bg-[#F4F5F7] text-[#53595F] text-[11px] font-bold px-2 py-0.5 rounded-[4px] border border-[#D1D5D8] tracking-wide uppercase" data-kid="1-2-2-1-3-3-1-2" data-name='scope badge "Semua periode"'>Semua periode</span>
+                </div>
+                <div class="text-[13px] font-medium text-[#53595F]" data-kid="1-2-2-1-3-3-2" data-name='metric label "Temuan terbuka"'>Temuan terbuka</div>
+              </div>
+            </div>
+
+            <div class="h-4 shrink-0" data-kid="1-2-2-1-4" data-name="spacing spacer div"></div>
+
+            <!-- Tabs (44px) -->
+            <div class="flex gap-6 h-[44px] border-b border-[#D1D5D8] shrink-0" data-kid="1-2-2-1-5" data-name="tab bar with two view tabs">
+              <button class="h-full flex items-center font-bold text-[14px] text-[#1B2A3A] border-b-[3px] border-[#0E5C58] px-1 relative top-[1px]" data-kid="1-2-2-1-5-1" data-name='active tab "Belum dipelihara (42)"'>
+                Belum dipelihara (42)
+              </button>
+              <button class="h-full flex items-center font-semibold text-[14px] text-[#53595F] hover:text-[#1B2A3A] border-b-[3px] border-transparent px-1 transition-colors" data-kid="1-2-2-1-5-2" data-name='inactive tab "Temuan terbuka (8)"'>
+                Temuan terbuka (8)
+              </button>
+            </div>
+
+            <div class="h-4 shrink-0" data-kid="1-2-2-1-6" data-name="spacing spacer div"></div>
+
+            <!-- Queue Surface -->
+            <div class="bg-[#FFFFFF] border border-[#D1D5D8] rounded-[10px] flex flex-col shrink-0 overflow-hidden" data-kid="1-2-2-1-7" data-name="queue table card surface">
+              <!-- Toolbar (56px) -->
+              <div class="h-[56px] px-4 flex justify-between items-center border-b border-[#D1D5D8] bg-[#FFFFFF]" data-kid="1-2-2-1-7-1" data-name="toolbar row with filter and scan">
+                <div class="relative" data-kid="1-2-2-1-7-1-1" data-name="queue filter input wrapper with icon">
+                  <i class="bi bi-search absolute left-3 top-1/2 -translate-y-1/2 text-[#53595F] text-[14px]" data-kid="1-2-2-1-7-1-1-1" data-name="magnifying glass icon in input"></i>
+                  <input class="h-[36px] w-[280px] pl-9 pr-3 text-[14px] font-medium text-[#1B2A3A] border border-[#D1D5D8] rounded-[8px] outline-none focus:border-[#0E5C58] placeholder:text-[#A0A5AA] transition-colors" data-kid="1-2-2-1-7-1-1-2" data-name="queue filter search input field" placeholder="Saring antrean..." type="text"/>
+                </div>
+                <button class="h-[36px] px-4 bg-[#0E5C58] hover:bg-[#0c4f4b] text-white rounded-[8px] font-semibold text-[14px] flex items-center gap-2 transition-colors cursor-pointer" data-kid="1-2-2-1-7-1-2" data-name='primary "Scan QR Unit" action button'>
+                  <i class="bi bi-qr-code-scan" data-kid="1-2-2-1-7-1-2-1" data-name="QR code scan icon"></i>
+                  Scan QR Unit
+                </button>
+              </div>
+
+              <!-- Table Header (40px) -->
+              <div class="h-[40px] px-4 flex items-center bg-[#F4F5F7] border-b border-[#D1D5D8] text-[12px] font-bold text-[#53595F] uppercase tracking-wider" data-kid="1-2-2-1-7-2" data-name="table header row">
+                <div class="w-32 shrink-0" data-kid="1-2-2-1-7-2-1" data-name='column header "Kode Inventaris"'>Kode Inventaris</div>
+                <div class="flex-1 min-w-0 pl-4" data-kid="1-2-2-1-7-2-2" data-name='column header "Perangkat &amp; Pengguna"'>Perangkat &amp; Pengguna</div>
+                <div class="w-56 shrink-0 pl-4" data-kid="1-2-2-1-7-2-3" data-name='column header "Cabang &amp; Ruangan"'>Cabang &amp; Ruangan</div>
+                <div class="w-48 shrink-0 pl-4" data-kid="1-2-2-1-7-2-4" data-name='column header "Pemeliharaan Terakhir"'>Pemeliharaan Terakhir</div>
+                <div class="w-28 shrink-0 text-right" data-kid="1-2-2-1-7-2-5" data-name='column header "Aksi"'>Aksi</div>
+              </div>
+
+              <!-- Rows (8x 48px) -->
+              <div class="flex flex-col" data-kid="1-2-2-1-7-3" data-name="queue table body rows container">
+                <!-- Row 1 -->
+                <div class="h-[48px] px-4 flex items-center border-b border-[#D1D5D8] hover:bg-[#F4F5F7] transition-colors" data-kid="1-2-2-1-7-3-1" data-name="queue table row 1 (INV-IT-142)">
+                  <div class="w-32 shrink-0 tabular-nums font-bold text-[13px] text-[#1B2A3A]" data-kid="1-2-2-1-7-3-1-1" data-name='asset inventory code "INV-IT-142"'>INV-IT-142</div>
+                  <div class="flex-1 min-w-0 flex items-baseline gap-2 truncate pr-4 pl-4" data-kid="1-2-2-1-7-3-1-2" data-name="device and user cell">
+                    <span class="text-[14px] font-semibold text-[#1B2A3A] truncate" data-kid="1-2-2-1-7-3-1-2-1" data-name='device name "PC Desktop Lenovo M70s"'>PC Desktop Lenovo M70s</span>
+                    <span class="text-[13px] text-[#53595F] truncate" data-kid="1-2-2-1-7-3-1-2-2" data-name='user name "Rina M."'>Rina M.</span>
+                  </div>
+                  <div class="w-56 shrink-0 flex items-baseline gap-1.5 truncate pr-4 pl-4" data-kid="1-2-2-1-7-3-1-3" data-name="branch and room cell">
+                    <span class="text-[13px] font-semibold text-[#1B2A3A]" data-kid="1-2-2-1-7-3-1-3-1" data-name='branch "KPO"'>KPO</span>
+                    <span class="text-[13px] text-[#53595F] truncate" data-kid="1-2-2-1-7-3-1-3-2" data-name='room "/ Akuntansi"'>/ Akuntansi</span>
+                  </div>
+                  <div class="w-48 shrink-0 flex items-center gap-2 pl-4" data-kid="1-2-2-1-7-3-1-4" data-name="last maintenance cell (amber)">
+                    <span class="w-2 h-2 rounded-full bg-[#875315]" data-kid="1-2-2-1-7-3-1-4-1" data-name="amber status dot"></span>
+                    <span class="text-[13px] text-[#875315] font-semibold tabular-nums" data-kid="1-2-2-1-7-3-1-4-2" data-name='last maintenance date "Sep 2026"'>Sep 2026</span>
+                  </div>
+                  <div class="w-28 shrink-0 flex justify-end" data-kid="1-2-2-1-7-3-1-5" data-name="action cell for row 1">
+                    <button class="h-[32px] px-3 bg-[#FFFFFF] border border-[#D1D5D8] rounded-[6px] text-[13px] font-semibold text-[#1B2A3A] hover:bg-[#F4F5F7] hover:border-[#A0A5AA] transition-all cursor-pointer" data-kid="1-2-2-1-7-3-1-5-1" data-name='row action button "Buka aset"'>Buka aset</button>
+                  </div>
+                </div>
+
+                <!-- Row 2 -->
+                <div class="h-[48px] px-4 flex items-center border-b border-[#D1D5D8] hover:bg-[#F4F5F7] transition-colors" data-kid="1-2-2-1-7-3-2" data-name="queue table row 2 (INV-IT-088)">
+                  <div class="w-32 shrink-0 tabular-nums font-bold text-[13px] text-[#1B2A3A]" data-kid="1-2-2-1-7-3-2-1" data-name='asset inventory code "INV-IT-088"'>INV-IT-088</div>
+                  <div class="flex-1 min-w-0 flex items-baseline gap-2 truncate pr-4 pl-4" data-kid="1-2-2-1-7-3-2-2" data-name="device and user cell">
+                    <span class="text-[14px] font-semibold text-[#1B2A3A] truncate" data-kid="1-2-2-1-7-3-2-2-1" data-name='device name "Laptop Dell Latitude 3420"'>Laptop Dell Latitude 3420</span>
+                    <span class="text-[13px] text-[#53595F] truncate" data-kid="1-2-2-1-7-3-2-2-2" data-name='user name "Budi Santoso"'>Budi Santoso</span>
+                  </div>
+                  <div class="w-56 shrink-0 flex items-baseline gap-1.5 truncate pr-4 pl-4" data-kid="1-2-2-1-7-3-2-3" data-name="branch and room cell">
+                    <span class="text-[13px] font-semibold text-[#1B2A3A]" data-kid="1-2-2-1-7-3-2-3-1" data-name='branch "KPO"'>KPO</span>
+                    <span class="text-[13px] text-[#53595F] truncate" data-kid="1-2-2-1-7-3-2-3-2" data-name='room "/ Customer Service"'>/ Customer Service</span>
+                  </div>
+                  <div class="w-48 shrink-0 flex items-center gap-2 pl-4" data-kid="1-2-2-1-7-3-2-4" data-name="last maintenance cell (amber)">
+                    <span class="w-2 h-2 rounded-full bg-[#875315]" data-kid="1-2-2-1-7-3-2-4-1" data-name="amber status dot"></span>
+                    <span class="text-[13px] text-[#875315] font-semibold tabular-nums" data-kid="1-2-2-1-7-3-2-4-2" data-name='last maintenance date "Sep 2026"'>Sep 2026</span>
+                  </div>
+                  <div class="w-28 shrink-0 flex justify-end" data-kid="1-2-2-1-7-3-2-5" data-name="action cell for row 2">
+                    <button class="h-[32px] px-3 bg-[#FFFFFF] border border-[#D1D5D8] rounded-[6px] text-[13px] font-semibold text-[#1B2A3A] hover:bg-[#F4F5F7] hover:border-[#A0A5AA] transition-all cursor-pointer" data-kid="1-2-2-1-7-3-2-5-1" data-name='row action button "Buka aset"'>Buka aset</button>
+                  </div>
+                </div>
+
+                <!-- Row 3 (Selected / Focused state) -->
+                <div class="h-[48px] px-4 flex items-center border-b border-[#D1D5D8] bg-[#D9F1EF] transition-colors relative" data-kid="1-2-2-1-7-3-3" data-name="selected queue table row 3 (INV-IT-015)">
+                  <div class="absolute left-0 top-0 bottom-0 w-1 bg-[#0E5C58]" data-kid="1-2-2-1-7-3-3-1" data-name="teal left accent bar on selected row"></div>
+                  <div class="w-32 shrink-0 tabular-nums font-bold text-[13px] text-[#1B2A3A]" data-kid="1-2-2-1-7-3-3-2" data-name='asset inventory code "INV-IT-015"'>INV-IT-015</div>
+                  <div class="flex-1 min-w-0 flex items-baseline gap-2 truncate pr-4 pl-4" data-kid="1-2-2-1-7-3-3-3" data-name="device and user cell">
+                    <span class="text-[14px] font-semibold text-[#1B2A3A] truncate" data-kid="1-2-2-1-7-3-3-3-1" data-name='device name "Printer Epson L3210"'>Printer Epson L3210</span>
+                    <span class="text-[13px] text-[#53595F] truncate" data-kid="1-2-2-1-7-3-3-3-2" data-name='user name "Teller 1"'>Teller 1</span>
+                  </div>
+                  <div class="w-56 shrink-0 flex items-baseline gap-1.5 truncate pr-4 pl-4" data-kid="1-2-2-1-7-3-3-4" data-name="branch and room cell">
+                    <span class="text-[13px] font-semibold text-[#1B2A3A]" data-kid="1-2-2-1-7-3-3-4-1" data-name='branch "KPO"'>KPO</span>
+                    <span class="text-[13px] text-[#53595F] truncate" data-kid="1-2-2-1-7-3-3-4-2" data-name='room "/ Pelayanan Nasabah"'>/ Pelayanan Nasabah</span>
+                  </div>
+                  <div class="w-48 shrink-0 flex items-center gap-2 pl-4" data-kid="1-2-2-1-7-3-3-5" data-name="last maintenance cell (red / overdue)">
+                    <span class="w-2 h-2 rounded-full bg-[#A5292B]" data-kid="1-2-2-1-7-3-3-5-1" data-name="red status dot"></span>
+                    <span class="text-[13px] text-[#A5292B] font-semibold tabular-nums" data-kid="1-2-2-1-7-3-3-5-2" data-name='last maintenance date "Agu 2026"'>Agu 2026</span>
+                  </div>
+                  <div class="w-28 shrink-0 flex justify-end" data-kid="1-2-2-1-7-3-3-6" data-name="action cell for row 3">
+                    <button class="h-[32px] px-3 bg-[#FFFFFF] border border-[#0E5C58] rounded-[6px] text-[13px] font-semibold text-[#0E5C58] hover:bg-[#F4F5F7] transition-all cursor-pointer" data-kid="1-2-2-1-7-3-3-6-1" data-name='row action button "Buka aset" (highlighted)'>Buka aset</button>
+                  </div>
+                </div>
+
+                <!-- Row 4 -->
+                <div class="h-[48px] px-4 flex items-center border-b border-[#D1D5D8] hover:bg-[#F4F5F7] transition-colors" data-kid="1-2-2-1-7-3-4" data-name="queue table row 4 (INV-IT-112)">
+                  <div class="w-32 shrink-0 tabular-nums font-bold text-[13px] text-[#1B2A3A]" data-kid="1-2-2-1-7-3-4-1" data-name='asset inventory code "INV-IT-112"'>INV-IT-112</div>
+                  <div class="flex-1 min-w-0 flex items-baseline gap-2 truncate pr-4 pl-4" data-kid="1-2-2-1-7-3-4-2" data-name="device and user cell">
+                    <span class="text-[14px] font-semibold text-[#1B2A3A] truncate" data-kid="1-2-2-1-7-3-4-2-1" data-name='device name "PC Desktop HP OptiPlex"'>PC Desktop HP OptiPlex</span>
+                    <span class="text-[13px] text-[#53595F] truncate" data-kid="1-2-2-1-7-3-4-2-2" data-name='user name "Andi W."'>Andi W.</span>
+                  </div>
+                  <div class="w-56 shrink-0 flex items-baseline gap-1.5 truncate pr-4 pl-4" data-kid="1-2-2-1-7-3-4-3" data-name="branch and room cell">
+                    <span class="text-[13px] font-semibold text-[#1B2A3A]" data-kid="1-2-2-1-7-3-4-3-1" data-name='branch "KPO"'>KPO</span>
+                    <span class="text-[13px] text-[#53595F] truncate" data-kid="1-2-2-1-7-3-4-3-2" data-name='room "/ Back Office"'>/ Back Office</span>
+                  </div>
+                  <div class="w-48 shrink-0 flex items-center gap-2 pl-4" data-kid="1-2-2-1-7-3-4-4" data-name="last maintenance cell (amber)">
+                    <span class="w-2 h-2 rounded-full bg-[#875315]" data-kid="1-2-2-1-7-3-4-4-1" data-name="amber status dot"></span>
+                    <span class="text-[13px] text-[#875315] font-semibold tabular-nums" data-kid="1-2-2-1-7-3-4-4-2" data-name='last maintenance date "Sep 2026"'>Sep 2026</span>
+                  </div>
+                  <div class="w-28 shrink-0 flex justify-end" data-kid="1-2-2-1-7-3-4-5" data-name="action cell for row 4">
+                    <button class="h-[32px] px-3 bg-[#FFFFFF] border border-[#D1D5D8] rounded-[6px] text-[13px] font-semibold text-[#1B2A3A] hover:bg-[#F4F5F7] hover:border-[#A0A5AA] transition-all cursor-pointer" data-kid="1-2-2-1-7-3-4-5-1" data-name='row action button "Buka aset"'>Buka aset</button>
+                  </div>
+                </div>
+
+                <!-- Row 5 -->
+                <div class="h-[48px] px-4 flex items-center border-b border-[#D1D5D8] hover:bg-[#F4F5F7] transition-colors" data-kid="1-2-2-1-7-3-5" data-name="queue table row 5 (INV-IT-094)">
+                  <div class="w-32 shrink-0 tabular-nums font-bold text-[13px] text-[#1B2A3A]" data-kid="1-2-2-1-7-3-5-1" data-name='asset inventory code "INV-IT-094"'>INV-IT-094</div>
+                  <div class="flex-1 min-w-0 flex items-baseline gap-2 truncate pr-4 pl-4" data-kid="1-2-2-1-7-3-5-2" data-name="device and user cell">
+                    <span class="text-[14px] font-semibold text-[#1B2A3A] truncate" data-kid="1-2-2-1-7-3-5-2-1" data-name='device name "Scanner Fujitsu fi-7160"'>Scanner Fujitsu fi-7160</span>
+                    <span class="text-[13px] text-[#53595F] truncate" data-kid="1-2-2-1-7-3-5-2-2" data-name='user name "Umum"'>Umum</span>
+                  </div>
+                  <div class="w-56 shrink-0 flex items-baseline gap-1.5 truncate pr-4 pl-4" data-kid="1-2-2-1-7-3-5-3" data-name="branch and room cell">
+                    <span class="text-[13px] font-semibold text-[#1B2A3A]" data-kid="1-2-2-1-7-3-5-3-1" data-name='branch "KPO"'>KPO</span>
+                    <span class="text-[13px] text-[#53595F] truncate" data-kid="1-2-2-1-7-3-5-3-2" data-name='room "/ Akuntansi"'>/ Akuntansi</span>
+                  </div>
+                  <div class="w-48 shrink-0 flex items-center gap-2 pl-4" data-kid="1-2-2-1-7-3-5-4" data-name="last maintenance cell (amber)">
+                    <span class="w-2 h-2 rounded-full bg-[#875315]" data-kid="1-2-2-1-7-3-5-4-1" data-name="amber status dot"></span>
+                    <span class="text-[13px] text-[#875315] font-semibold tabular-nums" data-kid="1-2-2-1-7-3-5-4-2" data-name='last maintenance date "Sep 2026"'>Sep 2026</span>
+                  </div>
+                  <div class="w-28 shrink-0 flex justify-end" data-kid="1-2-2-1-7-3-5-5" data-name="action cell for row 5">
+                    <button class="h-[32px] px-3 bg-[#FFFFFF] border border-[#D1D5D8] rounded-[6px] text-[13px] font-semibold text-[#1B2A3A] hover:bg-[#F4F5F7] hover:border-[#A0A5AA] transition-all cursor-pointer" data-kid="1-2-2-1-7-3-5-5-1" data-name='row action button "Buka aset"'>Buka aset</button>
+                  </div>
+                </div>
+
+                <!-- Row 6 -->
+                <div class="h-[48px] px-4 flex items-center border-b border-[#D1D5D8] hover:bg-[#F4F5F7] transition-colors" data-kid="1-2-2-1-7-3-6" data-name="queue table row 6 (INV-IT-223)">
+                  <div class="w-32 shrink-0 tabular-nums font-bold text-[13px] text-[#1B2A3A]" data-kid="1-2-2-1-7-3-6-1" data-name='asset inventory code "INV-IT-223"'>INV-IT-223</div>
+                  <div class="flex-1 min-w-0 flex items-baseline gap-2 truncate pr-4 pl-4" data-kid="1-2-2-1-7-3-6-2" data-name="device and user cell">
+                    <span class="text-[14px] font-semibold text-[#1B2A3A] truncate" data-kid="1-2-2-1-7-3-6-2-1" data-name='device name "Switch Cisco Catalyst"'>Switch Cisco Catalyst</span>
+                    <span class="text-[13px] text-[#53595F] truncate" data-kid="1-2-2-1-7-3-6-2-2" data-name='user name "Ruang Server"'>Ruang Server</span>
+                  </div>
+                  <div class="w-56 shrink-0 flex items-baseline gap-1.5 truncate pr-4 pl-4" data-kid="1-2-2-1-7-3-6-3" data-name="branch and room cell">
+                    <span class="text-[13px] font-semibold text-[#1B2A3A]" data-kid="1-2-2-1-7-3-6-3-1" data-name='branch "KPO"'>KPO</span>
+                    <span class="text-[13px] text-[#53595F] truncate" data-kid="1-2-2-1-7-3-6-3-2" data-name='room "/ IT"'>/ IT</span>
+                  </div>
+                  <div class="w-48 shrink-0 flex items-center gap-2 pl-4" data-kid="1-2-2-1-7-3-6-4" data-name="last maintenance cell (red / overdue)">
+                    <span class="w-2 h-2 rounded-full bg-[#A5292B]" data-kid="1-2-2-1-7-3-6-4-1" data-name="red status dot"></span>
+                    <span class="text-[13px] text-[#A5292B] font-semibold tabular-nums" data-kid="1-2-2-1-7-3-6-4-2" data-name='last maintenance date "Jul 2026"'>Jul 2026</span>
+                  </div>
+                  <div class="w-28 shrink-0 flex justify-end" data-kid="1-2-2-1-7-3-6-5" data-name="action cell for row 6">
+                    <button class="h-[32px] px-3 bg-[#FFFFFF] border border-[#D1D5D8] rounded-[6px] text-[13px] font-semibold text-[#1B2A3A] hover:bg-[#F4F5F7] hover:border-[#A0A5AA] transition-all cursor-pointer" data-kid="1-2-2-1-7-3-6-5-1" data-name='row action button "Buka aset"'>Buka aset</button>
+                  </div>
+                </div>
+
+                <!-- Row 7 -->
+                <div class="h-[48px] px-4 flex items-center border-b border-[#D1D5D8] hover:bg-[#F4F5F7] transition-colors" data-kid="1-2-2-1-7-3-7" data-name="queue table row 7 (INV-IT-041)">
+                  <div class="w-32 shrink-0 tabular-nums font-bold text-[13px] text-[#1B2A3A]" data-kid="1-2-2-1-7-3-7-1" data-name='asset inventory code "INV-IT-041"'>INV-IT-041</div>
+                  <div class="flex-1 min-w-0 flex items-baseline gap-2 truncate pr-4 pl-4" data-kid="1-2-2-1-7-3-7-2" data-name="device and user cell">
+                    <span class="text-[14px] font-semibold text-[#1B2A3A] truncate" data-kid="1-2-2-1-7-3-7-2-1" data-name='device name "PC Desktop Lenovo M70s"'>PC Desktop Lenovo M70s</span>
+                    <span class="text-[13px] text-[#53595F] truncate" data-kid="1-2-2-1-7-3-7-2-2" data-name='user name "Siti M."'>Siti M.</span>
+                  </div>
+                  <div class="w-56 shrink-0 flex items-baseline gap-1.5 truncate pr-4 pl-4" data-kid="1-2-2-1-7-3-7-3" data-name="branch and room cell">
+                    <span class="text-[13px] font-semibold text-[#1B2A3A]" data-kid="1-2-2-1-7-3-7-3-1" data-name='branch "KPO"'>KPO</span>
+                    <span class="text-[13px] text-[#53595F] truncate" data-kid="1-2-2-1-7-3-7-3-2" data-name='room "/ Akuntansi"'>/ Akuntansi</span>
+                  </div>
+                  <div class="w-48 shrink-0 flex items-center gap-2 pl-4" data-kid="1-2-2-1-7-3-7-4" data-name="last maintenance cell (amber)">
+                    <span class="w-2 h-2 rounded-full bg-[#875315]" data-kid="1-2-2-1-7-3-7-4-1" data-name="amber status dot"></span>
+                    <span class="text-[13px] text-[#875315] font-semibold tabular-nums" data-kid="1-2-2-1-7-3-7-4-2" data-name='last maintenance date "Sep 2026"'>Sep 2026</span>
+                  </div>
+                  <div class="w-28 shrink-0 flex justify-end" data-kid="1-2-2-1-7-3-7-5" data-name="action cell for row 7">
+                    <button class="h-[32px] px-3 bg-[#FFFFFF] border border-[#D1D5D8] rounded-[6px] text-[13px] font-semibold text-[#1B2A3A] hover:bg-[#F4F5F7] hover:border-[#A0A5AA] transition-all cursor-pointer" data-kid="1-2-2-1-7-3-7-5-1" data-name='row action button "Buka aset"'>Buka aset</button>
+                  </div>
+                </div>
+
+                <!-- Row 8 -->
+                <div class="h-[48px] px-4 flex items-center hover:bg-[#F4F5F7] transition-colors" data-kid="1-2-2-1-7-3-8" data-name="queue table row 8 (INV-IT-177)">
+                  <div class="w-32 shrink-0 tabular-nums font-bold text-[13px] text-[#1B2A3A]" data-kid="1-2-2-1-7-3-8-1" data-name='asset inventory code "INV-IT-177"'>INV-IT-177</div>
+                  <div class="flex-1 min-w-0 flex items-baseline gap-2 truncate pr-4 pl-4" data-kid="1-2-2-1-7-3-8-2" data-name="device and user cell">
+                    <span class="text-[14px] font-semibold text-[#1B2A3A] truncate" data-kid="1-2-2-1-7-3-8-2-1" data-name='device name "UPS APC 1000VA"'>UPS APC 1000VA</span>
+                    <span class="text-[13px] text-[#53595F] truncate" data-kid="1-2-2-1-7-3-8-2-2" data-name='user name "Umum"'>Umum</span>
+                  </div>
+                  <div class="w-56 shrink-0 flex items-baseline gap-1.5 truncate pr-4 pl-4" data-kid="1-2-2-1-7-3-8-3" data-name="branch and room cell">
+                    <span class="text-[13px] font-semibold text-[#1B2A3A]" data-kid="1-2-2-1-7-3-8-3-1" data-name='branch "KPO"'>KPO</span>
+                    <span class="text-[13px] text-[#53595F] truncate" data-kid="1-2-2-1-7-3-8-3-2" data-name='room "/ Customer Service"'>/ Customer Service</span>
+                  </div>
+                  <div class="w-48 shrink-0 flex items-center gap-2 pl-4" data-kid="1-2-2-1-7-3-8-4" data-name="last maintenance cell (red / overdue)">
+                    <span class="w-2 h-2 rounded-full bg-[#A5292B]" data-kid="1-2-2-1-7-3-8-4-1" data-name="red status dot"></span>
+                    <span class="text-[13px] text-[#A5292B] font-semibold tabular-nums" data-kid="1-2-2-1-7-3-8-4-2" data-name='last maintenance date "Agu 2026"'>Agu 2026</span>
+                  </div>
+                  <div class="w-28 shrink-0 flex justify-end" data-kid="1-2-2-1-7-3-8-5" data-name="action cell for row 8">
+                    <button class="h-[32px] px-3 bg-[#FFFFFF] border border-[#D1D5D8] rounded-[6px] text-[13px] font-semibold text-[#1B2A3A] hover:bg-[#F4F5F7] hover:border-[#A0A5AA] transition-all cursor-pointer" data-kid="1-2-2-1-7-3-8-5-1" data-name='row action button "Buka aset"'>Buka aset</button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Footer / Pagination (40px) -->
+              <div class="h-[40px] px-4 flex justify-between items-center bg-[#F4F5F7] border-t border-[#D1D5D8] text-[13px] font-semibold text-[#53595F]" data-kid="1-2-2-1-7-4" data-name="pagination footer bar">
+                <div data-kid="1-2-2-1-7-4-1" data-name="pagination results summary text">Menampilkan 1–8 dari 42 aset</div>
+                <div class="flex items-center gap-1.5" data-kid="1-2-2-1-7-4-2" data-name="pagination page numbers container">
+                  <button class="w-[28px] h-[28px] rounded-[6px] flex items-center justify-center border border-[#D1D5D8] bg-[#FFFFFF] text-[#A0A5AA] cursor-not-allowed" data-kid="1-2-2-1-7-4-2-1" data-name="disabled previous page button">
+                    <i class="bi bi-chevron-left" data-kid="1-2-2-1-7-4-2-1-1" data-name="chevron left icon"></i>
+                  </button>
+                  <button class="w-[28px] h-[28px] rounded-[6px] flex items-center justify-center border border-[#D1D5D8] bg-[#FFFFFF] text-[#1B2A3A] font-bold shadow-[0_1px_2px_rgba(0,0,0,0.05)] cursor-pointer" data-kid="1-2-2-1-7-4-2-2" data-name='current page number "1"'>
+                    1
+                  </button>
+                  <button class="w-[28px] h-[28px] rounded-[6px] flex items-center justify-center border border-transparent text-[#53595F] hover:bg-[#D1D5D8] transition-colors cursor-pointer" data-kid="1-2-2-1-7-4-2-3" data-name='page number "2" button'>
+                    2
+                  </button>
+                  <button class="w-[28px] h-[28px] rounded-[6px] flex items-center justify-center border border-transparent text-[#53595F] hover:bg-[#D1D5D8] transition-colors cursor-pointer" data-kid="1-2-2-1-7-4-2-4" data-name='page number "3" button'>
+                    3
+                  </button>
+                  <span class="px-1 text-[#A0A5AA]" data-kid="1-2-2-1-7-4-2-5" data-name="page ellipsis separator">...</span>
+                  <button class="w-[28px] h-[28px] rounded-[6px] flex items-center justify-center border border-[#D1D5D8] bg-[#FFFFFF] text-[#1B2A3A] hover:bg-[#E9EAEC] transition-colors cursor-pointer" data-kid="1-2-2-1-7-4-2-6" data-name="next page button">
+                    <i class="bi bi-chevron-right" data-kid="1-2-2-1-7-4-2-6-1" data-name="chevron right icon"></i>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="h-8" data-kid="1-2-2-2" data-name="bottom spacer div"></div>
+        </div>
+      </main>
+    </div>
+  </div>
+</body>
+</html>
+
