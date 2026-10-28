@@ -255,7 +255,7 @@ $body = '
 
 $html5QrcodeUrl = module_url('html5-qrcode.min.js');
 
-$script = '<script src="' . e($html5QrcodeUrl) . '"></script>
+$script = '<script src="' . e($html5QrcodeUrl) . '"></script>' . <<<'SCANNER_JS_CODE'
 <script>
 let html5QrCode = null;
 let currentCameraTrack = null;
@@ -511,7 +511,7 @@ function startCameraScanner() {
       return;
     }
     if (statusEl) {
-      statusEl.innerHTML = '<span class="text-danger fw-bold"><i class="bi bi-shield-x me-1"></i> Kamera membutuhkan koneksi HTTPS. Silakan buka melalui <a href="https://it.bankmitra.co.id/scanner.php" class="text-white text-decoration-underline fw-bold">https://it.bankmitra.co.id/scanner.php</a></span>';
+      statusEl.innerHTML = '<span class="text-danger fw-bold"><i class="bi bi-shield-x me-1"></i> Kamera membutuhkan koneksi HTTPS aman. Silakan buka melalui <a href="https://it.bankmitra.co.id/scanner.php" class="text-white text-decoration-underline fw-bold">https://it.bankmitra.co.id/scanner.php</a></span>';
     }
     if (manualBox) manualBox.classList.remove("d-none");
     return;
@@ -625,6 +625,7 @@ if (document.readyState === "loading") {
 } else {
   startCameraScanner();
 }
-</script>';
+</script>
+SCANNER_JS_CODE;
 
 render_page('Pindai QR Komputer', $body, $head, $script, false);
