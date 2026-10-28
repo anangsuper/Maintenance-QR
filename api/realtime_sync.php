@@ -16,7 +16,6 @@ if ($action === 'ws_status') {
     }
     header('Content-Type: application/json; charset=utf-8');
     header('Cache-Control: no-cache, no-store, must-revalidate');
-    header('Connection: close');
     $wsPort = (int)(getenv('WS_PORT') ?: 8080);
     $wsHost = getenv('WS_HOST') ?: '127.0.0.1';
     $fp = @fsockopen($wsHost, $wsPort, $errno, $errstr, 0.2);
@@ -39,7 +38,6 @@ if (!is_logged_in()) {
     http_response_code(401);
     header('Content-Type: application/json; charset=utf-8');
     header('Cache-Control: no-cache, no-store, must-revalidate');
-    header('Connection: close');
     echo json_encode([
         'success' => false,
         'error' => 'session_expired',
@@ -57,7 +55,6 @@ require_once __DIR__ . '/helpers/websocket_broadcaster.php';
 
 header('Content-Type: application/json; charset=utf-8');
 header('Cache-Control: no-cache, no-store, must-revalidate');
-header('Connection: close');
 
 $since = (int)($_GET['since'] ?? 0);
 $month = max(1, min(12, (int)($_GET['bulan'] ?? date('n'))));
