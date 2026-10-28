@@ -259,12 +259,6 @@ function render_page(string $title, string $content, string $extraHead = '', str
           <span class="badge bg-dark text-white pwa-queue-badge">0</span>
         </button>
 
-        <!-- Tombol Pasang PWA -->
-        <button type="button" class="btn btn-sm btn-outline-info d-none btn-pwa-install align-items-center gap-1 fw-semibold px-2 py-1" title="Pasang ke Layar Utama HP">
-          <i class="bi bi-download"></i>
-          <span class="d-none d-md-inline">Pasang App</span>
-        </button>
-
         <!-- Tombol Pindai di HP -->
         <button type="button" class="btn btn-sm btn-outline-success d-inline-flex align-items-center gap-1.5 fw-semibold px-2.5 py-1" data-bs-toggle="modal" data-bs-target="#modalMobileScannerQr" title="Buka Scanner QR di Smartphone (HP)">
           <i class="bi bi-phone-fill"></i>
@@ -320,11 +314,6 @@ function render_page(string $title, string $content, string $extraHead = '', str
           <i class="bi bi-cloud-arrow-up-fill"></i>
           <span class="d-none d-sm-inline">Antrean:</span>
           <span class="badge bg-dark text-white pwa-queue-badge">0</span>
-        </button>
-
-        <button type="button" class="btn btn-sm btn-outline-info d-none btn-pwa-install align-items-center gap-1 fw-semibold px-2 py-1" title="Pasang ke Layar Utama HP">
-          <i class="bi bi-download"></i>
-          <span class="d-none d-sm-inline">Pasang App</span>
         </button>
 
         '.(is_logged_in() 
