@@ -265,6 +265,12 @@ function render_page(string $title, string $content, string $extraHead = '', str
           <span class="d-none d-md-inline">Pasang App</span>
         </button>
 
+        <!-- Tombol Pindai di HP -->
+        <button type="button" class="btn btn-sm btn-outline-success d-inline-flex align-items-center gap-1.5 fw-semibold px-2.5 py-1" data-bs-toggle="modal" data-bs-target="#modalMobileScannerQr" title="Buka Scanner QR di Smartphone (HP)">
+          <i class="bi bi-phone-fill"></i>
+          <span class="d-none d-md-inline">Pindai di HP</span>
+        </button>
+
         <!-- Tombol Panduan Cepat Mudah Dipahami -->
         <button type="button" class="btn btn-sm btn-outline-primary d-inline-flex align-items-center gap-1.5 fw-semibold px-2.5 py-1" data-bs-toggle="modal" data-bs-target="#modalPanduanAplikasi" title="Buka Panduan Mudah Penggunaan Aplikasi">
           <i class="bi bi-question-circle-fill"></i>
@@ -2571,6 +2577,66 @@ label.form-label,
       <div class="modal-footer py-2 px-3 bg-light border-top d-flex justify-content-between">
         <span class="small text-muted" style="font-size: 0.75rem;"><kbd>Esc</kbd> untuk menutup</span>
         <span class="small text-muted" style="font-size: 0.75rem;">PT. BPR Mitratama Arthabuana</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Pindai Scanner di Smartphone (HP) -->
+<div class="modal fade" id="modalMobileScannerQr" tabindex="-1" aria-labelledby="modalMobileScannerQrLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered" style="max-width: 440px;">
+    <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
+      <div class="modal-header py-3 px-4 text-white" style="background: linear-gradient(135deg, #0A192F 0%, #0F2D59 100%);">
+        <div class="d-flex align-items-center gap-2">
+          <div class="rounded-circle d-flex align-items-center justify-content-center text-info" style="width: 38px; height: 38px; background: rgba(56, 189, 248, 0.15);">
+            <i class="bi bi-phone-fill fs-5"></i>
+          </div>
+          <div>
+            <h6 class="modal-title fw-bold mb-0 text-white" id="modalMobileScannerQrLabel">Pemindai QR Smartphone (HP)</h6>
+            <div class="text-white-50" style="font-size: 0.72rem;">Akses Langsung Lapangan Tanpa Login</div>
+          </div>
+        </div>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body p-4 text-center bg-white">
+        <p class="text-secondary small mb-3">
+          Arahkan kamera HP Anda ke QR Code di bawah untuk membuka aplikasi scanner di HP:
+        </p>
+        <div class="d-inline-flex justify-content-center align-items-center p-3 bg-white rounded-3 border shadow-sm mb-3" style="min-width: 210px; min-height: 210px;">
+          <img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&amp;data='.urlencode(module_url('scanner.php')).'" alt="QR Scanner HP" style="width: 190px; height: 190px;">
+        </div>
+        <div class="input-group mb-2">
+          <input type="text" class="form-control form-control-sm text-center font-monospace bg-light" id="inputHpScannerUrl" value="'.e(module_url('scanner.php')).'" readonly>
+          <button class="btn btn-outline-primary btn-sm px-3 fw-semibold" type="button" onclick="copyHpScannerLink()">
+            <i class="bi bi-clipboard me-1"></i> Salin Link
+          </button>
+        </div>
+        <script>
+        function copyHpScannerLink() {
+          var input = document.getElementById("inputHpScannerUrl");
+          if (input) {
+            navigator.clipboard.writeText(input.value).then(function() {
+              alert("Tautan scanner berhasil disalin: " + input.value);
+            }).catch(function() {
+              input.select();
+              document.execCommand("copy");
+              alert("Tautan scanner berhasil disalin: " + input.value);
+            });
+          }
+        }
+        </script>
+        <div class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 px-2.5 py-1.5 small mb-1">
+          <i class="bi bi-check2-circle me-1"></i> Kamera langsung aktif otomatis &bull; Bebas login
+        </div>
+        <div class="text-muted" style="font-size: 0.72rem;">
+          Tautan langsung: <a href="'.e(module_url('scanner.php')).'" class="fw-semibold text-primary">'.e(module_url('scanner.php')).'</a>
+        </div>
+      </div>
+      <div class="modal-footer py-2 px-3 bg-light border-top justify-content-between">
+        <a href="'.e(module_url('scanner.php')).'" target="_blank" class="btn btn-sm btn-outline-secondary">
+          <i class="bi bi-box-arrow-up-right me-1"></i> Buka di Tab Baru
+        </a>
+        <button type="button" class="btn btn-sm btn-primary px-3 fw-semibold" data-bs-dismiss="modal">Tutup</button>
       </div>
     </div>
   </div>

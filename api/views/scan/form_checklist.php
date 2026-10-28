@@ -304,7 +304,10 @@ if ($action === 'start' || $action === 'form' || $action === 'ulang' || $action 
               <span class="badge bg-primary bg-opacity-10 text-primary fw-bold px-2 py-1 mb-1">Periode '.$monthName.' '.$year.'</span>
               <h4 class="fw-bold text-dark mb-0"><i class="bi bi-clipboard-check text-primary me-2"></i>'.$formTitle.'</h4>
             </div>
-            <a class="btn btn-outline-secondary btn-sm" href="'.e(module_url('scan.php', ['t' => $token])).'"><i class="bi bi-x-lg"></i> Batal</a>
+            <div class="d-flex gap-1">
+              <a class="btn btn-outline-primary btn-sm" href="'.e(module_url('scanner.php')).'"><i class="bi bi-qr-code-scan me-1"></i> Scan Lain</a>
+              <a class="btn btn-outline-secondary btn-sm" href="'.e(module_url('scan.php', ['t' => $token])).'"><i class="bi bi-x-lg"></i> Batal</a>
+            </div>
           </div>
 
           <!-- Ringkasan Perangkat -->
@@ -644,6 +647,25 @@ if ($action === 'start' || $action === 'form' || $action === 'ulang' || $action 
             selectStatus.value = "Perlu Perbaikan";
           }
         });
+      }
+
+      // Auto-fill and persist technician name in browser localStorage for frictionless mobile scanning
+      var techInput = document.getElementById("technicianNameInput");
+      if (techInput) {
+        if (!techInput.value || techInput.value.trim() === "" || techInput.value.trim().toLowerCase() === "teknisi") {
+          var savedTech = localStorage.getItem("maint_saved_tech_name");
+          if (savedTech && savedTech.trim() !== "") {
+            techInput.value = savedTech.trim();
+          }
+        }
+        var form = document.getElementById("formMaintenance");
+        if (form) {
+          form.addEventListener("submit", function() {
+            if (techInput.value && techInput.value.trim() !== "") {
+              localStorage.setItem("maint_saved_tech_name", techInput.value.trim());
+            }
+          });
+        }
       }
     });
     JS;

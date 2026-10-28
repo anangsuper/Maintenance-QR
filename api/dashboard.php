@@ -1667,6 +1667,9 @@ if (is_hrd() && !is_admin()) {
         </div>
         <div class="header-actions d-flex flex-wrap align-items-center justify-content-start justify-content-lg-end gap-2 flex-shrink-0">
           '.(is_it() ? '<a href="'.e(module_url('scanner.php')).'" class="btn-solid-cta"><i class="bi bi-qr-code-scan"></i> Mulai Scan QR</a>' : '').'
+          <button type="button" class="btn-glass" data-bs-toggle="modal" data-bs-target="#modalMobileScannerQr" title="Buka Scanner di Smartphone (HP)">
+            <i class="bi bi-phone-fill text-info"></i> Pindai di HP
+          </button>
           <button type="button" class="btn-glass" data-bs-toggle="modal" data-bs-target="#modalPanduanAplikasi">
             <i class="bi bi-journal-text"></i> Panduan Alur
           </button>

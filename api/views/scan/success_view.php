@@ -73,6 +73,9 @@ if ($successData) {
           </div>
 
           <div class="d-grid gap-2">
+            <a class="btn btn-success btn-lg fw-bold py-3 shadow-sm" href="scanner.php">
+              <i class="bi bi-qr-code-scan me-2"></i> 📷 PINDAI KOMPUTER SELANJUTNYA
+            </a>
             <a class="btn btn-primary fw-bold py-2.5 py-sm-3 shadow-sm" href="scan.php?t='.urlencode($token).'">
               <i class="bi bi-card-checklist me-1"></i> Lihat Kartu Kontrol Perangkat
             </a>

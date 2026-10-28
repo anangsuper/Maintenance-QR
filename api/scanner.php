@@ -1,41 +1,43 @@
 <?php
 require __DIR__ . '/bootstrap.php';
-require_it();
+// Pemindai QR Lapangan: Dapat diakses langsung melalui HP tanpa perlu login akun.
+// Token QR yang dipindai langsung diarahkan ke form checklist atau kartu kontrol aset.
 
 $head = '<style>
-.scanner-container-dark {
-  max-width: 520px;
+.scanner-mobile-card {
+  max-width: 500px;
   margin: 0 auto;
-  background: linear-gradient(180deg, #051329 0%, #0B1E38 100%);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 18px;
-  padding: 26px 22px;
+  background: linear-gradient(180deg, #051329 0%, #0A1E38 100%);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 20px;
+  padding: 20px 18px;
   color: #FFFFFF;
-  box-shadow: 0 20px 40px -10px rgba(5, 19, 41, 0.6);
+  box-shadow: 0 16px 36px -10px rgba(5, 19, 41, 0.65);
 }
 
 .scanner-viewport-wrapper {
   position: relative;
   width: 100%;
-  margin: 16px auto;
-  border-radius: 12px;
+  margin: 14px auto;
+  border-radius: 14px;
   overflow: hidden;
   background-color: #000000;
+  box-shadow: inset 0 0 16px rgba(0, 0, 0, 0.8);
+  min-height: 280px;
 }
 
 #reader {
   width: 100% !important;
   border: none !important;
-  background: #000;
+  background: #000 !important;
 }
 
-/* Pastikan video TIDAK ter-crop/ter-zoom (gunakan contain) */
 #reader video {
-  border-radius: 8px;
-  object-fit: contain !important;
+  border-radius: 10px;
+  object-fit: cover !important;
   width: 100% !important;
   height: auto !important;
-  max-height: 55vh !important;
+  max-height: 52vh !important;
   background: #000;
 }
 
@@ -46,193 +48,231 @@ $head = '<style>
   justify-content: center !important;
 }
 
-#reader button {
-  background-color: var(--blue-corporate) !important;
-  color: #FFFFFF !important;
-  border: 1px solid rgba(255, 255, 255, 0.2) !important;
-  border-radius: 6px !important;
-  padding: 6px 14px !important;
-  font-size: 0.82rem !important;
-  margin: 6px 4px !important;
-  cursor: pointer;
-}
-
-#reader select, #reader__camera_selection {
-  background-color: #0D2748 !important;
-  color: #FFFFFF !important;
-  border: 1px solid var(--blue-accent) !important;
-  border-radius: 8px !important;
-  padding: 6px 10px !important;
-  font-size: 0.82rem !important;
-  max-width: 90% !important;
-  margin: 6px auto 10px auto !important;
-  display: block !important;
-}
-
-/* Corner Scan Frame Overlay */
+/* Corner Scan Reticle */
 .scan-corner-frame {
   position: absolute;
-  inset: 20px;
+  inset: 18px;
   pointer-events: none;
   z-index: 5;
 }
 
 .scan-corner {
   position: absolute;
-  width: 22px;
-  height: 22px;
-  border-color: var(--blue-accent);
+  width: 26px;
+  height: 26px;
+  border-color: #38BDF8;
   border-style: solid;
 }
 
-.corner-tl { top: 0; left: 0; border-width: 3px 0 0 3px; }
-.corner-tr { top: 0; right: 0; border-width: 3px 3px 0 0; }
-.corner-bl { bottom: 0; left: 0; border-width: 0 0 3px 3px; }
-.corner-br { bottom: 0; right: 0; border-width: 0 3px 3px 0; }
+.corner-tl { top: 0; left: 0; border-width: 3.5px 0 0 3.5px; border-top-left-radius: 6px; }
+.corner-tr { top: 0; right: 0; border-width: 3.5px 3.5px 0 0; border-top-right-radius: 6px; }
+.corner-bl { bottom: 0; left: 0; border-width: 0 0 3.5px 3.5px; border-bottom-left-radius: 6px; }
+.corner-br { bottom: 0; right: 0; border-width: 0 3.5px 3.5px 0; border-bottom-right-radius: 6px; }
 
 .scan-laser-line {
   position: absolute;
   top: 25%;
-  left: 20px;
-  right: 20px;
-  height: 2px;
-  background-color: var(--blue-accent);
-  box-shadow: 0 0 8px rgba(46, 124, 246, 0.8);
+  left: 18px;
+  right: 18px;
+  height: 2.5px;
+  background: linear-gradient(90deg, transparent, #38BDF8, #60A5FA, #38BDF8, transparent);
+  box-shadow: 0 0 12px rgba(56, 189, 248, 0.95);
   pointer-events: none;
   z-index: 6;
   animation: scanLaserAnim 2.2s infinite ease-in-out;
 }
 
 @keyframes scanLaserAnim {
-  0% { top: 20%; opacity: 0; }
-  50% { opacity: 1; }
-  100% { top: 80%; opacity: 0; }
+  0% { top: 15%; opacity: 0; }
+  20% { opacity: 1; }
+  80% { opacity: 1; }
+  100% { top: 85%; opacity: 0; }
 }
 
-.scanner-status-text {
-  font-size: 0.78rem;
-  color: #98A2B3;
-  text-align: center;
-  margin-top: 10px;
-}
-
-.zoom-controls-bar {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  margin-top: 12px;
-}
-
-.btn-zoom-opt {
+.scanner-tool-btn {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  color: #E2E8F0;
+  border-radius: 12px;
+  padding: 7px 12px;
   font-size: 0.78rem;
   font-weight: 600;
-  padding: 4px 14px;
-  border-radius: 20px;
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.25);
-  color: #E2E8F0;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.scanner-tool-btn:hover, .scanner-tool-btn:active {
+  background: rgba(56, 189, 248, 0.2);
+  border-color: #38BDF8;
+  color: #FFFFFF;
+}
+
+.scanner-tool-btn.active {
+  background: #38BDF8 !important;
+  border-color: #38BDF8 !important;
+  color: #0A1E38 !important;
+  font-weight: 700;
+  box-shadow: 0 0 10px rgba(56, 189, 248, 0.6);
+}
+
+.btn-zoom-pill {
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 3px 12px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: #CBD5E1;
   cursor: pointer;
   transition: all 0.15s ease;
 }
 
-.btn-zoom-opt:hover, .btn-zoom-opt.active {
-  background: var(--blue-accent) !important;
-  border-color: var(--blue-accent) !important;
+.btn-zoom-pill:hover, .btn-zoom-pill.active {
+  background: #2563EB !important;
+  border-color: #38BDF8 !important;
   color: #FFFFFF !important;
-  box-shadow: 0 0 8px rgba(46, 124, 246, 0.5);
+  box-shadow: 0 0 8px rgba(37, 99, 235, 0.6);
+}
+
+.pulse-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: #22C55E;
+  margin-right: 6px;
+  box-shadow: 0 0 8px #22C55E;
+  animation: pulseDotAnim 1.8s infinite;
+}
+
+@keyframes pulseDotAnim {
+  0% { transform: scale(0.9); opacity: 0.7; }
+  50% { transform: scale(1.3); opacity: 1; }
+  100% { transform: scale(0.9); opacity: 0.7; }
 }
 </style>';
 
 $body = '
-<div class="row justify-content-center py-2">
-  <div class="col-12 col-md-8 col-lg-6">
-    <div class="scanner-container-dark">
-      <div class="d-flex align-items-center justify-content-between border-bottom border-navy-subtle pb-3 mb-3">
+<div class="row justify-content-center py-2 px-1">
+  <div class="col-12 col-md-8 col-lg-6 col-xl-5">
+    <div class="scanner-mobile-card">
+      
+      <!-- Header Mobile Bar -->
+      <div class="d-flex align-items-center justify-content-between border-bottom pb-3 mb-2" style="border-color: rgba(255,255,255,0.1) !important;">
         <div>
-          <div class="tech-label" style="color: var(--blue-accent);">OPTICAL SCANNER</div>
-          <h1 class="h5 mb-0 text-white fw-bold">SCAN ASSET QR</h1>
+          <div class="text-uppercase fw-bold text-info" style="font-size: 0.68rem; letter-spacing: 0.08em;">PEMINDAI QR SMARTPHONE</div>
+          <h1 class="h6 mb-0 text-white fw-bold d-flex align-items-center">
+            <i class="bi bi-qr-code-scan me-2 text-primary"></i> SCAN ASSET LAPANGAN
+          </h1>
         </div>
-        '.(is_logged_in() 
-            ? '<a href="'.e(module_url('dashboard.php')).'" class="btn btn-sm btn-outline-light py-1 px-2" style="font-size: 0.78rem;"><i class="bi bi-speedometer2 me-1"></i> Dashboard</a>' 
-            : '<a href="'.e(module_url('login.php')).'" class="btn btn-sm btn-outline-light py-1 px-2" style="font-size: 0.78rem;"><i class="bi bi-person me-1"></i> Login</a>').'
+        <span class="badge rounded-pill bg-success bg-opacity-25 text-success border border-success border-opacity-50 px-2.5 py-1.5" style="font-size: 0.72rem;">
+          <span class="pulse-dot"></span> Langsung Scan
+        </span>
       </div>
 
-      <div class="text-center text-muted small mb-2" style="font-size: 0.8rem; color: #CBD5E1 !important;">
-        Arahkan kamera ke stiker QR Code yang tertera pada perangkat komputer.
+      <div class="text-center text-muted small my-2" style="font-size: 0.78rem; color: #94A3B8 !important;">
+        Arahkan kamera HP ke stiker label QR komputer untuk memeriksa info & mengisi checklist bulanan.
       </div>
 
-      <div class="scanner-viewport-wrapper">
+      <!-- Viewport Kamera -->
+      <div class="scanner-viewport-wrapper" id="scannerViewport">
         <div class="scan-corner-frame">
           <div class="scan-corner corner-tl"></div>
           <div class="scan-corner corner-tr"></div>
           <div class="scan-corner corner-bl"></div>
           <div class="scan-corner corner-br"></div>
-          <div class="scan-laser-line"></div>
+          <div class="scan-laser-line" id="scanLaserLine"></div>
         </div>
         <div id="reader"></div>
-      </div>
 
-      <!-- Kontrol Zoom Kamera (jika didukung perangkat) -->
-      <div id="zoomControlWrapper" class="d-none zoom-controls-bar">
-        <span class="text-secondary small me-1"><i class="bi bi-search"></i> Zoom:</span>
-        <div id="zoomButtonsContainer" class="d-inline-flex gap-2"></div>
-      </div>
-
-      <div id="scannerStatus" class="scanner-status-text">
-        <span class="spinner-border spinner-border-sm me-1 text-primary"></span> Menyiapkan kamera scanner...
-      </div>
-      <div class="text-center mt-2 px-2" style="font-size: 0.72rem; color: #94A3B8;">
-        <i class="bi bi-info-circle me-1"></i> Jika tampilan kamera terlalu dekat/ter-zoom, gunakan tombol zoom atau ubah pilihan kamera di atas.
-      </div>
-
-      <div class="text-center my-3">
-        <div class="d-flex align-items-center gap-2">
-          <hr class="flex-grow-1 border-secondary opacity-25">
-          <span class="tech-label" style="color: #667085;">ATAU MASUKKAN KODE MANUAL</span>
-          <hr class="flex-grow-1 border-secondary opacity-25">
-        </div>
-      </div>
-
-      <form onsubmit="return handleManualToken(event)">
-        <div class="input-group">
-          <input type="text" class="form-control form-control-sm font-monospace" id="manualTokenInput" placeholder="Ketik token / kode QR..." required style="background: #0D2748; border-color: #1E3A60; color: #FFFFFF;">
-          <button class="btn btn-primary btn-sm px-3 fw-semibold" type="submit">
-            <i class="bi bi-arrow-right me-1"></i> Buka
+        <!-- Tombol Start Manual (jika browser butuh izin ketukan pengguna) -->
+        <div id="manualStartBox" class="text-center p-4 d-none" style="position: absolute; inset: 0; background: #07172F; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 8;">
+          <i class="bi bi-camera-fill fs-1 text-primary mb-2"></i>
+          <p class="small text-light mb-3">Ketuk tombol di bawah untuk mengizinkan kamera HP:</p>
+          <button type="button" class="btn btn-primary fw-bold px-4 py-2 rounded-pill shadow" onclick="requestStartCamera()">
+            <i class="bi bi-camera me-1"></i> Buka Kamera Scanner
           </button>
         </div>
-        <div class="text-muted mt-1 text-center" style="font-size: 0.72rem;">Contoh: token yang tertera pada label QR komputer.</div>
-      </form>
+      </div>
+
+      <!-- Toolbar Kontrol Kamera: Senter, Balik Kamera, Unggah Galeri -->
+      <div class="d-flex align-items-center justify-content-center flex-wrap gap-2 mb-2">
+        <button type="button" class="scanner-tool-btn" id="btnToggleTorch" onclick="toggleCameraTorch()">
+          <i class="bi bi-lightning-fill"></i> Flash
+        </button>
+        <button type="button" class="scanner-tool-btn" id="btnSwitchCam" onclick="switchCamera()">
+          <i class="bi bi-camera-reverse"></i> Balik Kamera
+        </button>
+        <button type="button" class="scanner-tool-btn" onclick="document.getElementById(\'galleryInput\').click()">
+          <i class="bi bi-image"></i> Dari Foto
+        </button>
+        <input type="file" id="galleryInput" accept="image/*" class="d-none" onchange="handleGalleryScan(this)">
+      </div>
+
+      <!-- Zoom Slider / Buttons jika didukung kamera -->
+      <div id="zoomControlWrapper" class="d-none text-center my-2">
+        <span class="text-secondary small me-1"><i class="bi bi-search"></i> Zoom:</span>
+        <div id="zoomButtonsContainer" class="d-inline-flex gap-1"></div>
+      </div>
+
+      <!-- Status Scanner -->
+      <div id="scannerStatus" class="text-center mt-2" style="font-size: 0.78rem; color: #98A2B3;">
+        <span class="spinner-border spinner-border-sm me-1 text-primary"></span> Menghubungkan ke kamera HP...
+      </div>
+
+      <!-- Input Manual Token (Jika QR Rusak/Kamera Terhalang) -->
+      <div class="mt-3 pt-3 border-top" style="border-color: rgba(255,255,255,0.1) !important;">
+        <div class="d-flex align-items-center justify-content-between mb-2">
+          <span class="text-uppercase fw-semibold" style="font-size: 0.7rem; color: #94A3B8;">Ketik Token / Kode Manual</span>
+          <span class="text-muted" style="font-size: 0.7rem;">(Alternatif jika stiker robek)</span>
+        </div>
+        <form onsubmit="return handleManualToken(event)">
+          <div class="input-group">
+            <input type="text" class="form-control form-control-sm font-monospace" id="manualTokenInput" placeholder="Ketik nomor/token aset..." style="background: #091C35; border-color: #1E3A60; color: #FFFFFF;" required>
+            <button class="btn btn-primary btn-sm px-3 fw-bold" type="submit">
+              <i class="bi bi-arrow-right"></i> Buka
+            </button>
+          </div>
+        </form>
+      </div>
+
+      <!-- Tautan Cepat -->
+      <div class="d-flex justify-content-between align-items-center mt-3 pt-2 text-muted" style="font-size: 0.72rem;">
+        <span class="text-secondary"><i class="bi bi-shield-check text-success me-1"></i> Mode Lapangan Bebas Login</span>
+        '.(is_logged_in() 
+            ? '<a href="'.e(module_url('dashboard.php')).'" class="text-info text-decoration-none"><i class="bi bi-speedometer2 me-1"></i> Dashboard</a>' 
+            : '<a href="'.e(module_url('login.php')).'" class="text-secondary text-decoration-none" title="Akses Admin Portal"><i class="bi bi-lock me-1"></i> Portal Admin</a>').'
+      </div>
+
     </div>
   </div>
 </div>';
 
-$script = <<<'HTML'
-<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+$script = '<script src="' . e(module_url('html5-qrcode.min.js')) . '"></script>
 <script>
-let html5QrcodeScanner = null;
+let html5QrCode = null;
 let currentCameraTrack = null;
+let isTorchOn = false;
+let currentFacingMode = "environment";
+let isScanLocked = false;
 
 function playScanAudioFeedback() {
   try {
     const AudioContext = window.AudioContext || window.webkitAudioContext;
     if (AudioContext) {
       const ctx = new AudioContext();
-      if (ctx.state === 'suspended') {
-        ctx.resume();
-      }
+      if (ctx.state === "suspended") ctx.resume();
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
-
-      osc.type = 'sine';
-      osc.frequency.setValueAtTime(880, ctx.currentTime); // 880 Hz (A5 pleasant scanner beep)
-
+      osc.type = "sine";
+      osc.frequency.setValueAtTime(880, ctx.currentTime);
       gain.gain.setValueAtTime(0.25, ctx.currentTime);
       gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.12);
-
       osc.connect(gain);
       gain.connect(ctx.destination);
-
       osc.start();
       osc.stop(ctx.currentTime + 0.12);
     }
@@ -242,7 +282,7 @@ function playScanAudioFeedback() {
 function triggerScanHapticFeedback() {
   try {
     if (navigator.vibrate) {
-      navigator.vibrate([100, 40, 100]); // Dual pulse confirmation
+      navigator.vibrate([100, 40, 100]);
     }
   } catch (e) {}
 }
@@ -251,7 +291,6 @@ function resolveScanDestination(rawInput) {
   var text = (rawInput || "").trim();
   if (!text) return "";
 
-  // 1. Jika teks adalah URL lengkap (misalnya URL dari Vercel lama: https://project.vercel.app/scan.php?t=TOKEN)
   if (text.startsWith("http://") || text.startsWith("https://")) {
     try {
       var parsedUrl = new URL(text);
@@ -266,7 +305,6 @@ function resolveScanDestination(rawInput) {
     } catch (e) {}
   }
 
-  // 2. Jika teks mengandung query scan.php?t= atau ?token=
   if (text.indexOf("scan.php?t=") !== -1 || text.indexOf("scan.php?") !== -1) {
     var queryPart = text.split("?")[1] || "";
     var searchParams = new URLSearchParams(queryPart);
@@ -276,22 +314,30 @@ function resolveScanDestination(rawInput) {
     }
   }
 
-  // 3. Token mentah atau nomor kode inventaris
   return "scan.php?t=" + encodeURIComponent(text);
 }
 
 function onScanSuccess(decodedText) {
-  // 1. Umpan balik audio (beep) & getar (haptic) instan
+  if (isScanLocked) return;
+  isScanLocked = true;
+
   playScanAudioFeedback();
   triggerScanHapticFeedback();
 
   const statusEl = document.getElementById("scannerStatus");
   if (statusEl) {
-    statusEl.innerHTML = '<span class="text-success fw-bold"><i class="bi bi-check-circle-fill me-1"></i> QR Terdeteksi! Membuka data aset...</span>';
+    statusEl.innerHTML = \'<span class="text-success fw-bold"><i class="bi bi-check-circle-fill me-1"></i> QR Berhasil Terbaca! Membuka data aset...</span>\';
   }
+
+  const laser = document.getElementById("scanLaserLine");
+  if (laser) {
+    laser.style.backgroundColor = "#22C55E";
+    laser.style.boxShadow = "0 0 16px #22C55E";
+  }
+
   try {
-    if (html5QrcodeScanner) {
-      html5QrcodeScanner.clear();
+    if (html5QrCode && html5QrCode.isScanning) {
+      html5QrCode.stop().catch(function() {});
     }
   } catch (e) {}
 
@@ -315,34 +361,81 @@ function handleManualToken(e) {
   return false;
 }
 
-function applyCameraOptimizations() {
-  const video = document.querySelector("#reader video");
-  if (!video) return;
-
-  // Pastikan video tidak dicrop (tidak ter-zoom)
-  video.style.objectFit = "contain";
-  video.style.width = "100%";
-  video.style.height = "auto";
-
-  if (video.srcObject) {
-    const tracks = video.srcObject.getVideoTracks();
-    if (tracks && tracks.length > 0) {
-      const track = tracks[0];
-      currentCameraTrack = track;
-      try {
-        const capabilities = (typeof track.getCapabilities === "function") ? track.getCapabilities() : {};
-        // Reset zoom ke minimum (1x atau 0.5x) jika didukung perangkat
-        if (capabilities.zoom) {
-          const minZoom = capabilities.zoom.min || 1.0;
-          track.applyConstraints({
-            advanced: [{ zoom: minZoom }]
-          }).catch(function(e) {});
-
-          setupZoomControls(track, capabilities.zoom);
-        }
-      } catch (e) {}
-    }
+function handleGalleryScan(inputEl) {
+  if (!inputEl || !inputEl.files || inputEl.files.length === 0) return;
+  const file = inputEl.files[0];
+  const statusEl = document.getElementById("scannerStatus");
+  if (statusEl) {
+    statusEl.innerHTML = \'<span class="text-info"><span class="spinner-border spinner-border-sm me-1"></span> Menganalisis gambar dari galeri...</span>\';
   }
+
+  if (!html5QrCode) {
+    html5QrCode = new Html5Qrcode("reader");
+  }
+
+  html5QrCode.scanFile(file, true)
+    .then(function(decodedText) {
+      onScanSuccess(decodedText);
+    })
+    .catch(function(err) {
+      if (statusEl) {
+        statusEl.innerHTML = \'<span class="text-warning"><i class="bi bi-exclamation-circle me-1"></i> QR tidak ditemukan dalam gambar. Coba ambil foto lebih jelas/tegak.</span>\';
+      }
+    });
+}
+
+function applyCameraCapabilities() {
+  const video = document.querySelector("#reader video");
+  if (!video || !video.srcObject) return;
+
+  const tracks = video.srcObject.getVideoTracks();
+  if (!tracks || tracks.length === 0) return;
+
+  currentCameraTrack = tracks[0];
+  try {
+    const caps = (typeof currentCameraTrack.getCapabilities === "function") ? currentCameraTrack.getCapabilities() : {};
+    
+    // Check Torch capability
+    const torchBtn = document.getElementById("btnToggleTorch");
+    if (torchBtn) {
+      if (caps.torch) {
+        torchBtn.classList.remove("d-none");
+      }
+    }
+
+    // Check Zoom capability
+    if (caps.zoom) {
+      setupZoomControls(currentCameraTrack, caps.zoom);
+    }
+  } catch (e) {}
+}
+
+function toggleCameraTorch() {
+  if (!currentCameraTrack) return;
+  try {
+    const caps = (typeof currentCameraTrack.getCapabilities === "function") ? currentCameraTrack.getCapabilities() : {};
+    if (!caps.torch) {
+      alert("Lampu flash / torch tidak didukung oleh browser pada kamera ini.");
+      return;
+    }
+    isTorchOn = !isTorchOn;
+    currentCameraTrack.applyConstraints({
+      advanced: [{ torch: isTorchOn }]
+    }).then(function() {
+      const btn = document.getElementById("btnToggleTorch");
+      if (btn) {
+        if (isTorchOn) {
+          btn.classList.add("active");
+          btn.innerHTML = \'<i class="bi bi-lightning-fill"></i> Flash ON\';
+        } else {
+          btn.classList.remove("active");
+          btn.innerHTML = \'<i class="bi bi-lightning"></i> Flash\';
+        }
+      }
+    }).catch(function(e) {
+      isTorchOn = !isTorchOn;
+    });
+  } catch (e) {}
 }
 
 function setupZoomControls(track, zoomCap) {
@@ -363,14 +456,16 @@ function setupZoomControls(track, zoomCap) {
     presets.push(Number(Math.min(minZ + 1.0, maxZ).toFixed(1)));
   }
 
-  presets.forEach(function(val, idx) {
+  presets.forEach(function(val) {
     const btn = document.createElement("button");
     btn.type = "button";
-    btn.className = "btn-zoom-opt" + (val === minZ || (minZ >= 1.0 && val === 1.0) ? " active" : "");
+    btn.className = "btn-zoom-pill" + (val === minZ || (minZ >= 1.0 && val === 1.0) ? " active" : "");
     btn.textContent = val + "x";
     btn.onclick = function() {
-      setCameraZoom(val);
-      container.querySelectorAll(".btn-zoom-opt").forEach(function(b) { b.classList.remove("active"); });
+      if (track) {
+        track.applyConstraints({ advanced: [{ zoom: val }] }).catch(function() {});
+      }
+      container.querySelectorAll(".btn-zoom-pill").forEach(function(b) { b.classList.remove("active"); });
       btn.classList.add("active");
     };
     container.appendChild(btn);
@@ -379,67 +474,70 @@ function setupZoomControls(track, zoomCap) {
   wrapper.classList.remove("d-none");
 }
 
-function setCameraZoom(val) {
-  if (!currentCameraTrack) return;
-  try {
-    const caps = (typeof currentCameraTrack.getCapabilities === "function") ? currentCameraTrack.getCapabilities() : {};
-    if (caps.zoom) {
-      const target = Math.min(Math.max(val, caps.zoom.min), caps.zoom.max);
-      currentCameraTrack.applyConstraints({
-        advanced: [{ zoom: target }]
-      }).catch(function(err) {});
-    }
-  } catch (e) {}
+function switchCamera() {
+  if (!html5QrCode) return;
+  const statusEl = document.getElementById("scannerStatus");
+  if (statusEl) {
+    statusEl.innerHTML = \'<span class="spinner-border spinner-border-sm me-1 text-primary"></span> Membalik kamera...\';
+  }
+
+  currentFacingMode = (currentFacingMode === "environment") ? "user" : "environment";
+  
+  const promise = html5QrCode.isScanning ? html5QrCode.stop() : Promise.resolve();
+  promise.then(function() {
+    startCameraScanner();
+  }).catch(function() {
+    startCameraScanner();
+  });
 }
 
-document.addEventListener("DOMContentLoaded", () => {
-  try {
-    html5QrcodeScanner = new Html5QrcodeScanner(
-      "reader",
-      {
-        fps: 20,
-        qrbox: function(viewfinderWidth, viewfinderHeight) {
-          const minEdge = Math.min(viewfinderWidth, viewfinderHeight);
-          const size = Math.max(Math.floor(minEdge * 0.75), 180);
-          return { width: size, height: size };
-        },
-        showTorchButtonIfSupported: true,
-        videoConstraints: {
-          facingMode: { ideal: "environment" },
-          focusMode: { ideal: "continuous" }
-        }
-      },
-      false
-    );
-    html5QrcodeScanner.render(onScanSuccess, (err) => {});
-
-    // Pasang observer untuk mendeteksi saat elemen video aktif di dalam #reader
-    const observer = new MutationObserver(function() {
-      const vid = document.querySelector("#reader video");
-      if (vid) {
-        vid.addEventListener("loadedmetadata", applyCameraOptimizations);
-        vid.addEventListener("play", applyCameraOptimizations);
-        applyCameraOptimizations();
-      }
-    });
-    const rdr = document.getElementById("reader");
-    if (rdr) {
-      observer.observe(rdr, { childList: true, subtree: true });
-    }
-
-    const statusEl = document.getElementById("scannerStatus");
-    if (statusEl) {
-      statusEl.innerHTML = '<span class="text-success"><i class="bi bi-camera-fill me-1"></i> Kamera siap. Bidik ke stiker QR.</span>';
-    }
-  } catch (err) {
-    console.error(err);
-    const statusEl = document.getElementById("scannerStatus");
-    if (statusEl) {
-      statusEl.innerHTML = '<span class="text-muted">Kamera tidak aktif. Masukkan token QR secara manual di atas.</span>';
-    }
+function startCameraScanner() {
+  if (!html5QrCode) {
+    html5QrCode = new Html5Qrcode("reader");
   }
+
+  const manualBox = document.getElementById("manualStartBox");
+  const statusEl = document.getElementById("scannerStatus");
+
+  const qrConfig = {
+    fps: 22,
+    qrbox: function(viewfinderWidth, viewfinderHeight) {
+      const minEdge = Math.min(viewfinderWidth, viewfinderHeight);
+      const size = Math.max(Math.floor(minEdge * 0.72), 180);
+      return { width: size, height: size };
+    },
+    aspectRatio: 1.0
+  };
+
+  html5QrCode.start(
+    { facingMode: { ideal: currentFacingMode } },
+    qrConfig,
+    onScanSuccess,
+    function() {}
+  ).then(function() {
+    if (manualBox) manualBox.classList.add("d-none");
+    if (statusEl) {
+      statusEl.innerHTML = \'<span class="text-success"><i class="bi bi-camera-fill me-1"></i> Kamera aktif &bull; Bidik ke stiker QR</span>\';
+    }
+
+    // Pasang observer untuk track dan kemampuan zoom/flash
+    setTimeout(applyCameraCapabilities, 600);
+  }).catch(function(err) {
+    console.warn("Camera start failed, showing manual start prompt:", err);
+    if (manualBox) manualBox.classList.remove("d-none");
+    if (statusEl) {
+      statusEl.innerHTML = \'<span class="text-warning"><i class="bi bi-shield-lock me-1"></i> Butuh izin akses kamera. Ketuk tombol di layar.</span>\';
+    }
+  });
+}
+
+function requestStartCamera() {
+  startCameraScanner();
+}
+
+document.addEventListener("DOMContentLoaded", function() {
+  startCameraScanner();
 });
-</script>
-HTML;
+</script>';
 
 render_page('Pindai QR Komputer', $body, $head, $script, false);

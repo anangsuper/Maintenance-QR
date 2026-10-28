@@ -59,6 +59,7 @@ if ($currentMonthLog) {
         '.$btnUlang.'
         '.$btnSusulan.'
         '.$btnDetail.'
+        <a class="btn btn-outline-primary fw-semibold" href="'.e(module_url('scanner.php')).'"><i class="bi bi-qr-code-scan me-1"></i> Pindai Komputer Lain</a>
       </div>
     </div>';
 } else {
@@ -88,15 +89,20 @@ if ($currentMonthLog) {
         </div>';
     } else {
         $btnStartAction = '
-        <div class="d-flex flex-column flex-sm-row gap-2">
-          <a class="btn btn-success btn-lg fw-semibold py-3 px-4 shadow-sm flex-fill" href="'.e(module_url('scan.php', ['t' => $token, 'action' => 'start'])).'">
-            <i class="bi bi-play-circle-fill me-2"></i> Mulai Checklist (Bulan Ini)
+        <div class="d-grid gap-2">
+          <a class="btn btn-success btn-lg fw-bold py-3 px-4 shadow-sm text-center" href="'.e(module_url('scan.php', ['t' => $token, 'action' => 'start'])).'">
+            <i class="bi bi-lightning-charge-fill me-1"></i> Mulai Checklist Pemeliharaan (Bulan Ini)
           </a>
-          <a class="btn btn-outline-warning text-dark fw-semibold py-3 px-3 shadow-sm d-flex align-items-center justify-content-center" href="'.e(module_url('scan.php', ['t' => $token, 'action' => 'susulan'])).'" title="Isi pemeliharaan susulan untuk bulan lain">
-            <i class="bi bi-clock-history me-1"></i> Susulan
-          </a>
+          <div class="d-flex gap-2">
+            <a class="btn btn-outline-warning text-dark fw-semibold py-2 px-3 flex-fill shadow-sm text-center" href="'.e(module_url('scan.php', ['t' => $token, 'action' => 'susulan'])).'" title="Isi pemeliharaan susulan untuk bulan lain">
+              <i class="bi bi-clock-history me-1"></i> Maintenance Susulan
+            </a>
+            <a class="btn btn-outline-secondary fw-semibold py-2 px-3 flex-fill shadow-sm text-center" href="'.e(module_url('scanner.php')).'">
+              <i class="bi bi-qr-code-scan me-1"></i> Pindai Lainnya
+            </a>
+          </div>
         </div>
-        <div class="text-center mt-2"><small class="text-muted"><i class="bi bi-check2-circle text-success me-1"></i>Cukup pilih/masukkan nama petugas saat mengisi checklist (tidak wajib login).</small></div>';
+        <div class="text-center mt-2"><small class="text-success fw-semibold"><i class="bi bi-check-circle-fill me-1"></i>Bisa Langsung Diisi &amp; Disimpan Tanpa Perlu Login Akun</small></div>';
 
         $statusCardHtml = '
         <div class="card shadow-sm mb-4 p-3 p-md-4 rounded-3" style="background-color: #FEF2F2; border: 1px solid #FECACA; border-left: 4px solid #DC2626;">
@@ -543,15 +549,21 @@ if (!empty($_SESSION['flash_scan'])) {
 
 $userStatusStrip = $loggedIn
     ? '<div class="d-flex flex-wrap justify-content-between align-items-center bg-white p-2 px-3 rounded-3 shadow-sm mb-3 border gap-2">
-         <span class="small fw-bold text-dark"><i class="bi bi-person-check-fill text-success me-1"></i> Status Login: <span class="text-primary">'.e(current_user_name()).'</span></span>
+         <span class="small fw-bold text-dark"><i class="bi bi-person-check-fill text-success me-1"></i> Sesi Login: <span class="text-primary">'.e(current_user_name()).'</span></span>
          <div class="d-flex gap-2">
-           <a href="'.e(module_url('dashboard.php')).'" class="btn btn-sm btn-outline-primary"><i class="bi bi-speedometer2 me-1"></i> Dashboard</a>
-           <a href="'.e(module_url('logout.php')).'" class="btn btn-sm btn-outline-danger" title="Keluar"><i class="bi bi-box-arrow-right"></i> Keluar</a>
+           <a href="'.e(module_url('scanner.php')).'" class="btn btn-sm btn-primary fw-semibold"><i class="bi bi-qr-code-scan me-1"></i> Pindai Lagi</a>
+           <a href="'.e(module_url('dashboard.php')).'" class="btn btn-sm btn-outline-secondary"><i class="bi bi-speedometer2 me-1"></i> Dashboard</a>
          </div>
        </div>'
     : '<div class="d-flex flex-wrap justify-content-between align-items-center bg-white p-2 px-3 rounded-3 shadow-sm mb-3 border gap-2">
-         <span class="small text-secondary"><i class="bi bi-info-circle text-primary me-1"></i> Mode Cek Info Perangkat</span>
-         <a href="'.e(module_url('login.php')).'" class="btn btn-sm btn-outline-secondary"><i class="bi bi-box-arrow-in-right me-1"></i> Login Admin</a>
+         <div class="d-flex align-items-center gap-2">
+           <span class="badge bg-success px-2 py-1"><i class="bi bi-phone-fill me-1"></i> Pemindaian HP Aktif</span>
+           <span class="small text-secondary">Akses langsung lapangan &bull; Siap catat checklist tanpa login</span>
+         </div>
+         <div class="d-flex gap-2">
+           <a href="'.e(module_url('scanner.php')).'" class="btn btn-sm btn-primary fw-semibold"><i class="bi bi-qr-code-scan me-1"></i> Pindai Lagi</a>
+           <a href="'.e(module_url('login.php')).'" class="btn btn-sm btn-outline-secondary" title="Login Admin Portal"><i class="bi bi-shield-lock"></i></a>
+         </div>
        </div>';
 
 // Build Komponen Catatan & Keluhan Karyawan
