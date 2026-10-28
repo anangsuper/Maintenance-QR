@@ -87,7 +87,10 @@
       <main class="flex-1 flex flex-col min-w-0 bg-[#F4F5F7]" data-kid="1-2" data-name="main content viewport">
         <!-- Topbar (64px) -->
         <header class="h-[64px] bg-[#FFFFFF] border-b border-[#D1D5D8] flex items-center justify-between px-6 shrink-0 sticky top-0 z-10" data-kid="1-2-1" data-name="top header bar with search">
-          <div class="font-semibold text-[15px] text-[#1B2A3A]" data-kid="1-2-1-1" data-name='page title "Dashboard IT Ops"'>Dashboard IT Ops</div>
+          <div>
+              <div class="font-semibold text-[15px] text-[#1B2A3A] leading-tight" data-kid="1-2-1-1" data-name='page title "Dashboard IT Ops"'>Dashboard IT Ops</div>
+              <div class="text-[11px] text-[#53595F] leading-tight">Halo, <strong class="text-[#1B2A3A] font-semibold">Anang Super</strong></div>
+            </div>
           <div class="flex items-center gap-4" data-kid="1-2-1-2" data-name="top bar action controls container">
             <button class="flex items-center gap-2 h-[36px] px-3 bg-[#F4F5F7] border border-[#D1D5D8] rounded-[8px] text-[#53595F] text-[13px] hover:bg-[#e9eaec] transition-colors" data-kid="1-2-1-2-1" data-name="global search input button (Ctrl+K)">
               <i class="bi bi-search" data-kid="1-2-1-2-1-1" data-name="magnifying glass search icon"></i>
@@ -102,8 +105,15 @@
             <button class="text-[#53595F] hover:text-[#1B2A3A] ml-2 text-[18px] transition-colors" data-kid="1-2-1-2-4" data-name="help/question mark button">
               <i class="bi bi-question-circle" data-kid="1-2-1-2-4-1" data-name="question circle help icon"></i>
             </button>
-            <div class="w-[36px] h-[36px] rounded-[8px] bg-[#0E5C58] text-white flex items-center justify-center font-bold text-[13px] ml-2 cursor-pointer shadow-[0_1px_2px_rgba(0,0,0,0.1)]" data-kid="1-2-1-2-5" data-name="AI avatar user chip">
-              AI
+            <div class="flex items-center gap-2 h-[38px] px-2 rounded-[8px] hover:bg-[#F4F5F7] border border-transparent hover:border-[#D1D5D8] transition-all cursor-pointer ml-1" data-kid="1-2-1-2-5" data-name="user profile nav chip">
+              <div class="w-[32px] h-[32px] rounded-[8px] bg-[#0E5C58] text-white flex items-center justify-center font-bold text-[12px] shadow-[0_1px_2px_rgba(0,0,0,0.1)] shrink-0">
+                AS
+              </div>
+              <div class="flex flex-col text-start leading-none pr-1">
+                <span class="text-[13px] font-semibold text-[#1B2A3A]">Anang Super</span>
+                <span class="text-[11px] text-[#53595F] mt-0.5">IT Operations</span>
+              </div>
+              <i class="bi bi-chevron-down text-[#53595F] text-[10px]"></i>
             </div>
           </div>
         </header>

@@ -182,10 +182,13 @@ function render_page(string $title, string $content, string $extraHead = '', str
         <button class="btn btn-sm btn-outline-secondary d-lg-none" type="button" data-bs-toggle="offcanvas" data-bs-target="#appMobileSidebar" aria-controls="appMobileSidebar">
           <i class="bi bi-list fs-5"></i>
         </button>
-        <div class="font-semibold text-[15px] text-[#1B2A3A] text-truncate">' . e($cleanTitle) . '</div>
+        <div>
+          <div class="font-semibold text-[15px] text-[#1B2A3A] text-truncate leading-tight">' . e($cleanTitle) . '</div>
+          <div class="text-[11px] text-[#53595F] leading-tight d-none d-sm-block">Halo, <strong class="text-[#1B2A3A] font-semibold">' . e($userName) . '</strong></div>
+        </div>
       </div>
 
-      <div class="flex items-center gap-4">
+      <div class="flex items-center gap-3 md:gap-4">
         <button type="button" class="flex items-center gap-2 h-[36px] px-3 bg-[#F4F5F7] border border-[#D1D5D8] rounded-[8px] text-[#53595F] text-[13px] hover:bg-[#e9eaec] transition-colors cursor-pointer" data-bs-toggle="modal" data-bs-target="#globalSearchModal" title="Cari aset (Ctrl+K)">
           <i class="bi bi-search"></i>
           <span class="d-none d-sm-inline">Cari aset...</span>
@@ -196,13 +199,20 @@ function render_page(string $title, string $content, string $extraHead = '', str
           <i class="bi bi-cloud-slash"></i>
           <span class="pwa-queue-text">2 tertunda</span>
         </button>
-        <button type="button" class="text-[#53595F] hover:text-[#1B2A3A] ml-2 text-[18px] transition-colors border-0 bg-transparent cursor-pointer" data-bs-toggle="modal" data-bs-target="#modalPanduanAplikasi" title="Bantuan & Panduan">
+        <button type="button" class="text-[#53595F] hover:text-[#1B2A3A] ml-1 text-[18px] transition-colors border-0 bg-transparent cursor-pointer" data-bs-toggle="modal" data-bs-target="#modalPanduanAplikasi" title="Bantuan & Panduan">
           <i class="bi bi-question-circle"></i>
         </button>
         <div class="dropdown">
-          <div class="w-[36px] h-[36px] rounded-[8px] bg-[#0E5C58] text-white flex items-center justify-center font-bold text-[13px] ml-2 cursor-pointer shadow-[0_1px_2px_rgba(0,0,0,0.1)]" data-bs-toggle="dropdown" aria-expanded="false" title="Akun Pengguna">
-            ' . $userInitial . '
-          </div>
+          <button type="button" class="flex items-center gap-2 h-[38px] px-2 rounded-[8px] hover:bg-[#F4F5F7] border border-transparent hover:border-[#D1D5D8] transition-all cursor-pointer bg-transparent text-decoration-none" data-bs-toggle="dropdown" aria-expanded="false" title="Akun Pengguna: ' . e($userName) . '">
+            <div class="w-[32px] h-[32px] rounded-[8px] bg-[#0E5C58] text-white flex items-center justify-center font-bold text-[13px] shadow-[0_1px_2px_rgba(0,0,0,0.1)] shrink-0">
+              ' . $userInitial . '
+            </div>
+            <div class="d-none d-md-flex flex-col text-start leading-none pr-0.5">
+              <span class="text-[13px] font-semibold text-[#1B2A3A] truncate max-w-[150px]">' . e($userName) . '</span>
+              <span class="text-[11px] text-[#53595F] text-capitalize mt-0.5">' . e($displayRole) . '</span>
+            </div>
+            <i class="bi bi-chevron-down text-[#53595F] text-[10px] d-none d-md-inline-block"></i>
+          </button>
           <ul class="dropdown-menu dropdown-menu-end shadow-sm border mt-2">
             <li class="px-3 py-2 border-bottom">
               <div class="fw-bold text-[#1B2A3A]">' . e($userName) . '</div>
