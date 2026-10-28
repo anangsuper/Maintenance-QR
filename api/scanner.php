@@ -189,12 +189,14 @@ $body = '
         <div id="reader"></div>
 
         <!-- Tombol Start Manual (jika browser butuh izin ketukan pengguna) -->
-        <div id="manualStartBox" class="text-center p-4 d-none" style="position: absolute; inset: 0; background: #07172F; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 8;">
-          <i class="bi bi-camera-fill fs-1 text-primary mb-2"></i>
-          <p class="small text-light mb-3">Ketuk tombol di bawah untuk mengizinkan kamera HP:</p>
-          <button type="button" class="btn btn-primary fw-bold px-4 py-2 rounded-pill shadow" onclick="requestStartCamera()">
-            <i class="bi bi-camera me-1"></i> Buka Kamera Scanner
-          </button>
+        <div id="manualStartBox" class="text-center p-4 d-none" style="position: absolute; inset: 0; background: #07172F; z-index: 8;">
+          <div class="d-flex flex-column align-items-center justify-content-center h-100">
+            <i class="bi bi-camera-video-fill fs-1 text-primary mb-2"></i>
+            <p class="small text-light mb-3">Browser meminta izin untuk membuka kamera HP:</p>
+            <button type="button" class="btn btn-primary fw-bold px-4 py-2 rounded-pill shadow" onclick="requestStartCamera()">
+              <i class="bi bi-camera me-1"></i> Buka Kamera Scanner
+            </button>
+          </div>
         </div>
       </div>
 
@@ -485,59 +487,146 @@ function switchCamera() {
   
   const promise = html5QrCode.isScanning ? html5QrCode.stop() : Promise.resolve();
   promise.then(function() {
+    isCameraStarting = false;
     startCameraScanner();
   }).catch(function() {
+    isCameraStarting = false;
     startCameraScanner();
   });
 }
 
+let isCameraStarting = false;
+
 function startCameraScanner() {
-  if (!html5QrCode) {
-    html5QrCode = new Html5Qrcode("reader");
-  }
+  if (isCameraStarting) return;
+  isCameraStarting = true;
 
   const manualBox = document.getElementById("manualStartBox");
   const statusEl = document.getElementById("scannerStatus");
 
+  // 1. Cek Protokol Keamanan (Kamera WAJIB HTTPS atau localhost)
+  if (!window.isSecureContext && location.hostname !== "localhost" && location.hostname !== "127.0.0.1") {
+    isCameraStarting = false;
+    if (location.protocol === "http:" && location.hostname === "it.bankmitra.co.id") {
+      window.location.replace("https://" + location.host + location.pathname + location.search);
+      return;
+    }
+    if (statusEl) {
+      statusEl.innerHTML = '<span class="text-danger fw-bold"><i class="bi bi-shield-x me-1"></i> Kamera membutuhkan koneksi HTTPS. Silakan buka melalui <a href="https://it.bankmitra.co.id/scanner.php" class="text-white text-decoration-underline fw-bold">https://it.bankmitra.co.id/scanner.php</a></span>';
+    }
+    if (manualBox) manualBox.classList.remove("d-none");
+    return;
+  }
+
+  // 2. Cek apakah Html5Qrcode sudah siap
+  if (typeof Html5Qrcode === "undefined") {
+    isCameraStarting = false;
+    if (statusEl) {
+      statusEl.innerHTML = '<span class="text-warning"><span class="spinner-border spinner-border-sm me-1 text-primary"></span> Menyiapkan library kamera...</span>';
+    }
+    setTimeout(startCameraScanner, 600);
+    return;
+  }
+
+  if (!html5QrCode) {
+    html5QrCode = new Html5Qrcode("reader");
+  }
+
+  if (html5QrCode.isScanning) {
+    html5QrCode.stop().then(function() {
+      isCameraStarting = false;
+      startCameraScanner();
+    }).catch(function() {
+      isCameraStarting = false;
+    });
+    return;
+  }
+
+  if (statusEl) {
+    statusEl.innerHTML = '<span class="spinner-border spinner-border-sm me-1 text-primary"></span> Menghubungkan ke kamera...';
+  }
+
   const qrConfig = {
-    fps: 22,
+    fps: 15,
     qrbox: function(viewfinderWidth, viewfinderHeight) {
       const minEdge = Math.min(viewfinderWidth, viewfinderHeight);
-      const size = Math.max(Math.floor(minEdge * 0.72), 180);
+      const size = Math.max(Math.floor(minEdge * 0.72), 120);
       return { width: size, height: size };
-    },
-    aspectRatio: 1.0
+    }
   };
 
+  // Coba jalankan kamera langsung dengan facingMode (prioritaskan environment / kamera belakang)
   html5QrCode.start(
-    { facingMode: { ideal: currentFacingMode } },
+    { facingMode: currentFacingMode },
     qrConfig,
     onScanSuccess,
     function() {}
   ).then(function() {
+    isCameraStarting = false;
     if (manualBox) manualBox.classList.add("d-none");
     if (statusEl) {
-      statusEl.innerHTML = \'<span class="text-success"><i class="bi bi-camera-fill me-1"></i> Kamera aktif &bull; Bidik ke stiker QR</span>\';
+      statusEl.innerHTML = '<span class="text-success fw-bold"><i class="bi bi-camera-fill me-1"></i> Kamera aktif &bull; Arahkan ke stiker QR</span>';
     }
-
-    // Pasang observer untuk track dan kemampuan zoom/flash
-    setTimeout(applyCameraCapabilities, 600);
-  }).catch(function(err) {
-    console.warn("Camera start failed, showing manual start prompt:", err);
-    if (manualBox) manualBox.classList.remove("d-none");
-    if (statusEl) {
-      statusEl.innerHTML = \'<span class="text-warning"><i class="bi bi-shield-lock me-1"></i> Butuh izin akses kamera. Ketuk tombol di layar.</span>\';
-    }
+    setTimeout(applyCameraCapabilities, 500);
+  }).catch(function(errFirst) {
+    console.warn("Kamera facingMode gagal, mencoba deteksi perangkat kamera spesifik:", errFirst);
+    // Fallback: ambil daftar kamera perangkat
+    Html5Qrcode.getCameras().then(function(cameras) {
+      if (!cameras || cameras.length === 0) {
+        throw new Error("Tidak ada kamera yang terdeteksi.");
+      }
+      let selectedCam = cameras[0];
+      if (currentFacingMode === "environment" && cameras.length > 1) {
+        const back = cameras.find(function(c) {
+          return /back|rear|environment|belakang|main/i.test(c.label);
+        });
+        selectedCam = back || cameras[cameras.length - 1];
+      }
+      return html5QrCode.start(selectedCam.id, qrConfig, onScanSuccess, function() {});
+    }).then(function() {
+      isCameraStarting = false;
+      if (manualBox) manualBox.classList.add("d-none");
+      if (statusEl) {
+        statusEl.innerHTML = '<span class="text-success fw-bold"><i class="bi bi-camera-fill me-1"></i> Kamera aktif &bull; Arahkan ke stiker QR</span>';
+      }
+      setTimeout(applyCameraCapabilities, 500);
+    }).catch(function(errFinal) {
+      isCameraStarting = false;
+      console.error("Kamera sepenuhnya gagal:", errFinal);
+      if (manualBox) manualBox.classList.remove("d-none");
+      if (statusEl) {
+        const errStr = String(errFinal || errFirst || "");
+        if (errStr.includes("NotAllowedError") || errStr.includes("Permission") || errStr.includes("denied")) {
+          statusEl.innerHTML = '<span class="text-danger fw-bold"><i class="bi bi-shield-x me-1"></i> Izin kamera diblokir browser. Ketuk ikon gembok di address bar lalu pilih <b>Izinkan Kamera</b>.</span>';
+        } else if (errStr.includes("NotFoundError") || errStr.includes("DevicesNotFoundError")) {
+          statusEl.innerHTML = '<span class="text-warning fw-bold"><i class="bi bi-camera-video-off me-1"></i> Perangkat kamera tidak ditemukan.</span>';
+        } else if (errStr.includes("NotReadableError") || errStr.includes("TrackStartError")) {
+          statusEl.innerHTML = '<span class="text-warning fw-bold"><i class="bi bi-exclamation-triangle me-1"></i> Kamera sedang dipakai oleh aplikasi lain. Tutup aplikasi lain lalu coba lagi.</span>';
+        } else {
+          statusEl.innerHTML = '<span class="text-warning"><i class="bi bi-camera-video me-1"></i> Ketuk tombol <b>"Buka Kamera Scanner"</b> untuk menyalakan kamera.</span>';
+        }
+      }
+    });
   });
 }
 
 function requestStartCamera() {
+  const manualBox = document.getElementById("manualStartBox");
+  if (manualBox) manualBox.classList.add("d-none");
+  const statusEl = document.getElementById("scannerStatus");
+  if (statusEl) {
+    statusEl.innerHTML = '<span class="spinner-border spinner-border-sm me-1 text-primary"></span> Meminta izin kamera ke browser...';
+  }
+  isCameraStarting = false;
   startCameraScanner();
 }
 
-document.addEventListener("DOMContentLoaded", function() {
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", startCameraScanner);
+} else {
   startCameraScanner();
-});
+}
+
 </script>';
 
 render_page('Pindai QR Komputer', $body, $head, $script, false);
