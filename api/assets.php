@@ -283,20 +283,20 @@ foreach ($rawAssets as $a) {
 }
 
 // Render Branch Navigation Pills
-$branchPillsHtml = '<div class="branch-nav-bar custom-scrollbar mb-3">';
+$branchPillsHtml = '<div class="flex items-center gap-2 overflow-x-auto pb-1 mb-4 custom-scrollbar">';
 $allActive = ($cabangId === 0);
-$branchPillsHtml .= '<a class="branch-nav-pill '.($allActive ? 'active' : '').'" href="'.e(filter_query(['cabang' => 0, 'page' => 1])).'">
+$branchPillsHtml .= '<a class="flex items-center gap-1.5 h-[34px] px-3.5 rounded-[8px] text-[13px] font-semibold text-decoration-none shrink-0 transition-colors '.($allActive ? 'bg-[#0E5C58] text-white shadow-sm' : 'bg-[#FFFFFF] border border-[#D1D5D8] text-[#53595F] hover:bg-[#F4F5F7] hover:text-[#1B2A3A]').'" href="'.e(filter_query(['cabang' => 0, 'page' => 1])).'">
   <i class="bi bi-buildings"></i> Semua Cabang
-  <span class="badge rounded-pill '.($allActive ? 'bg-white bg-opacity-25 text-white' : 'bg-light text-dark').'">'.$totalAllAssets.'</span>
+  <span class="text-[11px] font-bold px-1.5 py-0.2 rounded-full '.($allActive ? 'bg-white/20 text-white' : 'bg-[#F4F5F7] text-[#53595F]').'">'.$totalAllAssets.'</span>
 </a>';
 foreach ($cabangs as $c) {
     $cid = (int)($c['id'] ?? 0);
     $cnama = $c['nama'] ?? $c['nama_cabang'] ?? ('Cabang #' . $cid);
     $cCount = $branchAssetCounts[$cid] ?? 0;
     $isActive = ($cid === $cabangId);
-    $branchPillsHtml .= '<a class="branch-nav-pill '.($isActive ? 'active' : '').'" href="'.e(filter_query(['cabang' => $cid, 'page' => 1])).'">
+    $branchPillsHtml .= '<a class="flex items-center gap-1.5 h-[34px] px-3.5 rounded-[8px] text-[13px] font-semibold text-decoration-none shrink-0 transition-colors '.($isActive ? 'bg-[#0E5C58] text-white shadow-sm' : 'bg-[#FFFFFF] border border-[#D1D5D8] text-[#53595F] hover:bg-[#F4F5F7] hover:text-[#1B2A3A]').'" href="'.e(filter_query(['cabang' => $cid, 'page' => 1])).'">
       <i class="bi bi-geo-alt'.($isActive ? '-fill' : '').'"></i> '.e($cnama).'
-      <span class="badge rounded-pill '.($isActive ? 'bg-white bg-opacity-25 text-white' : 'bg-light text-dark').'">'.$cCount.'</span>
+      <span class="text-[11px] font-bold px-1.5 py-0.2 rounded-full '.($isActive ? 'bg-white/20 text-white' : 'bg-[#F4F5F7] text-[#53595F]').'">'.$cCount.'</span>
     </a>';
 }
 $branchPillsHtml .= '</div>';
@@ -402,58 +402,67 @@ if ($maintStatus === 'pending') {
     </div>';
 }
 
+// Kombai Metric Strip (88px)
+$metricStripHtml = '
+<div class="bg-[#FFFFFF] border border-[#D1D5D8] rounded-[10px] h-[88px] flex overflow-hidden shrink-0 mb-4">
+  <a href="'.e(filter_query(['status' => null, 'maint' => null, 'page' => 1])).'" class="flex-1 flex flex-col justify-center px-6 border-r border-[#D1D5D8] relative cursor-pointer text-decoration-none transition-colors '.($maintStatus === '' || $maintStatus === 'all' ? 'bg-[#D9F1EF]' : 'hover:bg-[#F4F5F7]').'">
+    <div class="absolute left-0 top-0 bottom-0 w-1 bg-[#0E5C58]"></div>
+    <div class="text-[30px] font-bold text-[#1B2A3A] tabular-nums leading-none">'.$statTotal.'</div>
+    <div class="text-[12px] font-medium text-[#53595F] mt-1.5">Total Unit Komputer</div>
+  </a>
+  <a href="'.e(filter_query(['maint' => 'done', 'page' => 1])).'" class="flex-1 flex flex-col justify-center px-6 border-r border-[#D1D5D8] relative cursor-pointer text-decoration-none transition-colors '.($maintStatus === 'done' ? 'bg-[#D9F1EF]' : 'hover:bg-[#F4F5F7]').'">
+    <div class="absolute left-0 top-0 bottom-0 w-1 bg-[#16A34A]"></div>
+    <div class="text-[30px] font-bold text-[#16A34A] tabular-nums leading-none">'.$statDoneMaint.'</div>
+    <div class="text-[12px] font-medium text-[#53595F] mt-1.5">Sudah Dipelihara ('.$currentMonthName.')</div>
+  </a>
+  <a href="'.e(filter_query(['maint' => 'pending', 'page' => 1])).'" class="flex-1 flex flex-col justify-center px-6 border-r border-[#D1D5D8] relative cursor-pointer text-decoration-none transition-colors '.($maintStatus === 'pending' ? 'bg-[#FEF3C7]' : 'hover:bg-[#F4F5F7]').'">
+    <div class="absolute left-0 top-0 bottom-0 w-1 bg-[#D97706]"></div>
+    <div class="text-[30px] font-bold text-[#D97706] tabular-nums leading-none">'.$statPendingMaint.'</div>
+    <div class="text-[12px] font-medium text-[#53595F] mt-1.5">Belum Diperiksa (To-Do)</div>
+  </a>
+  <a href="'.e(filter_query(['maint' => 'repair', 'page' => 1])).'" class="flex-1 flex flex-col justify-center px-6 relative cursor-pointer text-decoration-none transition-colors '.($maintStatus === 'repair' ? 'bg-[#FEE2E2]' : 'hover:bg-[#F4F5F7]').'">
+    <div class="absolute left-0 top-0 bottom-0 w-1 bg-[#DC2626]"></div>
+    <div class="text-[30px] font-bold text-[#DC2626] tabular-nums leading-none">'.$statRepair.'</div>
+    <div class="text-[12px] font-medium text-[#53595F] mt-1.5">Temuan Kendala IT</div>
+  </a>
+</div>';
+
 // Tab Filter Cepat (To-Do List Teknisi) HTML
 $todoTabsHtml = '
-<div class="card p-3 border-0 shadow-sm mb-4 bg-white" style="border-radius: 16px; border-left: 5px solid '.($maintStatus === 'pending' ? '#ef4444' : ($maintStatus === 'repair' ? '#f59e0b' : ($maintStatus === 'done' ? '#10b981' : '#2563eb'))).' !important;">
-  <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2">
-    <div>
-      <div class="d-flex align-items-center gap-2">
-        <span class="badge '.($maintStatus === 'pending' ? 'bg-danger text-white' : ($maintStatus === 'repair' ? 'bg-warning text-dark' : ($maintStatus === 'done' ? 'bg-success text-white' : 'bg-primary bg-opacity-10 text-primary'))).' fw-bold px-2 py-1">
-          <i class="bi bi-list-task me-1"></i> TO-DO LIST TEKNISI
-        </span>
-        <span class="text-secondary small">Filter Cepat Status Periode: <strong>'.$currentMonthName.' '.$year.'</strong></span>
-      </div>
-      <div class="small text-muted mt-1">Pilih tab di bawah untuk memfokuskan daftar unit komputer:</div>
-    </div>
-    <div class="d-flex align-items-center gap-2 flex-wrap">
-      <a class="btn btn-outline-secondary btn-sm fw-semibold" target="_blank" href="'.e(module_url('print_qr.php', ['cabang' => $cabangId])).'">
-        <i class="bi bi-qr-code me-1"></i> Cetak QR Cabang Ini
-      </a>
-      <a class="btn btn-outline-primary btn-sm fw-semibold" target="_blank" href="'.e(module_url('print_report.php', ['bulan' => $month, 'tahun' => $year, 'cabang' => $cabangId])).'">
-        <i class="bi bi-printer me-1"></i> Cetak Laporan
-      </a>
-    </div>
-  </div>
-
-  <div class="d-flex flex-wrap gap-2 mt-3 pt-3 border-top">
-    <!-- 1. Semua Unit -->
+<div class="flex items-center justify-between border-b border-[#D1D5D8] h-[44px] shrink-0 mb-4 px-1 flex-wrap gap-2">
+  <div class="flex items-center gap-6 h-full overflow-x-auto custom-scrollbar">
     <a href="'.e(filter_query(['maint' => null, 'page' => 1])).'" 
-       class="btn btn-sm rounded-pill px-3 fw-bold '.($maintStatus === '' || $maintStatus === 'all' ? 'btn-primary shadow-sm' : 'btn-outline-secondary').'">
-      <i class="bi bi-grid-fill me-1"></i> Semua Unit ('.$statTotal.')
+       class="flex items-center gap-2 h-full border-b-2 text-[14px] text-decoration-none transition-colors '.($maintStatus === '' || $maintStatus === 'all' ? 'border-[#0E5C58] text-[#0E5C58] font-bold' : 'border-transparent text-[#53595F] hover:text-[#1B2A3A] font-semibold').'">
+      <span>Semua Unit</span>
+      <span class="text-[11px] font-bold px-1.5 py-0.5 rounded-full '.($maintStatus === '' || $maintStatus === 'all' ? 'bg-[#D9F1EF] text-[#0E5C58]' : 'bg-[#F4F5F7] text-[#53595F]').'">'.$statTotal.'</span>
     </a>
-
-    <!-- 2. Belum Diperiksa (To-Do Utama) -->
     <a href="'.e(filter_query(['maint' => 'pending', 'page' => 1])).'" 
-       class="btn btn-sm rounded-pill px-3 fw-bold '.($maintStatus === 'pending' ? 'btn-danger text-white shadow' : 'btn-outline-danger').'" style="'.($maintStatus !== 'pending' ? 'background-color: #FEF2F2; border-color: #FCA5A5;' : '').'">
-      <i class="bi bi-exclamation-circle-fill me-1"></i> Belum Diperiksa Bulan Ini ('.$statPendingMaint.')
+       class="flex items-center gap-2 h-full border-b-2 text-[14px] text-decoration-none transition-colors '.($maintStatus === 'pending' ? 'border-[#D97706] text-[#D97706] font-bold' : 'border-transparent text-[#53595F] hover:text-[#1B2A3A] font-semibold').'">
+      <span>Belum Diperiksa</span>
+      <span class="text-[11px] font-bold px-1.5 py-0.5 rounded-full '.($maintStatus === 'pending' ? 'bg-[#FEF3C7] text-[#92400E]' : 'bg-[#F4F5F7] text-[#53595F]').'">'.$statPendingMaint.'</span>
     </a>
-
-    <!-- 3. Ada Temuan Masalah -->
     <a href="'.e(filter_query(['maint' => 'repair', 'page' => 1])).'" 
-       class="btn btn-sm rounded-pill px-3 fw-bold '.($maintStatus === 'repair' ? 'btn-warning text-dark shadow' : 'btn-outline-warning text-dark').'" style="'.($maintStatus !== 'repair' ? 'background-color: #FFFBEB; border-color: #FCD34D;' : '').'">
-      <i class="bi bi-tools me-1"></i> Ada Temuan Masalah ('.$statRepair.')
+       class="flex items-center gap-2 h-full border-b-2 text-[14px] text-decoration-none transition-colors '.($maintStatus === 'repair' ? 'border-[#DC2626] text-[#DC2626] font-bold' : 'border-transparent text-[#53595F] hover:text-[#1B2A3A] font-semibold').'">
+      <span>Temuan Kendala</span>
+      <span class="text-[11px] font-bold px-1.5 py-0.5 rounded-full '.($maintStatus === 'repair' ? 'bg-[#FEE2E2] text-[#991B1B]' : 'bg-[#F4F5F7] text-[#53595F]').'">'.$statRepair.'</span>
     </a>
-
-    <!-- 4. Sudah Selesai -->
     <a href="'.e(filter_query(['maint' => 'done', 'page' => 1])).'" 
-       class="btn btn-sm rounded-pill px-3 fw-bold '.($maintStatus === 'done' ? 'btn-success text-white shadow' : 'btn-outline-success').'" style="'.($maintStatus !== 'done' ? 'background-color: #F0FDF4; border-color: #86EFAC;' : '').'">
-      <i class="bi bi-check-circle-fill me-1"></i> Selesai ('.$statDoneMaint.')
+       class="flex items-center gap-2 h-full border-b-2 text-[14px] text-decoration-none transition-colors '.($maintStatus === 'done' ? 'border-[#16A34A] text-[#16A34A] font-bold' : 'border-transparent text-[#53595F] hover:text-[#1B2A3A] font-semibold').'">
+      <span>Sudah Maintenance</span>
+      <span class="text-[11px] font-bold px-1.5 py-0.5 rounded-full '.($maintStatus === 'done' ? 'bg-[#D9F1EF] text-[#0E5C58]' : 'bg-[#F4F5F7] text-[#53595F]').'">'.$statDoneMaint.'</span>
     </a>
-
-    <!-- 5. Tidak Terpakai / Bebas Maintenance -->
     <a href="'.e(filter_query(['status' => 'Tidak Terpakai', 'maint' => null, 'page' => 1])).'" 
-       class="btn btn-sm rounded-pill px-3 fw-bold '.($statusAset === 'Tidak Terpakai' ? 'btn-secondary text-white shadow' : 'btn-outline-secondary').'">
-      <i class="bi bi-slash-circle me-1"></i> Tidak Terpakai (Histori)
+       class="flex items-center gap-2 h-full border-b-2 text-[14px] text-decoration-none transition-colors '.($statusAset === 'Tidak Terpakai' ? 'border-[#53595F] text-[#1B2A3A] font-bold' : 'border-transparent text-[#53595F] hover:text-[#1B2A3A] font-semibold').'">
+      <span>Tidak Terpakai (Histori)</span>
+      <span class="text-[11px] font-bold px-1.5 py-0.5 rounded-full bg-[#F4F5F7] text-[#53595F]">'.$statTidakTerpakai.'</span>
+    </a>
+  </div>
+  <div class="flex items-center gap-2 pb-1">
+    <a class="flex items-center gap-1.5 h-[30px] px-2.5 bg-white border border-[#D1D5D8] hover:bg-[#F4F5F7] text-[#53595F] hover:text-[#1B2A3A] font-semibold text-[12px] rounded-[6px] text-decoration-none transition-colors" target="_blank" href="'.e(module_url('print_qr.php', ['cabang' => $cabangId])).'">
+      <i class="bi bi-qr-code text-[#0E5C58]"></i> Cetak QR
+    </a>
+    <a class="flex items-center gap-1.5 h-[30px] px-2.5 bg-white border border-[#D1D5D8] hover:bg-[#F4F5F7] text-[#53595F] hover:text-[#1B2A3A] font-semibold text-[12px] rounded-[6px] text-decoration-none transition-colors" target="_blank" href="'.e(module_url('print_report.php', ['bulan' => $month, 'tahun' => $year, 'cabang' => $cabangId])).'">
+      <i class="bi bi-printer text-[#0E5C58]"></i> Cetak Laporan
     </a>
   </div>
 </div>';
@@ -568,11 +577,13 @@ foreach ($pageAssets as $a) {
     // Quick Action Button for Technicians
     $quickActionBtn = '';
     if ($isRepairIssue && $scanUrl) {
-        $quickActionBtn = '<a class="btn btn-sm btn-danger py-1 px-2 fw-semibold text-nowrap" href="'.e($scanUrl . '&action=tindak_lanjut').'" title="Tindak Lanjuti Kendala"><i class="bi bi-tools me-1"></i> Perbaiki</a>';
+        $quickActionBtn = '<a class="flex items-center gap-1 h-[28px] px-2.5 bg-[#DC2626] hover:bg-[#b91c1c] text-white font-semibold text-[11px] rounded-[6px] text-decoration-none transition-colors" href="'.e($scanUrl . '&action=tindak_lanjut').'" title="Tindak Lanjuti Kendala"><i class="bi bi-tools"></i> Perbaiki</a>';
     } elseif (!$isDoneMaint && $isAsetAktif && $scanUrl) {
-        $quickActionBtn = '<a class="btn btn-sm btn-primary py-1 px-2 fw-semibold text-nowrap" href="'.e($scanUrl . '&action=start').'" title="Mulai Checklist Pemeliharaan"><i class="bi bi-clipboard-check me-1"></i> Periksa</a>';
+        $quickActionBtn = '<a class="flex items-center gap-1 h-[28px] px-2.5 bg-[#0E5C58] hover:bg-[#0c4f4b] text-white font-semibold text-[11px] rounded-[6px] text-decoration-none transition-colors" href="'.e($scanUrl . '&action=start').'" title="Mulai Checklist Pemeliharaan"><i class="bi bi-clipboard-check"></i> Periksa</a>';
+    } elseif ($scanUrl) {
+        $quickActionBtn = '<a class="flex items-center gap-1 h-[28px] px-2.5 bg-[#D9F1EF] hover:bg-[#c2ebe8] text-[#0E5C58] font-semibold text-[11px] rounded-[6px] text-decoration-none transition-colors" href="'.e($scanUrl).'" title="Buka Kartu"><i class="bi bi-credit-card"></i> Buka Kartu</a>';
     } elseif (!$isAsetAktif) {
-        $quickActionBtn = '<span class="badge bg-light text-muted border py-1 px-2" style="font-size:0.72rem;" title="Unit Bebas Maintenance">Bebas Maint</span>';
+        $quickActionBtn = '<span class="inline-flex items-center h-[28px] px-2 bg-[#F4F5F7] text-[#53595F] text-[11px] font-semibold rounded-[6px]" title="Unit Bebas Maintenance">Bebas Maint</span>';
     }
 
     $tableRows .= '
@@ -699,56 +710,47 @@ $body = '
 '.$flashHtml.'
 
 <!-- Header & Quick Actions -->
-<div class="d-flex flex-column flex-xl-row align-items-xl-center justify-content-between gap-3 mb-4">
+<div class="flex flex-col xl:flex-row xl:items-center justify-between gap-3 mb-4">
   <div>
-    <div class="tech-label mb-1">ASSET MANAGEMENT</div>
-    <h1 class="h3 mb-1">Asset Registry</h1>
-    <p class="text-secondary small mb-0">Katalog dan inventaris lengkap perangkat IT, komputer kantor cabang, dan status pemeliharaan.</p>
+    <h1 class="text-[24px] font-bold text-[#1B2A3A] tracking-tight mb-0">Data Komputer &amp; PC</h1>
+    <p class="text-[13px] text-[#53595F] mb-0">Katalog dan registri lengkap perangkat IT, komputer kantor cabang, dan status pemeliharaan.</p>
   </div>
-  <div class="d-flex align-items-center gap-2 flex-wrap justify-content-start justify-content-xl-end">
-    <a class="btn btn-primary d-inline-flex align-items-center gap-1 fw-semibold px-3 shadow-sm" href="'.e(module_url('asset_add.php')).'">
+  <div class="flex items-center gap-2 flex-wrap">
+    <a class="flex items-center gap-1.5 h-[36px] px-3.5 bg-[#0E5C58] hover:bg-[#0c4f4b] text-white font-semibold text-[13px] rounded-[8px] transition-colors shadow-sm text-decoration-none" href="'.e(module_url('asset_add.php')).'">
       <i class="bi bi-plus-lg"></i> Tambah Aset
     </a>
-    <button type="button" class="btn btn-warning text-dark d-inline-flex align-items-center gap-1 fw-semibold shadow-sm" onclick="openBulkEditModal()">
-      <i class="bi bi-pencil-square"></i> Edit Massal <span class="badge bg-dark text-white rounded-pill ms-1"><span class="selectedCountNum">0</span></span>
+    <button type="button" class="flex items-center gap-1.5 h-[36px] px-3 bg-[#FFFFFF] border border-[#D1D5D8] hover:bg-[#F4F5F7] text-[#1B2A3A] font-medium text-[13px] rounded-[8px] transition-colors cursor-pointer" onclick="openBulkEditModal()">
+      <i class="bi bi-pencil-square text-[#875315]"></i> Edit Massal <span class="bg-[#F4F5F7] border border-[#D1D5D8] text-[#53595F] text-[11px] font-bold px-1.5 py-0.5 rounded-[4px] ml-1"><span class="selectedCountNum">0</span></span>
     </button>
-    <a class="btn btn-outline-primary d-inline-flex align-items-center gap-1 fw-semibold" href="'.e(module_url('asset_import.php')).'">
-      <i class="bi bi-file-earmark-arrow-up"></i> Import Excel / CSV
+    <a class="flex items-center gap-1.5 h-[36px] px-3 bg-[#FFFFFF] border border-[#D1D5D8] hover:bg-[#F4F5F7] text-[#1B2A3A] font-medium text-[13px] rounded-[8px] transition-colors text-decoration-none" href="'.e(module_url('asset_import.php')).'">
+      <i class="bi bi-file-earmark-arrow-up text-[#0E5C58]"></i> Import
     </a>
-    <a class="btn btn-light border d-inline-flex align-items-center gap-1 fw-semibold text-dark shadow-xs" href="'.e(module_url('asset_gallery.php')).'">
-      <i class="bi bi-images text-primary"></i> Galeri Foto Unit
+    <a class="flex items-center gap-1.5 h-[36px] px-3 bg-[#FFFFFF] border border-[#D1D5D8] hover:bg-[#F4F5F7] text-[#1B2A3A] font-medium text-[13px] rounded-[8px] transition-colors text-decoration-none" href="'.e(module_url('asset_gallery.php')).'">
+      <i class="bi bi-images text-[#0E5C58]"></i> Galeri Foto
     </a>
-    <a class="btn btn-light border d-inline-flex align-items-center gap-1 fw-semibold text-dark shadow-xs" href="'.e(module_url('asset_mutations.php')).'">
-      <i class="bi bi-arrow-left-right text-primary"></i> Mutasi Aset
+    <a class="flex items-center gap-1.5 h-[36px] px-3 bg-[#FFFFFF] border border-[#D1D5D8] hover:bg-[#F4F5F7] text-[#1B2A3A] font-medium text-[13px] rounded-[8px] transition-colors text-decoration-none" href="'.e(module_url('asset_mutations.php')).'">
+      <i class="bi bi-arrow-left-right text-[#0E5C58]"></i> Mutasi
     </a>
-    <div class="btn-group">
-      <button type="button" class="btn btn-light border dropdown-toggle d-inline-flex align-items-center gap-1" data-bs-toggle="dropdown" aria-expanded="false">
-        <i class="bi bi-printer"></i> Cetak Kartu
+    <div class="dropdown">
+      <button type="button" class="flex items-center gap-1.5 h-[36px] px-3 bg-[#FFFFFF] border border-[#D1D5D8] hover:bg-[#F4F5F7] text-[#1B2A3A] font-medium text-[13px] rounded-[8px] transition-colors cursor-pointer" data-bs-toggle="dropdown" aria-expanded="false">
+        <i class="bi bi-printer text-[#53595F]"></i> Cetak Kartu <i class="bi bi-chevron-down text-[11px] text-[#53595F]"></i>
       </button>
-      <ul class="dropdown-menu dropdown-menu-end shadow border-0" style="border-radius: 12px; min-width: 260px;">
+      <ul class="dropdown-menu dropdown-menu-end shadow-sm border mt-1" style="border-radius: 8px; min-width: 220px;">
         <li>
-          <a class="dropdown-item py-2 d-flex align-items-center gap-2" target="_blank" href="'.e(module_url('print_card.php', ['cabang' => $cabangId, 'tahun' => $year])).'">
-            <i class="bi bi-printer text-primary fs-5"></i>
-            <div>
-              <div class="fw-semibold">Cetak Kartu Kontrol</div>
-              <small class="text-muted">Lembar checklist perawatan rutin</small>
-            </div>
+          <a class="dropdown-item py-2" target="_blank" href="'.e(module_url('print_card.php', ['cabang' => $cabangId, 'tahun' => $year])).'">
+            <i class="bi bi-printer text-[#0E5C58] me-2"></i> Cetak Kartu Kontrol
           </a>
         </li>
         <li><hr class="dropdown-divider my-1"></li>
         <li>
-          <a class="dropdown-item py-2 d-flex align-items-center gap-2" target="_blank" href="'.e(module_url('print_inventory_card.php', ['cabang' => $cabangId])).'">
-            <i class="bi bi-credit-card-2-front text-info fs-5"></i>
-            <div>
-              <div class="fw-semibold">Cetak Kartu Inventaris</div>
-              <small class="text-muted">Format CR80 standar ID Card fisik</small>
-            </div>
+          <a class="dropdown-item py-2" target="_blank" href="'.e(module_url('print_inventory_card.php', ['cabang' => $cabangId])).'">
+            <i class="bi bi-credit-card-2-front text-[#875315] me-2"></i> Cetak Kartu Inventaris
           </a>
         </li>
       </ul>
     </div>
-    <a class="btn btn-light border d-inline-flex align-items-center gap-1" href="'.e(module_url('export_csv.php')).'">
-      <i class="bi bi-download"></i> Export CSV
+    <a class="flex items-center justify-center w-[36px] h-[36px] bg-[#FFFFFF] border border-[#D1D5D8] hover:bg-[#F4F5F7] text-[#53595F] font-medium text-[13px] rounded-[8px] transition-colors text-decoration-none" href="'.e(module_url('export_csv.php')).'" title="Export Data CSV">
+      <i class="bi bi-download"></i>
     </a>
   </div>
 </div>
@@ -756,73 +758,37 @@ $body = '
 <!-- Interactive Branch Switcher Navigation Bar -->
 '.$branchPillsHtml.'
 
-<!-- Stat Cards -->
-<div class="row g-3 mb-4">
-  <div class="col-6 col-lg-3">
-    <a href="'.e(filter_query(['status' => null, 'maint' => null, 'page' => 1])).'" class="text-decoration-none d-block h-100">
-      <div class="card card-metric h-100" style="border-left-color: var(--blue-corporate) !important;">
-        <div class="metric-value">'.$statTotal.'</div>
-        <div class="metric-label">Total Unit Aset</div>
-        <div class="small text-muted mt-2" style="font-size: 0.72rem;">Seluruh unit terdaftar</div>
-      </div>
-    </a>
-  </div>
-  <div class="col-6 col-lg-3">
-    <a href="'.e(filter_query(['maint' => 'done', 'page' => 1])).'" class="text-decoration-none d-block h-100">
-      <div class="card card-metric h-100" style="border-left-color: #16A34A !important;">
-        <div class="metric-value text-success">'.$statDoneMaint.'</div>
-        <div class="metric-label">Sudah Maintenance</div>
-        <div class="small text-success mt-2" style="font-size: 0.72rem;">Bulan '.$currentMonthName.'</div>
-      </div>
-    </a>
-  </div>
-  <div class="col-6 col-lg-3">
-    <a href="'.e(filter_query(['maint' => 'pending', 'page' => 1])).'" class="text-decoration-none d-block h-100">
-      <div class="card card-metric h-100" style="border-left-color: #D97706 !important;">
-        <div class="metric-value text-warning">'.$statPendingMaint.'</div>
-        <div class="metric-label">Belum Diperiksa</div>
-        <div class="small text-muted mt-2" style="font-size: 0.72rem;">Unit aktif wajib inspeksi</div>
-      </div>
-    </a>
-  </div>
-  <div class="col-6 col-lg-3">
-    <a href="'.e(filter_query(['maint' => 'repair', 'page' => 1])).'" class="text-decoration-none d-block h-100">
-      <div class="card card-metric h-100" style="border-left-color: #DC2626 !important;">
-        <div class="metric-value text-danger">'.$statRepair.'</div>
-        <div class="metric-label">Temuan Masalah</div>
-        <div class="small text-danger mt-2" style="font-size: 0.72rem;">Perlu tindak lanjut</div>
-      </div>
-    </a>
-  </div>
-</div>
+<!-- Metric Strip (88px) -->
+'.$metricStripHtml.'
 
+<!-- Tab Filter Cepat (44px) -->
 '.$todoTabsHtml.'
 
 <!-- Compact Filter Bar -->
-<div class="card p-3 mb-4">
+<div class="bg-white border border-[#D1D5D8] rounded-[10px] p-4 mb-4">
   <form method="get" class="row g-2 align-items-end">
     <div class="col-lg-3 col-md-6">
-      <label class="form-label text-secondary small fw-semibold mb-1">Cari Perangkat / User / IP</label>
+      <label class="form-label text-[#53595F] text-[12px] font-bold uppercase tracking-wider mb-1">Cari Perangkat / User / IP</label>
       <div class="input-group input-group-sm">
-        <span class="input-group-text bg-white border-end-0"><i class="bi bi-search text-muted"></i></span>
-        <input type="text" class="form-control form-control-sm border-start-0" name="q" value="'.e($search).'" placeholder="Ketik kode, merk, tipe, nama pengguna, IP...">
+        <span class="input-group-text bg-white border-[#D1D5D8] text-[#53595F]"><i class="bi bi-search"></i></span>
+        <input type="text" class="form-control form-control-sm border-[#D1D5D8] text-[#1B2A3A]" name="q" value="'.e($search).'" placeholder="Ketik kode, merk, tipe, nama pengguna, IP...">
       </div>
     </div>
     <div class="col-lg-2 col-md-3 col-sm-6">
-      <label class="form-label text-secondary small fw-semibold mb-1">Kantor Cabang</label>
-      <select class="form-select form-select-sm" name="cabang">
+      <label class="form-label text-[#53595F] text-[12px] font-bold uppercase tracking-wider mb-1">Kantor Cabang</label>
+      <select class="form-select form-select-sm border-[#D1D5D8] text-[#1B2A3A]" name="cabang">
         '.$optCab.'
       </select>
     </div>
     <div class="col-lg-2 col-md-3 col-sm-6">
-      <label class="form-label text-secondary small fw-semibold mb-1">Divisi</label>
-      <select class="form-select form-select-sm" name="divisi">
+      <label class="form-label text-[#53595F] text-[12px] font-bold uppercase tracking-wider mb-1">Divisi</label>
+      <select class="form-select form-select-sm border-[#D1D5D8] text-[#1B2A3A]" name="divisi">
         '.$optDiv.'
       </select>
     </div>
     <div class="col-lg-2 col-md-3 col-sm-6">
-      <label class="form-label text-secondary small fw-semibold mb-1">Status Operasional Aset</label>
-      <select class="form-select form-select-sm" name="status">
+      <label class="form-label text-[#53595F] text-[12px] font-bold uppercase tracking-wider mb-1">Status Operasional Aset</label>
+      <select class="form-select form-select-sm border-[#D1D5D8] text-[#1B2A3A]" name="status">
         <option value="">Semua Status Operasional</option>
         <option value="Aktif"'.($statusAset === 'Aktif' ? ' selected' : '').'>Aktif (Wajib Maint)</option>
         <option value="Tidak Terpakai"'.($statusAset === 'Tidak Terpakai' ? ' selected' : '').'>Tidak Terpakai (Histori)</option>
@@ -833,8 +799,8 @@ $body = '
       </select>
     </div>
     <div class="col-lg-2 col-md-3 col-sm-6">
-      <label class="form-label text-secondary small fw-semibold mb-1">Status Maintenance</label>
-      <select class="form-select form-select-sm" name="maint">
+      <label class="form-label text-[#53595F] text-[12px] font-bold uppercase tracking-wider mb-1">Status Maintenance</label>
+      <select class="form-select form-select-sm border-[#D1D5D8] text-[#1B2A3A]" name="maint">
         <option value="all">Semua Status Maint</option>
         <option value="done"'.($maintStatus === 'done' ? ' selected' : '').'>Selesai</option>
         <option value="pending"'.($maintStatus === 'pending' ? ' selected' : '').'>Belum Diperiksa (Aktif)</option>
@@ -843,24 +809,23 @@ $body = '
     </div>
 
     <div class="col-lg-2 col-md-3 col-sm-6">
-      <label class="form-label text-secondary small fw-semibold mb-1">Periode Bulan</label>
-      <select class="form-select form-select-sm" name="bulan">
-        '.$optMonth.'
-      </select>
-    </div>
-    <div class="col-lg-1 col-md-2 col-sm-6">
-      <label class="form-label text-secondary small fw-semibold mb-1">Tahun</label>
-      <select class="form-select form-select-sm" name="tahun">
-        '.$optYear.'
-      </select>
+      <label class="form-label text-[#53595F] text-[12px] font-bold uppercase tracking-wider mb-1">Periode Bulan &amp; Tahun</label>
+      <div class="d-flex gap-1">
+        <select class="form-select form-select-sm border-[#D1D5D8] text-[#1B2A3A]" name="bulan">
+          '.$optMonth.'
+        </select>
+        <select class="form-select form-select-sm border-[#D1D5D8] text-[#1B2A3A]" name="tahun" style="max-width: 90px;">
+          '.$optYear.'
+        </select>
+      </div>
     </div>
     <div class="col-12 d-flex justify-content-between align-items-center pt-2 border-top mt-2">
-      <div class="text-secondary small">
+      <div class="text-[#53595F] text-[13px]">
         Menampilkan <strong>'.$totalFiltered.'</strong> unit dari total <strong>'.$statTotal.'</strong> unit komputer.
       </div>
       <div class="d-flex gap-2">
-        <a class="btn btn-sm btn-light border px-3" href="'.e(module_url('assets.php')).'"><i class="bi bi-x-circle me-1"></i> Reset</a>
-        <button type="submit" class="btn btn-sm btn-primary px-3 fw-semibold"><i class="bi bi-filter me-1"></i> Terapkan</button>
+        <a class="flex items-center gap-1 h-[34px] px-3 bg-white border border-[#D1D5D8] hover:bg-[#F4F5F7] text-[#53595F] font-semibold text-[13px] rounded-[8px] transition-colors text-decoration-none" href="'.e(module_url('assets.php')).'"><i class="bi bi-x-circle me-1"></i> Reset</a>
+        <button type="submit" class="flex items-center gap-1 h-[34px] px-4 bg-[#0E5C58] hover:bg-[#0c4f4b] text-white font-semibold text-[13px] rounded-[8px] transition-colors cursor-pointer"><i class="bi bi-filter me-1"></i> Terapkan</button>
       </div>
     </div>
   </form>
@@ -869,42 +834,44 @@ $body = '
 '.$statusBannerHtml.'
 
 <!-- Table Surface Card -->
-<div class="card overflow-hidden mb-4">
-  <div class="card-header bg-white py-3 px-4 d-flex justify-content-between align-items-center flex-wrap gap-2">
+<div class="bg-white border border-[#D1D5D8] rounded-[10px] overflow-hidden mb-4 shadow-none">
+  <div class="bg-white border-b border-[#D1D5D8] py-3.5 px-5 flex justify-between items-center flex-wrap gap-2">
     <div>
-      <h2 class="h6 mb-0 fw-semibold text-dark"><i class="bi bi-pc-display me-2 text-primary"></i>Daftar Perangkat IT & Komputer</h2>
-      <div class="text-secondary small">Seluruh unit PC Desktop, Laptop, dan Printer terdata</div>
+      <h2 class="text-[15px] font-bold text-[#1B2A3A] mb-0 flex items-center gap-2">
+        <i class="bi bi-pc-display text-[#0E5C58]"></i> Daftar Perangkat IT &amp; Komputer
+      </h2>
+      <div class="text-[12px] text-[#53595F]">Seluruh unit PC Desktop, Laptop, dan Printer terdata</div>
     </div>
-    <div class="d-flex align-items-center gap-2">
-      <span class="small text-muted">Halaman '.$page.' dari '.$totalPages.'</span>
+    <div class="text-[12px] font-medium text-[#53595F]">
+      Halaman '.$page.' dari '.$totalPages.'
     </div>
   </div>
 
   <!-- Selection Action Bar (Appears when items are selected) -->
-  <div id="selectionActionBar" class="border-bottom px-4 py-2 d-none align-items-center justify-content-between flex-wrap gap-2" style="background-color: #EFF6FF !important;">
+  <div id="selectionActionBar" class="border-b border-[#D1D5D8] px-4 py-2.5 d-none align-items-center justify-content-between flex-wrap gap-2 bg-[#D9F1EF]">
     <div class="d-flex align-items-center gap-2 flex-wrap">
-      <span class="badge bg-primary fs-6 px-2 py-1"><i class="bi bi-check-square me-1"></i> <span id="selectedCountText">0</span> Dipilih</span>
-      <span class="badge bg-primary-subtle text-primary border border-primary-subtle small fw-normal d-none d-md-inline-flex align-items-center">
+      <span class="bg-[#0E5C58] text-white text-[12px] font-bold px-2.5 py-1 rounded-[6px]"><i class="bi bi-check-square me-1"></i> <span id="selectedCountText">0</span> Dipilih</span>
+      <span class="text-[#0E5C58] text-[12px] font-medium d-none d-md-inline-flex align-items-center">
         <i class="bi bi-pin-angle-fill me-1"></i> Tersimpan otomatis lintas pencarian &amp; filter
       </span>
-      <button type="button" class="btn btn-sm btn-outline-primary fw-semibold py-1 px-2" data-bs-toggle="modal" data-bs-target="#selectedAssetsModal" onclick="renderSelectedModalList()">
+      <button type="button" class="btn btn-sm btn-outline-dark fw-semibold py-1 px-2 text-[12px]" data-bs-toggle="modal" data-bs-target="#selectedAssetsModal" onclick="renderSelectedModalList()">
         <i class="bi bi-list-check me-1"></i> Lihat Daftar (<span class="selectedCountNum">0</span>)
       </button>
     </div>
     <div class="d-flex align-items-center gap-2 flex-wrap">
-      <button type="button" class="btn btn-sm btn-warning text-dark fw-semibold shadow-sm" onclick="openBulkEditModal()">
+      <button type="button" class="btn btn-sm btn-warning text-dark fw-semibold shadow-sm text-[12px]" onclick="openBulkEditModal()">
         <i class="bi bi-pencil-square me-1"></i> Edit Massal (<span class="selectedCountNum">0</span>)
       </button>
-      <button type="button" class="btn btn-sm btn-primary fw-semibold shadow-sm" onclick="batchPrintCards()">
+      <button type="button" class="btn btn-sm btn-dark fw-semibold shadow-sm text-[12px]" onclick="batchPrintCards()">
         <i class="bi bi-printer me-1"></i> Cetak Kartu Kontrol (<span class="selectedCountNum">0</span>)
       </button>
-      <button type="button" class="btn btn-sm btn-dark fw-semibold shadow-sm" onclick="batchPrintQR()">
+      <button type="button" class="btn btn-sm bg-[#0E5C58] text-white fw-semibold shadow-sm text-[12px]" onclick="batchPrintQR()">
         <i class="bi bi-qr-code me-1"></i> Cetak Label QR (<span class="selectedCountNum">0</span>)
       </button>
-      <button type="button" class="btn btn-sm btn-info text-white fw-semibold shadow-sm" onclick="batchPrintInventoryCards()">
+      <button type="button" class="btn btn-sm btn-info text-white fw-semibold shadow-sm text-[12px]" onclick="batchPrintInventoryCards()">
         <i class="bi bi-credit-card-2-front me-1"></i> Cetak Kartu Inventaris (<span class="selectedCountNum">0</span>)
       </button>
-      <button type="button" class="btn btn-sm btn-outline-secondary" onclick="deselectAllAssets()">
+      <button type="button" class="btn btn-sm btn-outline-secondary text-[12px]" onclick="deselectAllAssets()">
         <i class="bi bi-x-circle me-1"></i> Batalkan
       </button>
     </div>
@@ -912,28 +879,28 @@ $body = '
 
   <div class="table-responsive" style="overflow-x: auto;">
     <table class="table table-hover align-middle mb-0" style="table-layout: auto;">
-      <thead>
+      <thead class="bg-[#F4F5F7] text-[#53595F] text-[12px] font-bold uppercase tracking-wider border-b border-[#D1D5D8]">
         <tr>
-          <th style="width: 38px;" class="text-center">
+          <th style="width: 38px;" class="text-center bg-[#F4F5F7]">
             <input class="form-check-input" type="checkbox" id="checkAllAssets" title="Pilih Semua di Halaman Ini" style="cursor: pointer; width: 1.15rem; height: 1.15rem;">
           </th>
-          <th style="width: 36px;" class="text-center">No</th>
-          <th style="width: 125px;">Kode</th>
-          <th>Perangkat / Spesifikasi</th>
-          <th>Pengguna / Divisi</th>
-          <th>Lokasi &amp; IP</th>
-          <th style="width: 85px;" class="text-center">Kondisi</th>
-          <th style="width: 135px;" class="text-center">Maintenance</th>
-          <th style="width: 75px;" class="text-center">QR</th>
-          <th style="width: 110px;" class="text-end">Aksi</th>
+          <th style="width: 36px;" class="text-center bg-[#F4F5F7]">No</th>
+          <th style="width: 130px;" class="bg-[#F4F5F7]">Kode</th>
+          <th class="bg-[#F4F5F7]">Perangkat / Spesifikasi</th>
+          <th class="bg-[#F4F5F7]">Pengguna / Divisi</th>
+          <th class="bg-[#F4F5F7]">Lokasi &amp; IP</th>
+          <th style="width: 90px;" class="text-center bg-[#F4F5F7]">Kondisi</th>
+          <th style="width: 140px;" class="text-center bg-[#F4F5F7]">Maintenance</th>
+          <th style="width: 75px;" class="text-center bg-[#F4F5F7]">QR</th>
+          <th style="width: 110px;" class="text-end bg-[#F4F5F7]">Aksi</th>
         </tr>
       </thead>
-      <tbody>
+      <tbody class="divide-y divide-[#D1D5D8] text-[13px]">
         '.$tableRows.'
       </tbody>
     </table>
   </div>
-  <div class="p-3 bg-white border-top">
+  <div class="p-3 bg-white border-t border-[#D1D5D8]">
     '.$paginationHtml.'
   </div>
 </div>
@@ -1722,4 +1689,4 @@ document.addEventListener("DOMContentLoaded", function() {
 </script>
 ';
 
-render_page('Asset Registry', $body, $extraHead, $extraScript);
+render_page('Data Komputer & PC', $body, $extraHead, $extraScript);
