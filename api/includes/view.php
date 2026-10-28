@@ -3284,18 +3284,59 @@ label.form-label,
   document.addEventListener("DOMContentLoaded", syncSystemDeviceTheme);
 })();
 
-// PWA Service Worker Registration
+// Purge old service workers & clear caches cleanly
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", function() {
-    navigator.serviceWorker.getRegistrations().then(function(regs){ for(var r of regs){ r.unregister(); } }); if(window.caches){ caches.keys().then(function(k){ for(var x of k){ caches.delete(x); } }); }
-      .then(function(reg) {
-        // Success
-      })
-      .catch(function(err) {
-        console.warn("SW registration error:", err);
-      });
+    try {
+      navigator.serviceWorker.getRegistrations().then(function(regs) {
+        for (var r of regs) { r.unregister(); }
+      }).catch(function() {});
+      if (window.caches) {
+        caches.keys().then(function(keys) {
+          for (var k of keys) { caches.delete(k); }
+        }).catch(function() {});
+      }
+    } catch(e) {}
   });
 }
+
+// ============================================================
+// ANTI-IDLE HEARTBEAT & TAB RESUME AUTO-REFRESH
+// Menjaga koneksi router NAT & socket TCP tetap hidup saat idle
+// ============================================================
+(function() {
+  var lastActiveTime = Date.now();
+
+  function sendKeepAlivePing() {
+    try {
+      fetch("realtime_sync.php?action=ws_status&_t=" + Date.now(), { 
+        cache: "no-store",
+        priority: "low"
+      }).catch(function() {});
+    } catch(e) {}
+  }
+
+  // Ping ringan setiap 25 detik untuk mencegah router NAT timeout
+  setInterval(sendKeepAlivePing, 25000);
+
+  // Saat tab aktif kembali setelah diminimize / idle lama
+  document.addEventListener("visibilitychange", function() {
+    if (document.visibilityState === "visible") {
+      var idleSec = Math.round((Date.now() - lastActiveTime) / 1000);
+      lastActiveTime = Date.now();
+      if (idleSec > 60) {
+        sendKeepAlivePing();
+      }
+    } else {
+      lastActiveTime = Date.now();
+    }
+  });
+
+  window.addEventListener("focus", function() {
+    lastActiveTime = Date.now();
+    sendKeepAlivePing();
+  });
+})();
 </script>
 <script src="'.e(module_url('pwa-offline-queue.js')).'"></script>
 '.$extraScript.'
