@@ -543,7 +543,7 @@ function startCameraScanner() {
   }
 
   if (statusEl) {
-    statusEl.innerHTML = '<span class="spinner-border spinner-border-sm me-1 text-primary"></span> Menghubungkan ke kamera...';
+    statusEl.innerHTML = '<span class="spinner-border spinner-border-sm me-1 text-primary"></span> Menghubungkan ke kamera...</span>';
   }
 
   const qrConfig = {
@@ -615,7 +615,7 @@ function requestStartCamera() {
   if (manualBox) manualBox.classList.add("d-none");
   const statusEl = document.getElementById("scannerStatus");
   if (statusEl) {
-    statusEl.innerHTML = '<span class="spinner-border spinner-border-sm me-1 text-primary"></span> Meminta izin kamera ke browser...';
+    statusEl.innerHTML = '<span class="spinner-border spinner-border-sm me-1 text-primary"></span> Meminta izin kamera ke browser...</span>';
   }
   isCameraStarting = false;
   startCameraScanner();
