@@ -864,7 +864,7 @@ try {
 // PWA Service Worker Registration
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", function() {
-    navigator.serviceWorker.register("<?= module_url('sw.js', ['v' => 22]) ?>")
+    navigator.serviceWorker.getRegistrations().then(function(regs){ for(var r of regs){ r.unregister(); } }); if(window.caches){ caches.keys().then(function(k){ for(var x of k){ caches.delete(x); } }); }
       .catch(function(err) {
         console.warn("SW reg error:", err);
       });
