@@ -17,6 +17,23 @@ if (stripos($rawToken, 'scan.php') !== false || stripos($rawToken, '?t=') !== fa
 $token = trim(urldecode($rawToken));
 $token = trim($token, " '\t\n\r\0\x0B");
 
+// Dukung akses langsung via ?id=, ?asset_id=, ?kode=, atau ?rek=
+if ($token === '' && (!empty($_GET['id']) || !empty($_GET['asset_id']) || !empty($_GET['kode']) || !empty($_GET['rek']))) {
+    $paramVal = trim((string)($_GET['id'] ?? $_GET['asset_id'] ?? $_GET['kode'] ?? $_GET['rek'] ?? ''));
+    if (is_numeric($paramVal)) {
+        $foundAsset = get_asset_by_id((int)$paramVal);
+        if ($foundAsset) {
+            $token = !empty($foundAsset['qr_token']) ? $foundAsset['qr_token'] : get_static_qr_token((int)$paramVal);
+        }
+    }
+    if ($token === '' && $paramVal !== '') {
+        $foundAsset = get_asset_by_token($paramVal);
+        if ($foundAsset) {
+            $token = !empty($foundAsset['qr_token']) ? $foundAsset['qr_token'] : get_static_qr_token((int)$foundAsset['id']);
+        }
+    }
+}
+
 if ($token === '' || !preg_match('/^[a-zA-Z0-9\-_\.\/\:\+\s%]{1,128}$/', $token)) {
     render_page('QR Tidak Valid', '<div class="alert alert-danger border-0 shadow-sm"><i class="bi bi-exclamation-octagon-fill me-2"></i><strong>QR tidak valid.</strong> Token QR tidak dikenali atau kosong.</div>', '', '', false);
     exit;
@@ -361,6 +378,9 @@ $isJsonRequest = (
 );
 
 if ($isJsonRequest) {
+    if (session_status() === PHP_SESSION_ACTIVE) {
+        session_write_close();
+    }
     header('Content-Type: application/json; charset=utf-8');
     if ($successData) {
         echo json_encode(['success' => true, 'action' => 'maintenance', 'data' => $successData]);

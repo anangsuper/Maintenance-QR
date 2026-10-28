@@ -34,6 +34,15 @@ if ($cardId > 0) {
     $card = get_inventaris_kartu_by_norek($rekParam);
 }
 
+// Fallback jika ID yang dikirim berasal dari tabel assets
+if (!$card && ($cardId > 0 || !empty($_GET['asset_id']))) {
+    $aid = $cardId > 0 ? $cardId : (int)($_GET['asset_id'] ?? 0);
+    $foundAsset = get_asset_by_id($aid);
+    if ($foundAsset && !empty($foundAsset['kode_inventaris'])) {
+        $card = get_inventaris_kartu_by_norek($foundAsset['kode_inventaris']);
+    }
+}
+
 // State notifikasi
 $uploadSuccess = null;
 $uploadError = null;
@@ -285,12 +294,12 @@ $pageTitle = $card ? e($card['nama_barang']) . ' - Kartu Inventaris' : 'Kartu In
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?= $pageTitle ?> &bull; PT BPR Mitratama Arthabuana</title>
     <!-- Bootstrap 5 CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <link href="<?= module_url('assets/vendor/bootstrap.min.css') ?>" rel="stylesheet">
+    <link rel="stylesheet" href="<?= module_url('assets/vendor/bootstrap-icons.min.css') ?>">
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
     <!-- QRCode.js -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script src="<?= module_url('assets/vendor/qrcode.min.js') ?>"></script>
 
     <style>
         :root {
@@ -701,6 +710,7 @@ $pageTitle = $card ? e($card['nama_barang']) . ' - Kartu Inventaris' : 'Kartu In
                 $lokasiBarangVal = $ruanganVal;
                 $sumberVal = !empty($card['sumber_perolehan']) ? $card['sumber_perolehan'] : '02 : MODAL DISETOR';
                 $statusVal = !empty($card['status_inventaris']) ? $card['status_inventaris'] : '1 : Aktif';
+                $cleanStatus = preg_replace('/^\d+\s*:\s*/', '', $statusVal);
                 $keteranganVal = !empty($card['keterangan']) ? $card['keterangan'] : $card['nama_barang'];
             ?>
 
@@ -1236,7 +1246,7 @@ $pageTitle = $card ? e($card['nama_barang']) . ' - Kartu Inventaris' : 'Kartu In
                     </div>
                     <h6 class="fw-bold text-dark mb-1">Kosongkan Foto Barang?</h6>
                     <p class="text-muted small mb-3" style="font-size: 0.75rem;">
-                        Foto dokumentasi fisik <strong><?= e($card['nama_barang']) ?></strong> akan dikosongkan. Sesuai standar kepatuhan bank, penghapusan foto wajib melalui verifikasi scan wajah staf atau otorisasi admin.
+                        Foto dokumentasi fisik <strong><?= e($card['nama_barang'] ?? 'Aset') ?></strong> akan dikosongkan. Sesuai standar kepatuhan bank, penghapusan foto wajib melalui verifikasi scan wajah staf atau otorisasi admin.
                     </p>
                     <div class="d-grid gap-2">
                         <button type="button" class="btn btn-primary btn-sm rounded-pill fw-bold py-2 shadow-xs d-flex align-items-center justify-content-center gap-2" onclick="startFaceDeleteProcess()">
@@ -1349,7 +1359,7 @@ $pageTitle = $card ? e($card['nama_barang']) . ' - Kartu Inventaris' : 'Kartu In
     </div>
 
     <!-- Bootstrap 5 JS -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="<?= module_url('assets/vendor/bootstrap.bundle.min.js') ?>"></script>
     
     <!-- Face API Library untuk Pengenalan Wajah -->
     <script src="https://cdn.jsdelivr.net/npm/@vladmandic/face-api/dist/face-api.min.js"></script>

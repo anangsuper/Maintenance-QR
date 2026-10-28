@@ -2408,115 +2408,108 @@ if ($activeTab === 'kartu') {
     $pageQueue = max(1, (int)($_GET['p_queue'] ?? 1));
     $perPageQueue = 8;
 
+    // Ambil seluruh daftar aset yang belum dilakukan maintenance di bulan & tahun terpilih langsung dari Database
     $queueAssets = [];
-    if (!empty($dashData['upcoming_list'])) {
-        foreach ($dashData['upcoming_list'] as $u) {
-            $aid = (int)($u['asset_id'] ?? 0);
+    try {
+        $qWhere = " WHERE (a.status = 'Aktif' OR a.status IS NULL OR a.status = '') ";
+        $qParams = [];
+        if ($cabangId > 0) {
+            $qWhere .= " AND a.id_cabang = ? ";
+            $qParams[] = $cabangId;
+        }
+
+        // Filter aset yang belum pernah di-scan di bulan & tahun terpilih
+        $qWhere .= " AND a.id NOT IN (
+            SELECT asset_id FROM maintenance_scan 
+            WHERE maintenance_month = ? AND maintenance_year = ?
+        ) ";
+        $qParams[] = $month;
+        $qParams[] = $year;
+
+        $cCab = name_column('cabang') ?: 'nama_cabang';
+        $cDiv = name_column('divisi') ?: 'nama_divisi';
+        $cKar = name_column('karyawan') ?: 'nama_karyawan';
+
+        $qSql = "
+            SELECT 
+                a.id, a.kode_inventaris, a.merk, a.model, a.keterangan, a.ruangan,
+                c.`{$cCab}` AS cabang_nama,
+                d.`{$cDiv}` AS divisi_nama,
+                k.`{$cKar}` AS karyawan_nama,
+                q.token AS qr_token,
+                last_m.max_date AS last_maint_date
+            FROM assets a
+            LEFT JOIN cabang c ON c.id = a.id_cabang
+            LEFT JOIN divisi d ON d.id = a.id_divisi
+            LEFT JOIN karyawan k ON k.id = a.id_karyawan
+            LEFT JOIN asset_qr_tokens q ON q.asset_id = a.id
+            LEFT JOIN (
+                SELECT asset_id, MAX(maintenance_date) AS max_date 
+                FROM maintenance_scan 
+                GROUP BY asset_id
+            ) last_m ON last_m.asset_id = a.id
+            {$qWhere}
+            ORDER BY last_m.max_date ASC, a.kode_inventaris ASC
+        ";
+
+        $qStmt = db()->prepare($qSql);
+        $qStmt->execute($qParams);
+        $dueRows = $qStmt->fetchAll();
+
+        foreach ($dueRows as $r) {
+            $aid = (int)$r['id'];
+            $tok = !empty($r['qr_token']) ? $r['qr_token'] : get_static_qr_token($aid);
+            
+            // Format pemeliharaan terakhir
+            $lastMaintStr = 'Belum pernah';
+            $isOverdue = true;
+            if (!empty($r['last_maint_date'])) {
+                $lastTs = strtotime($r['last_maint_date']);
+                $lastMonth = (int)date('n', $lastTs);
+                $lastYear = (int)date('Y', $lastTs);
+                $lastMaintStr = ($monthNames[$lastMonth] ?? date('M', $lastTs)) . ' ' . $lastYear;
+                
+                $diffMonths = (($year - $lastYear) * 12) + ($month - $lastMonth);
+                $isOverdue = ($diffMonths >= 2);
+            }
+
+            $devName = trim(($r['merk'] ?? '') . ' ' . ($r['model'] ?? ''));
+            if ($devName === '') $devName = 'Perangkat Komputer IT';
+
+            $roomName = !empty($r['ruangan']) ? $r['ruangan'] : (!empty($r['divisi_nama']) ? $r['divisi_nama'] : 'Operasional');
+
             $queueAssets[] = [
                 'id' => $aid,
-                'kode_inventaris' => (string)($u['kode_inventaris'] ?? ('INV-IT-' . $aid)),
-                'nama_perangkat' => (string)($u['nama_perangkat'] ?? 'Perangkat IT'),
-                'pengguna' => (string)($u['karyawan_nama'] ?? '-'),
-                'cabang' => (string)($u['cabang_nama'] ?? 'KPO'),
-                'ruangan' => (string)($u['divisi_nama'] ?? 'Operasional'),
-                'token' => (string)($u['token'] ?? ''),
-                'last_maint' => !empty($u['last_maint']) ? (string)$u['last_maint'] : 'Sep 2026',
-                'is_overdue' => !empty($u['is_overdue'])
+                'kode_inventaris' => (string)($r['kode_inventaris'] ?? ('INV-IT-' . $aid)),
+                'nama_perangkat' => $devName,
+                'pengguna' => (string)($r['karyawan_nama'] ?? 'Umum / Staf'),
+                'cabang' => (string)($r['cabang_nama'] ?? 'KPO'),
+                'ruangan' => (string)$roomName,
+                'token' => $tok,
+                'last_maint' => $lastMaintStr,
+                'is_overdue' => $isOverdue
             ];
         }
-    }
+    } catch (Throwable $e) {}
 
+    // Fallback jika database masih kosong
     if (empty($queueAssets)) {
-        $queueAssets = [
-            [
-                'id' => 1,
-                'kode_inventaris' => 'INV-IT-142',
-                'nama_perangkat' => 'PC Desktop Lenovo M70s',
-                'pengguna' => 'Rina M.',
-                'cabang' => 'KPO',
-                'ruangan' => 'Akuntansi',
-                'token' => 'INV-IT-142',
-                'last_maint' => 'Sep 2026',
-                'is_overdue' => false,
-            ],
-            [
-                'id' => 2,
-                'kode_inventaris' => 'INV-IT-088',
-                'nama_perangkat' => 'Laptop Dell Latitude 3420',
-                'pengguna' => 'Budi Santoso',
-                'cabang' => 'KPO',
-                'ruangan' => 'Customer Service',
-                'token' => 'INV-IT-088',
-                'last_maint' => 'Sep 2026',
-                'is_overdue' => false,
-            ],
-            [
-                'id' => 3,
-                'kode_inventaris' => 'INV-IT-015',
-                'nama_perangkat' => 'Printer Epson L3210',
-                'pengguna' => 'Teller 1',
-                'cabang' => 'KPO',
-                'ruangan' => 'Pelayanan Nasabah',
-                'token' => 'INV-IT-015',
-                'last_maint' => 'Agu 2026',
-                'is_overdue' => true,
-            ],
-            [
-                'id' => 4,
-                'kode_inventaris' => 'INV-IT-112',
-                'nama_perangkat' => 'PC Desktop HP ProDesk 400',
-                'pengguna' => 'Ahmad Fauzi',
-                'cabang' => 'KPO',
-                'ruangan' => 'Operasional',
-                'token' => 'INV-IT-112',
-                'last_maint' => 'Agu 2026',
-                'is_overdue' => true,
-            ],
-            [
-                'id' => 5,
-                'kode_inventaris' => 'INV-IT-094',
-                'nama_perangkat' => 'Scanner Fujitsu fi-7160',
-                'pengguna' => 'Umum',
-                'cabang' => 'KPO',
-                'ruangan' => 'Akuntansi',
-                'token' => 'INV-IT-094',
-                'last_maint' => 'Sep 2026',
-                'is_overdue' => false,
-            ],
-            [
-                'id' => 6,
-                'kode_inventaris' => 'INV-IT-223',
-                'nama_perangkat' => 'Switch Cisco Catalyst',
-                'pengguna' => 'Ruang Server',
-                'cabang' => 'KPO',
-                'ruangan' => 'IT',
-                'token' => 'INV-IT-223',
-                'last_maint' => 'Jul 2026',
-                'is_overdue' => true,
-            ],
-            [
-                'id' => 7,
-                'kode_inventaris' => 'INV-IT-041',
-                'nama_perangkat' => 'PC Desktop Lenovo M70s',
-                'pengguna' => 'Siti M.',
-                'cabang' => 'KPO',
-                'ruangan' => 'Akuntansi',
-                'token' => 'INV-IT-041',
-                'last_maint' => 'Sep 2026',
-                'is_overdue' => false,
-            ],
-            [
-                'id' => 8,
-                'kode_inventaris' => 'INV-IT-177',
-                'nama_perangkat' => 'UPS APC 1000VA',
-                'pengguna' => 'Umum',
-                'cabang' => 'KPO',
-                'ruangan' => 'Customer Service',
-                'token' => 'INV-IT-177',
-                'last_maint' => 'Agu 2026',
-                'is_overdue' => true,
-            ],
-        ];
+        if (!empty($dashData['upcoming_list'])) {
+            foreach ($dashData['upcoming_list'] as $u) {
+                $aid = (int)($u['asset_id'] ?? 0);
+                $queueAssets[] = [
+                    'id' => $aid,
+                    'kode_inventaris' => (string)($u['kode_inventaris'] ?? ('INV-IT-' . $aid)),
+                    'nama_perangkat' => (string)($u['nama_perangkat'] ?? 'Perangkat IT'),
+                    'pengguna' => (string)($u['karyawan_nama'] ?? '-'),
+                    'cabang' => (string)($u['cabang_nama'] ?? 'KPO'),
+                    'ruangan' => (string)($u['divisi_nama'] ?? 'Operasional'),
+                    'token' => get_static_qr_token($aid),
+                    'last_maint' => 'Sep 2026',
+                    'is_overdue' => false
+                ];
+            }
+        }
     }
 
     $filteredQueueAssets = $queueAssets;
