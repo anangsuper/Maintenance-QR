@@ -3101,7 +3101,7 @@ label.form-label,
   </div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="' . e(module_url('assets/vendor/bootstrap.bundle.min.js')) . '"></script>
 <script>
 (function(){
   // Keyboard Shortcut: Ctrl + K or / to open Global Search
@@ -3445,7 +3445,7 @@ if ("serviceWorker" in navigator) {
   });
 })();
 </script>
-<script src="'.e(module_url('assets/vendor/bootstrap.bundle.min.js')).'"></script>
+
 <script src="'.e(module_url('pwa-offline-queue.js')).'"></script>
 '.$extraScript.'
 </body>
