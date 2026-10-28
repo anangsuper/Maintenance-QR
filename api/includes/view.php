@@ -88,6 +88,33 @@ function render_page(string $title, string $content, string $extraHead = '', str
         if (!empty($masterItems)) {
             $navLinks['PENGATURAN & MASTER'] = $masterItems;
         }
+    } else {
+        // PERAN: IT OPERATIONS & ADMINISTRATOR (DEFAULT)
+        $navLinks['OPERASIONAL'] = [
+            ['title' => 'Dashboard IT Ops', 'url' => module_url('dashboard.php'), 'icon' => 'bi-grid-1x2', 'active' => ($currentPage === 'dashboard.php' && !in_array($_GET['tab'] ?? '', ['kartu', 'temuan'], true))],
+            ['title' => 'Data Komputer & PC', 'url' => module_url('assets.php'), 'icon' => 'bi-pc-display', 'active' => in_array($currentPage, ['assets.php', 'asset_add.php', 'asset_edit.php', 'asset_delete.php', 'asset_import.php'], true)],
+            ['title' => 'Temuan Kendala IT', 'url' => module_url('dashboard.php', ['tab' => 'temuan']), 'icon' => 'bi-exclamation-triangle', 'active' => ($currentPage === 'dashboard.php' && ($_GET['tab'] ?? '') === 'temuan')],
+            ['title' => 'Log Ruang Server', 'url' => module_url('server_room_log.php'), 'icon' => 'bi-door-closed', 'active' => in_array($currentPage, ['server_room_log.php', 'server_room_print_qr.php'], true)],
+        ];
+        $navLinks['ASET & SARPRAS'] = [
+            ['title' => 'Pengadaan & Memo', 'url' => module_url('memo_pengajuan.php'), 'icon' => 'bi-file-earmark-text', 'active' => in_array($currentPage, ['memo_pengajuan.php', 'print_memo.php'], true)],
+            ['title' => 'Mutasi Aset', 'url' => module_url('inventaris_mutation.php'), 'icon' => 'bi-arrow-left-right', 'active' => in_array($currentPage, ['inventaris_mutation.php', 'asset_mutation.php', 'asset_mutations.php', 'print_bast.php'], true)],
+            ['title' => 'Penghapusan Aset', 'url' => module_url('asset_disposal.php'), 'icon' => 'bi-trash', 'active' => in_array($currentPage, ['asset_disposal.php', 'print_bast_disposal.php'], true)],
+            ['title' => 'Galeri Foto & Unit', 'url' => module_url('asset_gallery.php'), 'icon' => 'bi-images', 'active' => in_array($currentPage, ['asset_gallery.php', 'inventaris_gallery.php'], true)],
+            ['title' => 'Kartu Inventaris', 'url' => module_url('dashboard.php', ['tab' => 'kartu']), 'icon' => 'bi-credit-card-2-front', 'active' => ($currentPage === 'dashboard.php' && ($_GET['tab'] ?? '') === 'kartu') || in_array($currentPage, ['inventory_card.php', 'cetak_kartu.php', 'print_inventory_card.php', 'kartu_detail.php'], true)],
+        ];
+
+        $masterItems = [];
+        if ($isAdminUser) {
+            $masterItems[] = ['title' => 'Denah Meja Kantor', 'url' => module_url('floor_plan.php'), 'icon' => 'bi-layout-text-window-reverse', 'active' => ($currentPage === 'floor_plan.php')];
+            $masterItems[] = ['title' => 'Kantor Cabang', 'url' => module_url('cabang_admin.php'), 'icon' => 'bi-buildings', 'active' => ($currentPage === 'cabang_admin.php')];
+            $masterItems[] = ['title' => 'Divisi / Unit Kerja', 'url' => module_url('divisi_admin.php'), 'icon' => 'bi-diagram-3', 'active' => ($currentPage === 'divisi_admin.php')];
+            $masterItems[] = ['title' => 'Akun Pengguna', 'url' => module_url('users_admin.php'), 'icon' => 'bi-people', 'active' => ($currentPage === 'users_admin.php')];
+            $masterItems[] = ['title' => 'Cetak Label QR', 'url' => module_url('qr_admin.php'), 'icon' => 'bi-qr-code', 'active' => ($currentPage === 'qr_admin.php')];
+        }
+        if (!empty($masterItems)) {
+            $navLinks['PENGATURAN & MASTER'] = $masterItems;
+        }
     }
     $sidebarMenuHtml = '';
     $sectionIdx = 0;
@@ -100,8 +127,8 @@ function render_page(string $title, string $content, string $extraHead = '', str
         foreach ($items as $item) {
             $isActive = !empty($item['active']);
             $linkClass = $isActive
-                ? 'flex items-center h-[40px] px-3 rounded-[8px] bg-[#D9F1EF] text-[#1B2A3A] font-semibold text-[14px] text-decoration-none'
-                : 'flex items-center h-[40px] px-3 rounded-[8px] text-[#53595F] hover:bg-[#F4F5F7] hover:text-[#1B2A3A] font-medium text-[14px] transition-colors text-decoration-none';
+                ? 'nav-item-link active flex items-center h-[40px] px-3 rounded-[8px] bg-[#D9F1EF] text-[#1B2A3A] font-semibold text-[14px] text-decoration-none'
+                : 'nav-item-link flex items-center h-[40px] px-3 rounded-[8px] text-[#53595F] hover:bg-[#F4F5F7] hover:text-[#1B2A3A] font-medium text-[14px] transition-colors text-decoration-none';
             $iconColor = $isActive ? 'text-[#0E5C58]' : '';
             $sidebarMenuHtml .= '
               <a class="' . $linkClass . '" href="' . e($item['url']) . '">
@@ -114,9 +141,9 @@ function render_page(string $title, string $content, string $extraHead = '', str
     }
 
     $sidebarHtml = '
-    <aside class="w-[240px] bg-[#FFFFFF] border-r border-[#D1D5D8] flex flex-col shrink-0 app-sidebar" id="appDesktopSidebar">
+    <aside class="w-[240px] bg-[#FFFFFF] border-r border-[#D1D5D8] flex flex-col shrink-0 app-sidebar" id="appDesktopSidebar" style="background:#FFFFFF !important; border-right:1px solid #D1D5D8 !important; width:240px !important; min-width:240px !important; box-shadow:none !important;">
       <!-- Logo Area (64px) -->
-      <div class="h-[64px] flex items-center px-5 border-b border-[#D1D5D8] sidebar-brand">
+      <div class="h-[64px] flex items-center px-5 border-b border-[#D1D5D8] sidebar-brand" style="border-bottom:1px solid #D1D5D8 !important; background:#FFFFFF !important;">
         <a href="' . e(module_url('dashboard.php')) . '" class="flex items-center text-decoration-none">
           <i class="bi bi-shield-check text-[#0E5C58] text-[22px] mr-2.5"></i>
           <span class="font-bold text-[15px] tracking-tight text-[#1B2A3A]">QR Maintenance</span>
@@ -124,12 +151,12 @@ function render_page(string $title, string $content, string $extraHead = '', str
       </div>
 
       <!-- Nav Links -->
-      <div class="flex-1 overflow-y-auto py-5 px-3 flex flex-col gap-1 custom-scrollbar">
+      <div class="flex-1 overflow-y-auto py-5 px-3 flex flex-col gap-1 custom-scrollbar" style="background:#FFFFFF !important;">
         ' . $sidebarMenuHtml . '
       </div>
 
       <!-- User footer -->
-      <div class="p-3 border-t border-[#D1D5D8] bg-[#FFFFFF]">
+      <div class="p-3 border-t border-[#D1D5D8] bg-[#FFFFFF]" style="border-top:1px solid #D1D5D8 !important; background:#FFFFFF !important;">
         <div class="flex items-center justify-between">
           <div class="flex items-center gap-2 overflow-hidden">
             <div class="w-[34px] h-[34px] rounded-[8px] bg-[#0E5C58] text-white flex items-center justify-center font-bold text-[12px] shrink-0">
@@ -148,15 +175,15 @@ function render_page(string $title, string $content, string $extraHead = '', str
     </aside>
 
     <!-- Offcanvas Mobile Drawer -->
-    <div class="offcanvas offcanvas-start bg-white text-dark" tabindex="-1" id="appMobileSidebar" aria-labelledby="appMobileSidebarLabel" style="width: 260px;">
-      <div class="offcanvas-header border-b border-[#D1D5D8] py-3 px-4">
+    <div class="offcanvas offcanvas-start bg-white text-dark" tabindex="-1" id="appMobileSidebar" aria-labelledby="appMobileSidebarLabel" style="width: 260px; background:#FFFFFF !important; color:#1B2A3A !important;">
+      <div class="offcanvas-header border-b border-[#D1D5D8] py-3 px-4" style="border-bottom:1px solid #D1D5D8 !important;">
         <a href="' . e(module_url('dashboard.php')) . '" class="flex items-center text-decoration-none">
           <i class="bi bi-shield-check text-[#0E5C58] text-[22px] mr-2.5"></i>
           <span class="font-bold text-[15px] tracking-tight text-[#1B2A3A]">QR Maintenance</span>
         </a>
         <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
       </div>
-      <div class="offcanvas-body custom-scrollbar p-3">
+      <div class="offcanvas-body custom-scrollbar p-3" style="background:#FFFFFF !important;">
         ' . $sidebarMenuHtml . '
       </div>
       <div class="p-3 border-t border-[#D1D5D8] bg-[#F4F5F7]">
@@ -533,20 +560,32 @@ body {
   color: var(--text-primary) !important;
 }
 
-/* Materio Semi-Dark Vertical Navigation (High-Contrast ThemeSelection Style) */
+/* Clean White Vertical Navigation (Kombai Teal Palette) */
 .app-sidebar,
+aside#appDesktopSidebar {
+  width: 240px !important;
+  min-width: 240px !important;
+  max-width: 240px !important;
+  background-color: #FFFFFF !important;
+  background: #FFFFFF !important;
+  border-right: 1px solid #D1D5D8 !important;
+  color: #1B2A3A !important;
+  box-shadow: none !important;
+}
+
 .offcanvas#appMobileSidebar {
   width: 260px !important;
   min-width: 260px !important;
-  background: #28243D !important;
-  border-right: 1px solid rgba(255, 255, 255, 0.08) !important;
-  box-shadow: 0 0 20px 0 rgba(0, 0, 0, 0.25) !important;
+  background-color: #FFFFFF !important;
+  background: #FFFFFF !important;
+  border-right: 1px solid #D1D5D8 !important;
+  color: #1B2A3A !important;
 }
 
 @media (min-width: 992px) {
   .app-main-viewport {
-    margin-left: 260px !important;
-    width: calc(100% - 260px) !important;
+    margin-left: 240px !important;
+    width: calc(100% - 240px) !important;
   }
 }
 
@@ -556,12 +595,12 @@ body {
    ============================================================ */
 @media (min-width: 992px) and (max-width: 1399.98px) {
   .app-sidebar {
-    width: 235px !important;
-    min-width: 235px !important;
+    width: 240px !important;
+    min-width: 240px !important;
   }
   .app-main-viewport {
-    margin-left: 235px !important;
-    width: calc(100% - 235px) !important;
+    margin-left: 240px !important;
+    width: calc(100% - 240px) !important;
   }
   .sidebar-link {
     margin: 2px 8px !important;
@@ -1577,11 +1616,11 @@ h1, h2, h3, h4, h5, h6,
 }
 
 .app-sidebar {
-  width: 256px;
-  min-width: 256px;
-  background: linear-gradient(180deg, #051329 0%, #0A1E38 60%, #071526 100%);
-  border-right: 1px solid rgba(255, 255, 255, 0.07);
-  box-shadow: 4px 0 24px rgba(0, 0, 0, 0.12);
+  width: 240px !important;
+  min-width: 240px !important;
+  background: #FFFFFF !important;
+  border-right: 1px solid #D1D5D8 !important;
+  box-shadow: none !important;
   height: 100vh;
   position: fixed;
   top: 0;
@@ -1592,8 +1631,8 @@ h1, h2, h3, h4, h5, h6,
 
 @media (min-width: 992px) {
   .app-main-viewport {
-    margin-left: 256px;
-    width: calc(100% - 256px);
+    margin-left: 240px !important;
+    width: calc(100% - 240px) !important;
   }
 }
 
