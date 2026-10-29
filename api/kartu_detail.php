@@ -455,7 +455,7 @@ $pageTitle = $card ? e($card['nama_barang']) . ' - Kartu Inventaris' : 'Kartu In
         }
         .label-cell {
             color: #0E5C58;
-            font-size: 0.76rem;
+            font-size: 0.82rem;
             text-transform: uppercase;
             font-weight: 700;
             letter-spacing: 0.5px;
@@ -464,7 +464,7 @@ $pageTitle = $card ? e($card['nama_barang']) . ' - Kartu Inventaris' : 'Kartu In
         .value-cell {
             font-weight: 700;
             color: #1B2A3A;
-            font-size: 0.95rem;
+            font-size: 1.05rem;
         }
         .item-photo-wrapper {
             position: relative;
@@ -517,15 +517,16 @@ $pageTitle = $card ? e($card['nama_barang']) . ' - Kartu Inventaris' : 'Kartu In
             box-shadow: 0 4px 12px rgba(0,0,0,0.15);
         }
         .bank-data-table td, .bank-data-table th {
-            padding: 9px 12px;
+            padding: 12px 16px;
             vertical-align: middle;
-            font-size: 0.88rem;
+            font-size: 0.95rem;
         }
         .bank-data-table .td-label {
             width: 32%;
             min-width: 190px;
             white-space: nowrap;
             color: #53595F;
+            font-size: 0.82rem;
             font-weight: 700;
         }
         
@@ -641,7 +642,7 @@ $pageTitle = $card ? e($card['nama_barang']) . ' - Kartu Inventaris' : 'Kartu In
             }
             .bank-data-table td.td-label,
             .bank-data-table td:first-child {
-                font-size: 0.68rem !important;
+                font-size: 0.80rem !important;
                 font-weight: 700 !important;
                 text-transform: uppercase !important;
                 letter-spacing: 0.05em !important;
@@ -652,7 +653,7 @@ $pageTitle = $card ? e($card['nama_barang']) . ' - Kartu Inventaris' : 'Kartu In
                 white-space: normal !important;
             }
             .bank-data-table td:last-child {
-                font-size: 0.90rem !important;
+                font-size: 1.02rem !important;
                 color: #1B2A3A !important;
                 width: 100% !important;
             }
@@ -660,16 +661,16 @@ $pageTitle = $card ? e($card['nama_barang']) . ' - Kartu Inventaris' : 'Kartu In
                 width: 100% !important;
             }
             .bank-data-table .badge {
-                font-size: 0.82rem !important;
-                padding: 5px 12px !important;
+                font-size: 0.88rem !important;
+                padding: 6px 14px !important;
                 white-space: normal !important;
                 text-align: left !important;
                 line-height: 1.35 !important;
                 max-width: 100% !important;
             }
             .bank-data-table .copy-btn {
-                padding: 3px 10px !important;
-                font-size: 0.72rem !important;
+                padding: 4px 12px !important;
+                font-size: 0.78rem !important;
             }
             .item-photo-wrapper {
                 border-radius: 12px;
@@ -682,7 +683,7 @@ $pageTitle = $card ? e($card['nama_barang']) . ' - Kartu Inventaris' : 'Kartu In
             }
             .mobile-action-btn {
                 width: 100% !important;
-                height: 48px !important;
+                height: 52px !important;
                 display: flex !important;
                 flex-direction: column !important;
                 align-items: center !important;
@@ -691,17 +692,17 @@ $pageTitle = $card ? e($card['nama_barang']) . ' - Kartu Inventaris' : 'Kartu In
                 border: 1px solid #D1D5D8 !important;
                 background: #FFFFFF !important;
                 color: #1B2A3A !important;
-                font-size: 0.72rem !important;
-                font-weight: 600 !important;
+                font-size: 0.80rem !important;
+                font-weight: 700 !important;
                 text-decoration: none !important;
                 padding: 0 !important;
                 transition: all 0.15s ease !important;
-                box-shadow: 0 1px 2px rgba(0,0,0,0.04) !important;
+                box-shadow: 0 1px 3px rgba(0,0,0,0.06) !important;
             }
             .mobile-action-btn i {
-                font-size: 1.15rem !important;
+                font-size: 1.30rem !important;
                 line-height: 1 !important;
-                margin-bottom: 2px !important;
+                margin-bottom: 3px !important;
             }
             .mobile-action-btn:active, .mobile-action-btn:hover {
                 background: #F4F5F7 !important;
@@ -720,35 +721,34 @@ $pageTitle = $card ? e($card['nama_barang']) . ' - Kartu Inventaris' : 'Kartu In
 <body>
 
     <!-- Header Brand BPR Mitratama -->
-    <header class="header-brand py-3 px-3 px-md-4 shadow-sm" style="background: #0E5C58 !important; border-bottom: 2px solid #094340;">
-        <div class="container d-flex align-items-center justify-content-between gap-3" style="max-width: 1020px;">
+    <header class="header-brand py-3.5 px-3 px-md-4 shadow-sm" style="background: #0E5C58 !important; border-bottom: 3px solid #094340;">
+        <div class="container d-flex align-items-center justify-content-between gap-3" style="max-width: 1200px;">
             <div class="d-flex align-items-center gap-3 min-w-0">
-                <div class="bg-white px-2.5 py-1 rounded-3 shadow-xs flex-shrink-0 d-flex align-items-center justify-content-center" style="height: 44px; min-width: 52px;">
-                    <img src="<?= module_url('logo_img.php') ?>" alt="Logo Bank Mitra" style="height: 34px; width: auto; max-width: 120px; object-fit: contain;" onerror="this.onerror=null; this.src='data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'32\' height=\'32\' viewBox=\'0 0 24 24\' fill=\'%230E5C58\'%3E%3Cpath d=\'M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5\'/%3E%3C/svg%3E';">
+                <div class="bg-white px-3 py-1.5 rounded-3 shadow-sm flex-shrink-0 d-flex align-items-center justify-content-center" style="height: 54px; min-width: 75px;">
+                    <img src="<?= module_url('logo_img.php') ?>" alt="Logo Bank Mitra" style="height: 42px; width: auto; max-width: 160px; object-fit: contain;" onerror="this.onerror=null; this.src='data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'32\' height=\'32\' viewBox=\'0 0 24 24\' fill=\'%230E5C58\'%3E%3Cpath d=\'M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5\'/%3E%3C/svg%3E';">
                 </div>
                 <div class="min-w-0">
-                    <h1 class="h6 mb-0 text-white fw-bold tracking-tight text-truncate" style="font-size: 0.95rem; line-height: 1.25;">
-                        <span class="d-none d-sm-inline">PT. BPR MITRATAMA ARTHABUANA</span>
-                        <span class="d-sm-none">BANK MITRA</span>
+                    <h1 class="h5 mb-0 text-white fw-bold tracking-tight text-truncate" style="font-size: 1.25rem; line-height: 1.2;">
+                        PT. BPR MITRATAMA ARTHABUANA
                     </h1>
-                    <div class="small text-teal-light text-truncate fw-medium" style="font-size: 0.74rem; letter-spacing: 0.4px;">DATA MASTER KARTU INVENTARIS RESMI</div>
+                    <div class="text-teal-light text-truncate fw-semibold mt-0.5" style="font-size: 0.85rem; letter-spacing: 0.5px;">DATA MASTER KARTU INVENTARIS RESMI</div>
                 </div>
             </div>
             <div class="flex-shrink-0">
                 <?php if (is_logged_in()): ?>
-                    <a href="<?= module_url('dashboard.php', ['tab' => 'kartu']) ?>" class="btn btn-outline-light btn-sm rounded-pill px-3.5 py-1.5 d-inline-flex align-items-center gap-1.5 fw-semibold shadow-xs" style="font-size: 0.80rem; border-color: rgba(255,255,255,0.45);">
-                        <i class="bi bi-arrow-left"></i> <span class="d-none d-sm-inline">Dashboard</span><span class="d-sm-none">Menu</span>
+                    <a href="<?= module_url('dashboard.php', ['tab' => 'kartu']) ?>" class="btn btn-outline-light rounded-pill px-4 py-2 d-inline-flex align-items-center gap-2 fw-bold shadow-xs" style="font-size: 0.92rem; border-color: rgba(255,255,255,0.6);">
+                        <i class="bi bi-arrow-left fs-6"></i> <span>Dashboard</span>
                     </a>
                 <?php else: ?>
-                    <a href="<?= module_url('login.php') ?>" class="btn btn-outline-light btn-sm rounded-pill px-3.5 py-1.5 d-inline-flex align-items-center gap-1.5 fw-semibold shadow-xs" style="font-size: 0.80rem; border-color: rgba(255,255,255,0.45);">
-                        <i class="bi bi-box-arrow-in-right"></i> <span>Login</span>
+                    <a href="<?= module_url('login.php') ?>" class="btn btn-outline-light rounded-pill px-4 py-2 d-inline-flex align-items-center gap-2 fw-bold shadow-xs" style="font-size: 0.92rem; border-color: rgba(255,255,255,0.6);">
+                        <i class="bi bi-box-arrow-in-right fs-6"></i> <span>Login</span>
                     </a>
                 <?php endif; ?>
             </div>
         </div>
     </header>
 
-    <main class="container py-4" style="max-width: 1020px;">
+    <main class="container py-4" style="max-width: 1200px;">
 
         <!-- Alert Notifikasi -->
         <?php if ($uploadSuccess): ?>
@@ -908,24 +908,24 @@ $pageTitle = $card ? e($card['nama_barang']) . ' - Kartu Inventaris' : 'Kartu In
                 </div>
 
                 <!-- Desktop Header Bar -->
-                <div class="p-3 p-md-4 border-bottom bg-light bg-opacity-75 d-none d-md-flex flex-wrap align-items-center justify-content-between gap-2">
-                    <div class="d-flex align-items-center gap-2">
-                        <span class="badge badge-gold px-3 py-1.5 rounded-pill text-uppercase">
-                            <i class="bi bi-shield-check me-1"></i> Data Master Inventaris
+                <div class="p-3.5 p-md-4 border-bottom bg-light bg-opacity-75 d-none d-md-flex flex-wrap align-items-center justify-content-between gap-3">
+                    <div class="d-flex align-items-center gap-2.5">
+                        <span class="badge badge-gold px-3.5 py-2 rounded-pill text-uppercase shadow-2xs" style="font-size: 0.88rem;">
+                            <i class="bi bi-shield-check me-1.5 fs-6"></i> Data Master Inventaris
                         </span>
-                        <span class="badge bg-primary bg-opacity-10 text-primary px-3 py-1.5 rounded-pill font-mono">
+                        <span class="badge bg-primary bg-opacity-10 text-primary px-3.5 py-2 rounded-pill font-mono shadow-2xs" style="font-size: 0.88rem;">
                             ID: #<?= (int)$card['id'] ?>
                         </span>
                     </div>
-                    <div class="d-flex align-items-center gap-2">
-                        <a href="<?= module_url('inventaris_mutation.php', ['id' => $card['id']]) ?>" class="btn btn-outline-neutral btn-sm rounded-pill px-3 fw-semibold">
-                            <i class="bi bi-arrow-left-right me-1"></i> Mutasi Barang
+                    <div class="d-flex align-items-center gap-2.5">
+                        <a href="<?= module_url('inventaris_mutation.php', ['id' => $card['id']]) ?>" class="btn btn-outline-neutral rounded-pill px-3.5 py-2 fw-semibold" style="font-size: 0.88rem;">
+                            <i class="bi bi-arrow-left-right me-1.5"></i> Mutasi Barang
                         </a>
-                        <button type="button" class="btn btn-outline-neutral btn-sm rounded-pill px-3 fw-semibold" data-bs-toggle="modal" data-bs-target="#modalEditDataKartu">
-                            <i class="bi bi-pencil-square me-1"></i> Edit Data
+                        <button type="button" class="btn btn-outline-neutral rounded-pill px-3.5 py-2 fw-semibold" data-bs-toggle="modal" data-bs-target="#modalEditDataKartu" style="font-size: 0.88rem;">
+                            <i class="bi bi-pencil-square me-1.5"></i> Edit Data
                         </button>
-                        <a href="<?= module_url('print_inventory_card.php', ['source' => 'inventaris_kartu', 'id' => $card['id']]) ?>" target="_blank" class="btn btn-navy-primary btn-sm rounded-pill px-3.5 fw-bold shadow-xs">
-                            <i class="bi bi-printer-fill text-warning me-1"></i> Cetak CR80
+                        <a href="<?= module_url('print_inventory_card.php', ['source' => 'inventaris_kartu', 'id' => $card['id']]) ?>" target="_blank" class="btn btn-navy-primary rounded-pill px-4 py-2 fw-bold shadow-xs" style="font-size: 0.88rem;">
+                            <i class="bi bi-printer-fill text-warning me-1.5"></i> Cetak CR80
                         </a>
                     </div>
                 </div>
