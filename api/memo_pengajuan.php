@@ -361,7 +361,7 @@ if (empty($allMemos)) {
         if ($st === 'Diajukan') {
             $hasLampiran = !empty($m['lampiran_file']);
             $primaryActionBtn = '
-              <button type="button" class="btn btn-sm btn-success fw-bold d-inline-flex align-items-center gap-1 px-2.5 py-1 shadow-xs text-nowrap" style="font-size:0.75rem;" onclick=\'quickApproveMemo('.$mid.', "'.e($nomor).'")\' title="Setujui Memo ini agar siap dibeli">
+              <button type="button" class="btn btn-sm btn-primary-teal fw-semibold d-inline-flex align-items-center gap-1 px-2.5 py-1 shadow-xs text-nowrap" style="font-size:0.75rem;" onclick=\'quickApproveMemo('.$mid.', "'.e($nomor).'")\' title="Setujui Memo ini agar siap dibeli">
                 <i class="bi bi-check-circle-fill"></i> Setujui
               </button>';
 
@@ -369,7 +369,7 @@ if (empty($allMemos)) {
         } elseif ($st === 'Disetujui') {
             $hasNota = !empty($m['bukti_beli_file']);
             $primaryActionBtn = '
-              <button type="button" class="btn btn-sm btn-warning text-dark fw-bold d-inline-flex align-items-center gap-1 px-2.5 py-1 shadow-xs text-nowrap" style="font-size:0.75rem;" onclick=\'openRealisasiModal('.$memoJson.')\' title="'.($hasNota ? 'Lihat / Edit Bukti Pembelian & Nota Toko' : 'Upload Bukti Pembelian & Nota Toko').'">
+              <button type="button" class="btn btn-sm btn-outline-teal fw-semibold d-inline-flex align-items-center gap-1 px-2.5 py-1 shadow-xs text-nowrap" style="font-size:0.75rem;" onclick=\'openRealisasiModal('.$memoJson.')\' title="'.($hasNota ? 'Lihat / Edit Bukti Pembelian & Nota Toko' : 'Upload Bukti Pembelian & Nota Toko').'">
                 <i class="bi bi-receipt"></i> '.($hasNota ? 'Nota Toko' : '+ Nota Toko').'
               </button>';
         } elseif ($st === 'Selesai Dibeli') {
@@ -384,7 +384,7 @@ if (empty($allMemos)) {
                 'ket' => 'Pengadaan via Memo No. ' . $nomor . (!empty($m['catatan_realisasi']) ? ' (' . $m['catatan_realisasi'] . ')' : '')
             ]);
             $primaryActionBtn = '
-              <a href="'.e($cardUrl).'" class="btn btn-sm btn-success fw-bold d-inline-flex align-items-center gap-1 px-2.5 py-1 shadow-xs text-nowrap" style="font-size:0.75rem;" title="Daftarkan langsung barang ini ke Kartu Inventaris Aktif">
+              <a href="'.e($cardUrl).'" class="btn btn-sm btn-primary-teal fw-semibold d-inline-flex align-items-center gap-1 px-2.5 py-1 shadow-xs text-nowrap" style="font-size:0.75rem;" title="Daftarkan langsung barang ini ke Kartu Inventaris Aktif">
                 <i class="bi bi-credit-card-2-front"></i> Daftarkan Kartu
               </a>';
 
@@ -400,11 +400,11 @@ if (empty($allMemos)) {
         $actionHtml = '
           <div class="d-inline-flex align-items-center justify-content-end gap-1.5 flex-nowrap">
             '.$primaryActionBtn.'
-            <a href="'.$printUrl.'" target="_blank" class="btn btn-sm btn-outline-primary px-2 py-1 shadow-xs" style="font-size:0.75rem;" title="Cetak Dokumen Memo Internal">
+            <a href="'.$printUrl.'" target="_blank" class="btn btn-sm btn-outline-teal px-2 py-1 shadow-xs" style="font-size:0.75rem;" title="Cetak Dokumen Memo Internal">
               <i class="bi bi-printer"></i>
             </a>
             <div class="dropdown d-inline-block">
-              <button class="btn btn-sm btn-light border px-2 py-1 shadow-xs dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false" title="Menu Opsi Lainnya">
+              <button class="btn btn-sm btn-kombai-white px-2 py-1 shadow-xs dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false" title="Menu Opsi Lainnya">
                 <i class="bi bi-three-dots-vertical"></i>
               </button>
               <ul class="dropdown-menu dropdown-menu-end shadow border py-1" style="font-size:0.80rem; min-width: 190px;">
@@ -417,7 +417,7 @@ if (empty($allMemos)) {
         <tr>
           <td class="text-center font-monospace text-muted small">'.$no++.'</td>
           <td>
-            <a href="'.$printUrl.'" target="_blank" class="fw-bold text-dark font-monospace text-decoration-none d-block text-break" style="font-size:0.78rem; line-height: 1.3;" title="Lihat &amp; Cetak Dokumen Memo">
+            <a href="'.$printUrl.'" target="_blank" class="fw-bold text-[#0E5C58] font-monospace text-decoration-none d-block text-break" style="font-size:0.78rem; line-height: 1.3;" title="Lihat &amp; Cetak Dokumen Memo">
               <i class="bi bi-file-earmark-pdf-fill text-danger me-1"></i>'.$nomor.'
             </a>
             <div class="small text-muted mt-0.5" style="font-size:0.72rem;"><i class="bi bi-calendar3 me-1"></i>'.$tgl.'</div>
@@ -613,6 +613,28 @@ $body = '
       </div>
     </form>
   </div>
+
+  <!-- Table Responsive -->
+  <div class="table-responsive" style="overflow-x: auto;">
+    <table class="table align-middle mb-0 w-100">
+      <thead>
+        <tr>
+          <th style="width: 45px;" class="text-center font-monospace">NO</th>
+          <th style="width: 20%;">NOMOR MEMO &amp; TANGGAL</th>
+          <th style="width: 16%;">CABANG &amp; PENGAJU</th>
+          <th style="width: 26%;">PERIHAL PERMOHONAN</th>
+          <th style="width: 15%;">ESTIMASI &amp; REALISASI</th>
+          <th style="width: 9%;" class="text-center">STATUS</th>
+          <th style="width: 14%;" class="text-end pe-3">AKSI</th>
+        </tr>
+      </thead>
+      <tbody>
+        '.$tableRows.'
+      </tbody>
+    </table>
+  </div>
+</div>
+
 <!-- MODAL: FORM PEMBUATAN / EDIT MEMO INTERNAL -->
 <div class="modal fade" id="modalMemoInternal" tabindex="-1" aria-labelledby="modalMemoLabel" aria-hidden="true">
   <div class="modal-dialog modal-lg modal-dialog-scrollable">
