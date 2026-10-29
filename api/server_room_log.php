@@ -803,7 +803,7 @@ ob_start();
                     <span class="door-badge-pulse me-1"></span>Masih di Dalam
                   </span>
                 <?php else: ?>
-                  <span class="badge bg-light text-[#53595F] border rounded-pill px-2 py-1" style="font-size: 0.72rem;">
+                  <span class="badge border rounded-pill px-2 py-1 fw-bold" style="font-size: 0.72rem; background-color: #F1F5F9 !important; color: #1E293B !important; border-color: #CBD5E1 !important;">
                     <i class="bi bi-check2-circle me-1 text-success"></i>Selesai (<?= (int)$l['duration_minutes'] ?> mnt)
                   </span>
                 <?php endif; ?>
@@ -904,7 +904,7 @@ ob_start();
                 <td>
                   <?php if ($exitTs): ?>
                     <div class="fw-semibold text-[#1B2A3A] small"><?= date('H:i', $exitTs) ?></div>
-                    <div class="badge bg-[#D9F1EF] text-[#0E5C58] rounded-[6px] px-2 py-0.5" style="font-size: 0.70rem;">
+                    <div class="badge border rounded-[6px] px-2 py-0.5 fw-bold" style="font-size: 0.70rem; background-color: #D9F1EF !important; color: #0E5C58 !important; border-color: #A7E2DC !important;">
                       <i class="bi bi-stopwatch me-1"></i><?= (int)$l['duration_minutes'] ?> mnt
                     </div>
                   <?php else: ?>
@@ -922,13 +922,13 @@ ob_start();
                   </div>
                   <div class="text-[#53595F]" style="font-size: 0.75rem;">
                     <?php if ($l['visitor_type'] === 'vendor_external'): ?>
-                      <span class="badge bg-[#FEF3C7] text-[#B45309] border border-[#FDE68A]" style="font-size: 0.68rem;">Vendor</span>
+                      <span class="badge border" style="font-size: 0.72rem; background-color: #FEF3C7 !important; color: #92400E !important; border-color: #FCD34D !important; font-weight: 700;">Vendor</span>
                     <?php elseif ($l['visitor_type'] === 'auditor'): ?>
-                      <span class="badge bg-[#F3E8FF] text-[#6B21A8] border border-[#E9D5FF]" style="font-size: 0.68rem;">Auditor</span>
+                      <span class="badge border" style="font-size: 0.72rem; background-color: #F3E8FF !important; color: #6B21A8 !important; border-color: #D8B4FE !important; font-weight: 700;">Auditor</span>
                     <?php elseif ($l['visitor_type'] === 'internal_staff'): ?>
-                      <span class="badge bg-[#E0E7FF] text-[#3730A3] border border-[#C7D2FE]" style="font-size: 0.68rem;">Staf Bank</span>
+                      <span class="badge border" style="font-size: 0.72rem; background-color: #E0E7FF !important; color: #3730A3 !important; border-color: #C7D2FE !important; font-weight: 700;">Staf Bank</span>
                     <?php else: ?>
-                      <span class="badge bg-[#D9F1EF] text-[#0E5C58] border border-[#A7E2DC]" style="font-size: 0.68rem;">Internal IT</span>
+                      <span class="badge border" style="font-size: 0.72rem; background-color: #D9F1EF !important; color: #0E5C58 !important; border-color: #A7E2DC !important; font-weight: 700;">Internal IT</span>
                     <?php endif; ?>
                     <span class="ms-1"><?= e($l['institution']) ?></span>
                     <?php if (!empty($l['contact_number'])): ?>
@@ -964,7 +964,7 @@ ob_start();
                       <span class="door-badge-pulse me-1"></span>DI DALAM
                     </span>
                   <?php else: ?>
-                    <span class="badge bg-light text-[#53595F] border rounded-pill px-2.5 py-1 fw-semibold">
+                    <span class="badge border rounded-pill px-2.5 py-1 fw-bold" style="background-color: #F1F5F9 !important; color: #1E293B !important; border-color: #CBD5E1 !important;">
                       SELESAI
                     </span>
                   <?php endif; ?>
