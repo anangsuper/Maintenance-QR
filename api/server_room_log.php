@@ -457,6 +457,20 @@ $head = '
 }
 
 /* Kombai Visitor Type Selector Cards */
+#modalCheckin .modal-dialog {
+  max-width: 760px !important;
+  width: calc(100% - 1.5rem) !important;
+  margin: 1.25rem auto !important;
+}
+#modalCheckin .modal-content {
+  width: 100% !important;
+}
+#modalCheckin .input-group > .form-control,
+#modalCheckin .input-group > .form-select {
+  flex: 1 1 auto !important;
+  width: 1% !important;
+  min-width: 0 !important;
+}
 .visitor-card-neo {
   display: block;
   cursor: pointer;
@@ -466,6 +480,9 @@ $head = '
   transition: all 0.15s ease;
   user-select: none;
   position: relative;
+  word-break: keep-all;
+  overflow-wrap: normal;
+  height: 100%;
 }
 .visitor-card-neo:hover {
   border-color: #0E5C58;
@@ -1071,7 +1088,7 @@ ob_start();
               Identitas Pengunjung &amp; Staf Pendamping
             </div>
 
-            <div class="row g-2.5">
+            <div class="row g-3">
               <div class="col-md-6">
                 <label class="form-label fw-bold text-secondary small mb-1">
                   Nama Lengkap Pengunjung / Petugas <span class="text-danger">*</span>
@@ -1149,7 +1166,7 @@ ob_start();
               <textarea name="purpose_detail" class="form-control form-control-sm" rows="2" placeholder="Tuliskan rincian singkat pekerjaan yang akan dilakukan (opsional)..."></textarea>
             </div>
 
-            <div class="row g-2.5">
+            <div class="row g-3">
               <div class="col-md-6">
                 <label class="form-label fw-bold text-secondary small mb-1">
                   Suhu Ruangan Saat Masuk (&deg;C)
@@ -1263,7 +1280,7 @@ ob_start();
                 </button>
               </div>
             </div>
-          </div></div>
+          </div>
         </div>
 
         <div class="modal-footer bg-white border-top py-3 px-4 d-flex justify-content-between">
