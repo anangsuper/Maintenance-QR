@@ -647,6 +647,52 @@ function ensure_inventaris_kartu_columns(): void {
 }
 
 /**
+ * Pastikan kolom printed_at dan print_count tersedia di tabel inventaris_kartu
+ */
+function ensure_inventaris_kartu_print_columns(): void {
+    static $checked = false;
+    if ($checked) return;
+    $checked = true;
+    try {
+        $pdo = db();
+        $st = $pdo->query("SHOW COLUMNS FROM inventaris_kartu LIKE 'printed_at'");
+        if (!$st || !$st->fetch()) {
+            $pdo->exec("ALTER TABLE inventaris_kartu ADD COLUMN printed_at DATETIME NULL DEFAULT NULL, ADD COLUMN print_count INT UNSIGNED NOT NULL DEFAULT 0");
+        }
+    } catch (Throwable $e) {
+        // Ignore if already exists or non-MySQL mode
+    }
+}
+
+/**
+ * Tandai satu atau banyak kartu inventaris sebagai Sudah Dicetak / Belum Dicetak
+ */
+function mark_inventaris_kartu_printed(array|int $ids, bool $isPrinted = true): bool {
+    $idArray = is_array($ids) ? array_map('intval', $ids) : [(int)$ids];
+    $idArray = array_values(array_unique(array_filter($idArray, fn($x) => $x > 0)));
+    if (empty($idArray)) return false;
+
+    ensure_inventaris_kartu_print_columns();
+
+    try {
+        $pdo = db();
+        $inClause = implode(',', array_fill(0, count($idArray), '?'));
+        if ($isPrinted) {
+            $now = date('Y-m-d H:i:s');
+            $params = array_merge([$now], $idArray);
+            $st = $pdo->prepare("UPDATE inventaris_kartu SET printed_at = ?, print_count = COALESCE(print_count, 0) + 1 WHERE id IN ({$inClause})");
+            return $st->execute($params);
+        } else {
+            $st = $pdo->prepare("UPDATE inventaris_kartu SET printed_at = NULL, print_count = 0 WHERE id IN ({$inClause})");
+            return $st->execute($idArray);
+        }
+    } catch (Throwable $e) {
+        error_log("Gagal update status cetak kartu: " . $e->getMessage());
+        return false;
+    }
+}
+
+/**
  * Master Data Jenis Inventaris BPR Mitratama (Sesuai Core System)
  */
 function get_master_jenis_inventaris(): array {
@@ -958,6 +1004,613 @@ function compress_and_save_uploaded_image(string $tmpPath, string $targetPath, i
     }
     return false;
 }
+
+/**
+ * Menghasilkan script JavaScript untuk render & unduh / bagikan kartu fisik CR80
+ * sesuai ukuran asli kartu (85.60 mm x 54.00 mm pada 300 DPI = 1011 x 638 px)
+ * lengkap dengan metadata pHYs 300 DPI (11811 piksel/meter).
+ */
+function get_card_png_exporter_js(): string {
+    $logoUrl = module_url('logo_img.php');
+    $printAjaxUrl = module_url('print_inventory_card.php');
+    $js = <<<'JS'
+window.BANK_MITRA_CARD_LOGO_URL = __LOGO_URL__;
+window.BANK_MITRA_PRINT_AJAX_URL = __PRINT_AJAX_URL__;
+
+(function() {
+  // Tabel CRC32 untuk injeksi chunk pHYs 300 DPI pada file PNG
+  const crcTable = (function() {
+    const table = new Uint32Array(256);
+    for (let n = 0; n < 256; n++) {
+      let c = n;
+      for (let k = 0; k < 8; k++) {
+        c = (c & 1) ? (0xedb88320 ^ (c >>> 1)) : (c >>> 1);
+      }
+      table[n] = c >>> 0;
+    }
+    return table;
+  })();
+
+  function crc32(bytes) {
+    let c = 0xffffffff;
+    for (let i = 0; i < bytes.length; i++) {
+      c = crcTable[(c ^ bytes[i]) & 0xff] ^ (c >>> 8);
+    }
+    return (c ^ 0xffffffff) >>> 0;
+  }
+
+  // Menyisipkan chunk pHYs 300 DPI (11811 px/meter = 85.6mm x 54.0mm pada 1011x638 px)
+  async function injectPng300Dpi(blob) {
+    try {
+      const buffer = await blob.arrayBuffer();
+      const src = new Uint8Array(buffer);
+      // Pastikan header PNG valid dan chunk pertama adalah IHDR (panjang 13 byte -> selesai di byte 33)
+      if (src.length < 33 || src[0] !== 0x89 || src[1] !== 0x50 || src[2] !== 0x4E || src[3] !== 0x47) {
+        return blob;
+      }
+      // 21 byte chunk pHYs: 4 byte length (9), 4 byte type ('pHYs'), 9 byte data, 4 byte CRC
+      const phys = new Uint8Array(21);
+      const view = new DataView(phys.buffer);
+      view.setUint32(0, 9, false); // Length = 9
+      phys[4] = 0x70; // 'p'
+      phys[5] = 0x48; // 'H'
+      phys[6] = 0x59; // 'Y'
+      phys[7] = 0x73; // 's'
+      const ppm = 11811; // 300 DPI = 11811.0236 pixels per meter
+      view.setUint32(8, ppm, false);  // X pixels per unit
+      view.setUint32(12, ppm, false); // Y pixels per unit
+      phys[16] = 1; // Unit = meter
+      const crc = crc32(phys.subarray(4, 17));
+      view.setUint32(17, crc, false);
+
+      const out = new Uint8Array(src.length + phys.length);
+      out.set(src.subarray(0, 33), 0);
+      out.set(phys, 33);
+      out.set(src.subarray(33), 33 + phys.length);
+      return new Blob([out], { type: 'image/png' });
+    } catch (e) {
+      return blob;
+    }
+  }
+
+  function loadImageElement(src) {
+    return new Promise((resolve) => {
+      if (!src) return resolve(null);
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      img.onload = () => resolve(img);
+      img.onerror = () => resolve(null);
+      img.src = src;
+    });
+  }
+
+  function generateQrCanvas(text, sizePx) {
+    return new Promise((resolve) => {
+      if (typeof QRCode === 'undefined') {
+        return resolve(null);
+      }
+      const holder = document.createElement('div');
+      holder.style.position = 'fixed';
+      holder.style.left = '-9999px';
+      holder.style.top = '-9999px';
+      document.body.appendChild(holder);
+      try {
+        new QRCode(holder, {
+          text: text || window.location.href,
+          width: sizePx,
+          height: sizePx,
+          colorDark: '#000000',
+          colorLight: '#ffffff',
+          correctLevel: QRCode.CorrectLevel.M
+        });
+        setTimeout(() => {
+          const canvas = holder.querySelector('canvas');
+          const img = holder.querySelector('img');
+          if (canvas) {
+            document.body.removeChild(holder);
+            resolve(canvas);
+          } else if (img && img.src) {
+            loadImageElement(img.src).then((loaded) => {
+              document.body.removeChild(holder);
+              resolve(loaded);
+            });
+          } else {
+            document.body.removeChild(holder);
+            resolve(null);
+          }
+        }, 60);
+      } catch (err) {
+        if (holder.parentNode) document.body.removeChild(holder);
+        resolve(null);
+      }
+    });
+  }
+
+  function drawRoundedRectPath(ctx, x, y, w, h, r) {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.lineTo(x + w - r, y);
+    ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+    ctx.lineTo(x + w, y + h - r);
+    ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+    ctx.lineTo(x + r, y + h);
+    ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+    ctx.lineTo(x, y + r);
+    ctx.quadraticCurveTo(x, y, x + r, y);
+    ctx.closePath();
+  }
+
+  function drawFieldVectorIcon(ctx, type, cx, cy, size) {
+    ctx.save();
+    ctx.strokeStyle = '#ffffff';
+    ctx.fillStyle = '#ffffff';
+    ctx.lineWidth = Math.max(2, size * 0.095);
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    const r = size / 2;
+    const x0 = cx - r;
+    const y0 = cy - r;
+
+    if (type === 'doc') {
+      drawRoundedRectPath(ctx, x0 + size * 0.14, y0 + size * 0.08, size * 0.72, size * 0.84, size * 0.08);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(x0 + size * 0.30, y0 + size * 0.34);
+      ctx.lineTo(x0 + size * 0.70, y0 + size * 0.34);
+      ctx.moveTo(x0 + size * 0.30, y0 + size * 0.52);
+      ctx.lineTo(x0 + size * 0.70, y0 + size * 0.52);
+      ctx.moveTo(x0 + size * 0.30, y0 + size * 0.70);
+      ctx.lineTo(x0 + size * 0.54, y0 + size * 0.70);
+      ctx.stroke();
+    } else if (type === 'monitor') {
+      drawRoundedRectPath(ctx, x0 + size * 0.08, y0 + size * 0.12, size * 0.84, size * 0.58, size * 0.08);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(cx - size * 0.22, y0 + size * 0.88);
+      ctx.lineTo(cx + size * 0.22, y0 + size * 0.88);
+      ctx.moveTo(cx, y0 + size * 0.70);
+      ctx.lineTo(cx, y0 + size * 0.88);
+      ctx.stroke();
+    } else if (type === 'calendar') {
+      drawRoundedRectPath(ctx, x0 + size * 0.10, y0 + size * 0.18, size * 0.80, size * 0.72, size * 0.08);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(x0 + size * 0.32, y0 + size * 0.08);
+      ctx.lineTo(x0 + size * 0.32, y0 + size * 0.26);
+      ctx.moveTo(x0 + size * 0.68, y0 + size * 0.08);
+      ctx.lineTo(x0 + size * 0.68, y0 + size * 0.26);
+      ctx.moveTo(x0 + size * 0.10, y0 + size * 0.40);
+      ctx.lineTo(x0 + size * 0.90, y0 + size * 0.40);
+      ctx.stroke();
+    } else if (type === 'pin') {
+      ctx.beginPath();
+      ctx.arc(cx, y0 + size * 0.40, size * 0.30, Math.PI, 0, false);
+      ctx.bezierCurveTo(cx + size * 0.30, y0 + size * 0.64, cx, y0 + size * 0.88, cx, y0 + size * 0.92);
+      ctx.bezierCurveTo(cx, y0 + size * 0.88, cx - size * 0.30, y0 + size * 0.64, cx - size * 0.30, y0 + size * 0.40);
+      ctx.closePath();
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.arc(cx, y0 + size * 0.40, size * 0.11, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+
+  function drawShieldCheckIcon(ctx, cx, cy, size) {
+    ctx.save();
+    const r = size / 2;
+    const x0 = cx - r;
+    const y0 = cy - r;
+    ctx.strokeStyle = '#003b73';
+    ctx.lineWidth = Math.max(2.5, size * 0.085);
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+
+    ctx.beginPath();
+    ctx.moveTo(cx, y0 + size * 0.08);
+    ctx.lineTo(x0 + size * 0.84, y0 + size * 0.22);
+    ctx.lineTo(x0 + size * 0.84, y0 + size * 0.50);
+    ctx.bezierCurveTo(x0 + size * 0.84, y0 + size * 0.74, cx + size * 0.18, y0 + size * 0.88, cx, y0 + size * 0.94);
+    ctx.bezierCurveTo(cx - size * 0.18, y0 + size * 0.88, x0 + size * 0.16, y0 + size * 0.74, x0 + size * 0.16, y0 + size * 0.50);
+    ctx.lineTo(x0 + size * 0.16, y0 + size * 0.22);
+    ctx.closePath();
+    ctx.stroke();
+
+    ctx.strokeStyle = '#7ac142';
+    ctx.beginPath();
+    ctx.moveTo(cx - size * 0.16, cy + size * 0.02);
+    ctx.lineTo(cx - size * 0.03, cy + size * 0.15);
+    ctx.lineTo(cx + size * 0.20, cy - size * 0.10);
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  function wrapLines(ctx, text, maxWidth, maxLines) {
+    const words = String(text || '-').toUpperCase().split(/\s+/).filter(Boolean);
+    if (words.length === 0) return ['-'];
+    const lines = [];
+    let current = words[0];
+    for (let i = 1; i < words.length; i++) {
+      const test = current + ' ' + words[i];
+      if (ctx.measureText(test).width <= maxWidth) {
+        current = test;
+      } else {
+        lines.push(current);
+        current = words[i];
+      }
+    }
+    lines.push(current);
+    if (lines.length > maxLines) {
+      const clipped = lines.slice(0, maxLines);
+      let last = clipped[maxLines - 1];
+      while (last.length > 3 && ctx.measureText(last + '...').width > maxWidth) {
+        last = last.slice(0, -1);
+      }
+      clipped[maxLines - 1] = last + (last !== lines[maxLines - 1] ? '...' : '');
+      return clipped;
+    }
+    return lines;
+  }
+
+  // Render kartu fisik CR80 ukuran asli (85.6mm x 54.0mm @ 300 DPI = 1011 x 638 px)
+  window.renderPhysicalCardBlob = async function(cardData) {
+    const W = 1011; // 85.60 mm @ 300 DPI
+    const H = 638;  // 54.00 mm @ 300 DPI
+    const mm = (val) => val * (W / 85.6);
+
+    const canvas = document.createElement('canvas');
+    canvas.width = W;
+    canvas.height = H;
+    const ctx = canvas.getContext('2d');
+
+    // Clip sudut kartu CR80 (radius 3.0mm)
+    ctx.save();
+    drawRoundedRectPath(ctx, 0, 0, W, H, mm(3.0));
+    ctx.clip();
+
+    // Latar belakang putih bersih
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, W, H);
+
+    // 1. HEADER SECTION (Height: 11.5mm)
+    const headerH = mm(11.5);
+    const logoBoxW = W * 0.27;
+    const titleBoxX = logoBoxW;
+    const titleBoxW = W - logoBoxW;
+    const topBarH = mm(5.5);
+    const subBarH = mm(6.0);
+
+    // Logo Bank Mitra di kiri
+    const logoImg = await loadImageElement(window.BANK_MITRA_CARD_LOGO_URL);
+    if (logoImg && logoImg.naturalWidth > 0) {
+      const maxLW = logoBoxW - mm(3.0);
+      const maxLH = headerH - mm(2.0);
+      const scale = Math.min(maxLW / logoImg.naturalWidth, maxLH / logoImg.naturalHeight);
+      const lw = logoImg.naturalWidth * scale;
+      const lh = logoImg.naturalHeight * scale;
+      ctx.drawImage(logoImg, (logoBoxW - lw) / 2, (headerH - lh) / 2, lw, lh);
+    } else {
+      ctx.fillStyle = '#003b73';
+      ctx.font = `800 ${Math.round(mm(2.4))}px "Plus Jakarta Sans", Arial, sans-serif`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('BANK MITRA', logoBoxW / 2, headerH / 2);
+    }
+
+    // Top Bar Navy (#003b73)
+    ctx.fillStyle = '#003b73';
+    ctx.fillRect(titleBoxX, 0, titleBoxW, topBarH);
+    ctx.fillStyle = '#ffffff';
+    ctx.font = `800 ${Math.round(mm(2.54))}px "Plus Jakarta Sans", Arial, sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('PT BPR MITRATAMA ARTHABUANA', titleBoxX + titleBoxW / 2, topBarH / 2 + 1);
+
+    // Sub Bar Banners (ASSET TETAP)
+    const bannerContainerW = titleBoxW * 0.75;
+    // Teal stripe (#009ca6): polygon(0 0, 78% 0, 71% 100%, 0 100%)
+    ctx.fillStyle = '#009ca6';
+    ctx.beginPath();
+    ctx.moveTo(titleBoxX, topBarH);
+    ctx.lineTo(titleBoxX + bannerContainerW * 0.78, topBarH);
+    ctx.lineTo(titleBoxX + bannerContainerW * 0.71, topBarH + subBarH);
+    ctx.lineTo(titleBoxX, topBarH + subBarH);
+    ctx.closePath();
+    ctx.fill();
+
+    // Green banner (#7ac142): width 92% of bannerContainerW
+    const greenW = bannerContainerW * 0.92;
+    ctx.fillStyle = '#7ac142';
+    ctx.beginPath();
+    ctx.moveTo(titleBoxX, topBarH);
+    ctx.lineTo(titleBoxX + greenW * 0.78, topBarH);
+    ctx.lineTo(titleBoxX + greenW * 0.71, topBarH + subBarH);
+    ctx.lineTo(titleBoxX, topBarH + subBarH);
+    ctx.closePath();
+    ctx.fill();
+
+    ctx.fillStyle = '#ffffff';
+    ctx.font = `800 ${Math.round(mm(2.54))}px "Plus Jakarta Sans", Arial, sans-serif`;
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('ASSET TETAP', titleBoxX + mm(2.5), topBarH + subBarH / 2 + 1);
+
+    // 3x2 Green Dots di sebelah kanan sub-bar
+    const dotRadius = mm(0.45);
+    const dotGap = mm(1.75);
+    const dotsRightStart = W - mm(3.5) - dotGap * 2;
+    const dotsTopStart = topBarH + (subBarH - dotGap) / 2;
+    ctx.fillStyle = '#7ac142';
+    for (let r = 0; r < 2; r++) {
+      for (let c = 0; c < 3; c++) {
+        ctx.beginPath();
+        ctx.arc(dotsRightStart + c * dotGap, dotsTopStart + r * dotGap, dotRadius, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+
+    // Garis bawah header
+    ctx.strokeStyle = '#cbd5e1';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(0, headerH);
+    ctx.lineTo(W, headerH);
+    ctx.stroke();
+
+    // 2. DATA FIELDS (4 baris x 6.125mm = 24.5mm)
+    const rowH = mm(6.125);
+    const iconBoxW = mm(8.5);
+    const fields = [
+      { icon: 'doc',      label: 'NOMOR ASSET',   value: cardData.nomor_asset || cardData.kode || '-' },
+      { icon: 'monitor',  label: 'NAMA ASSET',    value: cardData.nama || '-' },
+      { icon: 'calendar', label: 'TGL PEROLEHAN', value: cardData.tgl || '-' },
+      { icon: 'pin',      label: 'LOKASI',        value: cardData.lokasi || '-' }
+    ];
+
+    fields.forEach((f, idx) => {
+      const y = headerH + idx * rowH;
+
+      // Kotak ikon navy
+      ctx.fillStyle = '#003b73';
+      ctx.fillRect(0, y, iconBoxW, rowH);
+      drawFieldVectorIcon(ctx, f.icon, iconBoxW / 2, y + rowH / 2, mm(3.5));
+
+      // Label
+      ctx.fillStyle = '#003b73';
+      ctx.font = `800 ${Math.round(mm(2.47))}px "Plus Jakarta Sans", Arial, sans-serif`;
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(f.label, iconBoxW + mm(3.0), y + rowH / 2 + 1);
+
+      // Separator hijau '|'
+      const sepX = iconBoxW + mm(27.5);
+      ctx.fillStyle = '#7ac142';
+      ctx.font = `800 ${Math.round(mm(3.15))}px "Plus Jakarta Sans", Arial, sans-serif`;
+      ctx.fillText('|', sepX, y + rowH / 2);
+
+      // Nilai field (mendukung hingga 2 baris)
+      const valX = sepX + mm(2.5);
+      const maxValW = W - valX - mm(2.2);
+      ctx.fillStyle = '#1e293b';
+      ctx.font = `800 ${Math.round(mm(2.47))}px "Plus Jakarta Sans", Arial, sans-serif`;
+      const lines = wrapLines(ctx, f.value, maxValW, 2);
+      if (lines.length === 1) {
+        ctx.fillText(lines[0], valX, y + rowH / 2 + 1);
+      } else {
+        const lineH = mm(2.65);
+        ctx.fillText(lines[0], valX, y + rowH / 2 - lineH / 2 + 1);
+        ctx.fillText(lines[1], valX, y + rowH / 2 + lineH / 2 + 1);
+      }
+
+      // Garis bawah baris
+      ctx.strokeStyle = '#e2e8f0';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(0, y + rowH);
+      ctx.lineTo(W, y + rowH);
+      ctx.stroke();
+    });
+
+    // 3. BOTTOM SECTION (Height: 18.0mm, y: 36.0mm .. 54.0mm)
+    const bottomY = headerH + 4 * rowH;
+    const bottomH = H - bottomY;
+
+    // Garis pemisah atas hijau (#7ac142)
+    ctx.strokeStyle = '#7ac142';
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    ctx.moveTo(0, bottomY);
+    ctx.lineTo(W, bottomY);
+    ctx.stroke();
+
+    // Ornamen gelombang bawah (height: 7.5mm)
+    const waveH = mm(7.5);
+    const waveY = H - waveH;
+    ctx.save();
+    ctx.translate(0, waveY);
+    ctx.scale(W / 500, waveH / 80);
+
+    // Gelombang hijau
+    ctx.fillStyle = 'rgba(122, 193, 66, 0.85)';
+    ctx.beginPath();
+    ctx.moveTo(0, 65);
+    ctx.bezierCurveTo(120, 95, 220, 10, 380, 60);
+    ctx.bezierCurveTo(440, 80, 480, 45, 500, 55);
+    ctx.lineTo(500, 80);
+    ctx.lineTo(0, 80);
+    ctx.closePath();
+    ctx.fill();
+
+    // Gelombang biru navy
+    ctx.fillStyle = '#003b73';
+    ctx.beginPath();
+    ctx.moveTo(0, 72);
+    ctx.bezierCurveTo(160, 30, 280, 95, 430, 45);
+    ctx.bezierCurveTo(470, 30, 490, 50, 500, 45);
+    ctx.lineTo(500, 80);
+    ctx.lineTo(0, 80);
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+
+    // Bagian Kiri Bawah: PERHATIAN (68% width)
+    const leftBottomW = W * 0.68;
+    const shieldSize = mm(7.2);
+    const shieldCx = mm(3.0) + shieldSize / 2;
+    const shieldCy = bottomY + bottomH / 2 - mm(0.6);
+    drawShieldCheckIcon(ctx, shieldCx, shieldCy, shieldSize);
+
+    const attTextX = mm(3.0) + shieldSize + mm(2.2);
+    const attTopY = bottomY + mm(4.2);
+    ctx.fillStyle = '#b91c1c';
+    ctx.font = `800 ${Math.round(mm(2.54))}px "Plus Jakarta Sans", Arial, sans-serif`;
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('PERHATIAN', attTextX, attTopY);
+
+    ctx.fillStyle = '#0f172a';
+    ctx.font = `700 ${Math.round(mm(1.84))}px "Plus Jakarta Sans", Arial, sans-serif`;
+    const descLines = [
+      'Barang inventaris ini tercatat di HRD.',
+      'Segala bentuk pemindahan dan perubahan',
+      'data wajib dilaporkan ke HRD.'
+    ];
+    descLines.forEach((line, i) => {
+      ctx.fillText(line, attTextX, attTopY + mm(3.0) + i * mm(2.45));
+    });
+
+    // Garis pemisah vertikal antara Perhatian & QR
+    ctx.strokeStyle = '#e2e8f0';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(leftBottomW, bottomY + mm(2.0));
+    ctx.lineTo(leftBottomW, H - mm(2.0));
+    ctx.stroke();
+
+    // Bagian Kanan Bawah: QR Code (32% width, ukuran QR 13.5mm x 13.5mm)
+    const qrBoxCenterX = leftBottomW + (W - leftBottomW) / 2;
+    const qrBoxCenterY = bottomY + bottomH / 2;
+    const qrSizePx = Math.round(mm(13.5));
+    const qrBorderPad = mm(0.75);
+    const qrOuterSize = qrSizePx + qrBorderPad * 2;
+
+    ctx.fillStyle = '#ffffff';
+    drawRoundedRectPath(
+      ctx,
+      qrBoxCenterX - qrOuterSize / 2,
+      qrBoxCenterY - qrOuterSize / 2,
+      qrOuterSize,
+      qrOuterSize,
+      mm(0.9)
+    );
+    ctx.fill();
+    ctx.strokeStyle = '#cbd5e1';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+
+    const qrSource = await generateQrCanvas(cardData.qr_url || window.location.href, 280);
+    if (qrSource) {
+      ctx.imageSmoothingEnabled = false;
+      ctx.drawImage(
+        qrSource,
+        qrBoxCenterX - qrSizePx / 2,
+        qrBoxCenterY - qrSizePx / 2,
+        qrSizePx,
+        qrSizePx
+      );
+      ctx.imageSmoothingEnabled = true;
+    }
+
+    // Bingkai luar kartu CR80
+    ctx.strokeStyle = '#cbd5e1';
+    ctx.lineWidth = 3;
+    drawRoundedRectPath(ctx, 1.5, 1.5, W - 3, H - 3, mm(3.0));
+    ctx.stroke();
+    ctx.restore();
+
+    const rawBlob = await new Promise((res) => canvas.toBlob(res, 'image/png', 1.0));
+    return await injectPng300Dpi(rawBlob);
+  };
+
+  // Tandai kartu sebagai "Sudah Dicetak" di database secara asinkron
+  window.markCardPrintedAsync = function(cardId, csrfToken) {
+    if (!cardId || cardId <= 0) return;
+    const fd = new FormData();
+    fd.append('ajax_action', 'mark_printed');
+    fd.append('ids', String(cardId));
+    if (csrfToken) fd.append('_csrf', csrfToken);
+    fetch(window.BANK_MITRA_PRINT_AJAX_URL, { method: 'POST', body: fd }).catch(() => {});
+  };
+
+  // Unduh atau Bagikan (WhatsApp / Mobile Share) gambar kartu ukuran asli CR80
+  window.downloadOrSharePhysicalCard = async function(cardData, mode, btnEl) {
+    const origHtml = btnEl ? btnEl.innerHTML : '';
+    if (btnEl) {
+      btnEl.disabled = true;
+      btnEl.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Memproses PNG CR80...';
+    }
+    try {
+      const blob = await window.renderPhysicalCardBlob(cardData);
+      const safeKode = String(cardData.kode || cardData.nomor_asset || 'INV').replace(/[^A-Za-z0-9.\-_]/g, '_');
+      const fileName = `Kartu_Inventaris_${safeKode}_CR80_85.6x54mm.png`;
+      const file = new File([blob], fileName, { type: 'image/png' });
+
+      if (mode === 'share' && navigator.canShare && navigator.canShare({ files: [file] })) {
+        await navigator.share({
+          title: `Kartu Inventaris ${cardData.nama || ''}`,
+          text: `Kartu Inventaris Fisik Bank Mitra\nNama Aset: ${cardData.nama || '-'}\nNo. Rekening: ${cardData.kode || '-'}\nLokasi: ${cardData.lokasi || '-'}\n Ukuran Asli: CR80 (85.6mm x 54.0mm - 300 DPI)`,
+          files: [file]
+        });
+        return;
+      }
+
+      // Unduh file PNG secara langsung
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = fileName;
+      document.body.appendChild(a);
+      a.click();
+      setTimeout(() => {
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      }, 600);
+
+      // Jika pengguna menekan tombol WA di perangkat desktop yang belum mendukung Web Share File API,
+      // unduh gambar otomatis lalu buka WhatsApp dengan pesan pengantar
+      if (mode === 'share') {
+        const waText = encodeURIComponent(
+          `*KARTU INVENTARIS BANK MITRA*\n` +
+          `• *Nama Barang:* ${cardData.nama || '-'}\n` +
+          `• *No. Rekening:* ${cardData.kode || '-'}\n` +
+          `• *No. Asset:* ${cardData.nomor_asset || '-'}\n` +
+          `• *Tanggal:* ${cardData.tgl || '-'}\n` +
+          `• *Lokasi:* ${cardData.lokasi || '-'}\n` +
+          `• *Link QR:* ${cardData.qr_url || window.location.href}\n\n` +
+          `_(File gambar kartu ukuran asli CR80 85.6mm x 54.0mm telah diunduh otomatis, silakan lampirkan pada chat ini)_`
+        );
+        window.open(`https://wa.me/?text=${waText}`, '_blank', 'noopener');
+      }
+    } catch (err) {
+      if (err && err.name === 'AbortError') return;
+      alert('Gagal membuat gambar kartu: ' + (err.message || err));
+    } finally {
+      if (btnEl) {
+        btnEl.disabled = false;
+        btnEl.innerHTML = origHtml;
+      }
+    }
+  };
+})();
+JS;
+
+    return str_replace(
+        ['__LOGO_URL__', '__PRINT_AJAX_URL__'],
+        [json_encode($logoUrl), json_encode($printAjaxUrl)],
+        $js
+    );
+}
+
 
 
 

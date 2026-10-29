@@ -229,6 +229,7 @@ foreach ($cabangs as $c) {
 }
 
 // Ambil Seluruh Data Kartu Inventaris
+ensure_inventaris_kartu_print_columns();
 $allCards = get_inventaris_kartu_rows(!empty($_GET['refresh']));
 $totalCardsCount = count($allCards);
 
@@ -237,6 +238,7 @@ $standardCabangs = get_standard_cabang_list();
 $searchCard = trim((string)($_GET['q_kartu'] ?? ''));
 $cabangCard = trim((string)($_GET['cabang_kartu'] ?? ''));
 $tahunCard = trim((string)($_GET['tahun_kartu'] ?? ''));
+$statusCetakCard = strtolower(trim((string)($_GET['status_cetak'] ?? ''))); // 'belum' atau 'sudah'
 
 $todayDateStr = date('Y-m-d');
 $todayDateDmy = date('d/m/Y');
@@ -247,6 +249,8 @@ $filterHasQr = isset($_GET['has_qr']) && (string)$_GET['has_qr'] === '1';
 
 $todayCardsCount = 0;
 $withQrCardsCount = 0;
+$printedCardsCount = 0;
+$unprintedCardsCount = 0;
 
 // Metrik Jumlah Kartu Inventaris Per Cabang (01 - 05)
 $cabangStats = [
@@ -322,6 +326,11 @@ foreach ($allCards as $ac) {
     if (!empty($ac['barcode_data'])) {
         $withQrCardsCount++;
     }
+    if (!empty($ac['printed_at'])) {
+        $printedCardsCount++;
+    } else {
+        $unprintedCardsCount++;
+    }
 }
 rsort($cardYears);
 if (!in_array((string)date('Y'), $cardYears, true)) {
@@ -332,8 +341,13 @@ foreach ($cardYears as $cy) {
     $optTahunKartuHtml .= '<option value="' . e($cy) . '"' . ($tahunCard === (string)$cy ? ' selected' : '') . '>' . e($cy) . '</option>';
 }
 
-// Filter Kartu Inventaris (Mendukung Pencarian Fleksibel dengan/tanpa Titik, Cabang 01-05, Tahun, Hari Ini, dan Label QR)
-$filteredCards = array_filter($allCards, function($r) use ($searchCard, $cabangCard, $tahunCard, $filterHariIni, $filterHasQr, $todayDateStr, $todayDateDmy, $todayDateDmY) {
+// Filter Kartu Inventaris (Mendukung Pencarian Fleksibel dengan/tanpa Titik, Cabang 01-05, Tahun, Hari Ini, Status Cetak, dan Label QR)
+$filteredCards = array_filter($allCards, function($r) use ($searchCard, $cabangCard, $tahunCard, $statusCetakCard, $filterHariIni, $filterHasQr, $todayDateStr, $todayDateDmy, $todayDateDmY) {
+    if ($statusCetakCard === 'belum') {
+        if (!empty($r['printed_at'])) return false;
+    } elseif ($statusCetakCard === 'sudah') {
+        if (empty($r['printed_at'])) return false;
+    }
     if ($filterHasQr) {
         $bc = trim((string)($r['barcode_data'] ?? ''));
         if ($bc === '') return false;
@@ -764,6 +778,16 @@ if (empty($displayCards)) {
 
         $noSeriBadge = !empty($c['nomor_seri_inventaris']) ? '<span class="badge bg-light text-dark border font-monospace mt-0.5" style="font-size: 0.68rem;"><i class="bi bi-hash me-0.5"></i>'.e($c['nomor_seri_inventaris']).'</span>' : '';
 
+        $isPrintedCard = !empty($c['printed_at']);
+        $printedDateTooltip = $isPrintedCard ? date('d/m/Y H:i', strtotime((string)$c['printed_at'])) : '';
+        $printStatusBadgeHtml = $isPrintedCard
+            ? '<button type="button" id="print-badge-'.$cId.'" data-printed="1" onclick="toggleCardPrintStatus('.$cId.', this)" class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#ECFDF5] text-[#059669] border border-[#A7F3D0] hover:bg-[#D1FAE5] transition-colors inline-flex items-center gap-1 cursor-pointer" title="Sudah dicetak pada '.e($printedDateTooltip).' — Klik untuk ubah ke Belum Dicetak"><i class="bi bi-check-circle-fill"></i><span>Sudah Dicetak</span></button>'
+            : '<button type="button" id="print-badge-'.$cId.'" data-printed="0" onclick="toggleCardPrintStatus('.$cId.', this)" class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#FFFBEB] text-[#D97706] border border-[#FDE68A] hover:bg-[#FEF3C7] transition-colors inline-flex items-center gap-1 cursor-pointer" title="Belum pernah dicetak — Klik untuk tandai Sudah Dicetak"><i class="bi bi-hourglass-split"></i><span>Belum Dicetak</span></button>';
+
+        $printStatusBadgeMobHtml = $isPrintedCard
+            ? '<button type="button" id="print-badge-mob-'.$cId.'" data-printed="1" onclick="toggleCardPrintStatus('.$cId.', this)" class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#ECFDF5] text-[#059669] border border-[#A7F3D0] inline-flex items-center gap-1 cursor-pointer" title="Sudah dicetak pada '.e($printedDateTooltip).'"><i class="bi bi-check-circle-fill"></i><span>Sudah Dicetak</span></button>'
+            : '<button type="button" id="print-badge-mob-'.$cId.'" data-printed="0" onclick="toggleCardPrintStatus('.$cId.', this)" class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#FFFBEB] text-[#D97706] border border-[#FDE68A] inline-flex items-center gap-1 cursor-pointer" title="Belum pernah dicetak"><i class="bi bi-hourglass-split"></i><span>Belum Dicetak</span></button>';
+
         $cardsTableRowsHtml .= '
         <tr id="card-row-'.$cId.'" class="hover:bg-[#F9FAFB] transition-colors">
           <td class="text-center py-2.5" style="width: 38px;">
@@ -779,9 +803,10 @@ if (empty($displayCards)) {
               '.$photoThumbHtml.'
               <div class="min-w-0">
                 <a href="'.e(module_url('kartu_detail.php', ['id'=>$cId])).'" target="_blank" class="font-semibold text-[#1B2A3A] hover:text-[#0E5C58] transition-colors text-decoration-none text-break text-[13px]" title="Buka Detail &amp; Foto Fisik">'.e($nama).'</a>
-                <div class="text-[11px] text-[#53595F] font-mono mt-0.5 flex items-center gap-1">
-                  <i class="bi bi-calendar-event text-[#0E5C58]"></i>'.e($tglCard).'
+                <div class="text-[11px] text-[#53595F] font-mono mt-0.5 flex items-center gap-1.5 flex-wrap">
+                  <span><i class="bi bi-calendar-event text-[#0E5C58] me-1"></i>'.e($tglCard).'</span>
                   '.$todayBadge.'
+                  '.$printStatusBadgeHtml.'
                 </div>
               </div>
             </div>
@@ -792,25 +817,28 @@ if (empty($displayCards)) {
           <td style="width: 95px;" class="text-center py-2.5">
             <span class="badge px-2 py-1 rounded-pill '.$lokasiBadgeClass.'" style="font-size: 0.72rem; font-weight: 600;">'.e($lokasi).'</span>
           </td>
-          <td class="text-end py-2.5 pe-3" style="width: 210px;">
+          <td class="text-end py-2.5 pe-3" style="width: 235px;">
             <div class="inline-flex items-center gap-1 justify-end">
+              <button type="button" class="h-[28px] px-2 bg-[#D9F1EF] border border-[#A7E2DC] hover:bg-[#0E5C58] hover:text-white text-[#0E5C58] rounded-[5px] text-[11px] font-semibold transition-colors inline-flex items-center gap-1 shadow-2xs cursor-pointer" title="Unduh Gambar Kartu PNG Ukuran Asli CR80 (85.6mm x 54mm)" onclick=\'downloadCardPngFromRow('.$jsonPayload.', this)\'>
+                <i class="bi bi-download"></i><span class="d-none d-xl-inline"> PNG</span>
+              </button>
               <a class="h-[28px] px-2 bg-white border border-[#D1D5D8] hover:bg-[#ECFDF5] text-[#10B981] rounded-[5px] text-[11px] font-medium transition-colors inline-flex items-center gap-1 text-decoration-none shadow-2xs" target="_blank" href="'.e(module_url('inventaris_mutation.php', ['id'=>$cId])).'" title="Mutasi Fasilitas &amp; Kartu Inventaris">
-                <i class="bi bi-arrow-left-right"></i><span class="d-none d-xl-inline"> Mutasi</span>
+                <i class="bi bi-arrow-left-right"></i><span class="d-none d-xxl-inline"> Mutasi</span>
               </a>
               <a class="h-[28px] px-2 bg-white border border-[#D1D5D8] hover:bg-[#D9F1EF] text-[#0E5C58] rounded-[5px] text-[11px] font-medium transition-colors inline-flex items-center gap-1 text-decoration-none shadow-2xs" target="_blank" href="'.e(module_url('kartu_detail.php', ['id'=>$cId])).'" title="Buka Detail Web &amp; Foto">
-                <i class="bi bi-box-arrow-up-right"></i><span class="d-none d-xl-inline"> Detail</span>
+                <i class="bi bi-box-arrow-up-right"></i><span class="d-none d-xxl-inline"> Detail</span>
               </a>
-              <button type="button" class="h-[28px] px-2 bg-white border border-[#D1D5D8] hover:bg-[#E0F2FE] text-[#0284C7] rounded-[5px] text-[11px] font-medium transition-colors inline-flex items-center gap-1 shadow-2xs cursor-pointer" title="Pratinjau Fisik Kartu" onclick=\'openCardPreviewModal('.$jsonPayload.')\'>
+              <button type="button" class="h-[28px] px-2 bg-white border border-[#D1D5D8] hover:bg-[#E0F2FE] text-[#0284C7] rounded-[5px] text-[11px] font-medium transition-colors inline-flex items-center gap-1 shadow-2xs cursor-pointer" title="Pratinjau Fisik Kartu &amp; Kirim WA" onclick=\'openCardPreviewModal('.$jsonPayload.')\'>
                 <i class="bi bi-eye"></i><span class="d-none d-xl-inline"> Lihat</span>
               </button>
               <a class="h-[28px] px-2 bg-white border border-[#D1D5D8] hover:bg-[#F4F5F7] text-[#1B2A3A] rounded-[5px] text-[11px] font-medium transition-colors inline-flex items-center gap-1 text-decoration-none shadow-2xs" target="_blank" href="'.e(module_url('print_inventory_card.php', ['source'=>'inventaris_kartu', 'id'=>$cId])).'" title="Cetak Kartu Ini">
                 <i class="bi bi-printer"></i><span class="d-none d-xl-inline"> Cetak</span>
               </a>
               <button type="button" class="h-[28px] px-2 bg-white border border-[#D1D5D8] hover:bg-[#FEF3C7] text-[#D97706] rounded-[5px] text-[11px] font-medium transition-colors inline-flex items-center gap-1 shadow-2xs cursor-pointer" title="Edit Kartu" onclick=\'openCardEditModal('.$jsonPayload.')\'>
-                <i class="bi bi-pencil"></i><span class="d-none d-xl-inline"> Edit</span>
+                <i class="bi bi-pencil"></i>
               </button>
               <button type="button" class="h-[28px] px-2 bg-white border border-[#D1D5D8] hover:bg-[#FEE2E2] text-[#DC2626] rounded-[5px] text-[11px] font-medium transition-colors inline-flex items-center gap-1 shadow-2xs cursor-pointer" title="Hapus Kartu" onclick="confirmDeleteCard('.$cId.', \''.e(addslashes($rek . ' - ' . $nama)).'\')">
-                <i class="bi bi-trash"></i><span class="d-none d-xl-inline"> Hapus</span>
+                <i class="bi bi-trash"></i>
               </button>
             </div>
           </td>
@@ -828,8 +856,8 @@ if (empty($displayCards)) {
               </div>
             </div>
             <div class="flex items-center gap-1.5 flex-wrap justify-end">
+              '.$printStatusBadgeMobHtml.'
               <span class="badge px-2 py-1 rounded-pill '.$lokasiBadgeClass.'" style="font-size: 0.70rem; font-weight: 600;">'.e($lokasi).'</span>
-              '.($barcode ? '<a href="'.e($barcode).'" target="_blank" class="px-2 py-0.5 rounded-[4px] text-[10px] font-bold bg-[#D9F1EF] text-[#0E5C58] border border-[#A7E2DC] text-decoration-none inline-flex items-center gap-1"><i class="bi bi-qr-code"></i>QR</a>' : '').'
             </div>
           </div>
 
@@ -845,7 +873,10 @@ if (empty($displayCards)) {
             </div>
           </div>
 
-          <div class="grid grid-cols-6 gap-1 pt-2 border-t border-[#F3F4F6]">
+          <div class="grid grid-cols-7 gap-1 pt-2 border-t border-[#F3F4F6]">
+            <button type="button" class="h-[30px] bg-[#D9F1EF] border border-[#A7E2DC] text-[#0E5C58] rounded-[6px] text-[11px] font-semibold flex items-center justify-center shadow-2xs cursor-pointer" title="Unduh Gambar Kartu PNG Ukuran Asli" onclick=\'downloadCardPngFromRow('.$jsonPayload.', this)\'>
+              <i class="bi bi-download"></i>
+            </button>
             <a class="h-[30px] bg-white border border-[#D1D5D8] hover:bg-[#ECFDF5] text-[#10B981] rounded-[6px] text-[11px] font-medium transition-colors flex items-center justify-center text-decoration-none shadow-2xs" target="_blank" href="'.e(module_url('inventaris_mutation.php', ['id'=>$cId])).'" title="Mutasi">
               <i class="bi bi-arrow-left-right"></i>
             </a>
@@ -2013,8 +2044,11 @@ if ($activeTab === 'kartu') {
           <button type="button" class="h-[34px] px-3.5 bg-[#0E5C58] hover:bg-[#094340] text-white rounded-[6px] text-[12px] font-semibold transition-colors inline-flex items-center gap-1.5 border-0 shadow-xs cursor-pointer" data-bs-toggle="modal" data-bs-target="#addCardModal">
             <i class="bi bi-plus-lg"></i> Tambah Data Kartu
           </button>
+          <a href="'.e(module_url('print_inventory_card.php', ['source'=>'inventaris_kartu', 'status_cetak'=>'belum', 'auto_mark'=>1])).'" target="_blank" class="h-[34px] px-3 bg-[#FFFBEB] border border-[#FDE68A] rounded-[6px] text-[12px] font-bold text-[#B45309] hover:bg-[#FEF3C7] transition-colors inline-flex items-center gap-1.5 text-decoration-none shadow-xs" title="Cetak massal A4 khusus kartu yang belum pernah dicetak &amp; otomatis tandai Sudah Dicetak">
+            <i class="bi bi-printer-fill"></i> Cetak Belum Dicetak ('.$unprintedCardsCount.')
+          </a>
           <a href="'.e(module_url('print_inventory_card.php', ['source'=>'inventaris_kartu'])).'" target="_blank" class="h-[34px] px-3 bg-white border border-[#D1D5D8] rounded-[6px] text-[12px] font-medium text-[#1B2A3A] hover:bg-[#F4F5F7] transition-colors inline-flex items-center gap-1.5 text-decoration-none shadow-xs">
-            <i class="bi bi-printer text-[#0E5C58]"></i> Cetak A4
+            <i class="bi bi-printer text-[#0E5C58]"></i> Cetak Semua A4
           </a>
           <div class="dropdown">
             <button class="h-[34px] px-3 bg-white border border-[#D1D5D8] rounded-[6px] text-[12px] font-medium text-[#1B2A3A] hover:bg-[#F4F5F7] transition-colors inline-flex items-center gap-1.5 shadow-xs dropdown-toggle cursor-pointer" type="button" data-bs-toggle="dropdown">
@@ -2151,9 +2185,20 @@ if ($activeTab === 'kartu') {
           </a>
         </div>
         <div class="col-12 flex justify-between items-center pt-3 border-t border-[#F3F4F6] mt-2 flex-wrap gap-2">
-          <div class="text-[12px] text-[#53595F]">
-            Menampilkan <strong>'.count($filteredCards).'</strong> kartu dari total <strong>'.$totalCardsCount.'</strong> kartu inventaris terdaftar.
-            '.($filterHariIni ? '<span class="px-2 py-0.5 rounded-full text-[11px] font-bold bg-[#D9F1EF] text-[#0E5C58] border border-[#A7E2DC] ms-1.5"><i class="bi bi-funnel me-0.5"></i>Filter Hari Ini Aktif</span>' : '').'
+          <div class="flex items-center gap-2 flex-wrap">
+            <span class="text-[12px] font-bold text-[#1B2A3A] me-1"><i class="bi bi-printer me-1 text-[#0E5C58]"></i>Status Cetak:</span>
+            <a href="'.e(module_url('dashboard.php', array_merge($_GET, ['tab'=>'kartu', 'status_cetak'=>null, 'p_kartu'=>1]))).'" class="px-2.5 py-1 rounded-full text-[11px] font-bold text-decoration-none transition-colors '.($statusCetakCard === '' ? 'bg-[#0E5C58] text-white' : 'bg-[#F4F5F7] text-[#53595F] hover:bg-[#E5E7EB]').'">
+              Semua ('.$totalCardsCount.')
+            </a>
+            <a href="'.e(module_url('dashboard.php', array_merge($_GET, ['tab'=>'kartu', 'status_cetak'=>($statusCetakCard === 'belum' ? null : 'belum'), 'p_kartu'=>1]))).'" class="px-2.5 py-1 rounded-full text-[11px] font-bold text-decoration-none transition-colors inline-flex items-center gap-1 '.($statusCetakCard === 'belum' ? 'bg-[#D97706] text-white shadow-2xs' : 'bg-[#FFFBEB] text-[#D97706] border border-[#FDE68A] hover:bg-[#FEF3C7]').'">
+              <i class="bi bi-hourglass-split"></i> Belum Dicetak ('.$unprintedCardsCount.')
+            </a>
+            <a href="'.e(module_url('dashboard.php', array_merge($_GET, ['tab'=>'kartu', 'status_cetak'=>($statusCetakCard === 'sudah' ? null : 'sudah'), 'p_kartu'=>1]))).'" class="px-2.5 py-1 rounded-full text-[11px] font-bold text-decoration-none transition-colors inline-flex items-center gap-1 '.($statusCetakCard === 'sudah' ? 'bg-[#059669] text-white shadow-2xs' : 'bg-[#ECFDF5] text-[#059669] border border-[#A7F3D0] hover:bg-[#D1FAE5]').'">
+              <i class="bi bi-check-circle-fill"></i> Sudah Dicetak ('.$printedCardsCount.')
+            </a>
+            <span class="text-[12px] text-[#53595F] ms-1">
+              &middot; Menampilkan <strong>'.count($filteredCards).'</strong> kartu
+            </span>
           </div>
           <div class="flex gap-2">
             <a class="h-[34px] px-3 bg-white border border-[#D1D5D8] rounded-[6px] text-[12px] font-medium text-[#1B2A3A] hover:bg-[#F4F5F7] transition-colors inline-flex items-center gap-1 text-decoration-none" href="'.e(module_url('dashboard.php', ['tab' => 'kartu'])).'"><i class="bi bi-x-circle"></i> Reset</a>
@@ -2172,6 +2217,9 @@ if ($activeTab === 'kartu') {
           <span class="text-[13px] text-[#1E40AF] font-semibold">Aksi untuk kartu inventaris terpilih:</span>
         </div>
         <div class="flex items-center gap-2 flex-wrap">
+          <button type="button" class="h-[32px] px-3 bg-[#059669] hover:bg-[#047857] text-white rounded-[6px] text-[12px] font-semibold transition-colors flex items-center gap-1.5 border-0 shadow-xs cursor-pointer" onclick="bulkMarkPrintedCards()">
+            <i class="bi bi-check2-all"></i> Tandai Sudah Dicetak
+          </button>
           <button type="button" class="h-[32px] px-3 bg-[#10B981] hover:bg-[#059669] text-white rounded-[6px] text-[12px] font-semibold transition-colors flex items-center gap-1.5 border-0 shadow-xs cursor-pointer" id="btnExportExcelSelected" onclick="exportExcelSelectedCards()">
             <i class="bi bi-file-earmark-excel-fill"></i> Ekspor Excel (<span id="countExcel">0</span>)
           </button>
@@ -3517,14 +3565,20 @@ $body .= '
           </div>
         </div>
       </div>
-      <div class="modal-footer py-2 px-3 bg-white justify-content-between">
-        <a href="kartu_template.html" target="_blank" class="btn btn-sm btn-outline-secondary">
-          <i class="bi bi-filetype-html me-1"></i> Buka File Template (kartu_template.html)
-        </a>
-        <div class="d-flex gap-2">
+      <div class="modal-footer py-2.5 px-3 bg-white justify-content-between flex-wrap gap-2">
+        <div class="text-muted" style="font-size: 0.72rem;">
+          <i class="bi bi-rulers text-primary me-1"></i> Ukuran Asli CR80: <strong>85.6mm &times; 54.0mm</strong> (300 DPI)
+        </div>
+        <div class="d-flex flex-wrap gap-1.5">
           <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-dismiss="modal">Tutup</button>
+          <button type="button" class="btn btn-sm fw-bold text-white" style="background-color: #0E5C58; border-color: #0E5C58;" onclick="if(window.CURRENT_PREVIEW_CARD) downloadOrSharePhysicalCard(window.CURRENT_PREVIEW_CARD, \'download\', this)">
+            <i class="bi bi-download me-1"></i> Unduh Gambar Kartu (PNG)
+          </button>
+          <button type="button" class="btn btn-sm btn-success fw-bold" onclick="if(window.CURRENT_PREVIEW_CARD) downloadOrSharePhysicalCard(window.CURRENT_PREVIEW_CARD, \'share\', this)">
+            <i class="bi bi-whatsapp me-1"></i> Bagikan / Kirim WA
+          </button>
           <a id="pvPrintDirectBtn" href="#" target="_blank" class="btn btn-sm btn-primary fw-bold">
-            <i class="bi bi-printer-fill me-1"></i> Cetak Kartu Ini
+            <i class="bi bi-printer-fill me-1"></i> Cetak A4
           </a>
         </div>
       </div>
@@ -3907,11 +3961,9 @@ function openCardEditModal(card) {
   modal.show();
 }
 
-function openCardPreviewModal(card) {
+function buildCardDataForPng(card) {
   const rek = card.nomor_rekening || "";
   const tglRaw = (card.tanggal_perolehan || "").trim();
-  
-  // Format DD/MM/YYYY
   let tglDisplay = "-";
   if (tglRaw) {
     if (tglRaw.includes("/")) {
@@ -3927,17 +3979,95 @@ function openCardPreviewModal(card) {
       tglDisplay = tglRaw;
     }
   }
-
-  document.getElementById("pvNomorAsset").innerText = card.gabungan || rek;
-  document.getElementById("pvNamaAsset").innerText = card.nama_barang || "-";
-  document.getElementById("pvTglPerolehan").innerText = tglDisplay;
-  document.getElementById("pvLokasi").innerText = card.ruangan || card.lokasi || "KPO";
-
   const qrTarget = card.id ? (window.location.origin + "/kartu_detail.php?id=" + card.id) : (card.barcode_data || window.location.origin);
+  return {
+    id: card.id || 0,
+    kode: rek,
+    nomor_asset: card.gabungan || rek,
+    nama: card.nama_barang || "-",
+    tgl: tglDisplay,
+    lokasi: card.ruangan || card.lokasi || "KPO",
+    qr_url: qrTarget
+  };
+}
+
+function downloadCardPngFromRow(card, btnEl) {
+  const payload = buildCardDataForPng(card);
+  if (typeof window.downloadOrSharePhysicalCard === "function") {
+    window.downloadOrSharePhysicalCard(payload, "download", btnEl);
+  }
+}
+
+function toggleCardPrintStatus(cardId, btnEl) {
+  if (!cardId) return;
+  const curPrinted = btnEl && btnEl.getAttribute("data-printed") === "1";
+  const nextStatus = curPrinted ? "unprinted" : "printed";
+  const csrfInput = document.querySelector("input[name=\\"_csrf\\"]");
+  const csrfToken = csrfInput ? csrfInput.value : "";
+
+  const fd = new FormData();
+  fd.append("ajax_action", "toggle_print_status");
+  fd.append("id", String(cardId));
+  fd.append("status", nextStatus);
+  fd.append("_csrf", csrfToken);
+
+  fetch("print_inventory_card.php", { method: "POST", body: fd })
+    .then(function(r) { return r.json(); })
+    .then(function(res) {
+      if (!res.success) return;
+      const badges = [
+        document.getElementById("print-badge-" + cardId),
+        document.getElementById("print-badge-mob-" + cardId)
+      ];
+      badges.forEach(function(b) {
+        if (!b) return;
+        if (res.is_printed) {
+          b.setAttribute("data-printed", "1");
+          b.className = "px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#ECFDF5] text-[#059669] border border-[#A7F3D0] hover:bg-[#D1FAE5] transition-colors inline-flex items-center gap-1 cursor-pointer";
+          b.title = "Sudah dicetak pada " + (res.printed_label || "") + " — Klik untuk ubah ke Belum Dicetak";
+          b.innerHTML = "<i class=\\"bi bi-check-circle-fill\\"></i><span>Sudah Dicetak</span>";
+        } else {
+          b.setAttribute("data-printed", "0");
+          b.className = "px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#FFFBEB] text-[#D97706] border border-[#FDE68A] hover:bg-[#FEF3C7] transition-colors inline-flex items-center gap-1 cursor-pointer";
+          b.title = "Belum pernah dicetak — Klik untuk tandai Sudah Dicetak";
+          b.innerHTML = "<i class=\\"bi bi-hourglass-split\\"></i><span>Belum Dicetak</span>";
+        }
+      });
+    })
+    .catch(function() {});
+}
+
+function bulkMarkPrintedCards() {
+  const ids = getSelectedCardIds();
+  if (ids.length === 0) return;
+  const csrfInput = document.querySelector("input[name=\\"_csrf\\"]");
+  const csrfToken = csrfInput ? csrfInput.value : "";
+  const fd = new FormData();
+  fd.append("ajax_action", "mark_printed");
+  fd.append("ids", ids.join(","));
+  fd.append("_csrf", csrfToken);
+  fetch("print_inventory_card.php", { method: "POST", body: fd })
+    .then(function(r) { return r.json(); })
+    .then(function(res) {
+      if (res.success) {
+        window.location.reload();
+      }
+    });
+}
+
+function openCardPreviewModal(card) {
+  const payload = buildCardDataForPng(card);
+  window.CURRENT_PREVIEW_CARD = payload;
+
+  document.getElementById("pvNomorAsset").innerText = payload.nomor_asset;
+  document.getElementById("pvNamaAsset").innerText = payload.nama;
+  document.getElementById("pvTglPerolehan").innerText = payload.tgl;
+  document.getElementById("pvLokasi").innerText = payload.lokasi;
+
   const qrBox = document.getElementById("pvQrBox");
   qrBox.innerHTML = "";
   new QRCode(qrBox, {
-    text: qrTarget,
+    text: payload.qr_url,
     width: 70,
     height: 70,
     colorDark: "#000000",
@@ -4046,6 +4176,9 @@ document.addEventListener("DOMContentLoaded", function() {
     }
   }
 });
+</script>
+<script>
+' . get_card_png_exporter_js() . '
 </script>
 ';
 

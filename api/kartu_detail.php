@@ -23,6 +23,7 @@ require_once __DIR__ . '/includes/audit_trail.php';
 
 // Pastikan skema tabel inventaris_kartu & master_ruangan siap
 ensure_inventaris_kartu_columns();
+ensure_inventaris_kartu_print_columns();
 
 $cardId = (int)($_GET['id'] ?? 0);
 $rekParam = trim((string)($_GET['rek'] ?? $_GET['no_rek'] ?? ''));
@@ -834,6 +835,19 @@ $pageTitle = $card ? e($card['nama_barang']) . ' - Kartu Inventaris' : 'Kartu In
                 $statusVal = !empty($card['status_inventaris']) ? $card['status_inventaris'] : '1 : Aktif';
                 $cleanStatus = preg_replace('/^\d+\s*:\s*/', '', $statusVal);
                 $keteranganVal = !empty($card['keterangan']) ? $card['keterangan'] : $card['nama_barang'];
+
+                $tglCardPhysical = format_card_date((string)($card['tanggal_perolehan'] ?? ''));
+                $isPrintedDetail = !empty($card['printed_at']);
+                $printedTimeDetail = $isPrintedDetail ? date('d/m/Y H:i', strtotime((string)$card['printed_at'])) : '';
+                $cardPhysicalPayload = [
+                    'id'          => (int)$card['id'],
+                    'kode'        => $kodeInventaris,
+                    'nomor_asset' => $nomorGabungan,
+                    'nama'        => (string)$card['nama_barang'],
+                    'tgl'         => $tglCardPhysical,
+                    'lokasi'      => $lokasiBarangVal,
+                    'qr_url'      => $canonicalQrUrl
+                ];
             ?>
 
             <!-- Kartu Paspor Inventaris Resmi -->
@@ -860,12 +874,20 @@ $pageTitle = $card ? e($card['nama_barang']) . ' - Kartu Inventaris' : 'Kartu In
 
                         <!-- Ringkasan Identitas Utama (Kanan 58%) -->
                         <div class="col-7">
-                            <div class="d-flex align-items-center justify-content-between mb-1">
+                            <div class="d-flex align-items-center justify-content-between mb-1 flex-wrap gap-1">
                                 <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 rounded-pill px-2 py-0.5 d-inline-flex align-items-center gap-1.5 fw-bold" style="font-size: 0.70rem;"><span class="status-pulse-dot"></span><span><?= e($cleanStatus) ?></span></span>
-                                <span class="badge bg-primary bg-opacity-10 text-primary rounded-pill font-mono" style="font-size: 0.68rem;">#<?= (int)$card['id'] ?></span>
+                                <?php if ($isPrintedDetail): ?>
+                                    <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 rounded-pill px-2 py-0.5 fw-bold" style="font-size: 0.66rem;" title="Dicetak pada <?= e($printedTimeDetail) ?>">
+                                        <i class="bi bi-check-circle-fill me-0.5"></i>Sudah Dicetak
+                                    </span>
+                                <?php else: ?>
+                                    <span class="badge bg-warning bg-opacity-15 text-warning-emphasis border border-warning border-opacity-50 rounded-pill px-2 py-0.5 fw-bold" style="font-size: 0.66rem;">
+                                        <i class="bi bi-hourglass-split me-0.5"></i>Belum Dicetak
+                                    </span>
+                                <?php endif; ?>
                             </div>
                             <h2 class="h6 fw-bold text-dark mb-1 lh-sm" style="font-size: 0.95rem;"><?= e($card['nama_barang']) ?></h2>
-                            <div class="font-mono text-primary fw-bold small mb-1" style="font-size: 0.78rem;"><?= e($kodeInventaris) ?></div>
+                            <div class="font-mono text-primary fw-bold small mb-1" style="font-size: 0.78rem;"><?= e($kodeInventaris) ?> <span class="text-muted fw-normal">(#<?= (int)$card['id'] ?>)</span></div>
                             <div class="small text-muted mb-0.5" style="font-size: 0.72rem;">
                                 <i class="bi bi-geo-alt-fill text-warning me-1"></i><strong><?= e($lokasiBarangVal) ?></strong>
                             </div>
@@ -905,19 +927,50 @@ $pageTitle = $card ? e($card['nama_barang']) . ' - Kartu Inventaris' : 'Kartu In
                             </a>
                         </div>
                     </div>
+
+                    <!-- Tombol Unduh Gambar Kartu (PNG Ukuran Asli CR80) & Bagikan WA -->
+                    <div class="row g-2 mt-1">
+                        <div class="col-7">
+                            <button type="button" class="btn w-100 rounded-3 fw-bold text-white d-flex align-items-center justify-content-center gap-1.5 py-2 shadow-xs" style="background-color: #0E5C58; font-size: 0.80rem;" onclick="downloadOrSharePhysicalCard(window.CURRENT_DETAIL_CARD, 'download', this)">
+                                <i class="bi bi-download"></i>
+                                <span>Unduh Kartu (PNG)</span>
+                            </button>
+                        </div>
+                        <div class="col-5">
+                            <button type="button" class="btn btn-success w-100 rounded-3 fw-bold d-flex align-items-center justify-content-center gap-1.5 py-2 shadow-xs" style="font-size: 0.80rem;" onclick="downloadOrSharePhysicalCard(window.CURRENT_DETAIL_CARD, 'share', this)">
+                                <i class="bi bi-whatsapp"></i>
+                                <span>Kirim WA</span>
+                            </button>
+                        </div>
+                    </div>
                 </div>
 
                 <!-- Desktop Header Bar -->
                 <div class="p-3.5 p-md-4 border-bottom bg-light bg-opacity-75 d-none d-md-flex flex-wrap align-items-center justify-content-between gap-3">
-                    <div class="d-flex align-items-center gap-2.5">
+                    <div class="d-flex align-items-center gap-2.5 flex-wrap">
                         <span class="badge badge-gold px-3.5 py-2 rounded-pill text-uppercase shadow-2xs" style="font-size: 0.88rem;">
                             <i class="bi bi-shield-check me-1.5 fs-6"></i> Data Master Inventaris
                         </span>
                         <span class="badge bg-primary bg-opacity-10 text-primary px-3.5 py-2 rounded-pill font-mono shadow-2xs" style="font-size: 0.88rem;">
                             ID: #<?= (int)$card['id'] ?>
                         </span>
+                        <?php if ($isPrintedDetail): ?>
+                            <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 px-3 py-2 rounded-pill fw-bold shadow-2xs" style="font-size: 0.84rem;" title="Dicetak pada <?= e($printedTimeDetail) ?>">
+                                <i class="bi bi-check-circle-fill me-1"></i> Sudah Dicetak (<?= e($printedTimeDetail) ?>)
+                            </span>
+                        <?php else: ?>
+                            <span class="badge bg-warning bg-opacity-15 text-warning-emphasis border border-warning border-opacity-50 px-3 py-2 rounded-pill fw-bold shadow-2xs" style="font-size: 0.84rem;">
+                                <i class="bi bi-hourglass-split me-1"></i> Belum Dicetak
+                            </span>
+                        <?php endif; ?>
                     </div>
-                    <div class="d-flex align-items-center gap-2.5">
+                    <div class="d-flex align-items-center gap-2 flex-wrap">
+                        <button type="button" class="btn btn-outline-neutral rounded-pill px-3.5 py-2 fw-bold" style="font-size: 0.86rem; border-color: #0E5C58; color: #0E5C58;" onclick="downloadOrSharePhysicalCard(window.CURRENT_DETAIL_CARD, 'download', this)" title="Unduh Gambar Kartu Fisik Ukuran Asli CR80 (85.6mm x 54.0mm - 300 DPI)">
+                            <i class="bi bi-download me-1"></i> Unduh Kartu (PNG)
+                        </button>
+                        <button type="button" class="btn btn-success rounded-pill px-3.5 py-2 fw-bold shadow-2xs" style="font-size: 0.86rem;" onclick="downloadOrSharePhysicalCard(window.CURRENT_DETAIL_CARD, 'share', this)" title="Bagikan / Kirim Gambar Kartu ke WhatsApp">
+                            <i class="bi bi-whatsapp me-1"></i> Kirim WA
+                        </button>
                         <a href="<?= module_url('inventaris_mutation.php', ['id' => $card['id']]) ?>" class="btn btn-outline-neutral rounded-pill px-3.5 py-2 fw-semibold" style="font-size: 0.88rem;">
                             <i class="bi bi-arrow-left-right me-1.5"></i> Mutasi Barang
                         </a>
@@ -2194,5 +2247,11 @@ $pageTitle = $card ? e($card['nama_barang']) . ' - Kartu Inventaris' : 'Kartu In
             });
         }
     </script>
+    <?php if ($card): ?>
+    <script>
+        window.CURRENT_DETAIL_CARD = <?= json_encode($cardPhysicalPayload, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) ?>;
+        <?= get_card_png_exporter_js() ?>
+    </script>
+    <?php endif; ?>
 </body>
 </html>

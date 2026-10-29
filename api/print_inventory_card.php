@@ -100,6 +100,55 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax_action'])) {
         exit;
     }
 
+    if ($action === 'mark_printed') {
+        $rawTargetIds = $_POST['ids'] ?? '';
+        $targetIds = [];
+        if (is_array($rawTargetIds)) {
+            $targetIds = array_map('intval', $rawTargetIds);
+        } elseif (is_string($rawTargetIds) && $rawTargetIds !== '') {
+            $decoded = json_decode($rawTargetIds, true);
+            if (is_array($decoded)) {
+                $targetIds = array_map('intval', $decoded);
+            } else {
+                foreach (explode(',', $rawTargetIds) as $part) {
+                    $cid = (int)trim($part);
+                    if ($cid > 0) $targetIds[] = $cid;
+                }
+            }
+        }
+        $targetIds = array_values(array_unique(array_filter($targetIds, fn($x) => $x > 0)));
+        if (empty($targetIds)) {
+            echo json_encode(['success' => false, 'error' => 'Tidak ada ID kartu yang dipilih.']);
+            exit;
+        }
+        $ok = mark_inventaris_kartu_printed($targetIds, true);
+        echo json_encode([
+            'success' => $ok,
+            'count'   => count($targetIds),
+            'printed_at' => date('Y-m-d H:i:s'),
+            'printed_label' => date('d/m/Y H:i')
+        ]);
+        exit;
+    }
+
+    if ($action === 'toggle_print_status') {
+        $cid = (int)($_POST['id'] ?? 0);
+        $makePrinted = (($_POST['status'] ?? 'printed') === 'printed');
+        if ($cid <= 0) {
+            echo json_encode(['success' => false, 'error' => 'ID kartu tidak valid.']);
+            exit;
+        }
+        $ok = mark_inventaris_kartu_printed([$cid], $makePrinted);
+        echo json_encode([
+            'success' => $ok,
+            'id' => $cid,
+            'is_printed' => $makePrinted,
+            'printed_at' => $makePrinted ? date('Y-m-d H:i:s') : null,
+            'printed_label' => $makePrinted ? date('d/m/Y H:i') : 'Belum Dicetak'
+        ]);
+        exit;
+    }
+
     echo json_encode(['success' => false, 'error' => 'Aksi AJAX tidak dikenali.']);
     exit;
 }
@@ -109,6 +158,7 @@ $source = trim((string)($_GET['source'] ?? 'inventaris_kartu')); // 'inventaris_
 $cabangId = max(0, (int)($_GET['cabang'] ?? 0));
 $singleId = max(0, (int)($_GET['id'] ?? $_GET['asset_id'] ?? 0));
 $rawIds = trim((string)($_GET['ids'] ?? $_POST['ids'] ?? ''));
+$statusCetakFilter = trim((string)($_GET['status_cetak'] ?? '')); // 'belum' atau 'sudah'
 $layout = trim((string)($_GET['layout'] ?? '10')); // '8', '10', '12'
 if (!in_array($layout, ['8', '10', '12'], true)) {
     $layout = '10';
@@ -133,6 +183,7 @@ $index = 0;
 
 if ($source === 'inventaris_kartu') {
     // Mode Default: Tabel Terpisah inventaris_kartu
+    ensure_inventaris_kartu_print_columns();
     $invRows = get_inventaris_kartu_rows(!empty($_GET['refresh']));
     if (!empty($idList)) {
         $invRows = array_values(array_filter($invRows, function($r) use ($idList) {
@@ -142,27 +193,44 @@ if ($source === 'inventaris_kartu') {
         $invRows = array_values(array_filter($invRows, function($r) use ($singleId) {
             return (int)$r['id'] === $singleId;
         }));
-    } elseif ($searchQuery !== '') {
-        $q = strtolower($searchQuery);
-        $cleanQ = preg_replace('/[^a-z0-9]/', '', $q);
-        $invRows = array_values(array_filter($invRows, function($r) use ($q, $cleanQ) {
-            $rek = strtolower(trim((string)($r['nomor_rekening'] ?? '')));
-            $nama = strtolower(trim((string)($r['nama_barang'] ?? '')));
-            $lokasi = strtolower(trim((string)($r['lokasi'] ?? '')));
-            $barcode = strtolower(trim((string)($r['barcode_data'] ?? '')));
-            $tgl = trim((string)($r['tanggal_perolehan'] ?? ''));
-            $gabungan = strtolower(get_nomor_asset_gabungan($rek, $tgl));
-            $cleanRek = preg_replace('/[^a-z0-9]/', '', $rek);
-            $cleanHaystack = preg_replace('/[^a-z0-9]/', '', $rek . ' ' . $nama . ' ' . $lokasi . ' ' . $barcode . ' ' . $gabungan);
-            
-            if (strpos($rek . ' ' . $nama . ' ' . $lokasi . ' ' . $barcode, $q) !== false) {
-                return true;
-            }
-            if ($cleanQ !== '' && (strpos($cleanRek, $cleanQ) !== false || strpos($cleanHaystack, $cleanQ) !== false)) {
-                return true;
-            }
-            return false;
-        }));
+    } else {
+        if ($statusCetakFilter === 'belum') {
+            $invRows = array_values(array_filter($invRows, function($r) {
+                return empty($r['printed_at']);
+            }));
+        } elseif ($statusCetakFilter === 'sudah') {
+            $invRows = array_values(array_filter($invRows, function($r) {
+                return !empty($r['printed_at']);
+            }));
+        }
+        if ($searchQuery !== '') {
+            $q = strtolower($searchQuery);
+            $cleanQ = preg_replace('/[^a-z0-9]/', '', $q);
+            $invRows = array_values(array_filter($invRows, function($r) use ($q, $cleanQ) {
+                $rek = strtolower(trim((string)($r['nomor_rekening'] ?? '')));
+                $nama = strtolower(trim((string)($r['nama_barang'] ?? '')));
+                $lokasi = strtolower(trim((string)($r['lokasi'] ?? '')));
+                $barcode = strtolower(trim((string)($r['barcode_data'] ?? '')));
+                $tgl = trim((string)($r['tanggal_perolehan'] ?? ''));
+                $gabungan = strtolower(get_nomor_asset_gabungan($rek, $tgl));
+                $cleanRek = preg_replace('/[^a-z0-9]/', '', $rek);
+                $cleanHaystack = preg_replace('/[^a-z0-9]/', '', $rek . ' ' . $nama . ' ' . $lokasi . ' ' . $barcode . ' ' . $gabungan);
+                
+                if (strpos($rek . ' ' . $nama . ' ' . $lokasi . ' ' . $barcode, $q) !== false) {
+                    return true;
+                }
+                if ($cleanQ !== '' && (strpos($cleanRek, $cleanQ) !== false || strpos($cleanHaystack, $cleanQ) !== false)) {
+                    return true;
+                }
+                return false;
+            }));
+        }
+    }
+
+    // Otomatis tandai "Sudah Dicetak" apabila halaman cetak dipanggil untuk ID tertentu atau filter "Belum Dicetak"
+    if ($exportMode === '' && !empty($invRows) && ($singleId > 0 || !empty($idList) || $statusCetakFilter === 'belum' || !empty($_GET['auto_mark']))) {
+        $autoMarkIds = array_map(fn($r) => (int)($r['id'] ?? 0), $invRows);
+        mark_inventaris_kartu_printed($autoMarkIds, true);
     }
 
     foreach ($invRows as $r) {
@@ -1868,6 +1936,20 @@ function doPost(e) {
       navigator.clipboard.writeText(area.value);
       alert("Kode Google Apps Script berhasil disalin ke clipboard!");
     }
+
+    function markAllRenderedCardsPrinted() {
+      if (typeof CARDS_DATA === "undefined" || !Array.isArray(CARDS_DATA) || CARDS_DATA.length === 0) return;
+      const ids = CARDS_DATA.map(c => c.id).filter(id => id > 0);
+      if (ids.length === 0) return;
+      const csrfEl = document.getElementById("csrfToken");
+      const formData = new FormData();
+      formData.append("ajax_action", "mark_printed");
+      formData.append("ids", ids.join(","));
+      if (csrfEl) formData.append("_csrf", csrfEl.value);
+      fetch(window.location.pathname, { method: "POST", body: formData, keepalive: true }).catch(() => {});
+    }
+
+    window.addEventListener("beforeprint", markAllRenderedCardsPrinted);
   </script>
 </body>
 </html>
