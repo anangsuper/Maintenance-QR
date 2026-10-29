@@ -1207,7 +1207,7 @@ $body = '
       </div>
 
       <div class="modal-footer border-secondary border-opacity-25 py-2 px-3 d-flex justify-content-between">
-        <button type="button" class="btn btn-outline-light btn-sm rounded-pill px-3" onclick="closePhotoFaceModal()">
+        <button type="button" class="btn btn-outline-secondary btn-sm rounded-pill px-3" onclick="closePhotoFaceModal()">
           Batal
         </button>
         <button type="button" id="btnManualTriggerPhotoBio" class="btn btn-primary btn-sm rounded-pill px-3 fw-bold" onclick="triggerInstantPhotoFaceVerify()">

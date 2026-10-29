@@ -413,6 +413,19 @@ $head = '
   70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(22, 163, 74, 0); }
   100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(22, 163, 74, 0); }
 }
+@keyframes scanRayAnim {
+  0% { top: 10%; opacity: 0.3; }
+  50% { top: 85%; opacity: 1; }
+  100% { top: 10%; opacity: 0.3; }
+}
+@keyframes bounceIn {
+  0% { transform: scale(0.5); opacity: 0; }
+  60% { transform: scale(1.1); opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
+}
+.animate-bounce {
+  animation: bounceIn 0.5s ease-out;
+}
 .scanner-video-box {
   width: 100%;
   max-width: 480px;
@@ -1197,41 +1210,60 @@ ob_start();
 
             <!-- Box Live Kamera Aktif -->
             <div id="camContainer" class="d-none text-center pt-2">
-              <div class="position-relative d-inline-block rounded-[8px] overflow-hidden shadow-sm border" style="background: #000; max-width: 380px; width: 100%;">
-                <video id="webcamVideo" autoplay playsinline style="width: 100%; height: auto; display: block;"></video>
-                <div style="position: absolute; top: 15%; left: 25%; width: 50%; height: 70%; border: 2px dashed rgba(255,255,255,0.7); border-radius: 50%; pointer-events: none;"></div>
-                <div class="position-absolute bottom-0 start-0 end-0 py-1 bg-dark bg-opacity-75 text-white xs">
-                  <i class="bi bi-person-bounding-box me-1"></i> Posisikan wajah di dalam bingkai
+              <div class="position-relative mx-auto rounded-3 overflow-hidden bg-black shadow-inner" style="max-width: 320px; aspect-ratio: 1/1;">
+                <video id="webcamVideo" autoplay playsinline class="w-100 h-100 object-fit-cover" style="transform: scaleX(-1);"></video>
+                
+                <!-- Oval Guide Frame -->
+                <div class="position-absolute top-50 start-50 translate-middle pointer-events-none" style="width: 72%; height: 85%; border: 2.5px dashed rgba(59, 130, 246, 0.85); border-radius: 50%; box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.35);"></div>
+                
+                <!-- Scanning Ray Animation -->
+                <div class="position-absolute start-0 w-100" style="height: 3px; background: linear-gradient(90deg, transparent, #3b82f6, #60a5fa, transparent); animation: scanRayAnim 2s infinite ease-in-out;"></div>
+
+                <!-- Success Overlay -->
+                <div id="camSuccessOverlay" class="position-absolute top-0 start-0 w-100 h-100 bg-success bg-opacity-75 d-flex flex-column align-items-center justify-content-center text-white d-none" style="backdrop-filter: blur(4px);">
+                  <i class="bi bi-check-circle-fill display-3 mb-2 animate-bounce"></i>
+                  <h5 class="fw-bold text-white mb-1">Foto Berhasil Diambil!</h5>
+                  <span class="badge bg-white text-success fw-bold px-3 py-1 rounded-pill">Tersimpan</span>
                 </div>
               </div>
               <canvas id="webcamCanvas" class="d-none"></canvas>
-              
+
+              <div class="alert alert-secondary py-2 px-3 small fw-semibold mt-3 mb-2 text-start text-dark mx-auto" style="max-width: 320px;">
+                <i class="bi bi-person-bounding-box me-1 text-primary"></i> Arahkan wajah ke lingkaran oval lalu tekan "Ambil Foto Sekarang".
+              </div>
+
+              <div class="text-muted small mb-2" style="font-size: 0.72rem;">
+                Pastikan wajah berada di dalam oval, tidak memakai masker, dan pencahayaan memadai.
+              </div>
+
               <div class="mt-2.5 d-flex align-items-center justify-content-center gap-2">
-                <button type="button" class="btn btn-sm btn-primary-teal px-4 fw-bold shadow-sm d-inline-flex align-items-center gap-1.5" onclick="snapPhotoCheckin()">
-                  <i class="bi bi-camera-fill fs-6"></i> Ambil Foto (Jepret)
+                <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-3" onclick="stopWebcamCheckin()">
+                  Batal
                 </button>
-                <button type="button" class="btn btn-sm btn-outline-danger rounded-[6px] px-3" onclick="stopWebcamCheckin()">
-                  <i class="bi bi-x-circle me-1"></i> Batal / Tutup Kamera
+                <button type="button" class="btn btn-sm btn-primary rounded-pill px-4 fw-bold shadow-sm" onclick="snapPhotoCheckin()">
+                  <i class="bi bi-camera me-1"></i> Ambil Foto Sekarang
                 </button>
               </div>
             </div>
 
             <!-- Box Foto Sudah Terambil -->
-            <div id="previewSnapBox" class="d-none text-center p-3 border rounded-[8px] bg-light mt-2">
-              <div class="d-inline-block position-relative shadow-sm rounded-3 overflow-hidden border border-success border-2">
-                <img id="imgSnapPreview" src="" class="rounded-2" style="max-width: 150px; height: auto; display: block;">
-                <span class="position-absolute top-0 end-0 badge bg-success m-1 shadow-xs">
-                  <i class="bi bi-check-lg"></i>
-                </span>
+            <div id="previewSnapBox" class="d-none text-center p-3 border rounded-[10px] bg-dark text-white mt-2">
+              <div class="position-relative mx-auto rounded-3 overflow-hidden bg-black shadow-inner mb-2" style="max-width: 180px; aspect-ratio: 1/1;">
+                <img id="imgSnapPreview" src="" class="w-100 h-100 object-fit-cover">
+                <div class="position-absolute top-0 end-0 m-2">
+                  <span class="badge bg-success shadow-sm rounded-pill px-2 py-1"><i class="bi bi-check-lg me-1"></i> Terverifikasi</span>
+                </div>
               </div>
-              <div class="text-success fw-bold small mt-2">
-                <i class="bi bi-check-circle-fill me-1"></i> Foto Wajah Berhasil Diambil
+              <div class="alert alert-success py-1.5 px-3 small fw-bold mb-2 d-inline-block">
+                <i class="bi bi-check-circle-fill me-1"></i> Wajah Terverifikasi: Foto Berhasil Disimpan
               </div>
-              <button type="button" class="btn btn-xs btn-outline-teal rounded-pill px-3 mt-1.5" onclick="retakePhotoCheckin()">
-                <i class="bi bi-arrow-repeat me-1"></i> Foto Ulang
-              </button>
+              <div>
+                <button type="button" class="btn btn-xs btn-outline-light rounded-pill px-3" onclick="retakePhotoCheckin()">
+                  <i class="bi bi-arrow-repeat me-1"></i> Foto Ulang
+                </button>
+              </div>
             </div>
-          </div>
+          </div></div>
         </div>
 
         <div class="modal-footer bg-white border-top py-3 px-4 d-flex justify-content-between">
@@ -1682,21 +1714,30 @@ function snapPhotoCheckin() {
   const v = document.getElementById("webcamVideo");
   const c = document.getElementById("webcamCanvas");
   if (!v || !c) return;
-  const w = v.videoWidth || 480;
-  const h = v.videoHeight || 360;
-  c.width = w;
-  c.height = h;
+  const s = Math.min(v.videoWidth || 480, v.videoHeight || 480);
+  const sx = ((v.videoWidth || 480) - s) / 2;
+  const sy = ((v.videoHeight || 480) - s) / 2;
+  c.width = 320;
+  c.height = 320;
   const ctx = c.getContext("2d");
-  ctx.drawImage(v, 0, 0, w, h);
+  ctx.translate(320, 0);
+  ctx.scale(-1, 1);
+  ctx.drawImage(v, sx, sy, s, s, 0, 0, 320, 320);
   const dataUrl = c.toDataURL("image/jpeg", 0.85);
   const photoInput = document.getElementById("inputPhotoIn");
   const snapPreview = document.getElementById("imgSnapPreview");
   const snapBox = document.getElementById("previewSnapBox");
+  const overlay = document.getElementById("camSuccessOverlay");
 
   if (photoInput) photoInput.value = dataUrl;
   if (snapPreview) snapPreview.src = dataUrl;
-  if (snapBox) snapBox.classList.remove("d-none");
-  stopWebcamCheckin();
+
+  if (overlay) overlay.classList.remove("d-none");
+  setTimeout(function() {
+    if (overlay) overlay.classList.add("d-none");
+    if (snapBox) snapBox.classList.remove("d-none");
+    stopWebcamCheckin();
+  }, 400);
 }
 
 // Barcode & QR Scanner Modal Logic

@@ -172,7 +172,21 @@ $autoCheckoutMatch = $autoCheckoutMatch ?? null;
       border-radius: 20px !important;
       border: none !important;
     }
-  </style>
+  
+    @keyframes scanRayAnim {
+      0% { top: 10%; opacity: 0.3; }
+      50% { top: 85%; opacity: 1; }
+      100% { top: 10%; opacity: 0.3; }
+    }
+    @keyframes bounceIn {
+      0% { transform: scale(0.5); opacity: 0; }
+      60% { transform: scale(1.1); opacity: 1; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+    .animate-bounce {
+      animation: bounceIn 0.5s ease-out;
+    }
+</style>
 </head>
 <body>
 
@@ -568,26 +582,63 @@ $autoCheckoutMatch = $autoCheckoutMatch ?? null;
                   <span>Dokumentasi Wajah Kedatangan (Kamera Selfie)</span>
                   <span class="badge bg-light text-muted border">Opsional / Rekomendasi</span>
                 </label>
-                <div class="border rounded-3 p-3 bg-light text-center">
+                <div class="border rounded-3 p-3 bg-dark text-white text-center">
                   <div id="webcamWrapper" class="d-none">
-                    <video id="webcamVideo" autoplay playsinline style="width: 100%; max-width: 320px; height: 240px; object-fit: cover; border-radius: 12px; background:#000;" class="mb-2 shadow-sm"></video>
+                    <div class="position-relative mx-auto rounded-3 overflow-hidden bg-black shadow-inner" style="max-width: 320px; aspect-ratio: 1/1;">
+                      <video id="webcamVideo" autoplay playsinline class="w-100 h-100 object-fit-cover" style="transform: scaleX(-1);"></video>
+                      
+                      <!-- Oval Guide Frame -->
+                      <div class="position-absolute top-50 start-50 translate-middle pointer-events-none" style="width: 72%; height: 85%; border: 2.5px dashed rgba(59, 130, 246, 0.85); border-radius: 50%; box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.35);"></div>
+                      
+                      <!-- Scanning Ray Animation -->
+                      <div class="position-absolute start-0 w-100" style="height: 3px; background: linear-gradient(90deg, transparent, #3b82f6, #60a5fa, transparent); animation: scanRayAnim 2s infinite ease-in-out;"></div>
+
+                      <!-- Success Overlay -->
+                      <div id="camSuccessOverlay" class="position-absolute top-0 start-0 w-100 h-100 bg-success bg-opacity-75 d-flex flex-column align-items-center justify-content-center text-white d-none" style="backdrop-filter: blur(4px);">
+                        <i class="bi bi-check-circle-fill display-3 mb-2 animate-bounce"></i>
+                        <h5 class="fw-bold text-white mb-1">Foto Berhasil Diambil!</h5>
+                        <span class="badge bg-white text-success fw-bold px-3 py-1 rounded-pill">Tersimpan</span>
+                      </div>
+                    </div>
                     <canvas id="webcamCanvas" class="d-none"></canvas>
-                    <div>
-                      <button type="button" class="btn btn-sm btn-primary rounded-pill px-3" onclick="snapPhotoCheckin()">
-                        <i class="bi bi-camera-fill me-1"></i> Jepret Foto
+
+                    <div class="alert alert-secondary py-2 px-3 small fw-semibold mt-3 mb-2 text-start text-dark mx-auto" style="max-width: 320px;">
+                      <i class="bi bi-person-bounding-box me-1 text-primary"></i> Arahkan wajah ke lingkaran oval lalu tekan "Ambil Foto Sekarang".
+                    </div>
+
+                    <div class="text-white-50 small mb-2" style="font-size: 0.72rem;">
+                      Pastikan wajah berada di dalam oval, tidak memakai masker, dan pencahayaan memadai.
+                    </div>
+
+                    <div class="mt-2.5 d-flex align-items-center justify-content-center gap-2">
+                      <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-3" onclick="stopPublicWebcam()">
+                        Batal
+                      </button>
+                      <button type="button" class="btn btn-sm btn-primary rounded-pill px-4 fw-bold shadow-sm" onclick="snapPhotoCheckin()">
+                        <i class="bi bi-camera me-1"></i> Ambil Foto Sekarang
                       </button>
                     </div>
                   </div>
 
-                  <div id="previewSnapBox" class="d-none mb-2">
-                    <img id="imgSnapPreview" src="" class="rounded-3 border shadow-sm" style="width: 120px; height: 120px; object-fit: cover;">
-                    <div class="mt-1">
-                      <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill py-0.5 px-2" onclick="retakePhotoCheckin()" style="font-size: 0.72rem;">Foto Ulang</button>
+                  <div id="previewSnapBox" class="d-none text-center p-3 border rounded-3 bg-dark text-white mt-2">
+                    <div class="position-relative mx-auto rounded-3 overflow-hidden bg-black shadow-inner mb-2" style="max-width: 180px; aspect-ratio: 1/1;">
+                      <img id="imgSnapPreview" src="" class="w-100 h-100 object-fit-cover">
+                      <div class="position-absolute top-0 end-0 m-2">
+                        <span class="badge bg-success shadow-sm rounded-pill px-2 py-1"><i class="bi bi-check-lg me-1"></i> Terverifikasi</span>
+                      </div>
+                    </div>
+                    <div class="alert alert-success py-1.5 px-3 small fw-bold mb-2 d-inline-block">
+                      <i class="bi bi-check-circle-fill me-1"></i> Wajah Terverifikasi: Foto Berhasil Disimpan
+                    </div>
+                    <div>
+                      <button type="button" class="btn btn-xs btn-outline-light rounded-pill px-3" onclick="retakePhotoCheckin()">
+                        <i class="bi bi-arrow-repeat me-1"></i> Foto Ulang
+                      </button>
                     </div>
                   </div>
 
                   <div id="btnStartWebcamBox">
-                    <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-3 fw-semibold" onclick="startWebcamCheckin()">
+                    <button type="button" class="btn btn-sm btn-primary rounded-pill px-4 fw-semibold" onclick="startWebcamCheckin()">
                       <i class="bi bi-camera me-1"></i> Buka Kamera Selfie
                     </button>
                   </div>
@@ -866,21 +917,42 @@ $autoCheckoutMatch = $autoCheckoutMatch ?? null;
     function snapPhotoCheckin() {
       const v = document.getElementById("webcamVideo");
       const c = document.getElementById("webcamCanvas");
-      c.width = v.videoWidth || 320;
-      c.height = v.videoHeight || 240;
+      if (!v || !c) return;
+      const s = Math.min(v.videoWidth || 320, v.videoHeight || 320);
+      const sx = ((v.videoWidth || 320) - s) / 2;
+      const sy = ((v.videoHeight || 320) - s) / 2;
+      c.width = 320;
+      c.height = 320;
       const ctx = c.getContext("2d");
-      ctx.drawImage(v, 0, 0, c.width, c.height);
+      ctx.translate(320, 0);
+      ctx.scale(-1, 1);
+      ctx.drawImage(v, sx, sy, s, s, 0, 0, 320, 320);
 
-      const dataUrl = c.toDataURL("image/jpeg", 0.75);
+      const dataUrl = c.toDataURL("image/jpeg", 0.85);
       document.getElementById("inputPhotoIn").value = dataUrl;
       document.getElementById("imgSnapPreview").src = dataUrl;
-      document.getElementById("previewSnapBox").classList.remove("d-none");
-      document.getElementById("webcamWrapper").classList.add("d-none");
 
+      const overlay = document.getElementById("camSuccessOverlay");
+      if (overlay) overlay.classList.remove("d-none");
+
+      setTimeout(function() {
+        if (overlay) overlay.classList.add("d-none");
+        document.getElementById("previewSnapBox").classList.remove("d-none");
+        document.getElementById("webcamWrapper").classList.add("d-none");
+        if (webcamStream) {
+          webcamStream.getTracks().forEach(t => t.stop());
+          webcamStream = null;
+        }
+      }, 400);
+    }
+
+    function stopPublicWebcam() {
       if (webcamStream) {
         webcamStream.getTracks().forEach(t => t.stop());
         webcamStream = null;
       }
+      document.getElementById("webcamWrapper").classList.add("d-none");
+      document.getElementById("btnStartWebcamBox").classList.remove("d-none");
     }
 
     function retakePhotoCheckin() {

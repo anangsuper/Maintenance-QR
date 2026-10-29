@@ -158,25 +158,123 @@ $hasBiometrics = !empty($user['face_descriptor']);
 $existingPhoto = $user['face_photo'] ?? '';
 $userFaceStatus = strtolower(trim((string)($user['face_status'] ?? '')));
 
+// Hitung Statistik Petugas & Biometrik
+$statTotalUsers = 0;
+$statVerified = 0;
+$statPending = 0;
+$statUnenrolled = 0;
+
+foreach ($allUsers as $u) {
+    $uid = (int)($u['id'] ?? 0);
+    $unama = trim((string)($u['nama'] ?? $u['username'] ?? ''));
+    if ($uid <= 0 || strcasecmp($unama, 'nama') === 0 || $unama === '') continue;
+    $statTotalUsers++;
+    $uHasBio = !empty($u['face_descriptor']);
+    $uStat = strtolower(trim((string)($u['face_status'] ?? '')));
+    if ($uHasBio && ($uStat === 'verified' || $uStat === 'terverifikasi')) {
+        $statVerified++;
+    } elseif ($uHasBio && ($uStat === 'pending' || $uStat === 'menunggu')) {
+        $statPending++;
+    } else {
+        $statUnenrolled++;
+    }
+}
+
+$statsCardsHtml = '
+<div class="row g-3 mb-4">
+  <div class="col-12 col-sm-6 col-xl-3">
+    <div class="card p-3 border shadow-sm bg-white rounded-3 h-100 stat-card-hover" style="border-left: 5px solid #003B73 !important;">
+      <div class="d-flex align-items-center justify-content-between">
+        <div>
+          <div class="text-uppercase fw-bold text-secondary mb-1" style="font-size: 0.72rem; letter-spacing: 0.05em;">Total Akun Petugas</div>
+          <div class="h3 fw-bold mb-0 text-dark">'.$statTotalUsers.' <span class="fs-6 fw-semibold text-muted">Orang</span></div>
+          <div class="small text-muted mt-1" style="font-size: 0.75rem;">Teknisi &amp; Staf Operasional</div>
+        </div>
+        <div class="rounded-circle d-flex align-items-center justify-content-center text-primary shadow-xs" style="width: 50px; height: 50px; background: #EFF6FF;">
+          <i class="bi bi-people-fill fs-3"></i>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-12 col-sm-6 col-xl-3">
+    <div class="card p-3 border shadow-sm bg-white rounded-3 h-100 stat-card-hover" style="border-left: 5px solid #10B981 !important;">
+      <div class="d-flex align-items-center justify-content-between">
+        <div>
+          <div class="text-uppercase fw-bold text-secondary mb-1" style="font-size: 0.72rem; letter-spacing: 0.05em;">Wajah Terverifikasi</div>
+          <div class="h3 fw-bold mb-0 text-success">'.$statVerified.' <span class="fs-6 fw-semibold text-muted">Petugas</span></div>
+          <div class="small text-success mt-1 fw-semibold" style="font-size: 0.75rem;"><i class="bi bi-patch-check-fill me-1"></i>Siap presensi checklist</div>
+        </div>
+        <div class="rounded-circle d-flex align-items-center justify-content-center text-success shadow-xs" style="width: 50px; height: 50px; background: #ECFDF5;">
+          <i class="bi bi-shield-check fs-3"></i>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-12 col-sm-6 col-xl-3">
+    <div class="card p-3 border shadow-sm bg-white rounded-3 h-100 stat-card-hover" style="border-left: 5px solid #D97706 !important;">
+      <div class="d-flex align-items-center justify-content-between">
+        <div>
+          <div class="text-uppercase fw-bold text-secondary mb-1" style="font-size: 0.72rem; letter-spacing: 0.05em;">Menunggu Konfirmasi</div>
+          <div class="h3 fw-bold mb-0" style="color: #B45309;">'.$statPending.' <span class="fs-6 fw-semibold text-muted">Petugas</span></div>
+          <div class="small mt-1 fw-semibold" style="font-size: 0.75rem; color: #D97706;"><i class="bi bi-hourglass-split me-1"></i>Review oleh Admin</div>
+        </div>
+        <div class="rounded-circle d-flex align-items-center justify-content-center shadow-xs" style="width: 50px; height: 50px; background: #FEF3C7; color: #D97706;">
+          <i class="bi bi-clock-history fs-3"></i>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-12 col-sm-6 col-xl-3">
+    <div class="card p-3 border shadow-sm bg-white rounded-3 h-100 stat-card-hover" style="border-left: 5px solid #6366F1 !important;">
+      <div class="d-flex align-items-center justify-content-between">
+        <div>
+          <div class="text-uppercase fw-bold text-secondary mb-1" style="font-size: 0.72rem; letter-spacing: 0.05em;">Belum Rekam Wajah</div>
+          <div class="h3 fw-bold mb-0 text-dark">'.$statUnenrolled.' <span class="fs-6 fw-semibold text-muted">Petugas</span></div>
+          <div class="small text-muted mt-1" style="font-size: 0.75rem;">Perlu foto sampel</div>
+        </div>
+        <div class="rounded-circle d-flex align-items-center justify-content-center shadow-xs" style="width: 50px; height: 50px; background: #EEF2FF; color: #6366F1 !important;">
+          <i class="bi bi-person-x-fill fs-3"></i>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>';
+
 if ($userFaceStatus === 'verified' || $userFaceStatus === 'terverifikasi') {
-    $badgeStatus = '<span class="badge bg-success-subtle text-success px-3 py-2 border border-success-subtle fw-bold"><i class="bi bi-shield-check me-1"></i> Wajah Terverifikasi Admin</span>';
+    $badgeStatus = '<span class="badge bg-success-subtle text-success px-3 py-2 border border-success-subtle fw-bold rounded-pill"><i class="bi bi-shield-check me-1"></i> Wajah Terverifikasi Admin</span>';
 } elseif ($userFaceStatus === 'pending' || $userFaceStatus === 'menunggu') {
-    $badgeStatus = '<span class="badge bg-warning-subtle text-warning px-3 py-2 border border-warning-subtle fw-bold shadow-sm"><i class="bi bi-hourglass-split me-1"></i> Menunggu Persetujuan Admin</span>';
+    $badgeStatus = '<span class="badge bg-warning-subtle text-warning px-3 py-2 border border-warning-subtle fw-bold shadow-sm rounded-pill"><i class="bi bi-hourglass-split me-1"></i> Menunggu Persetujuan Admin</span>';
 } elseif ($userFaceStatus === 'rejected') {
-    $badgeStatus = '<span class="badge bg-danger-subtle text-danger px-3 py-2 border border-danger-subtle fw-bold"><i class="bi bi-x-circle me-1"></i> Ditolak Admin (Daftar Ulang)</span>';
+    $badgeStatus = '<span class="badge bg-danger-subtle text-danger px-3 py-2 border border-danger-subtle fw-bold rounded-pill"><i class="bi bi-x-circle me-1"></i> Ditolak Admin (Daftar Ulang)</span>';
 } else {
-    $badgeStatus = '<span class="badge bg-secondary-subtle text-secondary px-3 py-2 border border-secondary-subtle fw-bold"><i class="bi bi-exclamation-circle me-1"></i> Belum Didaftarkan</span>';
+    $badgeStatus = '<span class="badge bg-secondary-subtle text-secondary px-3 py-2 border border-secondary-subtle fw-bold rounded-pill"><i class="bi bi-exclamation-circle me-1"></i> Belum Didaftarkan</span>';
 }
 
 $avatarHtml = '';
+$currName = trim((string)($user['nama'] ?? $user['username'] ?? 'Petugas IT'));
+$currRole = ucfirst(trim((string)($user['role'] ?? 'Teknisi')));
 if ($existingPhoto) {
     $avatarHtml = '
-    <div class="text-center mb-3" id="userAvatarBox">
-      <div class="d-inline-block position-relative">
-        <img src="'.e($existingPhoto).'" alt="Foto Biometrik" class="rounded-circle border border-3 border-success shadow-sm" style="width: 84px; height: 84px; object-fit: cover;">
-        <span class="position-absolute bottom-0 end-0 badge rounded-pill bg-success" title="Terverifikasi"><i class="bi bi-check-lg"></i></span>
+    <div class="text-center mb-3 p-3 bg-light rounded-3 border" id="userAvatarBox">
+      <div class="d-inline-block position-relative mb-2">
+        <img src="'.e($existingPhoto).'" alt="Foto Biometrik" class="rounded-circle border border-3 border-success shadow-sm" style="width: 90px; height: 90px; object-fit: cover;">
+        <span class="position-absolute bottom-0 end-0 badge rounded-circle bg-success p-1.5 shadow-sm" title="Terverifikasi"><i class="bi bi-shield-check fs-6"></i></span>
       </div>
-      <div class="small text-muted mt-1" style="font-size: 0.75rem;">Sampel Wajah Terdaftar Sebelumnya</div>
+      <div class="fw-bold text-dark mb-0" style="font-size: 0.95rem;">'.e($currName).'</div>
+      <div class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill px-2.5 py-0.5 mt-1 small">'.e($currRole).'</div>
+      <div class="small text-success mt-1.5 fw-semibold" style="font-size: 0.75rem;"><i class="bi bi-check-circle-fill me-1"></i>Sampel biometrik aktif terdaftar</div>
+    </div>';
+} else {
+    $avatarHtml = '
+    <div class="text-center mb-3 p-3 bg-light rounded-3 border" id="userAvatarBox">
+      <div class="d-inline-block position-relative mb-2">
+        <div class="rounded-circle bg-white border border-2 border-dashed border-secondary d-flex align-items-center justify-content-center text-muted shadow-xs mx-auto" style="width: 90px; height: 90px;">
+          <i class="bi bi-person-bounding-box fs-1 text-secondary opacity-50"></i>
+        </div>
+      </div>
+      <div class="fw-bold text-dark mb-0" style="font-size: 0.95rem;">'.e($currName).'</div>
+      <div class="badge bg-secondary-subtle text-secondary border rounded-pill px-2.5 py-0.5 mt-1 small">'.e($currRole).'</div>
+      <div class="small text-muted mt-1.5" style="font-size: 0.75rem;">Belum ada sampel foto biometrik</div>
     </div>';
 }
 
@@ -255,82 +353,99 @@ if ($isAdmin || is_hrd()) {
 $head = '
 <style>
   .enroll-main-card {
-    border-radius: 16px;
-    border: 1px solid #e2e8f0;
-    box-shadow: 0 4px 24px rgba(15, 23, 42, 0.08);
+    border-radius: 12px;
+    border: 1px solid #E2E8F0;
+    box-shadow: 0 4px 20px rgba(15, 23, 42, 0.05);
   }
   @media (min-width: 992px) {
     .border-end-lg {
-      border-right: 1px solid #e2e8f0 !important;
+      border-right: 1px solid #E2E8F0 !important;
     }
+  }
+  .stat-card-hover {
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+  }
+  .stat-card-hover:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.06) !important;
   }
   .scanner-container {
     position: relative;
     width: 100%;
-    max-width: 360px;
-    aspect-ratio: 3 / 4;
-    max-height: 420px;
+    max-width: 320px;
+    aspect-ratio: 1 / 1;
     margin: 0 auto;
-    background: #0f172a;
+    background: #000;
     border-radius: 16px;
     overflow: hidden;
-    border: 2px solid #cbd5e1;
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.25);
   }
   .scanner-video {
     width: 100%;
     height: 100%;
     object-fit: cover;
-    transform: scaleX(-1); /* Mirror view untuk kamera depan / webcam */
-  }
-  .scanner-overlay {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    pointer-events: none;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    transform: scaleX(-1);
   }
   .face-oval {
-    width: 200px;
-    height: 250px;
-    border: 2px solid rgba(255, 255, 255, 0.75);
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 72%;
+    height: 85%;
+    border: 2.5px dashed rgba(59, 130, 246, 0.85);
     border-radius: 50%;
-    box-shadow: 0 0 0 9999px rgba(15, 23, 42, 0.55);
-    transition: border-color 0.25s ease;
+    box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.35);
+    pointer-events: none;
+    transition: all 0.3s ease;
   }
   .face-oval.active {
-    border-color: #10b981;
-    box-shadow: 0 0 0 9999px rgba(15, 23, 42, 0.4);
+    border: 2.5px solid #22c55e !important;
+    box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.35), 0 0 20px rgba(34, 197, 94, 0.6) !important;
+  }
+  @keyframes scanRayAnim {
+    0% { top: 10%; opacity: 0.3; }
+    50% { top: 85%; opacity: 1; }
+    100% { top: 10%; opacity: 0.3; }
+  }
+  @keyframes bounceIn {
+    0% { transform: scale(0.5); opacity: 0; }
+    60% { transform: scale(1.1); opacity: 1; }
+    100% { transform: scale(1); opacity: 1; }
+  }
+  .animate-bounce {
+    animation: bounceIn 0.5s ease-out;
   }
 </style>';
 
 $body = '
-<div class="row justify-content-center">
-  <div class="col-12 col-lg-11 col-xl-10">
-    
-    <!-- Top Bar Navigation -->
-    <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
-      <div>
-        <span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-25 px-2.5 py-1 mb-1" style="font-size: 0.72rem;">
-          <i class="bi bi-shield-check me-1"></i> Identitas Petugas IT
-        </span>
-        <h4 class="fw-bold mb-0 text-dark">Foto Profil & Biometrik Teknisi</h4>
-        <div class="text-muted small">Registrasi dan verifikasi sampel wajah teknisi untuk presensi checklist pemeliharaan.</div>
-      </div>
-      <a class="btn btn-outline-secondary btn-sm rounded-pill px-3 py-1.5 fw-semibold" href="'.e($backHref).'">
-        <i class="bi bi-arrow-left me-1"></i> '.e($backText).'
-      </a>
-    </div>
+<!-- Header Halaman Standar Bank Mitra -->
+<div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3 mb-4">
+  <div>
+    <div class="tech-label mb-1">PENGATURAN &amp; KEAMANAN BIOMETRIK</div>
+    <h1 class="h3 mb-1"><i class="bi bi-person-bounding-box text-primary me-2"></i>Wajah Teknisi (Biometrik FIDO2)</h1>
+    <p class="text-secondary small mb-0">Perekaman sampel wajah dan foto profil petugas untuk verifikasi checklist pemeliharaan IT &amp; audit OJK.</p>
+  </div>
+  <div class="d-flex align-items-center gap-2 flex-wrap">
+    '.($isAdmin ? '
+    <a href="'.e(module_url('users_admin.php')).'" class="btn btn-outline-primary d-inline-flex align-items-center gap-1.5 fw-semibold shadow-xs">
+      <i class="bi bi-people-fill"></i> Kelola Pengguna
+    </a>' : '').'
+    <a href="'.e(module_url('dashboard.php')).'" class="btn btn-outline-secondary d-inline-flex align-items-center gap-1.5 fw-semibold shadow-xs">
+      <i class="bi bi-speedometer2"></i> Dashboard
+    </a>
+  </div>
+</div>
 
-    <div class="card enroll-main-card p-3 p-sm-4 p-lg-4 bg-white mb-4">
-      <div class="row g-4 align-items-start">
+<!-- 4 Kartu Statistik Ringkasan -->
+'.$statsCardsHtml.'
 
-        <!-- KOLOM KIRI: Pemilihan Teknisi, Status & Panduan -->
-        <div class="col-lg-5 border-end-lg pe-lg-4">
+<!-- Kartu Konten Utama -->
+<div class="card enroll-main-card p-3 p-sm-4 p-lg-4 bg-white mb-4">
+  <div class="row g-4 align-items-start">
+
+    <!-- KOLOM KIRI: Pemilihan Teknisi, Status & Panduan -->
+    <div class="col-lg-5 border-end-lg pe-lg-4">
           
           <!-- Pilih Teknisi -->
           <div class="mb-3">
@@ -416,36 +531,51 @@ $body = '
           <!-- Scanner Container -->
           <div class="scanner-container mb-3" id="scannerContainer">
             <video id="videoElement" class="scanner-video" autoplay playsinline webkit-playsinline muted></video>
-            <div class="scanner-overlay">
-              <div class="face-oval" id="faceOval"></div>
+            
+            <!-- Oval Guide Frame -->
+            <div class="face-oval pointer-events-none" id="faceOval"></div>
+            
+            <!-- Scanning Ray Animation -->
+            <div id="enrollScanRay" class="position-absolute start-0 w-100 d-none" style="height: 3px; background: linear-gradient(90deg, transparent, #3b82f6, #60a5fa, transparent); animation: scanRayAnim 2s infinite ease-in-out;"></div>
+
+            <!-- Success Overlay -->
+            <div id="enrollSuccessOverlay" class="position-absolute top-0 start-0 w-100 h-100 bg-success bg-opacity-75 d-flex flex-column align-items-center justify-content-center text-white d-none" style="backdrop-filter: blur(4px); z-index: 5;">
+              <i class="bi bi-check-circle-fill display-3 mb-2 animate-bounce"></i>
+              <h5 class="fw-bold text-white mb-1" id="enrollSuccessName">Wajah Terverifikasi!</h5>
+              <span class="badge bg-white text-success fw-bold px-3 py-1 rounded-pill" id="enrollSuccessBadge">100% Cocok</span>
             </div>
-            <canvas id="snapshotCanvas" style="display:none;" width="160" height="160"></canvas>
+
+            <canvas id="snapshotCanvas" style="display:none;" width="320" height="320"></canvas>
           </div>
 
           <!-- Status Bar Feedback Realtime -->
-          <div class="alert alert-secondary py-2 px-3 text-center mb-3 fw-semibold small" id="statusMessage">
+          <div class="alert alert-secondary py-2 px-3 small fw-semibold text-start text-dark mb-2 mx-auto" style="max-width: 320px;" id="statusMessage">
             <i class="bi bi-camera me-1 text-primary"></i>
-            Tekan <strong>"Buka Kamera"</strong> untuk mengambil foto verifikasi.
+            Tekan <strong>"Buka Kamera Wajah"</strong> untuk mulai verifikasi.
+          </div>
+
+          <div class="text-muted small mb-3 text-center" style="font-size: 0.72rem;">
+            Pastikan wajah berada di dalam oval, tidak memakai masker, dan pencahayaan memadai.
           </div>
 
           <!-- Progress Liveness -->
-          <div class="progress mb-3" style="height: 5px; border-radius: 4px;" id="progressBarContainer">
+          <div class="progress mb-3 mx-auto" style="height: 4px; border-radius: 4px; max-width: 320px;" id="progressBarContainer">
             <div class="progress-bar bg-primary" id="progressBar" style="width: 0%;"></div>
           </div>
 
           <!-- Tombol Aksi (Kamera Langsung & Pilihan Upload Foto) -->
-          <div class="d-grid gap-2 mb-3">
-            <button type="button" class="btn btn-primary fw-bold py-2.5 shadow-sm" id="btnStartCapture" onclick="startCamera()">
-              <i class="bi bi-camera-fill me-2"></i> Buka Kamera Depan / Webcam
+          <div class="d-grid gap-2 mb-3 mx-auto" style="max-width: 320px;">
+            <button type="button" class="btn btn-primary fw-bold py-2.5 rounded-pill shadow-sm" id="btnStartCapture" onclick="startCamera()">
+              <i class="bi bi-camera-fill me-2"></i> Buka Kamera Wajah
             </button>
             <input type="file" id="faceFileInput" accept="image/*" capture="user" class="d-none" onchange="handleFaceFileUpload(event)">
-            <button type="button" class="btn btn-outline-primary fw-semibold py-2.5 shadow-xs" id="btnUploadFaceFile" onclick="triggerFaceFileInput()">
-              <i class="bi bi-cloud-arrow-up-fill me-2"></i> Ambil / Upload Foto (Kamera HP / File)
+            <button type="button" class="btn btn-outline-secondary fw-semibold py-2 rounded-pill shadow-xs" id="btnUploadFaceFile" onclick="triggerFaceFileInput()">
+              <i class="bi bi-cloud-arrow-up-fill me-2"></i> Ambil / Upload Foto (File)
             </button>
-            <button type="button" class="btn btn-secondary fw-bold py-2.5 shadow-sm d-none" id="btnSnapNow" onclick="forceCaptureBiometric()">
-              <i class="bi bi-camera me-2"></i> Ambil Foto Sekarang
+            <button type="button" class="btn btn-primary fw-bold py-2.5 rounded-pill shadow-sm d-none" id="btnSnapNow" onclick="forceCaptureBiometric()">
+              <i class="bi bi-camera me-2"></i> Verifikasi Sekarang
             </button>
-            <button type="button" class="btn btn-success fw-bold py-2.5 shadow-sm d-none" id="btnSaveBiometric" onclick="saveBiometrics()">
+            <button type="button" class="btn btn-success fw-bold py-2.5 rounded-pill shadow-sm d-none" id="btnSaveBiometric" onclick="saveBiometrics()">
               <i class="bi bi-check-circle-fill me-2"></i> Simpan Foto Profil & Wajah
             </button>
           </div>
@@ -465,8 +595,7 @@ $body = '
 
       </div>
     </div>
-  </div>
-</div>';
+';
 
 $script = <<<'HTML'
 <!-- Load face-api.js dari CDN yang stabil -->
@@ -658,6 +787,10 @@ async function handleFaceFileUpload(event) {
 
       enrollCompleted = true;
       if (btnStart) btnStart.classList.add("d-none");
+    const scanRay = document.getElementById("enrollScanRay");
+    if (scanRay) scanRay.classList.remove("d-none");
+    const overlay = document.getElementById("enrollSuccessOverlay");
+    if (overlay) overlay.classList.add("d-none");
       if (btnSnapNow) btnSnapNow.classList.add("d-none");
       btnSave.classList.remove("d-none");
 
@@ -676,7 +809,7 @@ async function startCamera() {
   if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
     if (window.location.protocol === "http:") {
       const httpsUrl = "https://" + window.location.host + window.location.pathname + window.location.search;
-      if (confirm("Browser membatasi akses kamera langsung pada protokol HTTP.\n\nKlik OK untuk beralih ke HTTPS agar kamera aktif live (Pilih 'Advanced/Lanjutan' -> 'Lanjutkan ke 192.168.88.163' jika ada peringatan browser).")) {
+      if (confirm("Browser membatasi akses kamera langsung pada protokol HTTP.\n\nKlik OK untuk beralih ke HTTPS agar kamera aktif live (Pilih 'Advanced/Lanjutan' -> 'Lanjutkan ke situs ini' jika ada peringatan browser).")) {
         window.location.href = httpsUrl;
         return;
       }
@@ -725,6 +858,10 @@ async function startCamera() {
     } catch(e) {}
 
     btnStart.classList.add("d-none");
+    const scanRay = document.getElementById("enrollScanRay");
+    if (scanRay) scanRay.classList.remove("d-none");
+    const overlay = document.getElementById("enrollSuccessOverlay");
+    if (overlay) overlay.classList.add("d-none");
     statusMsg.className = "alert alert-primary py-2 px-3 text-center mb-3 small fw-semibold";
     statusMsg.innerHTML = '<i class="bi bi-person-bounding-box me-1"></i> Kamera aktif. Silakan posisikan wajah di bingkai.';
     
@@ -756,6 +893,19 @@ let isTrackingFrame = false;
 let enrollCompleted = false;
 
 function completeEnrollment(descriptor) {
+  const overlay = document.getElementById("enrollSuccessOverlay");
+  const nameEl = document.getElementById("enrollSuccessName");
+  if (nameEl) {
+    const sel = document.getElementById("selectUser");
+    let uname = "Wajah Terverifikasi!";
+    if (sel && sel.selectedIndex >= 0) {
+      uname = sel.options[sel.selectedIndex].text.split("(")[0].replace(/\[.*?\]/g, "").trim();
+    }
+    nameEl.textContent = uname || "Wajah Terverifikasi!";
+  }
+  if (overlay) overlay.classList.remove("d-none");
+  const scanRay = document.getElementById("enrollScanRay");
+  if (scanRay) scanRay.classList.add("d-none");
   enrollCompleted = true;
   detectedDescriptor = Array.from(descriptor);
   captureSnapshot();
@@ -1070,4 +1220,4 @@ async function saveNewTechOnly() {
 </script>
 HTML;
 
-render_page('Daftar Wajah Teknisi · IT Operations', $body, $head, $script, false);
+render_page('Wajah Teknisi (Biometrik) · IT Operations', $body, $head, $script);

@@ -5,85 +5,83 @@ function render_biometric_modal_html(string $token, string $returnAction = 'form
     <!-- Modal Biometric Face Recognition & Liveness Check -->
     <div class="modal fade" id="modalBiometricScan" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false" aria-hidden="true">
       <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
-          <div class="modal-header bg-dark text-white border-0 py-3">
-            <div class="d-flex align-items-center gap-2">
-              <div class="p-2 bg-primary bg-opacity-25 rounded-circle text-primary fs-5">
-                <i class="bi bi-shield-check"></i>
-              </div>
-              <div>
-                <h6 class="modal-title fw-bold mb-0">Biometric Face Recognition & Liveness</h6>
-                <div class="text-white-50 small" style="font-size: 0.72rem;">Verifikasi kehadiran teknisi resmi PT BPR Mitratama Arthabuana</div>
-              </div>
+        <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden bg-dark text-white">
+          <div class="modal-header border-secondary border-opacity-25 py-3 px-4">
+            <div>
+              <h6 class="modal-title fw-bold text-white mb-0"><i class="bi bi-person-bounding-box text-primary me-2"></i>Verifikasi Biometrik Wajah Teknisi</h6>
+              <small class="text-white-50">Arahkan wajah Anda ke kamera</small>
             </div>
             <button type="button" class="btn-close btn-close-white" onclick="closeBiometricModal()"></button>
           </div>
 
-          <div class="modal-body p-3 p-md-4 text-center bg-light">
-            <!-- Scanner Box -->
-            <div class="bio-scanner-wrapper mb-3">
-              <video id="bioVideo" class="bio-video-el" autoplay playsinline webkit-playsinline muted></video>
-              <canvas id="bioCanvas" class="bio-canvas-el"></canvas>
-              <div id="bioFaceOval" class="bio-face-oval"></div>
-              <div id="bioScanLine" class="bio-scanline d-none"></div>
+          <div class="modal-body p-3 text-center position-relative">
+            <!-- Video Box & Scanner Frame -->
+            <div class="bio-scanner-wrapper position-relative mx-auto rounded-3 overflow-hidden bg-black shadow-inner" style="max-width: 320px; aspect-ratio: 1/1;">
+              <video id="bioVideo" class="bio-video-el w-100 h-100 object-fit-cover" autoplay playsinline webkit-playsinline muted style="transform: scaleX(-1);"></video>
+              <canvas id="bioCanvas" class="bio-canvas-el position-absolute top-0 start-0 w-100 h-100 pointer-events-none" style="transform: scaleX(-1);"></canvas>
+              
+              <!-- Oval Guide Frame -->
+              <div id="bioFaceOval" class="position-absolute top-50 start-50 translate-middle pointer-events-none bio-face-oval" style="width: 72%; height: 85%; border: 2.5px dashed rgba(59, 130, 246, 0.85); border-radius: 50%; box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.35);"></div>
+              
+              <!-- Scanning Ray Animation -->
+              <div id="bioScanLine" class="position-absolute start-0 w-100" style="height: 3px; background: linear-gradient(90deg, transparent, #3b82f6, #60a5fa, transparent); animation: scanRayAnim 2s infinite ease-in-out;"></div>
 
               <!-- Success Overlay -->
-              <div id="bioSuccessOverlay" class="bio-success-overlay d-none">
-                <div class="text-center p-3">
-                  <div class="display-3 text-success mb-2">
-                    <i class="bi bi-check-circle-fill"></i>
-                  </div>
-                  <h5 class="fw-bold text-white mb-1" id="bioMatchedName">Nama Teknisi</h5>
-                  <div class="badge bg-success bg-opacity-75 fs-6 mb-2" id="bioMatchConfidence">98% Cocok</div>
-                  <div class="text-white-50 small">Verifikasi Liveness & Identitas Berhasil!<br>Menyimpan data...</div>
-                </div>
+              <div id="bioSuccessOverlay" class="position-absolute top-0 start-0 w-100 h-100 bg-success bg-opacity-75 d-flex flex-column align-items-center justify-content-center text-white d-none" style="backdrop-filter: blur(4px);">
+                <i class="bi bi-check-circle-fill display-3 mb-2 animate-bounce"></i>
+                <h5 class="fw-bold text-white mb-1" id="bioMatchedName">Wajah Terverifikasi!</h5>
+                <span class="badge bg-white text-success fw-bold px-3 py-1 rounded-pill" id="bioMatchConfidence">100% Cocok</span>
               </div>
             </div>
 
-            <!-- Status & Instruction Badge -->
-            <div id="bioStatusBox" class="alert alert-info py-2 px-3 small fw-semibold mb-2">
-              <span class="spinner-border spinner-border-sm me-2 text-primary"></span>
-              Menyiapkan kamera & modul AI...
+            <!-- Status Box -->
+            <div id="bioStatusBox" class="alert alert-secondary py-2 px-3 small fw-semibold mt-3 mb-2 text-start text-dark">
+              <span class="spinner-border spinner-border-sm me-2 text-primary"></span> Menyiapkan kamera dan modul pengenalan wajah...
+            </div>
+
+            <div class="text-white-50 small mb-2" style="font-size: 0.72rem;">
+              Pastikan wajah berada di dalam oval, tidak memakai masker, dan pencahayaan memadai.
             </div>
 
             <!-- Steady Hold Progress Bar -->
-            <div class="progress mb-2 d-none" id="bioHoldProgress" style="height: 6px;">
-              <div class="progress-bar bg-success progress-bar-striped progress-bar-animated" id="bioHoldProgressBar" style="width: 0%"></div>
+            <div class="progress mb-2 d-none" id="bioHoldProgress" style="height: 4px; background: rgba(255,255,255,0.15);">
+              <div class="progress-bar bg-primary" id="bioHoldProgressBar" style="width: 0%"></div>
             </div>
 
-            <!-- Tombol Aksi Cepat Verifikasi Instan (Muncul saat wajah terdeteksi) -->
-            <div class="mb-2 d-none" id="bioInstantVerifyBox">
-              <button type="button" class="btn btn-warning text-dark btn-sm w-100 fw-bold py-2 shadow-sm rounded-pill" onclick="triggerInstantBioVerify()">
-                <i class="bi bi-lightning-charge-fill me-1"></i> Wajah Terdeteksi &mdash; Tekan untuk Verifikasi Langsung
-              </button>
-            </div>
+            <!-- Instan verify box (jika terdeteksi) -->
+            <div class="mb-2 d-none" id="bioInstantVerifyBox"></div>
 
-            <!-- Liveness Checklist Pills -->
-            <div class="d-flex justify-content-center gap-2 mb-3">
-              <span id="pillFaceDetected" class="badge bg-secondary bg-opacity-25 text-dark small py-2 px-3 border">
+            <!-- Checklist Pills (Wajah, Kedip, Identitas) -->
+            <div class="d-flex justify-content-center gap-1.5 mb-2">
+              <span id="pillFaceDetected" class="badge bg-secondary bg-opacity-50 text-white-50 small py-1 px-2.5 border border-secondary border-opacity-50">
                 <i class="bi bi-person me-1"></i> Wajah
               </span>
-              <span id="pillLivenessBlink" class="badge bg-secondary bg-opacity-25 text-dark small py-2 px-3 border">
-                <i class="bi bi-eye me-1"></i> Kedip (Liveness)
+              <span id="pillLivenessBlink" class="badge bg-secondary bg-opacity-50 text-white-50 small py-1 px-2.5 border border-secondary border-opacity-50">
+                <i class="bi bi-eye me-1"></i> Kedip
               </span>
-              <span id="pillMatchId" class="badge bg-secondary bg-opacity-25 text-dark small py-2 px-3 border">
+              <span id="pillMatchId" class="badge bg-secondary bg-opacity-50 text-white-50 small py-1 px-2.5 border border-secondary border-opacity-50">
                 <i class="bi bi-check-all me-1"></i> Identitas Cocok
               </span>
             </div>
 
             <!-- Link Pendaftaran Wajah di HP jika belum terdaftar -->
-            <div class="mb-3">
-              <a href="'.e(module_url('user_biometric_enroll.php', ['ret' => module_url('scan.php', ['t' => $token, 'action' => $returnAction])])).'" class="btn btn-outline-primary btn-sm w-100 rounded-pill">
-                <i class="bi bi-phone-fill me-1"></i> Wajah Belum Terdaftar? Daftarkan di HP Sekarang
+            <div class="mt-2 text-center">
+              <a href="'.e(module_url('user_biometric_enroll.php', ['ret' => module_url('scan.php', ['t' => $token, 'action' => $returnAction])])).'" class="text-white-50 text-decoration-none small" style="font-size: 0.72rem;">
+                <i class="bi bi-phone me-1"></i> Wajah belum terdaftar? <span class="text-primary text-decoration-underline">Daftarkan di sini</span>
               </a>
             </div>
+          </div>
 
-            <div class="d-flex justify-content-between align-items-center">
-              <button type="button" class="btn btn-outline-secondary btn-sm" onclick="closeBiometricModal()">
-                Batal
+          <div class="modal-footer border-secondary border-opacity-25 py-2 px-3 d-flex justify-content-between">
+            <button type="button" class="btn btn-outline-secondary btn-sm rounded-pill px-3" onclick="closeBiometricModal()">
+              Batal
+            </button>
+            <div class="d-flex align-items-center gap-2">
+              <button type="button" class="btn btn-link btn-sm text-danger text-decoration-none p-0" style="font-size: 0.75rem;" onclick="bypassBiometricAndSubmit()">
+                Lewati Manual
               </button>
-              <button type="button" class="btn btn-link btn-sm text-danger text-decoration-none p-0" onclick="bypassBiometricAndSubmit()">
-                <i class="bi bi-exclamation-octagon me-1"></i> Lewati & Simpan Manual
+              <button type="button" id="btnManualTriggerBio" class="btn btn-primary btn-sm rounded-pill px-3 fw-bold" onclick="triggerInstantBioVerify()">
+                <i class="bi bi-camera me-1"></i> Verifikasi Sekarang
               </button>
             </div>
           </div>
@@ -99,25 +97,11 @@ function render_biometric_css(): string {
       position: relative;
       width: 100%;
       max-width: 320px;
-      aspect-ratio: 3 / 4;
-      max-height: 400px;
-      border-radius: 20px;
+      aspect-ratio: 1 / 1;
+      border-radius: 16px;
       overflow: hidden;
-      background: #0f172a;
-      box-shadow: 0 10px 25px rgba(0,0,0,0.25);
+      background: #000;
       margin: 0 auto;
-    }
-    @media (max-width: 576px) {
-      .bio-scanner-wrapper {
-        max-width: 270px;
-        aspect-ratio: 3 / 4;
-        max-height: 350px;
-        border-radius: 16px;
-      }
-      .bio-face-oval {
-        width: 155px !important;
-        height: 205px !important;
-      }
     }
     .bio-video-el {
       width: 100%;
@@ -139,45 +123,30 @@ function render_biometric_css(): string {
       top: 50%;
       left: 50%;
       transform: translate(-50%, -50%);
-      width: 190px;
-      height: 240px;
-      border: 3px dashed #38bdf8;
+      width: 72%;
+      height: 85%;
+      border: 2.5px dashed rgba(59, 130, 246, 0.85);
       border-radius: 50%;
-      box-shadow: 0 0 0 9999px rgba(15, 23, 42, 0.65);
+      box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.35);
       pointer-events: none;
       transition: all 0.3s ease;
     }
     .bio-face-oval.active {
-      border-color: #22c55e;
-      border-style: solid;
-      box-shadow: 0 0 0 9999px rgba(15, 23, 42, 0.4), 0 0 25px rgba(34, 197, 94, 0.6);
+      border: 2.5px solid #22c55e !important;
+      box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.35), 0 0 20px rgba(34, 197, 94, 0.6) !important;
     }
-    .bio-scanline {
-      position: absolute;
-      top: 25%;
-      left: calc(50% - 95px);
-      width: 190px;
-      height: 3px;
-      background: linear-gradient(90deg, transparent, #38bdf8, transparent);
-      animation: bioScanMove 2s infinite ease-in-out;
-      pointer-events: none;
+    @keyframes scanRayAnim {
+      0% { top: 10%; opacity: 0.3; }
+      50% { top: 85%; opacity: 1; }
+      100% { top: 10%; opacity: 0.3; }
     }
-    @keyframes bioScanMove {
-      0% { top: 20%; opacity: 0; }
-      50% { opacity: 1; }
-      100% { top: 80%; opacity: 0; }
+    @keyframes bounceIn {
+      0% { transform: scale(0.5); opacity: 0; }
+      60% { transform: scale(1.1); opacity: 1; }
+      100% { transform: scale(1); opacity: 1; }
     }
-    .bio-success-overlay {
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      background: rgba(15, 23, 42, 0.92);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      z-index: 10;
+    .animate-bounce {
+      animation: bounceIn 0.5s ease-out;
     }
     </style>';
 }
@@ -447,14 +416,14 @@ function render_biometric_js(array $enrolledTechs, string $extraJs = ''): string
       const matchedNameEl = document.getElementById("bioMatchedName");
       if (matchedNameEl) matchedNameEl.textContent = tech.nama;
       const matchConfEl = document.getElementById("bioMatchConfidence");
-      if (matchConfEl) matchConfEl.textContent = conf + "% Cocok (Terverifikasi)";
+      if (matchConfEl) matchConfEl.textContent = conf + "% Cocok";
       const successOverlay = document.getElementById("bioSuccessOverlay");
       if (successOverlay) successOverlay.classList.remove("d-none");
 
       const statusBox = document.getElementById("bioStatusBox");
       if (statusBox) {
         statusBox.className = "alert alert-success py-2 px-3 small fw-bold mb-2";
-        statusBox.innerHTML = '<i class="bi bi-check-circle-fill me-1"></i> Wajah Dikenali: <strong>' + tech.nama + '</strong>! Menyimpan...';
+        statusBox.innerHTML = '<i class="bi bi-check-circle-fill me-1"></i> Wajah Terverifikasi: <strong>' + tech.nama + '</strong>! Menyimpan foto...';
       }
 
       if (bioVideoStream) {
