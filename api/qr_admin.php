@@ -12,7 +12,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($action === 'generate_missing') {
         $created = generate_missing_qr_tokens($cabangId);
         $_SESSION['flash'] = "{$created} token QR baru berhasil di-generate secara otomatis.";
-        header('Location: ' . module_url('qr_admin.php', ['cabang'=>$cabangId]));
+        header('Location: ' . module_url('qr_admin.php', $cabangId > 0 ? ['cabang'=>$cabangId] : []));
         exit;
     }
 
@@ -22,7 +22,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             regenerate_qr_token($assetId);
             $_SESSION['flash'] = "Token QR berhasil diperbarui. QR lama otomatis di-revoke demi keamanan.";
         }
-        header('Location: ' . module_url('qr_admin.php', ['cabang'=>$cabangId]));
+        header('Location: ' . module_url('qr_admin.php', $cabangId > 0 ? ['cabang'=>$cabangId] : []));
         exit;
     }
 }
@@ -78,104 +78,93 @@ foreach ($rows as $r) {
     $rEditUrl = module_url('asset_edit.php', ['id' => $aid]);
 
     if ($hasToken) {
+        $modalPayload = htmlspecialchars(json_encode([
+            'id' => $aid,
+            'kode' => $kode,
+            'device' => $deviceTitle,
+            'user' => $userNama . ($divisiNama ? " ({$divisiNama})" : ''),
+            'cabang' => $cabangNama,
+            'url' => $url,
+            'token' => $tok,
+            'foto' => $rFotoSrc,
+            'edit_url' => $rEditUrl
+        ]), ENT_QUOTES, 'UTF-8');
+
         $qrStatus = '
-        <button type="button" class="btn btn-sm btn-outline-primary d-inline-flex align-items-center gap-1 py-1 px-2 rounded-pill shadow-xs" 
-          onclick="openQrModal('.htmlspecialchars(json_encode([
-              'id' => $aid,
-              'kode' => $kode,
-              'device' => $deviceTitle,
-              'user' => $userNama . ($divisiNama ? " ({$divisiNama})" : ''),
-              'cabang' => $cabangNama,
-              'url' => $url,
-              'token' => $tok,
-              'foto' => $rFotoSrc,
-              'edit_url' => $rEditUrl
-          ]), ENT_QUOTES, 'UTF-8').')" title="Klik untuk Pratinjau & Unduh QR">
-          <i class="bi bi-qr-code fs-6"></i>
-          <span class="small fw-semibold" style="font-size: 0.72rem;">LIHAT QR</span>
+        <button type="button" class="h-[28px] px-2.5 bg-[#D9F1EF] text-[#0E5C58] hover:bg-[#0E5C58] hover:text-white border border-[#A7E2DC] rounded-[6px] text-[11px] font-bold transition-colors inline-flex items-center gap-1 cursor-pointer shadow-xs" 
+          onclick="openQrModal('.$modalPayload.')" title="Klik untuk Pratinjau & Unduh QR">
+          <i class="bi bi-qr-code text-[12px]"></i>
+          <span>LIHAT QR</span>
         </button>';
     } else {
-        $qrStatus = '<span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-25 px-2 py-1 rounded-pill font-monospace" style="font-size: 0.72rem;"><i class="bi bi-dash-circle me-1"></i>BELUM ADA</span>';
+        $qrStatus = '<span class="px-2 py-0.5 rounded-[6px] text-[11px] font-medium bg-[#F3F4F6] text-[#6B7280] border border-[#E5E7EB] inline-flex items-center gap-1"><i class="bi bi-dash-circle text-[11px]"></i> BELUM ADA</span>';
     }
 
-    $action = '<div class="btn-group btn-group-sm">';
-    $action .= '<a class="btn btn-outline-secondary" href="'.e(module_url('asset_edit.php', ['id'=>$aid])).'" title="Edit Detail Aset"><i class="bi bi-pencil-square"></i></a>';
+    $action = '<div class="flex items-center justify-end gap-1">';
+    $action .= '<a class="h-[28px] w-[28px] bg-white border border-[#D1D5D8] hover:bg-[#F4F5F7] text-[#53595F] hover:text-[#0E5C58] rounded-[6px] inline-flex items-center justify-center transition-colors text-decoration-none" href="'.e(module_url('asset_edit.php', ['id'=>$aid])).'" title="Edit Detail Aset"><i class="bi bi-pencil-square text-[13px]"></i></a>';
     if ($url) {
-        $action .= '<a class="btn btn-outline-primary" target="_blank" href="'.e(module_url('print_qr.php', ['asset_id'=>$aid])).'" title="Cetak Stiker Label"><i class="bi bi-printer"></i></a>';
+        $action .= '<a class="h-[28px] w-[28px] bg-white border border-[#D1D5D8] hover:bg-[#D9F1EF] text-[#0E5C58] rounded-[6px] inline-flex items-center justify-center transition-colors text-decoration-none" target="_blank" href="'.e(module_url('print_qr.php', ['asset_id'=>$aid])).'" title="Cetak Stiker Label"><i class="bi bi-printer text-[13px]"></i></a>';
     }
-    $action .= '</div>';
-
-    $action .= '<form method="post" class="d-inline ms-1">
+    $action .= '<form method="post" class="inline m-0">
       <input type="hidden" name="_csrf" value="'.e(csrf_token()).'">
       <input type="hidden" name="action" value="regenerate">
       <input type="hidden" name="asset_id" value="'.$aid.'">
-      <button class="btn btn-sm btn-outline-warning text-dark" title="Generate Ulang & Revoke Token QR" onclick="return confirm(\'Generate ulang token QR ini? QR lama otomatis tidak berlaku lagi demi keamanan.\')"><i class="bi bi-arrow-repeat"></i></button>
+      <button type="submit" class="h-[28px] w-[28px] bg-white border border-[#D1D5D8] hover:bg-[#FEF3C7] text-[#D97706] rounded-[6px] inline-flex items-center justify-center transition-colors cursor-pointer" title="Generate Ulang & Revoke Token QR" onclick="return confirm(&#39;Generate ulang token QR ini? QR lama otomatis tidak berlaku lagi demi keamanan.&#39;)"><i class="bi bi-arrow-repeat text-[13px]"></i></button>
     </form>';
+    $action .= '<a class="h-[28px] w-[28px] bg-white border border-[#D1D5D8] hover:bg-[#FEE2E2] text-[#DC2626] rounded-[6px] inline-flex items-center justify-center transition-colors text-decoration-none" href="'.e(module_url('asset_delete.php', ['id'=>$aid])).'" title="Hapus Aset" onclick="return confirm(&#39;Hapus aset '.e(addslashes($kode)).' ini dari sistem?&#39;)"><i class="bi bi-trash text-[13px]"></i></a>';
+    $action .= '</div>';
 
-    $action .= '<a class="btn btn-sm btn-outline-danger ms-1" href="'.e(module_url('asset_delete.php', ['id'=>$aid])).'" title="Hapus Aset" onclick="return confirm(\'Hapus aset '.e(addslashes($kode)).' ini dari sistem?\')"><i class="bi bi-trash"></i></a>';
-
-    $table .= '<tr class="asset-table-row" id="row-asset-'.$aid.'" data-search="'.e($searchKeyword).'" data-has-token="'.($hasToken ? '1' : '0').'">
-      <td class="text-center">
-        <input type="checkbox" class="form-check-input row-chk" value="'.$aid.'" onchange="onRowCheckChange()">
+    $table .= '<tr class="asset-table-row hover:bg-[#F9FAFB] transition-colors" id="row-asset-'.$aid.'" data-search="'.e($searchKeyword).'" data-has-token="'.($hasToken ? '1' : '0').'">
+      <td class="text-center py-2.5">
+        <input type="checkbox" class="form-check-input row-chk cursor-pointer" value="'.$aid.'" onchange="onRowCheckChange()">
       </td>
-      <td class="text-center font-monospace text-muted small">'.sprintf('%02d', $num).'</td>
-      <td>
-        <span class="font-monospace fw-bold text-primary" style="font-size: 0.88rem;">'.e($kode).'</span>
+      <td class="text-center font-mono text-[#53595F] text-[12px] py-2.5">'.sprintf('%02d', $num).'</td>
+      <td class="py-2.5">
+        <span class="font-mono font-bold text-[#0E5C58] text-[13px]">'.e($kode).'</span>
       </td>
-      <td>
-        <div class="fw-semibold text-dark">'.e($deviceTitle).'</div>
-        <div class="text-muted small" style="font-size: 0.75rem;">SN: '.e($sn).' · Tipe: '.e($kategori).'</div>
+      <td class="py-2.5">
+        <div class="font-semibold text-[#1B2A3A] text-[13px]">'.e($deviceTitle).'</div>
+        <div class="text-[#53595F] text-[11px] mt-0.5">SN: '.e($sn).' &middot; Tipe: '.e($kategori).'</div>
       </td>
-      <td>
-        <div class="d-flex align-items-center gap-2">
-          <i class="bi bi-person text-secondary"></i>
-          <div>
-            <div class="fw-semibold text-dark">'.e($userNama).'</div>
-            '.($divisiNama ? '<div class="text-muted small" style="font-size: 0.72rem;">'.e($divisiNama).'</div>' : '').'
+      <td class="py-2.5">
+        <div class="flex items-center gap-2">
+          <div class="w-6 h-6 rounded-full bg-[#F4F5F7] border border-[#D1D5D8] flex items-center justify-center text-[#53595F] text-[11px] shrink-0">
+            <i class="bi bi-person"></i>
+          </div>
+          <div class="min-w-0">
+            <div class="font-semibold text-[#1B2A3A] text-[13px] truncate">'.e($userNama).'</div>
+            '.($divisiNama ? '<div class="text-[#53595F] text-[11px] truncate">'.e($divisiNama).'</div>' : '').'
           </div>
         </div>
       </td>
-      <td><span class="badge bg-light text-dark border">'.e($cabangNama).'</span></td>
-      <td class="text-center">'.$qrStatus.'</td>
-      <td class="text-nowrap text-end">'.$action.'</td>
+      <td class="py-2.5"><span class="px-2 py-0.5 rounded-[6px] text-[11px] font-medium bg-[#F4F5F7] border border-[#D1D5D8] text-[#1B2A3A]">'.e($cabangNama).'</span></td>
+      <td class="text-center py-2.5">'.$qrStatus.'</td>
+      <td class="text-nowrap text-end py-2.5 pe-3">'.$action.'</td>
     </tr>';
 }
 
 if (!$table) {
-    $table = '<tr><td colspan="8" class="text-center py-5 text-muted"><i class="bi bi-qr-code fs-1 d-block mb-2 opacity-50"></i>Tidak ada inventaris aset yang memerlukan label QR di cabang ini.</td></tr>';
+    $table = '<tr><td colspan="8" class="text-center py-5 text-[#53595F]"><i class="bi bi-qr-code text-[32px] text-[#9CA3AF] d-block mb-2"></i>Tidak ada inventaris aset yang memerlukan label QR di cabang ini.</td></tr>';
 }
 
 $flashHtml = $flash ? '<div class="alert alert-success alert-dismissible fade show border-0 shadow-sm mb-4" style="border-left: 4px solid #10B981 !important;"><i class="bi bi-check-circle-fill me-2 text-success"></i>'.e($flash).'<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>' : '';
 
 $head = '
 <style>
-.kpi-qr-card {
-  border-radius: 12px;
-  border: 1px solid #E2E8F0;
-  background: #ffffff;
-  padding: 16px 20px;
-  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.04);
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
-}
-.kpi-qr-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 16px rgba(15, 23, 42, 0.08);
-}
 .floating-bulk-bar {
   position: fixed;
   bottom: 24px;
   left: 50%;
   transform: translateX(-50%) translateY(120px);
-  background: rgba(15, 23, 42, 0.94);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  background: #1B2A3A;
+  border: 1px solid #334155;
   color: #ffffff;
   border-radius: 40px;
-  padding: 10px 22px;
+  padding: 8px 20px;
   box-shadow: 0 12px 30px rgba(0, 0, 0, 0.35);
   display: flex;
   align-items: center;
-  gap: 14px;
+  gap: 12px;
   z-index: 1050;
   transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s ease;
   opacity: 0;
@@ -187,151 +176,214 @@ $head = '
   pointer-events: auto;
 }
 .filter-chip-btn {
-  font-size: 0.78rem;
-  font-weight: 600;
-  border-radius: 20px;
-  padding: 4px 14px;
-  border: 1px solid #E2E8F0;
+  font-size: 12px;
+  font-weight: 500;
+  height: 30px;
+  padding: 0 12px;
+  border-radius: 6px;
+  border: 1px solid #D1D5D8;
   background: #ffffff;
-  color: #475569;
+  color: #53595F;
   cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   transition: all 0.15s ease;
 }
-.filter-chip-btn:hover, .filter-chip-btn.active {
-  background: #2563EB;
-  border-color: #2563EB;
+.filter-chip-btn:hover {
+  background: #F4F5F7;
+  color: #1B2A3A;
+}
+.filter-chip-btn.active {
+  background: #0E5C58;
+  border-color: #0E5C58;
   color: #ffffff;
-  box-shadow: 0 2px 6px rgba(37, 99, 235, 0.25);
+  font-weight: 600;
+  box-shadow: 0 1px 2px rgba(14, 92, 88, 0.2);
 }
 </style>';
 
 $body = '
+<div class="max-w-[1152px] mx-auto flex flex-col">
 '.$flashHtml.'
 
 <!-- Header Kicker & Action Bar -->
-<div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+<div class="mb-4 flex flex-col md:flex-row md:items-center justify-between gap-3">
   <div>
-    <div class="text-uppercase small fw-bold" style="letter-spacing: 0.08em; color: var(--app-accent); font-size: 0.72rem; margin-bottom: 2px;">SYSTEM / QR ASSET LABEL REGISTRY</div>
-    <h2 class="h3 fw-bold text-dark mb-1 d-flex align-items-center gap-2">
-      <i class="bi bi-qr-code text-primary"></i> Manajemen Label QR Aset
-    </h2>
-    <div class="text-muted small">Kelola token QR terenkripsi, pratinjau kode QR langsung di layar, dan cetak stiker label bodi komputer.</div>
+    <div class="text-[11px] font-bold text-[#0E5C58] uppercase tracking-wider mb-1 flex items-center gap-1.5">
+      <i class="bi bi-qr-code-scan"></i> SISTEM REGISTRASI LABEL QR ASET
+    </div>
+    <h1 class="text-[22px] font-bold text-[#1B2A3A] tracking-tight m-0">
+      Manajemen Label QR Aset
+    </h1>
+    <p class="text-[13px] text-[#53595F] mt-1 mb-0">Kelola token QR terenkripsi, pratinjau kode QR langsung di layar, dan cetak stiker label bodi komputer.</p>
   </div>
-  <div class="d-flex gap-2 flex-wrap">
-    <a class="btn btn-outline-secondary fw-semibold btn-sm rounded-pill px-3" href="'.e(module_url('dashboard.php')).'"><i class="bi bi-arrow-left me-1"></i> Dashboard</a>
-    <a class="btn btn-action-add fw-semibold btn-sm rounded-pill px-3" href="'.e(module_url('asset_add.php')).'"><i class="bi bi-plus-lg me-1"></i> Tambah Aset</a>
-    <a class="btn btn-primary fw-semibold btn-sm rounded-pill px-3 shadow-sm" target="_blank" href="'.e(module_url('print_qr.php', ['cabang'=>$cabangId])).'"><i class="bi bi-printer-fill me-1"></i> Cetak Stiker QR Cabang Ini</a>
-    <a class="btn btn-outline-primary fw-semibold btn-sm rounded-pill px-3" target="_blank" href="'.e(module_url('print_inventory_card.php', ['cabang'=>$cabangId])).'"><i class="bi bi-credit-card-2-front me-1"></i> Cetak Kartu Inventaris</a>
+  <div class="flex flex-wrap items-center gap-2 shrink-0">
+    <a href="'.e(module_url('print_qr.php', $cabangId > 0 ? ['cabang'=>$cabangId] : [])).'" target="_blank" class="h-[36px] px-3.5 bg-[#0E5C58] hover:bg-[#094340] text-white rounded-[8px] text-[13px] font-semibold transition-colors inline-flex items-center gap-1.5 text-decoration-none shadow-xs">
+      <i class="bi bi-printer-fill"></i> Cetak Stiker QR Cabang Ini
+    </a>
+    <a href="'.e(module_url('print_inventory_card.php', $cabangId > 0 ? ['cabang'=>$cabangId] : [])).'" target="_blank" class="h-[36px] px-3 bg-white border border-[#D1D5D8] rounded-[8px] text-[13px] font-medium text-[#1B2A3A] hover:bg-[#F4F5F7] transition-colors inline-flex items-center gap-1.5 text-decoration-none shadow-xs">
+      <i class="bi bi-credit-card-2-front text-[#0E5C58]"></i> Cetak Kartu A4
+    </a>
+    <a href="'.e(module_url('asset_add.php')).'" class="h-[36px] px-3 bg-white border border-[#D1D5D8] rounded-[8px] text-[13px] font-medium text-[#1B2A3A] hover:bg-[#F4F5F7] transition-colors inline-flex items-center gap-1.5 text-decoration-none shadow-xs">
+      <i class="bi bi-plus-lg text-[#0E5C58]"></i> Tambah Aset
+    </a>
+    <a href="'.e(module_url('dashboard.php')).'" class="h-[36px] px-3 bg-white border border-[#D1D5D8] rounded-[8px] text-[13px] font-medium text-[#53595F] hover:bg-[#F4F5F7] transition-colors inline-flex items-center gap-1.5 text-decoration-none shadow-xs">
+      <i class="bi bi-arrow-left"></i> Dashboard
+    </a>
   </div>
 </div>
 
-<!-- KPI Metrics Cards Row -->
-<div class="row g-3 mb-4">
-  <div class="col-6 col-md-3">
-    <div class="kpi-qr-card">
-      <div class="text-secondary small fw-semibold mb-1"><i class="bi bi-pc-display me-1 text-primary"></i>Total Unit Aset</div>
-      <div class="fs-4 fw-bold text-dark">'.$totalUnits.' <span class="fs-6 fw-normal text-muted">Unit</span></div>
+<!-- Symmetrical Metric Strip (88px) -->
+<div class="bg-[#FFFFFF] border border-[#D1D5D8] rounded-[10px] flex flex-col sm:flex-row overflow-hidden shrink-0 mb-4 shadow-xs">
+  <!-- Card 1: Total Unit Aset -->
+  <div class="flex-1 flex flex-col justify-center px-5 py-3 border-b sm:border-b-0 sm:border-r border-[#D1D5D8] relative">
+    <div class="absolute left-0 top-0 bottom-0 w-1 bg-[#0E5C58]"></div>
+    <div class="text-[26px] font-bold text-[#1B2A3A] tabular-nums leading-none">
+      '.$totalUnits.' <span class="text-[13px] font-normal text-[#53595F]">Unit</span>
+    </div>
+    <div class="text-[12px] font-medium text-[#53595F] mt-1.5 flex items-center gap-1.5">
+      <span class="text-[#0E5C58] font-bold">Total Unit Aset</span>
+      <span>&middot;</span>
+      <span class="text-[11px] text-[#53595F]">Semua Inventaris</span>
     </div>
   </div>
-  <div class="col-6 col-md-3">
-    <div class="kpi-qr-card">
-      <div class="text-secondary small fw-semibold mb-1"><i class="bi bi-qr-code-scan me-1 text-success"></i>Token QR Aktif</div>
-      <div class="fs-4 fw-bold text-success">'.$countValid.' <span class="fs-6 fw-normal text-muted">Siap Scan</span></div>
+
+  <!-- Card 2: Token QR Aktif -->
+  <div class="flex-1 flex flex-col justify-center px-5 py-3 border-b sm:border-b-0 sm:border-r border-[#D1D5D8] relative">
+    <div class="absolute left-0 top-0 bottom-0 w-1 bg-[#10B981]"></div>
+    <div class="text-[26px] font-bold text-[#10B981] tabular-nums leading-none">
+      '.$countValid.' <span class="text-[13px] font-normal text-[#53595F]">Siap Scan</span>
+    </div>
+    <div class="text-[12px] font-medium text-[#53595F] mt-1.5 flex items-center gap-1.5">
+      <span class="text-[#10B981] font-bold">Token QR Aktif</span>
+      <span>&middot;</span>
+      <span class="text-[11px] text-[#53595F]">Label Terbit</span>
     </div>
   </div>
-  <div class="col-6 col-md-3">
-    <div class="kpi-qr-card">
-      <div class="text-secondary small fw-semibold mb-1"><i class="bi bi-exclamation-circle me-1 text-warning"></i>Belum Punya Token</div>
-      <div class="fs-4 fw-bold '.($countMissing > 0 ? 'text-warning' : 'text-muted').'">'.$countMissing.' <span class="fs-6 fw-normal text-muted">Unit</span></div>
+
+  <!-- Card 3: Belum Punya Token -->
+  <div class="flex-1 flex flex-col justify-center px-5 py-3 border-b sm:border-b-0 sm:border-r border-[#D1D5D8] relative">
+    <div class="absolute left-0 top-0 bottom-0 w-1 '.($countMissing > 0 ? 'bg-[#F59E0B]' : 'bg-[#6B7280]').'"></div>
+    <div class="text-[26px] font-bold '.($countMissing > 0 ? 'text-[#D97706]' : 'text-[#6B7280]').' tabular-nums leading-none">
+      '.$countMissing.' <span class="text-[13px] font-normal text-[#53595F]">Unit</span>
+    </div>
+    <div class="text-[12px] font-medium text-[#53595F] mt-1.5 flex items-center gap-1.5">
+      <span class="'.($countMissing > 0 ? 'text-[#D97706]' : 'text-[#6B7280]').' font-bold">Belum Ada Token</span>
+      <span>&middot;</span>
+      <span class="text-[11px] text-[#53595F]">Perlu Generate</span>
     </div>
   </div>
-  <div class="col-6 col-md-3">
-    <div class="kpi-qr-card">
-      <div class="text-secondary small fw-semibold mb-1"><i class="bi bi-building me-1 text-info"></i>Kantor Terpilih</div>
-      <div class="fs-5 fw-bold text-dark text-truncate" title="'.e($activeBranchName).'">'.e($activeBranchName).'</div>
+
+  <!-- Card 4: Cabang Terpilih -->
+  <div class="flex-1 flex flex-col justify-center px-5 py-3 relative">
+    <div class="absolute left-0 top-0 bottom-0 w-1 bg-[#0284C7]"></div>
+    <div class="text-[20px] font-bold text-[#1B2A3A] truncate leading-none" title="'.e($activeBranchName).'">
+      '.e($activeBranchName).'
+    </div>
+    <div class="text-[12px] font-medium text-[#53595F] mt-1.5 flex items-center gap-1.5">
+      <span class="text-[#0284C7] font-bold">Kantor Cabang</span>
+      <span>&middot;</span>
+      <span class="text-[11px] text-[#53595F]">Filter Wilayah</span>
     </div>
   </div>
 </div>
 
-<!-- Toolbar Box & Instant Filter -->
-<div class="card p-3 mb-4 border shadow-sm" style="border-radius: 12px; border-color: var(--app-border) !important; background: #fff;">
+<!-- Toolbar Box & Instant Filter Card -->
+<div class="bg-white border border-[#D1D5D8] rounded-[10px] p-4 mb-4 shadow-xs">
   <div class="row g-3 align-items-center">
     <!-- Filter Cabang -->
     <div class="col-md-4">
-      <form method="get" class="d-flex gap-2">
-        <select class="form-select form-select-sm" name="cabang" onchange="this.form.submit()">
+      <form method="get" class="m-0">
+        <label class="block text-[12px] font-bold text-[#1B2A3A] mb-1.5">Pilih Kantor Cabang</label>
+        <select class="h-[36px] w-full bg-white border border-[#D1D5D8] rounded-[8px] px-3 text-[13px] text-[#1B2A3A] outline-none focus:border-[#0E5C58] transition-colors" name="cabang" onchange="this.form.submit()">
           <option value="0">🏢 Semua Kantor Cabang</option>
           '.$opts.'
         </select>
-        <noscript><button class="btn btn-primary btn-sm">Terapkan</button></noscript>
+        <noscript><button type="submit" class="h-[32px] px-3 bg-[#0E5C58] text-white rounded-[6px] text-[12px] mt-1">Terapkan</button></noscript>
       </form>
     </div>
 
     <!-- Live Search Table -->
     <div class="col-md-5">
-      <div class="input-group input-group-sm">
-        <span class="input-group-text bg-white border-end-0 text-muted"><i class="bi bi-search"></i></span>
-        <input type="text" id="tableSearchInput" class="form-control border-start-0" placeholder="Cari kode, nama user, seri, perangkat..." oninput="onFilterTable()">
-        <button class="btn btn-outline-secondary border-start-0" type="button" onclick="clearTableSearch()" title="Reset"><i class="bi bi-x-lg"></i></button>
+      <label class="block text-[12px] font-bold text-[#1B2A3A] mb-1.5">Pencarian Cepat Aset</label>
+      <div class="relative w-full">
+        <i class="bi bi-search absolute left-3 top-1/2 -translate-y-1/2 text-[#9CA3AF] text-[13px]"></i>
+        <input type="text" id="tableSearchInput" class="h-[36px] w-full bg-white border border-[#D1D5D8] rounded-[8px] pl-9 pr-8 text-[13px] text-[#1B2A3A] placeholder-[#9CA3AF] outline-none focus:border-[#0E5C58] transition-colors" placeholder="Cari kode, nama user, serial number, perangkat..." oninput="onFilterTable()">
+        <button type="button" class="absolute right-2.5 top-1/2 -translate-y-1/2 text-[#9CA3AF] hover:text-[#1B2A3A] bg-transparent border-0 cursor-pointer p-0" onclick="clearTableSearch()" title="Reset"><i class="bi bi-x-circle-fill"></i></button>
       </div>
     </div>
 
     <!-- Batch Generate Action -->
-    <div class="col-md-3 text-md-end">
+    <div class="col-md-3">
+      <label class="block text-[12px] font-bold text-[#1B2A3A] mb-1.5">Tindakan Token Massal</label>
       '.($countMissing > 0 ? '
-      <form method="post" class="d-inline">
+      <form method="post" class="m-0">
         <input type="hidden" name="_csrf" value="'.e(csrf_token()).'">
         <input type="hidden" name="action" value="generate_missing">
-        <button class="btn btn-warning btn-sm w-100 fw-semibold text-dark shadow-xs rounded-pill">
-          <i class="bi bi-magic me-1"></i> Generate '.$countMissing.' Token Kosong
+        <button type="submit" class="h-[36px] w-full px-3.5 bg-[#F59E0B] hover:bg-[#D97706] text-white rounded-[8px] text-[13px] font-semibold transition-colors inline-flex items-center justify-center gap-1.5 border-0 shadow-xs cursor-pointer">
+          <i class="bi bi-magic"></i> Generate '.$countMissing.' Token Kosong
         </button>
       </form>' : '
-      <button class="btn btn-outline-secondary btn-sm w-100 rounded-pill" disabled>
-        <i class="bi bi-shield-check text-success me-1"></i> Semua Token Sudah Ada
+      <button class="h-[36px] w-full px-3.5 bg-[#F4F5F7] text-[#6B7280] border border-[#D1D5D8] rounded-[8px] text-[13px] font-medium inline-flex items-center justify-center gap-1.5 cursor-not-allowed" disabled>
+        <i class="bi bi-shield-check text-[#10B981]"></i> Semua Token Sudah Ada
       </button>').'
     </div>
   </div>
 
-  <!-- Filter Status Tabs -->
-  <div class="d-flex flex-wrap align-items-center gap-2 mt-3 pt-3 border-top">
-    <span class="small fw-bold text-secondary me-1">Filter Status:</span>
-    <button type="button" class="filter-chip-btn active" id="chipAll" onclick="setTokenFilter(\'all\')">
-      Semua (<span id="countChipAll">'.$totalUnits.'</span>)
-    </button>
-    <button type="button" class="filter-chip-btn" id="chipValid" onclick="setTokenFilter(\'valid\')">
-      ✓ Token Valid (<span id="countChipValid">'.$countValid.'</span>)
-    </button>
-    <button type="button" class="filter-chip-btn" id="chipMissing" onclick="setTokenFilter(\'missing\')">
-      ✗ Belum Ada (<span id="countChipMissing">'.$countMissing.'</span>)
-    </button>
-    <span class="ms-auto small text-muted" id="filterStatusText">Menampilkan '.$totalUnits.' aset</span>
+  <!-- Filter Status Tabs / Chips -->
+  <div class="flex flex-wrap items-center justify-between gap-2 mt-3 pt-3 border-t border-[#F3F4F6]">
+    <div class="flex items-center gap-1.5">
+      <span class="text-[12px] font-bold text-[#53595F] me-1">Filter Status:</span>
+      <button type="button" class="filter-chip-btn active" id="chipAll" onclick="setTokenFilter(\'all\')">
+        Semua ('.$totalUnits.')
+      </button>
+      <button type="button" class="filter-chip-btn" id="chipValid" onclick="setTokenFilter(\'valid\')">
+        <i class="bi bi-check2"></i> Token Valid ('.$countValid.')
+      </button>
+      <button type="button" class="filter-chip-btn" id="chipMissing" onclick="setTokenFilter(\'missing\')">
+        <i class="bi bi-dash-circle"></i> Belum Ada ('.$countMissing.')
+      </button>
+    </div>
+    <div class="text-[12px] text-[#53595F]" id="filterStatusText">Menampilkan '.$totalUnits.' aset</div>
   </div>
 </div>
 
-<!-- Table Card -->
-<div class="card p-0 border shadow-sm" style="border-radius: 12px; border-color: var(--app-border) !important; background: #fff; overflow: hidden;">
-  <div class="card-header bg-white py-3 px-4 d-flex justify-content-between align-items-center" style="border-bottom: 1px solid var(--app-border);">
-    <div class="fw-bold text-dark text-uppercase small" style="letter-spacing: 0.05em;">
-      <i class="bi bi-qr-code-scan text-primary me-2"></i>Daftar Label QR Aset Terdaftar
+<!-- Table Card Container -->
+<div class="bg-white border border-[#D1D5D8] rounded-[10px] mb-4 shadow-xs overflow-hidden">
+  <!-- In-Card Selection Bar -->
+  <div id="selectionCardBar" class="border-b border-[#BFDBFE] px-4 py-2.5 d-none align-items-center justify-content-between flex-wrap gap-2" style="background-color: #EFF6FF !important;">
+    <div class="flex items-center gap-2">
+      <span class="px-2.5 py-1 text-[12px] font-bold bg-[#0284C7] text-white rounded-[6px]"><i class="bi bi-check-square me-1"></i> <span id="countSelectedText">0</span> Dipilih</span>
+      <span class="text-[13px] text-[#1E40AF] font-semibold">Aksi untuk aset terpilih:</span>
     </div>
-    <div class="small text-muted">
-      Centang kotak di sebelah nomor untuk memilih aset dan mencetak secara kolektif.
+    <div class="flex items-center gap-2 flex-wrap">
+      <button type="button" class="h-[32px] px-3 bg-[#0E5C58] hover:bg-[#094340] text-white rounded-[6px] text-[12px] font-semibold transition-colors flex items-center gap-1.5 border-0 shadow-xs cursor-pointer" onclick="printBulkSelected(\'qr\')">
+        <i class="bi bi-printer-fill"></i> Cetak Stiker QR (<span id="countPrintQr">0</span>)
+      </button>
+      <button type="button" class="h-[32px] px-3 bg-white border border-[#D1D5D8] hover:bg-[#F4F5F7] text-[#1B2A3A] rounded-[6px] text-[12px] font-medium transition-colors flex items-center gap-1.5 shadow-xs cursor-pointer" onclick="printBulkSelected(\'card\')">
+        <i class="bi bi-credit-card-2-front text-[#0E5C58]"></i> Cetak Kartu Inventaris (<span id="countPrintCard">0</span>)
+      </button>
+      <button type="button" class="h-[32px] px-3 bg-white border border-[#D1D5D8] hover:bg-[#F4F5F7] text-[#1B2A3A] rounded-[6px] text-[12px] font-medium transition-colors flex items-center gap-1 cursor-pointer" onclick="clearBulkSelection()">
+        <i class="bi bi-x-circle"></i> Batal
+      </button>
     </div>
   </div>
+
   <div class="table-responsive">
-    <table class="table table-hover align-middle mb-0" id="qrAssetTable">
-      <thead style="background-color: var(--app-navy); color: #ffffff;">
+    <table class="table table-hover align-middle mb-0" id="qrAssetTable" style="font-size: 13px;">
+      <thead style="background: #F4F5F7; border-bottom: 1px solid #D1D5D8;">
         <tr>
-          <th style="width: 40px; background-color: var(--app-navy); color: #ffffff;" class="text-center">
-            <input type="checkbox" class="form-check-input" id="checkAllRows" onchange="toggleSelectAllRows(this)" title="Pilih Semua Aset">
+          <th style="width: 40px;" class="text-center py-2.5">
+            <input class="form-check-input cursor-pointer" type="checkbox" id="checkAllRows" onchange="toggleSelectAllRows(this)" title="Pilih Semua Aset">
           </th>
-          <th style="width: 45px; background-color: var(--app-navy); color: #ffffff;" class="text-center font-monospace">NO</th>
-          <th style="width: 140px; background-color: var(--app-navy); color: #ffffff;">KODE INVENTARIS</th>
-          <th style="background-color: var(--app-navy); color: #ffffff;">DETAIL PERANGKAT</th>
-          <th style="background-color: var(--app-navy); color: #ffffff;">PENGGUNA / PIC</th>
-          <th style="background-color: var(--app-navy); color: #ffffff;">KANTOR CABANG</th>
-          <th style="width: 130px; background-color: var(--app-navy); color: #ffffff;" class="text-center">STATUS TOKEN</th>
-          <th style="width: 130px; background-color: var(--app-navy); color: #ffffff;" class="text-end pe-3">AKSI</th>
+          <th style="width: 45px;" class="text-center font-mono text-[12px] text-[#53595F] font-bold py-2.5">NO</th>
+          <th style="width: 150px;" class="text-[12px] text-[#53595F] font-bold py-2.5">KODE INVENTARIS</th>
+          <th class="text-[12px] text-[#53595F] font-bold py-2.5">DETAIL PERANGKAT</th>
+          <th class="text-[12px] text-[#53595F] font-bold py-2.5">PENGGUNA / PIC</th>
+          <th class="text-[12px] text-[#53595F] font-bold py-2.5">KANTOR CABANG</th>
+          <th style="width: 130px;" class="text-center text-[12px] text-[#53595F] font-bold py-2.5">STATUS TOKEN</th>
+          <th style="width: 150px;" class="text-end pe-3 text-[12px] text-[#53595F] font-bold py-2.5">AKSI</th>
         </tr>
       </thead>
       <tbody>'.$table.'</tbody>
@@ -339,31 +391,31 @@ $body = '
   </div>
 </div>
 
-<!-- Floating Bulk Action Bar -->
+<!-- Floating Bulk Action Bar (For quick access while scrolling) -->
 <div id="bulkActionBar" class="floating-bulk-bar shadow-lg">
-  <div class="d-flex align-items-center gap-2">
-    <span class="badge bg-primary fs-6 px-3 py-2 rounded-pill"><span id="bulkSelectedCount">0</span> Aset Dipilih</span>
+  <div class="flex items-center gap-2">
+    <span class="px-2.5 py-1 text-[12px] font-bold bg-[#0E5C58] text-white rounded-[6px]"><span id="bulkSelectedCount">0</span> Dipilih</span>
   </div>
-  <div class="vr bg-secondary opacity-50 mx-1"></div>
-  <button type="button" class="btn btn-primary btn-sm rounded-pill px-3 fw-semibold shadow-xs" onclick="printBulkSelected(\'qr\')">
-    <i class="bi bi-printer-fill me-1"></i> Cetak Stiker QR Terpilih
+  <div class="w-[1px] h-4 bg-white/20"></div>
+  <button type="button" class="h-[30px] px-3 bg-[#0E5C58] hover:bg-[#094340] text-white rounded-[6px] text-[12px] font-semibold transition-colors flex items-center gap-1.5 border-0 shadow-xs cursor-pointer" onclick="printBulkSelected(\'qr\')">
+    <i class="bi bi-printer-fill"></i> Cetak QR
   </button>
-  <button type="button" class="btn btn-outline-light btn-sm rounded-pill px-3 fw-semibold" onclick="printBulkSelected(\'card\')">
-    <i class="bi bi-credit-card-2-front me-1"></i> Cetak Kartu Inventaris
+  <button type="button" class="h-[30px] px-3 bg-white/10 hover:bg-white/20 text-white rounded-[6px] text-[12px] font-medium transition-colors flex items-center gap-1.5 border border-white/20 cursor-pointer" onclick="printBulkSelected(\'card\')">
+    <i class="bi bi-credit-card-2-front"></i> Cetak Kartu
   </button>
-  <button type="button" class="btn btn-sm btn-link text-white text-decoration-none ms-1" onclick="clearBulkSelection()">
-    <i class="bi bi-x-circle me-1"></i> Batal
+  <button type="button" class="h-[30px] px-2 text-white/80 hover:text-white text-[12px] font-medium transition-colors cursor-pointer bg-transparent border-0" onclick="clearBulkSelection()">
+    <i class="bi bi-x-circle"></i> Batal
   </button>
 </div>
 
-<!-- Modal Quick QR Preview (Sesuai Desain Pratinjau Stiker QR & Foto Perangkat) -->
+<!-- Modal Quick QR Preview -->
 <div class="modal fade" id="quickQrModal" tabindex="-1" aria-labelledby="quickQrModalLabel" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered modal-lg">
-    <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
-      <div class="modal-header text-white" style="background: linear-gradient(135deg, #1E3A60 0%, #2E77AD 100%);">
+    <div class="modal-content border-0 shadow-lg rounded-[10px] overflow-hidden">
+      <div class="modal-header py-3 px-4 text-white" style="background: #0E5C58 !important;">
         <div>
-          <div class="small text-uppercase fw-bold" style="font-size: 0.72rem; letter-spacing: 0.08em; color: rgba(255, 255, 255, 0.85) !important;">PRATINJAU STIKER QR &amp; FOTO UNIT</div>
-          <h5 class="modal-title fw-bold text-white mb-0" id="modalAssetKode" style="color: #ffffff !important;">INV-IT-001</h5>
+          <div class="text-[11px] font-bold uppercase tracking-wider text-white text-opacity-80">PRATINJAU STIKER QR &amp; FOTO UNIT</div>
+          <h5 class="modal-title font-bold text-white text-[18px] m-0" id="modalAssetKode">INV-IT-001</h5>
         </div>
         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
@@ -372,65 +424,65 @@ $body = '
         <div class="row g-3 align-items-center mb-3">
           <!-- Sisi Kiri: Kode QR -->
           <div class="col-12 col-md-6 text-center">
-            <div class="p-3 bg-white border border-2 border-primary border-opacity-25 rounded-3 shadow-sm d-inline-block position-relative">
-              <div id="modalQrBox" style="width: 190px; height: 190px; margin: 0 auto; display: flex; align-items: center; justify-content: center;"></div>
+            <div class="p-3 bg-white border border-[#D1D5D8] rounded-[10px] shadow-xs inline-block">
+              <div id="modalQrBox" style="width: 200px; height: 200px; margin: 0 auto; display: flex; align-items: center; justify-content: center;"></div>
             </div>
-            <div class="small text-muted mt-2 fw-semibold" style="font-size: 0.75rem;">
-              <i class="bi bi-qr-code me-1 text-primary"></i> Kode QR Maintenance IT
+            <div class="text-[12px] text-[#53595F] mt-2 font-medium flex items-center justify-center gap-1">
+              <i class="bi bi-qr-code text-[#0E5C58]"></i> Kode QR Maintenance IT
             </div>
           </div>
 
           <!-- Sisi Kanan: Foto Fisik Perangkat -->
           <div class="col-12 col-md-6 text-center">
-            <div id="modalAssetPhotoContainer" class="p-2 bg-light border rounded-3 shadow-xs position-relative overflow-hidden d-flex align-items-center justify-content-center" style="min-height: 200px; height: 215px;">
-              <img id="modalAssetPhotoImg" src="" alt="Foto Unit" class="w-100 h-100 object-fit-cover rounded border d-none" onerror="onModalPhotoError(this)">
-              <div id="modalAssetPhotoPlaceholder" class="text-secondary small py-4">
-                <i class="bi bi-camera fs-1 d-block mb-1 opacity-50 text-secondary"></i>
-                <span class="fw-semibold">Belum ada foto fisik unit</span>
-                <div class="mt-2">
-                  <a id="modalAssetAddPhotoBtn" href="#" class="btn btn-sm btn-outline-primary py-1 px-2.5 fw-semibold" style="font-size: 0.75rem;">
-                    <i class="bi bi-plus-circle me-1"></i> Upload Foto
+            <div id="modalAssetPhotoContainer" class="p-2 bg-[#F9FAFB] border border-[#D1D5D8] rounded-[10px] relative overflow-hidden flex items-center justify-center" style="min-height: 200px; height: 220px;">
+              <img id="modalAssetPhotoImg" src="" alt="Foto Unit" class="w-full h-full object-cover rounded-[8px] border border-[#D1D5D8] d-none" onerror="onModalPhotoError(this)">
+              <div id="modalAssetPhotoPlaceholder" class="text-[#53595F] text-[12px] py-4 text-center">
+                <i class="bi bi-camera text-[36px] d-block mb-1 text-[#9CA3AF]"></i>
+                <span class="font-medium">Belum ada foto fisik unit</span>
+                <div class="mt-2.5">
+                  <a id="modalAssetAddPhotoBtn" href="#" class="h-[28px] px-3 bg-white border border-[#D1D5D8] hover:bg-[#F4F5F7] text-[#0E5C58] rounded-[6px] text-[12px] font-semibold transition-colors inline-flex items-center gap-1 text-decoration-none shadow-xs">
+                    <i class="bi bi-plus-circle"></i> Upload Foto
                   </a>
                 </div>
               </div>
             </div>
-            <div class="small text-muted mt-2 fw-semibold d-flex justify-content-center align-items-center gap-1" style="font-size: 0.75rem;">
-              <i class="bi bi-pc-display me-1 text-primary"></i> Foto Fisik Unit Perangkat
-              <a id="modalAssetEditPhotoBtn" href="#" class="btn btn-sm btn-link py-0 px-1 text-decoration-none d-none" style="font-size: 0.72rem;">(Ganti Foto)</a>
+            <div class="text-[12px] text-[#53595F] mt-2 font-medium flex justify-center items-center gap-1">
+              <i class="bi bi-pc-display text-[#0E5C58]"></i> Foto Fisik Unit Perangkat
+              <a id="modalAssetEditPhotoBtn" href="#" class="text-[#0E5C58] hover:underline text-[11px] font-semibold text-decoration-none d-none ms-1">(Ganti Foto)</a>
             </div>
           </div>
         </div>
 
         <!-- Detail Perangkat -->
-        <div class="bg-light p-3 rounded-3 text-start mb-3 border">
-          <div class="row g-2 small">
-            <div class="col-4 text-muted">Perangkat:</div>
-            <div class="col-8 fw-bold text-dark text-truncate" id="modalAssetDevice">-</div>
-            <div class="col-4 text-muted">Pengguna:</div>
-            <div class="col-8 fw-semibold text-primary text-truncate" id="modalAssetUser">-</div>
-            <div class="col-4 text-muted">Kantor Cabang:</div>
-            <div class="col-8 text-dark" id="modalAssetCabang">-</div>
+        <div class="bg-[#F9FAFB] p-3.5 rounded-[10px] text-start mb-3 border border-[#D1D5D8]">
+          <div class="row g-2 text-[12px]">
+            <div class="col-4 text-[#53595F] font-medium">Perangkat:</div>
+            <div class="col-8 font-bold text-[#1B2A3A] truncate" id="modalAssetDevice">-</div>
+            <div class="col-4 text-[#53595F] font-medium">Pengguna:</div>
+            <div class="col-8 font-semibold text-[#0E5C58] truncate" id="modalAssetUser">-</div>
+            <div class="col-4 text-[#53595F] font-medium">Kantor Cabang:</div>
+            <div class="col-8 text-[#1B2A3A]" id="modalAssetCabang">-</div>
           </div>
         </div>
 
         <!-- Input Link Scan & Copy -->
-        <div class="input-group input-group-sm mb-3">
-          <input type="text" id="modalScanUrlInput" class="form-control font-monospace" readonly style="background: #F1F5F9; font-size: 0.75rem;">
-          <button class="btn btn-outline-secondary" type="button" onclick="copyModalScanUrl(this)" title="Salin Link">
+        <div class="flex gap-1.5 mb-3">
+          <input type="text" id="modalScanUrlInput" class="h-[34px] flex-1 bg-[#F4F5F7] border border-[#D1D5D8] rounded-[6px] px-2.5 font-mono text-[12px] text-[#1B2A3A] outline-none" readonly>
+          <button type="button" class="h-[34px] px-3 bg-white border border-[#D1D5D8] hover:bg-[#F4F5F7] text-[#1B2A3A] rounded-[6px] text-[12px] font-medium transition-colors flex items-center gap-1.5 cursor-pointer shadow-xs" onclick="copyModalScanUrl(this)" title="Salin Link">
             <i class="bi bi-clipboard"></i> Salin
           </button>
         </div>
 
         <!-- Action Buttons -->
-        <div class="d-flex flex-wrap gap-2 justify-content-center pt-2">
-          <a id="modalBtnPrint" href="#" target="_blank" class="btn btn-primary btn-sm px-3 rounded-pill fw-semibold shadow-xs">
-            <i class="bi bi-printer-fill me-1"></i> Cetak Stiker
+        <div class="flex flex-wrap gap-2 justify-center pt-2">
+          <a id="modalBtnPrint" href="#" target="_blank" class="h-[36px] px-3.5 bg-[#0E5C58] hover:bg-[#094340] text-white rounded-[8px] text-[13px] font-semibold transition-colors inline-flex items-center gap-1.5 text-decoration-none shadow-xs">
+            <i class="bi bi-printer-fill"></i> Cetak Stiker
           </a>
-          <button type="button" class="btn btn-outline-primary btn-sm px-3 rounded-pill fw-semibold" onclick="downloadModalQrPng()">
-            <i class="bi bi-download me-1"></i> Unduh Gambar QR (PNG)
+          <button type="button" class="h-[36px] px-3 bg-white border border-[#D1D5D8] hover:bg-[#F4F5F7] text-[#1B2A3A] rounded-[8px] text-[13px] font-medium transition-colors inline-flex items-center gap-1.5 cursor-pointer shadow-xs" onclick="downloadModalQrPng()">
+            <i class="bi bi-download"></i> Unduh Gambar QR (PNG)
           </button>
-          <a id="modalBtnOpenScan" href="#" target="_blank" class="btn btn-outline-secondary btn-sm px-3 rounded-pill">
-            <i class="bi bi-box-arrow-up-right me-1"></i> Buka Halaman Scan
+          <a id="modalBtnOpenScan" href="#" target="_blank" class="h-[36px] px-3 bg-white border border-[#D1D5D8] hover:bg-[#F4F5F7] text-[#53595F] rounded-[8px] text-[13px] font-medium transition-colors inline-flex items-center gap-1.5 text-decoration-none shadow-xs">
+            <i class="bi bi-box-arrow-up-right"></i> Buka Halaman Scan
           </a>
         </div>
       </div>
@@ -440,21 +492,23 @@ $body = '
 
 <!-- Floating Copy Toast -->
 <div class="position-fixed bottom-0 end-0 p-3" style="z-index: 1100;">
-  <div id="qrAdminToast" class="toast align-items-center text-white bg-dark border-0 shadow-lg" role="alert" aria-live="assertive" aria-atomic="true">
+  <div id="qrAdminToast" class="toast align-items-center text-white bg-[#1B2A3A] border border-[#334155] rounded-[8px] shadow-lg" role="alert" aria-live="assertive" aria-atomic="true">
     <div class="d-flex">
-      <div class="toast-body d-flex align-items-center gap-2">
-        <i class="bi bi-check-circle-fill text-success fs-5"></i>
+      <div class="toast-body d-flex align-items-center gap-2 text-[13px]">
+        <i class="bi bi-check-circle-fill text-[#10B981] fs-5"></i>
         <span>Link scan QR berhasil disalin!</span>
       </div>
       <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
     </div>
   </div>
-</div>';
+</div>
+</div><!-- End max-w-[1152px] -->
+';
 
 $logoDataUri = app_logo_url();
 
 $script = '
-<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="' . e(module_url('assets/vendor/qrcode.min.js')) . '"></script>
 <script>
 var appLogoUri = '.json_encode($logoDataUri).';
 var currentTokenFilter = "all";
@@ -534,10 +588,27 @@ function toggleSelectAllRows(masterChk) {
 function onRowCheckChange() {
   var selected = document.querySelectorAll(".row-chk:checked");
   var count = selected.length;
+  var inCardBar = document.getElementById("selectionCardBar");
   var bulkBar = document.getElementById("bulkActionBar");
   var countSpan = document.getElementById("bulkSelectedCount");
+  var countText = document.getElementById("countSelectedText");
+  var countPrintQr = document.getElementById("countPrintQr");
+  var countPrintCard = document.getElementById("countPrintCard");
 
   if (countSpan) countSpan.textContent = count;
+  if (countText) countText.textContent = count;
+  if (countPrintQr) countPrintQr.textContent = count;
+  if (countPrintCard) countPrintCard.textContent = count;
+
+  if (inCardBar) {
+    if (count > 0) {
+      inCardBar.classList.remove("d-none");
+      inCardBar.classList.add("d-flex");
+    } else {
+      inCardBar.classList.add("d-none");
+      inCardBar.classList.remove("d-flex");
+    }
+  }
 
   if (bulkBar) {
     if (count > 0) {
@@ -686,8 +757,8 @@ function drawLogoOnCanvas(canvas, logoUri, containerEl) {
     ctx.closePath();
     ctx.fill();
 
-    // Subtle cyan border
-    ctx.strokeStyle = "#30B0E0";
+    // Subtle teal border
+    ctx.strokeStyle = "#0E5C58";
     ctx.lineWidth = Math.max(1, Math.round(size * 0.012));
     ctx.stroke();
     ctx.restore();
