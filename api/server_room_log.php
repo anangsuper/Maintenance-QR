@@ -1476,6 +1476,7 @@ ob_start();
   </div>
 </div>
 
+<?php
 $body = ob_get_clean();
 
 ob_start();
