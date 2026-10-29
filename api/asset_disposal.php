@@ -224,9 +224,41 @@ foreach ($cabangMaster as $cb) {
     $cabangOptionsHtml .= '<option value="'.e($cName).'" '.$sel.'>'.e($cName).'</option>';
 }
 
-// 5. Render Halaman
-$body = '
+// 5. Render Halaman (Kombai Teal Design System)
+$head = '
 <style>
+.status-pill {
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 6px;
+  white-space: nowrap !important;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  line-height: 1.2;
+}
+.table thead th {
+  background: #F4F5F7;
+  color: #53595F;
+  font-size: 11px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  font-weight: 700;
+  border-bottom: 1px solid #D1D5D8;
+  padding: 10px 14px;
+}
+.table tbody td {
+  padding: 11px 14px;
+  font-size: 13px;
+  color: #1B2A3A;
+  border-bottom: 1px solid #F0F2F4;
+}
+.table tbody tr:hover {
+  background-color: #F8FAF9 !important;
+}
+
 #modalDisposal .modal-dialog, #modalCatalogPicker .modal-dialog {
   max-height: calc(100vh - 2rem);
 }
@@ -237,380 +269,327 @@ $body = '
 }
 #modalDisposal .modal-body, #modalCatalogPicker .modal-body {
   overflow-y: auto !important;
-  max-height: calc(100vh - 180px);
+  max-height: calc(100vh - 200px);
+}
+
+/* Kombai Form & Buttons */
+.form-control, .form-select {
+  border-color: #D1D5D8;
+  color: #1B2A3A;
+  font-size: 13px;
+  border-radius: 8px;
+}
+.form-control:focus, .form-select:focus {
+  border-color: #0E5C58;
+  box-shadow: 0 0 0 2px rgba(14, 92, 88, 0.15);
+}
+.btn-primary-teal {
+  background: #0E5C58;
+  color: #FFFFFF;
+  font-weight: 600;
+  border: none;
+  border-radius: 8px;
+  transition: background-color 0.15s ease;
+}
+.btn-primary-teal:hover {
+  background: #094340;
+  color: #FFFFFF;
+}
+.btn-outline-teal {
+  background: #FFFFFF;
+  color: #0E5C58;
+  border: 1px solid #0E5C58;
+  font-weight: 600;
+  border-radius: 8px;
+  transition: all 0.15s ease;
+}
+.btn-outline-teal:hover {
+  background: #D9F1EF;
+  color: #0E5C58;
+}
+.btn-kombai-white {
+  background: #FFFFFF;
+  color: #1B2A3A;
+  border: 1px solid #D1D5D8;
+  font-weight: 500;
+  border-radius: 8px;
+  font-size: 13px;
+  transition: background-color 0.15s ease;
+}
+.btn-kombai-white:hover {
+  background: #F4F5F7;
+  color: #1B2A3A;
 }
 </style>
+';
 
-<div class="container-fluid py-3 px-md-3">
+ob_start();
+?>
+<?php if ($flashSuccess): ?>
+  <div class="alert alert-success alert-dismissible fade show border-0 shadow-sm mb-4" style="border-left: 4px solid #16A34A !important;">
+    <i class="bi bi-check-circle-fill me-2 text-success"></i><?= e($flashSuccess) ?>
+    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+  </div>
+<?php endif; ?>
 
-  <!-- Flash Messages -->
-  '.($flashSuccess ? '
-  <div class="alert alert-success alert-dismissible fade show d-flex align-items-center gap-2 shadow-sm border-0 mb-3" role="alert">
-    <i class="bi bi-check-circle-fill fs-5"></i>
-    <div>'.e($flashSuccess).'</div>
-    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-  </div>' : '').'
+<?php if ($flashError): ?>
+  <div class="alert alert-danger alert-dismissible fade show border-0 shadow-sm mb-4" style="border-left: 4px solid #DC2626 !important;">
+    <i class="bi bi-exclamation-triangle-fill me-2 text-danger"></i><?= e($flashError) ?>
+    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+  </div>
+<?php endif; ?>
 
-  '.($flashError ? '
-  <div class="alert alert-danger alert-dismissible fade show d-flex align-items-center gap-2 shadow-sm border-0 mb-3" role="alert">
-    <i class="bi bi-exclamation-triangle-fill fs-5"></i>
-    <div>'.e($flashError).'</div>
-    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-  </div>' : '').'
-
-  <!-- BROWSER WINDOW NEO CONTAINER (SAMA SEPERTI USERS_ADMIN) -->
-  <div class="card p-0 shadow-sm border-0 browser-window-card mb-4" style="border-radius: 24px;">
-    <!-- Browser Window Topbar with Traffic Lights -->
-    <div class="card-header bg-white py-3 px-4 border-bottom d-flex align-items-center justify-content-between flex-wrap gap-2" style="border-top-left-radius: 24px; border-top-right-radius: 24px;">
-      <div class="browser-topbar-col-left d-flex align-items-center gap-2">
-        <span class="browser-traffic-dot bg-danger"></span>
-        <span class="browser-traffic-dot bg-warning"></span>
-        <span class="browser-traffic-dot bg-success"></span>
-      </div>
-
-      <div class="browser-topbar-col-center">
-        <div class="browser-address-pill">
-          <i class="bi bi-lock-fill text-danger"></i>
-          <span>bankmitra.id/asset_disposal.php</span>
-        </div>
-      </div>
-
-      <div class="browser-topbar-col-right">
-        <div class="floating-toast-pill">
-          <div class="floating-toast-icon-amber" style="background: linear-gradient(135deg, #E11D48 0%, #BE123C 100%); box-shadow: 0 4px 10px rgba(225, 29, 72, 0.25);">
-            <i class="bi bi-shield-check"></i>
-          </div>
-          <div class="text-start">
-            <div class="fw-bold text-dark" style="font-size: 0.76rem; line-height: 1.2;">Disposal Compliance</div>
-            <div class="text-muted" style="font-size: 0.68rem;">SDM &amp; Umum · KPO Bank Mitra</div>
-          </div>
-        </div>
-      </div>
+<!-- Page Heading Row -->
+<div class="mb-4 flex flex-col md:flex-row md:items-center justify-between gap-3">
+  <div>
+    <div class="text-[11px] font-bold text-[#0E5C58] uppercase tracking-wider mb-1 flex items-center gap-1.5">
+      <i class="bi bi-shield-check"></i> PENGELOLAAN SARPRAS &amp; SDM &middot; PT BPR MITRATAMA ARTHABUANA
     </div>
+    <h1 class="text-[22px] font-bold text-[#1B2A3A] tracking-tight m-0">Penghapusan &amp; Pemusnahan Aset (BA-Afkir)</h1>
+    <p class="text-[13px] text-[#53595F] mt-1 mb-0">Pencatatan resmi Berita Acara pemusnahan fisik inventaris &amp; perangkat IT yang aus atau rusak permanen guna penarikan resmi dari Buku Register Aset Bank.</p>
+  </div>
 
-    <!-- Inner Canvas with Gradient Hero Banner & Modern Metric Cards -->
-    <div class="p-3 p-md-4">
-      <!-- Hero Banner Card with Layered Smooth Waves (Rose/Crimson Theme) -->
-      <div class="card-hero-neo mb-4" style="background: linear-gradient(135deg, #881337 0%, #991B1B 45%, #E11D48 100%) !important; box-shadow: 0 12px 32px -4px rgba(225, 29, 72, 0.3) !important;">
-        <!-- Wave Layer Overlays at Bottom -->
-        <svg class="position-absolute bottom-0 start-0 w-100" style="height: 60px; pointer-events: none; opacity: 0.22;" preserveAspectRatio="none" viewBox="0 0 1200 120">
-          <path d="M0,0 C150,90 400,100 600,40 C800,-20 1050,80 1200,30 L1200,120 L0,120 Z" fill="#FFFFFF"></path>
-        </svg>
-        <svg class="position-absolute bottom-0 start-0 w-100" style="height: 40px; pointer-events: none; opacity: 0.32;" preserveAspectRatio="none" viewBox="0 0 1200 120">
-          <path d="M0,40 C300,10 600,80 900,30 C1050,10 1150,50 1200,60 L1200,120 L0,120 Z" fill="#FFFFFF"></path>
-        </svg>
+  <!-- Action Buttons Group -->
+  <div class="flex flex-wrap items-center gap-2 shrink-0">
+    <button type="button" class="h-[36px] px-3.5 bg-[#0E5C58] hover:bg-[#094340] text-white rounded-[8px] text-[13px] font-semibold transition-colors inline-flex items-center gap-1.5 border-0 shadow-xs cursor-pointer" data-bs-toggle="modal" data-bs-target="#modalDisposal" onclick="resetDisposalModal()">
+      <i class="bi bi-plus-lg"></i> <span>Catat BA-Afkir Baru</span>
+    </button>
+    <a href="<?= e(module_url('asset_disposal.php', array_merge($_GET, ['export' => 'excel']))) ?>" class="h-[36px] px-3 bg-white border border-[#D1D5D8] rounded-[8px] text-[13px] font-medium text-[#1B2A3A] hover:bg-[#F4F5F7] transition-colors inline-flex items-center gap-1.5 text-decoration-none shadow-xs">
+      <i class="bi bi-file-earmark-excel text-[#16A34A]"></i> <span>Ekspor Excel</span>
+    </a>
+    <a href="<?= e(module_url('dashboard.php', ['tab' => 'kartu'])) ?>" class="h-[36px] px-3 bg-white border border-[#D1D5D8] rounded-[8px] text-[13px] font-medium text-[#1B2A3A] hover:bg-[#F4F5F7] transition-colors inline-flex items-center gap-1.5 text-decoration-none shadow-xs">
+      <i class="bi bi-credit-card-2-front text-[#53595F]"></i> <span>Data Kartu</span>
+    </a>
+    <a href="<?= e(module_url('memo_pengajuan.php')) ?>" class="h-[36px] px-3 bg-white border border-[#D1D5D8] rounded-[8px] text-[13px] font-medium text-[#1B2A3A] hover:bg-[#F4F5F7] transition-colors inline-flex items-center gap-1.5 text-decoration-none shadow-xs">
+      <i class="bi bi-file-earmark-text text-[#0E5C58]"></i> <span>Memo Pengadaan</span>
+    </a>
+  </div>
+</div>
 
-        <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 position-relative" style="z-index: 2;">
-          <div style="max-width: 650px;">
-            <div class="d-flex align-items-center gap-2 mb-2 flex-wrap">
-              <span class="badge bg-white text-danger px-2.5 py-1 font-monospace fw-bold shadow-xs" style="font-size: 0.70rem; letter-spacing: 0.05em; border-radius: 6px;">PORTAL SDM &amp; UMUM</span>
-              <span class="text-white text-opacity-85 small fw-semibold">Kepatuhan Aset &amp; Akuntansi Bank Mitra</span>
-            </div>
-            <h2 class="display-6 fw-bold mb-1 text-white" style="letter-spacing: -0.025em;">Penghapusan &amp; Pemusnahan Aset</h2>
-            <p class="text-white text-opacity-95 mb-3" style="font-size: 0.95rem; font-weight: 500;">
-              Pencatatan resmi Berita Acara pemusnahan fisik (BA-Afkir) inventaris kantor &amp; perangkat IT yang aus atau rusak permanen guna penarikan resmi dari Buku Register Aset Bank.
-            </p>
-            <div class="d-flex flex-wrap align-items-center gap-3 mt-3 pt-1" style="gap: 12px !important;">
-              <button type="button" class="btn btn-light rounded-pill px-4 py-2 fw-bold d-inline-flex align-items-center gap-2 shadow-sm text-decoration-none" style="color: #BE123C !important; font-size: 0.88rem;" data-bs-toggle="modal" data-bs-target="#modalDisposal" onclick="resetDisposalModal()">
-                <i class="bi bi-plus-circle-fill" style="color: #BE123C;"></i> <span>Catat Berita Acara Afkir</span>
-              </button>
-              <a href="'.e(module_url('asset_disposal.php', array_merge($_GET, ['export' => 'excel']))).'" class="btn btn-outline-light rounded-pill px-3.5 py-2 fw-semibold d-inline-flex align-items-center gap-2 shadow-xs" style="font-size: 0.88rem; background: rgba(255, 255, 255, 0.12); border-color: rgba(255, 255, 255, 0.28);">
-                <i class="bi bi-file-earmark-spreadsheet-fill"></i> <span>Export Excel</span>
-              </a>
-            </div>
-          </div>
-
-          <!-- Decorative Right Badges (Themed Shield & Grace Period Clock) -->
-          <div class="d-none d-md-flex align-items-center gap-4">
-            <!-- Shield Marker -->
-            <div class="hero-pin-marker" title="Pemusnahan Terverifikasi Audit">
-              <svg width="44" height="52" viewBox="0 0 44 52" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M22 0L44 8V24C44 38 22 52 22 52C22 52 0 38 0 24V8L22 0Z" fill="#BE123C"/>
-                <path d="M14 26L19 31L30 20" stroke="#FFFFFF" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
-              </svg>
-            </div>
-
-            <!-- Glowing Grace Period Badge -->
-            <div class="hero-sun-container" title="Masa Tenggang 7 Hari Aktif">
-              <svg width="68" height="68" viewBox="0 0 68 68" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <circle cx="34" cy="34" r="28" fill="#F43F5E" fill-opacity="0.35"/>
-                <circle cx="34" cy="34" r="20" fill="#F43F5E"/>
-                <path d="M34 22V34L42 38" stroke="#FFFFFF" stroke-width="3" stroke-linecap="round"/>
-              </svg>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- 3 Symmetrical Metric Cards (Exact Proportions, Balanced Heights) -->
-      <div class="row g-3 mb-2">
-        <!-- Card 1: Total Aset Dihapuskan -->
-        <div class="col-md-4">
-          <div class="card-metric-modern">
-            <div>
-              <div class="metric-title-muted">Total Aset Diafkirkan</div>
-              <div class="metric-number-bold">'.number_format($kpi['total_unit']).' <span class="fs-6 fw-normal text-muted">Unit</span></div>
-            </div>
-            <div class="small text-muted mt-2 d-flex align-items-center gap-2" style="font-size: 0.78rem;">
-              <span class="text-warning fw-bold"><i class="bi bi-credit-card-2-front-fill"></i> '.$kpi['total_sdm'].' SDM &amp; Umum</span>
-              <span class="text-secondary">·</span>
-              <span class="text-info fw-bold"><i class="bi bi-pc-display"></i> '.$kpi['total_it'].' IT Operations</span>
-            </div>
-          </div>
-        </div>
-
-        <!-- Card 2: Masa Tenggang 7 Hari -->
-        <div class="col-md-4">
-          <div class="card-metric-modern">
-            <div>
-              <div class="metric-title-muted">Masa Tenggang 7 Hari</div>
-              <div class="metric-number-bold d-flex align-items-center gap-2">
-                <span class="text-success">'.$countRestorable.'</span>
-                <span class="fs-6 fw-normal text-muted">Unit Bisa Dibatalkan</span>
-              </div>
-            </div>
-            <div class="small text-muted mt-2" style="font-size: 0.78rem;">
-              <span class="text-success fw-bold"><i class="bi bi-arrow-counterclockwise"></i> Kembalikan ke Inventaris</span> jika tidak jadi dihapus
-            </div>
-          </div>
-        </div>
-
-        <!-- Card 3: Status Kepatuhan SOP -->
-        <div class="col-md-4">
-          <div class="card-status-mint">
-            <div>
-              <div class="metric-title-muted" style="color: #047857 !important;">Kepatuhan SOP Afkir Bank Mitra</div>
-              <div class="status-heading mt-1">
-                <span class="pulse-dot-green"></span>
-                <span>100% Berita Acara Terarsip</span>
-              </div>
-            </div>
-            <div class="status-subtext mt-2">
-              <i class="bi bi-check-all me-1"></i> Standar Cetak A4, Approval 3 Pihak &amp; Audit Trail
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Upward Trend Chart with Overlapping Floating Trend Badge -->
-      <div class="position-relative mt-2 pt-1 mb-2">
-        <div class="w-100 position-relative overflow-hidden rounded-4 trend-chart-box" style="height: 72px; border: 1px solid #E2E8F0;">
-          <svg viewBox="0 0 1000 72" preserveAspectRatio="none" style="width: 100%; height: 100%;">
-            <defs>
-              <linearGradient id="chartGradDisposal" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stop-color="#E11D48" stop-opacity="0.25"/>
-                <stop offset="100%" stop-color="#E11D48" stop-opacity="0.0"/>
-              </linearGradient>
-            </defs>
-            <path d="M0,60 Q250,52 500,38 T1000,12 L1000,72 L0,72 Z" fill="url(#chartGradDisposal)"/>
-            <path d="M0,60 Q250,52 500,38 T1000,12" fill="none" stroke="#E11D48" stroke-width="3" stroke-linecap="round"/>
-            <circle cx="994" cy="12" r="5" fill="#E11D48" stroke="#FFFFFF" stroke-width="2"/>
-          </svg>
-          <div class="position-absolute top-0 end-0 p-2 text-muted" style="font-size: 0.72rem; font-weight: 600;">
-            Tren Penghapusan Aset · Periode Aktif
-          </div>
-        </div>
-
-        <!-- Floating Trend Badge Overlapping Left of Chart -->
-        <div class="position-absolute" style="left: 16px; bottom: 10px; z-index: 4;">
-          <div class="badge-floating-trend shadow">
-            <div class="trend-icon-box" style="background: #BE123C; box-shadow: 0 4px 10px rgba(190, 18, 60, 0.3);">
-              <i class="bi bi-shield-check"></i>
-            </div>
-            <div>
-              <div class="fw-bold text-dark" style="font-size: 0.88rem;">+'.$kpi['total_bulan_ini'].' aset diafkirkan bulan ini</div>
-              <div class="text-muted small" style="font-size: 0.74rem;">Dilengkapi foto fisik &amp; dokumen BA 1 halaman A4</div>
-            </div>
-          </div>
-        </div>
-      </div>
+<!-- 3 SYMMETRICAL KOMBAI METRIC CARDS (88px) -->
+<div class="bg-[#FFFFFF] border border-[#D1D5D8] rounded-[10px] h-[88px] flex overflow-hidden shrink-0 mb-4">
+  <!-- Card 1: Total Aset Diafkirkan -->
+  <div class="flex-1 flex flex-col justify-center px-6 border-r border-[#D1D5D8] relative hover:bg-[#F4F5F7] transition-colors">
+    <div class="absolute left-0 top-0 bottom-0 w-1 bg-[#0E5C58]"></div>
+    <div class="text-[28px] font-bold text-[#1B2A3A] tabular-nums leading-none">
+      <?= number_format($kpi['total_unit']) ?> <span class="text-[13px] font-normal text-[#53595F]">Unit</span>
+    </div>
+    <div class="text-[12px] font-medium text-[#53595F] mt-1.5 flex items-center gap-2">
+      <span class="text-[#D97706] font-semibold"><i class="bi bi-credit-card-2-front-fill me-0.5"></i> <?= $kpi['total_sdm'] ?> SDM</span>
+      <span>&middot;</span>
+      <span class="text-[#0284C7] font-semibold"><i class="bi bi-pc-display me-0.5"></i> <?= $kpi['total_it'] ?> IT</span>
+      <span class="text-[#53595F] ms-auto small d-none d-lg-inline">(+<?= $kpi['total_bulan_ini'] ?> bulan ini)</span>
     </div>
   </div>
 
-  <!-- DATA TABLE ARSIP BERITA ACARA DENGAN TOOLBAR SYMMETRICAL -->
-  <div class="card p-0 overflow-hidden shadow-sm h-100 border-0 mb-4" style="border-radius: 20px;">
-    <!-- Table Header & Live Search Bar with Symmetrical Responsive Inputs -->
-    <div class="card-header bg-white py-3.5 px-4 border-bottom" style="border-top: 4px solid #E11D48; border-top-left-radius: 20px; border-top-right-radius: 20px;">
-      <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-3">
-        <div class="fw-bold text-dark text-uppercase small d-flex align-items-center gap-2" style="letter-spacing: 0.05em;">
-          <i class="bi bi-archive-fill text-danger fs-5"></i>
-          <span>Daftar Berita Acara Penghapusan Aset (BA-Afkir)</span>
-          <span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 rounded-pill px-2.5 py-1 font-monospace">'.count($disposalList).'</span>
-        </div>
-        <div class="small text-muted">
-          Menampilkan <strong class="text-dark">'.count($disposalList).'</strong> dokumen BA-Afkir
+  <!-- Card 2: Masa Tenggang 7 Hari -->
+  <div class="flex-1 flex flex-col justify-center px-6 border-r border-[#D1D5D8] relative hover:bg-[#F4F5F7] transition-colors">
+    <div class="absolute left-0 top-0 bottom-0 w-1 bg-[#10B981]"></div>
+    <div class="text-[28px] font-bold text-[#10B981] tabular-nums leading-none">
+      <?= $countRestorable ?> <span class="text-[13px] font-normal text-[#53595F]">Unit</span>
+    </div>
+    <div class="text-[12px] font-medium text-[#53595F] mt-1.5 flex items-center gap-1.5">
+      <i class="bi bi-arrow-counterclockwise text-[#10B981]"></i> Masa tenggang 7 hari (dapat dibatalkan)
+    </div>
+  </div>
+
+  <!-- Card 3: Status Kepatuhan SOP Afkir -->
+  <div class="flex-1 flex flex-col justify-center px-6 relative hover:bg-[#F4F5F7] transition-colors">
+    <div class="absolute left-0 top-0 bottom-0 w-1 bg-[#3B82F6]"></div>
+    <div class="text-[28px] font-bold text-[#1B2A3A] tabular-nums leading-none">
+      100% <span class="text-[13px] font-normal text-[#53595F]">Terarsip</span>
+    </div>
+    <div class="text-[12px] font-medium text-[#53595F] mt-1.5 flex items-center gap-1.5">
+      <i class="bi bi-check-all text-[#10B981]"></i> Standar Cetak A4, Approval 3 Pihak &amp; Audit Trail
+    </div>
+  </div>
+</div>
+
+<!-- DATA TABLE ARSIP BERITA ACARA -->
+<div class="bg-white border border-[#D1D5D8] rounded-[12px] shadow-xs overflow-hidden mb-4">
+  <!-- Table Header & Live Count -->
+  <div class="px-5 py-3.5 border-b border-[#D1D5D8] flex flex-wrap items-center justify-between gap-3 bg-white">
+    <div class="flex items-center gap-2">
+      <i class="bi bi-archive-fill text-[#0E5C58] text-[16px]"></i>
+      <span class="text-[14px] font-bold text-[#1B2A3A] uppercase tracking-wide">Daftar Berita Acara Penghapusan Aset (BA-Afkir)</span>
+      <span class="px-2 py-0.5 text-[11px] font-bold bg-[#D9F1EF] text-[#0E5C58] border border-[#A7E2DC] rounded-full font-mono"><?= count($disposalList) ?> Dokumen</span>
+    </div>
+    <div class="text-[12px] text-[#53595F]">
+      Menampilkan <strong class="text-[#1B2A3A]"><?= count($disposalList) ?></strong> dokumen BA-Afkir
+    </div>
+  </div>
+
+  <!-- Filter Toolbar (Symmetrical 36px) -->
+  <div class="p-3.5 border-b border-[#D1D5D8] bg-[#F8FAF9]">
+    <form method="GET" action="<?= e(module_url('asset_disposal.php')) ?>" class="row g-2 align-items-center m-0">
+      <div class="col-lg-6 col-md-12 p-0 pe-md-1">
+        <div class="input-group">
+          <span class="input-group-text bg-white border-end-0 text-muted" style="border-radius: 8px 0 0 8px; height: 36px; border-color: #D1D5D8;"><i class="bi bi-search"></i></span>
+          <input type="text" name="search" class="form-control border-start-0 ps-0" style="border-radius: 0 8px 8px 0; font-size: 13px; height: 36px; border-color: #D1D5D8;" placeholder="Cari No. BA, Nama Aset, No. Rekening, Alasan..." value="<?= e($filters['search']) ?>">
         </div>
       </div>
+      <div class="col-lg-4 col-md-8 p-0 px-md-1">
+        <select name="cabang" class="form-select form-select-sm" style="border-radius: 8px; height: 36px; font-size: 13px; border-color: #D1D5D8;" onchange="this.form.submit()">
+          <option value="all" <?= ($filters['cabang']==='all'?'selected':'') ?>>Semua Kantor Cabang</option>
+          <?= $cabangOptionsHtml ?>
+        </select>
+      </div>
+      <div class="col-lg-2 col-md-4 p-0 ps-md-1 d-flex gap-1.5">
+        <button type="submit" class="h-[36px] px-3.5 bg-[#0E5C58] hover:bg-[#094340] text-white rounded-[8px] text-[13px] font-semibold transition-colors flex-fill inline-flex items-center justify-center gap-1.5 border-0 shadow-xs cursor-pointer">
+          <i class="bi bi-funnel"></i> <span>Filter</span>
+        </button>
+        <?php if (!empty($filters['search']) || $filters['cabang']!=='all'): ?>
+        <a href="<?= e(module_url('asset_disposal.php')) ?>" class="h-[36px] w-[36px] bg-white border border-[#D1D5D8] rounded-[8px] text-[#53595F] hover:bg-[#F4F5F7] transition-colors inline-flex items-center justify-center text-decoration-none shadow-xs shrink-0" title="Reset Filter">
+          <i class="bi bi-arrow-counterclockwise"></i>
+        </a>
+        <?php endif; ?>
+      </div>
+    </form>
+  </div>
 
-      <!-- Filter & Search Toolbar Controls (All 38px High, Perfectly Symmetrical) -->
-      <form method="GET" action="'.e(module_url('asset_disposal.php')).'" class="row g-2 align-items-center m-0">
-        <div class="col-lg-6 col-md-12 p-0 pe-md-1">
-          <div class="input-group">
-            <span class="input-group-text bg-light border-end-0 text-muted" style="border-radius: 9999px 0 0 9999px; height: 38px;"><i class="bi bi-search"></i></span>
-            <input type="text" name="search" class="form-control bg-light border-start-0 ps-0" style="border-radius: 0 9999px 9999px 0; font-size: 0.84rem; height: 38px;" placeholder="Cari No. BA, Nama Aset, No. Rek, Alasan..." value="'.e($filters['search']).'">
-          </div>
-        </div>
-        <div class="col-lg-4 col-md-8 p-0 px-md-1">
-          <select name="cabang" class="form-select form-select-sm" style="border-radius: 9999px; height: 38px; font-size: 0.82rem;" onchange="this.form.submit()">
-            <option value="all" '.($filters['cabang']==='all'?'selected':'').'>Semua Kantor Cabang</option>
-            '.$cabangOptionsHtml.'
-          </select>
-        </div>
-        <div class="col-lg-2 col-md-4 p-0 ps-md-1 d-flex gap-1.5">
-          <button type="submit" class="btn btn-danger btn-sm w-100 fw-bold" style="border-radius: 9999px; height: 38px; font-size: 0.82rem;">
-            <i class="bi bi-funnel me-1"></i> Filter
-          </button>
-          '.(!empty($filters['search']) || $filters['cabang']!=='all' ? '
-          <a href="'.e(module_url('asset_disposal.php')).'" class="btn btn-outline-secondary btn-sm" style="border-radius: 9999px; height: 38px; width: 38px; padding: 0; display: inline-flex; align-items: center; justify-content: center;" title="Reset Filter">
-            <i class="bi bi-arrow-counterclockwise"></i>
-          </a>' : '').'
-        </div>
-      </form>
-    </div>
-
-    <div class="table-responsive">
-      <table class="table table-hover align-middle mb-0" style="font-size: 0.88rem;">
-        <thead class="table-light text-secondary text-uppercase" style="font-size: 0.72rem; letter-spacing: 0.05em;">
+  <div class="table-responsive">
+    <table class="table table-hover align-middle mb-0" style="font-size: 13px;">
+      <thead>
+        <tr>
+          <th class="ps-3" style="width: 18%;">No. BA &amp; Tanggal</th>
+          <th style="width: 27%;">Identitas Aset</th>
+          <th style="width: 17%;">Lokasi / Cabang</th>
+          <th style="width: 18%;">Kondisi &amp; Alasan Afkir</th>
+          <th style="width: 10%;">Dokumentasi</th>
+          <th class="text-end pe-3" style="width: 10%;">Aksi</th>
+        </tr>
+      </thead>
+      <tbody>
+        <?php if (empty($disposalList)): ?>
           <tr>
-            <th class="ps-3" style="width: 18%;">No. BA &amp; Tanggal</th>
-            <th style="width: 28%;">Identitas Aset</th>
-            <th style="width: 16%;">Lokasi / Cabang</th>
-            <th style="width: 18%;">Kondisi &amp; Alasan Afkir</th>
-            <th style="width: 10%;">Dokumentasi</th>
-            <th class="text-end pe-3" style="width: 10%;">Aksi</th>
+            <td colspan="6" class="text-center py-5 text-muted">
+              <i class="bi bi-trash3 fs-1 text-secondary opacity-50 d-block mb-2"></i>
+              <div class="fw-semibold text-[14px]">Belum Ada Catatan Berita Acara Penghapusan Aset</div>
+              <p class="small text-muted mb-3">Klik tombol "Catat BA-Afkir Baru" di atas untuk memproses penghapusan inventaris rusak.</p>
+              <button type="button" class="btn btn-sm btn-primary-teal fw-bold px-3 py-1.5" data-bs-toggle="modal" data-bs-target="#modalDisposal" onclick="resetDisposalModal()">
+                <i class="bi bi-plus-circle me-1"></i> Buat Berita Acara Pertama
+              </button>
+            </td>
           </tr>
-        </thead>
-        <tbody>';
+        <?php else: ?>
+          <?php foreach ($disposalList as $row): 
+            $assetBadge = ($row['asset_type'] === 'inventaris') 
+                ? '<span class="badge bg-[#FEF3C7] text-[#92400E] border border-[#FDE68A] px-2 py-0.5 text-[11px] font-semibold"><i class="bi bi-credit-card-2-front me-1"></i>Kartu SDM</span>' 
+                : '<span class="badge bg-[#E0F2FE] text-[#0369A1] border border-[#BAE6FD] px-2 py-0.5 text-[11px] font-semibold"><i class="bi bi-pc-display me-1"></i>Perangkat IT</span>';
 
-        if (empty($disposalList)) {
-            $body .= '
-            <tr>
-              <td colspan="6" class="text-center py-5 text-muted">
-                <i class="bi bi-trash3 fs-1 text-secondary opacity-50 d-block mb-2"></i>
-                <div class="fw-semibold">Belum Ada Catatan Berita Acara Penghapusan Aset</div>
-                <p class="small text-muted mb-3">Klik tombol "Catat Berita Acara Afkir" di atas untuk memproses penghapusan inventaris rusak.</p>
-                <button type="button" class="btn btn-sm btn-danger fw-bold px-3 py-1.5" data-bs-toggle="modal" data-bs-target="#modalDisposal" onclick="resetDisposalModal()">
-                  <i class="bi bi-plus-circle me-1"></i> Buat Berita Acara Pertama
-                </button>
-              </td>
-            </tr>';
-        } else {
-            foreach ($disposalList as $row) {
-                $assetBadge = ($row['asset_type'] === 'inventaris') 
-                    ? '<span class="badge bg-warning text-dark border border-warning" style="font-size: 0.65rem;"><i class="bi bi-credit-card-2-front"></i> Kartu SDM</span>' 
-                    : '<span class="badge bg-info text-dark border border-info" style="font-size: 0.65rem;"><i class="bi bi-pc-display"></i> Perangkat IT</span>';
-
-                $restoreInfo = is_disposal_restorable($row);
-                $canRestore = $restoreInfo['can_restore'];
-                $daysRemaining = $restoreInfo['days_remaining'];
-
-                $body .= '
-                <tr>
-                  <td class="ps-3">
-                    <div class="font-monospace fw-bold text-dark text-break" style="font-size: 0.82rem;">'.e($row['nomor_ba']).'</div>
-                    <div class="text-muted small mt-0.5"><i class="bi bi-calendar3 me-1"></i>'.date('d/m/Y', strtotime($row['tanggal_disposal'])).'</div>
-                    <div class="text-secondary small mt-0.5" style="font-size: 0.72rem;">Petugas: '.e($row['petugas_nama']).'</div>
-                    '.($canRestore ? '
-                    <div class="mt-1">
-                      <span class="badge bg-success-subtle text-success border border-success-subtle py-0.5 px-2 fw-semibold" style="font-size: 0.68rem;" title="Aset masih dapat dikembalikan ke inventaris dalam 7 hari">
-                        <i class="bi bi-arrow-counterclockwise me-1"></i>Bisa Batal (Sisa '.$daysRemaining.' hari)
-                      </span>
-                    </div>' : '
-                    <div class="mt-1">
-                      <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle py-0.5 px-2" style="font-size: 0.68rem;" title="Masa tenggang 7 hari telah lewat, status permanen">
-                        <i class="bi bi-lock-fill me-1"></i>Permanen (&gt;7 hari)
-                      </span>
-                    </div>').'
-                  </td>
-                  <td>
-                    <div class="d-flex align-items-center gap-1.5 mb-1">
-                      '.$assetBadge.'
-                      <span class="font-monospace text-muted small">['.e($row['kode_aset']).']</span>
-                    </div>
-                    <div class="fw-bold text-dark">'.e($row['nama_aset']).'</div>
-                    '.(!empty($row['merk_model']) && $row['merk_model'] !== '-' ? '<div class="text-muted small">'.e($row['merk_model']).'</div>' : '').'
-                  </td>
-                  <td>
-                    <div class="fw-semibold text-dark">'.e($row['cabang']).'</div>
-                    <div class="text-muted small">Ruang: '.e($row['lokasi_ruangan'] ?: '-').'</div>
-                    <div class="text-secondary small" style="font-size: 0.72rem;">PJ: '.e($row['pengguna_terakhir'] ?: '-').'</div>
-                  </td>
-                  <td>
-                    <div class="text-danger fw-bold small mb-1">
-                      <i class="bi bi-exclamation-triangle-fill me-1"></i>'.e($row['kondisi_terakhir']).'
-                    </div>
-                    <div class="text-secondary small text-truncate" style="max-width: 240px;" title="'.e($row['alasan_penghapusan']).'">
-                      '.e($row['alasan_penghapusan']).'
-                    </div>
-                    <div class="badge bg-light text-secondary border mt-1" style="font-size: 0.68rem;">
-                      '.e($row['metode_pemusnahan']).'
-                    </div>
-                  </td>
-                  <td>
-                    <div class="d-flex flex-column gap-1">';
-                      if (!empty($row['foto_barang'])) {
-                          $body .= '<a href="'.e(disposal_file_url($row['foto_barang'])).'" target="_blank" class="btn btn-xs btn-outline-secondary text-start py-0.5 px-2" style="font-size: 0.72rem;">
-                            <i class="bi bi-camera me-1 text-primary"></i> Foto Fisik
-                          </a>';
-                      }
-                      if (!empty($row['dokumen_ba_disetujui'])) {
-                          $body .= '<a href="'.e(disposal_file_url($row['dokumen_ba_disetujui'])).'" target="_blank" class="btn btn-xs btn-outline-info text-dark fw-bold text-start py-0.5 px-2" style="font-size: 0.72rem;">
-                            <i class="bi bi-file-earmark-check me-1 text-info"></i> Scan BA Acc ✓
-                          </a>';
-                      } else {
-                          $body .= '<button type="button" class="btn btn-xs btn-light border text-muted text-start py-0.5 px-2" style="font-size: 0.70rem;" onclick="openUploadAccModal('.$row['id'].', \''.e(addslashes($row['nomor_ba'])).'\')">
-                            <i class="bi bi-cloud-arrow-up me-1"></i> Upload Scan BA
-                          </button>';
-                      }
-                      $body .= '
-                    </div>
-                  </td>
-                  <td class="text-end pe-3 text-nowrap">
-                    <div class="btn-group btn-group-sm shadow-xs">
-                      <a href="'.e(module_url('print_bast_disposal.php', ['id' => $row['id']])).'" target="_blank" class="btn btn-primary fw-semibold" title="Cetak Berita Acara">
-                        <i class="bi bi-printer-fill me-1"></i> Cetak
+            $restoreInfo = is_disposal_restorable($row);
+            $canRestore = $restoreInfo['can_restore'];
+            $daysRemaining = $restoreInfo['days_remaining'];
+            $printUrl = module_url('print_bast_disposal.php', ['id' => $row['id']]);
+          ?>
+          <tr>
+            <td class="ps-3">
+              <a href="<?= $printUrl ?>" target="_blank" class="fw-bold text-[#0E5C58] font-mono text-decoration-none d-block text-break" style="font-size:0.78rem; line-height: 1.3;">
+                <i class="bi bi-file-earmark-pdf-fill text-danger me-1"></i><?= e($row['nomor_ba']) ?>
+              </a>
+              <div class="text-muted small mt-0.5" style="font-size:0.72rem;"><i class="bi bi-calendar3 me-1"></i><?= date('d/m/Y', strtotime($row['tanggal_disposal'])) ?></div>
+              <div class="text-secondary small mt-0.5" style="font-size:0.72rem;">Petugas: <?= e($row['petugas_nama']) ?></div>
+              <?php if ($canRestore): ?>
+                <div class="mt-1">
+                  <span class="badge bg-[#DCFCE7] text-[#15803D] border border-[#86EFAC] py-0.5 px-2 font-semibold" style="font-size: 0.68rem;" title="Aset masih dapat dikembalikan ke inventaris dalam 7 hari">
+                    <i class="bi bi-arrow-counterclockwise me-1"></i>Bisa Batal (Sisa <?= $daysRemaining ?> hari)
+                  </span>
+                </div>
+              <?php else: ?>
+                <div class="mt-1">
+                  <span class="badge bg-[#F4F5F7] text-[#53595F] border border-[#D1D5D8] py-0.5 px-2" style="font-size: 0.68rem;" title="Masa tenggang 7 hari telah lewat, status permanen">
+                    <i class="bi bi-lock-fill me-1"></i>Permanen (&gt;7 hari)
+                  </span>
+                </div>
+              <?php endif; ?>
+            </td>
+            <td>
+              <div class="d-flex align-items-center gap-1.5 mb-1">
+                <?= $assetBadge ?>
+                <span class="font-mono text-muted small ms-1">[<?= e($row['kode_aset']) ?>]</span>
+              </div>
+              <div class="fw-bold text-[#1B2A3A] text-[13px]"><?= e($row['nama_aset']) ?></div>
+              <?php if (!empty($row['merk_model']) && $row['merk_model'] !== '-'): ?>
+                <div class="text-[#53595F] text-[12px]"><?= e($row['merk_model']) ?></div>
+              <?php endif; ?>
+            </td>
+            <td>
+              <span class="badge bg-light text-dark border px-2 py-0.5 text-[11px] font-semibold mb-1"><?= e($row['cabang']) ?></span>
+              <div class="text-[#53595F] text-[12px]"><i class="bi bi-door-open me-1"></i><?= e($row['lokasi_ruangan'] ?: '-') ?></div>
+              <div class="text-secondary text-[11px]">PJ: <?= e($row['pengguna_terakhir'] ?: '-') ?></div>
+            </td>
+            <td>
+              <div class="text-[#DC2626] font-bold text-[12px] mb-1">
+                <i class="bi bi-exclamation-triangle-fill me-1"></i><?= e($row['kondisi_terakhir']) ?>
+              </div>
+              <div class="text-[#53595F] text-[12px] text-truncate" style="max-width: 220px;" title="<?= e($row['alasan_penghapusan']) ?>">
+                <?= e($row['alasan_penghapusan']) ?>
+              </div>
+              <div class="badge bg-[#F4F5F7] text-[#53595F] border border-[#D1D5D8] text-[11px] mt-1">
+                <?= e($row['metode_pemusnahan']) ?>
+              </div>
+            </td>
+            <td>
+              <div class="d-flex flex-column gap-1">
+                <?php if (!empty($row['foto_barang'])): ?>
+                  <a href="<?= e(disposal_file_url($row['foto_barang'])) ?>" target="_blank" class="badge bg-light text-secondary border shadow-xs text-decoration-none d-inline-flex align-items-center gap-1 px-2 py-1" style="font-size: 0.68rem;">
+                    <i class="bi bi-camera text-primary"></i> Foto Fisik
+                  </a>
+                <?php endif; ?>
+                <?php if (!empty($row['dokumen_ba_disetujui'])): ?>
+                  <a href="<?= e(disposal_file_url($row['dokumen_ba_disetujui'])) ?>" target="_blank" class="badge bg-[#DCFCE7] text-[#15803D] border border-[#86EFAC] shadow-xs text-decoration-none d-inline-flex align-items-center gap-1 px-2 py-1" style="font-size: 0.68rem;">
+                    <i class="bi bi-file-earmark-check-fill"></i> Scan BA Acc ✓
+                  </a>
+                <?php else: ?>
+                  <button type="button" class="btn btn-sm btn-kombai-white py-0.5 px-2 text-[11px] d-inline-flex align-items-center gap-1 shadow-xs" onclick="openUploadAccModal(<?= (int)$row['id'] ?>, <?= htmlspecialchars(json_encode($row['nomor_ba']), ENT_QUOTES, 'UTF-8') ?>)">
+                    <i class="bi bi-cloud-arrow-up text-[#0E5C58]"></i> Upload Scan
+                  </button>
+                <?php endif; ?>
+              </div>
+            </td>
+            <td class="text-end pe-3 text-nowrap">
+              <div class="d-inline-flex align-items-center justify-content-end gap-1.5 flex-nowrap">
+                <a href="<?= $printUrl ?>" target="_blank" class="btn btn-sm btn-outline-teal px-2 py-1 shadow-xs" style="font-size:0.75rem;" title="Cetak Berita Acara BA-Afkir">
+                  <i class="bi bi-printer me-1"></i> Cetak
+                </a>
+                <?php if ($canRestore): ?>
+                  <button type="button" class="btn btn-sm px-2 py-1 bg-[#DCFCE7] hover:bg-[#BBF7D0] text-[#15803D] border border-[#86EFAC] rounded-[8px] font-semibold text-[12px] shadow-xs cursor-pointer inline-flex items-center gap-1" onclick="openRestoreModal(<?= (int)$row['id'] ?>, <?= htmlspecialchars(json_encode($row['nama_aset']), ENT_QUOTES, 'UTF-8') ?>, <?= (int)$daysRemaining ?>)" title="Batalkan penghapusan &amp; kembalikan ke inventaris aktif">
+                    <i class="bi bi-arrow-counterclockwise"></i> Batal
+                  </button>
+                <?php endif; ?>
+                <div class="dropdown d-inline-block">
+                  <button class="btn btn-sm btn-kombai-white px-2 py-1 shadow-xs dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false" title="Menu Opsi Lainnya">
+                    <i class="bi bi-three-dots-vertical"></i>
+                  </button>
+                  <ul class="dropdown-menu dropdown-menu-end shadow border py-1" style="font-size:0.80rem; min-width: 195px;">
+                    <li>
+                      <a class="dropdown-item py-1.5" href="<?= $printUrl ?>" target="_blank">
+                        <i class="bi bi-file-earmark-pdf text-[#0E5C58] me-2"></i> Cetak Berita Acara
                       </a>
-                      '.($canRestore ? '
-                      <button type="button" class="btn btn-outline-success fw-semibold" onclick="openRestoreModal('.$row['id'].', \''.e(addslashes($row['nama_aset'])).'\', '.$daysRemaining.')" title="Batalkan penghapusan &amp; kembalikan ke inventaris aktif (Masa tenggang sisa '.$daysRemaining.' hari)">
-                        <i class="bi bi-arrow-counterclockwise me-1"></i> Batal Hapus
-                      </button>' : '').'
-                      <button type="button" class="btn btn-outline-secondary dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown" aria-expanded="false">
-                        <span class="visually-hidden">Toggle Dropdown</span>
+                    </li>
+                    <li>
+                      <button class="dropdown-item py-1.5" type="button" onclick="openUploadAccModal(<?= (int)$row['id'] ?>, <?= htmlspecialchars(json_encode($row['nomor_ba']), ENT_QUOTES, 'UTF-8') ?>)">
+                        <i class="bi bi-cloud-arrow-up text-[#0284C7] me-2"></i> Upload Scan BA Disetujui
                       </button>
-                      <ul class="dropdown-menu dropdown-menu-end shadow-sm" style="font-size: 0.85rem;">
-                        <li>
-                          <a class="dropdown-item" href="'.e(module_url('print_bast_disposal.php', ['id' => $row['id']])).'" target="_blank">
-                            <i class="bi bi-file-earmark-pdf me-2 text-primary"></i> Cetak Dokumen BA-Afkir
-                          </a>
-                        </li>
-                        <li>
-                          <button class="dropdown-item" type="button" onclick="openUploadAccModal('.$row['id'].', \''.e(addslashes($row['nomor_ba'])).'\')">
-                            <i class="bi bi-cloud-arrow-up me-2 text-info"></i> Upload Scan BA Disetujui
-                          </button>
-                        </li>
-                        <li><hr class="dropdown-divider"></li>
-                        <li>
-                          '.($canRestore ? '
-                          <button type="button" class="dropdown-item text-success fw-semibold" onclick="openRestoreModal('.$row['id'].', \''.e(addslashes($row['nama_aset'])).'\', '.$daysRemaining.')">
-                            <i class="bi bi-arrow-counterclockwise me-2 text-success"></i> Kembalikan ke Inventaris (Sisa '.$daysRemaining.' Hari)
-                          </button>' : '
-                          <span class="dropdown-item text-muted disabled" style="cursor: not-allowed;" title="Masa tenggang 7 hari telah berakhir">
-                            <i class="bi bi-lock-fill me-2 text-secondary"></i> Permanen (Lewat 7 Hari)
-                          </span>').'
-                        </li>
-                      </ul>
-                    </div>
-                  </td>
-                </tr>';
-            }
-        }
-
-$body .= '
-        </tbody>
-      </table>
-    </div>
+                    </li>
+                    <?php if ($canRestore): ?>
+                      <li><hr class="dropdown-divider my-1"></li>
+                      <li>
+                        <button class="dropdown-item py-1.5 text-success font-semibold" type="button" onclick="openRestoreModal(<?= (int)$row['id'] ?>, <?= htmlspecialchars(json_encode($row['nama_aset']), ENT_QUOTES, 'UTF-8') ?>, <?= (int)$daysRemaining ?>)">
+                          <i class="bi bi-arrow-counterclockwise text-success me-2"></i> Kembalikan ke Inventaris (Sisa <?= $daysRemaining ?> Hari)
+                        </button>
+                      </li>
+                    <?php endif; ?>
+                  </ul>
+                </div>
+              </div>
+            </td>
+          </tr>
+          <?php endforeach; ?>
+        <?php endif; ?>
+      </tbody>
+    </table>
   </div>
-
 </div>
 
 <!-- ==================================================== -->
@@ -618,257 +597,253 @@ $body .= '
 <!-- ==================================================== -->
 <div class="modal fade" id="modalDisposal" tabindex="-1" aria-labelledby="modalDisposalLabel" aria-hidden="true">
   <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
-    <form method="POST" action="'.e(module_url('asset_disposal.php')).'" enctype="multipart/form-data" id="formDisposal" class="modal-content border-0 shadow-lg">
+    <form method="POST" action="<?= e(module_url('asset_disposal.php')) ?>" enctype="multipart/form-data" id="formDisposal" class="modal-content border-0 shadow-lg rounded-[12px] overflow-hidden">
       <input type="hidden" name="action" value="save">
       <input type="hidden" name="id" id="dispId" value="0">
         
-        <div class="modal-header bg-dark text-white border-0 py-3">
-          <h5 class="modal-title fw-bold d-flex align-items-center gap-2" id="modalDisposalLabel">
-            <i class="bi bi-trash3-fill text-danger"></i> Catat Berita Acara Penghapusan Aset (BA-Afkir)
-          </h5>
-          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-        </div>
+      <div class="modal-header bg-[#1B2A3A] text-white border-0 py-3 px-4">
+        <h5 class="modal-title fw-bold text-[16px] flex items-center gap-2 m-0" id="modalDisposalLabel">
+          <i class="bi bi-trash3-fill text-[#EF4444]"></i> Catat Berita Acara Penghapusan Aset (BA-Afkir)
+        </h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
 
-        <div class="modal-body p-4">
-          <!-- 1. Pilihan Kategori Sumber Aset -->
-          <div class="mb-3">
-            <label class="form-label fw-bold text-dark small">PILIH SUMBER BUKU REGISTER ASET <span class="text-danger">*</span></label>
-            <div class="d-flex gap-3">
-              <div class="form-check border rounded-3 p-2.5 flex-fill bg-light">
-                <input class="form-check-input ms-0 me-2" type="radio" name="asset_type" id="typeInventaris" value="inventaris" checked onchange="switchAssetType(\'inventaris\')">
-                <label class="form-check-label fw-semibold text-dark" for="typeInventaris" style="cursor: pointer;">
-                  <i class="bi bi-credit-card-2-front text-warning me-1"></i> Kartu Inventaris Fisik (SDM &amp; Umum)
-                  <div class="text-muted fw-normal small" style="font-size: 0.74rem;">Perabot, Meja, Kursi, AC, Brankas, Kipas, Dispenser, Kendaraan</div>
-                </label>
-              </div>
-              <div class="form-check border rounded-3 p-2.5 flex-fill bg-light">
-                <input class="form-check-input ms-0 me-2" type="radio" name="asset_type" id="typeKomputer" value="komputer" onchange="switchAssetType(\'komputer\')">
-                <label class="form-check-label fw-semibold text-dark" for="typeKomputer" style="cursor: pointer;">
-                  <i class="bi bi-pc-display text-info me-1"></i> Perangkat IT / Komputer (IT Ops)
-                  <div class="text-muted fw-normal small" style="font-size: 0.74rem;">PC Dekstop, Laptop, Monitor, Printer, Scanner, Server</div>
-                </label>
-              </div>
-            </div>
-          </div>
-
-          <!-- 2. Pilih Barang Aset Aktif -->
-          <div class="mb-3">
-            <div class="d-flex align-items-center justify-content-between mb-1.5">
-              <label class="form-label fw-bold text-dark small mb-0" for="selectAssetItem">
-                PILIH UNIT BARANG INVENTARIS YANG DIAFKIRKAN <span class="text-danger">*</span>
+      <div class="modal-body p-4">
+        <!-- 1. Pilihan Kategori Sumber Aset -->
+        <div class="mb-3">
+          <label class="form-label fw-bold text-[#1B2A3A] text-[12px] uppercase">PILIH SUMBER BUKU REGISTER ASET <span class="text-danger">*</span></label>
+          <div class="d-flex gap-3">
+            <div class="form-check border border-[#D1D5D8] rounded-[8px] p-2.5 flex-fill bg-[#F8FAF9]">
+              <input class="form-check-input ms-0 me-2" type="radio" name="asset_type" id="typeInventaris" value="inventaris" checked onchange="switchAssetType(this.value)">
+              <label class="form-check-label fw-semibold text-[#1B2A3A]" for="typeInventaris" style="cursor: pointer;">
+                <i class="bi bi-credit-card-2-front text-warning me-1"></i> Kartu Inventaris Fisik (SDM &amp; Umum)
+                <div class="text-[#53595F] fw-normal text-[11px]">Perabot, Meja, Kursi, AC, Brankas, Kipas, Dispenser, Kendaraan</div>
               </label>
-              <button type="button" class="btn btn-xs btn-outline-danger fw-bold px-2 py-0.5" onclick="openCatalogModal()">
-                <i class="bi bi-grid-3x3-gap-fill me-1"></i> Buka Katalog Tabel
-              </button>
             </div>
-
-            <!-- Tombol Utama: Buka Katalog Modal Pencarian -->
-            <button type="button" class="btn btn-danger w-100 mb-2.5 d-flex align-items-center justify-content-center gap-2 py-2 shadow-xs" onclick="openCatalogModal()">
-              <i class="bi bi-grid-3x3-gap-fill fs-5"></i>
-              <span class="fw-bold">Buka Katalog &amp; Cari Barang di Tabel</span>
-              <span class="badge bg-white text-danger fw-bold ms-1" id="badgeTotalItems">0 Barang</span>
-            </button>
-
-            <!-- Box Pencarian Cepat & Filter Cabang -->
-            <div class="p-2.5 rounded-3 bg-light border mb-2">
-              <div class="row g-2">
-                <div class="col-sm-5 col-12">
-                  <label class="form-label text-uppercase fw-bold text-muted small mb-1" style="font-size: 0.68rem;">Filter Cabang</label>
-                  <select id="filterCabangAset" class="form-select form-select-sm" onchange="filterAssetDropdown()">
-                    <option value="">-- Semua Cabang --</option>';
-                    foreach ($cabangMaster as $cb) {
-                        $cName = $cb['nama_cabang'] ?? '';
-                        if ($cName === '') continue;
-                        $body .= '<option value="'.e($cName).'">'.e($cName).'</option>';
-                    }
-$body .= '
-                  </select>
-                </div>
-                <div class="col-sm-7 col-12">
-                  <label class="form-label text-uppercase fw-bold text-muted small mb-1" style="font-size: 0.68rem;">Cari Nama / No. Rekening / Ruangan</label>
-                  <div class="input-group input-group-sm">
-                    <span class="input-group-text bg-white border-end-0 text-muted"><i class="bi bi-search"></i></span>
-                    <input type="text" id="quickSearchAsset" class="form-control border-start-0" placeholder="Ketik kata kunci untuk mencari..." oninput="filterAssetDropdown()" autocomplete="off">
-                    <button class="btn btn-outline-secondary" type="button" onclick="clearQuickSearch()" title="Reset pencarian"><i class="bi bi-x"></i></button>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <!-- Dropdown Hasil Pencarian -->
-            <select class="form-select" id="selectAssetItem" required onchange="onAssetSelected(this)">
-              <option value="">-- Pilih Barang dari Hasil Pencarian --</option>
-            </select>
-            <div class="d-flex justify-content-between align-items-center mt-1">
-              <div class="form-text small" id="lblMatchCount">Memuat daftar barang...</div>
-              <button type="button" class="btn btn-link btn-xs text-danger text-decoration-none p-0 fw-semibold" onclick="clearQuickSearch()" style="font-size: 0.74rem;">Reset Pencarian</button>
+            <div class="form-check border border-[#D1D5D8] rounded-[8px] p-2.5 flex-fill bg-[#F8FAF9]">
+              <input class="form-check-input ms-0 me-2" type="radio" name="asset_type" id="typeKomputer" value="komputer" onchange="switchAssetType(this.value)">
+              <label class="form-check-label fw-semibold text-[#1B2A3A]" for="typeKomputer" style="cursor: pointer;">
+                <i class="bi bi-pc-display text-info me-1"></i> Perangkat IT / Komputer (IT Ops)
+                <div class="text-[#53595F] fw-normal text-[11px]">PC Desktop, Laptop, Monitor, Printer, Scanner, Server</div>
+              </label>
             </div>
           </div>
+        </div>
 
-          <!-- Hidden Input Detail Aset Otomatis -->
-          <input type="hidden" name="asset_id" id="dispAssetId" value="0">
-          <input type="hidden" name="kode_aset" id="dispKodeAset" value="">
-          <input type="hidden" name="nama_aset" id="dispNamaAset" value="">
-          <input type="hidden" name="merk_model" id="dispMerkModel" value="">
-          <input type="hidden" name="serial_number" id="dispSerialNumber" value="">
-          <input type="hidden" name="cabang" id="dispCabang" value="Kantor Pusat (KPO)">
-          <input type="hidden" name="lokasi_ruangan" id="dispRuangan" value="">
-          <input type="hidden" name="pengguna_terakhir" id="dispPengguna" value="">
-
-          <!-- Card Informasi Aset Terpilih -->
-          <div class="card bg-light border-0 rounded-3 p-3 mb-3 d-none" id="cardAsetDetail">
-            <div class="row g-2 small">
-              <div class="col-sm-6">
-                <div class="text-muted" style="font-size: 0.74rem;">KODE / NO. REKENING:</div>
-                <div class="fw-bold font-monospace" id="lblKodeAset">-</div>
-              </div>
-              <div class="col-sm-6">
-                <div class="text-muted" style="font-size: 0.74rem;">KANTOR CABANG &amp; RUANGAN:</div>
-                <div class="fw-bold text-dark" id="lblLokasiAset">-</div>
-              </div>
-              <div class="col-sm-6">
-                <div class="text-muted" style="font-size: 0.74rem;">PENANGGUNG JAWAB:</div>
-                <div class="fw-semibold text-dark" id="lblPenggunaAset">-</div>
-              </div>
-              <div class="col-sm-6">
-                <div class="text-muted" style="font-size: 0.74rem;">SERIAL NUMBER / MERK:</div>
-                <div class="text-dark" id="lblSnAset">-</div>
-              </div>
-            </div>
-          </div>
-
-          <hr class="my-3 text-muted">
-
-          <!-- 3. Nomor Dokumen & Tanggal Pelaksanaan -->
-          <div class="row g-3 mb-3">
-            <div class="col-md-7 col-12">
-              <label class="form-label fw-bold text-dark small" for="dispNomorBa">NOMOR BERITA ACARA (AUTO)</label>
-              <input type="text" name="nomor_ba" id="dispNomorBa" class="form-control font-monospace bg-light fw-bold" placeholder="Dibuat otomatis oleh sistem...">
-              <div class="form-text small" style="font-size: 0.72rem;">Format resmi: 001/BA-AFKIR/SDM-UMUM/BANK-MITRA.KPO/X/2026.</div>
-            </div>
-            <div class="col-md-5 col-12">
-              <label class="form-label fw-bold text-dark small" for="dispTanggal">TANGGAL PEMERIKSAAN / AFKIR <span class="text-danger">*</span></label>
-              <input type="date" name="tanggal_disposal" id="dispTanggal" class="form-control" value="'.date('Y-m-d').'" required>
-            </div>
-          </div>
-
-          <!-- 4. Kondisi Fisik & Metode Pemusnahan -->
-          <div class="row g-3 mb-3">
-            <div class="col-md-6 col-12">
-              <label class="form-label fw-bold text-dark small" for="dispKondisi">KONDISI FISIK TERAKHIR <span class="text-danger">*</span></label>
-              <select name="kondisi_terakhir" id="dispKondisi" class="form-select form-select-sm" required>
-                <option value="Rusak Berat / Tidak Ekonomis Diperbaiki">Rusak Berat / Tidak Ekonomis Diperbaiki</option>
-                <option value="Mati Total / Tidak Dapat Menyala">Mati Total / Tidak Dapat Menyala</option>
-                <option value="Rangka Fisik Patah / Lapuk / Keropos">Rangka Fisik Patah / Lapuk / Keropos</option>
-                <option value="Usang / Masa Manfaat Habis">Usang / Masa Manfaat Habis</option>
-              </select>
-            </div>
-            <div class="col-md-6 col-12">
-              <label class="form-label fw-bold text-dark small" for="dispMetode">METODE PEMUSNAHAN / PENYINGKIRAN <span class="text-danger">*</span></label>
-              <select name="metode_pemusnahan" id="dispMetode" class="form-select form-select-sm" required>
-                <option value="Dihancurkan / Dibuang Fisik">Dihancurkan / Dibuang Fisik</option>
-                <option value="Dikeluarkan dari Area Lingkungan Bank">Dikeluarkan dari Area Lingkungan Bank</option>
-                <option value="Kanibalisasi Suku Cadang (Untuk Unit Lain)">Kanibalisasi Suku Cadang (Untuk Unit Lain)</option>
-                <option value="Penghapusan Buku Administratif (Write-Off)">Penghapusan Buku Administratif (Write-Off)</option>
-              </select>
-            </div>
-          </div>
-
-          <!-- 5. Alasan & Pertimbangan Teknis -->
-          <div class="mb-3">
-            <label class="form-label fw-bold text-dark small" for="dispAlasan">ALASAN &amp; PERTIMBANGAN TEKNIS PENGHAPUSAN <span class="text-danger">*</span></label>
-            <div class="d-flex flex-wrap gap-1 mb-2">
-              <button type="button" class="btn btn-xs btn-outline-secondary" onclick="appendAlasan(\'Biaya perbaikan melebihi nilai beli unit baru.\')">+ Biaya Servis Mahal</button>
-              <button type="button" class="btn btn-xs btn-outline-secondary" onclick="appendAlasan(\'Rangka fisik patah dan lapuk sehingga tidak aman dipakai.\')">+ Rangka Patah</button>
-              <button type="button" class="btn btn-xs btn-outline-secondary" onclick="appendAlasan(\'Komponen elektronik vital rusak dan sparepart tidak lagi tersedia.\')">+ Sparepart Tidak Ada</button>
-              <button type="button" class="btn btn-xs btn-outline-secondary" onclick="appendAlasan(\'Masa manfaat ekonomis telah habis dan tidak layak operasi.\')">+ Masa Manfaat Habis</button>
-            </div>
-            <textarea name="alasan_penghapusan" id="dispAlasan" class="form-control form-control-sm" rows="3" required placeholder="Jelaskan pertimbangan teknis mengapa barang ini dihapus / diafkirkan..."></textarea>
-          </div>
-
-          <!-- 6. Upload Foto Fisik Barang Terakhir -->
-          <div class="mb-3">
-            <label class="form-label fw-bold text-dark small" for="dispFoto">UPLOAD FOTO KONDISI FISIK BARANG RUSAK</label>
-            <input type="file" name="foto_barang" id="dispFoto" class="form-control form-control-sm" accept="image/*">
-            <div class="form-text small" style="font-size: 0.72rem;">Lampirkan bukti foto fisik kerusakan barang sebagai kelengkapan audit.</div>
-          </div>
-
-          <!-- 7. Penandatangan Berita Acara -->
-          <div class="card bg-light border-0 rounded-3 p-3 mb-3">
-            <div class="fw-bold text-dark small mb-2"><i class="bi bi-pen"></i> PEJABAT PENANDATANGAN BERITA ACARA</div>
-            <div class="row g-2">
-              <div class="col-md-4 col-12">
-                <label class="form-label small text-muted" style="font-size: 0.74rem;">YANG MEMERIKSA (PETUGAS)</label>
-                <input type="text" name="petugas_nama" id="dispPetugasNama" class="form-control form-control-sm" value="'.e($_SESSION['nama'] ?? 'Staf Bagian Umum').'" required>
-                <input type="text" name="petugas_jabatan" id="dispPetugasJabatan" class="form-control form-control-sm mt-1" value="'.(is_hrd() ? 'Staf Bagian Umum' : 'Staf IT Operations').'">
-              </div>
-              <div class="col-md-4 col-12">
-                <label class="form-label small text-muted" style="font-size: 0.74rem;">MENGETAHUI</label>
-                <input type="text" name="nama_mengetahui" id="dispNamaMengetahui" class="form-control form-control-sm" value="Defie Damayanti" required>
-                <input type="text" name="jabatan_mengetahui" id="dispJabatanMengetahui" class="form-control form-control-sm mt-1" value="Kabag. Umum &amp; SDM">
-              </div>
-              <div class="col-md-4 col-12">
-                <label class="form-label small text-muted" style="font-size: 0.74rem;">MENYETUJUI</label>
-                <input type="text" name="nama_menyetujui" id="dispNamaMenyetujui" class="form-control form-control-sm" value="Kahar Muzaqir, SH" required>
-                <input type="text" name="jabatan_menyetujui" id="dispJabatanMenyetujui" class="form-control form-control-sm mt-1" value="Direktur Operasional">
-              </div>
-            </div>
-          </div>
-
-          <!-- Opsi Cetak Langsung -->
-          <div class="form-check mt-3">
-            <input class="form-check-input" type="checkbox" name="print_after" value="1" id="chkPrintAfter" checked>
-            <label class="form-check-label small fw-semibold text-dark" for="chkPrintAfter">
-              Langsung buka dokumen Berita Acara siap cetak setelah data disimpan
+        <!-- 2. Pilih Barang Aset Aktif -->
+        <div class="mb-3">
+          <div class="d-flex align-items-center justify-content-between mb-1.5">
+            <label class="form-label fw-bold text-[#1B2A3A] text-[12px] uppercase mb-0" for="selectAssetItem">
+              PILIH UNIT BARANG INVENTARIS YANG DIAFKIRKAN <span class="text-danger">*</span>
             </label>
+            <button type="button" class="btn btn-xs btn-outline-teal px-2 py-0.5 font-semibold text-[11px]" onclick="openCatalogModal()">
+              <i class="bi bi-grid-3x3-gap-fill me-1"></i> Buka Katalog Tabel
+            </button>
           </div>
 
+          <!-- Tombol Utama: Buka Katalog Modal Pencarian -->
+          <button type="button" class="btn btn-primary-teal w-100 mb-2.5 d-flex align-items-center justify-content-center gap-2 py-2 shadow-xs" onclick="openCatalogModal()">
+            <i class="bi bi-grid-3x3-gap-fill fs-5"></i>
+            <span class="fw-bold">Buka Katalog &amp; Cari Barang di Tabel</span>
+            <span class="badge bg-white text-[#0E5C58] fw-bold ms-1" id="badgeTotalItems">0 Barang</span>
+          </button>
+
+          <!-- Box Pencarian Cepat & Filter Cabang -->
+          <div class="p-2.5 rounded-[8px] bg-[#F8FAF9] border border-[#D1D5D8] mb-2">
+            <div class="row g-2">
+              <div class="col-sm-5 col-12">
+                <label class="form-label text-uppercase fw-bold text-[#53595F] text-[11px] mb-1">Filter Cabang</label>
+                <select id="filterCabangAset" class="form-select form-select-sm" onchange="filterAssetDropdown()">
+                  <option value="">-- Semua Cabang --</option>
+                  <?php foreach ($cabangMaster as $cb): 
+                    $cName = $cb['nama_cabang'] ?? '';
+                    if ($cName === '') continue;
+                  ?>
+                    <option value="<?= e($cName) ?>"><?= e($cName) ?></option>
+                  <?php endforeach; ?>
+                </select>
+              </div>
+              <div class="col-sm-7 col-12">
+                <label class="form-label text-uppercase fw-bold text-[#53595F] text-[11px] mb-1">Cari Nama / No. Rekening / Ruangan</label>
+                <div class="input-group input-group-sm">
+                  <span class="input-group-text bg-white border-end-0 text-muted" style="border-color: #D1D5D8;"><i class="bi bi-search"></i></span>
+                  <input type="text" id="quickSearchAsset" class="form-control border-start-0" style="border-color: #D1D5D8;" placeholder="Ketik kata kunci untuk mencari..." oninput="filterAssetDropdown()" autocomplete="off">
+                  <button class="btn btn-kombai-white" type="button" onclick="clearQuickSearch()" title="Reset pencarian"><i class="bi bi-x"></i></button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Dropdown Hasil Pencarian -->
+          <select class="form-select" id="selectAssetItem" required onchange="onAssetSelected(this)">
+            <option value="">-- Pilih Barang dari Hasil Pencarian --</option>
+          </select>
+          <div class="d-flex justify-content-between align-items-center mt-1">
+            <div class="form-text small" id="lblMatchCount">Memuat daftar barang...</div>
+            <button type="button" class="btn btn-link btn-xs text-[#0E5C58] text-decoration-none p-0 fw-semibold" onclick="clearQuickSearch()" style="font-size: 0.74rem;">Reset Pencarian</button>
+          </div>
         </div>
 
-        <div class="modal-footer bg-light py-2 px-3 border-0">
-          <button type="button" class="btn btn-secondary fw-semibold btn-sm px-3" data-bs-dismiss="modal">Batal</button>
-          <button type="submit" class="btn btn-danger fw-bold btn-sm px-4">
-            <i class="bi bi-check-circle-fill me-1"></i> Simpan &amp; Proses BA-Afkir
-          </button>
+        <!-- Hidden Input Detail Aset Otomatis -->
+        <input type="hidden" name="asset_id" id="dispAssetId" value="0">
+        <input type="hidden" name="kode_aset" id="dispKodeAset" value="">
+        <input type="hidden" name="nama_aset" id="dispNamaAset" value="">
+        <input type="hidden" name="merk_model" id="dispMerkModel" value="">
+        <input type="hidden" name="serial_number" id="dispSerialNumber" value="">
+        <input type="hidden" name="cabang" id="dispCabang" value="Kantor Pusat (KPO)">
+        <input type="hidden" name="lokasi_ruangan" id="dispRuangan" value="">
+        <input type="hidden" name="pengguna_terakhir" id="dispPengguna" value="">
+
+        <!-- Card Informasi Aset Terpilih -->
+        <div class="card bg-[#F8FAF9] border border-[#D1D5D8] rounded-[8px] p-3 mb-3 d-none" id="cardAsetDetail">
+          <div class="row g-2 small">
+            <div class="col-sm-6">
+              <div class="text-[#53595F] text-[11px] uppercase">KODE / NO. REKENING:</div>
+              <div class="fw-bold font-mono text-[#0E5C58]" id="lblKodeAset">-</div>
+            </div>
+            <div class="col-sm-6">
+              <div class="text-[#53595F] text-[11px] uppercase">KANTOR CABANG &amp; RUANGAN:</div>
+              <div class="fw-bold text-[#1B2A3A]" id="lblLokasiAset">-</div>
+            </div>
+            <div class="col-sm-6">
+              <div class="text-[#53595F] text-[11px] uppercase">PENANGGUNG JAWAB:</div>
+              <div class="fw-semibold text-[#1B2A3A]" id="lblPenggunaAset">-</div>
+            </div>
+            <div class="col-sm-6">
+              <div class="text-[#53595F] text-[11px] uppercase">SERIAL NUMBER / MERK:</div>
+              <div class="text-[#1B2A3A]" id="lblSnAset">-</div>
+            </div>
+          </div>
         </div>
+
+        <hr class="my-3 text-muted">
+
+        <!-- 3. Nomor Dokumen & Tanggal Pelaksanaan -->
+        <div class="row g-3 mb-3">
+          <div class="col-md-7 col-12">
+            <label class="form-label fw-bold text-[#1B2A3A] text-[12px] uppercase" for="dispNomorBa">NOMOR BERITA ACARA (AUTO)</label>
+            <input type="text" name="nomor_ba" id="dispNomorBa" class="form-control font-mono bg-[#F8FAF9] fw-bold" placeholder="Dibuat otomatis oleh sistem...">
+            <div class="form-text small" style="font-size: 0.72rem;">Format resmi: 001/BA-AFKIR/SDM-UMUM/BANK-MITRA.KPO/X/2026.</div>
+          </div>
+          <div class="col-md-5 col-12">
+            <label class="form-label fw-bold text-[#1B2A3A] text-[12px] uppercase" for="dispTanggal">TANGGAL PEMERIKSAAN / AFKIR <span class="text-danger">*</span></label>
+            <input type="date" name="tanggal_disposal" id="dispTanggal" class="form-control" value="<?= date('Y-m-d') ?>" required>
+          </div>
+        </div>
+
+        <!-- 4. Kondisi Fisik & Metode Pemusnahan -->
+        <div class="row g-3 mb-3">
+          <div class="col-md-6 col-12">
+            <label class="form-label fw-bold text-[#1B2A3A] text-[12px] uppercase" for="dispKondisi">KONDISI FISIK TERAKHIR <span class="text-danger">*</span></label>
+            <select name="kondisi_terakhir" id="dispKondisi" class="form-select form-select-sm" required>
+              <option value="Rusak Berat / Tidak Ekonomis Diperbaiki">Rusak Berat / Tidak Ekonomis Diperbaiki</option>
+              <option value="Mati Total / Tidak Dapat Menyala">Mati Total / Tidak Dapat Menyala</option>
+              <option value="Rangka Fisik Patah / Lapuk / Keropos">Rangka Fisik Patah / Lapuk / Keropos</option>
+              <option value="Usang / Masa Manfaat Habis">Usang / Masa Manfaat Habis</option>
+            </select>
+          </div>
+          <div class="col-md-6 col-12">
+            <label class="form-label fw-bold text-[#1B2A3A] text-[12px] uppercase" for="dispMetode">METODE PEMUSNAHAN / PENYINGKIRAN <span class="text-danger">*</span></label>
+            <select name="metode_pemusnahan" id="dispMetode" class="form-select form-select-sm" required>
+              <option value="Dihancurkan / Dibuang Fisik">Dihancurkan / Dibuang Fisik</option>
+              <option value="Dikeluarkan dari Area Lingkungan Bank">Dikeluarkan dari Area Lingkungan Bank</option>
+              <option value="Kanibalisasi Suku Cadang (Untuk Unit Lain)">Kanibalisasi Suku Cadang (Untuk Unit Lain)</option>
+              <option value="Penghapusan Buku Administratif (Write-Off)">Penghapusan Buku Administratif (Write-Off)</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- 5. Alasan & Pertimbangan Teknis -->
+        <div class="mb-3">
+          <label class="form-label fw-bold text-[#1B2A3A] text-[12px] uppercase" for="dispAlasan">ALASAN &amp; PERTIMBANGAN TEKNIS PENGHAPUSAN <span class="text-danger">*</span></label>
+          <div class="d-flex flex-wrap gap-1 mb-2">
+            <button type="button" class="btn btn-xs btn-kombai-white" onclick="appendAlasan('Biaya perbaikan melebihi nilai beli unit baru.')">+ Biaya Servis Mahal</button>
+            <button type="button" class="btn btn-xs btn-kombai-white" onclick="appendAlasan('Rangka fisik patah dan lapuk sehingga tidak aman dipakai.')">+ Rangka Patah</button>
+            <button type="button" class="btn btn-xs btn-kombai-white" onclick="appendAlasan('Komponen elektronik vital rusak dan sparepart tidak lagi tersedia.')">+ Sparepart Tidak Ada</button>
+            <button type="button" class="btn btn-xs btn-kombai-white" onclick="appendAlasan('Masa manfaat ekonomis telah habis dan tidak layak operasi.')">+ Masa Manfaat Habis</button>
+          </div>
+          <textarea name="alasan_penghapusan" id="dispAlasan" class="form-control form-control-sm" rows="3" required placeholder="Jelaskan pertimbangan teknis mengapa barang ini dihapus / diafkirkan..."></textarea>
+        </div>
+
+        <!-- 6. Upload Foto Fisik Barang Terakhir -->
+        <div class="mb-3">
+          <label class="form-label fw-bold text-[#1B2A3A] text-[12px] uppercase" for="dispFoto">UPLOAD FOTO KONDISI FISIK BARANG RUSAK</label>
+          <input type="file" name="foto_barang" id="dispFoto" class="form-control form-control-sm" accept="image/*">
+          <div class="form-text small" style="font-size: 0.72rem;">Lampirkan bukti foto fisik kerusakan barang sebagai kelengkapan audit.</div>
+        </div>
+
+        <!-- 7. Penandatangan Berita Acara -->
+        <div class="card bg-[#F8FAF9] border border-[#D1D5D8] rounded-[8px] p-3 mb-3">
+          <div class="fw-bold text-[#1B2A3A] text-[12px] uppercase mb-2"><i class="bi bi-pen"></i> PEJABAT PENANDATANGAN BERITA ACARA</div>
+          <div class="row g-2">
+            <div class="col-md-4 col-12">
+              <label class="form-label text-[11px] text-[#53595F] uppercase">YANG MEMERIKSA (PETUGAS)</label>
+              <input type="text" name="petugas_nama" id="dispPetugasNama" class="form-control form-control-sm" value="<?= e($_SESSION['nama'] ?? 'Staf Bagian Umum') ?>" required>
+              <input type="text" name="petugas_jabatan" id="dispPetugasJabatan" class="form-control form-control-sm mt-1" value="<?= (is_hrd() ? 'Staf Bagian Umum' : 'Staf IT Operations') ?>">
+            </div>
+            <div class="col-md-4 col-12">
+              <label class="form-label text-[11px] text-[#53595F] uppercase">MENGETAHUI</label>
+              <input type="text" name="nama_menyetujui" id="dispNamaMengetahui" class="form-control form-control-sm" value="Defie Damayanti" required>
+              <input type="text" name="jabatan_menyetujui" id="dispJabatanMengetahui" class="form-control form-control-sm mt-1" value="Kabag. Umum &amp; SDM">
+            </div>
+            <div class="col-md-4 col-12">
+              <label class="form-label text-[11px] text-[#53595F] uppercase">MENYETUJUI</label>
+              <input type="text" name="nama_menyetujui" id="dispNamaMenyetujui" class="form-control form-control-sm" value="Kahar Muzaqir, SH" required>
+              <input type="text" name="jabatan_menyetujui" id="dispJabatanMenyetujui" class="form-control form-control-sm mt-1" value="Direktur Operasional">
+            </div>
+          </div>
+        </div>
+
+        <!-- Opsi Cetak Langsung -->
+        <div class="form-check mt-3">
+          <input class="form-check-input" type="checkbox" name="print_after" value="1" id="chkPrintAfter" checked>
+          <label class="form-check-label small fw-semibold text-[#1B2A3A]" for="chkPrintAfter">
+            Langsung buka dokumen Berita Acara siap cetak setelah data disimpan
+          </label>
+        </div>
+
+      </div>
+
+      <div class="modal-footer bg-[#F8FAF9] py-2 px-4 border-t border-[#D1D5D8] flex items-center justify-end gap-2">
+        <button type="button" class="btn btn-kombai-white btn-sm px-3" data-bs-dismiss="modal">Batal</button>
+        <button type="submit" class="btn btn-primary-teal fw-bold btn-sm px-4">
+          <i class="bi bi-check-circle-fill me-1"></i> Simpan &amp; Proses BA-Afkir
+        </button>
+      </div>
     </form>
   </div>
 </div>
 
-<!-- ========================================== -->
-<!-- MODAL UPLOAD SCAN BERITA ACARA DISETUJUI -->
-<!-- ========================================== -->
-
 <!-- Modal Konfirmasi Pengembalian Aset (Restore Sebelum 7 Hari) -->
 <div class="modal fade" id="modalRestoreDisposal" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered">
-    <form method="POST" action="'.e(module_url('asset_disposal.php')).'" class="modal-content border-0 shadow-lg rounded-4">
+    <form method="POST" action="<?= e(module_url('asset_disposal.php')) ?>" class="modal-content border-0 shadow-lg rounded-[12px] overflow-hidden">
       <input type="hidden" name="action" value="restore">
       <input type="hidden" name="id" id="restoreDisposalId" value="0">
-      <div class="modal-header bg-success text-white border-0 py-3">
-        <h6 class="modal-title fw-bold d-flex align-items-center gap-2">
+      <div class="modal-header bg-[#10B981] text-white border-0 py-3 px-4">
+        <h6 class="modal-title fw-bold text-[15px] flex items-center gap-2 m-0">
           <i class="bi bi-arrow-counterclockwise fs-5"></i> Batalkan Penghapusan &amp; Kembalikan Aset
         </h6>
         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
       <div class="modal-body p-4 text-center">
         <div class="mb-3">
-          <div class="d-inline-flex p-3 rounded-circle bg-success bg-opacity-10 text-success">
+          <div class="d-inline-flex p-3 rounded-circle bg-[#DCFCE7] text-[#15803D]">
             <i class="bi bi-arrow-counterclockwise fs-1"></i>
           </div>
         </div>
-        <h5 class="fw-bold text-dark mb-2">Kembalikan ke Inventaris Aktif?</h5>
-        <p class="text-secondary small mb-3">
-          Aset <strong id="restoreDisposalNama" class="text-dark">-</strong> akan dipulihkan status fisiknya menjadi <strong>Aktif</strong> di buku register inventaris Bank Mitra, dan Berita Acara afkir ini akan dibatalkan.
+        <h5 class="fw-bold text-[#1B2A3A] mb-2">Kembalikan ke Inventaris Aktif?</h5>
+        <p class="text-[#53595F] text-[13px] mb-3">
+          Aset <strong id="restoreDisposalNama" class="text-[#1B2A3A]">-</strong> akan dipulihkan status fisiknya menjadi <strong>Aktif</strong> di buku register inventaris Bank Mitra, dan Berita Acara afkir ini akan dibatalkan.
         </p>
-        <div class="alert alert-success border-0 py-2 px-3 small d-inline-flex align-items-center gap-2 mb-0">
+        <div class="alert alert-success border-0 py-2 px-3 small d-inline-flex align-items-center gap-2 mb-0" style="background:#EDF7EE; color:#166534; border-radius:8px;">
           <i class="bi bi-clock-history text-success"></i>
           <span>Masa tenggang tersisa: <strong id="restoreDisposalSisaHari">7</strong> hari</span>
         </div>
       </div>
-      <div class="modal-footer bg-light border-0 py-2.5 px-4 justify-content-end gap-2">
-        <button type="button" class="btn btn-sm btn-outline-secondary px-3" data-bs-dismiss="modal">Tutup</button>
-        <button type="submit" class="btn btn-sm btn-success fw-bold px-3">
+      <div class="modal-footer bg-[#F8FAF9] border-t border-[#D1D5D8] py-2.5 px-4 justify-content-end gap-2">
+        <button type="button" class="btn btn-sm btn-kombai-white px-3" data-bs-dismiss="modal">Tutup</button>
+        <button type="submit" class="btn btn-sm btn-primary-teal font-semibold px-3">
           <i class="bi bi-check-circle me-1"></i> Ya, Kembalikan ke Inventaris
         </button>
       </div>
@@ -876,31 +851,32 @@ $body .= '
   </div>
 </div>
 
+<!-- Modal Upload Scan Berita Acara Disetujui -->
 <div class="modal fade" id="modalUploadAcc" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered">
-    <div class="modal-content border-0 shadow">
-      <form method="POST" action="'.e(module_url('asset_disposal.php')).'" enctype="multipart/form-data">
+    <div class="modal-content border-0 shadow-lg rounded-[12px] overflow-hidden">
+      <form method="POST" action="<?= e(module_url('asset_disposal.php')) ?>" enctype="multipart/form-data">
         <input type="hidden" name="action" value="upload_acc">
         <input type="hidden" name="id" id="uploadAccId" value="0">
-        <div class="modal-header bg-dark text-white border-0 py-2.5">
-          <h6 class="modal-title fw-bold d-flex align-items-center gap-1.5">
-            <i class="bi bi-cloud-arrow-up text-info"></i> Upload Scan Berita Acara Disetujui
+        <div class="modal-header bg-[#1B2A3A] text-white border-0 py-3 px-4">
+          <h6 class="modal-title fw-bold text-[15px] flex items-center gap-2 m-0">
+            <i class="bi bi-cloud-arrow-up text-[#0284C7]"></i> Upload Scan Berita Acara Disetujui
           </h6>
           <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
-        <div class="modal-body p-3">
-          <div class="small text-muted mb-2">
+        <div class="modal-body p-4">
+          <div class="text-[13px] text-[#53595F] mb-3">
             Unggah dokumen scan Berita Acara fisik yang telah ditandatangani dan distempel basah untuk nomor:
-            <div class="fw-bold font-monospace text-dark" id="lblAccNomorBa">-</div>
+            <div class="fw-bold font-mono text-[#0E5C58] text-[14px] mt-1" id="lblAccNomorBa">-</div>
           </div>
           <div class="mb-3">
-            <label class="form-label small fw-bold text-dark">PILIH FILE BERKAS (PDF / GAMBAR)</label>
+            <label class="form-label text-[12px] fw-bold text-[#1B2A3A] uppercase">PILIH FILE BERKAS (PDF / GAMBAR)</label>
             <input type="file" name="dokumen_ba_disetujui" class="form-control form-control-sm" accept=".pdf,image/*" required>
           </div>
         </div>
-        <div class="modal-footer bg-light py-2 px-3 border-0">
-          <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Tutup</button>
-          <button type="submit" class="btn btn-primary btn-sm fw-bold">Unggah Dokumen</button>
+        <div class="modal-footer bg-[#F8FAF9] py-2 px-4 border-t border-[#D1D5D8] flex items-center justify-end gap-2">
+          <button type="button" class="btn btn-kombai-white btn-sm" data-bs-dismiss="modal">Tutup</button>
+          <button type="submit" class="btn btn-primary-teal btn-sm fw-bold px-3">Unggah Dokumen</button>
         </div>
       </form>
     </div>
@@ -912,10 +888,10 @@ $body .= '
 <!-- =================================================== -->
 <div class="modal fade" id="modalCatalogPicker" tabindex="-1" aria-labelledby="modalCatalogPickerLabel" aria-hidden="true" style="z-index: 1070;">
   <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
-    <div class="modal-content border-0 shadow-2xl">
-      <div class="modal-header bg-dark text-white border-0 py-3">
-        <h5 class="modal-title fw-bold d-flex align-items-center gap-2" id="modalCatalogPickerLabel">
-          <i class="bi bi-grid-3x3-gap-fill text-danger"></i> Katalog &amp; Pencarian Barang Inventaris Aktif
+    <div class="modal-content border-0 shadow-2xl rounded-[12px] overflow-hidden">
+      <div class="modal-header bg-[#1B2A3A] text-white border-0 py-3 px-4">
+        <h5 class="modal-title fw-bold text-[16px] flex items-center gap-2 m-0" id="modalCatalogPickerLabel">
+          <i class="bi bi-grid-3x3-gap-fill text-[#10B981]"></i> Katalog &amp; Pencarian Barang Inventaris Aktif
         </h5>
         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
@@ -925,30 +901,30 @@ $body .= '
         <div class="row g-2 mb-3">
           <div class="col-md-7 col-12">
             <div class="input-group">
-              <span class="input-group-text bg-white border-end-0 text-danger"><i class="bi bi-search"></i></span>
-              <input type="text" id="modalCatalogSearchInput" class="form-control border-start-0" placeholder="Ketik nama barang, nomor rekening, ruangan, penanggung jawab..." oninput="renderCatalogRows()" autocomplete="off">
-              <button class="btn btn-outline-secondary" type="button" onclick="clearCatalogSearch()"><i class="bi bi-x-circle me-1"></i>Reset</button>
+              <span class="input-group-text bg-white border-end-0 text-muted" style="border-color: #D1D5D8;"><i class="bi bi-search"></i></span>
+              <input type="text" id="modalCatalogSearchInput" class="form-control border-start-0" style="border-color: #D1D5D8;" placeholder="Ketik nama barang, nomor rekening, ruangan, penanggung jawab..." oninput="renderCatalogRows()" autocomplete="off">
+              <button class="btn btn-kombai-white" type="button" onclick="clearCatalogSearch()"><i class="bi bi-x-circle me-1"></i>Reset</button>
             </div>
           </div>
           <div class="col-md-5 col-12">
-            <select id="modalCatalogBranchFilter" class="form-select" onchange="renderCatalogRows()">
-              <option value="">-- Seluruh Kantor Cabang --</option>';
-              foreach ($cabangMaster as $cb) {
-                  $cName = $cb['nama_cabang'] ?? '';
-                  if ($cName === '') continue;
-                  $body .= '<option value="'.e($cName).'">'.e($cName).'</option>';
-              }
-$body .= '
+            <select id="modalCatalogBranchFilter" class="form-select" onchange="renderCatalogRows()" style="border-color: #D1D5D8;">
+              <option value="">-- Seluruh Kantor Cabang --</option>
+              <?php foreach ($cabangMaster as $cb): 
+                $cName = $cb['nama_cabang'] ?? '';
+                if ($cName === '') continue;
+              ?>
+                <option value="<?= e($cName) ?>"><?= e($cName) ?></option>
+              <?php endforeach; ?>
             </select>
           </div>
         </div>
 
         <!-- Tabel Katalog Barang -->
-        <div class="table-responsive border rounded-3" style="max-height: 460px;">
-          <table class="table table-hover align-middle mb-0" id="tableCatalogAsset" style="font-size: 0.88rem;">
-            <thead class="table-light sticky-top" style="z-index: 2;">
+        <div class="table-responsive border border-[#D1D5D8] rounded-[8px]" style="max-height: 460px;">
+          <table class="table table-hover align-middle mb-0" id="tableCatalogAsset" style="font-size: 13px;">
+            <thead class="sticky-top" style="z-index: 2;">
               <tr>
-                <th style="width: 45px;" class="text-center small font-monospace">NO</th>
+                <th style="width: 45px;" class="text-center font-mono">NO</th>
                 <th style="width: 170px;">NOMOR REKENING</th>
                 <th>NAMA BARANG &amp; GOLONGAN</th>
                 <th style="width: 180px;">CABANG &amp; RUANGAN</th>
@@ -963,15 +939,18 @@ $body .= '
         </div>
       </div>
 
-      <div class="modal-footer bg-light d-flex justify-content-between py-2.5 px-3">
-        <span class="text-muted small" id="modalCatalogCount">Memuat data barang...</span>
-        <button type="button" class="btn btn-secondary px-4 fw-semibold btn-sm" data-bs-dismiss="modal">Tutup</button>
+      <div class="modal-footer bg-[#F8FAF9] d-flex justify-content-between py-2.5 px-4 border-t border-[#D1D5D8]">
+        <span class="text-[#53595F] text-[12px]" id="modalCatalogCount">Memuat data barang...</span>
+        <button type="button" class="btn btn-kombai-white px-4 fw-semibold btn-sm" data-bs-dismiss="modal">Tutup</button>
       </div>
     </div>
   </div>
 </div>
+<?php
+$body = ob_get_clean();
 
-<!-- DATA ASSETS FOR JAVASCRIPT -->
+ob_start();
+?>
 <script>
 var gInventaris = [];
 var gKomputer = [];
@@ -990,7 +969,7 @@ function loadActiveAssets(callback) {
   gIsLoadingAssets = true;
 
   var lblCount = document.getElementById("lblMatchCount");
-  if (lblCount) lblCount.innerHTML = "<span class=\"spinner-border spinner-border-sm text-danger me-1\"></span>Memuat daftar barang aktif...";
+  if (lblCount) lblCount.innerHTML = '<span class="spinner-border spinner-border-sm text-[#0E5C58] me-1"></span>Memuat daftar barang aktif...';
 
   fetch("asset_disposal?action=get_active_assets")
     .then(function(res) {
@@ -1000,7 +979,7 @@ function loadActiveAssets(callback) {
     .then(function(data) {
       gInventaris = data.inventaris || [];
       gKomputer = data.komputer || [];
-      var curType = document.querySelector("input[name=\"asset_type\"]:checked");
+      var curType = document.querySelector('input[name="asset_type"]:checked');
       var t = curType ? curType.value : "inventaris";
       gCurrentList = (t === "komputer") ? gKomputer : gInventaris;
       gAssetsLoaded = true;
@@ -1019,7 +998,7 @@ function loadActiveAssets(callback) {
     .catch(function(err) {
       gIsLoadingAssets = false;
       console.error("Gagal memuat katalog aset:", err);
-      if (lblCount) lblCount.innerHTML = "<span class=\"text-danger\"><i class=\"bi bi-exclamation-triangle me-1\"></i>Gagal memuat data. Coba lagi.</span>";
+      if (lblCount) lblCount.innerHTML = '<span class="text-danger"><i class="bi bi-exclamation-triangle me-1"></i>Gagal memuat data. Coba lagi.</span>';
     });
 }
 
@@ -1054,14 +1033,14 @@ function filterAssetDropdown() {
   if (!select) return;
 
   if (!gAssetsLoaded) {
-    select.innerHTML = "<option value=\"\">-- Sedang memuat daftar barang... --</option>";
+    select.innerHTML = '<option value="">-- Sedang memuat daftar barang... --</option>';
     return;
   }
 
   var branch = (document.getElementById("filterCabangAset") ? document.getElementById("filterCabangAset").value : "").toLowerCase().trim();
   var query = (document.getElementById("quickSearchAsset") ? document.getElementById("quickSearchAsset").value : "").toLowerCase().trim();
 
-  select.innerHTML = "<option value=\"\">-- Pilih Barang dari Hasil Pencarian --</option>";
+  select.innerHTML = '<option value="">-- Pilih Barang dari Hasil Pencarian --</option>';
 
   var matched = 0;
   var MAX_OPTIONS = 150;
@@ -1113,7 +1092,7 @@ function openCatalogModal() {
   var myModal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
   var tbody = document.getElementById("catalogTableBody");
   if (tbody && !gAssetsLoaded) {
-    tbody.innerHTML = "<tr><td colspan=\"6\" class=\"text-center py-5 text-muted\"><div class=\"spinner-border spinner-border-sm text-danger me-2\"></div>Memuat katalog barang aktif...</td></tr>";
+    tbody.innerHTML = '<tr><td colspan="6" class="text-center py-5 text-muted"><div class="spinner-border spinner-border-sm text-[#0E5C58] me-2"></div>Memuat katalog barang aktif...</td></tr>';
   }
   myModal.show();
 
@@ -1143,7 +1122,7 @@ function renderCatalogRows() {
   if (!tbody) return;
 
   if (!gAssetsLoaded) {
-    tbody.innerHTML = "<tr><td colspan=\"6\" class=\"text-center py-5 text-muted\"><div class=\"spinner-border spinner-border-sm text-danger me-2\"></div>Memuat katalog barang aktif...</td></tr>";
+    tbody.innerHTML = '<tr><td colspan="6" class="text-center py-5 text-muted"><div class="spinner-border spinner-border-sm text-[#0E5C58] me-2"></div>Memuat katalog barang aktif...</td></tr>';
     return;
   }
 
@@ -1175,43 +1154,43 @@ function renderCatalogRows() {
     }
 
     var isSelected = (item.id === currentSelectedId);
-    var rowClass = isSelected ? "table-danger fw-semibold" : "";
+    var rowClass = isSelected ? "bg-[#D9F1EF] font-semibold" : "";
 
-    html += "<tr class=\"" + rowClass + "\" style=\"cursor: pointer;\" onclick=\"selectAssetAndCloseCatalog(" + item.id + ")\">";
-    html += "<td class=\"text-center font-monospace text-muted small\">" + matched + "</td>";
-    html += "<td>";
-    html += "<div class=\"fw-bold font-monospace text-danger\">" + escapeHtml(item.kode) + "</div>";
+    html += '<tr class="' + rowClass + '" style="cursor: pointer;" onclick="selectAssetAndCloseCatalog(' + item.id + ')">';
+    html += '<td class="text-center font-mono text-muted small">' + matched + '</td>';
+    html += '<td>';
+    html += '<div class="fw-bold font-mono text-[#0E5C58]">' + escapeHtml(item.kode) + '</div>';
     if (item.sn) {
-      html += "<div class=\"small text-muted font-monospace\" style=\"font-size: 0.72rem;\">SN: " + escapeHtml(item.sn) + "</div>";
+      html += '<div class="small text-muted font-mono" style="font-size: 0.72rem;">SN: ' + escapeHtml(item.sn) + '</div>';
     }
-    html += "</td>";
-    html += "<td>";
-    html += "<div class=\"fw-bold text-dark\">" + escapeHtml(item.nama) + "</div>";
-    html += "<span class=\"badge bg-light text-secondary border small mt-0.5\">" + escapeHtml(item.merk || "Fasilitas") + "</span>";
-    html += "</td>";
-    html += "<td>";
-    html += "<div class=\"fw-semibold text-dark\">" + escapeHtml(item.cabang) + "</div>";
-    html += "<div class=\"small text-muted\"><i class=\"bi bi-door-open me-1\"></i>" + escapeHtml(item.ruangan || "-") + "</div>";
-    html += "</td>";
-    html += "<td><div class=\"text-dark small\">" + escapeHtml(item.pengguna || "-") + "</div></td>";
-    html += "<td class=\"text-center\" onclick=\"event.stopPropagation()\">";
-    html += "<button type=\"button\" class=\"btn btn-sm " + (isSelected ? "btn-danger" : "btn-outline-danger") + " fw-bold px-3 py-1 shadow-sm\" onclick=\"selectAssetAndCloseCatalog(" + item.id + ")\">";
-    html += "<i class=\"bi " + (isSelected ? "bi-check-circle-fill" : "bi-check-lg") + " me-1\"></i> " + (isSelected ? "Terpilih" : "Pilih");
-    html += "</button>";
-    html += "</td>";
-    html += "</tr>";
+    html += '</td>';
+    html += '<td>';
+    html += '<div class="fw-bold text-[#1B2A3A]">' + escapeHtml(item.nama) + '</div>';
+    html += '<span class="badge bg-light text-secondary border small mt-0.5">' + escapeHtml(item.merk || "Fasilitas") + '</span>';
+    html += '</td>';
+    html += '<td>';
+    html += '<div class="fw-semibold text-[#1B2A3A]">' + escapeHtml(item.cabang) + '</div>';
+    html += '<div class="small text-muted"><i class="bi bi-door-open me-1"></i>' + escapeHtml(item.ruangan || "-") + '</div>';
+    html += '</td>';
+    html += '<td><div class="text-[#1B2A3A] small">' + escapeHtml(item.pengguna || "-") + '</div></td>';
+    html += '<td class="text-center" onclick="event.stopPropagation()">';
+    html += '<button type="button" class="btn btn-sm ' + (isSelected ? "btn-primary-teal" : "btn-outline-teal") + ' fw-bold px-3 py-1 shadow-xs" onclick="selectAssetAndCloseCatalog(' + item.id + ')">';
+    html += '<i class="bi ' + (isSelected ? "bi-check-circle-fill" : "bi-check-lg") + ' me-1"></i> ' + (isSelected ? "Terpilih" : "Pilih");
+    html += '</button>';
+    html += '</td>';
+    html += '</tr>';
   }
 
   if (matched === 0) {
-    html = "<tr><td colspan=\"6\" class=\"text-center py-5 text-muted\">" +
-           "<i class=\"bi bi-search fs-2 d-block mb-2 opacity-50\"></i>" +
-           "Tidak ada barang inventaris yang sesuai dengan filter pencarian.<br>" +
-           "<button type=\"button\" class=\"btn btn-link btn-sm mt-2 text-decoration-none\" onclick=\"clearCatalogSearch()\">Reset Pencarian</button>" +
-           "</td></tr>";
+    html = '<tr><td colspan="6" class="text-center py-5 text-muted">' +
+           '<i class="bi bi-search fs-2 d-block mb-2 opacity-50"></i>' +
+           'Tidak ada barang inventaris yang sesuai dengan filter pencarian.<br>' +
+           '<button type="button" class="btn btn-link btn-sm mt-2 text-decoration-none text-[#0E5C58]" onclick="clearCatalogSearch()">Reset Pencarian</button>' +
+           '</td></tr>';
   } else if (matched > MAX_DISPLAY) {
-    html += "<tr><td colspan=\"6\" class=\"text-center py-2.5 bg-light text-muted small border-top\">" +
-            "<i class=\"bi bi-info-circle me-1\"></i> Menampilkan " + MAX_DISPLAY + " barang teratas dari " + matched + " hasil yang cocok. " +
-            "Ketik nama atau nomor rekening di kotak pencarian untuk mempersempit.</td></tr>";
+    html += '<tr><td colspan="6" class="text-center py-2.5 bg-light text-muted small border-top">' +
+            '<i class="bi bi-info-circle me-1"></i> Menampilkan ' + MAX_DISPLAY + ' barang teratas dari ' + matched + ' hasil yang cocok. ' +
+            'Ketik nama atau nomor rekening di kotak pencarian untuk mempersempit.</td></tr>';
   }
 
   tbody.innerHTML = html;
@@ -1340,7 +1319,7 @@ function escapeHtml(text) {
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;")
-    .replace(/\'/g, "&#039;");
+    .replace(/'/g, "&#039;");
 }
 
 // Pre-fetch asset catalog silently in background after window loads
@@ -1372,6 +1351,7 @@ document.addEventListener("DOMContentLoaded", function() {
   }
 });
 </script>
-';
+<?php
+$extraScript = ob_get_clean();
 
-echo render_view('Penghapusan Aset (BA-Afkir)', $body);
+render_page('Penghapusan Aset (BA-Afkir) · IT Operations Bank Mitra', $body, $head, $extraScript);
