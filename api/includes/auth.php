@@ -170,6 +170,10 @@ function module_base_url(): string {
 }
 
 function module_url(string $file = '', array $params = []): string {
+    if ($file !== '') {
+        // Hapus ekstensi .php agar URL bersih dan aman dari HTTP 301 Nginx redirect pada request POST
+        $file = preg_replace('/\.php(?=\?|$)/i', '', $file);
+    }
     $url = module_base_url() . ($file ? '/' . ltrim($file, '/') : '');
     if ($params) $url .= '?' . http_build_query($params);
     return $url;
@@ -192,10 +196,11 @@ if (!function_exists('redirect')) {
 }
 
 function login_url(): string {
-    $u = cfg('login_url', envv('LOGIN_URL', '/login.php'));
+    $u = cfg('login_url', envv('LOGIN_URL', '/login'));
     if (preg_match('~^https?://~i', $u)) return $u;
     $scheme = is_https() ? 'https' : 'http';
     $host = $_SERVER['HTTP_X_FORWARDED_HOST'] ?? $_SERVER['HTTP_HOST'] ?? 'localhost';
+    $u = preg_replace('/\.php(?=\?|$)/i', '', $u);
     return $scheme . '://' . $host . '/' . ltrim($u, '/');
 }
 
@@ -227,7 +232,7 @@ function safe_redirect_url(?string $url, ?string $fallback = null): string {
     }
 
     // Cegah redirect loop kembali ke halaman login atau logout
-    if (preg_match('~/(login|logout)\.php~i', $url)) {
+    if (preg_match('~/(login|logout)(\.php)?(?=\?|/|$)~i', $url)) {
         return $fallback;
     }
 
@@ -341,7 +346,7 @@ function require_login(): void {
             if (session_status() !== PHP_SESSION_ACTIVE) {
                 session_start();
             }
-            if (!str_contains($savedRedirect, 'login.php') && !str_contains($savedRedirect, 'logout.php')) {
+            if (!str_contains($savedRedirect, '/login') && !str_contains($savedRedirect, 'login.php') && !str_contains($savedRedirect, '/logout') && !str_contains($savedRedirect, 'logout.php')) {
                 $_SESSION['after_login'] = $savedRedirect;
             }
             session_write_close();
@@ -391,7 +396,7 @@ function require_login(): void {
 
     // Belum login pada regular browser navigation
     $reqUri = request_uri_full();
-    if (!str_contains($reqUri, 'login.php') && !str_contains($reqUri, 'logout.php')) {
+    if (!str_contains($reqUri, '/login') && !str_contains($reqUri, 'login.php') && !str_contains($reqUri, '/logout') && !str_contains($reqUri, 'logout.php')) {
         $_SESSION['after_login'] = $reqUri;
     }
     session_write_close();

@@ -1101,7 +1101,7 @@ async function saveBiometrics() {
   btnSave.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Menyimpan data...';
 
   try {
-    const res = await fetch("user_biometric_enroll.php", {
+    const res = await fetch("user_biometric_enroll", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -1171,7 +1171,7 @@ async function saveNewTechOnly() {
   }
 
   try {
-    const res = await fetch("user_biometric_enroll.php", {
+    const res = await fetch("user_biometric_enroll", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ action: "add_tech_only", new_name: nameVal })

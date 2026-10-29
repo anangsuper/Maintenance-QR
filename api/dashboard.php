@@ -3521,7 +3521,7 @@ function submitQuickRuanganDashboard() {
   formData.append("nama_ruangan", nama);
   formData.append("kode_ruangan", kode);
 
-  fetch("ruangan_ajax_add.php", {
+  fetch("ruangan_ajax_add", {
     method: "POST",
     body: formData
   })

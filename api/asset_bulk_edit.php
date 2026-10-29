@@ -185,10 +185,12 @@ foreach ($assetsToEdit as $idx => $a) {
       </td>
       <td>
         <select class="form-select form-select-sm row-status" name="assets['.$aid.'][status]">
-          <option value="Aktif"'.($curStatus === 'Aktif' ? ' selected' : '').'>Aktif</option>
+          <option value="Aktif"'.(strtolower($curStatus) === 'aktif' || $curStatus === '' ? ' selected' : '').'>Aktif (Wajib Maint)</option>
+          <option value="Tidak Terpakai"'.(in_array(strtolower($curStatus), ['tidak terpakai', 'diganti baru', 'pensiun'], true) ? ' selected' : '').'>Tidak Terpakai (Bebas Maint)</option>
           <option value="Backup"'.($curStatus === 'Backup' ? ' selected' : '').'>Backup</option>
           <option value="Perbaikan"'.($curStatus === 'Perbaikan' ? ' selected' : '').'>Perbaikan</option>
           <option value="Nonaktif"'.($curStatus === 'Nonaktif' ? ' selected' : '').'>Nonaktif</option>
+          <option value="Afkir"'.(in_array(strtolower($curStatus), ['afkir', 'disposal'], true) ? ' selected' : '').'>Afkir</option>
         </select>
       </td>
       <td>
@@ -267,10 +269,12 @@ $body = '
         <span class="input-group-text bg-white small text-muted">Status</span>
         <select class="form-select form-select-sm" id="quickFillStatus">
           <option value="">-- Pilih Status --</option>
-          <option value="Aktif">Aktif</option>
+          <option value="Aktif">Aktif (Wajib Maint)</option>
+          <option value="Tidak Terpakai">Tidak Terpakai (Bebas Maint)</option>
           <option value="Backup">Backup</option>
           <option value="Perbaikan">Perbaikan</option>
           <option value="Nonaktif">Nonaktif</option>
+          <option value="Afkir">Afkir</option>
         </select>
         <button type="button" class="btn btn-outline-primary" onclick="applyQuickFill(\'status\')">Set Semua</button>
       </div>
@@ -464,7 +468,7 @@ document.addEventListener("DOMContentLoaded", function() {
     formData.append("nama_divisi", nama);
     formData.append("keterangan", ket);
 
-    fetch("divisi_ajax_add.php", {
+    fetch("divisi_ajax_add", {
       method: "POST",
       body: formData
     })

@@ -992,7 +992,7 @@ function loadActiveAssets(callback) {
   var lblCount = document.getElementById("lblMatchCount");
   if (lblCount) lblCount.innerHTML = "<span class=\"spinner-border spinner-border-sm text-danger me-1\"></span>Memuat daftar barang aktif...";
 
-  fetch("asset_disposal.php?action=get_active_assets")
+  fetch("asset_disposal?action=get_active_assets")
     .then(function(res) {
       if (!res.ok) throw new Error("HTTP " + res.status);
       return res.json();

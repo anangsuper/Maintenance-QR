@@ -688,7 +688,7 @@ document.addEventListener("DOMContentLoaded", function() {
     formData.append("nama_divisi", nama);
     formData.append("keterangan", ket);
 
-    fetch("divisi_ajax_add.php", {
+    fetch("divisi_ajax_add", {
       method: "POST",
       body: formData
     })

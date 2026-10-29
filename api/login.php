@@ -683,7 +683,7 @@ body {
       <?= $errorHtml ?>
 
       <!-- Form Login Kredensial -->
-      <form method="post" id="loginForm" autocomplete="on">
+      <form method="post" action="<?= e(module_url('login.php', !empty($_GET['redirect']) ? ['redirect' => $_GET['redirect']] : [])) ?>" id="loginForm" autocomplete="on">
         <div class="form-field-group">
           <label class="field-label" for="inputUser">Username / ID Petugas</label>
           <div class="input-box-wrapper">

@@ -326,7 +326,7 @@ if ($action === 'start' || $action === 'form' || $action === 'ulang' || $action 
 
           '.($error ? '<div class="alert alert-danger py-2 mb-3">'.e($error).'</div>' : '').'
 
-          <form method="post" action="scan.php?t='.urlencode($token).'&action='.urlencode($action).'" id="formMaintenance">
+          <form method="post" action="'.e(module_url('scan.php', ['t' => $token, 'action' => $action])).'" id="formMaintenance">
             <input type="hidden" name="_csrf" value="'.e(csrf_token()).'">
             <input type="hidden" name="action" value="save_maintenance">
             <input type="hidden" name="action_type" value="'.e($action).'">

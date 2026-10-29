@@ -745,7 +745,7 @@ function ensureCatalogLoaded(callback) {
     tbody.innerHTML = "<tr><td colspan=\"6\" class=\"text-center py-5 text-muted\"><div class=\"spinner-border spinner-border-sm text-success me-2\"></div>Memuat katalog barang inventaris...</td></tr>";
   }
 
-  fetch("inventaris_mutation.php?action=get_inventory_catalog")
+  fetch("inventaris_mutation?action=get_inventory_catalog")
     .then(function(res) {
       if (!res.ok) throw new Error("HTTP " + res.status);
       return res.json();
