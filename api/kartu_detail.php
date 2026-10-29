@@ -982,7 +982,7 @@ $pageTitle = $card ? e($card['nama_barang']) . ' - Kartu Inventaris' : 'Kartu In
                                             </td>
                                         </tr>
                                         <tr>
-                                            <td class="text-secondary small fw-bold">Ruangan</td>
+                                            <td class="text-secondary small fw-bold">Ruangan (Lokasi Penempatan)</td>
                                             <td>
                                                 <div class="d-flex align-items-center justify-content-between gap-2">
                                                     <span class="badge bg-warning bg-opacity-15 text-dark border border-warning border-opacity-40 rounded-pill px-2.5 py-1 fw-semibold font-mono">
@@ -1166,9 +1166,9 @@ $pageTitle = $card ? e($card['nama_barang']) . ' - Kartu Inventaris' : 'Kartu In
                                 </select>
                             </div>
 
-                            <!-- Ruangan -->
+                            <!-- Ruangan Penempatan (Lokasi Fisik) -->
                             <div class="col-md-6">
-                                <label class="form-label small fw-bold text-secondary">Ruangan</label>
+                                <label class="form-label small fw-bold text-secondary">Ruangan Penempatan (Lokasi Fisik)</label>
                                 <div class="input-group input-group-sm">
                                     <span class="input-group-text bg-light text-muted"><i class="bi bi-geo-alt-fill text-warning"></i></span>
                                     <input type="text" name="ruangan_custom" id="ruanganInput" class="form-control font-mono" list="listLokasiPresets" value="<?= e($ruanganVal) ?>" placeholder="Contoh: 33 : RUANG KADIV KREDIT LT 4">

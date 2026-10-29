@@ -169,13 +169,21 @@ if ($source === 'inventaris_kartu') {
         $index++;
         $id = (int)($r['id'] ?? 0);
         $rek = trim((string)($r['nomor_rekening'] ?? ''));
+        $kodeInv = format_kode_inventaris($rek);
         $nama = trim((string)($r['nama_barang'] ?? ''));
         $barcode = trim((string)($r['barcode_data'] ?? ''));
-        $lokasi = trim((string)($r['lokasi'] ?? ''));
-        if ($lokasi === '' || $lokasi === 'KPO' || $lokasi === 'KPO / Operasional') {
-            $cBranch = get_cabang_from_nomor_rekening($rek);
-            $lokasi = $cBranch ? $cBranch['lokasi'] : 'Kantor Pusat (KPO)';
+        $ruanganRaw = trim((string)($r['ruangan'] ?? ''));
+        $lokasiRaw = trim((string)($r['lokasi'] ?? ''));
+        if ($ruanganRaw !== '') {
+            $ruanganDisplay = $ruanganRaw;
+        } elseif ($lokasiRaw !== '' && $lokasiRaw !== 'KPO' && $lokasiRaw !== 'KPO / Operasional' && $lokasiRaw !== 'Kantor Pusat (KPO)') {
+            $ruanganDisplay = $lokasiRaw;
+        } else {
+            $cBranch = get_cabang_from_nomor_rekening($kodeInv);
+            $cabPrefix = ($cBranch && $cBranch['code'] === '01') ? 'KPO' : 'KC-' . ($cBranch ? strtoupper(substr($cBranch['name'], 0, 3)) : 'CAB');
+            $ruanganDisplay = "{$cabPrefix}/Lt-4/SDM";
         }
+        $lokasi = $ruanganDisplay;
         $tglRaw = trim((string)($r['tanggal_perolehan'] ?? ''));
 
         $tglFormatted = format_card_date($tglRaw);
@@ -186,12 +194,13 @@ if ($source === 'inventaris_kartu') {
         $cardsData[] = [
             'index'        => $index,
             'id'           => $id,
-            'kode'         => $rek !== '' ? $rek : ('INV-' . $id),
+            'kode'         => $kodeInv !== '' ? $kodeInv : ('INV-' . $id),
             'nama'         => $nama,
             'tgl'          => $tglFormatted,
             'tgl_raw'      => $tglRaw,
             'nomor_gabungan' => get_nomor_asset_gabungan($rek, $tglRaw),
             'lokasi'       => $lokasi,
+            'ruangan'      => $ruanganDisplay,
             'barcode_data' => $barcode,
             'qr_url'       => $qrTarget,
             'created_at'   => $r['created_at'] ?? ''
@@ -255,6 +264,7 @@ if ($source === 'inventaris_kartu') {
             'tgl_raw'      => $tglRaw,
             'nomor_gabungan' => get_nomor_asset_gabungan($kode, $tglRaw),
             'lokasi'       => $lokasi,
+            'ruangan'      => $lokasi,
             'pengguna'     => $pengguna,
             'barcode_data' => $qrUrl,
             'qr_url'       => $qrUrl,
@@ -335,8 +345,7 @@ if ($exportMode === 'excel' || $exportMode === 'xls') {
     echo '<th style="width: 350px;">Nama Aktiva</th>';
     echo '<th style="width: 140px;">Tanggal Perolehan</th>';
     echo '<th style="width: 180px;">Kode Barcode</th>';
-    echo '<th style="width: 260px;">Lokasi</th>';
-    echo '<th style="width: 110px;">Kantor</th>';
+    echo '<th style="width: 260px;">Ruangan</th>';
     echo '</tr>';
     echo '</thead>';
     echo '<tbody>';
@@ -348,8 +357,7 @@ if ($exportMode === 'excel' || $exportMode === 'xls') {
         $namaVal = mb_strtoupper((string)($c['nama'] ?? ''), 'UTF-8');
         $tglDisplay = format_excel_date($c['tgl_raw'] ?? '');
         $kodeBarcode = !empty($c['nomor_gabungan']) ? $c['nomor_gabungan'] : get_nomor_asset_gabungan($rekVal, $c['tgl_raw'] ?? '');
-        $lokasiVal = $c['lokasi'] ?? '';
-        $kantorVal = determine_kantor_code($lokasiVal, $rekVal);
+        $ruanganVal = $c['ruangan'] ?? ($c['lokasi'] ?? '');
 
         echo '<tr>';
         echo '<td class="text-center">' . $no . '</td>';
@@ -357,8 +365,7 @@ if ($exportMode === 'excel' || $exportMode === 'xls') {
         echo '<td class="text-left">' . htmlspecialchars($namaVal, ENT_QUOTES, 'UTF-8') . '</td>';
         echo '<td class="date-text">' . htmlspecialchars($tglDisplay, ENT_QUOTES, 'UTF-8') . '</td>';
         echo '<td class="num-text">' . htmlspecialchars($kodeBarcode, ENT_QUOTES, 'UTF-8') . '</td>';
-        echo '<td class="text-left">' . htmlspecialchars($lokasiVal, ENT_QUOTES, 'UTF-8') . '</td>';
-        echo '<td class="text-center" style="font-weight: bold;">' . htmlspecialchars($kantorVal, ENT_QUOTES, 'UTF-8') . '</td>';
+        echo '<td class="text-left">' . htmlspecialchars($ruanganVal, ENT_QUOTES, 'UTF-8') . '</td>';
         echo '</tr>';
     }
 
@@ -376,7 +383,7 @@ if ($exportMode === 'csv') {
     header('Content-Disposition: attachment; filename="' . $csvFileName . '"');
     $out = fopen('php://output', 'w');
     fprintf($out, chr(0xEF).chr(0xBB).chr(0xBF)); // BOM UTF-8
-    fputcsv($out, ['No.', 'No Sistem', 'Nama Aktiva', 'Tanggal Perolehan', 'Kode Barcode', 'Lokasi', 'Kantor']);
+    fputcsv($out, ['No.', 'No Sistem', 'Nama Aktiva', 'Tanggal Perolehan', 'Kode Barcode', 'Ruangan']);
     $no = 0;
     foreach ($cardsData as $c) {
         $no++;
@@ -384,8 +391,7 @@ if ($exportMode === 'csv') {
         $namaVal = mb_strtoupper((string)($c['nama'] ?? ''), 'UTF-8');
         $tglDisplay = format_excel_date($c['tgl_raw'] ?? '');
         $kodeBarcode = !empty($c['nomor_gabungan']) ? $c['nomor_gabungan'] : get_nomor_asset_gabungan($rekVal, $c['tgl_raw'] ?? '');
-        $lokasiVal = $c['lokasi'] ?? '';
-        $kantorVal = determine_kantor_code($lokasiVal, $rekVal);
+        $ruanganVal = $c['ruangan'] ?? ($c['lokasi'] ?? '');
 
         fputcsv($out, [
             $no,
@@ -393,8 +399,7 @@ if ($exportMode === 'csv') {
             sanitize_csv_cell($namaVal),
             sanitize_csv_cell($tglDisplay),
             sanitize_csv_cell($kodeBarcode),
-            sanitize_csv_cell($lokasiVal),
-            sanitize_csv_cell($kantorVal)
+            sanitize_csv_cell($ruanganVal)
         ]);
     }
     fclose($out);
@@ -500,7 +505,7 @@ if ($exportMode === 'doc') {
         echo '<tr height="22">';
         echo '<td width="92" valign="middle"><font face="Arial" size="1" color="#003B73" style="font-size: 6.8pt; font-weight: bold;"><b>LOKASI</b></font></td>';
         echo '<td width="10" align="center" valign="middle"><font face="Arial" size="1" color="#94A3B8">|</font></td>';
-        echo '<td valign="middle"><font face="Arial" size="1" color="#003B73" style="font-size: 7.0pt; font-weight: bold;"><b>' . e($c['lokasi']) . '</b></font></td>';
+        echo '<td valign="middle"><font face="Arial" size="1" color="#003B73" style="font-size: 7.0pt; font-weight: bold;"><b>' . e($c['ruangan'] ?? $c['lokasi']) . '</b></font></td>';
         echo '</tr>';
         
         echo '</table>';
@@ -564,11 +569,11 @@ unset($_SESSION['flash'], $_SESSION['flash_error']);
   
   <!-- CSS Framework & Icons -->
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+  <link href="<?= module_url('assets/vendor/bootstrap.min.css') ?>" rel="stylesheet">
+  <link href="<?= module_url('assets/vendor/bootstrap-icons.min.css') ?>" rel="stylesheet">
   
   <!-- QRCode.js Library -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <script src="<?= module_url('assets/vendor/qrcode.min.js') ?>"></script>
 
   <style id="pageStyle">
     :root {
@@ -1032,7 +1037,6 @@ unset($_SESSION['flash'], $_SESSION['flash_error']);
           <div class="toolbar-title d-flex align-items-center gap-2">
             <i class="bi bi-credit-card-2-front text-primary"></i>
             <span>Cetak Kartu Inventaris</span>
-            <span class="badge bg-primary text-white" style="font-size: 0.72rem; font-weight: 600;"><i class="bi bi-geo-alt-fill me-1"></i>Cabang: <?= e($cabangDisplayTitle) ?></span>
             <span class="badge bg-secondary text-white" style="font-size: 0.72rem; font-weight: 600;"><i class="bi bi-calendar-event me-1"></i>Tgl: <?= e(date('d/m/Y')) ?></span>
           </div>
           <div class="text-muted small" style="font-size: 0.74rem;">
@@ -1089,7 +1093,7 @@ unset($_SESSION['flash'], $_SESSION['flash_error']);
         </button>
 
         <button type="button" class="btn btn-sm btn-light border d-inline-flex align-items-center gap-1" data-bs-toggle="modal" data-bs-target="#quickEditModal">
-          <i class="bi bi-pencil-square"></i> Set Lokasi
+          <i class="bi bi-pencil-square"></i> Set Ruangan
         </button>
 
         <div class="dropdown">
@@ -1223,7 +1227,7 @@ unset($_SESSION['flash'], $_SESSION['flash_error']);
                       </div>
                     </div>
 
-                    <!-- 4. Lokasi -->
+                    <!-- 4. Lokasi / Ruangan Penempatan -->
                     <div class="card-field-row">
                       <div class="field-icon-box">
                         <svg viewBox="0 0 16 16" fill="currentColor" class="field-svg-icon"><path d="M8 16s6-5.686 6-10A6 6 0 0 0 2 6c0 4.314 6 10 6 10zm0-7a3 3 0 1 1 0-6 3 3 0 0 1 0 6z"/></svg>
@@ -1231,7 +1235,7 @@ unset($_SESSION['flash'], $_SESSION['flash_error']);
                       <div class="field-content-box">
                         <span class="field-lbl">LOKASI</span>
                         <span class="field-sep">|</span>
-                        <span class="field-val attr-value-lokasi" title="<?= e($card['lokasi']) ?>"><?= e($card['lokasi']) ?></span>
+                        <span class="field-val attr-value-lokasi" title="<?= e($card['ruangan'] ?? $card['lokasi']) ?>"><?= e($card['ruangan'] ?? $card['lokasi']) ?></span>
                       </div>
                     </div>
                   </div>
@@ -1299,9 +1303,9 @@ unset($_SESSION['flash'], $_SESSION['flash_error']);
             </div>
             <div class="row g-3 mb-4">
               <div class="col-md-6">
-                <label class="form-label small fw-bold text-dark">Nomor Rekening <span class="text-danger">*</span></label>
-                <input type="text" name="nomor_rekening" id="printAddCardRekening" class="form-control font-monospace" placeholder="Contoh: 01.05.0493" maxlength="11" required oninput="handleRekeningInput(this, event)">
-                <div class="form-text text-muted" style="font-size: 0.72rem;">Format: <strong>XX.XX.XXXX</strong></div>
+                <label class="form-label small fw-bold text-dark">Nomor Rekening / Kode Inventaris <span class="text-danger">*</span></label>
+                <input type="text" name="nomor_rekening" id="printAddCardRekening" class="form-control font-monospace" placeholder="Contoh: 03.5.00029" maxlength="10" required oninput="handleRekeningInput(this, event)">
+                <div class="form-text text-muted" style="font-size: 0.72rem;">Format: <strong>XX.X.XXXXX</strong> (contoh: <code>03.5.00029</code>)</div>
               </div>
               <div class="col-md-6">
                 <label class="form-label small fw-bold text-dark">Nama Barang <span class="text-danger">*</span></label>
@@ -1365,8 +1369,8 @@ unset($_SESSION['flash'], $_SESSION['flash_error']);
                 </select>
               </div>
               <div class="col-md-6">
-                <label class="form-label small fw-bold text-dark">Lokasi Barang / Kantor</label>
-                <input type="text" name="lokasi" id="printAddCardLokasi" class="form-control" placeholder="Contoh: Kantor Pusat, Handil Bakti, Marabahan...">
+                <label class="form-label small fw-bold text-dark">Lokasi Penempatan / Ruangan</label>
+                <input type="text" name="lokasi" id="printAddCardLokasi" class="form-control" placeholder="Contoh: 33 : RUANG KADIV KREDIT LT 4...">
               </div>
             </div>
 
@@ -1443,14 +1447,14 @@ unset($_SESSION['flash'], $_SESSION['flash_error']);
         </div>
         <div class="modal-body p-3">
           <div class="mb-3">
-            <label class="form-label small fw-bold text-dark">Lokasi Penempatan Massal</label>
+            <label class="form-label small fw-bold text-dark">Ruangan Penempatan Massal</label>
             <div class="input-group input-group-sm">
-              <input type="text" id="bulkLocationInput" class="form-control" placeholder="Contoh: KPO / Lantai 2 / Ruang IT" onkeydown="handleLokasiKeydown(event, this)">
+              <input type="text" id="bulkLocationInput" class="form-control" placeholder="Contoh: 33 : RUANG KADIV KREDIT LT 4" onkeydown="handleLokasiKeydown(event, this)">
               <button class="btn btn-primary fw-semibold" type="button" onclick="applyBulkLocation()">
                 <i class="bi bi-check-lg me-1"></i> Terapkan ke Semua
               </button>
             </div>
-            <div class="form-text" style="font-size: 0.74rem;">Mengganti nilai lokasi pada seluruh kartu yang ada di layar cetak saat ini.</div>
+            <div class="form-text" style="font-size: 0.74rem;">Mengganti nilai ruangan pada seluruh kartu yang ada di layar cetak saat ini.</div>
           </div>
           <div class="mb-2">
             <label class="form-label small fw-bold text-dark">Teks Catatan Perhatian (Footer Kartu)</label>
@@ -1590,7 +1594,7 @@ function doPost(e) {
   </div>
 
   <input type="hidden" id="csrfToken" value="<?= e(csrf_token()) ?>">
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="<?= module_url('assets/vendor/bootstrap.bundle.min.js') ?>"></script>
 
   <script>
     const CARDS_DATA = <?= json_encode($cardsData, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) ?>;
@@ -1662,7 +1666,7 @@ function doPost(e) {
     function applyBulkLocation() {
       const locVal = document.getElementById("bulkLocationInput").value.trim();
       if (!locVal) {
-        alert("Silakan ketik nama lokasi terlebih dahulu.");
+        alert("Silakan ketik nama ruangan terlebih dahulu.");
         return;
       }
       document.querySelectorAll(".attr-value-lokasi").forEach(el => {
@@ -1671,8 +1675,9 @@ function doPost(e) {
       });
       CARDS_DATA.forEach(c => {
         c.lokasi = locVal;
+        c.ruangan = locVal;
       });
-      alert(`Lokasi "${locVal}" berhasil diterapkan ke semua kartu.`);
+      alert(`Ruangan "${locVal}" berhasil diterapkan ke semua kartu.`);
     }
 
     function applyBulkDisclaimer() {
@@ -1766,17 +1771,15 @@ function doPost(e) {
         return;
       }
 
-      let p0 = digits.slice(0, 2);
-      let p1 = digits.slice(2, 4);
-      let p2 = digits.slice(4, 9); // Mendukung 4 hingga 5 digit di belakang (contoh: 01.05.0493 atau 01.05.00354)
+      let p0 = digits.slice(0, 2); // 2 digit kode cabang (contoh: 03)
+      let p1 = digits.slice(2, 3); // 1 digit kelompok aktiva (contoh: 5)
+      let p2 = digits.slice(3, 8); // 5 digit nomor urut inventaris (contoh: 00029)
 
       if (digits.length < 2) {
         el.value = digits;
       } else if (digits.length === 2) {
         el.value = isDelete ? p0 : p0 + ".";
-      } else if (digits.length < 4) {
-        el.value = p0 + "." + digits.slice(2);
-      } else if (digits.length === 4) {
+      } else if (digits.length === 3) {
         el.value = isDelete ? (p0 + "." + p1) : (p0 + "." + p1 + ".");
       } else {
         el.value = p0 + "." + p1 + "." + p2;

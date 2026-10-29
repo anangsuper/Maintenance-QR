@@ -708,7 +708,7 @@ if (empty($displayCards)) {
         $tglCard = format_card_date($tglRaw);
         $gabungan = get_nomor_asset_gabungan($rek, $tglRaw);
         $barcode = $c['barcode_data'] ?? '';
-        $lokasi = $c['lokasi'] ?? 'KPO';
+        $lokasi = !empty($c['ruangan']) ? $c['ruangan'] : (!empty($c['lokasi']) ? $c['lokasi'] : 'KPO');
         $jsonPayload = json_encode(array_merge($c, ['gabungan' => $gabungan]), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP);
 
         // Deteksi apakah item baru diperoleh hari ini
@@ -3861,7 +3861,7 @@ function openCardPreviewModal(card) {
   document.getElementById("pvNomorAsset").innerText = card.gabungan || rek;
   document.getElementById("pvNamaAsset").innerText = card.nama_barang || "-";
   document.getElementById("pvTglPerolehan").innerText = tglDisplay;
-  document.getElementById("pvLokasi").innerText = card.lokasi || "KPO";
+  document.getElementById("pvLokasi").innerText = card.ruangan || card.lokasi || "KPO";
 
   const qrTarget = card.id ? (window.location.origin + "/kartu_detail.php?id=" + card.id) : (card.barcode_data || window.location.origin);
   const qrBox = document.getElementById("pvQrBox");
