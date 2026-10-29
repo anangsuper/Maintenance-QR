@@ -1274,26 +1274,29 @@ $pageTitle = $card ? e($card['nama_barang']) . ' - Kartu Inventaris' : 'Kartu In
     <!-- ===================================================================== -->
     <div class="modal fade" id="modalFaceVerify" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden bg-dark text-white">
-                <div class="modal-header border-secondary border-opacity-25 py-3 px-4">
+            <div class="modal-content border-0 shadow-xl rounded-[16px] overflow-hidden bg-white text-[#1B2A3A]">
+                <div class="modal-header py-3 px-4 text-white" style="background: #0E5C58 !important;">
                     <div>
-                        <h6 class="modal-title fw-bold text-white mb-0"><i class="bi bi-person-bounding-box text-primary me-2"></i>Verifikasi Biometrik Wajah Petugas</h6>
-                        <small class="text-white-50">Arahkan wajah Anda ke kamera</small>
+                        <h6 class="modal-title fw-bold text-white mb-0 d-flex align-items-center gap-2">
+                            <i class="bi bi-person-bounding-box text-[#D9F1EF] fs-5"></i>
+                            <span>Verifikasi Biometrik Wajah Petugas</span>
+                        </h6>
+                        <small class="text-[#D9F1EF] opacity-90 fw-medium d-block mt-0.5" style="font-size: 0.78rem;">Arahkan wajah Anda ke lingkaran pemindai kamera</small>
                     </div>
                     <button type="button" class="btn-close btn-close-white" onclick="closeBiometricModal()"></button>
                 </div>
 
-                <div class="modal-body p-3 text-center position-relative">
+                <div class="modal-body p-3.5 text-center position-relative bg-white">
                     <!-- Scanner Viewport -->
                     <div class="bio-scanner-wrapper position-relative mx-auto rounded-3 overflow-hidden bg-black shadow-inner" style="max-width: 320px; aspect-ratio: 1/1;">
                         <video id="bioVideo" class="bio-video-el w-100 h-100 object-fit-cover" autoplay playsinline webkit-playsinline muted style="transform: scaleX(-1);"></video>
                         <canvas id="bioCanvas" class="bio-canvas-el position-absolute top-0 start-0 w-100 h-100 pointer-events-none" style="transform: scaleX(-1);"></canvas>
                         
                         <!-- Oval Guide Frame -->
-                        <div id="bioFaceOval" class="position-absolute top-50 start-50 translate-middle pointer-events-none bio-face-oval" style="width: 72%; height: 85%; border: 2.5px dashed rgba(59, 130, 246, 0.85); border-radius: 50%; box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.35);"></div>
+                        <div id="bioFaceOval" class="position-absolute top-50 start-50 translate-middle pointer-events-none bio-face-oval" style="width: 72%; height: 85%; border: 2.5px dashed #0E5C58; border-radius: 50%; box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.45);"></div>
                         
                         <!-- Scanning Ray Animation -->
-                        <div id="bioScanLine" class="position-absolute start-0 w-100" style="height: 3px; background: linear-gradient(90deg, transparent, #3b82f6, #60a5fa, transparent); animation: scanRayAnim 2s infinite ease-in-out;"></div>
+                        <div id="bioScanLine" class="position-absolute start-0 w-100" style="height: 3px; background: linear-gradient(90deg, transparent, #0E5C58, #2DD4BF, transparent); animation: scanRayAnim 2s infinite ease-in-out;"></div>
 
                         <!-- Success Overlay -->
                         <div id="bioSuccessOverlay" class="position-absolute top-0 start-0 w-100 h-100 bg-success bg-opacity-75 d-flex flex-column align-items-center justify-content-center text-white d-none" style="backdrop-filter: blur(4px);">
@@ -1304,12 +1307,12 @@ $pageTitle = $card ? e($card['nama_barang']) . ' - Kartu Inventaris' : 'Kartu In
                     </div>
 
                     <!-- Status Text -->
-                    <div id="bioStatusBox" class="alert alert-secondary py-2 px-3 small fw-semibold mt-3 mb-2 text-start text-dark">
-                        <span class="spinner-border spinner-border-sm me-2 text-primary"></span>
+                    <div id="bioStatusBox" class="alert alert-info py-2 px-3 small fw-bold mt-3 mb-2 text-start text-[#0E5C58] bg-[#D9F1EF] border border-[#A7E2DC]">
+                        <span class="spinner-border spinner-border-sm me-2 text-[#0E5C58]"></span>
                         Menyiapkan kamera dan modul pengenalan wajah...
                     </div>
 
-                    <div class="text-white-50 small mb-2" style="font-size: 0.72rem;">
+                    <div class="text-[#1B2A3A] small mb-2.5 fw-semibold" style="font-size: 0.80rem; line-height: 1.4;">
                         Pastikan wajah berada di dalam oval, tidak memakai masker, dan pencahayaan memadai.
                     </div>
 
@@ -1317,28 +1320,27 @@ $pageTitle = $card ? e($card['nama_barang']) . ' - Kartu Inventaris' : 'Kartu In
                     <div class="mb-2 d-none" id="bioInstantVerifyBox"></div>
 
                     <!-- Checklist Indikator -->
-                    <div class="d-flex justify-content-center gap-1.5 mb-2">
-                        <span id="pillFaceDetected" class="badge bg-secondary bg-opacity-50 text-white-50 small py-1 px-2.5 border border-secondary border-opacity-50">
-                            <i class="bi bi-person me-1"></i> Wajah
+                    <div class="d-flex justify-content-center gap-2 mb-2">
+                        <span id="pillFaceDetected" class="badge bg-[#F1F5F9] text-[#475569] small py-1.5 px-3 border border-[#CBD5E1] fw-semibold">
+                            <i class="bi bi-person me-1"></i> Wajah Terdeteksi
                         </span>
-                        <span id="pillMatchId" class="badge bg-secondary bg-opacity-50 text-white-50 small py-1 px-2.5 border border-secondary border-opacity-50">
+                        <span id="pillMatchId" class="badge bg-[#F1F5F9] text-[#475569] small py-1.5 px-3 border border-[#CBD5E1] fw-semibold">
                             <i class="bi bi-check-all me-1"></i> Identitas Cocok
                         </span>
                     </div>
 
-                    <div class="mt-2 text-center">
-                        <a href="<?= module_url('user_biometric_enroll.php') ?>" class="text-white-50 text-decoration-none small" style="font-size: 0.72rem;">
-                            <i class="bi bi-camera me-1"></i> Belum rekam wajah? <span class="text-primary text-decoration-underline">Daftarkan di sini</span>
-                        </a>
+                    <div class="mt-2.5 text-center text-[#53595F] small" style="font-size: 0.78rem;">
+                        <i class="bi bi-camera me-1"></i> Belum rekam wajah? <a href="<?= module_url('user_biometric_enroll.php') ?>" class="text-[#0E5C58] fw-bold text-decoration-underline">Daftarkan di sini</a>
                     </div>
                 </div>
 
-                <div class="modal-footer border-secondary border-opacity-25 py-2 px-3 d-flex justify-content-between">
-                    <button type="button" class="btn btn-outline-secondary btn-sm rounded-pill px-3" onclick="closeBiometricModal()">
+                <div class="modal-footer bg-[#F8FAFC] border-top border-[#E2E8F0] py-2.5 px-3.5 d-flex justify-content-between align-items-center">
+                    <button type="button" class="btn btn-outline-secondary btn-sm rounded-pill px-3.5 fw-semibold" onclick="closeBiometricModal()">
                         Batal
                     </button>
-                    <button type="button" id="btnManualTriggerFace" class="btn btn-primary btn-sm rounded-pill px-3 fw-bold" onclick="triggerInstantFaceVerify()">
-                        <i class="bi bi-camera me-1"></i> Verifikasi Sekarang
+                    <button type="button" id="btnManualTriggerFace" class="btn btn-primary btn-sm rounded-pill px-4 fw-bold shadow-xs d-inline-flex align-items-center gap-1.5" onclick="triggerInstantFaceVerify()">
+                        <i class="bi bi-camera-fill"></i>
+                        <span>Verifikasi Sekarang</span>
                     </button>
                 </div>
             </div>
@@ -1636,8 +1638,8 @@ $pageTitle = $card ? e($card['nama_barang']) . ' - Kartu Inventaris' : 'Kartu In
             bioCompleted = false;
             bioFaceHoldFrames = 0;
 
-            document.getElementById("pillFaceDetected").className = "badge bg-secondary bg-opacity-25 text-dark small py-1.5 px-3 border";
-            document.getElementById("pillMatchId").className = "badge bg-secondary bg-opacity-25 text-dark small py-1.5 px-3 border";
+            document.getElementById("pillFaceDetected").className = "badge bg-[#F1F5F9] text-[#475569] small py-1.5 px-3 border border-[#CBD5E1] fw-semibold";
+            document.getElementById("pillMatchId").className = "badge bg-[#F1F5F9] text-[#475569] small py-1.5 px-3 border border-[#CBD5E1] fw-semibold";
             document.getElementById("bioSuccessOverlay").classList.add("d-none");
             document.getElementById("bioScanLine").classList.add("d-none");
             document.getElementById("bioFaceOval").classList.remove("active");
@@ -1768,7 +1770,7 @@ $pageTitle = $card ? e($card['nama_barang']) . ' - Kartu Inventaris' : 'Kartu In
 
         function finalizeFaceVerification(user, dist, videoEl) {
             bioCompleted = true;
-            document.getElementById("pillMatchId").className = "badge bg-success text-white small py-1.5 px-3 border";
+            document.getElementById("pillMatchId").className = "badge bg-success text-white small py-1.5 px-3 border border-success fw-bold";
 
             let conf = Math.round((1.0 - (dist / 0.60)) * 100);
             if (conf > 99) conf = 99;
@@ -1923,7 +1925,7 @@ $pageTitle = $card ? e($card['nama_barang']) . ' - Kartu Inventaris' : 'Kartu In
 
                     if (detection) {
                         oval.classList.add("active");
-                        pillFace.className = "badge bg-success text-white small py-1.5 px-3 border";
+                        pillFace.className = "badge bg-success text-white small py-1.5 px-3 border border-success fw-bold";
                         if (instantBox) instantBox.classList.remove("d-none");
 
                         if (detection.descriptor) {
@@ -1949,7 +1951,7 @@ $pageTitle = $card ? e($card['nama_barang']) . ' - Kartu Inventaris' : 'Kartu In
                         }
                     } else {
                         oval.classList.remove("active");
-                        pillFace.className = "badge bg-secondary bg-opacity-25 text-dark small py-1.5 px-3 border";
+                        pillFace.className = "badge bg-[#F1F5F9] text-[#475569] small py-1.5 px-3 border border-[#CBD5E1] fw-semibold";
                         bioFaceHoldFrames = 0;
                         if (statusBox) {
                             statusBox.className = "alert alert-primary py-2 px-3 small fw-semibold mb-2";
