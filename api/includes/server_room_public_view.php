@@ -6,8 +6,8 @@
  */
 
 // Safe default fallbacks
-$cabang = $cabang ?? (!empty($cabangFilter) && $cabangFilter !== 'all' ? $cabangFilter : 'Kantor Pusat - Ruang Server Utama (Lt. 2)');
-$ruangan = $ruangan ?? 'Data Center & Server Room Bank Mitra';
+$cabang = !empty($_GET['cabang']) ? trim((string)$_GET['cabang']) : ($cabang ?? (!empty($cabangFilter) && $cabangFilter !== 'all' ? $cabangFilter : 'Kantor Pusat (KPO)'));
+$ruangan = !empty($_GET['ruangan']) ? trim((string)$_GET['ruangan']) : ($ruangan ?? 'Ruang Server & Data Center Lt. 2');
 $liveOccupants = $liveOccupants ?? [];
 $logs = $logs ?? [];
 $statActive = $statActive ?? count($liveOccupants);
@@ -31,22 +31,22 @@ $autoCheckoutMatch = $autoCheckoutMatch ?? null;
   <meta charset="utf-8">
   <title>Portal Akses &amp; Log Ruang Server &middot; Bank Mitra</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-  <meta name="theme-color" content="#28243D">
+  <meta name="theme-color" content="#0E5C58">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <link rel="icon" type="image/png" href="<?= app_logo_url() ?>">
 
   <!-- Bootstrap 5, Icons, Fonts -->
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+  <link rel="stylesheet" href="assets/vendor/bootstrap.min.css">
+  <link rel="stylesheet" href="assets/vendor/bootstrap-icons.min.css">
   <link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
-  <script src="https://unpkg.com/html5-qrcode"></script>
+  <script src="html5-qrcode.min.js"></script>
 
   <style>
     :root {
-      --primary: #8C57FF;
-      --primary-dark: #6827EB;
-      --dark-card: #28243D;
+      --primary: #0E5C58;
+      --primary-dark: #094340;
+      --dark-card: #0E5C58;
       --success: #10B981;
       --danger: #EF4444;
       --warning: #F59E0B;
@@ -68,7 +68,7 @@ $autoCheckoutMatch = $autoCheckoutMatch ?? null;
       z-index: 1020;
     }
     .portal-hero-card {
-      background: linear-gradient(135deg, #28243D 0%, #3B3258 100%);
+      background: linear-gradient(135deg, #0E5C58 0%, #166560 100%);
       color: #FFFFFF;
       border-radius: 20px;
       padding: 24px 20px;
@@ -190,9 +190,6 @@ $autoCheckoutMatch = $autoCheckoutMatch ?? null;
       </div>
 
       <div class="d-flex align-items-center gap-2">
-        <span class="badge d-none d-md-inline-block text-uppercase fw-bold px-2.5 py-1.5" style="background: rgba(140, 87, 255, 0.12); color: #8C57FF; font-size: 0.70rem;">
-          <i class="bi bi-shield-lock-fill me-1"></i> OJK POJK No. 75
-        </span>
         <a href="<?= module_url('login.php') ?>" class="btn btn-sm btn-outline-primary rounded-pill px-3 fw-semibold" style="font-size: 0.78rem;">
           <i class="bi bi-person-fill me-1"></i> Login Staf
         </a>
@@ -226,16 +223,16 @@ $autoCheckoutMatch = $autoCheckoutMatch ?? null;
       <div class="portal-hero-card mb-3">
         <div class="d-flex align-items-center justify-content-between mb-2">
           <span class="badge bg-white bg-opacity-20 text-white rounded-pill px-2.5 py-1 small fw-semibold" style="font-size: 0.72rem;">
-            <i class="bi bi-geo-alt-fill text-warning me-1"></i> <?= e($cabang) ?>
+            <i class="bi bi-shield-check text-warning me-1"></i> Area Terbatas IT
           </span>
           <div id="livePortalClock" class="font-monospace small text-white-50" style="font-size: 0.76rem;"></div>
         </div>
 
         <h1 class="h5 fw-bold mb-1 text-white" style="letter-spacing: -0.02em;">
-          <?= e($ruangan) ?>
+          Log Akses Ruang Server &amp; Data Center
         </h1>
         <p class="small text-white-50 mb-3" style="font-size: 0.80rem;">
-          Portal akses buku tamu digital ruang server. Siapa pun yang masuk wajib mencatatkan kehadiran secara mandiri.
+          Portal buku tamu digital ruang server. Siapa pun yang masuk wajib mencatatkan kehadiran secara mandiri.
         </p>
 
         <!-- Status Indikator Ruangan -->
@@ -274,7 +271,7 @@ $autoCheckoutMatch = $autoCheckoutMatch ?? null;
           <button type="button" class="btn btn-sm btn-outline-light rounded-pill px-3 py-1 fw-semibold d-inline-flex align-items-center gap-1.5" style="font-size: 0.74rem; background: rgba(255,255,255,0.08); border-color: rgba(255,255,255,0.25);" data-bs-toggle="modal" data-bs-target="#modalScanner" onclick="startScannerModal()">
             <i class="bi bi-qr-code-scan"></i> <span>Scan Barcode Live</span>
           </button>
-          <a href="<?= module_url('server_room_print_qr.php') ?>" target="_blank" class="btn btn-sm btn-link text-white-50 text-decoration-none fw-semibold" style="font-size: 0.74rem;">
+          <a href="<?= module_url('server_room_print_qr.php', ['cabang' => $cabang, 'ruangan' => $ruangan]) ?>" target="_blank" class="btn btn-sm btn-link text-white-50 text-decoration-none fw-semibold" style="font-size: 0.74rem;">
             <i class="bi bi-printer me-1"></i> Cetak Stiker Pintu A4
           </a>
         </div>
@@ -293,7 +290,11 @@ $autoCheckoutMatch = $autoCheckoutMatch ?? null;
 
           <div class="d-flex flex-column gap-2">
             <?php foreach ($liveOccupants as $occ): 
-              $durMin = max(0, round((time() - strtotime($occ['entry_time'])) / 60));
+              $enterTs = strtotime($occ['entry_time']);
+              $diffSec = time() - $enterTs;
+              if ($diffSec >= 27000 && $diffSec <= 30600) { $diffSec -= 28800; }
+              elseif ($diffSec >= 23400 && $diffSec <= 27000) { $diffSec -= 25200; }
+              $durMin = max(1, (int)round(max(0, $diffSec) / 60));
             ?>
               <div class="bg-white rounded-3 p-2.5 shadow-xs border d-flex align-items-center justify-content-between gap-2">
                 <div class="d-flex align-items-center gap-2 overflow-hidden">
@@ -324,7 +325,7 @@ $autoCheckoutMatch = $autoCheckoutMatch ?? null;
           <div class="metric-pill text-center">
             <div class="text-muted fw-semibold" style="font-size: 0.70rem;">SUHU SERVER</div>
             <div class="fw-bold fs-6 text-info mt-0.5"><?= $avgTempFormatted ?></div>
-            <div class="text-muted" style="font-size: 0.64rem;">OJK: 18&deg;C-22&deg;C</div>
+            <div class="text-muted" style="font-size: 0.64rem;">Standar: 18&deg;C-22&deg;C</div>
           </div>
         </div>
         <div class="col-4">
@@ -467,7 +468,7 @@ $autoCheckoutMatch = $autoCheckoutMatch ?? null;
       <!-- FOOTER STANDAR KEPATUHAN -->
       <footer class="text-center text-muted small py-3" style="font-size: 0.72rem;">
         <div>&copy; <?= date('Y') ?> PT BPR Mitratama Arthabuana &middot; Ruang Server &amp; Data Center Terbatas</div>
-        <div class="text-secondary mt-1">Standar Keamanan Fisik OJK POJK No. 75/POJK.03/2016 &middot; ISO/IEC 27001</div>
+        <div class="text-secondary mt-1">Sistem Buku Tamu &amp; Akses Ruang Server Digital</div>
       </footer>
 
     </div>
@@ -482,8 +483,10 @@ $autoCheckoutMatch = $autoCheckoutMatch ?? null;
         <form method="post" id="formCheckin">
           <input type="hidden" name="action" value="checkin">
           <input type="hidden" name="photo_in" id="inputPhotoIn">
+          <input type="hidden" name="cabang" value="<?= e($cabang) ?>">
+          <input type="hidden" name="ruangan" value="<?= e($ruangan) ?>">
 
-          <div class="modal-header bg-primary text-white py-3 px-4" style="background: linear-gradient(72.47deg, #8C57FF 0%, #6827EB 100%) !important;">
+          <div class="modal-header bg-primary text-white py-3 px-4" style="background: linear-gradient(72.47deg, #0E5C58 0%, #094340 100%) !important;">
             <h5 class="modal-title fw-bold d-flex align-items-center gap-2" id="modalCheckinLabel">
               <i class="bi bi-door-open-fill"></i> Check-In Masuk Ruang Server
             </h5>
@@ -595,7 +598,7 @@ $autoCheckoutMatch = $autoCheckoutMatch ?? null;
 
           <div class="modal-footer bg-light py-3 px-4 d-flex justify-content-between">
             <button type="button" class="btn btn-outline-secondary rounded-pill px-3" data-bs-dismiss="modal">Batal</button>
-            <button type="submit" class="btn btn-primary fw-bold rounded-pill px-4 shadow-sm" style="background: #8C57FF; border-color: #8C57FF;">
+            <button type="submit" class="btn btn-primary fw-bold rounded-pill px-4 shadow-sm" style="background: #0E5C58; border-color: #0E5C58;">
               <i class="bi bi-door-open-fill me-1"></i> Konfirmasi Check-In Masuk
             </button>
           </div>
@@ -677,7 +680,11 @@ $autoCheckoutMatch = $autoCheckoutMatch ?? null;
           </p>
           <div class="d-flex flex-column gap-2">
             <?php foreach ($liveOccupants as $occ): 
-              $durMin = max(0, round((time() - strtotime($occ['entry_time'])) / 60));
+              $enterTs = strtotime($occ['entry_time']);
+              $diffSec = time() - $enterTs;
+              if ($diffSec >= 27000 && $diffSec <= 30600) { $diffSec -= 28800; }
+              elseif ($diffSec >= 23400 && $diffSec <= 27000) { $diffSec -= 25200; }
+              $durMin = max(1, (int)round(max(0, $diffSec) / 60));
             ?>
               <div class="card border rounded-3 p-3 shadow-xs" style="cursor: pointer;" onclick="openCheckoutModal(<?= (int)$occ['id'] ?>, <?= htmlspecialchars(json_encode($occ['visitor_name']), ENT_QUOTES, 'UTF-8') ?>, <?= htmlspecialchars(json_encode($occ['log_code']), ENT_QUOTES, 'UTF-8') ?>); bootstrap.Modal.getInstance(document.getElementById('modalSelectCheckout')).hide();">
                 <div class="d-flex align-items-center justify-content-between">
@@ -770,7 +777,7 @@ $autoCheckoutMatch = $autoCheckoutMatch ?? null;
   </div>
 
   <!-- Bootstrap 5 JS Bundle -->
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="assets/vendor/bootstrap.bundle.min.js"></script>
 
   <script>
     // Live Clock
