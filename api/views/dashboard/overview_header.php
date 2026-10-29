@@ -365,10 +365,11 @@ if (is_hrd() && !is_admin()) {
       <div class="flex justify-between items-center mb-3 shrink-0 flex-wrap gap-2">
         <div>
           <div class="text-[11px] font-bold text-[#0E5C58] uppercase tracking-wider mb-0.5 flex items-center gap-1.5">
-            <i class="bi bi-shield-check"></i> BANKING IT OPERATIONS COMMAND
+            <i class="bi '.($isTabKartu ? 'bi-credit-card-2-front' : 'bi-shield-check').'"></i> '.($isTabKartu ? 'PENGELOLAAN INVENTARIS &amp; SARANA PRASARANA BANK MITRA' : 'BANKING IT OPERATIONS COMMAND').'
           </div>
-          <h1 class="text-[22px] font-bold text-[#1B2A3A] tracking-tight m-0">Antrean Pemeliharaan &amp; Operasional IT</h1>
+          <h1 class="text-[22px] font-bold text-[#1B2A3A] tracking-tight m-0">'.($isTabKartu ? 'Manajemen Kartu Inventaris &amp; Label CR80' : 'Antrean Pemeliharaan &amp; Operasional IT').'</h1>
         </div>
+        '.(!$isTabKartu ? '
         <div class="flex items-center gap-2">
           <!-- Dropdown Cabang -->
           <div class="relative">
@@ -386,9 +387,11 @@ if (is_hrd() && !is_admin()) {
             <i class="bi bi-chevron-down absolute right-3 top-1/2 -translate-y-1/2 text-[#53595F] text-[11px] pointer-events-none"></i>
           </div>
         </div>
+        ' : '').'
       </div>
 
-      <!-- 4. Bar Pintasan Cepat (Quick Action Hub) -->
+      <!-- 4. Bar Pintasan Cepat (Quick Action Hub - Hanya di Tab Antrean & Temuan IT) -->
+      '.(!$isTabKartu ? '
       <div class="bg-white border border-[#D1D5D8] rounded-[10px] p-3 mb-4 shadow-xs">
         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
           <div class="flex items-center gap-2">
@@ -416,6 +419,7 @@ if (is_hrd() && !is_admin()) {
           </div>
         </div>
       </div>
+      ' : '').'
 
       <!-- 1. Penambahan 4 Metrik Kartu Eksekutif (88px Symmetrical Metric Cards) & Widget Sebaran / Feed (Hanya Tampil di Dashboard Utama / Tab Antrean) -->
       ' . ($isTabAntrean ? '

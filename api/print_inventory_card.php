@@ -227,8 +227,8 @@ if ($source === 'inventaris_kartu') {
         }
     }
 
-    // Otomatis tandai "Sudah Dicetak" apabila halaman cetak dipanggil untuk ID tertentu atau filter "Belum Dicetak"
-    if ($exportMode === '' && !empty($invRows) && ($singleId > 0 || !empty($idList) || $statusCetakFilter === 'belum' || !empty($_GET['auto_mark']))) {
+    // Tandai "Sudah Dicetak" pada GET hanya jika diminta secara eksplisit via auto_mark=1 (pencetakan aktual ditandai otomatis saat event beforeprint / tombol Cetak)
+    if ($exportMode === '' && !empty($invRows) && !empty($_GET['auto_mark'])) {
         $autoMarkIds = array_map(fn($r) => (int)($r['id'] ?? 0), $invRows);
         mark_inventaris_kartu_printed($autoMarkIds, true);
     }
@@ -1117,7 +1117,7 @@ unset($_SESSION['flash'], $_SESSION['flash_error']);
       
       <!-- Kiri: Brand & Info -->
       <div class="d-flex align-items-center gap-3">
-        <a href="<?= e(module_url('assets.php')) ?>" class="btn btn-sm btn-light border" title="Kembali">
+        <a href="<?= e($source === 'inventaris_kartu' ? module_url('dashboard.php', ['tab' => 'kartu']) : module_url('assets.php')) ?>" class="btn btn-sm btn-light border" title="Kembali">
           <i class="bi bi-arrow-left"></i>
         </a>
         <div>

@@ -93,9 +93,20 @@ $body .= '
           </div>
           <div class="row g-3 mb-4">
             <div class="col-md-6">
-              <label class="form-label small fw-bold text-dark">Nomor Rekening <span class="text-danger">*</span></label>
-              <input type="text" name="nomor_rekening" id="addCardRekening" class="form-control font-monospace" placeholder="Contoh: 01.05.0493" maxlength="11" required oninput="handleRekeningInput(this, event)">
-              <div class="form-text text-muted" style="font-size: 0.72rem;">Format: <strong>XX.XX.XXXX</strong></div>
+              <div class="d-flex justify-content-between align-items-center mb-1">
+                <label class="form-label small fw-bold text-dark mb-0">Nomor Rekening / Kode Inventaris <span class="text-danger">*</span></label>
+                <span class="badge bg-light text-primary border font-monospace" style="font-size: 0.68rem;">Auto Urut Cabang</span>
+              </div>
+              <input type="text" name="nomor_rekening" id="addCardRekening" class="form-control font-monospace fw-bold text-primary" value="'.e($nextKodeInventarisMap['01'] ?? '01.5.00497').'" placeholder="Contoh: 01.5.00497" maxlength="10" required oninput="handleRekeningInput(this, event)">
+              <div class="d-flex flex-wrap align-items-center gap-1 mt-1.5">
+                <span class="text-muted" style="font-size: 0.70rem;">Pilih Cabang:</span>
+                <button type="button" class="btn btn-xs btn-outline-primary py-0 px-1.5 font-monospace" style="font-size: 0.68rem;" onclick="selectAddCardBranch(\'01\')">01 KPO</button>
+                <button type="button" class="btn btn-xs btn-outline-secondary py-0 px-1.5 font-monospace" style="font-size: 0.68rem;" onclick="selectAddCardBranch(\'02\')">02 BTL</button>
+                <button type="button" class="btn btn-xs btn-outline-secondary py-0 px-1.5 font-monospace" style="font-size: 0.68rem;" onclick="selectAddCardBranch(\'03\')">03 MTP</button>
+                <button type="button" class="btn btn-xs btn-outline-secondary py-0 px-1.5 font-monospace" style="font-size: 0.68rem;" onclick="selectAddCardBranch(\'04\')">04 TJG</button>
+                <button type="button" class="btn btn-xs btn-outline-secondary py-0 px-1.5 font-monospace" style="font-size: 0.68rem;" onclick="selectAddCardBranch(\'05\')">05 HDB</button>
+              </div>
+              <div class="form-text text-muted" style="font-size: 0.70rem;">Format resmi: <strong>XX.X.XXXXX</strong> (contoh: <code>'.e($nextKodeInventarisMap['01'] ?? '01.5.00497').'</code>)</div>
             </div>
             <div class="col-md-6">
               <label class="form-label small fw-bold text-dark">Nama Barang <span class="text-danger">*</span></label>
@@ -221,9 +232,9 @@ $body .= '
           </div>
           <div class="row g-3 mb-4">
             <div class="col-md-6">
-              <label class="form-label small fw-bold text-dark">Nomor Rekening <span class="text-danger">*</span></label>
-              <input type="text" name="nomor_rekening" id="editCardRekening" class="form-control font-monospace" placeholder="Contoh: 01.05.0493" maxlength="11" required oninput="handleRekeningInput(this, event)">
-              <div class="form-text text-muted" style="font-size: 0.72rem;">Format: <strong>XX.XX.XXXX</strong></div>
+              <label class="form-label small fw-bold text-dark">Nomor Rekening / Kode Inventaris <span class="text-danger">*</span></label>
+              <input type="text" name="nomor_rekening" id="editCardRekening" class="form-control font-monospace fw-bold text-primary" placeholder="Contoh: 01.5.00496" maxlength="10" required oninput="handleRekeningInput(this, event)">
+              <div class="form-text text-muted" style="font-size: 0.72rem;">Format resmi: <strong>XX.X.XXXXX</strong></div>
             </div>
             <div class="col-md-6">
               <label class="form-label small fw-bold text-dark">Nama Barang <span class="text-danger">*</span></label>

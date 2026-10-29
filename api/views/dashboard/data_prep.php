@@ -68,6 +68,7 @@ foreach ($cabangs as $c) {
 ensure_inventaris_kartu_print_columns();
 $allCards = get_inventaris_kartu_rows(!empty($_GET['refresh']));
 $totalCardsCount = count($allCards);
+$nextKodeInventarisMap = get_next_kode_inventaris_per_cabang($allCards);
 
 $standardCabangs = get_standard_cabang_list();
 
@@ -108,7 +109,7 @@ $branchKeywordMap = [
 // Daftar tahun untuk filter kartu & hitung metrik
 $cardYears = [];
 foreach ($allCards as $ac) {
-    $rek = trim((string)($ac['nomor_rekening'] ?? ''));
+    $rek = format_kode_inventaris(trim((string)($ac['nomor_rekening'] ?? '')));
     $lok = strtolower(trim((string)($ac['lokasi'] ?? '')));
     $assignedCode = '01'; // Default
 
@@ -159,7 +160,7 @@ foreach ($allCards as $ac) {
     if (isset($cabangStats[$assignedCode])) {
         $cabangStats[$assignedCode]['count']++;
     }
-    if (!empty($ac['barcode_data'])) {
+    if (!empty($ac['id']) || !empty($ac['barcode_data'])) {
         $withQrCardsCount++;
     }
     if (!empty($ac['printed_at'])) {
@@ -186,7 +187,7 @@ $filteredCards = array_filter($allCards, function($r) use ($searchCard, $cabangC
     }
     if ($filterHasQr) {
         $bc = trim((string)($r['barcode_data'] ?? ''));
-        if ($bc === '') return false;
+        if (empty($r['id']) && $bc === '') return false;
     }
     if ($filterHariIni) {
         $tgl = trim((string)($r['tanggal_perolehan'] ?? ''));
@@ -213,17 +214,19 @@ $filteredCards = array_filter($allCards, function($r) use ($searchCard, $cabangC
         $q = strtolower(trim($searchCard));
         $cleanQ = preg_replace('/[^a-z0-9]/', '', $q);
         
-        $rekRaw = strtolower(trim((string)($r['nomor_rekening'] ?? '')));
+        $rekRaw = strtolower(format_kode_inventaris(trim((string)($r['nomor_rekening'] ?? ''))));
         $cleanRek = preg_replace('/[^a-z0-9]/', '', $rekRaw);
         
         $namaRaw = strtolower(trim((string)($r['nama_barang'] ?? '')));
+        $seriRaw = strtolower(trim((string)($r['nomor_seri_inventaris'] ?? '')));
+        $ruangRaw = strtolower(trim((string)($r['ruangan'] ?? '')));
         $barcodeRaw = strtolower(trim((string)($r['barcode_data'] ?? '')));
         $lokasiRaw = strtolower(trim((string)($r['lokasi'] ?? '')));
         $tglRaw = trim((string)($r['tanggal_perolehan'] ?? ''));
         $nomorGabungan = strtolower(get_nomor_asset_gabungan($rekRaw, $tglRaw));
         $cleanGabungan = preg_replace('/[^a-z0-9]/', '', $nomorGabungan);
 
-        $haystack = $rekRaw . ' ' . $namaRaw . ' ' . $barcodeRaw . ' ' . $lokasiRaw . ' ' . $nomorGabungan;
+        $haystack = $rekRaw . ' ' . $namaRaw . ' ' . $seriRaw . ' ' . $ruangRaw . ' ' . $barcodeRaw . ' ' . $lokasiRaw . ' ' . $nomorGabungan;
         $cleanHaystack = preg_replace('/[^a-z0-9]/', '', $haystack);
 
         $matched = false;
@@ -239,7 +242,7 @@ $filteredCards = array_filter($allCards, function($r) use ($searchCard, $cabangC
         if (!$matched) return false;
     }
     if ($cabangCard !== '' && $cabangCard !== 'Semua Cabang' && $cabangCard !== 'all') {
-        $rek = trim((string)($r['nomor_rekening'] ?? ''));
+        $rek = format_kode_inventaris(trim((string)($r['nomor_rekening'] ?? '')));
         $lokasi = strtolower(trim((string)($r['lokasi'] ?? '')));
         $cleanRek = preg_replace('/[^a-z0-9]/', '', strtolower($rek));
         $cleanCabang = preg_replace('/[^a-z0-9]/', '', strtolower($cabangCard));
@@ -304,6 +307,8 @@ $logoUri = app_logo_data_uri();
 $flash = $_SESSION['flash'] ?? '';
 $flashError = $_SESSION['flash_error'] ?? '';
 unset($_SESSION['flash'], $_SESSION['flash_error']);
+// Pastikan token CSRF diinisialisasi ke dalam $_SESSION sebelum session_write_close()
+csrf_token();
 if (session_status() === PHP_SESSION_ACTIVE) {
     session_write_close();
 }

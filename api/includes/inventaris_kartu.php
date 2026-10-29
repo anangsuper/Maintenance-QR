@@ -148,9 +148,15 @@ function format_kode_inventaris(?string $raw): string {
         $p1 = str_pad($parts[0], 2, '0', STR_PAD_LEFT);
         $p2 = $parts[1];
         $p3 = $parts[2];
-        if (strlen($p2) === 2 && strlen($p3) === 4) {
-            $p3 = $p2[1] . $p3;
-            $p2 = $p2[0];
+        if (strlen($p2) === 2) {
+            if ($p2[0] === '0') {
+                // Contoh: 01.05.0359 -> p2='5', p3='00359'
+                $p2 = $p2[1];
+            } elseif (strlen($p3) === 4) {
+                // Contoh: 01.50.0495 -> p2='5', p3='00495'
+                $p3 = $p2[1] . $p3;
+                $p2 = $p2[0];
+            }
         }
         $p3 = str_pad($p3, 5, '0', STR_PAD_LEFT);
         return "{$p1}.{$p2}.{$p3}";
@@ -171,6 +177,32 @@ function format_kode_inventaris(?string $raw): string {
     }
 
     return $raw;
+}
+
+/**
+ * Menghitung nomor rekening / kode inventaris berikutnya secara otomatis per cabang (01 s/d 05)
+ * Format: XX.5.XXXXX (contoh: 01.5.00497)
+ */
+function get_next_kode_inventaris_per_cabang(?array $cards = null): array {
+    if ($cards === null) {
+        $cards = get_inventaris_kartu_rows();
+    }
+    $maxSeq = ['01' => 0, '02' => 0, '03' => 0, '04' => 0, '05' => 0];
+    foreach ($cards as $c) {
+        $rek = format_kode_inventaris((string)($c['nomor_rekening'] ?? ''));
+        if (preg_match('/^(\d{2})\.\d\.(\d{5})$/', $rek, $m)) {
+            $b = $m[1];
+            $seq = (int)$m[2];
+            if (isset($maxSeq[$b]) && $seq > $maxSeq[$b] && $seq < 90000) {
+                $maxSeq[$b] = $seq;
+            }
+        }
+    }
+    $nextMap = [];
+    foreach ($maxSeq as $b => $seq) {
+        $nextMap[$b] = sprintf('%s.5.%05d', $b, $seq + 1);
+    }
+    return $nextMap;
 }
 
 /**
@@ -384,7 +416,7 @@ function get_inventaris_kartu_rows(bool $refresh = false): array {
  * Tambah kartu inventaris baru
  */
 function insert_inventaris_kartu(array $data): array {
-    $rek = trim((string)($data['nomor_rekening'] ?? ''));
+    $rek = format_kode_inventaris(trim((string)($data['nomor_rekening'] ?? '')));
     $nama = trim((string)($data['nama_barang'] ?? ''));
     $tgl = normalize_date_to_db($data['tanggal_perolehan'] ?? '');
     $barcode = trim((string)($data['barcode_data'] ?? ''));
@@ -411,6 +443,9 @@ function insert_inventaris_kartu(array $data): array {
                 if ($r['id'] > $maxId) $maxId = $r['id'];
             }
             $newId = $maxId + 1;
+            if ($barcode === '' || str_contains($barcode, 'canva.link')) {
+                $barcode = module_url('kartu_detail.php', ['id' => $newId]);
+            }
             $client->appendValues('inventaris_kartu!A:G', [[
                 $newId, sheet_cell_text($rek), $nama, $tgl, $barcode, $lokasi, $nowStr
             ]]);
@@ -421,12 +456,15 @@ function insert_inventaris_kartu(array $data): array {
     ensure_inventaris_kartu_columns();
 
     $noSeri = trim((string)($data['nomor_seri_inventaris'] ?? ''));
-    $jenisInv = trim((string)($data['jenis_inventaris'] ?? ''));
-    $golongan = trim((string)($data['golongan'] ?? ''));
+    $jenisInv = trim((string)($data['jenis_inventaris'] ?? '3 : PERALATAN KANTOR'));
+    $golongan = trim((string)($data['golongan'] ?? '02 : GOLONGAN I'));
     $ruangan = trim((string)($data['ruangan'] ?? ''));
-    $sumber = trim((string)($data['sumber_perolehan'] ?? ''));
+    $sumber = trim((string)($data['sumber_perolehan'] ?? '02 : MODAL DISETOR'));
     $statusInv = trim((string)($data['status_inventaris'] ?? '1 : Aktif'));
     $ket = trim((string)($data['keterangan'] ?? ''));
+    if ($ket === '') {
+        $ket = $nama;
+    }
 
     try {
         $ins = db()->prepare("
@@ -443,6 +481,19 @@ function insert_inventaris_kartu(array $data): array {
             $nowStr
         ]);
         $newId = (int)db()->lastInsertId();
+        $canonicalQr = module_url('kartu_detail.php', ['id' => $newId]);
+        $finalBarcode = ($barcode === '' || str_contains($barcode, 'canva.link')) ? $canonicalQr : $barcode;
+        $finalNoSeri = $noSeri !== '' ? $noSeri : generate_default_nomor_seri([
+            'id' => $newId,
+            'nomor_rekening' => $rek,
+            'ruangan' => $ruangan,
+            'golongan' => $golongan,
+            'tanggal_perolehan' => $tgl
+        ]);
+        if ($finalBarcode !== $barcode || $finalNoSeri !== $noSeri) {
+            db()->prepare("UPDATE inventaris_kartu SET barcode_data = ?, nomor_seri_inventaris = ? WHERE id = ?")
+                ->execute([$finalBarcode, $finalNoSeri, $newId]);
+        }
         return ['success' => true, 'id' => $newId];
     } catch (Throwable $e) {
         return ['success' => false, 'error' => $e->getMessage()];
@@ -462,10 +513,13 @@ function update_inventaris_kartu(int $id, array $data): bool {
         $current = get_inventaris_kartu_by_id($id);
     }
 
-    $rek = trim((string)($data['nomor_rekening'] ?? ($current['nomor_rekening'] ?? '')));
+    $rek = format_kode_inventaris(trim((string)($data['nomor_rekening'] ?? ($current['nomor_rekening'] ?? ''))));
     $nama = trim((string)($data['nama_barang'] ?? ($current['nama_barang'] ?? '')));
     $tgl = !empty($data['tanggal_perolehan']) ? normalize_date_to_db($data['tanggal_perolehan']) : ($current['tanggal_perolehan'] ?? date('Y-m-d'));
     $barcode = trim((string)($data['barcode_data'] ?? ($current['barcode_data'] ?? '')));
+    if ($barcode === '' || str_contains($barcode, 'canva.link')) {
+        $barcode = module_url('kartu_detail.php', ['id' => $id]);
+    }
     
     // Tentukan lokasi: gunakan input lokasi jika diisi, atau default berdasarkan cabang
     $lokasi = trim((string)($data['lokasi'] ?? ($current['lokasi'] ?? '')));
@@ -477,13 +531,22 @@ function update_inventaris_kartu(int $id, array $data): bool {
     if ($rek === '' || $nama === '') return false;
 
     $noSeri = trim((string)($data['nomor_seri_inventaris'] ?? ($current['nomor_seri_inventaris'] ?? '')));
-    $jenisInv = trim((string)($data['jenis_inventaris'] ?? ($current['jenis_inventaris'] ?? '')));
-    $golongan = trim((string)($data['golongan'] ?? ($current['golongan'] ?? '')));
+    $jenisInv = trim((string)($data['jenis_inventaris'] ?? ($current['jenis_inventaris'] ?? '3 : PERALATAN KANTOR')));
+    $golongan = trim((string)($data['golongan'] ?? ($current['golongan'] ?? '02 : GOLONGAN I')));
     $ruangan = trim((string)($data['ruangan'] ?? ($current['ruangan'] ?? '')));
     $pengguna = trim((string)($data['pengguna'] ?? ($current['pengguna'] ?? 'Umum / Pool')));
-    $sumber = trim((string)($data['sumber_perolehan'] ?? ($current['sumber_perolehan'] ?? '')));
+    $sumber = trim((string)($data['sumber_perolehan'] ?? ($current['sumber_perolehan'] ?? '02 : MODAL DISETOR')));
     $statusInv = trim((string)($data['status_inventaris'] ?? ($current['status_inventaris'] ?? '1 : Aktif')));
     $ket = trim((string)($data['keterangan'] ?? ($current['keterangan'] ?? '')));
+    if ($noSeri === '') {
+        $noSeri = generate_default_nomor_seri([
+            'id' => $id,
+            'nomor_rekening' => $rek,
+            'ruangan' => $ruangan,
+            'golongan' => $golongan,
+            'tanggal_perolehan' => $tgl
+        ]);
+    }
 
     if (is_google_cloud_mode()) {
         $client = google_sheets_v4_client();

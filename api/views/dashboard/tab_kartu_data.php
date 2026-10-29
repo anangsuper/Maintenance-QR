@@ -46,14 +46,22 @@ if (empty($displayCards)) {
 } else {
     foreach ($displayCards as $c) {
         $cId = (int)$c['id'];
-        $rek = $c['nomor_rekening'] ?? '';
+        $rek = format_kode_inventaris($c['nomor_rekening'] ?? '');
         $nama = $c['nama_barang'] ?? '';
         $tglRaw = $c['tanggal_perolehan'] ?? '';
         $tglCard = format_card_date($tglRaw);
         $gabungan = get_nomor_asset_gabungan($rek, $tglRaw);
-        $barcode = $c['barcode_data'] ?? '';
+        $canonicalCardUrl = module_url('kartu_detail.php', ['id' => $cId]);
+        $rawBarcode = trim((string)($c['barcode_data'] ?? ''));
+        $barcode = ($rawBarcode !== '' && !str_contains($rawBarcode, 'canva.link')) ? $rawBarcode : $canonicalCardUrl;
+        $noSeriVal = !empty($c['nomor_seri_inventaris']) ? $c['nomor_seri_inventaris'] : generate_default_nomor_seri($c);
         $lokasi = !empty($c['ruangan']) ? $c['ruangan'] : (!empty($c['lokasi']) ? $c['lokasi'] : 'KPO');
-        $jsonPayload = json_encode(array_merge($c, ['gabungan' => $gabungan]), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP);
+        $jsonPayload = json_encode(array_merge($c, [
+            'nomor_rekening' => $rek,
+            'nomor_seri_inventaris' => $noSeriVal,
+            'barcode_data' => $barcode,
+            'gabungan' => $gabungan
+        ]), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP);
 
         // Deteksi apakah item baru diperoleh hari ini
         $isCardToday = false;
@@ -104,7 +112,7 @@ if (empty($displayCards)) {
             $lokasiBadgeClass = 'bg-danger-subtle text-danger border border-danger-subtle';
         }
 
-        $noSeriBadge = !empty($c['nomor_seri_inventaris']) ? '<span class="badge bg-light text-dark border font-monospace mt-0.5" style="font-size: 0.68rem;"><i class="bi bi-hash me-0.5"></i>'.e($c['nomor_seri_inventaris']).'</span>' : '';
+        $noSeriBadge = $noSeriVal !== '' ? '<span class="badge bg-light text-dark border font-monospace mt-0.5" style="font-size: 0.68rem;" title="Nomor Seri Inventaris Bank"><i class="bi bi-hash me-0.5"></i>'.e($noSeriVal).'</span>' : '';
 
         $isPrintedCard = !empty($c['printed_at']);
         $printedDateTooltip = $isPrintedCard ? date('d/m/Y H:i', strtotime((string)$c['printed_at'])) : '';
@@ -121,16 +129,16 @@ if (empty($displayCards)) {
           <td class="text-center py-2.5" style="width: 38px;">
             <input class="form-check-input card-checkbox cursor-pointer" type="checkbox" value="'.$cId.'" onchange="updateCardCounters(this)">
           </td>
-          <td style="width: 155px;" class="py-2.5">
+          <th scope="row" style="width: 155px;" class="py-2.5 font-normal">
             <div class="font-mono font-bold text-[#0E5C58] text-[13px]">'.e($rek).'</div>
             <div class="text-[11px] text-[#53595F] font-mono mt-0.5" title="Nomor Aset Gabungan">'.e($gabungan).'</div>
             '.$noSeriBadge.'
-          </td>
+          </th>
           <td class="py-2.5">
             <div class="flex items-center gap-2.5">
               '.$photoThumbHtml.'
               <div class="min-w-0">
-                <a href="'.e(module_url('kartu_detail.php', ['id'=>$cId])).'" target="_blank" class="font-semibold text-[#1B2A3A] hover:text-[#0E5C58] transition-colors text-decoration-none text-break text-[13px]" title="Buka Detail &amp; Foto Fisik">'.e($nama).'</a>
+                <a href="'.e($canonicalCardUrl).'" target="_blank" class="font-semibold text-[#1B2A3A] hover:text-[#0E5C58] transition-colors text-decoration-none text-break text-[13px]" title="Buka Detail &amp; Foto Fisik">'.e($nama).'</a>
                 <div class="text-[11px] text-[#53595F] font-mono mt-0.5 flex items-center gap-1.5 flex-wrap">
                   <span><i class="bi bi-calendar-event text-[#0E5C58] me-1"></i>'.e($tglCard).'</span>
                   '.$todayBadge.'
@@ -140,7 +148,7 @@ if (empty($displayCards)) {
             </div>
           </td>
           <td style="width: 75px;" class="text-center py-2.5">
-            '.($barcode ? '<a href="'.e($barcode).'" target="_blank" class="px-2 py-0.5 rounded-[4px] text-[11px] font-bold bg-[#D9F1EF] text-[#0E5C58] border border-[#A7E2DC] text-decoration-none inline-flex items-center gap-1 shadow-2xs" title="'.e($barcode).'"><i class="bi bi-qr-code"></i>QR</a>' : '<span class="text-[#A0A5AA] text-[12px]">-</span>').'
+            <a href="'.e($barcode).'" target="_blank" class="px-2 py-0.5 rounded-[4px] text-[11px] font-bold bg-[#D9F1EF] text-[#0E5C58] border border-[#A7E2DC] hover:bg-[#0E5C58] hover:text-white transition-colors text-decoration-none inline-flex items-center gap-1 shadow-2xs" title="Buka Paspor QR: '.e($barcode).'"><i class="bi bi-qr-code"></i>QR</a>
           </td>
           <td style="width: 95px;" class="text-center py-2.5">
             <span class="badge px-2 py-1 rounded-pill '.$lokasiBadgeClass.'" style="font-size: 0.72rem; font-weight: 600;">'.e($lokasi).'</span>
@@ -153,7 +161,7 @@ if (empty($displayCards)) {
               <a class="h-[28px] px-2 bg-white border border-[#D1D5D8] hover:bg-[#ECFDF5] text-[#10B981] rounded-[5px] text-[11px] font-medium transition-colors inline-flex items-center gap-1 text-decoration-none shadow-2xs" target="_blank" href="'.e(module_url('inventaris_mutation.php', ['id'=>$cId])).'" title="Mutasi Fasilitas &amp; Kartu Inventaris">
                 <i class="bi bi-arrow-left-right"></i><span class="d-none d-xxl-inline"> Mutasi</span>
               </a>
-              <a class="h-[28px] px-2 bg-white border border-[#D1D5D8] hover:bg-[#D9F1EF] text-[#0E5C58] rounded-[5px] text-[11px] font-medium transition-colors inline-flex items-center gap-1 text-decoration-none shadow-2xs" target="_blank" href="'.e(module_url('kartu_detail.php', ['id'=>$cId])).'" title="Buka Detail Web &amp; Foto">
+              <a class="h-[28px] px-2 bg-white border border-[#D1D5D8] hover:bg-[#D9F1EF] text-[#0E5C58] rounded-[5px] text-[11px] font-medium transition-colors inline-flex items-center gap-1 text-decoration-none shadow-2xs" target="_blank" href="'.e($canonicalCardUrl).'" title="Buka Detail Web &amp; Foto">
                 <i class="bi bi-box-arrow-up-right"></i><span class="d-none d-xxl-inline"> Detail</span>
               </a>
               <button type="button" class="h-[28px] px-2 bg-white border border-[#D1D5D8] hover:bg-[#E0F2FE] text-[#0284C7] rounded-[5px] text-[11px] font-medium transition-colors inline-flex items-center gap-1 shadow-2xs cursor-pointer" title="Pratinjau Fisik Kartu &amp; Kirim WA" onclick=\'openCardPreviewModal('.$jsonPayload.')\'>
@@ -174,8 +182,8 @@ if (empty($displayCards)) {
 
         // Mobile Card Row (Tanpa Scroll Horizontal pada Smartphone)
         $cardsMobileCardsHtml .= '
-        <div class="p-3 border-b border-[#E5E7EB] bg-white hover:bg-[#F9FAFB] transition-colors" id="card-mobile-'.$cId.'">
-          <div class="flex items-start justify-between gap-2 mb-2">
+        <article class="p-3 border-b border-[#E5E7EB] bg-white hover:bg-[#F9FAFB] transition-colors" id="card-mobile-'.$cId.'">
+          <header class="flex items-start justify-between gap-2 mb-2">
             <div class="flex items-center gap-2">
               <input class="form-check-input card-checkbox cursor-pointer" type="checkbox" value="'.$cId.'" onchange="updateCardCounters(this)">
               <div>
@@ -187,12 +195,12 @@ if (empty($displayCards)) {
               '.$printStatusBadgeMobHtml.'
               <span class="badge px-2 py-1 rounded-pill '.$lokasiBadgeClass.'" style="font-size: 0.70rem; font-weight: 600;">'.e($lokasi).'</span>
             </div>
-          </div>
+          </header>
 
           <div class="flex items-center gap-2.5 mb-2.5">
             '.$photoThumbHtml.'
             <div class="min-w-0 flex-1">
-              <a href="'.e(module_url('kartu_detail.php', ['id'=>$cId])).'" target="_blank" class="font-semibold text-[#1B2A3A] hover:text-[#0E5C58] transition-colors text-decoration-none text-[13px] line-clamp-2" title="Buka Detail &amp; Foto Fisik">'.e($nama).'</a>
+              <a href="'.e($canonicalCardUrl).'" target="_blank" class="font-semibold text-[#1B2A3A] hover:text-[#0E5C58] transition-colors text-decoration-none text-[13px] line-clamp-2" title="Buka Detail &amp; Foto Fisik">'.e($nama).'</a>
               <div class="text-[11px] text-[#53595F] font-mono mt-0.5 flex items-center gap-1">
                 <i class="bi bi-calendar-event text-[#0E5C58]"></i>'.e($tglCard).'
                 '.$todayBadge.'
@@ -201,14 +209,14 @@ if (empty($displayCards)) {
             </div>
           </div>
 
-          <div class="grid grid-cols-7 gap-1 pt-2 border-t border-[#F3F4F6]">
+          <footer class="grid grid-cols-7 gap-1 pt-2 border-t border-[#F3F4F6]">
             <button type="button" class="h-[30px] bg-[#D9F1EF] border border-[#A7E2DC] text-[#0E5C58] rounded-[6px] text-[11px] font-semibold flex items-center justify-center shadow-2xs cursor-pointer" title="Unduh Gambar Kartu PNG Ukuran Asli" onclick=\'downloadCardPngFromRow('.$jsonPayload.', this)\'>
               <i class="bi bi-download"></i>
             </button>
             <a class="h-[30px] bg-white border border-[#D1D5D8] hover:bg-[#ECFDF5] text-[#10B981] rounded-[6px] text-[11px] font-medium transition-colors flex items-center justify-center text-decoration-none shadow-2xs" target="_blank" href="'.e(module_url('inventaris_mutation.php', ['id'=>$cId])).'" title="Mutasi">
               <i class="bi bi-arrow-left-right"></i>
             </a>
-            <a class="h-[30px] bg-white border border-[#D1D5D8] hover:bg-[#D9F1EF] text-[#0E5C58] rounded-[6px] text-[11px] font-medium transition-colors flex items-center justify-center text-decoration-none shadow-2xs" target="_blank" href="'.e(module_url('kartu_detail.php', ['id'=>$cId])).'" title="Detail">
+            <a class="h-[30px] bg-white border border-[#D1D5D8] hover:bg-[#D9F1EF] text-[#0E5C58] rounded-[6px] text-[11px] font-medium transition-colors flex items-center justify-center text-decoration-none shadow-2xs" target="_blank" href="'.e($canonicalCardUrl).'" title="Detail">
               <i class="bi bi-box-arrow-up-right"></i>
             </a>
             <button type="button" class="h-[30px] bg-white border border-[#D1D5D8] hover:bg-[#E0F2FE] text-[#0284C7] rounded-[6px] text-[11px] font-medium transition-colors flex items-center justify-center shadow-2xs cursor-pointer" title="Lihat" onclick=\'openCardPreviewModal('.$jsonPayload.')\'>
@@ -223,8 +231,8 @@ if (empty($displayCards)) {
             <button type="button" class="h-[30px] bg-white border border-[#D1D5D8] hover:bg-[#FEE2E2] text-[#DC2626] rounded-[6px] text-[11px] font-medium transition-colors flex items-center justify-center shadow-2xs cursor-pointer" title="Hapus" onclick="confirmDeleteCard('.$cId.', \''.e(addslashes($rek . ' - ' . $nama)).'\')">
               <i class="bi bi-trash"></i>
             </button>
-          </div>
-        </div>';
+          </footer>
+        </article>';
     }
 }
 

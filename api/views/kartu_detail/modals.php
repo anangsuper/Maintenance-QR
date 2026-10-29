@@ -113,9 +113,15 @@
                         </div>
                     </div>
 
-                    <div class="modal-footer bg-white border-top py-2.5 px-3 d-flex justify-content-between align-items-center">
+                    <div class="modal-footer bg-white border-top py-2.5 px-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
                         <button type="button" class="btn btn-outline-secondary btn-sm rounded-pill px-3" data-bs-dismiss="modal">Batal</button>
-                        <div class="d-flex align-items-center gap-2">
+                        <div class="d-flex align-items-center gap-2 flex-wrap">
+                            <?php if (is_logged_in() && (is_admin() || is_hrd())): ?>
+                                <button type="button" class="btn btn-outline-primary btn-sm rounded-pill px-3 fw-semibold shadow-2xs d-inline-flex align-items-center gap-1.5" onclick="submitEditDataAsAuthorizedStaff()">
+                                    <i class="bi bi-shield-check text-success"></i>
+                                    <span>Simpan via Sesi <?= e(is_admin() ? 'Admin' : 'SDM & Umum') ?></span>
+                                </button>
+                            <?php endif; ?>
                             <button type="button" class="btn btn-primary btn-sm rounded-pill px-3.5 fw-bold shadow-xs d-inline-flex align-items-center gap-1.5" onclick="startFaceAuthForEditData()">
                                 <i class="bi bi-person-bounding-box fs-6"></i>
                                 <span>Validasi Muka &amp; Simpan</span>

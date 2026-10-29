@@ -4,6 +4,8 @@
 // =========================================================================
 $extraScript = '
 <script>
+window.NEXT_KODE_INV_MAP = ' . json_encode($nextKodeInventarisMap ?? []) . ';
+
 function getSelectedCardIds() {
   const cbs = document.querySelectorAll(".card-checkbox:checked");
   const ids = [];
@@ -112,17 +114,15 @@ function handleRekeningInput(el, event) {
     return;
   }
 
-  let p0 = digits.slice(0, 2);
-  let p1 = digits.slice(2, 4);
-  let p2 = digits.slice(4, 9); // Mendukung 4 hingga 5 digit di belakang (contoh: 01.05.0493 atau 01.05.00354)
+  let p0 = digits.slice(0, 2); // 2 digit kode cabang (01 s/d 05)
+  let p1 = digits.slice(2, 3); // 1 digit kelompok aktiva (5)
+  let p2 = digits.slice(3, 8); // 5 digit nomor urut (contoh: 00496)
 
   if (digits.length < 2) {
     el.value = digits;
   } else if (digits.length === 2) {
     el.value = isDelete ? p0 : p0 + ".";
-  } else if (digits.length < 4) {
-    el.value = p0 + "." + digits.slice(2);
-  } else if (digits.length === 4) {
+  } else if (digits.length === 3) {
     el.value = isDelete ? (p0 + "." + p1) : (p0 + "." + p1 + ".");
   } else {
     el.value = p0 + "." + p1 + "." + p2;
@@ -131,6 +131,30 @@ function handleRekeningInput(el, event) {
   if (p0.length === 2) {
     autoSuggestBranchLokasi(p0);
   }
+  if (el.id === "addCardRekening") {
+    autoGenerateCardNoSeri("add");
+  }
+}
+
+function selectAddCardBranch(code) {
+  const rekInput = document.getElementById("addCardRekening");
+  if (rekInput && window.NEXT_KODE_INV_MAP && window.NEXT_KODE_INV_MAP[code]) {
+    rekInput.value = window.NEXT_KODE_INV_MAP[code];
+  } else if (rekInput) {
+    rekInput.value = code + ".5.00001";
+  }
+  const addLok = document.getElementById("addCardLokasi");
+  const mapLok = {
+    "01": "Kantor Pusat (KPO)",
+    "02": "Batulicin",
+    "03": "Martapura",
+    "04": "Tanjung",
+    "05": "Handil Bakti"
+  };
+  if (addLok && mapLok[code]) {
+    addLok.value = mapLok[code];
+  }
+  autoGenerateCardNoSeri("add");
 }
 
 function handleDateInput(el, event) {
@@ -206,29 +230,61 @@ function handleLokasiKeydown(e, el) {
 }
 
 function autoGenerateCardNoSeri(prefix) {
+  var isEdit = (prefix === "edit");
+  var rekInput = document.getElementById(isEdit ? "editCardRekening" : "addCardRekening");
+  var tglInput = document.getElementById(isEdit ? "editCardTanggal" : "addCardTanggal");
+  var idInput = document.getElementById("editCardId");
+
+  var kdCab = "01";
+  var seqNum = "001";
+  if (rekInput && rekInput.value) {
+    var mCab = rekInput.value.trim().match(/^(\d{2})/);
+    if (mCab) kdCab = mCab[1];
+    var digits = rekInput.value.replace(/[^0-9]/g, "");
+    if (digits.length >= 6) {
+      var tail = parseInt(digits.slice(-3), 10);
+      if (!isNaN(tail) && tail > 0) {
+        seqNum = String(tail).padStart(3, "0");
+      }
+    }
+  }
+  if (isEdit && idInput && idInput.value) {
+    var idVal = parseInt(idInput.value, 10);
+    if (!isNaN(idVal) && idVal > 0) {
+      seqNum = String(idVal % 1000 || 1).padStart(3, "0");
+    }
+  }
+
   var d = new Date();
   var dd = String(d.getDate()).padStart(2, "0");
   var mm = String(d.getMonth() + 1).padStart(2, "0");
   var yy = String(d.getFullYear()).slice(-2);
-  var rand = String(Math.floor(1 + Math.random() * 999)).padStart(3, "0");
+  if (tglInput && tglInput.value) {
+    var mTgl = tglInput.value.trim().match(/^(\d{2})[\/\-](\d{2})[\/\-](\d{4})$/);
+    if (mTgl) {
+      dd = mTgl[1];
+      mm = mTgl[2];
+      yy = mTgl[3].slice(-2);
+    }
+  }
 
-  var selR = document.getElementById(prefix === "edit" ? "editCardRuangan" : "addCardRuangan");
+  var selR = document.getElementById(isEdit ? "editCardRuangan" : "addCardRuangan");
   var kdR = "05";
   if (selR && selR.value) {
     var mR = selR.value.match(/^(\d{2})/);
     if (mR) kdR = mR[1];
   }
 
-  var selG = document.getElementById(prefix === "edit" ? "editCardGolongan" : "addCardGolongan");
+  var selG = document.getElementById(isEdit ? "editCardGolongan" : "addCardGolongan");
   var kdG = "02";
   if (selG && selG.value) {
     var mG = selG.value.match(/^(\d{2})/);
     if (mG) kdG = mG[1];
   }
 
-  var target = document.getElementById(prefix === "edit" ? "editCardNoSeri" : "addCardNoSeri");
+  var target = document.getElementById(isEdit ? "editCardNoSeri" : "addCardNoSeri");
   if (target) {
-    target.value = "01." + kdR + "." + kdG + "." + dd + mm + yy + "." + rand;
+    target.value = kdCab + "." + kdR + "." + kdG + "." + dd + mm + yy + "." + seqNum;
   }
 }
 
@@ -525,6 +581,24 @@ function appendModalAction(text) {
 }
 
 document.addEventListener("DOMContentLoaded", function() {
+  const addModalEl = document.getElementById("addCardModal");
+  if (addModalEl) {
+    addModalEl.addEventListener("shown.bs.modal", function() {
+      const addNoSeri = document.getElementById("addCardNoSeri");
+      if (addNoSeri && !addNoSeri.value.trim()) {
+        autoGenerateCardNoSeri("add");
+      }
+      const addLok = document.getElementById("addCardLokasi");
+      if (addLok && !addLok.value.trim()) {
+        addLok.value = "Kantor Pusat (KPO)";
+      }
+    });
+  }
+  ["addCardRuangan", "addCardGolongan", "addCardTanggal"].forEach(function(id) {
+    const el = document.getElementById(id);
+    if (el) el.addEventListener("change", function() { autoGenerateCardNoSeri("add"); });
+  });
+
   const urlParams = new URLSearchParams(window.location.search);
   if (urlParams.get("add") === "1" || window.location.hash === "#addCardModal") {
     const addCardModalEl = document.getElementById("addCardModal");

@@ -24,6 +24,7 @@ require_once __DIR__ . '/includes/audit_trail.php';
 // Pastikan skema tabel inventaris_kartu & master_ruangan siap
 ensure_inventaris_kartu_columns();
 ensure_inventaris_kartu_print_columns();
+csrf_token();
 
 $cardId = (int)($_GET['id'] ?? 0);
 $rekParam = trim((string)($_GET['rek'] ?? $_GET['no_rek'] ?? ''));
@@ -185,10 +186,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     $bioUserId = (int)($_POST['bio_user_id'] ?? 0);
     $bioConfidence = (int)($_POST['bio_confidence'] ?? 0);
 
-    if ($bioVerified !== '1' || empty($bioUserName)) {
-        $dataError = "Perubahan data master ditolak! Wajib diverifikasi melalui pemindaian biometrik wajah staf/teknisi.";
-    } else {
+    $isAuthorizedEdit = false;
+    $verifierLabel = '';
+
+    if ($bioVerified === '1' && !empty($bioUserName)) {
+        $isAuthorizedEdit = true;
         $verifierLabel = $bioUserName . ($bioConfidence > 0 ? " ({$bioConfidence}% Cocok - Scan Wajah)" : " (Scan Wajah)");
+    } elseif (is_logged_in() && (is_admin() || is_hrd())) {
+        $isAuthorizedEdit = true;
+        $staffRole = is_admin() ? 'Sesi Admin' : 'Sesi SDM & Umum';
+        $staffName = current_user_name() ?: (is_admin() ? 'Administrator' : 'Staf SDM & Umum');
+        $verifierLabel = $staffName . " ({$staffRole})";
+        $bioUserName = $staffName;
+    }
+
+    if (!$isAuthorizedEdit) {
+        $dataError = "Perubahan data master ditolak! Wajib diverifikasi melalui pemindaian biometrik wajah staf/teknisi atau sesi resmi Admin/SDM.";
+    } else {
 
         $jenisInv = trim((string)($_POST['jenis_inventaris'] ?? ''));
         $golongan = trim((string)($_POST['golongan'] ?? ''));

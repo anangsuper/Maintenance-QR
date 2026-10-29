@@ -158,6 +158,17 @@
             openBiometricModal();
         }
 
+        function submitEditDataAsAuthorizedStaff() {
+            var form = document.getElementById("editDataKartuForm");
+            if (form && !form.checkValidity()) {
+                form.reportValidity();
+                return;
+            }
+            document.getElementById("editBioVerified").value = "1";
+            document.getElementById("editBioUserName").value = <?= json_encode(current_user_name() ?: 'Admin / SDM') ?>;
+            form.submit();
+        }
+
         function startFaceAuthProcess() {
             window.faceAuthMode = 'upload';
             if (!fileInput || !fileInput.files || fileInput.files.length === 0) {

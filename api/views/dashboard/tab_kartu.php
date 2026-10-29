@@ -16,7 +16,7 @@
           <button type="button" class="h-[34px] px-3.5 bg-[#0E5C58] hover:bg-[#094340] text-white rounded-[6px] text-[12px] font-semibold transition-colors inline-flex items-center gap-1.5 border-0 shadow-xs cursor-pointer" data-bs-toggle="modal" data-bs-target="#addCardModal">
             <i class="bi bi-plus-lg"></i> Tambah Data Kartu
           </button>
-          <a href="'.e(module_url('print_inventory_card.php', ['source'=>'inventaris_kartu', 'status_cetak'=>'belum', 'auto_mark'=>1])).'" target="_blank" class="h-[34px] px-3 bg-[#FFFBEB] border border-[#FDE68A] rounded-[6px] text-[12px] font-bold text-[#B45309] hover:bg-[#FEF3C7] transition-colors inline-flex items-center gap-1.5 text-decoration-none shadow-xs" title="Cetak massal A4 khusus kartu yang belum pernah dicetak &amp; otomatis tandai Sudah Dicetak">
+          <a href="'.e(module_url('print_inventory_card.php', ['source'=>'inventaris_kartu', 'status_cetak'=>'belum'])).'" target="_blank" class="h-[34px] px-3 bg-[#FFFBEB] border border-[#FDE68A] rounded-[6px] text-[12px] font-bold text-[#B45309] hover:bg-[#FEF3C7] transition-colors inline-flex items-center gap-1.5 text-decoration-none shadow-xs" title="Cetak massal A4 khusus kartu yang belum pernah dicetak">
             <i class="bi bi-printer-fill"></i> Cetak Belum Dicetak ('.$unprintedCardsCount.')
           </a>
           <a href="'.e(module_url('print_inventory_card.php', ['source'=>'inventaris_kartu'])).'" target="_blank" class="h-[34px] px-3 bg-white border border-[#D1D5D8] rounded-[6px] text-[12px] font-medium text-[#1B2A3A] hover:bg-[#F4F5F7] transition-colors inline-flex items-center gap-1.5 text-decoration-none shadow-xs">
@@ -48,10 +48,10 @@
       </div>
     </div>
 
-    <!-- 4 Kotak Metrik Ringkasan Tab Kartu Termasuk Baru Diperoleh Hari Ini -->
+    <!-- 4 Kotak Metrik Ringkasan Tab Kartu -->
     <div class="bg-[#FFFFFF] border border-[#D1D5D8] rounded-[10px] flex flex-col sm:flex-row overflow-hidden shrink-0 mb-4 shadow-xs">
       <!-- Card 1: Total Kartu -->
-      <a href="'.e(module_url('dashboard.php', ['tab'=>'kartu'])).'" class="flex-1 flex flex-col justify-center px-5 py-3 border-b sm:border-b-0 sm:border-r border-[#D1D5D8] relative hover:bg-[#F4F5F7] transition-colors text-decoration-none">
+      <a href="'.e(module_url('dashboard.php', ['tab'=>'kartu'])).'" class="flex-1 flex flex-col justify-center px-5 py-3 border-b sm:border-b-0 sm:border-r border-[#D1D5D8] relative '.($statusCetakCard === '' && !$filterHariIni ? 'bg-[#D9F1EF]' : 'hover:bg-[#F4F5F7]').' transition-colors text-decoration-none">
         <div class="absolute left-0 top-0 bottom-0 w-1 bg-[#0E5C58]"></div>
         <div class="text-[26px] font-bold text-[#1B2A3A] tabular-nums leading-none">
           '.number_format($totalCardsCount).' <span class="text-[13px] font-normal text-[#53595F]">Unit</span>
@@ -59,47 +59,49 @@
         <div class="text-[12px] font-medium text-[#53595F] mt-1.5 flex items-center gap-1.5">
           <span class="text-[#0E5C58] font-bold">Total Kartu Inventaris</span>
           <span>&middot;</span>
-          <span class="text-[#53595F] text-[11px]">Semua Unit</span>
+          <span class="text-[#53595F] text-[11px]">100% Ber-QR Resmi</span>
         </div>
       </a>
 
-      <!-- Card 2: Baru Hari Ini -->
-      <a href="'.e(module_url('dashboard.php', ['tab'=>'kartu', 'hari_ini'=>($filterHariIni ? null : 1)])).'" class="flex-1 flex flex-col justify-center px-5 py-3 border-b sm:border-b-0 sm:border-r border-[#D1D5D8] relative '.($filterHariIni ? 'bg-[#ECFDF5]' : 'hover:bg-[#F4F5F7]').' transition-colors text-decoration-none">
+      <!-- Card 2: Belum Dicetak -->
+      <a href="'.e(module_url('dashboard.php', ['tab'=>'kartu', 'status_cetak'=>($statusCetakCard === 'belum' ? null : 'belum')])).'" class="flex-1 flex flex-col justify-center px-5 py-3 border-b sm:border-b-0 sm:border-r border-[#D1D5D8] relative '.($statusCetakCard === 'belum' ? 'bg-[#FFFBEB]' : 'hover:bg-[#F4F5F7]').' transition-colors text-decoration-none">
+        <div class="absolute left-0 top-0 bottom-0 w-1 bg-[#D97706]"></div>
+        <div class="text-[26px] font-bold text-[#D97706] tabular-nums leading-none flex items-center justify-between">
+          <span>'.number_format($unprintedCardsCount).' <span class="text-[13px] font-normal text-[#53595F]">Unit</span></span>
+          <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#FFFBEB] text-[#D97706] border border-[#FDE68A]"><i class="bi bi-hourglass-split me-0.5"></i>Siap Cetak</span>
+        </div>
+        <div class="text-[12px] font-medium text-[#53595F] mt-1.5 flex items-center gap-1.5">
+          <span class="text-[#D97706] font-semibold">Belum Dicetak</span>
+          <span>&middot;</span>
+          <span class="text-[#53595F] text-[11px]">Klik untuk filter</span>
+        </div>
+      </a>
+
+      <!-- Card 3: Sudah Dicetak -->
+      <a href="'.e(module_url('dashboard.php', ['tab'=>'kartu', 'status_cetak'=>($statusCetakCard === 'sudah' ? null : 'sudah')])).'" class="flex-1 flex flex-col justify-center px-5 py-3 border-b sm:border-b-0 sm:border-r border-[#D1D5D8] relative '.($statusCetakCard === 'sudah' ? 'bg-[#ECFDF5]' : 'hover:bg-[#F4F5F7]').' transition-colors text-decoration-none">
         <div class="absolute left-0 top-0 bottom-0 w-1 bg-[#10B981]"></div>
         <div class="text-[26px] font-bold text-[#10B981] tabular-nums leading-none flex items-center justify-between">
-          <span>'.$todayCardsCount.' <span class="text-[13px] font-normal text-[#53595F]">Unit</span></span>
-          '.($todayCardsCount > 0 ? '<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#10B981] text-white"><i class="bi bi-stars me-0.5"></i>Baru</span>' : '').'
+          <span>'.number_format($printedCardsCount).' <span class="text-[13px] font-normal text-[#53595F]">Unit</span></span>
+          <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#ECFDF5] text-[#059669] border border-[#A7F3D0]"><i class="bi bi-check-circle-fill me-0.5"></i>Tercetak</span>
         </div>
         <div class="text-[12px] font-medium text-[#53595F] mt-1.5 flex items-center gap-1.5">
-          <span class="text-[#10B981] font-semibold"><i class="bi bi-funnel me-0.5"></i> Baru Hari Ini</span>
+          <span class="text-[#10B981] font-semibold">Sudah Dicetak</span>
+          <span>&middot;</span>
+          <span class="text-[#53595F] text-[11px]">'.($totalCardsCount > 0 ? round(($printedCardsCount / $totalCardsCount) * 100) : 0).'% Selesai</span>
+        </div>
+      </a>
+
+      <!-- Card 4: Baru Hari Ini -->
+      <a href="'.e(module_url('dashboard.php', ['tab'=>'kartu', 'hari_ini'=>($filterHariIni ? null : 1)])).'" class="flex-1 flex flex-col justify-center px-5 py-3 relative '.($filterHariIni ? 'bg-[#EFF6FF]' : 'hover:bg-[#F4F5F7]').' transition-colors text-decoration-none">
+        <div class="absolute left-0 top-0 bottom-0 w-1 bg-[#0284C7]"></div>
+        <div class="text-[26px] font-bold text-[#0284C7] tabular-nums leading-none flex items-center justify-between">
+          <span>'.$todayCardsCount.' <span class="text-[13px] font-normal text-[#53595F]">Unit</span></span>
+          '.($todayCardsCount > 0 ? '<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#0284C7] text-white"><i class="bi bi-stars me-0.5"></i>Baru</span>' : '').'
+        </div>
+        <div class="text-[12px] font-medium text-[#53595F] mt-1.5 flex items-center gap-1.5">
+          <span class="text-[#0284C7] font-semibold"><i class="bi bi-stars me-0.5"></i> Baru Hari Ini</span>
           <span>&middot;</span>
           <span class="text-[#53595F] text-[11px]">'.date('d/m/Y').'</span>
-        </div>
-      </a>
-
-      <!-- Card 3: Kartu Ber-Label QR -->
-      <a href="'.e(module_url('dashboard.php', ['tab'=>'kartu', 'has_qr'=>($filterHasQr ? null : 1)])).'" class="flex-1 flex flex-col justify-center px-5 py-3 border-b sm:border-b-0 sm:border-r border-[#D1D5D8] relative '.($filterHasQr ? 'bg-[#EFF6FF]' : 'hover:bg-[#F4F5F7]').' transition-colors text-decoration-none">
-        <div class="absolute left-0 top-0 bottom-0 w-1 bg-[#0284C7]"></div>
-        <div class="text-[26px] font-bold text-[#0284C7] tabular-nums leading-none">
-          '.number_format($withQrCardsCount).' <span class="text-[13px] font-normal text-[#53595F]">Unit</span>
-        </div>
-        <div class="text-[12px] font-medium text-[#53595F] mt-1.5 flex items-center gap-1.5">
-          <span class="text-[#0284C7] font-semibold"><i class="bi bi-qr-code me-0.5"></i> Kartu Ber-Label QR</span>
-          <span>&middot;</span>
-          <span class="text-[#53595F] text-[11px]">'.($totalCardsCount > 0 ? round(($withQrCardsCount / $totalCardsCount) * 100) : 0).'% Ber-QR</span>
-        </div>
-      </a>
-
-      <!-- Card 4: Sebaran 5 Kantor Cabang -->
-      <a href="#branchDistributionGrid" onclick="document.getElementById(\'branchDistributionGrid\')?.scrollIntoView({behavior:\'smooth\'})" class="flex-1 flex flex-col justify-center px-5 py-3 relative hover:bg-[#F4F5F7] transition-colors text-decoration-none">
-        <div class="absolute left-0 top-0 bottom-0 w-1 bg-[#D97706]"></div>
-        <div class="text-[26px] font-bold text-[#1B2A3A] tabular-nums leading-none">
-          5 <span class="text-[13px] font-normal text-[#53595F]">Cabang</span>
-        </div>
-        <div class="text-[12px] font-medium text-[#53595F] mt-1.5 flex items-center gap-1.5">
-          <span class="text-[#D97706] font-semibold"><i class="bi bi-buildings me-0.5"></i> Distribusi Kantor</span>
-          <span>&middot;</span>
-          <span class="text-[#53595F] text-[11px]">01 Pusat s/d 05</span>
         </div>
       </a>
     </div>
@@ -208,7 +210,7 @@
       </div>
 
       <!-- Desktop View: Tabel Pas Lebar Layar (Tanpa Scroll Horizontal) -->
-      <div class="d-none d-md-block w-100 overflow-hidden">
+      <div class="d-none d-md-block w-100 overflow-hidden" role="region" aria-label="Daftar Kartu Inventaris" tabindex="0">
         <table class="table table-hover align-middle mb-0 w-100" style="font-size: 13px;">
           <thead style="background: #F4F5F7; border-bottom: 1px solid #D1D5D8;">
             <tr>

@@ -269,7 +269,7 @@ function csrf_token(): string {
             $_SESSION['_csrf'] = (string)$_COOKIE['_csrf_token'];
         } else {
             $_SESSION['_csrf'] = bin2hex(random_bytes(32));
-            setcookie('_csrf_token', $_SESSION['_csrf'], [
+            if (!headers_sent()) setcookie('_csrf_token', $_SESSION['_csrf'], [
                 'expires' => time() + 86400 * 30,
                 'path' => '/',
                 'domain' => '',
