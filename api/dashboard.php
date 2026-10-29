@@ -763,52 +763,52 @@ if (empty($displayCards)) {
         $noSeriBadge = !empty($c['nomor_seri_inventaris']) ? '<span class="badge bg-light text-dark border font-monospace mt-0.5" style="font-size: 0.68rem;"><i class="bi bi-hash me-0.5"></i>'.e($c['nomor_seri_inventaris']).'</span>' : '';
 
         $cardsTableRowsHtml .= '
-        <tr id="card-row-'.$cId.'">
-          <td class="text-center" style="width: 38px;">
-            <input class="form-check-input card-checkbox" type="checkbox" value="'.$cId.'" onchange="updateCardCounters()">
+        <tr id="card-row-'.$cId.'" class="hover:bg-[#F9FAFB] transition-colors">
+          <td class="text-center py-2.5" style="width: 38px;">
+            <input class="form-check-input card-checkbox cursor-pointer" type="checkbox" value="'.$cId.'" onchange="updateCardCounters()">
           </td>
-          <td style="min-width: 140px;">
-            <div class="font-monospace fw-bold text-primary" style="font-size: 0.88rem;">'.e($rek).'</div>
-            <div class="small text-muted font-monospace" style="font-size: 0.72rem;" title="Nomor Aset Gabungan">'.e($gabungan).'</div>
+          <td style="min-width: 140px;" class="py-2.5">
+            <div class="font-mono font-bold text-[#0E5C58] text-[13px]">'.e($rek).'</div>
+            <div class="text-[11px] text-[#53595F] font-mono mt-0.5" title="Nomor Aset Gabungan">'.e($gabungan).'</div>
             '.$noSeriBadge.'
           </td>
-          <td>
-            <div class="d-flex align-items-center gap-2.5">
+          <td class="py-2.5">
+            <div class="flex items-center gap-2.5">
               '.$photoThumbHtml.'
-              <div>
-                <a href="'.e(module_url('kartu_detail.php', ['id'=>$cId])).'" target="_blank" class="fw-semibold text-dark text-decoration-none hover-primary text-break" title="Buka Detail &amp; Foto Fisik">'.e($nama).'</a>
-                <div class="small text-secondary font-monospace mt-0.5">
-                  <i class="bi bi-calendar-event text-primary me-1"></i>'.e($tglCard).'
+              <div class="min-w-0">
+                <a href="'.e(module_url('kartu_detail.php', ['id'=>$cId])).'" target="_blank" class="font-semibold text-[#1B2A3A] hover:text-[#0E5C58] transition-colors text-decoration-none text-break text-[13px]" title="Buka Detail &amp; Foto Fisik">'.e($nama).'</a>
+                <div class="text-[11px] text-[#53595F] font-mono mt-0.5 flex items-center gap-1">
+                  <i class="bi bi-calendar-event text-[#0E5C58]"></i>'.e($tglCard).'
                   '.$todayBadge.'
                 </div>
               </div>
             </div>
           </td>
-          <td style="width: 100px;" class="text-center">
-            '.($barcode ? '<a href="'.e($barcode).'" target="_blank" class="badge bg-primary-subtle text-primary border border-primary-subtle text-decoration-none py-1 px-2" title="'.e($barcode).'"><i class="bi bi-qr-code me-1"></i>Label QR</a>' : '<span class="text-muted small">-</span>').'
+          <td style="width: 100px;" class="text-center py-2.5">
+            '.($barcode ? '<a href="'.e($barcode).'" target="_blank" class="px-2 py-0.5 rounded-[4px] text-[11px] font-bold bg-[#D9F1EF] text-[#0E5C58] border border-[#A7E2DC] text-decoration-none inline-flex items-center gap-1 shadow-2xs" title="'.e($barcode).'"><i class="bi bi-qr-code"></i>QR</a>' : '<span class="text-[#A0A5AA] text-[12px]">-</span>').'
           </td>
-          <td style="width: 90px;" class="text-center">
+          <td style="width: 90px;" class="text-center py-2.5">
             <span class="badge px-2 py-1 rounded-pill '.$lokasiBadgeClass.'" style="font-size: 0.75rem; font-weight: 600;">'.e($lokasi).'</span>
           </td>
-          <td class="text-end text-nowrap" style="min-width: 390px;">
-            <div class="btn-group btn-group-sm shadow-xs">
-              <a class="btn btn-sm btn-light border text-success fw-medium" target="_blank" href="'.e(module_url('inventaris_mutation.php', ['id'=>$cId])).'" title="Mutasi Fasilitas &amp; Kartu Inventaris" style="font-size: 0.78rem; padding: 3px 8px;">
-                <i class="bi bi-arrow-left-right me-1"></i>Mutasi
+          <td class="text-end text-nowrap py-2.5 pe-3" style="min-width: 380px;">
+            <div class="inline-flex items-center gap-1">
+              <a class="h-[28px] px-2 bg-white border border-[#D1D5D8] hover:bg-[#ECFDF5] text-[#10B981] rounded-[5px] text-[11px] font-medium transition-colors inline-flex items-center gap-1 text-decoration-none shadow-2xs" target="_blank" href="'.e(module_url('inventaris_mutation.php', ['id'=>$cId])).'" title="Mutasi Fasilitas &amp; Kartu Inventaris">
+                <i class="bi bi-arrow-left-right"></i> Mutasi
               </a>
-              <a class="btn btn-sm btn-light border text-primary fw-medium" target="_blank" href="'.e(module_url('kartu_detail.php', ['id'=>$cId])).'" title="Buka Detail Web &amp; Foto" style="font-size: 0.78rem; padding: 3px 8px;">
-                <i class="bi bi-box-arrow-up-right me-1"></i>Detail
+              <a class="h-[28px] px-2 bg-white border border-[#D1D5D8] hover:bg-[#D9F1EF] text-[#0E5C58] rounded-[5px] text-[11px] font-medium transition-colors inline-flex items-center gap-1 text-decoration-none shadow-2xs" target="_blank" href="'.e(module_url('kartu_detail.php', ['id'=>$cId])).'" title="Buka Detail Web &amp; Foto">
+                <i class="bi bi-box-arrow-up-right"></i> Detail
               </a>
-              <button type="button" class="btn btn-sm btn-light border text-info-emphasis fw-medium" title="Pratinjau Fisik Kartu" onclick=\'openCardPreviewModal('.$jsonPayload.')\' style="font-size: 0.78rem; padding: 3px 8px;">
-                <i class="bi bi-eye me-1 text-info"></i>Lihat
+              <button type="button" class="h-[28px] px-2 bg-white border border-[#D1D5D8] hover:bg-[#E0F2FE] text-[#0284C7] rounded-[5px] text-[11px] font-medium transition-colors inline-flex items-center gap-1 shadow-2xs cursor-pointer" title="Pratinjau Fisik Kartu" onclick=\'openCardPreviewModal('.$jsonPayload.')\'>
+                <i class="bi bi-eye"></i> Lihat
               </button>
-              <a class="btn btn-sm btn-light border text-dark fw-medium" target="_blank" href="'.e(module_url('print_inventory_card.php', ['source'=>'inventaris_kartu', 'id'=>$cId])).'" title="Cetak Kartu Ini" style="font-size: 0.78rem; padding: 3px 8px;">
-                <i class="bi bi-printer me-1"></i>Cetak
+              <a class="h-[28px] px-2 bg-white border border-[#D1D5D8] hover:bg-[#F4F5F7] text-[#1B2A3A] rounded-[5px] text-[11px] font-medium transition-colors inline-flex items-center gap-1 text-decoration-none shadow-2xs" target="_blank" href="'.e(module_url('print_inventory_card.php', ['source'=>'inventaris_kartu', 'id'=>$cId])).'" title="Cetak Kartu Ini">
+                <i class="bi bi-printer"></i> Cetak
               </a>
-              <button type="button" class="btn btn-sm btn-light border text-warning-emphasis fw-medium" title="Edit Kartu" onclick=\'openCardEditModal('.$jsonPayload.')\' style="font-size: 0.78rem; padding: 3px 8px;">
-                <i class="bi bi-pencil me-1 text-warning-emphasis"></i>Edit
+              <button type="button" class="h-[28px] px-2 bg-white border border-[#D1D5D8] hover:bg-[#FEF3C7] text-[#D97706] rounded-[5px] text-[11px] font-medium transition-colors inline-flex items-center gap-1 shadow-2xs cursor-pointer" title="Edit Kartu" onclick=\'openCardEditModal('.$jsonPayload.')\'>
+                <i class="bi bi-pencil"></i> Edit
               </button>
-              <button type="button" class="btn btn-sm btn-light border text-danger fw-medium" title="Hapus Kartu" onclick="confirmDeleteCard('.$cId.', \''.e(addslashes($rek . ' - ' . $nama)).'\')" style="font-size: 0.78rem; padding: 3px 8px;">
-                <i class="bi bi-trash me-1"></i>Hapus
+              <button type="button" class="h-[28px] px-2 bg-white border border-[#D1D5D8] hover:bg-[#FEE2E2] text-[#DC2626] rounded-[5px] text-[11px] font-medium transition-colors inline-flex items-center gap-1 shadow-2xs cursor-pointer" title="Hapus Kartu" onclick="confirmDeleteCard('.$cId.', \''.e(addslashes($rek . ' - ' . $nama)).'\')">
+                <i class="bi bi-trash"></i> Hapus
               </button>
             </div>
           </td>
@@ -1391,19 +1391,19 @@ $head = '
 $branchCardsGridHtml = '';
 foreach ($cabangStats as $bCode => $b) {
     $isBranchActive = ($cabangCard === $bCode);
-    $todayBadgeBranch = $b['today'] > 0 ? '<span class="badge bg-success-subtle text-success border border-success-subtle ms-1" style="font-size: 0.65rem; font-weight: 700;">+'.$b['today'].' Hari Ini</span>' : '';
+    $todayBadgeBranch = $b['today'] > 0 ? '<span class="px-1.5 py-0.5 text-[10px] font-bold bg-[#10B981] text-white rounded-full ms-1">+'.$b['today'].' Hari Ini</span>' : '';
     $branchCardsGridHtml .= '
     <div class="col-6 col-md-4 col-lg">
       <a href="'.e(module_url('dashboard.php', ['tab'=>'kartu', 'cabang_kartu'=>($isBranchActive ? '' : $bCode)])).'" class="text-decoration-none">
-        <div class="p-2 px-3 rounded border '.($isBranchActive ? 'border-primary bg-primary-subtle shadow-sm' : 'border-light-subtle bg-light').' h-100 transition-all" style="cursor: pointer;">
-          <div class="d-flex justify-content-between align-items-center">
-            <span class="font-monospace fw-bold small '.($isBranchActive ? 'text-primary' : 'text-secondary').'">'.$bCode.'</span>
+        <div class="p-2.5 px-3 rounded-[8px] border '.($isBranchActive ? 'border-[#0E5C58] bg-[#D9F1EF] shadow-xs' : 'border-[#D1D5D8] bg-[#F8F9FA] hover:bg-[#F4F5F7]').' h-100 transition-all cursor-pointer">
+          <div class="flex justify-between items-center">
+            <span class="font-mono font-bold text-[12px] '.($isBranchActive ? 'text-[#0E5C58]' : 'text-[#53595F]').'">'.$bCode.'</span>
             '.$todayBadgeBranch.'
           </div>
-          <div class="fw-bold text-dark text-truncate mt-1" style="font-size: 0.85rem;">'.e($b['name']).'</div>
-          <div class="d-flex align-items-baseline gap-1 mt-1">
-            <span class="fs-5 fw-bold '.($isBranchActive ? 'text-primary' : 'text-dark').'">'.$b['count'].'</span>
-            <span class="text-muted small" style="font-size: 0.72rem;">kartu</span>
+          <div class="font-bold text-[#1B2A3A] text-truncate text-[13px] mt-1">'.e($b['name']).'</div>
+          <div class="flex items-baseline gap-1 mt-1">
+            <span class="text-[18px] font-bold '.($isBranchActive ? 'text-[#0E5C58]' : 'text-[#1B2A3A]').' tabular-nums">'.$b['count'].'</span>
+            <span class="text-[#53595F] text-[11px]">kartu</span>
           </div>
         </div>
       </a>
@@ -1458,188 +1458,92 @@ $body = '
 '.($flashError ? '<div class="alert alert-danger alert-dismissible fade show border-0 shadow-sm mb-3"><i class="bi bi-exclamation-triangle-fill me-2 text-danger"></i>'.e($flashError).'<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>' : '');
 
 if (is_hrd() && !is_admin()) {
-    // BROWSER WINDOW NEO CONTAINER (EMERALD / TEAL THEME UNTUK SDM & SARPRAS)
+    // KOMBAI TEAL CONTAINER UNTUK SDM & SARPRAS
     $body .= '
-    <div class="card p-0 shadow-sm border-0 browser-window-card mb-4" style="border-radius: 16px;">
-      <!-- Browser Window Topbar with Traffic Lights & Materio Minimalist Breadcrumb -->
-      <div class="card-header bg-white py-3 px-4 border-bottom d-flex align-items-center justify-content-between flex-wrap gap-2" style="border-top-left-radius: 16px; border-top-right-radius: 16px;">
-        <div class="browser-topbar-col-left d-flex align-items-center gap-2">
-          <span class="browser-traffic-dot bg-danger"></span>
-          <span class="browser-traffic-dot bg-warning"></span>
-          <span class="browser-traffic-dot bg-success"></span>
-        </div>
-
-        <div class="browser-topbar-col-center">
-          <div class="browser-address-pill">
-            <i class="bi bi-shield-check text-primary"></i>
-            <span>bankmitra.id/dashboard.php?tab=kartu</span>
+    <div class="max-w-[1152px] mx-auto flex flex-col">
+      <!-- Heading Row with Page Title and Actions -->
+      <div class="mb-4 flex flex-col md:flex-row md:items-center justify-between gap-3">
+        <div>
+          <div class="text-[11px] font-bold text-[#0E5C58] uppercase tracking-wider mb-1 flex items-center gap-1.5">
+            <i class="bi bi-building-gear"></i> PENGELOLAAN SARANA &amp; PRASARANA
           </div>
+          <h1 class="text-[22px] font-bold text-[#1B2A3A] tracking-tight m-0">Dashboard Inventaris &amp; Sarana Prasarana</h1>
+          <p class="text-[13px] text-[#53595F] mt-1 mb-0">Pusat pengelolaan inventaris fisik, memo pengajuan pengadaan, dan cetak kartu label BPR Mitratama Arthabuana.</p>
         </div>
-
-        <div class="browser-topbar-col-right">
-          <div class="floating-toast-pill">
-            <div class="floating-toast-icon-amber" style="background: linear-gradient(135deg, #8C57FF 0%, #7135FF 100%); box-shadow: 0 4px 10px rgba(140, 87, 255, 0.25);">
-              <i class="bi bi-building-gear text-white"></i>
-            </div>
-            <div class="text-start">
-              <div class="fw-bold text-dark" style="font-size: 0.76rem; line-height: 1.2;">Sarana &amp; Prasarana</div>
-              <div class="text-muted" style="font-size: 0.68rem;">SDM &amp; Umum · KPO Bank Mitra</div>
-            </div>
-          </div>
+        <div class="flex flex-wrap items-center gap-2 shrink-0">
+          <button type="button" class="h-[36px] px-3.5 bg-[#0E5C58] hover:bg-[#094340] text-white rounded-[8px] text-[13px] font-semibold transition-colors inline-flex items-center gap-1.5 border-0 shadow-xs cursor-pointer" data-bs-toggle="modal" data-bs-target="#addCardModal">
+            <i class="bi bi-plus-lg"></i> Buat Kartu Baru
+          </button>
+          <a href="'.e(module_url('memo_pengajuan.php')).'" class="h-[36px] px-3 bg-white border border-[#D1D5D8] rounded-[8px] text-[13px] font-medium text-[#1B2A3A] hover:bg-[#F4F5F7] transition-colors inline-flex items-center gap-1.5 text-decoration-none shadow-xs">
+            <i class="bi bi-file-earmark-text text-[#0E5C58]"></i> Memo Pengajuan
+          </a>
+          <a href="'.e(module_url('asset_disposal.php')).'" class="h-[36px] px-3 bg-white border border-[#D1D5D8] rounded-[8px] text-[13px] font-medium text-[#1B2A3A] hover:bg-[#F4F5F7] transition-colors inline-flex items-center gap-1.5 text-decoration-none shadow-xs">
+            <i class="bi bi-trash3 text-[#DC2626]"></i> Penghapusan (Afkir)
+          </a>
+          <a href="'.e(module_url('inventaris_mutation.php')).'" class="h-[36px] px-3 bg-white border border-[#D1D5D8] rounded-[8px] text-[13px] font-medium text-[#1B2A3A] hover:bg-[#F4F5F7] transition-colors inline-flex items-center gap-1.5 text-decoration-none shadow-xs">
+            <i class="bi bi-arrow-left-right text-[#0284C7]"></i> Mutasi Barang
+          </a>
         </div>
       </div>
 
-      <!-- Inner Canvas with Materio Hero Banner & Modern Metric Cards -->
-      <div class="p-3 p-md-4">
-        <!-- Hero Banner Card with Materio Violet Gradient & Modern Action Buttons -->
-        <div class="card-hero-neo mb-4" style="background: linear-gradient(72.47deg, #8C57FF 0%, #6827EB 100%) !important; box-shadow: 0 10px 30px -4px rgba(140, 87, 255, 0.45) !important; border-radius: 16px; border: 1px solid rgba(255, 255, 255, 0.15); position: relative; overflow: hidden;">
-          <!-- Ambient Wave Accents at Bottom -->
-          <svg class="position-absolute bottom-0 start-0 w-100" style="height: 60px; pointer-events: none; opacity: 0.16;" preserveAspectRatio="none" viewBox="0 0 1200 120">
-            <path d="M0,0 C150,90 400,100 600,40 C800,-20 1050,80 1200,30 L1200,120 L0,120 Z" fill="#FFFFFF"></path>
-          </svg>
-          <svg class="position-absolute bottom-0 start-0 w-100" style="height: 40px; pointer-events: none; opacity: 0.22;" preserveAspectRatio="none" viewBox="0 0 1200 120">
-            <path d="M0,40 C300,10 600,80 900,30 C1050,10 1150,50 1200,60 L1200,120 L0,120 Z" fill="#FFFFFF"></path>
-          </svg>
-
-          <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 position-relative" style="z-index: 2;">
-            <div style="max-width: 650px;">
-              <div class="d-flex align-items-center gap-2 mb-2 flex-wrap">
-                <span class="badge bg-white text-primary px-2.5 py-1 font-monospace fw-bold shadow-xs" style="font-size: 0.70rem; letter-spacing: 0.05em; border-radius: 6px; color: #7135FF !important;">PORTAL SARPRAS</span>
-                <span class="text-white text-opacity-85 small fw-semibold">Selamat bertugas, <strong>'.e($_SESSION['nama'] ?? 'Petugas').'</strong></span>
-              </div>
-              <h2 class="display-6 fw-bold mb-1 text-white" style="letter-spacing: -0.025em;">Pusat Inventaris &amp; Pengadaan</h2>
-              <p class="text-white text-opacity-95 mb-3" style="font-size: 0.95rem; font-weight: 500;">
-                Kelola kartu inventaris fisik perabot kantor, permohonan memo pengadaan sarana baru, serta cetak label identitas fisik CR80/PVC.
-              </p>
-              <div class="d-flex flex-wrap align-items-center gap-2">
-                <button type="button" class="btn btn-light rounded-pill px-3.5 py-2 fw-bold d-inline-flex align-items-center gap-2 shadow-sm text-decoration-none" style="color: #7135FF !important; font-size: 0.88rem;" data-bs-toggle="modal" data-bs-target="#addCardModal">
-                  <i class="bi bi-plus-circle-fill" style="color: #7135FF;"></i> <span>Buat Kartu Baru</span>
-                </button>
-                <a href="'.e(module_url('memo_pengajuan.php')).'" class="btn btn-outline-light rounded-pill px-3 py-2 fw-semibold d-inline-flex align-items-center gap-2 shadow-xs" style="font-size: 0.88rem; background: rgba(255, 255, 255, 0.12); border-color: rgba(255, 255, 255, 0.28);">
-                  <i class="bi bi-file-earmark-text-fill"></i> <span>Memo Pengajuan</span>
-                </a>
-                <a href="'.e(module_url('asset_disposal.php')).'" class="btn btn-outline-light rounded-pill px-3 py-2 fw-semibold d-inline-flex align-items-center gap-2 shadow-xs" style="font-size: 0.88rem; background: rgba(255, 255, 255, 0.12); border-color: rgba(255, 255, 255, 0.28);">
-                  <i class="bi bi-trash3-fill"></i> <span>Penghapusan (Afkir)</span>
-                </a>
-                <a href="'.e(module_url('inventaris_mutation.php')).'" class="btn btn-outline-light rounded-pill px-3 py-2 fw-semibold d-inline-flex align-items-center gap-2 shadow-xs" style="font-size: 0.88rem; background: rgba(255, 255, 255, 0.12); border-color: rgba(255, 255, 255, 0.28);">
-                  <i class="bi bi-arrow-left-right"></i> <span>Mutasi Barang</span>
-                </a>
-              </div>
-            </div>
-
-            <!-- Decorative Right Badges (Materio Glassmorphic Card Badge) -->
-            <div class="d-none d-lg-flex align-items-center gap-3 pe-2">
-              <div class="p-3 text-center rounded-4 shadow-sm" style="background: rgba(255, 255, 255, 0.14); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.22); min-width: 140px;">
-                <div class="d-inline-flex align-items-center justify-content-center mb-2" style="width: 50px; height: 50px; border-radius: 12px; background: rgba(255, 255, 255, 0.22); box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
-                  <i class="bi bi-credit-card-2-front-fill text-white fs-3"></i>
-                </div>
-                <div class="text-white fw-bold small mb-0 lh-sm">CR80 &amp; QR</div>
-                <div class="text-white text-opacity-75" style="font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.05em;">Aset Resmi</div>
-              </div>
-            </div>
+      <!-- Symmetrical Metric Strip (88px) -->
+      <div class="bg-[#FFFFFF] border border-[#D1D5D8] rounded-[10px] h-[88px] flex overflow-hidden shrink-0 mb-4 shadow-xs">
+        <!-- Card 1: Total Kartu Inventaris -->
+        <a href="'.e(module_url('dashboard.php', ['tab'=>'kartu'])).'" class="flex-1 flex flex-col justify-center px-6 border-r border-[#D1D5D8] relative hover:bg-[#F4F5F7] transition-colors text-decoration-none">
+          <div class="absolute left-0 top-0 bottom-0 w-1 bg-[#0E5C58]"></div>
+          <div class="text-[28px] font-bold text-[#1B2A3A] tabular-nums leading-none">
+            '.number_format($totalCardsCount).' <span class="text-[13px] font-normal text-[#53595F]">Aset</span>
           </div>
-        </div>
-
-        <!-- 3 Symmetrical Metric Cards -->
-        <div class="row g-3 mb-2">
-          <!-- Card 1: Total Kartu Inventaris -->
-          <div class="col-md-4">
-            <div class="card-metric-modern">
-              <div>
-                <div class="metric-title-muted">Kartu Inventaris Aktif</div>
-                <div class="metric-number-bold">'.number_format($totalCardsCount).' <span class="fs-6 fw-normal text-muted">Aset</span></div>
-              </div>
-              <div class="small text-muted mt-2 d-flex align-items-center gap-2" style="font-size: 0.78rem;">
-                <span class="text-success fw-bold"><i class="bi bi-check-circle-fill"></i> Terdaftar Resmi</span>
-                '.($todayCardsCount > 0 ? '<span class="text-secondary">·</span> <span class="text-primary fw-bold">+'.$todayCardsCount.' Hari Ini</span>' : '').'
-              </div>
-            </div>
+          <div class="text-[12px] font-medium text-[#53595F] mt-1.5 flex items-center gap-1.5">
+            <span class="text-[#10B981] font-semibold"><i class="bi bi-check-circle-fill me-0.5"></i> Terdaftar Resmi</span>
+            '.($todayCardsCount > 0 ? '<span>&middot;</span> <span class="text-[#0E5C58] font-bold">+'.$todayCardsCount.' Hari Ini</span>' : '').'
           </div>
+        </a>
 
-          <!-- Card 2: Foto Inventaris Bank -->
-          <div class="col-md-4">
-            <a href="'.e(module_url('asset_gallery.php', ['sub' => 'inventaris'])).'" class="text-decoration-none d-block h-100">
-              <div class="card-metric-modern" style="cursor: pointer;">
-                <div>
-                  <div class="metric-title-muted">Dokumentasi Foto Fisik</div>
-                  <div class="metric-number-bold d-flex align-items-center gap-2 text-primary">
-                    <span>'.number_format($totalInvWithPhotoCount).'</span>
-                    <i class="bi bi-camera-fill text-primary" style="font-size: 1.5rem;"></i>
-                  </div>
-                </div>
-                <div class="small text-primary mt-2 fw-semibold" style="font-size: 0.78rem;">
-                  <i class="bi bi-images me-1"></i> Buka Galeri Foto Inventaris &raquo;
-                </div>
-              </div>
-            </a>
+        <!-- Card 2: Dokumentasi Foto Fisik -->
+        <a href="'.e(module_url('asset_gallery.php', ['sub'=>'inventaris'])).'" class="flex-1 flex flex-col justify-center px-6 border-r border-[#D1D5D8] relative hover:bg-[#F4F5F7] transition-colors text-decoration-none">
+          <div class="absolute left-0 top-0 bottom-0 w-1 bg-[#0284C7]"></div>
+          <div class="text-[28px] font-bold text-[#0284C7] tabular-nums leading-none">
+            '.number_format($totalInvWithPhotoCount).' <span class="text-[13px] font-normal text-[#53595F]">Foto Unit</span>
           </div>
+          <div class="text-[12px] font-medium text-[#53595F] mt-1.5 flex items-center gap-1.5">
+            <span class="text-[#0284C7] font-semibold"><i class="bi bi-camera-fill me-0.5"></i> Galeri Foto Fisik</span>
+            <span>&middot;</span>
+            <span class="text-[#53595F] text-[11px]">'.($totalCardsCount > 0 ? round(($totalInvWithPhotoCount / $totalCardsCount) * 100) : 0).'% Terdokumentasi</span>
+          </div>
+        </a>
 
-          <!-- Card 3: Jaringan Kantor Cabang -->
-          <div class="col-md-4">
-            <a href="'.e(module_url('cabang_admin.php')).'" class="text-decoration-none d-block h-100">
-              <div class="card-metric-modern" style="cursor: pointer;">
-                <div>
-                  <div class="metric-title-muted">Jaringan Kantor Bank</div>
-                  <div class="metric-number-bold d-flex align-items-center gap-2">
-                    <span>5 Cabang</span>
-                    <span class="badge bg-success-subtle text-success small rounded-pill px-2.5 py-1" style="font-size: 0.72rem;"><i class="bi bi-check-circle-fill me-1"></i>Aktif</span>
-                  </div>
-                </div>
-                <div class="small text-muted mt-2 fw-semibold" style="font-size: 0.78rem;">
-                  <i class="bi bi-buildings me-1 text-primary"></i> Kelola Alamat &amp; Data Cabang &raquo;
-                </div>
-              </div>
-            </a>
+        <!-- Card 3: Jaringan Kantor Bank -->
+        <a href="'.e(module_url('cabang_admin.php')).'" class="flex-1 flex flex-col justify-center px-6 relative hover:bg-[#F4F5F7] transition-colors text-decoration-none">
+          <div class="absolute left-0 top-0 bottom-0 w-1 bg-[#10B981]"></div>
+          <div class="text-[28px] font-bold text-[#1B2A3A] tabular-nums leading-none">
+            5 <span class="text-[13px] font-normal text-[#53595F]">Cabang</span>
           </div>
-        </div>
-
-        <!-- Upward Trend Chart with Overlapping Floating Trend Badge -->
-        <div class="position-relative mt-2 pt-1 mb-2">
-          <div class="w-100 position-relative overflow-hidden rounded-4 trend-chart-box" style="height: 72px; border: 1px solid var(--border-subtle, #E2E8F0);">
-            <svg viewBox="0 0 1000 72" preserveAspectRatio="none" style="width: 100%; height: 100%;">
-              <defs>
-                <linearGradient id="chartGradHrd" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stop-color="#8C57FF" stop-opacity="0.25"/>
-                  <stop offset="100%" stop-color="#8C57FF" stop-opacity="0.0"/>
-                </linearGradient>
-              </defs>
-              <path d="M0,58 Q250,46 500,32 T1000,10 L1000,72 L0,72 Z" fill="url(#chartGradHrd)"/>
-              <path d="M0,58 Q250,46 500,32 T1000,10" fill="none" stroke="#8C57FF" stroke-width="3" stroke-linecap="round"/>
-              <circle cx="994" cy="10" r="5" fill="#8C57FF" stroke="#FFFFFF" stroke-width="2"/>
-            </svg>
-            <div class="position-absolute top-0 end-0 p-2 text-muted" style="font-size: 0.72rem; font-weight: 600;">
-              Distribusi Aset Sarpras · Terintegrasi
-            </div>
+          <div class="text-[12px] font-medium text-[#53595F] mt-1.5 flex items-center gap-1.5">
+            <span class="text-[#10B981] font-semibold"><i class="bi bi-buildings-fill me-0.5"></i> 01 Pusat s/d 05 Handil</span>
+            <span>&middot;</span>
+            <span class="text-[#0E5C58] font-bold">100% Aktif</span>
           </div>
-
-          <!-- Floating Trend Badge Overlapping Left of Chart -->
-          <div class="position-absolute" style="left: 16px; bottom: 10px; z-index: 4;">
-            <div class="badge-floating-trend shadow">
-              <div class="trend-icon-box" style="background: linear-gradient(135deg, #8C57FF 0%, #7135FF 100%);">
-                <i class="bi bi-box-seam-fill"></i>
-              </div>
-              <div>
-                <div class="fw-bold text-dark" style="font-size: 0.88rem;">+'.$totalCardsCount.' kartu inventaris aktif</div>
-                <div class="text-muted small" style="font-size: 0.74rem;">Siap cetak label QR &amp; kartu fisik CR80</div>
-              </div>
-            </div>
-          </div>
-        </div>
+        </a>
       </div>
-    </div>';
 
-    // TABS NAVIGATION: KHUSUS SDM & UMUM
-    $body .= '
-    <div class="dashboard-main-nav">
-      <a class="dashboard-nav-tab active" href="'.e(module_url('dashboard.php', ['tab' => 'kartu'])).'">
-        <i class="bi bi-credit-card-2-front"></i> Kartu Inventaris &amp; Label QR
-        <span class="badge bg-primary text-white rounded-pill ms-1">'.$totalCardsCount.'</span>
-      </a>
-      <a class="dashboard-nav-tab" href="'.e(module_url('asset_gallery.php', ['sub' => 'inventaris'])).'">
-        <i class="bi bi-images"></i> Galeri Foto Inventaris
-        <span class="badge bg-info text-white rounded-pill ms-1">'.$totalInvWithPhotoCount.'</span>
-      </a>
-    </div>';
+      <!-- Tabs Navigation (44px) -->
+      <div class="flex gap-6 h-[44px] border-b border-[#D1D5D8] shrink-0 mb-4">
+        <a href="'.e(module_url('dashboard.php', ['tab'=>'kartu'])).'" class="h-full flex items-center font-bold text-[#1B2A3A] border-b-[3px] border-[#0E5C58] px-1 relative top-[1px] transition-colors text-decoration-none">
+          <i class="bi bi-credit-card-2-front me-1.5 text-[#0E5C58]"></i> Kartu Inventaris ('.$totalCardsCount.')
+        </a>
+        <a href="'.e(module_url('asset_gallery.php', ['sub'=>'inventaris'])).'" class="h-full flex items-center font-semibold text-[#53595F] hover:text-[#1B2A3A] border-b-[3px] border-transparent px-1 relative top-[1px] transition-colors text-decoration-none">
+          <i class="bi bi-images me-1.5"></i> Galeri Foto ('.$totalInvWithPhotoCount.')
+        </a>
+        <a href="'.e(module_url('memo_pengajuan.php')).'" class="h-full flex items-center font-semibold text-[#53595F] hover:text-[#1B2A3A] border-b-[3px] border-transparent px-1 relative top-[1px] transition-colors text-decoration-none">
+          <i class="bi bi-file-earmark-text me-1.5"></i> Memo Pengajuan
+        </a>
+        <a href="'.e(module_url('asset_disposal.php')).'" class="h-full flex items-center font-semibold text-[#53595F] hover:text-[#1B2A3A] border-b-[3px] border-transparent px-1 relative top-[1px] transition-colors text-decoration-none">
+          <i class="bi bi-trash3 me-1.5"></i> Penghapusan (BA-Afkir)
+        </a>
+      </div>
+    ' ;
+
 } else {
     // =========================================================================
     // HEADER & METRIC STRIP IT OPERATIONS - SESUAI DESAIN ANTREAN PEMELIHARAAN
@@ -1746,43 +1650,44 @@ if (is_hrd() && !is_admin()) {
 // 7. KONTEN TAB: KARTU INVENTARIS ATAU MONITORING
 // =========================================================================
 if ($activeTab === 'kartu') {
-    // --- TAMPILAN TAB KARTU INVENTARIS (DISAMAKAN PERSIS DENGAN WEBSITE QR) ---
+    // --- TAMPILAN TAB KARTU INVENTARIS (KOMBAI TEAL DESIGN SYSTEM) ---
     $body .= '
     <!-- Minimalist Action Toolbar Tab Kartu -->
-    <div class="card p-3 mb-4 bg-white border shadow-xs">
-      <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
-        <div class="d-flex align-items-center gap-2 flex-wrap">
-          <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-2.5 py-1 font-monospace fw-bold" style="font-size: 0.72rem; letter-spacing: 0.04em; border-radius: 6px;">KARTU INVENTARIS</span>
-          <span class="text-secondary small">Kelola data kartu fisik CR80, penerbitan QR code, cetak massal A4, dan ekspor dokumen.</span>
+    <div class="bg-white border border-[#D1D5D8] rounded-[10px] p-3.5 mb-4 shadow-xs">
+      <div class="flex flex-col md:flex-row md:items-center justify-between gap-3">
+        <div class="flex items-center gap-2 flex-wrap">
+          <span class="px-2.5 py-1 text-[11px] font-bold bg-[#D9F1EF] text-[#0E5C58] border border-[#A7E2DC] rounded-[6px] font-mono tracking-wider">
+            KARTU INVENTARIS
+          </span>
+          <span class="text-[13px] text-[#53595F]">
+            Kelola data kartu fisik CR80, penerbitan QR code, cetak massal A4, dan ekspor dokumen.
+          </span>
         </div>
-        <div class="d-flex flex-wrap align-items-center gap-2">
-          <button type="button" class="btn btn-sm btn-primary fw-semibold shadow-xs d-inline-flex align-items-center gap-1.5" data-bs-toggle="modal" data-bs-target="#addCardModal">
+        <div class="flex flex-wrap items-center gap-2 shrink-0">
+          <button type="button" class="h-[34px] px-3.5 bg-[#0E5C58] hover:bg-[#094340] text-white rounded-[6px] text-[12px] font-semibold transition-colors inline-flex items-center gap-1.5 border-0 shadow-xs cursor-pointer" data-bs-toggle="modal" data-bs-target="#addCardModal">
             <i class="bi bi-plus-lg"></i> Tambah Data Kartu
           </button>
-          <a href="'.e(module_url('import_fbd3.php')).'" class="btn btn-sm btn-outline-secondary bg-white d-inline-flex align-items-center gap-1.5">
-            <i class="bi bi-file-earmark-excel text-success"></i> Import FBD3
-          </a>
-          <a href="'.e(module_url('print_inventory_card.php', ['source'=>'inventaris_kartu'])).'" target="_blank" class="btn btn-sm btn-outline-secondary bg-white d-inline-flex align-items-center gap-1.5">
-            <i class="bi bi-printer"></i> Cetak A4
+          <a href="'.e(module_url('print_inventory_card.php', ['source'=>'inventaris_kartu'])).'" target="_blank" class="h-[34px] px-3 bg-white border border-[#D1D5D8] rounded-[6px] text-[12px] font-medium text-[#1B2A3A] hover:bg-[#F4F5F7] transition-colors inline-flex items-center gap-1.5 text-decoration-none shadow-xs">
+            <i class="bi bi-printer text-[#0E5C58]"></i> Cetak A4
           </a>
           <div class="dropdown">
-            <button class="btn btn-sm btn-outline-secondary bg-white dropdown-toggle d-inline-flex align-items-center gap-1.5" type="button" data-bs-toggle="dropdown">
-              <i class="bi bi-download"></i> Ekspor
+            <button class="h-[34px] px-3 bg-white border border-[#D1D5D8] rounded-[6px] text-[12px] font-medium text-[#1B2A3A] hover:bg-[#F4F5F7] transition-colors inline-flex items-center gap-1.5 shadow-xs dropdown-toggle cursor-pointer" type="button" data-bs-toggle="dropdown">
+              <i class="bi bi-download text-[#53595F]"></i> Ekspor
             </button>
-            <ul class="dropdown-menu dropdown-menu-end shadow-sm" style="font-size: 0.85rem;">
+            <ul class="dropdown-menu dropdown-menu-end shadow-sm border border-[#D1D5D8] rounded-[8px]" style="font-size: 0.85rem;">
               <li>
-                <a class="dropdown-item fw-semibold text-success" href="'.e(module_url('print_inventory_card.php', ['export'=>'excel'])).'">
-                  <i class="bi bi-file-earmark-excel-fill text-success me-2"></i> Laporan Excel SDM (.xls)
+                <a class="dropdown-item fw-semibold text-[#10B981]" href="'.e(module_url('print_inventory_card.php', ['export'=>'excel'])).'">
+                  <i class="bi bi-file-earmark-excel-fill text-[#10B981] me-2"></i> Laporan Excel SDM (.xls)
                 </a>
               </li>
               <li>
                 <a class="dropdown-item" href="'.e(module_url('print_inventory_card.php', ['export'=>'doc'])).'">
-                  <i class="bi bi-file-earmark-word-fill text-primary me-2"></i> Dokumen Microsoft Word (.doc)
+                  <i class="bi bi-file-earmark-word-fill text-[#0284C7] me-2"></i> Dokumen Microsoft Word (.doc)
                 </a>
               </li>
               <li>
                 <a class="dropdown-item" href="'.e(module_url('print_inventory_card.php', ['export'=>'csv'])).'">
-                  <i class="bi bi-file-earmark-spreadsheet text-secondary me-2"></i> Spreadsheet CSV (.csv)
+                  <i class="bi bi-file-earmark-spreadsheet text-[#53595F] me-2"></i> Spreadsheet CSV (.csv)
                 </a>
               </li>
             </ul>
@@ -1792,80 +1697,93 @@ if ($activeTab === 'kartu') {
     </div>
 
     <!-- 4 Kotak Metrik Ringkasan Tab Kartu Termasuk Baru Diperoleh Hari Ini -->
-    <div class="row g-3 mb-4">
-      <div class="col-6 col-md-3">
-        <a href="'.e(module_url('dashboard.php', ['tab'=>'kartu'])).'" class="text-decoration-none">
-          <div class="card card-metric h-100" style="cursor: pointer;">
-            <div class="metric-value text-primary">'.$totalCardsCount.'</div>
-            <div class="metric-label">Total Kartu Inventaris</div>
-            <div class="small text-primary mt-2" style="font-size: 0.72rem;"><i class="bi bi-arrow-repeat me-1"></i>Semua unit &raquo;</div>
-          </div>
-        </a>
-      </div>
-      <div class="col-6 col-md-3">
-        <a href="'.e(module_url('dashboard.php', ['tab'=>'kartu', 'hari_ini'=>($filterHariIni ? null : 1)])).'" class="text-decoration-none">
-          <div class="card card-metric h-100 '.($filterHariIni ? 'border-success' : '').'" style="cursor: pointer;">
-            <div class="metric-value text-success d-flex align-items-center justify-content-between">
-              <span>'.$todayCardsCount.'</span>
-              '.($todayCardsCount > 0 ? '<span class="badge bg-success text-white" style="font-size: 0.72rem; font-weight: 700;"><i class="bi bi-stars me-1"></i>Baru</span>' : '').'
-            </div>
-            <div class="metric-label">Baru Diperoleh Hari Ini</div>
-            <div class="small text-success mt-2" style="font-size: 0.72rem;"><i class="bi bi-funnel me-1"></i>'.($filterHariIni ? 'Tampilkan semua &raquo;' : 'Filter hari ini ('.date('d/m/Y').') &raquo;').'</div>
-          </div>
-        </a>
-      </div>
-      <div class="col-6 col-md-3">
-        <a href="'.e(module_url('dashboard.php', ['tab'=>'kartu', 'has_qr'=>($filterHasQr ? null : 1)])).'" class="text-decoration-none">
-          <div class="card card-metric h-100 '.($filterHasQr ? 'border-info' : '').'" style="cursor: pointer;">
-            <div class="metric-value" style="color: #0284C7;">'.$withQrCardsCount.'</div>
-            <div class="metric-label">Kartu Ber-Label QR</div>
-            <div class="small text-info mt-2" style="font-size: 0.72rem;"><i class="bi bi-qr-code me-1"></i>'.($filterHasQr ? 'Tampilkan semua &raquo;' : 'Filter ber-QR ('.$withQrCardsCount.') &raquo;').'</div>
-          </div>
-        </a>
-      </div>
-      <div class="col-6 col-md-3">
-        <a href="#branchDistributionGrid" class="text-decoration-none" onclick="document.getElementById(\'branchDistributionGrid\')?.scrollIntoView({behavior:\'smooth\'})">
-          <div class="card card-metric h-100" style="cursor: pointer;">
-            <div class="metric-value" style="color: #7C3AED;">5</div>
-            <div class="metric-label">Sebaran Kantor Cabang</div>
-            <div class="small mt-2" style="color: #7C3AED; font-size: 0.72rem;"><i class="bi bi-buildings me-1"></i>01 Pusat s/d 05 Handil Bakti &raquo;</div>
-          </div>
-        </a>
-      </div>
+    <div class="bg-[#FFFFFF] border border-[#D1D5D8] rounded-[10px] flex flex-col sm:flex-row overflow-hidden shrink-0 mb-4 shadow-xs">
+      <!-- Card 1: Total Kartu -->
+      <a href="'.e(module_url('dashboard.php', ['tab'=>'kartu'])).'" class="flex-1 flex flex-col justify-center px-5 py-3 border-b sm:border-b-0 sm:border-r border-[#D1D5D8] relative hover:bg-[#F4F5F7] transition-colors text-decoration-none">
+        <div class="absolute left-0 top-0 bottom-0 w-1 bg-[#0E5C58]"></div>
+        <div class="text-[26px] font-bold text-[#1B2A3A] tabular-nums leading-none">
+          '.number_format($totalCardsCount).' <span class="text-[13px] font-normal text-[#53595F]">Unit</span>
+        </div>
+        <div class="text-[12px] font-medium text-[#53595F] mt-1.5 flex items-center gap-1.5">
+          <span class="text-[#0E5C58] font-bold">Total Kartu Inventaris</span>
+          <span>&middot;</span>
+          <span class="text-[#53595F] text-[11px]">Semua Unit</span>
+        </div>
+      </a>
+
+      <!-- Card 2: Baru Hari Ini -->
+      <a href="'.e(module_url('dashboard.php', ['tab'=>'kartu', 'hari_ini'=>($filterHariIni ? null : 1)])).'" class="flex-1 flex flex-col justify-center px-5 py-3 border-b sm:border-b-0 sm:border-r border-[#D1D5D8] relative '.($filterHariIni ? 'bg-[#ECFDF5]' : 'hover:bg-[#F4F5F7]').' transition-colors text-decoration-none">
+        <div class="absolute left-0 top-0 bottom-0 w-1 bg-[#10B981]"></div>
+        <div class="text-[26px] font-bold text-[#10B981] tabular-nums leading-none flex items-center justify-between">
+          <span>'.$todayCardsCount.' <span class="text-[13px] font-normal text-[#53595F]">Unit</span></span>
+          '.($todayCardsCount > 0 ? '<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#10B981] text-white"><i class="bi bi-stars me-0.5"></i>Baru</span>' : '').'
+        </div>
+        <div class="text-[12px] font-medium text-[#53595F] mt-1.5 flex items-center gap-1.5">
+          <span class="text-[#10B981] font-semibold"><i class="bi bi-funnel me-0.5"></i> Baru Hari Ini</span>
+          <span>&middot;</span>
+          <span class="text-[#53595F] text-[11px]">'.date('d/m/Y').'</span>
+        </div>
+      </a>
+
+      <!-- Card 3: Kartu Ber-Label QR -->
+      <a href="'.e(module_url('dashboard.php', ['tab'=>'kartu', 'has_qr'=>($filterHasQr ? null : 1)])).'" class="flex-1 flex flex-col justify-center px-5 py-3 border-b sm:border-b-0 sm:border-r border-[#D1D5D8] relative '.($filterHasQr ? 'bg-[#EFF6FF]' : 'hover:bg-[#F4F5F7]').' transition-colors text-decoration-none">
+        <div class="absolute left-0 top-0 bottom-0 w-1 bg-[#0284C7]"></div>
+        <div class="text-[26px] font-bold text-[#0284C7] tabular-nums leading-none">
+          '.number_format($withQrCardsCount).' <span class="text-[13px] font-normal text-[#53595F]">Unit</span>
+        </div>
+        <div class="text-[12px] font-medium text-[#53595F] mt-1.5 flex items-center gap-1.5">
+          <span class="text-[#0284C7] font-semibold"><i class="bi bi-qr-code me-0.5"></i> Kartu Ber-Label QR</span>
+          <span>&middot;</span>
+          <span class="text-[#53595F] text-[11px]">'.($totalCardsCount > 0 ? round(($withQrCardsCount / $totalCardsCount) * 100) : 0).'% Ber-QR</span>
+        </div>
+      </a>
+
+      <!-- Card 4: Sebaran 5 Kantor Cabang -->
+      <a href="#branchDistributionGrid" onclick="document.getElementById(\'branchDistributionGrid\')?.scrollIntoView({behavior:\'smooth\'})" class="flex-1 flex flex-col justify-center px-5 py-3 relative hover:bg-[#F4F5F7] transition-colors text-decoration-none">
+        <div class="absolute left-0 top-0 bottom-0 w-1 bg-[#D97706]"></div>
+        <div class="text-[26px] font-bold text-[#1B2A3A] tabular-nums leading-none">
+          5 <span class="text-[13px] font-normal text-[#53595F]">Cabang</span>
+        </div>
+        <div class="text-[12px] font-medium text-[#53595F] mt-1.5 flex items-center gap-1.5">
+          <span class="text-[#D97706] font-semibold"><i class="bi bi-buildings me-0.5"></i> Distribusi Kantor</span>
+          <span>&middot;</span>
+          <span class="text-[#53595F] text-[11px]">01 Pusat s/d 05</span>
+        </div>
+      </a>
     </div>
 
     <!-- Ringkasan Jumlah Kartu Inventaris Per Cabang (01 - 05) -->
-    <div id="branchDistributionGrid" class="card p-3 mb-4 border shadow-xs bg-white">
-      <div class="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-2">
+    <div id="branchDistributionGrid" class="bg-white border border-[#D1D5D8] rounded-[10px] p-4 mb-4 shadow-xs">
+      <div class="flex justify-between items-center mb-3 flex-wrap gap-2">
         <div>
-          <div class="tech-label" style="font-size: 0.68rem;">DISTRIBUSI UNIT CABANG</div>
-          <h3 class="h6 fw-bold text-dark mb-0 d-flex align-items-center gap-2">
-            <i class="bi bi-buildings text-primary"></i> Jumlah Kartu Inventaris Per Cabang
+          <div class="text-[11px] font-bold text-[#0E5C58] uppercase tracking-wider mb-0.5">DISTRIBUSI UNIT CABANG</div>
+          <h3 class="text-[15px] font-bold text-[#1B2A3A] m-0 flex items-center gap-1.5">
+            <i class="bi bi-buildings text-[#0E5C58]"></i> Jumlah Kartu Inventaris Per Cabang
           </h3>
         </div>
-        <div class="text-secondary small">
-          Total <strong>5 Kantor Cabang</strong> · Klik cabang untuk filter cepat
+        <div class="text-[12px] text-[#53595F]">
+          Total <strong>5 Kantor Cabang</strong> &middot; Klik cabang untuk filter cepat
         </div>
       </div>
-      <div class="row g-2 mt-1">
+      <div class="row g-2">
         '.$branchCardsGridHtml.'
       </div>
     </div>
 
     <!-- Compact Filter Bar (Sistem Filter Aset Komputer) -->
-    <div class="card p-3 mb-4 border shadow-sm bg-white" style="border-radius: 8px; border-color: var(--app-border) !important;">
+    <div class="bg-white border border-[#D1D5D8] rounded-[10px] p-4 mb-4 shadow-xs">
       <form method="get" class="row g-2 align-items-end">
         <input type="hidden" name="tab" value="kartu">
         <div class="col-lg-4 col-md-6">
-          <label class="form-label text-secondary small fw-semibold mb-1">Cari Nomor Rekening / Perangkat / PIC</label>
-          <div class="input-group input-group-sm">
-            <span class="input-group-text bg-white border-end-0"><i class="bi bi-search text-muted"></i></span>
-            <input type="text" class="form-control form-control-sm border-start-0" name="q_kartu" value="'.e($searchCard).'" placeholder="Cari 05500032 atau 05.5.00032, nama barang, lokasi...">
+          <label class="block text-[12px] font-bold text-[#1B2A3A] mb-1.5">Cari Nomor Rekening / Perangkat / PIC</label>
+          <div class="relative">
+            <i class="bi bi-search absolute left-3 top-1/2 -translate-y-1/2 text-[#53595F] text-[13px]"></i>
+            <input type="text" class="h-[36px] w-full bg-white border border-[#D1D5D8] rounded-[8px] pl-9 pr-3 text-[13px] text-[#1B2A3A] placeholder-[#9CA3AF] outline-none focus:border-[#0E5C58] transition-colors" name="q_kartu" value="'.e($searchCard).'" placeholder="Cari 05500032, nama barang, lokasi...">
           </div>
         </div>
         <div class="col-lg-3 col-md-3 col-sm-6">
-          <label class="form-label text-secondary small fw-semibold mb-1">Kantor Cabang</label>
-          <select class="form-select form-select-sm" name="cabang_kartu">
+          <label class="block text-[12px] font-bold text-[#1B2A3A] mb-1.5">Kantor Cabang</label>
+          <select class="h-[36px] w-full bg-white border border-[#D1D5D8] rounded-[8px] px-3 text-[13px] text-[#1B2A3A] outline-none focus:border-[#0E5C58] transition-colors" name="cabang_kartu">
             <option value="">Semua Cabang (01 - 05)</option>
             <option value="01"'.($cabangCard === '01' ? ' selected' : '').'>01 - Kantor Pusat ('.$cabangStats['01']['count'].')</option>
             <option value="02"'.($cabangCard === '02' ? ' selected' : '').'>02 - Batulicin ('.$cabangStats['02']['count'].')</option>
@@ -1875,87 +1793,89 @@ if ($activeTab === 'kartu') {
           </select>
         </div>
         <div class="col-lg-2 col-md-3 col-sm-6">
-          <label class="form-label text-secondary small fw-semibold mb-1">Tahun Perolehan</label>
-          <select class="form-select form-select-sm" name="tahun_kartu">
+          <label class="block text-[12px] font-bold text-[#1B2A3A] mb-1.5">Tahun Perolehan</label>
+          <select class="h-[36px] w-full bg-white border border-[#D1D5D8] rounded-[8px] px-3 text-[13px] text-[#1B2A3A] outline-none focus:border-[#0E5C58] transition-colors" name="tahun_kartu">
             <option value="">Semua Tahun</option>
             '.$optTahunKartuHtml.'
           </select>
         </div>
-        <div class="col-lg-3 col-md-12 d-flex gap-1 justify-content-lg-end">
-          <a class="btn btn-sm '.($filterHariIni ? 'btn-success fw-bold' : 'btn-outline-success').' w-100" href="'.e(module_url('dashboard.php', ['tab' => 'kartu', 'hari_ini' => ($filterHariIni ? null : 1)])).'" title="Filter aset yang baru diperoleh / didaftarkan hari ini">
-            <i class="bi bi-stars me-1"></i> Baru Hari Ini ('.$todayCardsCount.')
+        <div class="col-lg-3 col-md-12 flex gap-1 justify-content-lg-end">
+          <a class="h-[36px] px-3 w-full rounded-[8px] text-[13px] font-semibold transition-colors flex items-center justify-center gap-1.5 text-decoration-none '.($filterHariIni ? 'bg-[#10B981] hover:bg-[#059669] text-white shadow-xs' : 'bg-white border border-[#D1D5D8] text-[#10B981] hover:bg-[#ECFDF5]').'" href="'.e(module_url('dashboard.php', ['tab' => 'kartu', 'hari_ini' => ($filterHariIni ? null : 1)])).'" title="Filter aset yang baru diperoleh / didaftarkan hari ini">
+            <i class="bi bi-stars"></i> Baru Hari Ini ('.$todayCardsCount.')
           </a>
         </div>
-        <div class="col-12 d-flex justify-content-between align-items-center pt-2 border-top mt-2 flex-wrap gap-2">
-          <div class="text-secondary small">
+        <div class="col-12 flex justify-between items-center pt-3 border-t border-[#F3F4F6] mt-2 flex-wrap gap-2">
+          <div class="text-[12px] text-[#53595F]">
             Menampilkan <strong>'.count($filteredCards).'</strong> kartu dari total <strong>'.$totalCardsCount.'</strong> kartu inventaris terdaftar.
-            '.($filterHariIni ? '<span class="badge bg-success-subtle text-success border border-success-subtle ms-1"><i class="bi bi-funnel me-1"></i>Filter Hari Ini Aktif</span>' : '').'
+            '.($filterHariIni ? '<span class="px-2 py-0.5 rounded-full text-[11px] font-bold bg-[#D9F1EF] text-[#0E5C58] border border-[#A7E2DC] ms-1.5"><i class="bi bi-funnel me-0.5"></i>Filter Hari Ini Aktif</span>' : '').'
           </div>
-          <div class="d-flex gap-2">
-            <a class="btn btn-sm btn-light border px-3" href="'.e(module_url('dashboard.php', ['tab' => 'kartu'])).'"><i class="bi bi-x-circle me-1"></i> Reset</a>
-            <button type="submit" class="btn btn-sm btn-primary px-3 fw-semibold"><i class="bi bi-filter me-1"></i> Terapkan</button>
+          <div class="flex gap-2">
+            <a class="h-[34px] px-3 bg-white border border-[#D1D5D8] rounded-[6px] text-[12px] font-medium text-[#1B2A3A] hover:bg-[#F4F5F7] transition-colors inline-flex items-center gap-1 text-decoration-none" href="'.e(module_url('dashboard.php', ['tab' => 'kartu'])).'"><i class="bi bi-x-circle"></i> Reset</a>
+            <button type="submit" class="h-[34px] px-3.5 bg-[#0E5C58] hover:bg-[#094340] text-white rounded-[6px] text-[12px] font-semibold transition-colors inline-flex items-center gap-1 border-0 shadow-xs cursor-pointer"><i class="bi bi-filter"></i> Terapkan</button>
           </div>
         </div>
       </form>
     </div>
 
     <!-- Table Container Card -->
-    <div class="card mb-4 border shadow-sm bg-white overflow-hidden" style="border-radius: 8px; border-color: var(--app-border) !important;">
-      <!-- Selection Action Bar (Muncul bila kartu dicentang, sama persis dengan Asset Registry) -->
-      <div id="selectionCardBar" class="border-bottom px-4 py-2 d-none align-items-center justify-content-between flex-wrap gap-2" style="background-color: #EFF6FF !important;">
-        <div class="d-flex align-items-center gap-2">
-          <span class="badge bg-primary fs-6 px-2 py-1"><i class="bi bi-check-square me-1"></i> <span id="countSelectedText">0</span> Dipilih</span>
-          <span class="text-secondary small fw-semibold">Aksi untuk kartu inventaris terpilih:</span>
+    <div class="bg-white border border-[#D1D5D8] rounded-[10px] mb-4 shadow-xs overflow-hidden">
+      <!-- Selection Card Bar -->
+      <div id="selectionCardBar" class="border-b border-[#BFDBFE] px-4 py-2.5 d-none align-items-center justify-content-between flex-wrap gap-2" style="background-color: #EFF6FF !important;">
+        <div class="flex items-center gap-2">
+          <span class="px-2.5 py-1 text-[12px] font-bold bg-[#0284C7] text-white rounded-[6px]"><i class="bi bi-check-square me-1"></i> <span id="countSelectedText">0</span> Dipilih</span>
+          <span class="text-[13px] text-[#1E40AF] font-semibold">Aksi untuk kartu inventaris terpilih:</span>
         </div>
-        <div class="d-flex align-items-center gap-2 flex-wrap">
-          <button type="button" class="btn btn-sm btn-success fw-semibold shadow-sm d-inline-flex align-items-center gap-1" id="btnExportExcelSelected" onclick="exportExcelSelectedCards()">
-            <i class="bi bi-file-earmark-excel-fill"></i> Ekspor Excel SDM (<span id="countExcel">0</span>)
+        <div class="flex items-center gap-2 flex-wrap">
+          <button type="button" class="h-[32px] px-3 bg-[#10B981] hover:bg-[#059669] text-white rounded-[6px] text-[12px] font-semibold transition-colors flex items-center gap-1.5 border-0 shadow-xs cursor-pointer" id="btnExportExcelSelected" onclick="exportExcelSelectedCards()">
+            <i class="bi bi-file-earmark-excel-fill"></i> Ekspor Excel (<span id="countExcel">0</span>)
           </button>
-          <button type="button" class="btn btn-sm btn-primary fw-semibold shadow-sm d-inline-flex align-items-center gap-1" id="btnPrintSelected" onclick="printSelectedCards()">
-            <i class="bi bi-printer-fill"></i> Cetak Kartu Pilihan (<span id="countPrint">0</span>)
+          <button type="button" class="h-[32px] px-3 bg-[#0E5C58] hover:bg-[#094340] text-white rounded-[6px] text-[12px] font-semibold transition-colors flex items-center gap-1.5 border-0 shadow-xs cursor-pointer" id="btnPrintSelected" onclick="printSelectedCards()">
+            <i class="bi bi-printer-fill"></i> Cetak Kartu (<span id="countPrint">0</span>)
           </button>
-          <button type="button" class="btn btn-sm btn-danger fw-semibold shadow-sm d-inline-flex align-items-center gap-1" id="btnDeleteSelected" onclick="bulkDeleteCards()">
+          <button type="button" class="h-[32px] px-3 bg-[#DC2626] hover:bg-[#B91C1C] text-white rounded-[6px] text-[12px] font-semibold transition-colors flex items-center gap-1.5 border-0 shadow-xs cursor-pointer" id="btnDeleteSelected" onclick="bulkDeleteCards()">
             <i class="bi bi-trash"></i> Hapus Terpilih (<span id="countDelete">0</span>)
           </button>
-          <button type="button" class="btn btn-sm btn-outline-secondary d-inline-flex align-items-center gap-1" onclick="deselectAllCards()">
+          <button type="button" class="h-[32px] px-3 bg-white border border-[#D1D5D8] hover:bg-[#F4F5F7] text-[#1B2A3A] rounded-[6px] text-[12px] font-medium transition-colors flex items-center gap-1 cursor-pointer" onclick="deselectAllCards()">
             <i class="bi bi-x-circle"></i> Batal
           </button>
         </div>
       </div>
 
       <div class="table-responsive">
-        <table class="table table-hover align-middle mb-0">
-          <thead class="table-light" style="border-bottom: 2px solid var(--app-border);">
+        <table class="table table-hover align-middle mb-0" style="font-size: 13px;">
+          <thead style="background: #F4F5F7; border-bottom: 1px solid #D1D5D8;">
             <tr>
-              <th style="width: 40px;" class="text-center">
-                <input class="form-check-input" type="checkbox" id="checkAllRows" onchange="toggleSelectAllCards(this)" title="Pilih Semua Kartu" style="cursor: pointer; width: 1.15rem; height: 1.15rem;">
+              <th style="width: 40px;" class="text-center py-2.5">
+                <input class="form-check-input cursor-pointer" type="checkbox" id="checkAllRows" onchange="toggleSelectAllCards(this)" title="Pilih Semua Kartu">
               </th>
-              <th style="width: 140px;">NOMOR INVENTARIS</th>
-              <th>NAMA BARANG &amp; TGL PEROLEHAN</th>
-              <th style="width: 105px;" class="text-center">LABEL QR</th>
-              <th style="width: 90px;" class="text-center">LOKASI</th>
-              <th class="text-end text-nowrap" style="min-width: 390px;">AKSI</th>
+              <th style="width: 150px;" class="text-[11px] font-bold text-[#53595F] uppercase tracking-wider py-2.5">NOMOR INVENTARIS</th>
+              <th class="text-[11px] font-bold text-[#53595F] uppercase tracking-wider py-2.5">NAMA BARANG &amp; TGL PEROLEHAN</th>
+              <th style="width: 110px;" class="text-center text-[11px] font-bold text-[#53595F] uppercase tracking-wider py-2.5">LABEL QR</th>
+              <th style="width: 100px;" class="text-center text-[11px] font-bold text-[#53595F] uppercase tracking-wider py-2.5">LOKASI</th>
+              <th class="text-end text-nowrap text-[11px] font-bold text-[#53595F] uppercase tracking-wider py-2.5 pe-4" style="min-width: 380px;">AKSI</th>
             </tr>
           </thead>
-          <tbody>
+          <tbody class="divide-y divide-[#E5E7EB]">
             '.$cardsTableRowsHtml.'
           </tbody>
         </table>
       </div>
-      <div class="card-footer bg-white border-top py-2 px-3 d-flex flex-wrap justify-content-between align-items-center gap-2">
-        <div class="text-muted small">
+
+      <div class="bg-white border-t border-[#D1D5D8] py-2.5 px-4 flex flex-wrap justify-between items-center gap-2">
+        <div class="text-[12px] text-[#53595F]">
           Menampilkan <strong>'.($totalFilteredCards > 0 ? ($offsetCards + 1) : 0).' - '.min($offsetCards + $perPageCards, $totalFilteredCards).'</strong> dari <strong>'.$totalFilteredCards.'</strong> kartu inventaris terdaftar
         </div>
         '.($totalPagesCards > 1 ? '
         <nav aria-label="Halaman Kartu">
-          <ul class="pagination pagination-sm mb-0">
-            <li class="page-item '.($pageKartu <= 1 ? 'disabled' : '').'">
-              <a class="page-link" href="'.e(module_url('dashboard.php', array_merge($_GET, ['tab'=>'kartu', 'p_kartu'=>max(1, $pageKartu - 1)]))).'"><i class="bi bi-chevron-left"></i></a>
+          <ul class="pagination pagination-sm m-0 flex items-center gap-1">
+            <li class="page-item '.($pageKartu <= 1 ? 'disabled opacity-50' : '').'">
+              <a class="h-[28px] px-2 bg-white border border-[#D1D5D8] rounded-[4px] text-[12px] text-[#1B2A3A] flex items-center text-decoration-none" href="'.e(module_url('dashboard.php', array_merge($_GET, ['tab'=>'kartu', 'p_kartu'=>max(1, $pageKartu - 1)]))).'"><i class="bi bi-chevron-left"></i></a>
             </li>
             '.implode('', array_map(function($p) use ($pageKartu) {
-                if ($p === '...') return '<li class="page-item disabled"><span class="page-link">&hellip;</span></li>';
-                $act = ($p == $pageKartu) ? 'active fw-bold' : '';
-                return '<li class="page-item '.$act.'"><a class="page-link" href="'.e(module_url('dashboard.php', array_merge($_GET, ['tab'=>'kartu', 'p_kartu'=>$p]))).'">'.$p.'</a></li>';
+                if ($p === '...') return '<li class="page-item disabled px-1 text-[#A0A5AA]">&hellip;</li>';
+                $isAct = ($p == $pageKartu);
+                $cls = $isAct ? 'bg-[#0E5C58] text-white font-bold border-[#0E5C58]' : 'bg-white text-[#1B2A3A] border-[#D1D5D8] hover:bg-[#F4F5F7]';
+                return '<li class="page-item"><a class="h-[28px] min-w-[28px] px-2 border rounded-[4px] text-[12px] flex items-center justify-center text-decoration-none '.$cls.'" href="'.e(module_url('dashboard.php', array_merge($_GET, ['tab'=>'kartu', 'p_kartu'=>$p]))).'">'.$p.'</a></li>';
             }, (function() use ($pageKartu, $totalPagesCards) {
                 $pages = [];
                 $start = max(1, $pageKartu - 2);
@@ -1971,14 +1891,16 @@ if ($activeTab === 'kartu') {
                 }
                 return $pages;
             })())).'
-            <li class="page-item '.($pageKartu >= $totalPagesCards ? 'disabled' : '').'">
-              <a class="page-link" href="'.e(module_url('dashboard.php', array_merge($_GET, ['tab'=>'kartu', 'p_kartu'=>min($totalPagesCards, $pageKartu + 1)]))).'"><i class="bi bi-chevron-right"></i></a>
+            <li class="page-item '.($pageKartu >= $totalPagesCards ? 'disabled opacity-50' : '').'">
+              <a class="h-[28px] px-2 bg-white border border-[#D1D5D8] rounded-[4px] text-[12px] text-[#1B2A3A] flex items-center text-decoration-none" href="'.e(module_url('dashboard.php', array_merge($_GET, ['tab'=>'kartu', 'p_kartu'=>min($totalPagesCards, $pageKartu + 1)]))).'"><i class="bi bi-chevron-right"></i></a>
             </li>
           </ul>
         </nav>
         ' : '').'
       </div>
-    </div>';
+    </div>
+    ' ;
+
 
 } elseif ($activeTab === 'temuan') {
     // --- TAMPILAN TAB TEMUAN KENDALA & STATUS PERBAIKAN ---
@@ -2709,11 +2631,9 @@ if ($activeTab === 'kartu') {
     </details>';
 }
 
-if (!$isHrdOnly) {
-    $body .= '
-    </div><!-- End max-w-[1152px] -->
-    <div class="h-8 shrink-0" data-kid="1-2-2-2" data-name="bottom spacer div"></div>';
-}
+$body .= '
+</div><!-- End max-w-[1152px] -->
+<div class="h-8 shrink-0" data-kid="1-2-2-2" data-name="bottom spacer div"></div>';
 
 // =========================================================================
 // 8. MODALS TERPADU UNTUK KARTU INVENTARIS CR80 & TEMUAN
@@ -2795,7 +2715,7 @@ $body .= '
       <form method="post">
         <input type="hidden" name="_csrf" value="'.e(csrf_token()).'">
         <input type="hidden" name="action" value="create_card">
-        <div class="modal-header bg-primary text-white py-3 px-4">
+        <div class="modal-header py-3 px-4 text-white" style="background: #0E5C58 !important;">
           <div>
             <h5 class="modal-title fw-bold mb-0"><i class="bi bi-plus-circle-fill me-2"></i>Tambah Data Kartu Inventaris</h5>
             <small class="text-white-50">Sistem Inventaris Core Banking BPR Mitratama</small>
