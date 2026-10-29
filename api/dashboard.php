@@ -697,8 +697,10 @@ $offsetCards = ($pageKartu - 1) * $perPageCards;
 $displayCards = array_slice($filteredCards, $offsetCards, $perPageCards);
 
 $cardsTableRowsHtml = '';
+$cardsMobileCardsHtml = '';
 if (empty($displayCards)) {
     $cardsTableRowsHtml = '<tr><td colspan="6" class="text-center py-5 text-muted"><i class="bi bi-inbox fs-1 d-block mb-2 opacity-50"></i>Tidak ada data kartu inventaris yang ditemukan.</td></tr>';
+    $cardsMobileCardsHtml = '<div class="text-center py-5 text-muted"><i class="bi bi-inbox fs-1 d-block mb-2 opacity-50"></i>Tidak ada data kartu inventaris yang ditemukan.</div>';
 } else {
     foreach ($displayCards as $c) {
         $cId = (int)$c['id'];
@@ -765,9 +767,9 @@ if (empty($displayCards)) {
         $cardsTableRowsHtml .= '
         <tr id="card-row-'.$cId.'" class="hover:bg-[#F9FAFB] transition-colors">
           <td class="text-center py-2.5" style="width: 38px;">
-            <input class="form-check-input card-checkbox cursor-pointer" type="checkbox" value="'.$cId.'" onchange="updateCardCounters()">
+            <input class="form-check-input card-checkbox cursor-pointer" type="checkbox" value="'.$cId.'" onchange="updateCardCounters(this)">
           </td>
-          <td style="min-width: 140px;" class="py-2.5">
+          <td style="width: 155px;" class="py-2.5">
             <div class="font-mono font-bold text-[#0E5C58] text-[13px]">'.e($rek).'</div>
             <div class="text-[11px] text-[#53595F] font-mono mt-0.5" title="Nomor Aset Gabungan">'.e($gabungan).'</div>
             '.$noSeriBadge.'
@@ -784,35 +786,86 @@ if (empty($displayCards)) {
               </div>
             </div>
           </td>
-          <td style="width: 100px;" class="text-center py-2.5">
+          <td style="width: 75px;" class="text-center py-2.5">
             '.($barcode ? '<a href="'.e($barcode).'" target="_blank" class="px-2 py-0.5 rounded-[4px] text-[11px] font-bold bg-[#D9F1EF] text-[#0E5C58] border border-[#A7E2DC] text-decoration-none inline-flex items-center gap-1 shadow-2xs" title="'.e($barcode).'"><i class="bi bi-qr-code"></i>QR</a>' : '<span class="text-[#A0A5AA] text-[12px]">-</span>').'
           </td>
-          <td style="width: 90px;" class="text-center py-2.5">
-            <span class="badge px-2 py-1 rounded-pill '.$lokasiBadgeClass.'" style="font-size: 0.75rem; font-weight: 600;">'.e($lokasi).'</span>
+          <td style="width: 95px;" class="text-center py-2.5">
+            <span class="badge px-2 py-1 rounded-pill '.$lokasiBadgeClass.'" style="font-size: 0.72rem; font-weight: 600;">'.e($lokasi).'</span>
           </td>
-          <td class="text-end text-nowrap py-2.5 pe-3" style="min-width: 380px;">
-            <div class="inline-flex items-center gap-1">
+          <td class="text-end py-2.5 pe-3" style="width: 210px;">
+            <div class="inline-flex items-center gap-1 justify-end">
               <a class="h-[28px] px-2 bg-white border border-[#D1D5D8] hover:bg-[#ECFDF5] text-[#10B981] rounded-[5px] text-[11px] font-medium transition-colors inline-flex items-center gap-1 text-decoration-none shadow-2xs" target="_blank" href="'.e(module_url('inventaris_mutation.php', ['id'=>$cId])).'" title="Mutasi Fasilitas &amp; Kartu Inventaris">
-                <i class="bi bi-arrow-left-right"></i> Mutasi
+                <i class="bi bi-arrow-left-right"></i><span class="d-none d-xl-inline"> Mutasi</span>
               </a>
               <a class="h-[28px] px-2 bg-white border border-[#D1D5D8] hover:bg-[#D9F1EF] text-[#0E5C58] rounded-[5px] text-[11px] font-medium transition-colors inline-flex items-center gap-1 text-decoration-none shadow-2xs" target="_blank" href="'.e(module_url('kartu_detail.php', ['id'=>$cId])).'" title="Buka Detail Web &amp; Foto">
-                <i class="bi bi-box-arrow-up-right"></i> Detail
+                <i class="bi bi-box-arrow-up-right"></i><span class="d-none d-xl-inline"> Detail</span>
               </a>
               <button type="button" class="h-[28px] px-2 bg-white border border-[#D1D5D8] hover:bg-[#E0F2FE] text-[#0284C7] rounded-[5px] text-[11px] font-medium transition-colors inline-flex items-center gap-1 shadow-2xs cursor-pointer" title="Pratinjau Fisik Kartu" onclick=\'openCardPreviewModal('.$jsonPayload.')\'>
-                <i class="bi bi-eye"></i> Lihat
+                <i class="bi bi-eye"></i><span class="d-none d-xl-inline"> Lihat</span>
               </button>
               <a class="h-[28px] px-2 bg-white border border-[#D1D5D8] hover:bg-[#F4F5F7] text-[#1B2A3A] rounded-[5px] text-[11px] font-medium transition-colors inline-flex items-center gap-1 text-decoration-none shadow-2xs" target="_blank" href="'.e(module_url('print_inventory_card.php', ['source'=>'inventaris_kartu', 'id'=>$cId])).'" title="Cetak Kartu Ini">
-                <i class="bi bi-printer"></i> Cetak
+                <i class="bi bi-printer"></i><span class="d-none d-xl-inline"> Cetak</span>
               </a>
               <button type="button" class="h-[28px] px-2 bg-white border border-[#D1D5D8] hover:bg-[#FEF3C7] text-[#D97706] rounded-[5px] text-[11px] font-medium transition-colors inline-flex items-center gap-1 shadow-2xs cursor-pointer" title="Edit Kartu" onclick=\'openCardEditModal('.$jsonPayload.')\'>
-                <i class="bi bi-pencil"></i> Edit
+                <i class="bi bi-pencil"></i><span class="d-none d-xl-inline"> Edit</span>
               </button>
               <button type="button" class="h-[28px] px-2 bg-white border border-[#D1D5D8] hover:bg-[#FEE2E2] text-[#DC2626] rounded-[5px] text-[11px] font-medium transition-colors inline-flex items-center gap-1 shadow-2xs cursor-pointer" title="Hapus Kartu" onclick="confirmDeleteCard('.$cId.', \''.e(addslashes($rek . ' - ' . $nama)).'\')">
-                <i class="bi bi-trash"></i> Hapus
+                <i class="bi bi-trash"></i><span class="d-none d-xl-inline"> Hapus</span>
               </button>
             </div>
           </td>
         </tr>';
+
+        // Mobile Card Row (Tanpa Scroll Horizontal pada Smartphone)
+        $cardsMobileCardsHtml .= '
+        <div class="p-3 border-b border-[#E5E7EB] bg-white hover:bg-[#F9FAFB] transition-colors" id="card-mobile-'.$cId.'">
+          <div class="flex items-start justify-between gap-2 mb-2">
+            <div class="flex items-center gap-2">
+              <input class="form-check-input card-checkbox cursor-pointer" type="checkbox" value="'.$cId.'" onchange="updateCardCounters(this)">
+              <div>
+                <div class="font-mono font-bold text-[#0E5C58] text-[13px]">'.e($rek).'</div>
+                <div class="text-[11px] text-[#53595F] font-mono" title="Nomor Aset Gabungan">'.e($gabungan).'</div>
+              </div>
+            </div>
+            <div class="flex items-center gap-1.5 flex-wrap justify-end">
+              <span class="badge px-2 py-1 rounded-pill '.$lokasiBadgeClass.'" style="font-size: 0.70rem; font-weight: 600;">'.e($lokasi).'</span>
+              '.($barcode ? '<a href="'.e($barcode).'" target="_blank" class="px-2 py-0.5 rounded-[4px] text-[10px] font-bold bg-[#D9F1EF] text-[#0E5C58] border border-[#A7E2DC] text-decoration-none inline-flex items-center gap-1"><i class="bi bi-qr-code"></i>QR</a>' : '').'
+            </div>
+          </div>
+
+          <div class="flex items-center gap-2.5 mb-2.5">
+            '.$photoThumbHtml.'
+            <div class="min-w-0 flex-1">
+              <a href="'.e(module_url('kartu_detail.php', ['id'=>$cId])).'" target="_blank" class="font-semibold text-[#1B2A3A] hover:text-[#0E5C58] transition-colors text-decoration-none text-[13px] line-clamp-2" title="Buka Detail &amp; Foto Fisik">'.e($nama).'</a>
+              <div class="text-[11px] text-[#53595F] font-mono mt-0.5 flex items-center gap-1">
+                <i class="bi bi-calendar-event text-[#0E5C58]"></i>'.e($tglCard).'
+                '.$todayBadge.'
+              </div>
+              '.$noSeriBadge.'
+            </div>
+          </div>
+
+          <div class="grid grid-cols-6 gap-1 pt-2 border-t border-[#F3F4F6]">
+            <a class="h-[30px] bg-white border border-[#D1D5D8] hover:bg-[#ECFDF5] text-[#10B981] rounded-[6px] text-[11px] font-medium transition-colors flex items-center justify-center text-decoration-none shadow-2xs" target="_blank" href="'.e(module_url('inventaris_mutation.php', ['id'=>$cId])).'" title="Mutasi">
+              <i class="bi bi-arrow-left-right"></i>
+            </a>
+            <a class="h-[30px] bg-white border border-[#D1D5D8] hover:bg-[#D9F1EF] text-[#0E5C58] rounded-[6px] text-[11px] font-medium transition-colors flex items-center justify-center text-decoration-none shadow-2xs" target="_blank" href="'.e(module_url('kartu_detail.php', ['id'=>$cId])).'" title="Detail">
+              <i class="bi bi-box-arrow-up-right"></i>
+            </a>
+            <button type="button" class="h-[30px] bg-white border border-[#D1D5D8] hover:bg-[#E0F2FE] text-[#0284C7] rounded-[6px] text-[11px] font-medium transition-colors flex items-center justify-center shadow-2xs cursor-pointer" title="Lihat" onclick=\'openCardPreviewModal('.$jsonPayload.')\'>
+              <i class="bi bi-eye"></i>
+            </button>
+            <a class="h-[30px] bg-white border border-[#D1D5D8] hover:bg-[#F4F5F7] text-[#1B2A3A] rounded-[6px] text-[11px] font-medium transition-colors flex items-center justify-center text-decoration-none shadow-2xs" target="_blank" href="'.e(module_url('print_inventory_card.php', ['source'=>'inventaris_kartu', 'id'=>$cId])).'" title="Cetak">
+              <i class="bi bi-printer"></i>
+            </a>
+            <button type="button" class="h-[30px] bg-white border border-[#D1D5D8] hover:bg-[#FEF3C7] text-[#D97706] rounded-[6px] text-[11px] font-medium transition-colors flex items-center justify-center shadow-2xs cursor-pointer" title="Edit" onclick=\'openCardEditModal('.$jsonPayload.')\'>
+              <i class="bi bi-pencil"></i>
+            </button>
+            <button type="button" class="h-[30px] bg-white border border-[#D1D5D8] hover:bg-[#FEE2E2] text-[#DC2626] rounded-[6px] text-[11px] font-medium transition-colors flex items-center justify-center shadow-2xs cursor-pointer" title="Hapus" onclick="confirmDeleteCard('.$cId.', \''.e(addslashes($rek . ' - ' . $nama)).'\')">
+              <i class="bi bi-trash"></i>
+            </button>
+          </div>
+        </div>';
     }
 }
 
@@ -2132,24 +2185,30 @@ if ($activeTab === 'kartu') {
         </div>
       </div>
 
-      <div class="table-responsive">
-        <table class="table table-hover align-middle mb-0" style="font-size: 13px;">
+      <!-- Desktop View: Tabel Pas Lebar Layar (Tanpa Scroll Horizontal) -->
+      <div class="d-none d-md-block w-100 overflow-hidden">
+        <table class="table table-hover align-middle mb-0 w-100" style="font-size: 13px;">
           <thead style="background: #F4F5F7; border-bottom: 1px solid #D1D5D8;">
             <tr>
-              <th style="width: 40px;" class="text-center py-2.5">
+              <th style="width: 38px;" class="text-center py-2.5">
                 <input class="form-check-input cursor-pointer" type="checkbox" id="checkAllRows" onchange="toggleSelectAllCards(this)" title="Pilih Semua Kartu">
               </th>
-              <th style="width: 150px;" class="text-[11px] font-bold text-[#53595F] uppercase tracking-wider py-2.5">NOMOR INVENTARIS</th>
+              <th style="width: 155px;" class="text-[11px] font-bold text-[#53595F] uppercase tracking-wider py-2.5">NOMOR INVENTARIS</th>
               <th class="text-[11px] font-bold text-[#53595F] uppercase tracking-wider py-2.5">NAMA BARANG &amp; TGL PEROLEHAN</th>
-              <th style="width: 110px;" class="text-center text-[11px] font-bold text-[#53595F] uppercase tracking-wider py-2.5">LABEL QR</th>
-              <th style="width: 100px;" class="text-center text-[11px] font-bold text-[#53595F] uppercase tracking-wider py-2.5">LOKASI</th>
-              <th class="text-end text-nowrap text-[11px] font-bold text-[#53595F] uppercase tracking-wider py-2.5 pe-4" style="min-width: 380px;">AKSI</th>
+              <th style="width: 75px;" class="text-center text-[11px] font-bold text-[#53595F] uppercase tracking-wider py-2.5">LABEL QR</th>
+              <th style="width: 95px;" class="text-center text-[11px] font-bold text-[#53595F] uppercase tracking-wider py-2.5">LOKASI</th>
+              <th class="text-end text-[11px] font-bold text-[#53595F] uppercase tracking-wider py-2.5 pe-3" style="width: 210px;">AKSI</th>
             </tr>
           </thead>
           <tbody class="divide-y divide-[#E5E7EB]">
             '.$cardsTableRowsHtml.'
           </tbody>
         </table>
+      </div>
+
+      <!-- Mobile View: Kartu Vertikal (Tanpa Scroll Horizontal) -->
+      <div class="d-block d-md-none divide-y divide-[#E5E7EB]">
+        '.$cardsMobileCardsHtml.'
       </div>
 
       <div class="bg-white border-t border-[#D1D5D8] py-2.5 px-4 flex flex-wrap justify-between items-center gap-2">
@@ -3492,11 +3551,18 @@ $extraScript = '
 function getSelectedCardIds() {
   const cbs = document.querySelectorAll(".card-checkbox:checked");
   const ids = [];
-  cbs.forEach(cb => ids.push(cb.value));
+  cbs.forEach(cb => {
+    if (!ids.includes(cb.value)) ids.push(cb.value);
+  });
   return ids;
 }
 
-function updateCardCounters() {
+function updateCardCounters(sourceCb) {
+  if (sourceCb && sourceCb.value) {
+    document.querySelectorAll(".card-checkbox[value=\\"" + sourceCb.value + "\\"]").forEach(function(cb) {
+      cb.checked = sourceCb.checked;
+    });
+  }
   const ids = getSelectedCardIds();
   const count = ids.length;
   const countDelSpan = document.getElementById("countDelete");
@@ -3521,10 +3587,12 @@ function updateCardCounters() {
   }
 
   const checkAll = document.getElementById("checkAllRows");
-  const rowChecks = document.querySelectorAll(".card-checkbox");
-  if (checkAll && rowChecks.length > 0) {
-    checkAll.checked = count === rowChecks.length;
-    checkAll.indeterminate = count > 0 && count < rowChecks.length;
+  const allUnique = new Set();
+  document.querySelectorAll(".card-checkbox").forEach(cb => allUnique.add(cb.value));
+  const totalCount = allUnique.size;
+  if (checkAll && totalCount > 0) {
+    checkAll.checked = count === totalCount;
+    checkAll.indeterminate = count > 0 && count < totalCount;
   }
 }
 
