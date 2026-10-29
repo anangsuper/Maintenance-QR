@@ -7,10 +7,10 @@ function render_page(string $title, string $content, string $extraHead = '', str
     $userInitial = strtoupper(substr($userName, 0, 1) ?: 'U');
     $cleanTitle = html_entity_decode($title, ENT_QUOTES, 'UTF-8');
     $userPhoto = function_exists('current_user_photo') ? current_user_photo() : null;
-    $anonymousSvg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none" style="width: 100%; height: 100%; display: block;"><circle cx="32" cy="32" r="31" fill="#28243D" stroke="#8C57FF" stroke-width="2"/><path d="M32 10C21 10 14 17 14 27c0 10 6 21 18 27 12-6 18-17 18-27 0-10-7-17-18-17z" fill="#FFFFFF"/><ellipse cx="20" cy="34" rx="3.5" ry="2" fill="#FFB4BA" opacity="0.7"/><ellipse cx="44" cy="34" rx="3.5" ry="2" fill="#FFB4BA" opacity="0.7"/><path d="M19 21c3-2.5 7-2.5 10-0.5" stroke="#1E1B2E" stroke-width="2" stroke-linecap="round"/><path d="M45 21c-3-2.5-7-2.5-10-0.5" stroke="#1E1B2E" stroke-width="2" stroke-linecap="round"/><ellipse cx="24" cy="26" rx="3.5" ry="2.2" fill="#1E1B2E"/><ellipse cx="40" cy="26" rx="3.5" ry="2.2" fill="#1E1B2E"/><path d="M22 36c4-1 8 2 10 3 2-1 6-4 10-3 3 1 4 3 4 3-3-1-6 0-8 2-2 2-4 2-6 0-2-2-5-3-8-2-1 0-2-3-2-3z" fill="#1E1B2E"/><path d="M30 44h4l-2 8z" fill="#1E1B2E"/><path d="M25 41c2.5 2 11.5 2 14 0" stroke="#8C57FF" stroke-width="1.8" stroke-linecap="round"/></svg>';
+    $anonymousSvg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none" style="width: 100%; height: 100%; display: block;"><circle cx="32" cy="32" r="31" fill="#28243D" stroke="#0E5C58" stroke-width="2"/><path d="M32 10C21 10 14 17 14 27c0 10 6 21 18 27 12-6 18-17 18-27 0-10-7-17-18-17z" fill="#FFFFFF"/><ellipse cx="20" cy="34" rx="3.5" ry="2" fill="#FFB4BA" opacity="0.7"/><ellipse cx="44" cy="34" rx="3.5" ry="2" fill="#FFB4BA" opacity="0.7"/><path d="M19 21c3-2.5 7-2.5 10-0.5" stroke="#1E1B2E" stroke-width="2" stroke-linecap="round"/><path d="M45 21c-3-2.5-7-2.5-10-0.5" stroke="#1E1B2E" stroke-width="2" stroke-linecap="round"/><ellipse cx="24" cy="26" rx="3.5" ry="2.2" fill="#1E1B2E"/><ellipse cx="40" cy="26" rx="3.5" ry="2.2" fill="#1E1B2E"/><path d="M22 36c4-1 8 2 10 3 2-1 6-4 10-3 3 1 4 3 4 3-3-1-6 0-8 2-2 2-4 2-6 0-2-2-5-3-8-2-1 0-2-3-2-3z" fill="#1E1B2E"/><path d="M30 44h4l-2 8z" fill="#1E1B2E"/><path d="M25 41c2.5 2 11.5 2 14 0" stroke="#0E5C58" stroke-width="1.8" stroke-linecap="round"/></svg>';
     if ($userPhoto && (str_starts_with($userPhoto, 'data:image') || str_starts_with($userPhoto, 'http') || str_starts_with($userPhoto, '/'))) {
-        $avatarHtml = '<img src="'.e($userPhoto).'" alt="'.e($userName).'" class="sidebar-user-avatar-img rounded-circle object-fit-cover shadow-xs" style="width: 38px; height: 38px; min-width: 38px; border: 2px solid rgba(140, 87, 255, 0.45); display: inline-block;">';
-        $topbarAvatarHtml = '<img src="'.e($userPhoto).'" alt="'.e($userName).'" class="topbar-user-avatar-img rounded-circle object-fit-cover" style="width: 32px; height: 32px; min-width: 32px; border: 1.5px solid rgba(140, 87, 255, 0.45); display: inline-block;">';
+        $avatarHtml = '<img src="'.e($userPhoto).'" alt="'.e($userName).'" class="sidebar-user-avatar-img rounded-circle object-fit-cover shadow-xs" style="width: 38px; height: 38px; min-width: 38px; border: 2px solid rgba(14, 92, 88, 0.45); display: inline-block;">';
+        $topbarAvatarHtml = '<img src="'.e($userPhoto).'" alt="'.e($userName).'" class="topbar-user-avatar-img rounded-circle object-fit-cover" style="width: 32px; height: 32px; min-width: 32px; border: 1.5px solid rgba(14, 92, 88, 0.45); display: inline-block;">';
     } else {
         $avatarHtml = '<div class="sidebar-user-avatar d-flex align-items-center justify-content-center overflow-hidden shadow-xs" style="width: 38px; height: 38px; min-width: 38px; border-radius: 50%; padding: 0; background: #28243D;" title="Anonymous User">'.$anonymousSvg.'</div>';
         $topbarAvatarHtml = '<span class="topbar-user-avatar d-inline-flex align-items-center justify-content-center overflow-hidden" style="width: 32px; height: 32px; min-width: 32px; border-radius: 50%; padding: 0; background: #28243D;" title="Anonymous User">'.$anonymousSvg.'</span>';
@@ -424,13 +424,13 @@ body {
 
 :root {
   /* Materio Brand Palette */
-  --materio-primary: #8C57FF;
+  --materio-primary: #0E5C58;
   --materio-primary-hover: #7E4EE6;
-  --materio-primary-active: #7135FF;
+  --materio-primary-active: #0c4f4b;
   --materio-primary-rgb: 140, 87, 255;
-  --materio-primary-gradient: linear-gradient(72.47deg, #8C57FF 22.16%, #BA9BFB 76.47%);
-  --materio-primary-subtle: rgba(140, 87, 255, 0.12);
-  --materio-primary-border: rgba(140, 87, 255, 0.28);
+  --materio-primary-gradient: linear-gradient(72.47deg, #0E5C58 22.16%, #BA9BFB 76.47%);
+  --materio-primary-subtle: rgba(14, 92, 88, 0.12);
+  --materio-primary-border: rgba(14, 92, 88, 0.28);
   --materio-secondary: #8A8D93;
   --materio-secondary-subtle: rgba(138, 141, 147, 0.12);
   --materio-success: #56CA00;
@@ -788,9 +788,9 @@ aside#appDesktopSidebar {
 }
 
 .sidebar-link.active {
-  background: linear-gradient(72.47deg, #8C57FF 0%, #7135FF 100%) !important;
+  background: #0E5C58 !important;
   color: #FFFFFF !important;
-  box-shadow: 0px 4px 14px rgba(140, 87, 255, 0.5) !important;
+  box-shadow: 0px 4px 14px rgba(14, 92, 88, 0.5) !important;
   font-weight: 700 !important;
   border-left: none !important;
 }
@@ -819,7 +819,7 @@ aside#appDesktopSidebar {
 }
 
 .sidebar-user-avatar {
-  background: #8C57FF !important;
+  background: #0E5C58 !important;
   color: #FFFFFF !important;
   border-radius: 50% !important;
 }
@@ -872,7 +872,7 @@ aside#appDesktopSidebar {
   background-color: var(--materio-primary) !important;
   border-color: var(--materio-primary) !important;
   color: #FFFFFF !important;
-  box-shadow: 0px 2px 6px rgba(140, 87, 255, 0.35) !important;
+  box-shadow: 0px 2px 6px rgba(14, 92, 88, 0.35) !important;
   border-radius: 8px !important;
   font-weight: 500 !important;
   transition: all 0.2s ease !important;
@@ -881,7 +881,7 @@ aside#appDesktopSidebar {
 .btn-primary:hover, .btn-primary:focus {
   background-color: var(--materio-primary-hover) !important;
   border-color: var(--materio-primary-hover) !important;
-  box-shadow: 0px 4px 10px rgba(140, 87, 255, 0.45) !important;
+  box-shadow: 0px 4px 10px rgba(14, 92, 88, 0.45) !important;
   transform: translateY(-1px) !important;
 }
 
@@ -983,7 +983,7 @@ aside#appDesktopSidebar {
 }
 
 .table tbody tr:hover td {
-  background-color: rgba(140, 87, 255, 0.04) !important;
+  background-color: rgba(14, 92, 88, 0.04) !important;
 }
 
 /* Materio Inputs */
@@ -1002,7 +1002,7 @@ aside#appDesktopSidebar {
 /* Materio Hero Cards & Accent Gradients */
 .card-hero-neo {
   border-radius: 12px !important;
-  box-shadow: 0 6px 20px rgba(140, 87, 255, 0.25) !important;
+  box-shadow: 0 6px 20px rgba(14, 92, 88, 0.25) !important;
 }
 /* High-Performance Rendering & Hardware Acceleration */
 *, *::before, *::after {
@@ -1021,9 +1021,9 @@ table tbody tr {
   --navy-deep: #28243D;
   --navy-primary: #312D4B;
   --navy-subtle: #3D3759;
-  --blue-corporate: var(--materio-primary, #8C57FF);
-  --blue-accent: var(--materio-primary, #8C57FF);
-  --blue-soft: var(--materio-primary-subtle, rgba(140, 87, 255, 0.12));
+  --blue-corporate: var(--materio-primary, #0E5C58);
+  --blue-accent: var(--materio-primary, #0E5C58);
+  --blue-soft: var(--materio-primary-subtle, rgba(14, 92, 88, 0.12));
   --bg-app: #F4F5FA;
   --surface-card: #FFFFFF;
   --border-subtle: rgba(76, 78, 100, 0.12);
@@ -1395,14 +1395,14 @@ table tbody tr {
 }
 
 [data-bs-theme="dark"] .btn-outline-primary {
-  background-color: rgba(140, 87, 255, 0.12) !important;
-  border-color: rgba(140, 87, 255, 0.45) !important;
+  background-color: rgba(14, 92, 88, 0.12) !important;
+  border-color: rgba(14, 92, 88, 0.45) !important;
   color: #C2A4FF !important;
 }
 
 [data-bs-theme="dark"] .btn-outline-primary:hover {
-  background-color: #8C57FF !important;
-  border-color: #8C57FF !important;
+  background-color: #0E5C58 !important;
+  border-color: #0E5C58 !important;
   color: #FFFFFF !important;
 }
 
@@ -1493,7 +1493,7 @@ table tbody tr {
 }
 
 [data-bs-theme="dark"] .chip-primary {
-  background-color: rgba(140, 87, 255, 0.18) !important;
+  background-color: rgba(14, 92, 88, 0.18) !important;
   color: #C2A4FF !important;
 }
 
@@ -1730,9 +1730,9 @@ h1, h2, h3, h4, h5, h6,
 }
 
 .sidebar-link.active {
-  background: linear-gradient(72.47deg, #8C57FF 0%, #7135FF 100%) !important;
+  background: #0E5C58 !important;
   color: #FFFFFF !important;
-  box-shadow: 0px 4px 14px rgba(140, 87, 255, 0.5) !important;
+  box-shadow: 0px 4px 14px rgba(14, 92, 88, 0.5) !important;
   border-left: none !important;
   font-weight: 700 !important;
 }
@@ -2080,9 +2080,9 @@ h1, h2, h3, h4, h5, h6,
 .btn-check:checked + .btn-outline-primary,
 .btn-check:checked + label.btn,
 .btn-outline-primary.active {
-  background: linear-gradient(135deg, #8C57FF 0%, #6827EB 100%) !important;
+  background: #0E5C58 !important;
   color: #FFFFFF !important;
-  border-color: #6827EB !important;
+  border-color: #0c4f4b !important;
   box-shadow: 0 4px 14px rgba(104, 39, 235, 0.35) !important;
 }
 
@@ -2478,9 +2478,9 @@ h1, h2, h3, h4, h5, h6,
   border-radius: 10px !important;
 }
 .sidebar-link.active {
-  background: linear-gradient(72.47deg, #8C57FF 0%, #7135FF 100%) !important;
+  background: #0E5C58 !important;
   color: #FFFFFF !important;
-  box-shadow: 0px 4px 14px rgba(140, 87, 255, 0.5) !important;
+  box-shadow: 0px 4px 14px rgba(14, 92, 88, 0.5) !important;
   border-left: none !important;
   font-weight: 700 !important;
 }

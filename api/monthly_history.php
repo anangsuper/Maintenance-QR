@@ -67,59 +67,67 @@ foreach ($overview as $mNum => $m) {
     $total = $m['total'];
 
     $iconClass = $isCurrent
-        ? '<span class="text-primary fs-3"><i class="bi bi-play-circle-fill"></i></span>'
+        ? '<span class="d-inline-flex align-items-center justify-content-center rounded-circle" style="width: 36px; height: 36px; background-color: #D9F1EF; color: #0E5C58;"><i class="bi bi-play-circle-fill fs-5"></i></span>'
         : ($done === $total && $total > 0
-            ? '<span class="text-success fs-3"><i class="bi bi-check-circle-fill"></i></span>'
+            ? '<span class="d-inline-flex align-items-center justify-content-center rounded-circle" style="width: 36px; height: 36px; background-color: #DCFCE7; color: #16A34A;"><i class="bi bi-check-circle-fill fs-5"></i></span>'
             : ($isFuture
-                ? '<span class="text-muted fs-3"><i class="bi bi-clock"></i></span>'
-                : '<span class="text-warning fs-3"><i class="bi bi-exclamation-circle-fill"></i></span>'));
+                ? '<span class="d-inline-flex align-items-center justify-content-center rounded-circle" style="width: 36px; height: 36px; background-color: #F1F5F9; color: #94A3B8;"><i class="bi bi-clock fs-5"></i></span>'
+                : '<span class="d-inline-flex align-items-center justify-content-center rounded-circle" style="width: 36px; height: 36px; background-color: #FEF3C7; color: #D97706;"><i class="bi bi-exclamation-circle-fill fs-5"></i></span>'));
 
-    $cardBorder = $isCurrent ? 'border-primary border-2 shadow' : 'border-0 shadow-sm';
+    $cardBorder = $isCurrent ? 'border-2 shadow-sm' : 'border shadow-2xs';
+    $cardBorderInline = $isCurrent ? 'border-color: #0E5C58 !important;' : 'border-color: #D1D5D8 !important;';
 
+    $barColor = ($percent >= 100) ? '#16A34A' : (($percent >= 50) ? '#0E5C58' : '#D97706');
     $progressBar = '
-    <div class="progress" style="height: 8px;">
-      <div class="progress-bar '.($percent === 100 ? 'bg-success' : ($percent >= 50 ? 'bg-primary' : 'bg-warning')).'" style="width: '.$percent.'%"></div>
+    <div class="rounded-pill overflow-hidden" style="height: 7px; background-color: #E2E8F0;">
+      <div class="h-100 rounded-pill transition-all" style="width: '.$percent.'%; background-color: '.$barColor.';"></div>
     </div>';
 
     $monthCardsHtml .= '
     <div class="col-md-6 col-lg-4">
-      <div class="card p-3 p-md-4 h-100 '.$cardBorder.'">
-        <div class="d-flex align-items-center justify-content-between mb-2">
-          <div class="d-flex align-items-center gap-2">
+      <div class="card p-3 p-md-3.5 h-100 '.$cardBorder.' rounded-[12px] bg-white" style="'.$cardBorderInline.'">
+        <div class="d-flex align-items-center justify-content-between mb-2.5">
+          <div class="d-flex align-items-center gap-2.5">
             '.$iconClass.'
             <div>
-              <h5 class="fw-bold text-dark mb-0">'.e($m['month_name']).'</h5>
+              <h5 class="fw-bold mb-0 text-[#1B2A3A]" style="font-size: 16px;">'.e($m['month_name']).'</h5>
             </div>
           </div>
-          '.($isCurrent ? '<span class="badge bg-primary px-2 py-1">Bulan Berjalan</span>' : '').'
+          '.($isCurrent ? '<span class="badge border rounded-pill px-2.5 py-1" style="font-size: 0.72rem; background-color: #D9F1EF !important; color: #0E5C58 !important; border-color: #A7E2DC !important; font-weight: 700;">Bulan Berjalan</span>' : '').'
         </div>
 
-        <div class="my-3">
-          <div class="d-flex justify-content-between small text-secondary mb-1">
+        <div class="my-2.5">
+          <div class="d-flex justify-content-between small text-[#53595F] mb-1.5" style="font-size: 0.78rem;">
             <span>Progress Pemeliharaan</span>
-            <span class="fw-bold text-dark">'.$done.' / '.$total.' Unit ('.$percent.'%)</span>
+            <span class="fw-bold text-[#1B2A3A]">'.$done.' / '.$total.' Unit ('.$percent.'%)</span>
           </div>
           '.$progressBar.'
         </div>
 
         <div class="row g-2 small text-center mb-3">
-          <div class="col-4 bg-light p-2 rounded">
-            <div class="text-muted" style="font-size:0.75rem;">TOTAL</div>
-            <div class="fw-bold text-dark">'.$total.'</div>
+          <div class="col-4">
+            <div class="p-2 rounded-[8px] border" style="background-color: #F8FAFC; border-color: #E2E8F0 !important;">
+              <div class="text-[#53595F] fw-semibold" style="font-size: 0.68rem; letter-spacing: 0.05em;">TOTAL</div>
+              <div class="fw-bold text-[#1B2A3A] fs-6">'.$total.'</div>
+            </div>
           </div>
-          <div class="col-4 bg-success bg-opacity-10 p-2 rounded">
-            <div class="text-success" style="font-size:0.75rem;">SUDAH</div>
-            <div class="fw-bold text-success">'.$done.'</div>
+          <div class="col-4">
+            <div class="p-2 rounded-[8px] border" style="background-color: #F0FDF4; border-color: #BBF7D0 !important;">
+              <div class="text-[#15803D] fw-bold" style="font-size: 0.68rem; letter-spacing: 0.05em;">SUDAH</div>
+              <div class="fw-bold text-[#16A34A] fs-6">'.$done.'</div>
+            </div>
           </div>
-          <div class="col-4 bg-danger bg-opacity-10 p-2 rounded">
-            <div class="text-danger" style="font-size:0.75rem;">BELUM</div>
-            <div class="fw-bold text-danger">'.$m['pending'].'</div>
+          <div class="col-4">
+            <div class="p-2 rounded-[8px] border" style="background-color: #FEF2F2; border-color: #FECACA !important;">
+              <div class="text-[#B91C1C] fw-bold" style="font-size: 0.68rem; letter-spacing: 0.05em;">BELUM</div>
+              <div class="fw-bold text-[#DC2626] fs-6">'.$m['pending'].'</div>
+            </div>
           </div>
         </div>
 
         <div class="mt-auto">
-          <a class="btn btn-outline-primary btn-sm w-100 fw-semibold" href="'.e(module_url('audit.php', ['bulan'=>$mNum,'tahun'=>$year,'cabang'=>$cabangId])).'">
-            <i class="bi bi-list-check me-1"></i> Buka Rincian Perangkat
+          <a class="btn btn-outline-teal btn-sm w-100 fw-bold rounded-[8px] py-1.5 shadow-2xs d-inline-flex align-items-center justify-content-center gap-1.5" href="'.e(module_url('audit.php', ['bulan'=>$mNum,'tahun'=>$year,'cabang'=>$cabangId])).'" style="font-size: 0.82rem;">
+            <i class="bi bi-list-check"></i> Buka Rincian Perangkat
           </a>
         </div>
       </div>
@@ -163,13 +171,16 @@ $headStyle = '
   color: #FFFFFF !important;
   font-weight: 600;
 }
-.btn-outline-primary {
-  color: #0E5C58 !important;
-  border-color: #0E5C58 !important;
+.btn-outline-teal {
+  background: #FFFFFF;
+  color: #0E5C58;
+  border: 1px solid #0E5C58;
+  transition: all 0.15s ease;
 }
-.btn-outline-primary:hover {
-  background: #0E5C58 !important;
-  color: #FFFFFF !important;
+.btn-outline-teal:hover {
+  background: #0E5C58;
+  color: #FFFFFF;
+  border-color: #0E5C58;
 }
 .badge.bg-primary {
   background-color: #0E5C58 !important;

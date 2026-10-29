@@ -179,47 +179,59 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'update_card_data' && $card) {
     verify_csrf();
 
-    $jenisInv = trim((string)($_POST['jenis_inventaris'] ?? ''));
-    $golongan = trim((string)($_POST['golongan'] ?? ''));
-    $ruanganSelect = trim((string)($_POST['ruangan_select'] ?? ''));
-    $ruanganCustom = trim((string)($_POST['ruangan_custom'] ?? ''));
-    $sumberPerolehan = trim((string)($_POST['sumber_perolehan'] ?? ''));
-    $statusInv = trim((string)($_POST['status_inventaris'] ?? '1 : Aktif'));
-    $nomorSeri = trim((string)($_POST['nomor_seri_inventaris'] ?? ''));
-    $keterangan = trim((string)($_POST['keterangan'] ?? ''));
+    $bioVerified = (string)($_POST['bio_verified'] ?? '0');
+    $bioUserName = trim((string)($_POST['bio_user_name'] ?? ''));
+    $bioUserId = (int)($_POST['bio_user_id'] ?? 0);
+    $bioConfidence = (int)($_POST['bio_confidence'] ?? 0);
 
-    // Lokasi barang: utamakan custom input, atau select
-    $finalRuangan = !empty($ruanganCustom) ? $ruanganCustom : $ruanganSelect;
-    if (empty($finalRuangan)) {
-        $finalRuangan = 'KPO/Lt-4/SDM';
-    }
-
-    $updated = update_inventaris_kartu_data((int)$card['id'], [
-        'nomor_seri_inventaris' => $nomorSeri,
-        'jenis_inventaris' => $jenisInv,
-        'golongan' => $golongan,
-        'ruangan' => $finalRuangan,
-        'lokasi' => $finalRuangan,
-        'sumber_perolehan' => $sumberPerolehan,
-        'status_inventaris' => $statusInv,
-        'keterangan' => $keterangan,
-    ]);
-
-    if ($updated) {
-        $card = get_inventaris_kartu_by_id((int)$card['id']);
-        $dataSuccess = "Rincian inventaris (Jenis, Ruangan, Golongan, No Seri) berhasil disimpan!";
-        
-        try {
-            record_audit_log(
-                'UPDATE',
-                'INVENTARIS_KARTU',
-                (int)$card['id'],
-                (string)$card['nama_barang'],
-                "Data spesifikasi master inventaris diperbarui (Ruangan: {$finalRuangan}, Jenis: {$jenisInv}, Gol: {$golongan})"
-            );
-        } catch (Throwable $e) {}
+    if ($bioVerified !== '1' || empty($bioUserName)) {
+        $dataError = "Perubahan data master ditolak! Wajib diverifikasi melalui pemindaian biometrik wajah staf/teknisi.";
     } else {
-        $dataError = "Gagal memperbarui rincian data kartu inventaris.";
+        $verifierLabel = $bioUserName . ($bioConfidence > 0 ? " ({$bioConfidence}% Cocok - Scan Wajah)" : " (Scan Wajah)");
+
+        $jenisInv = trim((string)($_POST['jenis_inventaris'] ?? ''));
+        $golongan = trim((string)($_POST['golongan'] ?? ''));
+        $ruanganSelect = trim((string)($_POST['ruangan_select'] ?? ''));
+        $ruanganCustom = trim((string)($_POST['ruangan_custom'] ?? ''));
+        $sumberPerolehan = trim((string)($_POST['sumber_perolehan'] ?? ''));
+        $statusInv = trim((string)($_POST['status_inventaris'] ?? '1 : Aktif'));
+        $nomorSeri = trim((string)($_POST['nomor_seri_inventaris'] ?? ''));
+        $keterangan = trim((string)($_POST['keterangan'] ?? ''));
+
+        // Lokasi barang: utamakan custom input, atau select
+        $finalRuangan = !empty($ruanganCustom) ? $ruanganCustom : $ruanganSelect;
+        if (empty($finalRuangan)) {
+            $finalRuangan = 'KPO/Lt-4/SDM';
+        }
+
+        $updated = update_inventaris_kartu_data((int)$card['id'], [
+            'nomor_seri_inventaris' => $nomorSeri,
+            'jenis_inventaris' => $jenisInv,
+            'golongan' => $golongan,
+            'ruangan' => $finalRuangan,
+            'lokasi' => $finalRuangan,
+            'sumber_perolehan' => $sumberPerolehan,
+            'status_inventaris' => $statusInv,
+            'keterangan' => $keterangan,
+        ]);
+
+        if ($updated) {
+            $card = get_inventaris_kartu_by_id((int)$card['id']);
+            $dataSuccess = "Rincian inventaris berhasil disimpan dan diverifikasi oleh: " . e($verifierLabel);
+            
+            try {
+                record_audit_log(
+                    'UPDATE',
+                    'INVENTARIS_KARTU',
+                    (int)$card['id'],
+                    (string)$card['nama_barang'],
+                    "Data master inventaris diperbarui via Verifikasi Wajah ({$verifierLabel}) - Ruangan: {$finalRuangan}, Jenis: {$jenisInv}, Gol: {$golongan}",
+                    ['user_name' => $bioUserName, 'user_role' => 'teknisi']
+                );
+            } catch (Throwable $e) {}
+        } else {
+            $dataError = "Gagal memperbarui rincian data kartu inventaris.";
+        }
     }
 }
 
@@ -1105,9 +1117,13 @@ $pageTitle = $card ? e($card['nama_barang']) . ' - Kartu Inventaris' : 'Kartu In
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
                 
-                <form method="post" action="<?= module_url('kartu_detail.php', ['id' => $card['id']]) ?>">
+                <form method="post" id="editDataKartuForm" action="<?= module_url('kartu_detail.php', ['id' => $card['id']]) ?>">
                     <input type="hidden" name="_csrf" value="<?= e(csrf_token()) ?>">
                     <input type="hidden" name="action" value="update_card_data">
+                    <input type="hidden" name="bio_verified" id="editBioVerified" value="0">
+                    <input type="hidden" name="bio_user_id" id="editBioUserId" value="">
+                    <input type="hidden" name="bio_user_name" id="editBioUserName" value="">
+                    <input type="hidden" name="bio_confidence" id="editBioConfidence" value="">
 
                     <div class="modal-body p-4 bg-light">
                         <div class="row g-3">
@@ -1198,11 +1214,14 @@ $pageTitle = $card ? e($card['nama_barang']) . ' - Kartu Inventaris' : 'Kartu In
                         </div>
                     </div>
 
-                    <div class="modal-footer bg-white border-top py-2">
+                    <div class="modal-footer bg-white border-top py-2.5 px-3 d-flex justify-content-between align-items-center">
                         <button type="button" class="btn btn-outline-secondary btn-sm rounded-pill px-3" data-bs-dismiss="modal">Batal</button>
-                        <button type="submit" class="btn btn-primary btn-sm rounded-pill px-4 fw-bold">
-                            <i class="bi bi-save me-1"></i> Simpan Perubahan
-                        </button>
+                        <div class="d-flex align-items-center gap-2">
+                            <button type="button" class="btn btn-primary btn-sm rounded-pill px-3.5 fw-bold shadow-xs d-inline-flex align-items-center gap-1.5" onclick="startFaceAuthForEditData()">
+                                <i class="bi bi-person-bounding-box fs-6"></i>
+                                <span>Validasi Muka &amp; Simpan</span>
+                            </button>
+                        </div>
                     </div>
                 </form>
             </div>
@@ -1479,8 +1498,27 @@ $pageTitle = $card ? e($card['nama_barang']) . ' - Kartu Inventaris' : 'Kartu In
             });
         }
 
-        // 2. Tombol Otorisasi Wajah (Upload / Hapus)
+        // 2. Tombol Otorisasi Wajah (Upload / Hapus / Edit Data Master)
         window.faceAuthMode = 'upload';
+
+        function startFaceAuthForEditData() {
+            var form = document.getElementById("editDataKartuForm");
+            if (form && !form.checkValidity()) {
+                form.reportValidity();
+                return;
+            }
+            var modalEditEl = document.getElementById("modalEditDataKartu");
+            if (modalEditEl) {
+                try {
+                    var m = (typeof bootstrap !== 'undefined' && bootstrap.Modal)
+                        ? (bootstrap.Modal.getInstance ? bootstrap.Modal.getInstance(modalEditEl) : null)
+                        : null;
+                    if (m) m.hide();
+                } catch(e) {}
+            }
+            window.faceAuthMode = 'edit_data';
+            openBiometricModal();
+        }
 
         function startFaceAuthProcess() {
             window.faceAuthMode = 'upload';
@@ -1740,6 +1778,32 @@ $pageTitle = $card ? e($card['nama_barang']) . ' - Kartu Inventaris' : 'Kartu In
             const matchConfEl = document.getElementById("bioMatchConfidence");
             const successOverlay = document.getElementById("bioSuccessOverlay");
             const statusBox = document.getElementById("bioStatusBox");
+
+            // JIKA DALAM MODE EDIT DATA MASTER INVENTARIS
+            if (window.faceAuthMode === 'edit_data') {
+                document.getElementById("editBioVerified").value = "1";
+                document.getElementById("editBioUserId").value = user.id;
+                document.getElementById("editBioUserName").value = user.nama;
+                document.getElementById("editBioConfidence").value = conf;
+
+                if (matchedNameEl) matchedNameEl.textContent = user.nama;
+                if (matchConfEl) matchConfEl.textContent = conf + "% Cocok";
+                if (successOverlay) successOverlay.classList.remove("d-none");
+
+                if (statusBox) {
+                    statusBox.className = "alert alert-success py-2 px-3 small fw-bold mb-2";
+                    statusBox.innerHTML = '<i class="bi bi-check-circle-fill me-1"></i> Otorisasi Wajah Diterima: <strong>' + user.nama + '</strong>! Menyimpan perubahan data...';
+                }
+
+                if (bioVideoStream) {
+                    try { bioVideoStream.getTracks().forEach(t => t.stop()); } catch(e) {}
+                }
+
+                setTimeout(() => {
+                    document.getElementById("editDataKartuForm").submit();
+                }, 600);
+                return;
+            }
 
             // JIKA DALAM MODE HAPUS FOTO
             if (window.faceAuthMode === 'delete') {
