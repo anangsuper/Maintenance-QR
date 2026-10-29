@@ -148,10 +148,13 @@ function render_page(string $title, string $content, string $extraHead = '', str
     $sidebarHtml = '
     <aside class="w-[240px] bg-[#FFFFFF] border-r border-[#D1D5D8] flex flex-col shrink-0 app-sidebar" id="appDesktopSidebar" style="background:#FFFFFF !important; border-right:1px solid #D1D5D8 !important; width:240px !important; min-width:240px !important; box-shadow:none !important;">
       <!-- Logo Area (64px) -->
-      <div class="h-[64px] flex items-center px-5 border-b border-[#D1D5D8] sidebar-brand" style="border-bottom:1px solid #D1D5D8 !important; background:#FFFFFF !important;">
-        <a href="' . e(module_url('dashboard.php')) . '" class="flex items-center text-decoration-none">
-          <i class="bi bi-shield-check text-[#0E5C58] text-[22px] mr-2.5"></i>
-          <span class="font-bold text-[15px] tracking-tight text-[#1B2A3A]">QR Maintenance</span>
+      <div class="h-[64px] flex items-center px-4 border-b border-[#D1D5D8] sidebar-brand" style="border-bottom:1px solid #D1D5D8 !important; background:#FFFFFF !important;">
+        <a href="' . e(module_url('dashboard.php')) . '" class="flex items-center gap-2.5 text-decoration-none overflow-hidden">
+          <img src="' . app_logo_url() . '" alt="Logo Bank Mitra" class="h-[36px] w-auto max-w-[42px] object-contain shrink-0" onerror="this.onerror=null; this.src=\'logo.png\';">
+          <div class="flex flex-col leading-tight overflow-hidden">
+            <span class="font-bold text-[14px] tracking-tight text-[#1B2A3A] truncate">Bank Mitra</span>
+            <span class="text-[10px] font-semibold text-[#0E5C58] uppercase tracking-wider truncate">QR Maintenance</span>
+          </div>
         </a>
       </div>
 
@@ -182,9 +185,12 @@ function render_page(string $title, string $content, string $extraHead = '', str
     <!-- Offcanvas Mobile Drawer -->
     <div class="offcanvas offcanvas-start bg-white text-dark" tabindex="-1" id="appMobileSidebar" aria-labelledby="appMobileSidebarLabel" style="width: 260px; background:#FFFFFF !important; color:#1B2A3A !important;">
       <div class="offcanvas-header border-b border-[#D1D5D8] py-3 px-4" style="border-bottom:1px solid #D1D5D8 !important;">
-        <a href="' . e(module_url('dashboard.php')) . '" class="flex items-center text-decoration-none">
-          <i class="bi bi-shield-check text-[#0E5C58] text-[22px] mr-2.5"></i>
-          <span class="font-bold text-[15px] tracking-tight text-[#1B2A3A]">QR Maintenance</span>
+        <a href="' . e(module_url('dashboard.php')) . '" class="flex items-center gap-2.5 text-decoration-none overflow-hidden">
+          <img src="' . app_logo_url() . '" alt="Logo Bank Mitra" class="h-[34px] w-auto max-w-[40px] object-contain shrink-0" onerror="this.onerror=null; this.src=\'logo.png\';">
+          <div class="flex flex-col leading-tight overflow-hidden">
+            <span class="font-bold text-[14px] tracking-tight text-[#1B2A3A] truncate">Bank Mitra</span>
+            <span class="text-[10px] font-semibold text-[#0E5C58] uppercase tracking-wider truncate">QR Maintenance</span>
+          </div>
         </a>
         <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
       </div>
