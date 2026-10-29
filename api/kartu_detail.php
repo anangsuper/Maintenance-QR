@@ -314,29 +314,6 @@ $pageTitle = $card ? e($card['nama_barang']) . ' - Kartu Inventaris' : 'Kartu In
     <script src="<?= module_url('assets/vendor/qrcode.min.js') ?>"></script>
 
     <style>
-        /* Kombai Teal Brand Palette & Utility Classes */
-        .bg-teal { background-color: #0E5C58 !important; }
-        .bg-teal-dark { background-color: #094340 !important; }
-        .bg-teal-light, .bg-\[\#D9F1EF\] { background-color: #D9F1EF !important; }
-        .bg-slate-light, .bg-\[\#F8FAFC\] { background-color: #F8FAFC !important; }
-        .bg-\[\#F1F5F9\] { background-color: #F1F5F9 !important; }
-        .text-teal, .text-\[\#0E5C58\] { color: #0E5C58 !important; }
-        .text-teal-dark, .text-\[\#094340\] { color: #094340 !important; }
-        .text-teal-light, .text-\[\#D9F1EF\] { color: #D9F1EF !important; }
-        .text-slate-dark, .text-\[\#1B2A3A\] { color: #1B2A3A !important; }
-        .text-slate-muted, .text-\[\#53595F\] { color: #53595F !important; }
-        .text-\[\#475569\] { color: #475569 !important; }
-        .text-\[\#0284C7\] { color: #0E5C58 !important; }
-        .text-\[\#D97706\] { color: #0E5C58 !important; }
-        .text-\[\#16A34A\] { color: #0E5C58 !important; }
-        .border-teal, .border-\[\#0E5C58\] { border-color: #0E5C58 !important; }
-        .border-teal-light, .border-\[\#A7E2DC\] { border-color: #A7E2DC !important; }
-        .border-\[\#CBD5E1\] { border-color: #CBD5E1 !important; }
-        .border-\[\#E2E8F0\] { border-color: #E2E8F0 !important; }
-        .border-\[\#D1D5D8\] { border-color: #D1D5D8 !important; }
-        .rounded-\[8px\] { border-radius: 8px !important; }
-        .rounded-\[16px\] { border-radius: 16px !important; }
-
         :root {
             --app-teal: #0E5C58;
             --app-teal-dark: #094340;
@@ -743,24 +720,27 @@ $pageTitle = $card ? e($card['nama_barang']) . ' - Kartu Inventaris' : 'Kartu In
 <body>
 
     <!-- Header Brand BPR Mitratama -->
-    <header class="header-brand py-2.5 px-3 px-md-4 shadow-sm" style="background: #0E5C58 !important;">
-        <div class="container max-w-4xl d-flex align-items-center justify-content-between gap-2">
-            <div class="d-flex align-items-center gap-2.5 min-w-0">
-                <div class="bg-white p-1 rounded-[8px] shadow-2xs flex-shrink-0 d-flex align-items-center justify-content-center" style="width: 36px; height: 36px;">
-                    <img src="<?= module_url('logo_img.php') ?>" alt="Logo Bank Mitra" style="max-height: 26px; max-width: 26px; object-fit: contain;" onerror="this.onerror=null; this.src='data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'32\' height=\'32\' viewBox=\'0 0 24 24\' fill=\'%230E5C58\'%3E%3Cpath d=\'M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5\'/%3E%3C/svg%3E';">
+    <header class="header-brand py-3 px-3 px-md-4 shadow-sm" style="background: #0E5C58 !important; border-bottom: 2px solid #094340;">
+        <div class="container d-flex align-items-center justify-content-between gap-3" style="max-width: 1020px;">
+            <div class="d-flex align-items-center gap-3 min-w-0">
+                <div class="bg-white px-2.5 py-1 rounded-3 shadow-xs flex-shrink-0 d-flex align-items-center justify-content-center" style="height: 44px; min-width: 52px;">
+                    <img src="<?= module_url('logo_img.php') ?>" alt="Logo Bank Mitra" style="height: 34px; width: auto; max-width: 120px; object-fit: contain;" onerror="this.onerror=null; this.src='data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'32\' height=\'32\' viewBox=\'0 0 24 24\' fill=\'%230E5C58\'%3E%3Cpath d=\'M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5\'/%3E%3C/svg%3E';">
                 </div>
                 <div class="min-w-0">
-                    <h1 class="h6 mb-0 text-white fw-bold tracking-tight text-truncate" style="font-size: 0.88rem;">BANK MITRA</h1>
-                    <div class="small text-[#D9F1EF] text-truncate fw-medium" style="font-size: 0.70rem; letter-spacing: 0.3px;">KARTU INVENTARIS RESMI</div>
+                    <h1 class="h6 mb-0 text-white fw-bold tracking-tight text-truncate" style="font-size: 0.95rem; line-height: 1.25;">
+                        <span class="d-none d-sm-inline">PT. BPR MITRATAMA ARTHABUANA</span>
+                        <span class="d-sm-none">BANK MITRA</span>
+                    </h1>
+                    <div class="small text-teal-light text-truncate fw-medium" style="font-size: 0.74rem; letter-spacing: 0.4px;">DATA MASTER KARTU INVENTARIS RESMI</div>
                 </div>
             </div>
             <div class="flex-shrink-0">
                 <?php if (is_logged_in()): ?>
-                    <a href="<?= module_url('dashboard.php', ['tab' => 'kartu']) ?>" class="btn btn-outline-light btn-sm rounded-pill px-3 py-1 d-inline-flex align-items-center gap-1.5 fw-semibold" style="font-size: 0.76rem;">
+                    <a href="<?= module_url('dashboard.php', ['tab' => 'kartu']) ?>" class="btn btn-outline-light btn-sm rounded-pill px-3.5 py-1.5 d-inline-flex align-items-center gap-1.5 fw-semibold shadow-xs" style="font-size: 0.80rem; border-color: rgba(255,255,255,0.45);">
                         <i class="bi bi-arrow-left"></i> <span class="d-none d-sm-inline">Dashboard</span><span class="d-sm-none">Menu</span>
                     </a>
                 <?php else: ?>
-                    <a href="<?= module_url('login.php') ?>" class="btn btn-outline-light btn-sm rounded-pill px-3 py-1 d-inline-flex align-items-center gap-1.5 fw-semibold" style="font-size: 0.76rem;">
+                    <a href="<?= module_url('login.php') ?>" class="btn btn-outline-light btn-sm rounded-pill px-3.5 py-1.5 d-inline-flex align-items-center gap-1.5 fw-semibold shadow-xs" style="font-size: 0.80rem; border-color: rgba(255,255,255,0.45);">
                         <i class="bi bi-box-arrow-in-right"></i> <span>Login</span>
                     </a>
                 <?php endif; ?>
@@ -902,25 +882,25 @@ $pageTitle = $card ? e($card['nama_barang']) . ' - Kartu Inventaris' : 'Kartu In
                     <div class="row g-2 pt-1">
                         <div class="col-3">
                             <button class="mobile-action-btn" type="button" data-bs-toggle="collapse" data-bs-target="#collapseUploadPhoto" aria-expanded="false" title="Unggah / Ambil Foto">
-                                <i class="bi bi-camera-fill text-teal"></i>
+                                <i class="bi bi-camera-fill text-[#0E5C58]"></i>
                                 <span><?= $photoUrl ? 'Ganti' : 'Foto' ?></span>
                             </button>
                         </div>
                         <div class="col-3">
                             <a href="<?= module_url('inventaris_mutation.php', ['id' => $card['id']]) ?>" class="mobile-action-btn" title="Mutasi Lokasi Barang">
-                                <i class="bi bi-arrow-left-right text-teal"></i>
+                                <i class="bi bi-arrow-left-right text-[#0284C7]"></i>
                                 <span>Mutasi</span>
                             </a>
                         </div>
                         <div class="col-3">
                             <button type="button" class="mobile-action-btn" data-bs-toggle="modal" data-bs-target="#modalEditDataKartu" title="Ubah Data Inventaris">
-                                <i class="bi bi-pencil-square text-teal"></i>
+                                <i class="bi bi-pencil-square text-[#D97706]"></i>
                                 <span>Edit</span>
                             </button>
                         </div>
                         <div class="col-3">
                             <a href="<?= module_url('print_inventory_card.php', ['source' => 'inventaris_kartu', 'id' => $card['id']]) ?>" target="_blank" class="mobile-action-btn" title="Cetak Kartu Fisik">
-                                <i class="bi bi-printer-fill text-teal"></i>
+                                <i class="bi bi-printer-fill text-[#16A34A]"></i>
                                 <span>Cetak</span>
                             </a>
                         </div>
@@ -2138,7 +2118,7 @@ $pageTitle = $card ? e($card['nama_barang']) . ' - Kartu Inventaris' : 'Kartu In
                     text: <?= json_encode($canonicalQrUrl) ?>,
                     width: 82,
                     height: 82,
-                    colorDark: "#0E5C58",
+                    colorDark: "#002B49",
                     colorLight: "#FFFFFF",
                     correctLevel: QRCode.CorrectLevel.M
                 });
