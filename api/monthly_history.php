@@ -158,10 +158,30 @@ $headStyle = '
   border-color: #94A3B8;
 }
 .branch-nav-pill.active {
-  background: var(--blue-corporate, #003B73);
-  border-color: var(--blue-corporate, #003B73);
-  color: #FFFFFF;
+  background: #0E5C58 !important;
+  border-color: #0E5C58 !important;
+  color: #FFFFFF !important;
   font-weight: 600;
+}
+.btn-outline-primary {
+  color: #0E5C58 !important;
+  border-color: #0E5C58 !important;
+}
+.btn-outline-primary:hover {
+  background: #0E5C58 !important;
+  color: #FFFFFF !important;
+}
+.badge.bg-primary {
+  background-color: #0E5C58 !important;
+}
+.progress-bar.bg-primary {
+  background-color: #0E5C58 !important;
+}
+.text-primary {
+  color: #0E5C58 !important;
+}
+.border-primary {
+  border-color: #0E5C58 !important;
 }
 </style>';
 
