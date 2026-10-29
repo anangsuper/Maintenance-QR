@@ -1570,12 +1570,12 @@ if (is_hrd() && !is_admin()) {
         </div>
       </div>
 
-      <!-- Symmetrical Metric Strip (88px) -->
-      <div class="bg-[#FFFFFF] border border-[#D1D5D8] rounded-[10px] h-[88px] flex overflow-hidden shrink-0 mb-4 shadow-xs">
+      <!-- Symmetrical Metric Strip (Responsive Mobile & Desktop) -->
+      <div class="bg-[#FFFFFF] border border-[#D1D5D8] rounded-[10px] h-auto md:h-[88px] flex flex-col md:flex-row overflow-hidden shrink-0 mb-4 shadow-xs">
         <!-- Card 1: Total Kartu Inventaris -->
-        <a href="'.e(module_url('dashboard.php', ['tab'=>'kartu'])).'" class="flex-1 flex flex-col justify-center px-6 border-r border-[#D1D5D8] relative hover:bg-[#F4F5F7] transition-colors text-decoration-none">
+        <a href="'.e(module_url('dashboard.php', ['tab'=>'kartu'])).'" class="flex-1 flex flex-col justify-center px-5 py-3 border-b md:border-b-0 md:border-r border-[#D1D5D8] relative hover:bg-[#F4F5F7] transition-colors text-decoration-none">
           <div class="absolute left-0 top-0 bottom-0 w-1 bg-[#0E5C58]"></div>
-          <div class="text-[28px] font-bold text-[#1B2A3A] tabular-nums leading-none">
+          <div class="text-[26px] md:text-[28px] font-bold text-[#1B2A3A] tabular-nums leading-none">
             '.number_format($totalCardsCount).' <span class="text-[13px] font-normal text-[#53595F]">Aset</span>
           </div>
           <div class="text-[12px] font-medium text-[#53595F] mt-1.5 flex items-center gap-1.5">
@@ -1585,9 +1585,9 @@ if (is_hrd() && !is_admin()) {
         </a>
 
         <!-- Card 2: Dokumentasi Foto Fisik -->
-        <a href="'.e(module_url('asset_gallery.php', ['sub'=>'inventaris'])).'" class="flex-1 flex flex-col justify-center px-6 border-r border-[#D1D5D8] relative hover:bg-[#F4F5F7] transition-colors text-decoration-none">
+        <a href="'.e(module_url('asset_gallery.php', ['sub'=>'inventaris'])).'" class="flex-1 flex flex-col justify-center px-5 py-3 border-b md:border-b-0 md:border-r border-[#D1D5D8] relative hover:bg-[#F4F5F7] transition-colors text-decoration-none">
           <div class="absolute left-0 top-0 bottom-0 w-1 bg-[#0284C7]"></div>
-          <div class="text-[28px] font-bold text-[#0284C7] tabular-nums leading-none">
+          <div class="text-[26px] md:text-[28px] font-bold text-[#0284C7] tabular-nums leading-none">
             '.number_format($totalInvWithPhotoCount).' <span class="text-[13px] font-normal text-[#53595F]">Foto Unit</span>
           </div>
           <div class="text-[12px] font-medium text-[#53595F] mt-1.5 flex items-center gap-1.5">
@@ -1598,9 +1598,9 @@ if (is_hrd() && !is_admin()) {
         </a>
 
         <!-- Card 3: Jaringan Kantor Bank -->
-        <a href="'.e(module_url('cabang_admin.php')).'" class="flex-1 flex flex-col justify-center px-6 relative hover:bg-[#F4F5F7] transition-colors text-decoration-none">
+        <a href="'.e(module_url('cabang_admin.php')).'" class="flex-1 flex flex-col justify-center px-5 py-3 relative hover:bg-[#F4F5F7] transition-colors text-decoration-none">
           <div class="absolute left-0 top-0 bottom-0 w-1 bg-[#10B981]"></div>
-          <div class="text-[28px] font-bold text-[#1B2A3A] tabular-nums leading-none">
+          <div class="text-[26px] md:text-[28px] font-bold text-[#1B2A3A] tabular-nums leading-none">
             5 <span class="text-[13px] font-normal text-[#53595F]">Cabang</span>
           </div>
           <div class="text-[12px] font-medium text-[#53595F] mt-1.5 flex items-center gap-1.5">
@@ -1611,8 +1611,8 @@ if (is_hrd() && !is_admin()) {
         </a>
       </div>
 
-      <!-- Tabs Navigation (44px) -->
-      <div class="flex gap-6 h-[44px] border-b border-[#D1D5D8] shrink-0 mb-4">
+      <!-- Tabs Navigation (44px, Mobile Horizontal Scroll) -->
+      <div class="flex gap-4 md:gap-6 h-[44px] border-b border-[#D1D5D8] shrink-0 mb-4 overflow-x-auto whitespace-nowrap no-scrollbar">
         <a href="'.e(module_url('dashboard.php', ['tab'=>'kartu'])).'" class="h-full flex items-center font-bold text-[#1B2A3A] border-b-[3px] border-[#0E5C58] px-1 relative top-[1px] transition-colors text-decoration-none">
           <i class="bi bi-credit-card-2-front me-1.5 text-[#0E5C58]"></i> Kartu Inventaris ('.$totalCardsCount.')
         </a>
@@ -2005,8 +2005,8 @@ if (is_hrd() && !is_admin()) {
       </div>
       ' : '') . '
 
-      <!-- Tabs Navigation (44px) -->
-      <div class="flex gap-6 h-[44px] border-b border-[#D1D5D8] shrink-0 mb-4">
+      <!-- Tabs Navigation (44px, Mobile Horizontal Scroll) -->
+      <div class="flex gap-4 md:gap-6 h-[44px] border-b border-[#D1D5D8] shrink-0 mb-4 overflow-x-auto whitespace-nowrap no-scrollbar">
         <a href="'.e(module_url('dashboard.php', ['cabang'=>$cabangId, 'bulan'=>$month, 'tahun'=>$year])).'" class="h-full flex items-center font-'.($isTabAntrean ? 'bold text-[#1B2A3A] border-b-[3px] border-[#0E5C58]' : 'semibold text-[#53595F] hover:text-[#1B2A3A] border-b-[3px] border-transparent').' px-1 relative top-[1px] transition-colors text-decoration-none">
           <i class="bi bi-clock-history me-1.5 '.($isTabAntrean ? 'text-[#0E5C58]' : '').'"></i> Belum dipelihara ('.$displayDueCount.')
         </a>
@@ -2872,23 +2872,48 @@ if ($activeTab === 'kartu') {
         $borderClass = ($rIdx < count($pagedQueueAssets)) ? 'border-b border-[#D1D5D8]' : '';
 
         $queueRowsHtml .= '
-        <div class="h-[48px] px-4 flex items-center '.$borderClass.' '.$rowBg.' transition-colors relative" data-kid="1-2-2-1-7-3-'.$rIdx.'" data-name="queue table row ('.e($item['kode_inventaris']).')">
+        <!-- Desktop Table Row (md+) -->
+        <div class="hidden md:flex h-[48px] px-4 items-center '.$borderClass.' '.$rowBg.' transition-colors relative" data-kid="1-2-2-1-7-3-'.$rIdx.'" data-name="queue table row ('.e($item['kode_inventaris']).')">
           '.$accentBar.'
-          <div class="w-[280px] shrink-0 tabular-nums font-bold text-[12px] font-mono text-[#1B2A3A] truncate pr-3" data-kid="1-2-2-1-7-3-'.$rIdx.'-1" data-name=\'asset inventory code "'.e($item['kode_inventaris']).'"\' title="'.e($item['kode_inventaris']).'">'.e($item['kode_inventaris']).'</div>
-          <div class="flex-1 min-w-[200px] flex items-baseline gap-2 truncate px-3" data-kid="1-2-2-1-7-3-'.$rIdx.'-2" data-name="device and user cell">
+          <div class="w-[24%] shrink-0 tabular-nums font-bold text-[12px] font-mono text-[#1B2A3A] truncate pr-3" data-kid="1-2-2-1-7-3-'.$rIdx.'-1" data-name=\'asset inventory code "'.e($item['kode_inventaris']).'"\' title="'.e($item['kode_inventaris']).'">'.e($item['kode_inventaris']).'</div>
+          <div class="flex-1 min-w-0 flex items-baseline gap-2 truncate px-3" data-kid="1-2-2-1-7-3-'.$rIdx.'-2" data-name="device and user cell">
             <span class="text-[13px] font-semibold text-[#1B2A3A] truncate" data-kid="1-2-2-1-7-3-'.$rIdx.'-2-1" data-name=\'device name "'.e($item['nama_perangkat']).'"\' title="'.e($item['nama_perangkat']).'">'.e($item['nama_perangkat']).'</span>
             <span class="text-[12px] text-[#53595F] truncate shrink-0" data-kid="1-2-2-1-7-3-'.$rIdx.'-2-2" data-name=\'user name "'.e($item['pengguna']).'"\' title="'.e($item['pengguna']).'">'.e($item['pengguna']).'</span>
           </div>
-          <div class="w-48 shrink-0 flex items-baseline gap-1.5 truncate px-3" data-kid="1-2-2-1-7-3-'.$rIdx.'-3" data-name="branch and room cell">
+          <div class="w-[20%] shrink-0 flex items-baseline gap-1.5 truncate px-3" data-kid="1-2-2-1-7-3-'.$rIdx.'-3" data-name="branch and room cell">
             <span class="text-[13px] font-semibold text-[#1B2A3A] truncate" data-kid="1-2-2-1-7-3-'.$rIdx.'-3-1" data-name=\'branch "'.e($item['cabang']).'"\' title="'.e($item['cabang']).'">'.e($item['cabang']).'</span>
             <span class="text-[12px] text-[#53595F] truncate" data-kid="1-2-2-1-7-3-'.$rIdx.'-3-2" data-name=\'room "/ '.e($item['ruangan']).'"\' title="'.e($item['ruangan']).'">/ '.e($item['ruangan']).'</span>
           </div>
-          <div class="w-44 shrink-0 flex items-center gap-2 px-3" data-kid="1-2-2-1-7-3-'.$rIdx.'-4" data-name="last maintenance cell">
+          <div class="w-[18%] shrink-0 flex items-center gap-2 px-3" data-kid="1-2-2-1-7-3-'.$rIdx.'-4" data-name="last maintenance cell">
             <span class="w-2 h-2 rounded-full '.$dotColor.' shrink-0" data-kid="1-2-2-1-7-3-'.$rIdx.'-4-1" data-name="status dot"></span>
             <span class="text-[12px] '.$textColor.' font-semibold tabular-nums truncate" data-kid="1-2-2-1-7-3-'.$rIdx.'-4-2" data-name=\'last maintenance date "'.e($item['last_maint']).'"\'>'.e($item['last_maint']).'</span>
           </div>
-          <div class="w-28 shrink-0 flex justify-end" data-kid="1-2-2-1-7-3-'.$rIdx.'-5" data-name="action cell">
+          <div class="w-[110px] shrink-0 flex justify-end" data-kid="1-2-2-1-7-3-'.$rIdx.'-5" data-name="action cell">
             <a href="'.e($actionUrl).'" class="h-[32px] px-3 bg-[#FFFFFF] border border-[#D1D5D8] rounded-[6px] text-[12px] font-semibold text-[#1B2A3A] hover:bg-[#F4F5F7] hover:border-[#A0A5AA] transition-all cursor-pointer inline-flex items-center justify-center text-decoration-none shadow-xs" data-kid="1-2-2-1-7-3-'.$rIdx.'-5-1" data-name=\'row action button "Buka aset"\'>Buka aset</a>
+          </div>
+        </div>
+        <!-- Mobile Card Row (< md) -->
+        <div class="flex md:hidden flex-col gap-2 p-3.5 '.$borderClass.' '.$rowBg.' transition-colors relative">
+          '.$accentBar.'
+          <div class="flex items-center justify-between gap-2">
+            <span class="px-2 py-0.5 rounded bg-[#F4F5F7] border border-[#E5E7EB] font-mono font-bold text-[11px] text-[#0E5C58] truncate">'.e($item['kode_inventaris']).'</span>
+            <span class="inline-flex items-center gap-1.5 text-[11px] '.$textColor.' font-bold shrink-0">
+              <span class="w-2 h-2 rounded-full '.$dotColor.'"></span>
+              '.e($item['last_maint']).'
+            </span>
+          </div>
+          <div>
+            <div class="text-[14px] font-bold text-[#1B2A3A] leading-snug">'.e($item['nama_perangkat']).'</div>
+            <div class="text-[12px] text-[#53595F] mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5">
+              <span><i class="bi bi-person text-[#0E5C58] me-1"></i>'.e($item['pengguna']).'</span>
+              <span>&middot;</span>
+              <span><i class="bi bi-geo-alt text-[#0E5C58] me-1"></i>'.e($item['cabang']).' / '.e($item['ruangan']).'</span>
+            </div>
+          </div>
+          <div class="pt-1 flex justify-end">
+            <a href="'.e($actionUrl).'" class="h-[34px] w-full bg-[#0E5C58] hover:bg-[#094340] text-white rounded-[8px] text-[12px] font-semibold transition-all inline-flex items-center justify-center gap-1.5 text-decoration-none shadow-xs">
+              <i class="bi bi-qr-code-scan"></i> Buka &amp; Inspeksi Aset
+            </a>
           </div>
         </div>';
     }
@@ -2935,50 +2960,48 @@ if ($activeTab === 'kartu') {
     $body .= '
     <!-- Queue Surface -->
     <div class="bg-[#FFFFFF] border border-[#D1D5D8] rounded-[10px] flex flex-col shrink-0 overflow-hidden" data-kid="1-2-2-1-7" data-name="queue table card surface">
-      <!-- Toolbar (56px) -->
-      <div class="h-[56px] px-4 flex justify-between items-center border-b border-[#D1D5D8] bg-[#FFFFFF]" data-kid="1-2-2-1-7-1" data-name="toolbar row with filter and scan">
-        <form method="get" class="relative m-0" data-kid="1-2-2-1-7-1-1" data-name="queue filter input wrapper with icon">
+      <!-- Toolbar (Responsive Mobile & Desktop) -->
+      <div class="min-h-[56px] py-2.5 px-3 md:px-4 flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-2.5 border-b border-[#D1D5D8] bg-[#FFFFFF]" data-kid="1-2-2-1-7-1" data-name="toolbar row with filter and scan">
+        <form method="get" class="relative m-0 flex-1 sm:flex-initial" data-kid="1-2-2-1-7-1-1" data-name="queue filter input wrapper with icon">
           <input type="hidden" name="cabang" value="'.(int)$cabangId.'">
           <input type="hidden" name="bulan" value="'.(int)$month.'">
           <input type="hidden" name="tahun" value="'.(int)$year.'">
           <i class="bi bi-search absolute left-3 top-1/2 -translate-y-1/2 text-[#53595F] text-[14px]" data-kid="1-2-2-1-7-1-1-1" data-name="magnifying glass icon in input"></i>
-          <input class="h-[36px] w-[280px] pl-9 pr-3 text-[14px] font-medium text-[#1B2A3A] border border-[#D1D5D8] rounded-[8px] outline-none focus:border-[#0E5C58] placeholder:text-[#A0A5AA] transition-colors" data-kid="1-2-2-1-7-1-1-2" data-name="queue filter search input field" placeholder="Saring antrean..." type="text" name="q_queue" value="'.e($searchQueue).'"/>
+          <input class="h-[36px] w-full sm:w-[280px] pl-9 pr-3 text-[13px] md:text-[14px] font-medium text-[#1B2A3A] border border-[#D1D5D8] rounded-[8px] outline-none focus:border-[#0E5C58] placeholder:text-[#A0A5AA] transition-colors" data-kid="1-2-2-1-7-1-1-2" data-name="queue filter search input field" placeholder="Saring antrean..." type="text" name="q_queue" value="'.e($searchQueue).'"/>
         </form>
-        <div class="flex items-center gap-2">
-          <a href="'.e(module_url('scanner.php')).'" class="h-[36px] px-4 bg-[#0E5C58] hover:bg-[#0c4f4b] text-white rounded-[8px] font-semibold text-[14px] flex items-center gap-2 transition-colors cursor-pointer text-decoration-none shadow-sm" data-kid="1-2-2-1-7-1-2" data-name=\'primary "Scan QR Unit" action button\'>
+        <div class="flex items-center gap-2 justify-end">
+          <a href="'.e(module_url('scanner.php')).'" class="h-[36px] px-3.5 md:px-4 bg-[#0E5C58] hover:bg-[#0c4f4b] text-white rounded-[8px] font-semibold text-[13px] md:text-[14px] flex-1 sm:flex-initial flex items-center justify-center gap-2 transition-colors cursor-pointer text-decoration-none shadow-sm" data-kid="1-2-2-1-7-1-2" data-name=\'primary "Scan QR Unit" action button\'>
             <i class="bi bi-qr-code-scan" data-kid="1-2-2-1-7-1-2-1" data-name="QR code scan icon"></i>
             Scan QR Unit
           </a>
-          <button type="button" class="h-[36px] px-3 bg-[#FFFFFF] border border-[#D1D5D8] hover:bg-[#F4F5F7] text-[#53595F] rounded-[8px] font-semibold text-[13px] flex items-center gap-1.5 transition-colors" data-bs-toggle="modal" data-bs-target="#modalMobileScannerQr" title="Pindai di HP">
+          <button type="button" class="h-[36px] px-3 bg-[#FFFFFF] border border-[#D1D5D8] hover:bg-[#F4F5F7] text-[#53595F] rounded-[8px] font-semibold text-[13px] flex items-center gap-1.5 transition-colors shrink-0" data-bs-toggle="modal" data-bs-target="#modalMobileScannerQr" title="Pindai di HP">
             <i class="bi bi-phone"></i>
           </button>
-          <a href="'.e(module_url('print_report.php', ['bulan'=>$month,'tahun'=>$year,'cabang'=>$cabangId])).'" target="_blank" class="h-[36px] px-3 bg-[#FFFFFF] border border-[#D1D5D8] hover:bg-[#F4F5F7] text-[#53595F] rounded-[8px] font-semibold text-[13px] flex items-center gap-1.5 transition-colors text-decoration-none" title="Cetak Rekap">
+          <a href="'.e(module_url('print_report.php', ['bulan'=>$month,'tahun'=>$year,'cabang'=>$cabangId])).'" target="_blank" class="h-[36px] px-3 bg-[#FFFFFF] border border-[#D1D5D8] hover:bg-[#F4F5F7] text-[#53595F] rounded-[8px] font-semibold text-[13px] flex items-center gap-1.5 transition-colors text-decoration-none shrink-0" title="Cetak Rekap">
             <i class="bi bi-printer"></i>
           </a>
         </div>
       </div>
 
-      <!-- Table Scroll Wrapper -->
-      <div class="overflow-x-auto">
-        <div class="min-w-[980px]">
-          <!-- Table Header (40px) -->
-          <div class="h-[40px] px-4 flex items-center bg-[#F4F5F7] border-b border-[#D1D5D8] text-[12px] font-bold text-[#53595F] uppercase tracking-wider" data-kid="1-2-2-1-7-2" data-name="table header row">
-            <div class="w-[280px] shrink-0 pr-3" data-kid="1-2-2-1-7-2-1" data-name=\'column header "Kode Inventaris"\'>Kode Inventaris</div>
-            <div class="flex-1 min-w-[200px] px-3" data-kid="1-2-2-1-7-2-2" data-name=\'column header "Perangkat &amp; Pengguna"\'>Perangkat &amp; Pengguna</div>
-            <div class="w-48 shrink-0 px-3" data-kid="1-2-2-1-7-2-3" data-name=\'column header "Cabang &amp; Ruangan"\'>Cabang &amp; Ruangan</div>
-            <div class="w-44 shrink-0 px-3" data-kid="1-2-2-1-7-2-4" data-name=\'column header "Pemeliharaan Terakhir"\'>Pemeliharaan Terakhir</div>
-            <div class="w-28 shrink-0 text-right" data-kid="1-2-2-1-7-2-5" data-name=\'column header "Aksi"\'>Aksi</div>
-          </div>
+      <!-- Table Wrapper (No Horizontal Scroll: Desktop Table on md+, Mobile Cards on < md) -->
+      <div class="w-full">
+        <!-- Desktop Table Header (40px, hidden on mobile) -->
+        <div class="hidden md:flex h-[40px] px-4 items-center bg-[#F4F5F7] border-b border-[#D1D5D8] text-[12px] font-bold text-[#53595F] uppercase tracking-wider" data-kid="1-2-2-1-7-2" data-name="table header row">
+          <div class="w-[24%] shrink-0 pr-3" data-kid="1-2-2-1-7-2-1" data-name=\'column header "Kode Inventaris"\'>Kode Inventaris</div>
+          <div class="flex-1 min-w-0 px-3" data-kid="1-2-2-1-7-2-2" data-name=\'column header "Perangkat &amp; Pengguna"\'>Perangkat &amp; Pengguna</div>
+          <div class="w-[20%] shrink-0 px-3" data-kid="1-2-2-1-7-2-3" data-name=\'column header "Cabang &amp; Ruangan"\'>Cabang &amp; Ruangan</div>
+          <div class="w-[18%] shrink-0 px-3" data-kid="1-2-2-1-7-2-4" data-name=\'column header "Pemeliharaan Terakhir"\'>Pemeliharaan Terakhir</div>
+          <div class="w-[110px] shrink-0 text-right" data-kid="1-2-2-1-7-2-5" data-name=\'column header "Aksi"\'>Aksi</div>
+        </div>
 
-          <!-- Rows (8x 48px) -->
-          <div class="flex flex-col" data-kid="1-2-2-1-7-3" data-name="queue table body rows container">
-            '.$queueRowsHtml.'
-          </div>
+        <!-- Rows -->
+        <div class="flex flex-col" data-kid="1-2-2-1-7-3" data-name="queue table body rows container">
+          '.$queueRowsHtml.'
         </div>
       </div>
 
-      <!-- Footer / Pagination (40px) -->
-      <div class="h-[40px] px-4 flex justify-between items-center bg-[#F4F5F7] border-t border-[#D1D5D8] text-[13px] font-semibold text-[#53595F]" data-kid="1-2-2-1-7-4" data-name="pagination footer bar">
+      <!-- Footer / Pagination -->
+      <div class="min-h-[42px] py-2 px-3 md:px-4 flex flex-col sm:flex-row justify-between items-center gap-2 bg-[#F4F5F7] border-t border-[#D1D5D8] text-[12px] md:text-[13px] font-semibold text-[#53595F]" data-kid="1-2-2-1-7-4" data-name="pagination footer bar">
         <div data-kid="1-2-2-1-7-4-1" data-name="pagination results summary text">Menampilkan <span class="font-bold text-[#1B2A3A]">'.$startItem.'&ndash;'.$endItem.'</span> dari <span class="font-bold text-[#1B2A3A]">'.$totalQueueCount.'</span> aset</div>
         <div class="flex items-center gap-1.5" data-kid="1-2-2-1-7-4-2" data-name="pagination page numbers container">
           '.$queuePaginationHtml.'
@@ -3456,9 +3479,9 @@ $body .= '
         </h6>
         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
       </div>
-      <div class="modal-body text-center bg-light p-4" style="overflow-x: auto;">
-        <!-- Container Skala Pratinjau -->
-        <div style="display: inline-block; transform: scale(1.25); transform-origin: top center; margin-bottom: 22mm;">
+      <div class="modal-body text-center bg-light p-2 sm:p-4" style="overflow-x: hidden;">
+        <!-- Container Skala Pratinjau (Responsif Mobile & Desktop) -->
+        <div class="cr80-preview-scale-box">
           <div class="atm-card" style="text-align: left;">
             <!-- Top Header -->
             <div class="card-header-sec">

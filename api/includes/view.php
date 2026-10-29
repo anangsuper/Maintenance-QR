@@ -215,33 +215,33 @@ function render_page(string $title, string $content, string $extraHead = '', str
 
     // Topbar HTML
     $topbarHtml = '
-    <header class="h-[64px] bg-[#FFFFFF] border-b border-[#D1D5D8] flex items-center justify-between px-6 shrink-0 sticky top-0 z-10 app-topbar">
-      <div class="flex items-center gap-3">
-        <button class="btn btn-sm btn-outline-secondary d-lg-none" type="button" data-bs-toggle="offcanvas" data-bs-target="#appMobileSidebar" aria-controls="appMobileSidebar">
+    <header class="h-[58px] md:h-[64px] bg-[#FFFFFF] border-b border-[#D1D5D8] flex items-center justify-between px-3 sm:px-4 md:px-6 shrink-0 sticky top-0 z-10 app-topbar gap-2">
+      <div class="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
+        <button class="btn btn-sm btn-outline-secondary d-lg-none shrink-0 px-2 py-1" type="button" data-bs-toggle="offcanvas" data-bs-target="#appMobileSidebar" aria-controls="appMobileSidebar" aria-label="Menu Navigasi">
           <i class="bi bi-list fs-5"></i>
         </button>
-        <div>
-          <div class="font-semibold text-[15px] text-[#1B2A3A] text-truncate leading-tight">' . e($cleanTitle) . '</div>
-          <div class="text-[11px] text-[#53595F] leading-tight d-none d-sm-block">Halo, <strong class="text-[#1B2A3A] font-semibold">' . e($userName) . '</strong></div>
+        <div class="min-w-0 flex-1">
+          <div class="font-semibold text-[14px] md:text-[15px] text-[#1B2A3A] text-truncate leading-tight">' . e($cleanTitle) . '</div>
+          <div class="text-[11px] text-[#53595F] leading-tight d-none d-sm-block text-truncate">Halo, <strong class="text-[#1B2A3A] font-semibold">' . e($userName) . '</strong></div>
         </div>
       </div>
 
-      <div class="flex items-center gap-3 md:gap-4">
-        <button type="button" class="flex items-center gap-2 h-[36px] px-3 bg-[#F4F5F7] border border-[#D1D5D8] rounded-[8px] text-[#53595F] text-[13px] hover:bg-[#e9eaec] transition-colors cursor-pointer" data-bs-toggle="modal" data-bs-target="#globalSearchModal" title="Cari aset (Ctrl+K)">
+      <div class="flex items-center gap-1.5 sm:gap-2.5 md:gap-4 shrink-0">
+        <button type="button" class="flex items-center justify-center gap-2 h-[34px] md:h-[36px] px-2.5 md:px-3 bg-[#F4F5F7] border border-[#D1D5D8] rounded-[8px] text-[#53595F] text-[13px] hover:bg-[#e9eaec] transition-colors cursor-pointer" data-bs-toggle="modal" data-bs-target="#globalSearchModal" title="Cari aset (Ctrl+K)">
           <i class="bi bi-search"></i>
           <span class="d-none d-sm-inline">Cari aset...</span>
           <kbd class="ml-2 font-mono text-[10px] font-semibold bg-[#FFFFFF] border border-[#D1D5D8] rounded-[4px] px-1.5 py-0.5 text-[#53595F] d-none d-md-inline-block">Ctrl+K</kbd>
         </button>
         <div class="w-px h-6 bg-[#D1D5D8] d-none d-sm-block"></div>
-        <button type="button" class="flex items-center gap-1.5 text-[13px] font-semibold text-[#875315] hover:opacity-80 transition-opacity pwa-queue-btn border-0 bg-transparent cursor-pointer" data-bs-toggle="modal" data-bs-target="#modalPWAQueue" title="Antrean Pemeliharaan Offline">
+        <button type="button" class="flex items-center gap-1 text-[12px] md:text-[13px] font-semibold text-[#875315] hover:opacity-80 transition-opacity pwa-queue-btn border-0 bg-transparent cursor-pointer px-1" data-bs-toggle="modal" data-bs-target="#modalPWAQueue" title="Antrean Pemeliharaan Offline">
           <i class="bi bi-cloud-slash"></i>
-          <span class="pwa-queue-text">2 tertunda</span>
+          <span class="pwa-queue-text d-none d-md-inline">2 tertunda</span>
         </button>
-        <button type="button" class="text-[#53595F] hover:text-[#1B2A3A] ml-1 text-[18px] transition-colors border-0 bg-transparent cursor-pointer" data-bs-toggle="modal" data-bs-target="#modalPanduanAplikasi" title="Bantuan & Panduan">
+        <button type="button" class="text-[#53595F] hover:text-[#1B2A3A] text-[17px] md:text-[18px] transition-colors border-0 bg-transparent cursor-pointer px-1" data-bs-toggle="modal" data-bs-target="#modalPanduanAplikasi" title="Bantuan & Panduan">
           <i class="bi bi-question-circle"></i>
         </button>
         <div class="dropdown">
-          <button type="button" class="flex items-center gap-2 h-[38px] px-2 rounded-[8px] hover:bg-[#F4F5F7] border border-transparent hover:border-[#D1D5D8] transition-all cursor-pointer bg-transparent text-decoration-none" data-bs-toggle="dropdown" aria-expanded="false" title="Akun Pengguna: ' . e($userName) . '">
+          <button type="button" class="flex items-center gap-2 h-[36px] md:h-[38px] px-1.5 md:px-2 rounded-[8px] hover:bg-[#F4F5F7] border border-transparent hover:border-[#D1D5D8] transition-all cursor-pointer bg-transparent text-decoration-none" data-bs-toggle="dropdown" aria-expanded="false" title="Akun Pengguna: ' . e($userName) . '">
             <div class="w-[32px] h-[32px] rounded-[8px] bg-[#0E5C58] text-white flex items-center justify-center font-bold text-[13px] shadow-[0_1px_2px_rgba(0,0,0,0.1)] shrink-0">
               ' . $userInitial . '
             </div>
@@ -2779,6 +2779,79 @@ label.form-label,
   animation: pulseDot 2s infinite ease-in-out;
 }
 
+/* =============================================================
+   GLOBAL RESPONSIVE ADAPTATION (HANDPHONE & DESKTOP)
+   ============================================================= */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.cr80-preview-scale-box {
+  display: inline-block;
+  transform: scale(1.22);
+  transform-origin: top center;
+  margin-bottom: 20mm;
+}
+
+@media (max-width: 767.98px) {
+  .app-content-container {
+    padding: 12px 12px 28px !important;
+  }
+  .card-hero-neo {
+    padding: 18px 16px !important;
+    border-radius: 16px !important;
+  }
+  .card-metric-modern,
+  .card-status-mint {
+    padding: 16px !important;
+    border-radius: 14px !important;
+  }
+  .metric-number-bold {
+    font-size: 1.55rem !important;
+  }
+  .card-header {
+    flex-wrap: wrap !important;
+    gap: 8px !important;
+  }
+  .modal-dialog {
+    margin: 0.5rem !important;
+  }
+  .modal-footer {
+    flex-wrap: wrap !important;
+    gap: 6px !important;
+  }
+  .table-responsive {
+    -webkit-overflow-scrolling: touch;
+  }
+  .table > :not(caption) > * > * {
+    padding: 0.55rem 0.6rem;
+    font-size: 0.82rem;
+  }
+}
+
+@media (max-width: 575.98px) {
+  .cr80-preview-scale-box {
+    transform: scale(0.92) !important;
+    margin-bottom: -2mm !important;
+  }
+}
+
+@media (min-width: 768px) and (max-width: 1023.98px) {
+  .app-content-container {
+    padding: 18px 20px 32px !important;
+  }
+}
+
+@media (min-width: 1024px) {
+  .app-content-container {
+    padding: 24px 28px 36px !important;
+  }
+}
+
 </style>
 
 '.$extraHead.'
@@ -2795,7 +2868,7 @@ label.form-label,
   '.$sidebarHtml.'
   <div class="app-main-viewport flex-1 flex flex-col min-w-0 bg-[#F4F5F7] h-screen overflow-hidden">
     '.$topbarHtml.'
-    <main class="app-content-container flex-1 overflow-y-auto p-6">
+    <main class="app-content-container flex-1 overflow-y-auto p-3 sm:p-4 md:p-6">
       '.$content.'
     </main>
   </div>

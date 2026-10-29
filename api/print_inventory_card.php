@@ -1049,6 +1049,25 @@ unset($_SESSION['flash'], $_SESSION['flash_error']);
       display: none !important;
     }
 
+    @media screen and (max-width: 767.98px) {
+      .print-stage {
+        padding: 12px 8px !important;
+        overflow-x: auto !important;
+        justify-content: flex-start !important;
+      }
+      .a4-sheet {
+        width: 100% !important;
+        min-height: auto !important;
+        padding: 12px 8px !important;
+        gap: 14px !important;
+        justify-content: center !important;
+        border-radius: 12px !important;
+      }
+      .toolbar-title {
+        font-size: 0.92rem !important;
+      }
+    }
+
     @media print {
       @page {
         <?php if ($layout === '12'): ?>

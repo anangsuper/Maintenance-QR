@@ -1222,19 +1222,19 @@ $pageTitle = $card ? e($card['nama_barang']) . ' - Kartu Inventaris' : 'Kartu In
                 <!-- Footer Kartu: QR Code Resmi Web Internal -->
                 <div class="p-3 p-md-4 bg-light border-top">
                     <div class="d-flex flex-column flex-md-row align-items-center justify-content-between gap-3 text-center text-md-start">
-                        <div class="d-flex align-items-center gap-3 flex-wrap flex-sm-nowrap">
-                            <div class="qr-card-box shadow-xs">
+                        <div class="d-flex flex-column flex-sm-row align-items-center gap-3 w-100">
+                            <div class="qr-card-box shadow-xs flex-shrink-0">
                                 <div id="cardQrCode"></div>
                             </div>
-                            <div>
-                                <h6 class="fw-bold mb-1 text-dark d-flex align-items-center gap-1.5 justify-content-center justify-content-md-start">
+                            <div class="w-100" style="min-width: 0;">
+                                <h6 class="fw-bold mb-1 text-dark d-flex align-items-center gap-1.5 justify-content-center justify-content-sm-start">
                                     <i class="bi bi-qr-code text-primary"></i> Barcode &amp; QR Code Resmi Bank
                                 </h6>
-                                <p class="text-secondary small mb-2" style="max-width: 480px; font-size: 0.78rem;">
+                                <p class="text-secondary small mb-2 mx-auto mx-sm-0" style="max-width: 520px; font-size: 0.78rem;">
                                     Hasil scan stiker fisik inventaris mengarah langsung ke paspor aset ini di server lokal BPR Mitratama.
                                 </p>
                                 <!-- Kotak Tautan QR Code Share Link Modern -->
-                                <div class="input-group input-group-sm" style="max-width: 480px;">
+                                <div class="input-group input-group-sm mx-auto mx-sm-0" style="max-width: 480px;">
                                     <span class="input-group-text bg-white text-muted border-end-0" style="font-size: 0.75rem;"><i class="bi bi-link-45deg"></i></span>
                                     <input type="text" class="form-control form-control-sm font-mono bg-white text-muted border-start-0 border-end-0" value="<?= e($canonicalQrUrl) ?>" id="inputCardUrl" readonly style="font-size: 0.74rem;">
                                     <button class="btn btn-primary px-3 fw-semibold shadow-2xs d-inline-flex align-items-center gap-1" type="button" onclick="copyCardUrlDirect(this)">
@@ -1257,12 +1257,12 @@ $pageTitle = $card ? e($card['nama_barang']) . ' - Kartu Inventaris' : 'Kartu In
                 $matchedDivisi = (string)($matchedAsset['divisi_nama'] ?? $matchedAsset['nama_divisi'] ?? '-');
             ?>
                 <div class="card card-custom p-3 p-md-4 mb-4 bg-white">
-                    <div class="d-flex align-items-center justify-content-between mb-2">
-                        <div class="d-flex align-items-center gap-2">
+                    <div class="d-flex flex-column flex-sm-row align-items-start align-items-sm-center justify-content-between gap-2 mb-3">
+                        <div class="d-flex align-items-center gap-2 flex-wrap">
                             <span class="badge bg-info text-dark rounded-pill px-2.5 py-1">Aset TI Terhubung</span>
                             <h6 class="mb-0 fw-bold"><?= e($matchedNama) ?> (<?= e($matchedKode) ?>)</h6>
                         </div>
-                        <a href="<?= module_url('scan.php', ['t' => $matchedScanToken]) ?>" class="btn btn-outline-primary btn-sm rounded-pill px-3">
+                        <a href="<?= module_url('scan.php', ['t' => $matchedScanToken]) ?>" class="btn btn-outline-primary btn-sm rounded-pill px-3 w-100 w-sm-auto text-center">
                             <i class="bi bi-wrench me-1"></i> Buka Maintenance TI
                         </a>
                     </div>
