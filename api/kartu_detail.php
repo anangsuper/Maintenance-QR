@@ -314,26 +314,52 @@ $pageTitle = $card ? e($card['nama_barang']) . ' - Kartu Inventaris' : 'Kartu In
     <script src="<?= module_url('assets/vendor/qrcode.min.js') ?>"></script>
 
     <style>
+        /* Kombai Teal Brand Palette & Utility Classes */
+        .bg-teal { background-color: #0E5C58 !important; }
+        .bg-teal-dark { background-color: #094340 !important; }
+        .bg-teal-light, .bg-\[\#D9F1EF\] { background-color: #D9F1EF !important; }
+        .bg-slate-light, .bg-\[\#F8FAFC\] { background-color: #F8FAFC !important; }
+        .bg-\[\#F1F5F9\] { background-color: #F1F5F9 !important; }
+        .text-teal, .text-\[\#0E5C58\] { color: #0E5C58 !important; }
+        .text-teal-dark, .text-\[\#094340\] { color: #094340 !important; }
+        .text-teal-light, .text-\[\#D9F1EF\] { color: #D9F1EF !important; }
+        .text-slate-dark, .text-\[\#1B2A3A\] { color: #1B2A3A !important; }
+        .text-slate-muted, .text-\[\#53595F\] { color: #53595F !important; }
+        .text-\[\#475569\] { color: #475569 !important; }
+        .text-\[\#0284C7\] { color: #0E5C58 !important; }
+        .text-\[\#D97706\] { color: #0E5C58 !important; }
+        .text-\[\#16A34A\] { color: #0E5C58 !important; }
+        .border-teal, .border-\[\#0E5C58\] { border-color: #0E5C58 !important; }
+        .border-teal-light, .border-\[\#A7E2DC\] { border-color: #A7E2DC !important; }
+        .border-\[\#CBD5E1\] { border-color: #CBD5E1 !important; }
+        .border-\[\#E2E8F0\] { border-color: #E2E8F0 !important; }
+        .border-\[\#D1D5D8\] { border-color: #D1D5D8 !important; }
+        .rounded-\[8px\] { border-radius: 8px !important; }
+        .rounded-\[16px\] { border-radius: 16px !important; }
+
         :root {
-            --app-navy: #002B49;
-            --app-gold: #C5A059;
-            --app-gold-light: #F7F3E9;
+            --app-teal: #0E5C58;
+            --app-teal-dark: #094340;
+            --app-teal-light: #D9F1EF;
+            --app-teal-border: #A7E2DC;
+            --app-text-main: #1B2A3A;
+            --app-text-muted: #53595F;
             --app-bg: #F4F6F9;
         }
         body {
             font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
             background-color: var(--app-bg);
-            color: #1E293B;
+            color: var(--app-text-main);
             min-height: 100vh;
         }
         .font-mono {
             font-family: 'JetBrains Mono', monospace;
         }
         .header-brand {
-            background: linear-gradient(135deg, #001B30 0%, #003B66 100%);
+            background: #0E5C58 !important;
             color: #ffffff;
-            border-bottom: 2px solid #D4AF37;
-            box-shadow: 0 4px 15px rgba(0, 27, 48, 0.25);
+            border-bottom: 2px solid #094340;
+            box-shadow: 0 4px 15px rgba(14, 92, 88, 0.2);
         }
         .status-pulse-dot {
             display: inline-block;
@@ -349,47 +375,82 @@ $pageTitle = $card ? e($card['nama_barang']) . ' - Kartu Inventaris' : 'Kartu In
             70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(16, 185, 129, 0); }
             100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
         }
-        .btn-navy-primary {
-            background: linear-gradient(135deg, #002B49 0%, #003B66 100%) !important;
+        .btn-primary {
+            background-color: #0E5C58 !important;
+            border-color: #0E5C58 !important;
             color: #FFFFFF !important;
-            border: 1px solid #001B30 !important;
-            box-shadow: 0 2px 6px rgba(0, 43, 73, 0.2) !important;
+            box-shadow: 0 2px 6px rgba(14, 92, 88, 0.25) !important;
+        }
+        .btn-primary:hover, .btn-primary:focus {
+            background-color: #094340 !important;
+            border-color: #094340 !important;
+            color: #FFFFFF !important;
+            box-shadow: 0 4px 12px rgba(14, 92, 88, 0.35) !important;
+            transform: translateY(-1px);
+        }
+        .btn-outline-primary {
+            color: #0E5C58 !important;
+            border-color: #0E5C58 !important;
+            background-color: #FFFFFF !important;
+        }
+        .btn-outline-primary:hover, .btn-outline-primary:focus {
+            background-color: #0E5C58 !important;
+            border-color: #0E5C58 !important;
+            color: #FFFFFF !important;
+        }
+        .text-primary {
+            color: #0E5C58 !important;
+        }
+        .border-primary {
+            border-color: #0E5C58 !important;
+        }
+        .bg-primary-subtle, .badge.bg-primary {
+            background-color: #D9F1EF !important;
+            color: #0E5C58 !important;
+            border-color: #A7E2DC !important;
+        }
+        .btn-navy-primary {
+            background: #0E5C58 !important;
+            color: #FFFFFF !important;
+            border: 1px solid #094340 !important;
+            box-shadow: 0 2px 6px rgba(14, 92, 88, 0.2) !important;
             transition: all 0.2s ease;
         }
         .btn-navy-primary:hover {
-            background: linear-gradient(135deg, #001B30 0%, #002B49 100%) !important;
+            background: #094340 !important;
             color: #FFFFFF !important;
-            box-shadow: 0 4px 12px rgba(0, 43, 73, 0.35) !important;
+            box-shadow: 0 4px 12px rgba(14, 92, 88, 0.35) !important;
             transform: translateY(-1px);
         }
         .btn-outline-neutral {
             color: #334155 !important;
-            border: 1.5px solid #94A3B8 !important;
+            border: 1.5px solid #CBD5E1 !important;
             background: #FFFFFF !important;
             transition: all 0.2s ease;
         }
         .btn-outline-neutral:hover {
-            background: #1E293B !important;
-            color: #FFFFFF !important;
-            border-color: #1E293B !important;
+            background: #F8FAFC !important;
+            color: #0E5C58 !important;
+            border-color: #0E5C58 !important;
             transform: translateY(-1px);
-            box-shadow: 0 4px 10px rgba(15, 23, 42, 0.12) !important;
+            box-shadow: 0 4px 10px rgba(14, 92, 88, 0.12) !important;
         }
         .copy-btn {
             font-size: 0.70rem;
-            border: 1px solid #CBD5E1;
-            background: #F8FAFC;
-            color: #475569;
+            border: 1px solid #A7E2DC;
+            background: #D9F1EF;
+            color: #0E5C58;
             padding: 2px 8px;
             line-height: 1.3;
             border-radius: 20px;
+            font-weight: 600;
             transition: all 0.15s ease;
             cursor: pointer;
         }
         .copy-btn:hover {
-            background: #E2E8F0;
-            color: #0F172A;
-            border-color: #94A3B8;
+            background: #0E5C58;
+            color: #FFFFFF;
+            border-color: #0E5C58;
         }
         .photo-dropzone {
             border: 2px dashed #CBD5E1;
@@ -399,24 +460,24 @@ $pageTitle = $card ? e($card['nama_barang']) . ' - Kartu Inventaris' : 'Kartu In
             transition: all 0.2s ease;
         }
         .photo-dropzone:hover {
-            border-color: #002B49;
+            border-color: #0E5C58;
             background: #F8FAFC;
         }
         .card-custom {
-            border: 1px solid #E2E8F0;
+            border: 1px solid #D1D5D8;
             border-radius: 16px;
-            box-shadow: 0 4px 20px -2px rgba(0, 43, 73, 0.08);
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.05);
             background: #ffffff;
             overflow: hidden;
         }
         .badge-gold {
-            background-color: var(--app-gold-light);
-            color: #8C6D23;
-            border: 1px solid rgba(197, 160, 89, 0.3);
+            background-color: #D9F1EF !important;
+            color: #0E5C58 !important;
+            border: 1px solid #A7E2DC !important;
             font-weight: 700;
         }
         .label-cell {
-            color: #64748B;
+            color: #0E5C58;
             font-size: 0.76rem;
             text-transform: uppercase;
             font-weight: 700;
@@ -425,7 +486,7 @@ $pageTitle = $card ? e($card['nama_barang']) . ' - Kartu Inventaris' : 'Kartu In
         }
         .value-cell {
             font-weight: 700;
-            color: #0F172A;
+            color: #1B2A3A;
             font-size: 0.95rem;
         }
         .item-photo-wrapper {
@@ -841,25 +902,25 @@ $pageTitle = $card ? e($card['nama_barang']) . ' - Kartu Inventaris' : 'Kartu In
                     <div class="row g-2 pt-1">
                         <div class="col-3">
                             <button class="mobile-action-btn" type="button" data-bs-toggle="collapse" data-bs-target="#collapseUploadPhoto" aria-expanded="false" title="Unggah / Ambil Foto">
-                                <i class="bi bi-camera-fill text-[#0E5C58]"></i>
+                                <i class="bi bi-camera-fill text-teal"></i>
                                 <span><?= $photoUrl ? 'Ganti' : 'Foto' ?></span>
                             </button>
                         </div>
                         <div class="col-3">
                             <a href="<?= module_url('inventaris_mutation.php', ['id' => $card['id']]) ?>" class="mobile-action-btn" title="Mutasi Lokasi Barang">
-                                <i class="bi bi-arrow-left-right text-[#0284C7]"></i>
+                                <i class="bi bi-arrow-left-right text-teal"></i>
                                 <span>Mutasi</span>
                             </a>
                         </div>
                         <div class="col-3">
                             <button type="button" class="mobile-action-btn" data-bs-toggle="modal" data-bs-target="#modalEditDataKartu" title="Ubah Data Inventaris">
-                                <i class="bi bi-pencil-square text-[#D97706]"></i>
+                                <i class="bi bi-pencil-square text-teal"></i>
                                 <span>Edit</span>
                             </button>
                         </div>
                         <div class="col-3">
                             <a href="<?= module_url('print_inventory_card.php', ['source' => 'inventaris_kartu', 'id' => $card['id']]) ?>" target="_blank" class="mobile-action-btn" title="Cetak Kartu Fisik">
-                                <i class="bi bi-printer-fill text-[#16A34A]"></i>
+                                <i class="bi bi-printer-fill text-teal"></i>
                                 <span>Cetak</span>
                             </a>
                         </div>
@@ -2077,7 +2138,7 @@ $pageTitle = $card ? e($card['nama_barang']) . ' - Kartu Inventaris' : 'Kartu In
                     text: <?= json_encode($canonicalQrUrl) ?>,
                     width: 82,
                     height: 82,
-                    colorDark: "#002B49",
+                    colorDark: "#0E5C58",
                     colorLight: "#FFFFFF",
                     correctLevel: QRCode.CorrectLevel.M
                 });
