@@ -483,6 +483,13 @@ $pageTitle = $card ? e($card['nama_barang']) . ' - Kartu Inventaris' : 'Kartu In
             vertical-align: middle;
             font-size: 0.88rem;
         }
+        .bank-data-table .td-label {
+            width: 32%;
+            min-width: 190px;
+            white-space: nowrap;
+            color: #53595F;
+            font-weight: 700;
+        }
         
         /* Gaya Biometric Scanner */
         .bio-scanner-wrapper {
@@ -564,12 +571,67 @@ $pageTitle = $card ? e($card['nama_barang']) . ' - Kartu Inventaris' : 'Kartu In
             .card-custom .p-3, .card-custom .p-md-4 {
                 padding: 14px !important;
             }
-            .bank-data-table {
-                font-size: 0.82rem !important;
+            /* Stacked Card Layout on Smartphones: Never squish table columns! */
+            .table-responsive {
+                overflow: visible !important;
+            }
+            .bank-data-table,
+            .bank-data-table tbody {
+                display: block !important;
+                width: 100% !important;
+            }
+            .bank-data-table tr {
+                display: flex !important;
+                flex-direction: column !important;
+                padding: 11px 14px !important;
+                border-bottom: 1px solid #E5E7EB !important;
+                background: #FFFFFF !important;
+            }
+            .bank-data-table tr:nth-of-type(odd) {
+                background-color: #F9FAFB !important;
+            }
+            .bank-data-table tr:last-child {
+                border-bottom: none !important;
             }
             .bank-data-table td {
-                padding: 8px 10px !important;
-                word-break: break-word;
+                display: block !important;
+                width: 100% !important;
+                padding: 0 !important;
+                border: none !important;
+                word-break: normal !important;
+                overflow-wrap: break-word !important;
+            }
+            .bank-data-table td.td-label,
+            .bank-data-table td:first-child {
+                font-size: 0.68rem !important;
+                font-weight: 700 !important;
+                text-transform: uppercase !important;
+                letter-spacing: 0.05em !important;
+                color: #53595F !important;
+                margin-bottom: 5px !important;
+                line-height: 1.25 !important;
+                width: 100% !important;
+                white-space: normal !important;
+            }
+            .bank-data-table td:last-child {
+                font-size: 0.90rem !important;
+                color: #1B2A3A !important;
+                width: 100% !important;
+            }
+            .bank-data-table td:last-child .d-flex {
+                width: 100% !important;
+            }
+            .bank-data-table .badge {
+                font-size: 0.82rem !important;
+                padding: 5px 12px !important;
+                white-space: normal !important;
+                text-align: left !important;
+                line-height: 1.35 !important;
+                max-width: 100% !important;
+            }
+            .bank-data-table .copy-btn {
+                padding: 3px 10px !important;
+                font-size: 0.72rem !important;
             }
             .item-photo-wrapper {
                 border-radius: 12px;
@@ -947,7 +1009,7 @@ $pageTitle = $card ? e($card['nama_barang']) . ' - Kartu Inventaris' : 'Kartu In
                                 <table class="table table-sm table-striped bank-data-table mb-0">
                                     <tbody>
                                         <tr>
-                                            <td class="text-secondary small fw-bold" style="width: 38%;">Kode Inventaris</td>
+                                            <td class="td-label">Kode Inventaris</td>
                                             <td>
                                                 <div class="d-flex align-items-center justify-content-between gap-2">
                                                     <span class="fw-bold font-mono text-primary fs-6"><?= e($kodeInventaris) ?></span>
@@ -958,7 +1020,7 @@ $pageTitle = $card ? e($card['nama_barang']) . ' - Kartu Inventaris' : 'Kartu In
                                             </td>
                                         </tr>
                                         <tr>
-                                            <td class="text-secondary small fw-bold">Nomor Seri Inventaris</td>
+                                            <td class="td-label">Nomor Seri Inventaris</td>
                                             <td>
                                                 <div class="d-flex align-items-center justify-content-between gap-2">
                                                     <span class="fw-bold font-mono text-dark"><?= e($nomorSeriInv) ?></span>
@@ -969,7 +1031,7 @@ $pageTitle = $card ? e($card['nama_barang']) . ' - Kartu Inventaris' : 'Kartu In
                                             </td>
                                         </tr>
                                         <tr>
-                                            <td class="text-secondary small fw-bold">Jenis Inventaris</td>
+                                            <td class="td-label">Jenis Inventaris</td>
                                             <td>
                                                 <div class="d-flex align-items-center justify-content-between gap-2">
                                                     <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 rounded-pill px-2.5 py-1 font-mono fw-semibold">
@@ -982,7 +1044,7 @@ $pageTitle = $card ? e($card['nama_barang']) . ' - Kartu Inventaris' : 'Kartu In
                                             </td>
                                         </tr>
                                         <tr>
-                                            <td class="text-secondary small fw-bold">Ruangan (Lokasi Penempatan)</td>
+                                            <td class="td-label">Ruangan (Lokasi Penempatan)</td>
                                             <td>
                                                 <div class="d-flex align-items-center justify-content-between gap-2">
                                                     <span class="badge bg-warning bg-opacity-15 text-dark border border-warning border-opacity-40 rounded-pill px-2.5 py-1 fw-semibold font-mono">
@@ -995,7 +1057,7 @@ $pageTitle = $card ? e($card['nama_barang']) . ' - Kartu Inventaris' : 'Kartu In
                                             </td>
                                         </tr>
                                         <tr>
-                                            <td class="text-secondary small fw-bold">Golongan</td>
+                                            <td class="td-label">Golongan</td>
                                             <td>
                                                 <div class="d-flex align-items-center justify-content-between gap-2">
                                                     <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 rounded-pill px-2.5 py-1 font-mono fw-semibold">
@@ -1008,15 +1070,15 @@ $pageTitle = $card ? e($card['nama_barang']) . ' - Kartu Inventaris' : 'Kartu In
                                             </td>
                                         </tr>
                                         <tr>
-                                            <td class="text-secondary small fw-bold">Sumber Perolehan</td>
+                                            <td class="td-label">Sumber Perolehan</td>
                                             <td class="fw-semibold text-dark"><?= e($sumberVal) ?></td>
                                         </tr>
                                         <tr>
-                                            <td class="text-secondary small fw-bold">Tanggal Perolehan</td>
+                                            <td class="td-label">Tanggal Perolehan</td>
                                             <td class="fw-semibold text-dark"><?= e($tglFormatted) ?></td>
                                         </tr>
                                         <tr>
-                                            <td class="text-secondary small fw-bold">Keterangan / Rincian</td>
+                                            <td class="td-label">Keterangan / Rincian</td>
                                             <td class="text-muted small"><?= e($keteranganVal ?: '-') ?></td>
                                         </tr>
                                     </tbody>
