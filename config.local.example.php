@@ -21,3 +21,4 @@ return [
     // URL Aplikasi jika berada di subfolder (kosongkan jika di root domain)
     'app_url' => '',
 ];
+

@@ -57,7 +57,14 @@ if (!empty($idList)) {
     }
 } else {
     $rows = get_qr_admin_rows($cabangId);
-    $assetList = $rows;
+    $statusPrintFilter = strtolower(trim((string)($_GET['status'] ?? 'aktif')));
+    if ($statusPrintFilter === 'aktif' || $statusPrintFilter === '') {
+        $rows = array_filter($rows, function($r) {
+            $st = strtolower(trim((string)($r['status'] ?? 'Aktif')));
+            return ($st === 'aktif' || $st === '');
+        });
+    }
+    $assetList = array_values($rows);
 }
 
 $cabangs = get_cabang_list();

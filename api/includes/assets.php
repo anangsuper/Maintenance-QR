@@ -234,6 +234,43 @@ function save_asset_base64_image(string $base64Data): ?string {
     return null;
 }
 
+function get_asset_replacement_info(array $asset): array {
+    $info = [
+        'replaces' => null,
+        'replaced_by' => null,
+        'date' => null,
+    ];
+    $replacesId = (int)($asset['replaces_asset_id'] ?? 0);
+    $replacedById = (int)($asset['replaced_by_id'] ?? 0);
+    $replDate = !empty($asset['replacement_date']) ? (string)$asset['replacement_date'] : null;
+    $ket = (string)($asset['keterangan'] ?? '');
+
+    if ($replacesId <= 0 && preg_match('/Menggantikan unit (?:baru |lama )?#?(\d+)/i', $ket, $m)) {
+        $replacesId = (int)$m[1];
+    }
+    if ($replacedById <= 0 && preg_match('/Diganti (?:unit baru|dengan unit baru) (?:pada [^#]+)?#(\d+)/i', $ket, $m)) {
+        $replacedById = (int)$m[1];
+    }
+    if (!$replDate && preg_match('/tgl\s+(\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4})/i', $ket, $m)) {
+        $replDate = $m[1];
+    }
+
+    if ($replacesId > 0) {
+        $oldA = get_asset_by_id($replacesId);
+        if ($oldA) {
+            $info['replaces'] = $oldA;
+        }
+    }
+    if ($replacedById > 0) {
+        $newA = get_asset_by_id($replacedById);
+        if ($newA) {
+            $info['replaced_by'] = $newA;
+        }
+    }
+    $info['date'] = $replDate;
+    return $info;
+}
+
 function create_new_asset(array $data): array {
     $kode = normalize_kode_inventaris(trim((string)($data['kode_inventaris'] ?? '')));
     $merk = trim((string)($data['merk'] ?? ''));
@@ -394,6 +431,15 @@ function create_new_asset(array $data): array {
         if (in_array('ruangan', $cols, true)) $insertData['ruangan'] = $ruangan;
         if (in_array('sumber_perolehan', $cols, true)) $insertData['sumber_perolehan'] = $sumberPerolehan;
         if (in_array('status_inventaris', $cols, true)) $insertData['status_inventaris'] = $statusInv;
+        if (in_array('replaces_asset_id', $cols, true) && !empty($data['replaces_asset_id'])) {
+            $insertData['replaces_asset_id'] = (int)$data['replaces_asset_id'];
+        }
+        if (in_array('replaced_by_id', $cols, true) && !empty($data['replaced_by_id'])) {
+            $insertData['replaced_by_id'] = (int)$data['replaced_by_id'];
+        }
+        if (in_array('replacement_date', $cols, true) && !empty($data['replacement_date'])) {
+            $insertData['replacement_date'] = substr((string)$data['replacement_date'], 0, 10);
+        }
 
         $fieldNames = array_keys($insertData);
         $fieldHolders = array_fill(0, count($fieldNames), '?');
@@ -763,6 +809,15 @@ function update_asset(int $id, array $data): array {
         }
         if (array_key_exists('ruangan', $data) && in_array('ruangan', $cols, true)) {
             $updateFields['ruangan'] = trim((string)$data['ruangan']);
+        }
+        if (array_key_exists('replaces_asset_id', $data) && in_array('replaces_asset_id', $cols, true)) {
+            $updateFields['replaces_asset_id'] = $data['replaces_asset_id'] ? (int)$data['replaces_asset_id'] : null;
+        }
+        if (array_key_exists('replaced_by_id', $data) && in_array('replaced_by_id', $cols, true)) {
+            $updateFields['replaced_by_id'] = $data['replaced_by_id'] ? (int)$data['replaced_by_id'] : null;
+        }
+        if (array_key_exists('replacement_date', $data) && in_array('replacement_date', $cols, true)) {
+            $updateFields['replacement_date'] = $data['replacement_date'] ? substr((string)$data['replacement_date'], 0, 10) : null;
         }
         if (array_key_exists('sumber_perolehan', $data) && in_array('sumber_perolehan', $cols, true)) {
             $updateFields['sumber_perolehan'] = trim((string)$data['sumber_perolehan']);

@@ -408,8 +408,8 @@
     if (reconnectTimer) clearTimeout(reconnectTimer);
     if (pingTimer) clearInterval(pingTimer);
 
-    // Bypass WebSocket port 8080 jika diakses lewat HTTPS / Domain publik agar tidak terjadi timeout 7-10 detik
-    if (location.protocol === 'https:' || (location.hostname !== 'localhost' && !/^\d+\.\d+\.\d+\.\d+$/.test(location.hostname))) {
+    // Bypass WebSocket port 8080 pada domain publik / IP jaringan agar tidak memicu blokir firewall/NAT
+    if (location.protocol === 'https:' || location.hostname !== 'localhost') {
       updateStatusUI(false, 'poll');
       startFallbackPolling();
       return;

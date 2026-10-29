@@ -58,8 +58,8 @@ $footerUrl = module_url('bank_mitra_memo_footer.png');
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>BA Penghapusan Aset (Afkir) - <?= $nomorBa ?></title>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+<link href="<?= module_url('assets/vendor/bootstrap.min.css') ?>" rel="stylesheet">
+<link rel="stylesheet" href="<?= module_url('assets/vendor/bootstrap-icons.min.css') ?>">
 <style>
 @page {
   size: A4 portrait;

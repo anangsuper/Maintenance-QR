@@ -1,6 +1,8 @@
 # ==============================================================================
-# QR Maintenance - Web Server Hardening & Cyber Protection (.htaccess)
+# QR Maintenance - Web Server Hardening & Hostinger Routing (.htaccess)
 # ==============================================================================
+
+DirectoryIndex index.php
 
 # 1. Matikan Directory Browsing (Mencegah peretas melihat daftar isi folder)
 Options -Indexes -MultiViews
@@ -29,12 +31,28 @@ Options -Indexes -MultiViews
 <Files "config.local.example.php">
     Require all denied
 </Files>
+<Files "config.hostinger.example.php">
+    Require all denied
+</Files>
 
-# 5. Blokir Akses Langsung ke Folder Internal PHP
+# 5. Blokir Folder Internal & Routing Otomatis Hostinger
 <IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    # Blokir akses langsung ke folder internal PHP
     RewriteRule ^api/includes/ - [F,L]
     RewriteRule ^api/helpers/ - [F,L]
+    RewriteRule ^api/views/ - [F,L]
     RewriteRule ^sql/ - [F,L]
+    RewriteRule ^scratch/ - [F,L]
+
+    # Map request /uploads/... ke api/uploads/...
+    RewriteRule ^uploads/(.*)$ api/uploads/$1 [L]
+
+    # Routing otomatis untuk semua halaman ke router api/index.php
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteRule ^(.*)$ api/index.php [QSA,L]
 </IfModule>
 
 # 6. HTTP Security Headers (Perlindungan Clickjacking, XSS, MIME-sniffing)
@@ -46,7 +64,7 @@ Options -Indexes -MultiViews
     Header always set Permissions-Policy "camera=(self)"
 </IfModule>
 
-# 7. Browser Caching & Kompresi Aset Statis untuk Akses Instan (0ms)
+# 7. Browser Caching & Kompresi Aset Statis untuk Akses Cepat
 <IfModule mod_deflate.c>
     AddOutputFilterByType DEFLATE text/html text/plain text/xml text/css text/javascript application/javascript application/json
 </IfModule>

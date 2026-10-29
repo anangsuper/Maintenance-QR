@@ -10,6 +10,9 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 }
 
 verify_csrf();
+if (session_status() === PHP_SESSION_ACTIVE) {
+    session_write_close();
+}
 
 $nama = trim((string)($_POST['nama_divisi'] ?? ''));
 $keterangan = trim((string)($_POST['keterangan'] ?? ''));

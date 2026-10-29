@@ -1,0 +1,21 @@
+.git
+.gitignore
+scratch/
+sql/
+*.xlsx
+*.pptx
+*.py
+*.sh
+*.bat
+nginx.conf.example
+config.local.php
+config.local.example.php
+
+# Prevent root PHP wrappers from being served as raw static text on Vercel
+create_card.php
+inventaris_mutation.php
+logo_img.php
+memo_pengajuan.php
+print_memo.php
+users_admin.php
+websocket_server.php
