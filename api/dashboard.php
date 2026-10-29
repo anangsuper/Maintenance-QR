@@ -2765,21 +2765,21 @@ if ($activeTab === 'kartu') {
         $queueRowsHtml .= '
         <div class="h-[48px] px-4 flex items-center '.$borderClass.' '.$rowBg.' transition-colors relative" data-kid="1-2-2-1-7-3-'.$rIdx.'" data-name="queue table row ('.e($item['kode_inventaris']).')">
           '.$accentBar.'
-          <div class="w-32 shrink-0 tabular-nums font-bold text-[13px] text-[#1B2A3A]" data-kid="1-2-2-1-7-3-'.$rIdx.'-1" data-name=\'asset inventory code "'.e($item['kode_inventaris']).'"\'>'.e($item['kode_inventaris']).'</div>
-          <div class="flex-1 min-w-0 flex items-baseline gap-2 truncate pr-4 pl-4" data-kid="1-2-2-1-7-3-'.$rIdx.'-2" data-name="device and user cell">
-            <span class="text-[14px] font-semibold text-[#1B2A3A] truncate" data-kid="1-2-2-1-7-3-'.$rIdx.'-2-1" data-name=\'device name "'.e($item['nama_perangkat']).'"\' title="'.e($item['nama_perangkat']).'">'.e($item['nama_perangkat']).'</span>
-            <span class="text-[13px] text-[#53595F] truncate" data-kid="1-2-2-1-7-3-'.$rIdx.'-2-2" data-name=\'user name "'.e($item['pengguna']).'"\' title="'.e($item['pengguna']).'">'.e($item['pengguna']).'</span>
+          <div class="w-[280px] shrink-0 tabular-nums font-bold text-[12px] font-mono text-[#1B2A3A] truncate pr-3" data-kid="1-2-2-1-7-3-'.$rIdx.'-1" data-name=\'asset inventory code "'.e($item['kode_inventaris']).'"\' title="'.e($item['kode_inventaris']).'">'.e($item['kode_inventaris']).'</div>
+          <div class="flex-1 min-w-[200px] flex items-baseline gap-2 truncate px-3" data-kid="1-2-2-1-7-3-'.$rIdx.'-2" data-name="device and user cell">
+            <span class="text-[13px] font-semibold text-[#1B2A3A] truncate" data-kid="1-2-2-1-7-3-'.$rIdx.'-2-1" data-name=\'device name "'.e($item['nama_perangkat']).'"\' title="'.e($item['nama_perangkat']).'">'.e($item['nama_perangkat']).'</span>
+            <span class="text-[12px] text-[#53595F] truncate shrink-0" data-kid="1-2-2-1-7-3-'.$rIdx.'-2-2" data-name=\'user name "'.e($item['pengguna']).'"\' title="'.e($item['pengguna']).'">'.e($item['pengguna']).'</span>
           </div>
-          <div class="w-56 shrink-0 flex items-baseline gap-1.5 truncate pr-4 pl-4" data-kid="1-2-2-1-7-3-'.$rIdx.'-3" data-name="branch and room cell">
-            <span class="text-[13px] font-semibold text-[#1B2A3A]" data-kid="1-2-2-1-7-3-'.$rIdx.'-3-1" data-name=\'branch "'.e($item['cabang']).'"\'>'.e($item['cabang']).'</span>
-            <span class="text-[13px] text-[#53595F] truncate" data-kid="1-2-2-1-7-3-'.$rIdx.'-3-2" data-name=\'room "/ '.e($item['ruangan']).'"\'>/ '.e($item['ruangan']).'</span>
+          <div class="w-48 shrink-0 flex items-baseline gap-1.5 truncate px-3" data-kid="1-2-2-1-7-3-'.$rIdx.'-3" data-name="branch and room cell">
+            <span class="text-[13px] font-semibold text-[#1B2A3A] truncate" data-kid="1-2-2-1-7-3-'.$rIdx.'-3-1" data-name=\'branch "'.e($item['cabang']).'"\' title="'.e($item['cabang']).'">'.e($item['cabang']).'</span>
+            <span class="text-[12px] text-[#53595F] truncate" data-kid="1-2-2-1-7-3-'.$rIdx.'-3-2" data-name=\'room "/ '.e($item['ruangan']).'"\' title="'.e($item['ruangan']).'">/ '.e($item['ruangan']).'</span>
           </div>
-          <div class="w-48 shrink-0 flex items-center gap-2 pl-4" data-kid="1-2-2-1-7-3-'.$rIdx.'-4" data-name="last maintenance cell">
-            <span class="w-2 h-2 rounded-full '.$dotColor.'" data-kid="1-2-2-1-7-3-'.$rIdx.'-4-1" data-name="status dot"></span>
-            <span class="text-[13px] '.$textColor.' font-semibold tabular-nums" data-kid="1-2-2-1-7-3-'.$rIdx.'-4-2" data-name=\'last maintenance date "'.e($item['last_maint']).'"\'>'.e($item['last_maint']).'</span>
+          <div class="w-44 shrink-0 flex items-center gap-2 px-3" data-kid="1-2-2-1-7-3-'.$rIdx.'-4" data-name="last maintenance cell">
+            <span class="w-2 h-2 rounded-full '.$dotColor.' shrink-0" data-kid="1-2-2-1-7-3-'.$rIdx.'-4-1" data-name="status dot"></span>
+            <span class="text-[12px] '.$textColor.' font-semibold tabular-nums truncate" data-kid="1-2-2-1-7-3-'.$rIdx.'-4-2" data-name=\'last maintenance date "'.e($item['last_maint']).'"\'>'.e($item['last_maint']).'</span>
           </div>
           <div class="w-28 shrink-0 flex justify-end" data-kid="1-2-2-1-7-3-'.$rIdx.'-5" data-name="action cell">
-            <a href="'.e($actionUrl).'" class="h-[32px] px-3 bg-[#FFFFFF] border border-[#D1D5D8] rounded-[6px] text-[13px] font-semibold text-[#1B2A3A] hover:bg-[#F4F5F7] hover:border-[#A0A5AA] transition-all cursor-pointer inline-flex items-center justify-center text-decoration-none" data-kid="1-2-2-1-7-3-'.$rIdx.'-5-1" data-name=\'row action button "Buka aset"\'>Buka aset</a>
+            <a href="'.e($actionUrl).'" class="h-[32px] px-3 bg-[#FFFFFF] border border-[#D1D5D8] rounded-[6px] text-[12px] font-semibold text-[#1B2A3A] hover:bg-[#F4F5F7] hover:border-[#A0A5AA] transition-all cursor-pointer inline-flex items-center justify-center text-decoration-none shadow-xs" data-kid="1-2-2-1-7-3-'.$rIdx.'-5-1" data-name=\'row action button "Buka aset"\'>Buka aset</a>
           </div>
         </div>';
     }
@@ -2849,23 +2849,28 @@ if ($activeTab === 'kartu') {
         </div>
       </div>
 
-      <!-- Table Header (40px) -->
-      <div class="h-[40px] px-4 flex items-center bg-[#F4F5F7] border-b border-[#D1D5D8] text-[12px] font-bold text-[#53595F] uppercase tracking-wider" data-kid="1-2-2-1-7-2" data-name="table header row">
-        <div class="w-32 shrink-0" data-kid="1-2-2-1-7-2-1" data-name=\'column header "Kode Inventaris"\'>Kode Inventaris</div>
-        <div class="flex-1 min-w-0 pl-4" data-kid="1-2-2-1-7-2-2" data-name=\'column header "Perangkat &amp; Pengguna"\'>Perangkat &amp; Pengguna</div>
-        <div class="w-56 shrink-0 pl-4" data-kid="1-2-2-1-7-2-3" data-name=\'column header "Cabang &amp; Ruangan"\'>Cabang &amp; Ruangan</div>
-        <div class="w-48 shrink-0 pl-4" data-kid="1-2-2-1-7-2-4" data-name=\'column header "Pemeliharaan Terakhir"\'>Pemeliharaan Terakhir</div>
-        <div class="w-28 shrink-0 text-right" data-kid="1-2-2-1-7-2-5" data-name=\'column header "Aksi"\'>Aksi</div>
-      </div>
+      <!-- Table Scroll Wrapper -->
+      <div class="overflow-x-auto">
+        <div class="min-w-[980px]">
+          <!-- Table Header (40px) -->
+          <div class="h-[40px] px-4 flex items-center bg-[#F4F5F7] border-b border-[#D1D5D8] text-[12px] font-bold text-[#53595F] uppercase tracking-wider" data-kid="1-2-2-1-7-2" data-name="table header row">
+            <div class="w-[280px] shrink-0 pr-3" data-kid="1-2-2-1-7-2-1" data-name=\'column header "Kode Inventaris"\'>Kode Inventaris</div>
+            <div class="flex-1 min-w-[200px] px-3" data-kid="1-2-2-1-7-2-2" data-name=\'column header "Perangkat &amp; Pengguna"\'>Perangkat &amp; Pengguna</div>
+            <div class="w-48 shrink-0 px-3" data-kid="1-2-2-1-7-2-3" data-name=\'column header "Cabang &amp; Ruangan"\'>Cabang &amp; Ruangan</div>
+            <div class="w-44 shrink-0 px-3" data-kid="1-2-2-1-7-2-4" data-name=\'column header "Pemeliharaan Terakhir"\'>Pemeliharaan Terakhir</div>
+            <div class="w-28 shrink-0 text-right" data-kid="1-2-2-1-7-2-5" data-name=\'column header "Aksi"\'>Aksi</div>
+          </div>
 
-      <!-- Rows (8x 48px) -->
-      <div class="flex flex-col" data-kid="1-2-2-1-7-3" data-name="queue table body rows container">
-        '.$queueRowsHtml.'
+          <!-- Rows (8x 48px) -->
+          <div class="flex flex-col" data-kid="1-2-2-1-7-3" data-name="queue table body rows container">
+            '.$queueRowsHtml.'
+          </div>
+        </div>
       </div>
 
       <!-- Footer / Pagination (40px) -->
       <div class="h-[40px] px-4 flex justify-between items-center bg-[#F4F5F7] border-t border-[#D1D5D8] text-[13px] font-semibold text-[#53595F]" data-kid="1-2-2-1-7-4" data-name="pagination footer bar">
-        <div data-kid="1-2-2-1-7-4-1" data-name="pagination results summary text">Menampilkan <span class="font-bold text-[#1B2A3A]">'.$startItem.'–'.$endItem.'</span> dari <span class="font-bold text-[#1B2A3A]">'.$totalQueueCount.'</span> aset</div>
+        <div data-kid="1-2-2-1-7-4-1" data-name="pagination results summary text">Menampilkan <span class="font-bold text-[#1B2A3A]">'.$startItem.'&ndash;'.$endItem.'</span> dari <span class="font-bold text-[#1B2A3A]">'.$totalQueueCount.'</span> aset</div>
         <div class="flex items-center gap-1.5" data-kid="1-2-2-1-7-4-2" data-name="pagination page numbers container">
           '.$queuePaginationHtml.'
         </div>
