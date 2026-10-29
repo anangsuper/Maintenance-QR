@@ -1855,7 +1855,8 @@ if (is_hrd() && !is_admin()) {
         </div>
       </div>
 
-      <!-- 1. Penambahan 4 Metrik Kartu Eksekutif (88px Symmetrical Metric Cards) -->
+      <!-- 1. Penambahan 4 Metrik Kartu Eksekutif (88px Symmetrical Metric Cards) & Widget Sebaran / Feed (Hanya Tampil di Dashboard Utama / Tab Antrean) -->
+      ' . ($isTabAntrean ? '
       <div class="bg-[#FFFFFF] border border-[#D1D5D8] rounded-[10px] flex flex-col md:flex-row overflow-hidden shrink-0 mb-4 shadow-xs">
         <!-- Card 1: Belum Dipelihara [Aksen Teal] -->
         <a href="'.e(module_url('dashboard.php', ['cabang'=>$cabangId, 'bulan'=>$month, 'tahun'=>$year])).'" class="flex-1 flex flex-col justify-center px-5 py-3 border-b md:border-b-0 md:border-r border-[#D1D5D8] relative cursor-pointer '.($isTabAntrean ? 'bg-[#D9F1EF]' : 'hover:bg-[#F4F5F7]').' transition-colors text-decoration-none">
@@ -1971,6 +1972,7 @@ if (is_hrd() && !is_admin()) {
           </div>
         </div>
       </div>
+      ' : '') . '
 
       <!-- Tabs Navigation (44px) -->
       <div class="flex gap-6 h-[44px] border-b border-[#D1D5D8] shrink-0 mb-4">
