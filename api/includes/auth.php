@@ -838,10 +838,10 @@ function verify_current_user_password(string $password): array {
 
 /**
  * =========================================================================
- * PROTEKSI ANTI BRUTE-FORCE & ACCOUNT LOCKOUT (STANDAR KETAHANAN SIBER OJK)
+ * PROTEKSI ANTI BRUTE-FORCE & ACCOUNT LOCKOUT (STANDAR KETAHANAN SIBER)
  * Sesuai regulasi:
- * - POJK No. 75/POJK.03/2016 (Standar Penyelenggaraan TI BPR/BPRS)
- * - POJK No. 11/POJK.03/2022 (Ketahanan Siber & Penyelenggaraan TI Bank)
+ * - Standar Penyelenggaraan TI BPR/BPRS
+ * - Standar Ketahanan Siber & Penyelenggaraan TI Bank
  * 
  * Aturan:
  * 1. Maksimal percobaan gagal: 5 kali berturut-turut.
@@ -849,8 +849,10 @@ function verify_current_user_password(string $password): array {
  * 3. Pemulihan otomatis setelah masa penguncian berakhir atau reset saat login berhasil.
  * =========================================================================
  */
-const OJK_MAX_LOGIN_ATTEMPTS = 5;
-const OJK_LOCKOUT_DURATION_SECONDS = 900; // 15 menit
+const MAX_LOGIN_ATTEMPTS = 5;
+const LOCKOUT_DURATION_SECONDS = 900; // 15 menit
+const OJK_MAX_LOGIN_ATTEMPTS = MAX_LOGIN_ATTEMPTS;
+const OJK_LOCKOUT_DURATION_SECONDS = LOCKOUT_DURATION_SECONDS;
 
 function get_lockout_storage_record(string $identifier, string $type): array {
     // 1. Coba dari MySQL jika bukan Google Cloud Mode
@@ -962,7 +964,7 @@ function clear_lockout_storage_record(string $identifier): void {
 function check_login_throttle(string $username, string $ip): array {
     $now = time();
 
-    // Sesuai standar regulasi OJK (POJK No. 75/POJK.03/2016 Bab IX Pasal 38),
+    // Sesuai standar keamanan sistem perbankan,
     // pengamanan brute-force diterapkan pada akun pengguna (User Account Lockout).
     // Alamat IP kantor / LAN tidak diblokir secara massal agar staf/karyawan lain tidak mengalami DoS.
     $targets = [];
@@ -979,7 +981,7 @@ function check_login_throttle(string $username, string $ip): array {
                 'locked' => true,
                 'remaining_seconds' => $remSeconds,
                 'attempts' => $rec['attempts'],
-                'message' => "Akses {$t['label']} terkunci sementara selama 15 menit sesuai regulasi OJK akibat 5 kali salah kata sandi berturut-turut. Silakan tunggu {$remMinutes} menit lagi atau hubungi Administrator IT."
+                'message' => "Akses {$t['label']} terkunci sementara selama 15 menit sesuai kebijakan keamanan akibat 5 kali salah kata sandi berturut-turut. Silakan tunggu {$remMinutes} menit lagi atau hubungi Administrator IT."
             ];
         }
 
@@ -994,7 +996,7 @@ function check_login_throttle(string $username, string $ip): array {
     foreach ($targets as $t) {
         $rec = get_lockout_storage_record($t['id'], $t['type']);
         // Jika jeda dari percobaan terakhir > 15 menit, reset hitungan
-        if ($rec['last_attempt'] > 0 && ($now - $rec['last_attempt'] > OJK_LOCKOUT_DURATION_SECONDS)) {
+        if ($rec['last_attempt'] > 0 && ($now - $rec['last_attempt'] > LOCKOUT_DURATION_SECONDS)) {
             clear_lockout_storage_record($t['id']);
             continue;
         }
@@ -1007,7 +1009,7 @@ function check_login_throttle(string $username, string $ip): array {
         'locked' => false,
         'remaining_seconds' => 0,
         'attempts' => $maxAttempts,
-        'remaining_attempts' => max(0, OJK_MAX_LOGIN_ATTEMPTS - $maxAttempts),
+        'remaining_attempts' => max(0, MAX_LOGIN_ATTEMPTS - $maxAttempts),
         'message' => ''
     ];
 }
@@ -1026,15 +1028,15 @@ function record_login_failure(string $username, string $ip): array {
     foreach ($targets as $t) {
         $rec = get_lockout_storage_record($t['id'], $t['type']);
         // Jika jeda dari percobaan sebelumnya > 15 menit, mulai dari 1
-        if ($rec['last_attempt'] > 0 && ($now - $rec['last_attempt'] > OJK_LOCKOUT_DURATION_SECONDS)) {
+        if ($rec['last_attempt'] > 0 && ($now - $rec['last_attempt'] > LOCKOUT_DURATION_SECONDS)) {
             $currentAttempts = 1;
         } else {
             $currentAttempts = $rec['attempts'] + 1;
         }
 
         $lockedUntil = 0;
-        if ($currentAttempts >= OJK_MAX_LOGIN_ATTEMPTS) {
-            $lockedUntil = $now + OJK_LOCKOUT_DURATION_SECONDS;
+        if ($currentAttempts >= MAX_LOGIN_ATTEMPTS) {
+            $lockedUntil = $now + LOCKOUT_DURATION_SECONDS;
             $isLockedNow = true;
             $lockedLabel = $t['label'];
         }
@@ -1048,10 +1050,10 @@ function record_login_failure(string $username, string $ip): array {
 
     if ($isLockedNow) {
         if (function_exists('record_audit_log')) {
-            record_audit_log('ACCOUNT_LOCKED', 'KEAMANAN', null, $username ?: 'unknown', "{$lockedLabel} terkunci otomatis selama 15 menit sesuai aturan OJK setelah 5 kali gagal login berturut-turut.", [
+            record_audit_log('ACCOUNT_LOCKED', 'KEAMANAN', null, $username ?: 'unknown', "{$lockedLabel} terkunci otomatis selama 15 menit sesuai kebijakan keamanan setelah 5 kali gagal login berturut-turut.", [
                 'ip' => $ip,
-                'duration_seconds' => OJK_LOCKOUT_DURATION_SECONDS,
-                'standard' => 'POJK No. 75/POJK.03/2016 & POJK No. 11/POJK.03/2022'
+                'duration_seconds' => LOCKOUT_DURATION_SECONDS,
+                'standard' => 'Standar Keamanan Perbankan'
             ]);
         }
 
@@ -1059,15 +1061,15 @@ function record_login_failure(string $username, string $ip): array {
             'locked' => true,
             'attempts' => $maxAttempts,
             'remaining_attempts' => 0,
-            'remaining_seconds' => OJK_LOCKOUT_DURATION_SECONDS,
-            'message' => "Akses {$lockedLabel} terkunci sementara selama 15 menit sesuai standar OJK akibat 5 kali salah kata sandi. Silakan tunggu 15 menit lagi sebelum mencoba kembali."
+            'remaining_seconds' => LOCKOUT_DURATION_SECONDS,
+            'message' => "Akses {$lockedLabel} terkunci sementara selama 15 menit sesuai standar keamanan akibat 5 kali salah kata sandi. Silakan tunggu 15 menit lagi sebelum mencoba kembali."
         ];
     }
 
     return [
         'locked' => false,
         'attempts' => $maxAttempts,
-        'remaining_attempts' => max(0, OJK_MAX_LOGIN_ATTEMPTS - $maxAttempts),
+        'remaining_attempts' => max(0, MAX_LOGIN_ATTEMPTS - $maxAttempts),
         'remaining_seconds' => 0,
         'message' => ''
     ];

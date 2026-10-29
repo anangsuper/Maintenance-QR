@@ -1,7 +1,7 @@
 <?php
 /**
  * AUDIT TRAIL & LOG AKTIVITAS SISTEM TERPUSAT
- * Memenuhi standar kepatuhan operasional perbankan (POJK / ISO 27001)
+ * Memenuhi standar kepatuhan operasional perbankan (ISO 27001)
  * Mendukung Dual-Storage Engine: Database MySQL dan Google Sheets API v4
  */
 

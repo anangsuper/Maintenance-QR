@@ -69,10 +69,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $error = $throttleCheck['message'];
         $isLocked = true;
         $lockRemainingSeconds = $throttleCheck['remaining_seconds'];
-        record_audit_log('LOGIN_BLOCKED', 'KEAMANAN', null, $username ?: 'unknown', 'Percobaan login diblokir karena akun/IP sedang dalam status terkunci sementara (Standar OJK).', [
+        record_audit_log('LOGIN_BLOCKED', 'KEAMANAN', null, $username ?: 'unknown', 'Percobaan login diblokir karena akun/IP sedang dalam status terkunci sementara (Standar Keamanan).', [
             'ip' => $clientIp,
             'remaining_seconds' => $throttleCheck['remaining_seconds'],
-            'standard' => 'POJK No. 75/POJK.03/2016'
+            'standard' => 'Standar Keamanan Perbankan'
         ]);
     } else {
         $failInfo = record_login_failure($username, $clientIp);
@@ -83,7 +83,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } else {
             $baseErr = $result['error'] ?? 'Username atau kata sandi tidak valid.';
             $attempts = $failInfo['attempts'];
-            $error = $baseErr . ' (Percobaan ke-' . $attempts . ' dari 5. Akun akan terkunci 15 menit jika 5 kali berturut-turut gagal sesuai standar OJK).';
+            $error = $baseErr . ' (Percobaan ke-' . $attempts . ' dari 5. Akun akan terkunci 15 menit jika 5 kali berturut-turut gagal sesuai standar keamanan).';
         }
         record_audit_log('LOGIN_FAILED', 'KEAMANAN', null, $username, 'Percobaan login gagal: ' . $error, [
             'user_name' => $username,
@@ -94,7 +94,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-$errorHtml = $error ? '<div class="alert-custom alert-danger-custom" id="lockoutAlertBox"><i class="bi ' . ($isLocked ? 'bi-shield-lock-fill' : 'bi-shield-x') . ' alert-icon" style="font-size: 1.25rem;"></i><div style="flex:1;"><strong>' . ($isLocked ? 'Akun / IP Terkunci Sementara (Standar OJK)' : 'Autentikasi Gagal') . '</strong><div class="alert-text mt-1">'.e($error).'</div>' . ($isLocked ? '<div class="mt-2 fw-bold text-danger d-flex align-items-center gap-1" id="timerBox"><i class="bi bi-hourglass-split"></i> Sisa waktu penguncian: <span id="lockTimer">Menghitung...</span></div><div class="mt-2 pt-2 border-top border-danger border-opacity-25 small text-light opacity-75"><i class="bi bi-info-circle me-1"></i>Untuk pembukaan kunci darurat, hubungi Administrator IT.</div>' : '') . '</div></div>' : '';
+$errorHtml = $error ? '<div class="alert-custom alert-danger-custom" id="lockoutAlertBox"><i class="bi ' . ($isLocked ? 'bi-shield-lock-fill' : 'bi-shield-x') . ' alert-icon" style="font-size: 1.25rem;"></i><div style="flex:1;"><strong>' . ($isLocked ? 'Akun / IP Terkunci Sementara (Standar Keamanan)' : 'Autentikasi Gagal') . '</strong><div class="alert-text mt-1">'.e($error).'</div>' . ($isLocked ? '<div class="mt-2 fw-bold text-danger d-flex align-items-center gap-1" id="timerBox"><i class="bi bi-hourglass-split"></i> Sisa waktu penguncian: <span id="lockTimer">Menghitung...</span></div><div class="mt-2 pt-2 border-top border-danger border-opacity-25 small text-light opacity-75"><i class="bi bi-info-circle me-1"></i>Untuk pembukaan kunci darurat, hubungi Administrator IT.</div>' : '') . '</div></div>' : '';
 
 $successHtml = $flashLogin ? '<div class="alert-custom alert-success-custom"><i class="bi bi-check-circle-fill alert-icon"></i><div><strong>Informasi</strong><div class="alert-text">'.e($flashLogin).'</div></div></div>' : '';
 
@@ -799,7 +799,7 @@ window.addEventListener("pageshow", function() {
   }
 });
 
-// Countdown Timer jika Akun Terkunci Sementara (Standar Keamanan OJK)
+// Countdown Timer jika Akun Terkunci Sementara (Standar Keamanan)
 const lockRemainingSecs = <?= (int)$lockRemainingSeconds ?>;
 if (lockRemainingSecs > 0) {
   let remaining = lockRemainingSecs;

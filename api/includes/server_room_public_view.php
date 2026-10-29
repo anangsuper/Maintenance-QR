@@ -2,7 +2,7 @@
 /**
  * Tampilan Khusus Publik: Portal Akses & Buku Tamu Digital Ruang Server (Tanpa Login)
  * Dirancang khusus responsif untuk smartphone (scan QR pintu) dan tablet/desktop.
- * Kepatuhan OJK POJK No. 75/POJK.03/2016 & ISO/IEC 27001
+ * Kepatuhan Keamanan & ISO/IEC 27001
  */
 
 // Safe default fallbacks

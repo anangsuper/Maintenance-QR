@@ -596,7 +596,7 @@ ob_start();
   <div class="mb-4 flex flex-col md:flex-row md:items-center justify-between gap-3">
     <div>
       <div class="text-[11px] font-bold text-[#0E5C58] uppercase tracking-wider mb-1 flex items-center gap-1.5">
-        <i class="bi bi-shield-lock-fill"></i> KEAMANAN DATA CENTER &middot; POJK NO. 75/POJK.03/2016
+        <i class="bi bi-shield-lock-fill"></i> KEAMANAN DATA CENTER &middot; KONTROL AKSES FISIK
       </div>
       <h1 class="text-[22px] font-bold text-[#1B2A3A] tracking-tight m-0">Log Masuk Ruang Server &amp; Data Center</h1>
       <p class="text-[13px] text-[#53595F] mt-1 mb-0">Kontrol akses fisik dan pencatatan riwayat kunjungan teknisi IT, auditor SKAI, serta rekanan eksternal.</p>
@@ -994,7 +994,7 @@ ob_start();
               <i class="bi bi-door-open-fill"></i> Check-In Masuk Ruang Server &amp; Data Center
             </h5>
             <div class="small text-white text-opacity-85" style="font-size: 0.8rem;">
-              <i class="bi bi-shield-check me-1"></i>Pencatatan resmi kepatuhan akses fisik Data Center BPR Mitra (POJK 75)
+              <i class="bi bi-shield-check me-1"></i>Pencatatan resmi kontrol akses fisik Data Center BPR Mitra
             </div>
           </div>
           <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
@@ -1052,7 +1052,7 @@ ob_start();
                     <i class="bi bi-shield-check fs-5"></i>
                   </div>
                   <div class="fw-bold small title-text">Auditor SKAI</div>
-                  <div class="text-muted xs sub-text">Pemeriksaan / OJK</div>
+                  <div class="text-muted xs sub-text">Pemeriksaan / Audit</div>
                 </label>
               </div>
             </div>
@@ -1140,7 +1140,7 @@ ob_start();
                   <option value="Backup Data Offline / Penarikan Harddisk">💾 Backup Data Offline & Penarikan Harddisk/Tape</option>
                   <option value="Pemeriksaan & Servis AC Presisi Ruang Server">❄️ Pemeriksaan & Servis AC Presisi Ruang Server</option>
                   <option value="Uji Beban Genset & Pengecekan Aki UPS">🔋 Uji Beban Genset & Pengecekan Aki UPS</option>
-                  <option value="Inspeksi Pengawasan Audit SKAI / OJK">🔍 Inspeksi Pengawasan Audit SKAI / OJK</option>
+                  <option value="Inspeksi Pengawasan Audit Internal / SKAI">🔍 Inspeksi Pengawasan Audit Internal / SKAI</option>
                   <option value="Kunjungan Vendor ISP / Perbaikan Kabel Fiber Optic">🌐 Kunjungan Vendor ISP / Fiber Optic</option>
                   <option value="Instalasi / Penambahan Perangkat Baru">📦 Instalasi / Penambahan Perangkat Rak Baru</option>
                   <option value="Lainnya">📝 Keperluan Lainnya...</option>
@@ -1591,7 +1591,7 @@ function onVisitorTypeChange(type) {
     if (helpBanner) helpBanner.className = "alert alert-warning border-0 rounded-3 py-2 px-3 mt-2.5 mb-0 d-flex align-items-center gap-2 small shadow-xs";
   } else if (type === "auditor") {
     if (inst) {
-      if (inst.value === "PT BPR Mitratama Arthabuana" || !inst.value) inst.value = "SKAI / OJK / Auditor";
+      if (inst.value === "PT BPR Mitratama Arthabuana" || !inst.value) inst.value = "SKAI / Auditor Eksternal";
     }
     if (acc) {
       if (acc.value === "Mandiri (Teknisi IT Bank)" || !acc.value) acc.value = defaultAdmin;

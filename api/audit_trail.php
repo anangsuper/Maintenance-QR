@@ -325,7 +325,7 @@ $body .= '
       <i class="bi bi-shield-lock-fill text-primary fs-5"></i>
       <div>
         <h6 class="fw-bold mb-0 text-dark">Daftar Log Aktivitas Sistem</h6>
-        <div class="text-muted small" style="font-size: 0.72rem;">Memenuhi regulasi POJK & ISO 27001 · Menampilkan '.$totalLogs.' entri aktivitas</div>
+        <div class="text-muted small" style="font-size: 0.72rem;">Standar Keamanan Sistem & ISO 27001 · Menampilkan '.$totalLogs.' entri aktivitas</div>
       </div>
     </div>
     <div>

@@ -148,7 +148,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                     $card['foto_updated_by'] = $verifierLabel;
                     $card['foto_updated_at'] = date('Y-m-d H:i:s');
 
-                    // Catat Audit Log POJK
+                    // Catat Audit Log Aktivitas
                     try {
                         record_audit_log(
                             'UPDATE',

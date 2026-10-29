@@ -2988,7 +2988,7 @@ label.form-label,
                 <div class="col-md-6">
                   <div class="p-3 border rounded-3 h-100 bg-light">
                     <strong class="text-dark d-block mb-1"><i class="bi bi-journal-text text-warning me-1"></i> 2. Log Aktivitas (Audit Trail)</strong>
-                    <p class="text-muted small mb-0">Buka menu <strong>Log Aktivitas (Audit)</strong> untuk memeriksa rekaman mutasi data, login, pengubahan status, dan unduh CSV untuk arsip OJK/ISO.</p>
+                    <p class="text-muted small mb-0">Buka menu <strong>Log Aktivitas (Audit)</strong> untuk memeriksa rekaman mutasi data, login, pengubahan status, dan unduh CSV untuk arsip audit.</p>
                   </div>
                 </div>
                 <div class="col-md-6">
@@ -3051,7 +3051,7 @@ label.form-label,
         </div>
       </div>
       <div class="modal-footer py-2.5 px-4 bg-white border-top d-flex justify-content-between align-items-center">
-        <span class="small text-muted"><i class="bi bi-shield-lock-fill text-primary me-1"></i> Sistem Terproteksi Standar Perbankan POJK No. 75</span>
+        <span class="small text-muted"><i class="bi bi-shield-lock-fill text-primary me-1"></i> Sistem Terproteksi Standar Keamanan Perbankan</span>
         <button type="button" class="btn btn-primary btn-sm px-4 fw-semibold" data-bs-dismiss="modal">Saya Paham</button>
       </div>
     </div>

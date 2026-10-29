@@ -424,7 +424,7 @@ $body = '
   <div>
     <div class="tech-label mb-1">PENGATURAN &amp; KEAMANAN BIOMETRIK</div>
     <h1 class="h3 mb-1"><i class="bi bi-person-bounding-box text-primary me-2"></i>Wajah Teknisi (Biometrik FIDO2)</h1>
-    <p class="text-secondary small mb-0">Perekaman sampel wajah dan foto profil petugas untuk verifikasi checklist pemeliharaan IT &amp; audit OJK.</p>
+    <p class="text-secondary small mb-0">Perekaman sampel wajah dan foto profil petugas untuk verifikasi checklist pemeliharaan IT &amp; audit operasional.</p>
   </div>
   <div class="d-flex align-items-center gap-2 flex-wrap">
     '.($isAdmin ? '
