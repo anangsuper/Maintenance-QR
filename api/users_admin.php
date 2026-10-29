@@ -219,997 +219,102 @@ foreach ($users as $u) {
 $bioPercent = $totalUsers > 0 ? round(($countFaceVerified / $totalUsers) * 100) : 100;
 $ratingScore = number_format(min(5.0, 4.0 + ($bioPercent / 100)), 1);
 
-// Pending Approval Banner HTML
-$pendingBannerHtml = '';
-if (!empty($pendingFaceUsers)) {
-    $pendingItemsHtml = '';
-    foreach ($pendingFaceUsers as $pu) {
-        $puId = (int)$pu['id'];
-        $puNama = (string)($pu['nama'] ?? 'Tanpa Nama');
-        $puUsername = (string)($pu['username'] ?? '');
-        $puRole = (string)($pu['role'] ?? 'teknisi');
-        $puPhoto = trim((string)($pu['face_photo'] ?? ''));
-
-        $puImg = $puPhoto !== ''
-            ? '<img src="'.e($puPhoto).'" class="rounded-circle border shadow-sm js-preview-face cursor-pointer" style="width: 48px; height: 48px; object-fit: cover;" data-photo="'.e($puPhoto).'" data-nama="'.e($puNama).'" data-username="'.e($puUsername).'" data-role="'.e($puRole).'" title="Klik untuk memperbesar foto">'
-            : '<div class="rounded-circle d-flex align-items-center justify-content-center text-warning fw-bold border border-warning" style="width: 48px; height: 48px; background: #FFFBEB;"><i class="bi bi-person-bounding-box fs-5"></i></div>';
-
-        $pendingItemsHtml .= '
-        <div class="col-md-6 col-lg-4">
-          <div class="card p-3 h-100 bg-white border border-warning shadow-sm" style="border-radius: 18px;">
-            <div class="d-flex align-items-center gap-3 mb-3">
-              '.$puImg.'
-              <div class="min-w-0 flex-grow-1">
-                <h6 class="fw-bold mb-0 text-dark text-truncate" style="font-size: 0.92rem;">'.e($puNama).'</h6>
-                <div class="text-muted font-monospace small text-truncate">@'.e($puUsername).' · '.ucfirst(e($puRole)).'</div>
-                <span class="badge-chip chip-warning mt-1" style="font-size: 0.7rem; border-radius: 9999px;"><i class="bi bi-hourglass-split"></i> Menunggu Verifikasi</span>
-              </div>
-            </div>
-            <div class="d-flex gap-2 mt-auto pt-2 border-top" style="border-color: #FEF3C7 !important;">
-              <form method="post" class="flex-fill m-0" onsubmit="return confirm(\'Setujui dan aktifkan biometrik wajah '.addslashes($puNama).'?\')">
-                <input type="hidden" name="_csrf" value="'.e(csrf_token()).'">
-                <input type="hidden" name="action" value="approve_face">
-                <input type="hidden" name="user_id" value="'.$puId.'">
-                <button type="submit" class="btn btn-success btn-sm fw-bold w-100 py-1.5" style="font-size: 0.78rem; border-radius: 10px;">
-                  <i class="bi bi-check-circle-fill me-1"></i> Setujui
-                </button>
-              </form>
-              <form method="post" class="m-0" onsubmit="return confirm(\'Tolak sampel foto wajah '.addslashes($puNama).'?\')">
-                <input type="hidden" name="_csrf" value="'.e(csrf_token()).'">
-                <input type="hidden" name="action" value="reject_face">
-                <input type="hidden" name="user_id" value="'.$puId.'">
-                <button type="submit" class="btn btn-outline-danger btn-sm py-1.5 px-2.5" style="font-size: 0.78rem; border-radius: 10px;" title="Tolak Pendaftaran">
-                  <i class="bi bi-x-circle me-1"></i> Tolak
-                </button>
-              </form>
-            </div>
-          </div>
-        </div>';
-    }
-
-    $pendingBannerHtml = '
-    <div class="card shadow-sm mb-4 p-4 border-0" style="border-radius: 20px; border-left: 6px solid #F59E0B !important; background: linear-gradient(135deg, #FFFDF5 0%, #FEF9C3 100%);">
-      <div class="d-flex flex-wrap align-items-center justify-content-between mb-3 gap-2">
-        <div>
-          <div class="d-flex align-items-center gap-2 mb-1">
-            <span class="badge-chip chip-warning fw-bold" style="border-radius: 9999px;"><i class="bi bi-shield-exclamation"></i> MEMERLUKAN PERSETUJUAN ADMIN</span>
-            <span class="badge bg-warning text-dark fw-bold" style="font-size: 0.72rem; border-radius: 9999px;">'.count($pendingFaceUsers).' Permintaan</span>
-          </div>
-          <h5 class="fw-bold text-dark mb-0 d-flex align-items-center gap-2">
-            <i class="bi bi-person-bounding-box text-warning"></i> Verifikasi Biometrik Wajah Teknisi Mobile
-          </h5>
-          <div class="text-muted small mt-1">Petugas telah mendaftarkan sampel wajah melalui smartphone saat bertugas. Silakan tinjau dan setujui untuk autentikasi checklist &amp; login presensi.</div>
-        </div>
-      </div>
-      <div class="row g-3">
-        '.$pendingItemsHtml.'
-      </div>
-    </div>';
-}
-
-// Generate User Rows HTML with Symmetrical Cell Heights & Action Buttons
-$userRowsHtml = '';
-$no = 0;
-foreach ($users as $u) {
-    $no++;
-    $uId = (int)($u['id'] ?? 0);
-    $uNama = (string)($u['nama'] ?? '');
-    $uNick = trim((string)($u['nama_panggilan'] ?? ''));
-    $uUsername = (string)($u['username'] ?? '');
-    $uRole = strtolower((string)($u['role'] ?? 'teknisi'));
-    $uTelRaw = (string)($u['telepon'] ?? '');
-    $uTel = format_phone_number($uTelRaw);
-    $uStatus = (string)($u['status'] ?? 'Aktif');
-    $fDesc = trim((string)($u['face_descriptor'] ?? ''));
-    $fStat = strtolower(trim((string)($u['face_status'] ?? '')));
-    $uPhoto = trim((string)($u['face_photo'] ?? ''));
-    $isBeingEdited = ($editId === $uId);
-
-    // Filter Group Data Attributes for Instant JS Search
-    $filterRoleGroup = ($uRole === 'admin' || $uRole === 'administrator') ? 'admin' : ((in_array($uRole, ['sdm', 'hrd', 'umum', 'hrd_umum', 'sdm_umum', 'sdm & umum', 'sdm/hrd'], true) || str_contains($uRole, 'sdm')) ? 'sdm' : (($uRole === 'auditor' || $uRole === 'skai') ? 'auditor' : 'teknisi'));
-    $filterBioGroup = ($fStat === 'verified' || $fStat === 'terverifikasi') ? 'verified' : (($fStat === 'pending' || $fStat === 'menunggu') ? 'pending' : 'none');
-    $filterStatusGroup = (strcasecmp($uStatus, 'Nonaktif') === 0) ? 'nonaktif' : 'aktif';
-
-    // Nickname Badge
-    $nickBadge = ($uNick !== '') ? '<span class="badge-chip chip-secondary font-monospace" title="Nama Panggilan / Paraf Kartu Kontrol IT" style="font-size: 0.68rem; border-radius: 9999px;"><i class="bi bi-pen"></i> Paraf: '.e($uNick).'</span>' : '';
-
-    // Role Badges
-    if ($filterRoleGroup === 'admin') {
-        $roleBadge = '<span class="badge-chip chip-primary fw-bold" style="border-radius: 9999px;"><i class="bi bi-shield-lock-fill"></i> Administrator</span>';
-    } elseif ($filterRoleGroup === 'sdm') {
-        $roleBadge = '<span class="badge-chip chip-warning text-dark fw-bold" style="border-radius: 9999px;"><i class="bi bi-person-workspace"></i> SDM &amp; Umum</span>';
-    } elseif ($filterRoleGroup === 'auditor') {
-        $roleBadge = '<span class="badge-chip chip-secondary fw-bold" style="border-radius: 9999px;"><i class="bi bi-eye-fill"></i> Auditor</span>';
-    } else {
-        $roleBadge = '<span class="badge-chip" style="background:#E0F2FE; color:#0369A1; border:1px solid #BAE6FD; font-weight:600; border-radius: 9999px;"><i class="bi bi-tools"></i> Teknisi IT</span>';
-    }
-
-    // Status Badge
-    $statusBadge = ($filterStatusGroup === 'nonaktif')
-        ? '<span class="badge-chip chip-danger" style="border-radius: 9999px;"><i class="bi bi-x-circle-fill"></i> Nonaktif</span>'
-        : '<span class="badge-chip chip-success" style="border-radius: 9999px;"><span class="pulse-dot-green me-1"></span> Aktif</span>';
-
-    // WhatsApp Direct Link
-    $telHtml = '';
-    if ($uTel !== '-' && $uTel !== '') {
-        $cleanPhone = preg_replace('/[^0-9]/', '', $uTel);
-        if (str_starts_with($cleanPhone, '0')) {
-            $waPhone = '62' . substr($cleanPhone, 1);
-        } else {
-            $waPhone = $cleanPhone;
-        }
-        $telHtml = '
-        <div class="small mt-0.5 text-muted" style="font-size: 0.78rem;">
-          <a href="https://wa.me/'.e($waPhone).'" target="_blank" rel="noopener noreferrer" class="text-decoration-none text-muted hover-primary d-inline-flex align-items-center gap-1" title="Kirim Pesan WhatsApp">
-            <i class="bi bi-whatsapp text-success"></i>
-            <span>'.e($uTel).'</span>
-          </a>
-        </div>';
-    }
-
-    $hasFace = ($uPhoto !== '' || $fDesc !== '');
-    $isFaceVerified = ($fStat === 'verified' || $fStat === 'terverifikasi');
-    $isFacePending = ($fStat === 'pending' || $fStat === 'menunggu');
-
-    // Avatar Profil (Symmetrical 42px size)
-    if ($uPhoto !== '') {
-        $avatarStatusDot = $isFaceVerified
-            ? '<span class="position-absolute bottom-0 end-0 badge rounded-pill bg-success p-0 border border-white" style="width: 10px; height: 10px;" title="Biometrik Terverifikasi"></span>'
-            : ($isFacePending ? '<span class="position-absolute bottom-0 end-0 badge rounded-pill bg-warning p-0 border border-white" style="width: 10px; height: 10px;" title="Menunggu Verifikasi Admin"></span>' : '');
-
-        $avatarHtml = '
-        <div class="flex-shrink-0 position-relative js-preview-face cursor-pointer" data-photo="'.e($uPhoto).'" data-nama="'.e($uNama).'" data-username="'.e($uUsername).'" data-role="'.e($uRole).'" data-id="'.$uId.'" data-stat="'.e($fStat).'" data-enroll-url="'.e(module_url('user_biometric_enroll.php', ['id'=>$uId])).'" title="Klik untuk melihat & kelola foto wajah">
-          <img src="'.e($uPhoto).'" class="rounded-circle border border-2 border-white shadow-xs" style="width: 42px; height: 42px; object-fit: cover;" alt="Foto '.e($uNama).'">
-          '.$avatarStatusDot.'
-        </div>';
-    } else {
-        $initial = strtoupper(substr($uNama ?: $uUsername, 0, 1));
-        $avatarHtml = '<div class="rounded-circle d-flex align-items-center justify-content-center fw-bold text-white shadow-xs flex-shrink-0" style="width: 42px; height: 42px; font-size: 1rem; background: linear-gradient(135deg, #06B6D4 0%, #2563EB 100%);">'.$initial.'</div>';
-    }
-
-    // Biometric Status (Uniform Height Layout with Interactive Trigger)
-    if (!$hasFace) {
-        $bioBadge = '
-        <div class="d-inline-flex align-items-center justify-content-center gap-1">
-          <a href="'.e(module_url('user_biometric_enroll.php', ['id'=>$uId])).'" class="badge-chip chip-secondary text-decoration-none" style="font-size: 0.72rem; border-radius: 9999px;" title="Klik untuk mendaftarkan wajah biometrik"><i class="bi bi-camera text-muted me-1"></i> Belum Ada</a>
-        </div>';
-    } elseif ($isFaceVerified) {
-        $bioPhotoThumb = ($uPhoto !== '') ? '<img src="'.e($uPhoto).'" class="rounded-circle border shadow-xs js-preview-face cursor-pointer me-1" style="width: 26px; height: 26px; object-fit: cover;" data-photo="'.e($uPhoto).'" data-nama="'.e($uNama).'" data-username="'.e($uUsername).'" data-role="'.e($uRole).'" data-id="'.$uId.'" data-stat="'.e($fStat).'" data-enroll-url="'.e(module_url('user_biometric_enroll.php', ['id'=>$uId])).'" title="Klik untuk pratinjau & kelola wajah">' : '';
-        $bioBadge = '
-        <div class="d-inline-flex align-items-center justify-content-center gap-1">
-          '.$bioPhotoThumb.'
-          <span class="badge-chip chip-success js-preview-face cursor-pointer" style="font-size: 0.72rem; border-radius: 9999px;" data-photo="'.e($uPhoto).'" data-nama="'.e($uNama).'" data-username="'.e($uUsername).'" data-role="'.e($uRole).'" data-id="'.$uId.'" data-stat="'.e($fStat).'" data-enroll-url="'.e(module_url('user_biometric_enroll.php', ['id'=>$uId])).'" title="Biometrik Wajah Terverifikasi (Klik untuk opsi verifikasi/hapus)"><i class="bi bi-shield-check"></i> Terverifikasi</span>
-        </div>';
-    } elseif ($isFacePending) {
-        $bioPhotoThumb = ($uPhoto !== '') ? '<img src="'.e($uPhoto).'" class="rounded-circle border border-warning shadow-xs js-preview-face cursor-pointer me-1" style="width: 26px; height: 26px; object-fit: cover;" data-photo="'.e($uPhoto).'" data-nama="'.e($uNama).'" data-username="'.e($uUsername).'" data-role="'.e($uRole).'" data-id="'.$uId.'" data-stat="'.e($fStat).'" data-enroll-url="'.e(module_url('user_biometric_enroll.php', ['id'=>$uId])).'" title="Klik untuk pratinjau & setujui">' : '';
-        $bioBadge = '
-        <div class="d-inline-flex align-items-center justify-content-center gap-1">
-          '.$bioPhotoThumb.'
-          <span class="badge-chip chip-warning js-preview-face cursor-pointer" style="font-size: 0.72rem; border-radius: 9999px;" data-photo="'.e($uPhoto).'" data-nama="'.e($uNama).'" data-username="'.e($uUsername).'" data-role="'.e($uRole).'" data-id="'.$uId.'" data-stat="'.e($fStat).'" data-enroll-url="'.e(module_url('user_biometric_enroll.php', ['id'=>$uId])).'" title="Menunggu Verifikasi Admin (Klik untuk setujui)"><i class="bi bi-hourglass-split"></i> Menunggu</span>
-        </div>';
-    } else {
-        $bioPhotoThumb = ($uPhoto !== '') ? '<img src="'.e($uPhoto).'" class="rounded-circle border border-danger shadow-xs js-preview-face cursor-pointer me-1" style="width: 26px; height: 26px; object-fit: cover;" data-photo="'.e($uPhoto).'" data-nama="'.e($uNama).'" data-username="'.e($uUsername).'" data-role="'.e($uRole).'" data-id="'.$uId.'" data-stat="'.e($fStat).'" data-enroll-url="'.e(module_url('user_biometric_enroll.php', ['id'=>$uId])).'" title="Klik untuk pratinjau">' : '';
-        $bioBadge = '
-        <div class="d-inline-flex align-items-center justify-content-center gap-1">
-          '.$bioPhotoThumb.'
-          <span class="badge-chip chip-danger js-preview-face cursor-pointer" style="font-size: 0.72rem; border-radius: 9999px;" data-photo="'.e($uPhoto).'" data-nama="'.e($uNama).'" data-username="'.e($uUsername).'" data-role="'.e($uRole).'" data-id="'.$uId.'" data-stat="'.e($fStat).'" data-enroll-url="'.e(module_url('user_biometric_enroll.php', ['id'=>$uId])).'"><i class="bi bi-x-circle"></i> Ditolak</span>
-        </div>';
-    }
-
-    $isUserAdmin = in_array($uRole, ['admin', 'administrator'], true);
-    $canManageUser = is_admin() || !$isUserAdmin;
-
-    // 1. Biometric Enrollment / Photo Shortcut (Uniform 32x32px Button)
-    $enrollBtnHtml = '<a class="btn btn-outline-secondary btn-sm action-btn-sq" href="'.e(module_url('user_biometric_enroll.php', ['id'=>$uId])).'" title="Daftarkan / Foto Ulang Wajah Biometrik"><i class="bi bi-camera"></i></a>';
-
-    // 2. Verifikasi Wajah Button (Uniform 32x32px Button)
-    $verifyBtnHtml = '';
-    if ($hasFace) {
-        if (!$isFaceVerified) {
-            $verifyConfirm = json_encode("Verifikasi dan setujui biometrik wajah {$uNama}?");
-            $verifyBtnHtml = '
-            <form method="post" class="d-inline m-0" onsubmit="return confirm(' . htmlspecialchars($verifyConfirm, ENT_QUOTES, 'UTF-8') . ')">
-              <input type="hidden" name="_csrf" value="'.e(csrf_token()).'">
-              <input type="hidden" name="action" value="approve_face">
-              <input type="hidden" name="user_id" value="'.$uId.'">
-              <button type="submit" class="btn btn-outline-success btn-sm action-btn-sq" title="Verifikasi Muka (Setujui Wajah)"><i class="bi bi-shield-check"></i></button>
-            </form>';
-        } else {
-            $unverifyConfirm = json_encode("Batalkan status verifikasi wajah {$uNama}?");
-            $verifyBtnHtml = '
-            <form method="post" class="d-inline m-0" onsubmit="return confirm(' . htmlspecialchars($unverifyConfirm, ENT_QUOTES, 'UTF-8') . ')">
-              <input type="hidden" name="_csrf" value="'.e(csrf_token()).'">
-              <input type="hidden" name="action" value="unverify_face">
-              <input type="hidden" name="user_id" value="'.$uId.'">
-              <button type="submit" class="btn btn-outline-secondary btn-sm action-btn-sq text-success border-success" title="Wajah Terverifikasi (Klik untuk batalkan verifikasi)"><i class="bi bi-patch-check-fill"></i></button>
-            </form>';
-        }
-    }
-
-    // 3. Hapus Muka Button (Uniform 32x32px Button)
-    $delFaceBtnHtml = '';
-    if ($hasFace) {
-        $delFaceConfirm = json_encode("Apakah Anda yakin ingin MENGHAPUS data biometrik wajah {$uNama}? Foto dan sampel biometrik akan dihapus.");
-        $delFaceBtnHtml = '
-        <form method="post" class="d-inline m-0" onsubmit="return confirm(' . htmlspecialchars($delFaceConfirm, ENT_QUOTES, 'UTF-8') . ')">
-          <input type="hidden" name="_csrf" value="'.e(csrf_token()).'">
-          <input type="hidden" name="action" value="delete_face">
-          <input type="hidden" name="user_id" value="'.$uId.'">
-          <button type="submit" class="btn btn-outline-danger btn-sm action-btn-sq" title="Hapus Muka (Reset Biometrik Wajah)"><i class="bi bi-person-x"></i></button>
-        </form>';
-    }
-
-    // 4. Edit User Button (Uniform 32x32px Button)
-    $editBtnHtml = $canManageUser
-        ? '<a class="btn btn-outline-primary btn-sm action-btn-sq '.($isBeingEdited ? 'active' : '').'" href="'.e(module_url('users_admin.php', ['edit'=>$uId])).'" title="Edit Profil / Password"><i class="bi bi-pencil-square"></i></a>'
-        : '<span class="action-btn-sq-placeholder"></span>';
-
-    // 5. Delete User Button with Guard Checks (Uniform 32x32px Button)
-    $delBtnHtml = '';
-    if ($uId !== current_user_id()) {
-        if ($canManageUser) {
-            $confirmMsg = json_encode("Apakah Anda yakin ingin menghapus akun {$uNama} (@{$uUsername})? Tindakan ini permanen.");
-            $delBtnHtml = '
-            <form method="post" class="d-inline m-0" onsubmit="return confirm(' . htmlspecialchars($confirmMsg, ENT_QUOTES, 'UTF-8') . ')">
-              <input type="hidden" name="_csrf" value="'.e(csrf_token()).'">
-              <input type="hidden" name="action" value="delete">
-              <input type="hidden" name="user_id" value="'.$uId.'">
-              <button type="submit" class="btn btn-outline-danger btn-sm action-btn-sq" title="Hapus Akun Pengguna"><i class="bi bi-trash"></i></button>
-            </form>';
-        } else {
-            $delBtnHtml = '<span class="action-btn-sq-placeholder" title="Hanya Administrator yang dapat mengelola akun ini"><i class="bi bi-shield-lock-fill text-muted"></i></span>';
-        }
-    } else {
-        $delBtnHtml = '<span class="action-btn-sq-placeholder" title="Akun Anda yang sedang aktif"><i class="bi bi-person-check-fill text-primary"></i></span>';
-    }
-
-    $rowClass = $isBeingEdited ? 'table-warning border-start border-4 border-warning' : '';
-
-    $userRowsHtml .= '
-    <tr class="user-row '.$rowClass.'" data-nama="'.strtolower(e($uNama)).'" data-username="'.strtolower(e($uUsername)).'" data-phone="'.strtolower(e($uTel)).'" data-role="'.$filterRoleGroup.'" data-bio="'.$filterBioGroup.'" data-status="'.$filterStatusGroup.'">
-      <td class="text-center font-monospace text-muted small align-middle">'.sprintf('%02d', $no).'</td>
-      <td class="align-middle">
-        <div class="d-flex align-items-center gap-3">
-          '.$avatarHtml.'
-          <div class="min-w-0">
-            <div class="fw-bold text-dark d-flex align-items-center flex-wrap gap-1.5">
-              <span>'.e($uNama).'</span>
-              '.$nickBadge.'
-            </div>
-            <div class="text-muted font-monospace small" style="font-size: 0.78rem;">@'.e($uUsername).'</div>
-            '.$telHtml.'
-          </div>
-        </div>
-      </td>
-      <td class="text-center align-middle">'.$roleBadge.'</td>
-      <td class="text-center align-middle">'.$bioBadge.'</td>
-      <td class="text-center align-middle">'.$statusBadge.'</td>
-      <td class="text-center align-middle">
-        <div class="d-inline-flex align-items-center justify-content-center gap-1.5">
-          '.$enrollBtnHtml.'
-          '.$verifyBtnHtml.'
-          '.$delFaceBtnHtml.'
-          '.$editBtnHtml.'
-          '.$delBtnHtml.'
-        </div>
-      </td>
-    </tr>';
-}
-
-if (!$userRowsHtml) {
-    $userRowsHtml = '<tr><td colspan="6" class="text-center py-5 text-muted"><i class="bi bi-people fs-1 d-block mb-2 opacity-50"></i>Belum ada data pengguna. Silakan buat akun pengguna baru pada form di samping.</td></tr>';
-}
-
-$flashHtml = $flash ? '<div class="alert alert-success alert-dismissible fade show border-0 shadow-sm mb-4" style="border-left: 5px solid #10B981 !important; border-radius: 14px;"><div class="d-flex align-items-center"><i class="bi bi-check-circle-fill me-2 fs-5 text-success"></i><div>'.e($flash).'</div></div><button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>' : '';
-$errorHtml = $error ? '<div class="alert alert-danger alert-dismissible fade show border-0 shadow-sm mb-4" style="border-left: 5px solid #EF4444 !important; border-radius: 14px;"><div class="d-flex align-items-center"><i class="bi bi-exclamation-triangle-fill me-2 fs-5 text-danger"></i><div>'.e($error).'</div></div><button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>' : '';
-
-// Form State: Add vs Edit
-if ($editUser) {
-    $editNama = $editUser['nama'] ?? '';
-    $editNick = $editUser['nama_panggilan'] ?? '';
-    $editUsername = $editUser['username'] ?? '';
-    $editRole = strtolower($editUser['role'] ?? 'teknisi');
-    $editTelepon = format_phone_number((string)($editUser['telepon'] ?? ''));
-    $editTeleponVal = ($editTelepon !== '-' && $editTelepon !== '') ? $editTelepon : '';
-    $editStatus = $editUser['status'] ?? 'Aktif';
-    $editPhoto = trim((string)($editUser['face_photo'] ?? ''));
-    $editFaceStat = strtolower(trim((string)($editUser['face_status'] ?? 'none')));
-
-    $formCardHeader = '
-    <div class="card-header bg-white py-3.5 px-4 border-bottom d-flex align-items-center justify-content-between" style="border-top: 4px solid #F59E0B; border-top-left-radius: 20px; border-top-right-radius: 20px;">
-      <div>
-        <div class="text-uppercase small fw-bold text-warning" style="font-size: 0.72rem; letter-spacing: 0.06em;">MODIFIKASI PENGGUNA #'.(int)$editUser['id'].'</div>
-        <h6 class="fw-bold mb-0 text-dark d-flex align-items-center gap-1.5"><i class="bi bi-pencil-square text-warning"></i> Edit Akun / Password</h6>
-      </div>
-      <a href="'.e(module_url('users_admin.php')).'" class="btn btn-outline-secondary btn-sm py-1 px-3 btn-pill" title="Batal & Kembali ke Tambah Pengguna"><i class="bi bi-x-lg me-1"></i> Batal</a>
-    </div>';
-
-    $editPhotoBox = '';
-    if ($editPhoto !== '') {
-        $isEditVerified = ($editFaceStat === 'verified' || $editFaceStat === 'terverifikasi');
-        $isEditPending = ($editFaceStat === 'pending' || $editFaceStat === 'menunggu');
-
-        $editStatusBadge = $isEditVerified
-            ? '<span class="badge bg-success" style="font-size: 0.72rem; border-radius: 9999px;"><i class="bi bi-shield-check me-1"></i> Terverifikasi</span>'
-            : ($isEditPending
-                ? '<span class="badge bg-warning text-dark" style="font-size: 0.72rem; border-radius: 9999px;"><i class="bi bi-hourglass-split me-1"></i> Menunggu Verifikasi</span>'
-                : '<span class="badge bg-danger" style="font-size: 0.72rem; border-radius: 9999px;"><i class="bi bi-x-circle me-1"></i> Ditolak</span>');
-
-        $verifySideBtn = !$isEditVerified
-            ? '<button type="submit" form="sideVerifyFaceForm" class="btn btn-xs btn-success py-1 px-2.5 btn-pill" style="font-size: 0.75rem;"><i class="bi bi-shield-check me-1"></i> Verifikasi Muka</button>'
-            : '<button type="submit" form="sideUnverifyFaceForm" class="btn btn-xs btn-outline-warning py-1 px-2.5 btn-pill" style="font-size: 0.75rem;"><i class="bi bi-arrow-counterclockwise me-1"></i> Batal Verifikasi</button>';
-
-        $editPhotoBox = '
-        <div class="p-3 mb-3 bg-light rounded-4 border">
-          <div class="d-flex align-items-center gap-3 mb-2.5">
-            <img src="'.e($editPhoto).'" class="rounded-circle border shadow-xs js-preview-face cursor-pointer" style="width: 48px; height: 48px; object-fit: cover;" data-photo="'.e($editPhoto).'" data-nama="'.e($editNama).'" data-username="'.e($editUsername).'" data-role="'.e($editRole).'" data-id="'.(int)$editUser['id'].'" data-stat="'.e($editFaceStat).'" data-enroll-url="'.e(module_url('user_biometric_enroll.php', ['id'=>(int)$editUser['id']])).'" title="Perbesar foto & kelola biometrik">
-            <div class="flex-grow-1 min-w-0">
-              <div class="fw-bold text-dark small d-flex align-items-center gap-1.5">
-                <span>Biometrik:</span>
-                '.$editStatusBadge.'
-              </div>
-              <div class="text-muted small" style="font-size: 0.72rem;">Sampel wajah terdaftar di basis data</div>
-            </div>
-          </div>
-          <div class="d-flex flex-wrap align-items-center gap-1.5 pt-2 border-top">
-            '.$verifySideBtn.'
-            <button type="submit" form="sideDeleteFaceForm" class="btn btn-xs btn-outline-danger py-1 px-2.5 btn-pill" style="font-size: 0.75rem;"><i class="bi bi-trash me-1"></i> Hapus Muka</button>
-            <a href="'.e(module_url('user_biometric_enroll.php', ['id'=>(int)$editUser['id']])).'" class="btn btn-xs btn-outline-primary py-1 px-2.5 btn-pill ms-auto" style="font-size: 0.75rem;"><i class="bi bi-camera me-1"></i> Foto Ulang</a>
-          </div>
-        </div>';
-    } else {
-        $editPhotoBox = '
-        <div class="p-3 mb-3 bg-light rounded-4 border d-flex align-items-center justify-content-between">
-          <div class="small text-muted"><i class="bi bi-camera text-secondary me-1"></i> Belum ada biometrik wajah</div>
-          <a href="'.e(module_url('user_biometric_enroll.php', ['id'=>(int)$editUser['id']])).'" class="btn btn-xs btn-outline-primary py-1 px-3 btn-pill" style="font-size: 0.75rem;"><i class="bi bi-camera me-1"></i> Daftarkan</a>
-        </div>';
-    }
-
-    $formContent = '
-    <form method="post" class="p-4">
-      <input type="hidden" name="_csrf" value="'.e(csrf_token()).'">
-      <input type="hidden" name="action" value="edit">
-      <input type="hidden" name="user_id" value="'.(int)$editUser['id'].'">
-
-      '.$editPhotoBox.'
-
-      <div class="mb-3">
-        <label class="form-label text-uppercase fw-bold text-muted small form-label-custom">Username Login</label>
-        <div class="input-group">
-          <span class="input-group-text bg-light text-muted input-icon-box"><i class="bi bi-at"></i></span>
-          <input type="text" class="form-control bg-light font-monospace form-control-custom" value="'.e($editUsername).'" readonly disabled>
-        </div>
-        <div class="form-text small" style="font-size: 0.72rem;">Username permanen dan tidak dapat diubah demi konsistensi log audit.</div>
-      </div>
-
-      <div class="mb-3">
-        <label class="form-label text-uppercase fw-bold text-muted small form-label-custom">Nama Lengkap Petugas <span class="text-danger">*</span></label>
-        <div class="input-group">
-          <span class="input-group-text bg-white text-muted input-icon-box"><i class="bi bi-person"></i></span>
-          <input type="text" class="form-control fw-bold form-control-custom" name="nama" required value="'.e($editNama).'" placeholder="Contoh: Budi Santoso, S.Kom">
-        </div>
-      </div>
-
-      <div class="mb-3">
-        <label class="form-label text-uppercase fw-bold text-muted small form-label-custom">Nama Panggilan / Paraf Kartu</label>
-        <div class="input-group">
-          <span class="input-group-text bg-white text-muted input-icon-box"><i class="bi bi-pen"></i></span>
-          <input type="text" class="form-control form-control-custom" name="nama_panggilan" value="'.e($editNick).'" placeholder="Contoh: Budi">
-        </div>
-        <div class="form-text small" style="font-size: 0.72rem;">Nama singkat yang dicetak pada kolom PARAF kartu inspeksi fisik.</div>
-      </div>
-
-      <div class="mb-3">
-        <label class="form-label text-uppercase fw-bold text-muted small form-label-custom">Hak Akses / Peran <span class="text-danger">*</span></label>
-        <div class="input-group">
-          <span class="input-group-text bg-white text-muted input-icon-box"><i class="bi bi-shield-check"></i></span>
-          <select class="form-select form-control-custom" name="role">
-            <option value="teknisi" '.($editRole==='teknisi'?'selected':'').'>Teknisi IT (Inspeksi & Checklist)</option>
-            <option value="sdm" '.($editRole==='sdm'||$editRole==='hrd'||$editRole==='umum'||$editRole==='hrd_umum'||str_contains($editRole,'sdm')?'selected':'').'>SDM & Umum / HRD (Inventaris & Karyawan)</option>
-            <option value="auditor" '.($editRole==='auditor'?'selected':'').'>Auditor / SKAI (Read-Only Audit Trail)</option>
-            '.(is_admin() ? '<option value="admin" '.($editRole==='admin'?'selected':'').'>Administrator (Akses Penuh Sistem)</option>' : '').'
-          </select>
-        </div>
-        <div class="p-3 mt-2 bg-light rounded-4 border small" style="font-size: 0.72rem; line-height: 1.45;">
-          <div class="fw-bold text-dark mb-1"><i class="bi bi-info-circle-fill text-primary me-1"></i> Penjelasan Hak Akses:</div>
-          <ul class="mb-0 ps-3 text-muted">
-            <li><strong>Teknisi IT:</strong> Checklist pemeliharaan, scanner QR, &amp; biometrik wajah.</li>
-            <li><strong>SDM &amp; Umum:</strong> Kartu inventaris non-komputer, mutasi &amp; cetak CR80.</li>
-            <li><strong>Auditor:</strong> Monitoring inspeksi &amp; unduh log audit trail.</li>
-            '.(is_admin() ? '<li><strong>Admin:</strong> Akses penuh seluruh sistem dan kelola pengguna.</li>' : '').'
-          </ul>
-        </div>
-      </div>
-
-      <div class="mb-3">
-        <label class="form-label text-uppercase fw-bold text-muted small form-label-custom">Reset Password</label>
-        <div class="input-group">
-          <span class="input-group-text bg-white text-muted input-icon-box"><i class="bi bi-key"></i></span>
-          <input type="password" class="form-control" name="password" id="editPasswordInput" placeholder="Kosongkan jika tidak diubah..." autocomplete="new-password" style="height: 42px; border-color: #E2E8F0; border-radius: 0;">
-          <button class="btn btn-outline-secondary" style="border-radius: 0 12px 12px 0; border-color: #E2E8F0; width: 42px; height: 42px; padding: 0; display: flex; align-items: center; justify-content: center;" type="button" id="btnToggleEditPassword" title="Lihat Password"><i class="bi bi-eye"></i></button>
-        </div>
-        <div class="form-text small" style="font-size: 0.72rem;">Biarkan kosong jika password lama tetap dipertahankan.</div>
-      </div>
-
-      <div class="mb-3">
-        <label class="form-label text-uppercase fw-bold text-muted small form-label-custom">No. WhatsApp / Telepon</label>
-        <div class="input-group">
-          <span class="input-group-text bg-white text-muted input-icon-box"><i class="bi bi-telephone"></i></span>
-          <input type="text" class="form-control form-control-custom" name="telepon" value="'.e($editTeleponVal).'" placeholder="Contoh: 08123456789">
-        </div>
-      </div>
-
-      <div class="mb-4">
-        <label class="form-label text-uppercase fw-bold text-muted small form-label-custom">Status Akses Akun</label>
-        <div class="input-group">
-          <span class="input-group-text bg-white text-muted input-icon-box"><i class="bi bi-power"></i></span>
-          <select class="form-select form-control-custom" name="status">
-            <option value="Aktif" '.($editStatus==='Aktif'?'selected':'').'>Aktif (Diberikan Akses Login)</option>
-            <option value="Nonaktif" '.($editStatus==='Nonaktif'?'selected':'').'>Nonaktif (Akses Ditangguhkan)</option>
-          </select>
-        </div>
-      </div>
-
-      <div class="d-flex gap-2">
-        <a class="btn btn-outline-secondary flex-fill fw-semibold py-2.5 btn-pill" href="'.e(module_url('users_admin.php')).'">Batal</a>
-        <button type="submit" class="btn btn-primary flex-fill fw-bold py-2.5 btn-pill"><i class="bi bi-save me-1"></i> Simpan Perubahan</button>
-      </div>
-    </form>';
-} else {
-    $formCardHeader = '
-    <div class="card-header bg-white py-3.5 px-4 border-bottom" style="border-top: 4px solid #2563EB; border-top-left-radius: 20px; border-top-right-radius: 20px;">
-      <div class="text-uppercase small fw-bold text-primary" style="font-size: 0.72rem; letter-spacing: 0.06em;">REGISTRASI PENGGUNA</div>
-      <h6 class="fw-bold mb-0 text-dark d-flex align-items-center gap-1.5"><i class="bi bi-person-plus-fill text-primary"></i> Tambah Akun Petugas Baru</h6>
-    </div>';
-
-    $formContent = '
-    <form method="post" class="p-4" autocomplete="off" id="formAddUser">
-      <input type="hidden" name="_csrf" value="'.e(csrf_token()).'">
-      <input type="hidden" name="action" value="add">
-
-      <div class="mb-3">
-        <label class="form-label text-uppercase fw-bold text-muted small form-label-custom">Username Login <span class="text-danger">*</span></label>
-        <div class="input-group">
-          <span class="input-group-text bg-white text-muted input-icon-box"><i class="bi bi-at"></i></span>
-          <input type="text" class="form-control font-monospace form-control-custom" name="username" required placeholder="Contoh: teknisi.budi" autocomplete="off">
-        </div>
-        <div class="form-text small" style="font-size: 0.72rem;">Gunakan huruf kecil tanpa spasi (a-z, 0-9, titik).</div>
-      </div>
-
-      <div class="mb-3">
-        <label class="form-label text-uppercase fw-bold text-muted small form-label-custom">Password <span class="text-danger">*</span></label>
-        <div class="input-group">
-          <span class="input-group-text bg-white text-muted input-icon-box"><i class="bi bi-key"></i></span>
-          <input type="password" class="form-control" name="password" id="addPasswordInput" required placeholder="Password login..." autocomplete="new-password" style="height: 42px; border-color: #E2E8F0; border-radius: 0;">
-          <button class="btn btn-outline-secondary" style="border-radius: 0 12px 12px 0; border-color: #E2E8F0; width: 42px; height: 42px; padding: 0; display: flex; align-items: center; justify-content: center;" type="button" id="btnToggleAddPassword" title="Lihat Password"><i class="bi bi-eye"></i></button>
-        </div>
-      </div>
-
-      <div class="mb-3">
-        <label class="form-label text-uppercase fw-bold text-muted small form-label-custom">Nama Lengkap Petugas <span class="text-danger">*</span></label>
-        <div class="input-group">
-          <span class="input-group-text bg-white text-muted input-icon-box"><i class="bi bi-person"></i></span>
-          <input type="text" class="form-control form-control-custom" name="nama" required placeholder="Contoh: Budi Santoso, S.Kom">
-        </div>
-        <div class="form-text small" style="font-size: 0.72rem;">Nama tercatat pada histori checklist &amp; log audit trail.</div>
-      </div>
-
-      <div class="mb-3">
-        <label class="form-label text-uppercase fw-bold text-muted small form-label-custom">Nama Panggilan / Paraf Kartu</label>
-        <div class="input-group">
-          <span class="input-group-text bg-white text-muted input-icon-box"><i class="bi bi-pen"></i></span>
-          <input type="text" class="form-control form-control-custom" name="nama_panggilan" placeholder="Contoh: Budi">
-        </div>
-        <div class="form-text small" style="font-size: 0.72rem;">Nama singkat untuk paraf kartu inspeksi fisik.</div>
-      </div>
-
-      <div class="mb-3">
-        <label class="form-label text-uppercase fw-bold text-muted small form-label-custom">Hak Akses / Peran <span class="text-danger">*</span></label>
-        <div class="input-group">
-          <span class="input-group-text bg-white text-muted input-icon-box"><i class="bi bi-shield-check"></i></span>
-          <select class="form-select form-control-custom" name="role">
-            <option value="teknisi" selected>Teknisi IT (Inspeksi & Checklist)</option>
-            <option value="sdm">SDM & Umum / HRD (Inventaris & Karyawan)</option>
-            <option value="auditor">Auditor / SKAI (Read-Only Audit Trail)</option>
-            '.(is_admin() ? '<option value="admin">Administrator (Akses Penuh Sistem)</option>' : '').'
-          </select>
-        </div>
-        <div class="p-3 mt-2 bg-light rounded-4 border small" style="font-size: 0.72rem; line-height: 1.45;">
-          <div class="fw-bold text-dark mb-1"><i class="bi bi-info-circle-fill text-primary me-1"></i> Penjelasan Hak Akses:</div>
-          <ul class="mb-0 ps-3 text-muted">
-            <li><strong>Teknisi IT:</strong> Checklist pemeliharaan, scanner QR, &amp; biometrik wajah.</li>
-            <li><strong>SDM &amp; Umum:</strong> Kartu inventaris non-komputer, mutasi &amp; cetak CR80.</li>
-            <li><strong>Auditor:</strong> Monitoring inspeksi &amp; unduh log audit trail.</li>
-            '.(is_admin() ? '<li><strong>Admin:</strong> Akses penuh seluruh sistem dan kelola pengguna.</li>' : '').'
-          </ul>
-        </div>
-      </div>
-
-      <div class="mb-3">
-        <label class="form-label text-uppercase fw-bold text-muted small form-label-custom">No. WhatsApp / Telepon</label>
-        <div class="input-group">
-          <span class="input-group-text bg-white text-muted input-icon-box"><i class="bi bi-telephone"></i></span>
-          <input type="text" class="form-control form-control-custom" name="telepon" placeholder="Contoh: 08123456789">
-        </div>
-      </div>
-
-      <div class="mb-4">
-        <label class="form-label text-uppercase fw-bold text-muted small form-label-custom">Status Akses Akun</label>
-        <div class="input-group">
-          <span class="input-group-text bg-white text-muted input-icon-box"><i class="bi bi-power"></i></span>
-          <select class="form-select form-control-custom" name="status">
-            <option value="Aktif" selected>Aktif (Dapat langsung login)</option>
-            <option value="Nonaktif">Nonaktif (Akses ditangguhkan)</option>
-          </select>
-        </div>
-      </div>
-
-      <button type="submit" class="btn btn-primary w-100 fw-bold py-2.5 btn-pill shadow-sm"><i class="bi bi-person-plus-fill me-1.5"></i> Buat Akun Pengguna</button>
-    </form>';
-}
-
-$sideFaceForms = '';
-if ($editUser && $editPhoto !== '') {
-    $confirmVerify = json_encode("Verifikasi dan setujui biometrik wajah {$editNama}?");
-    $confirmUnverify = json_encode("Batalkan status verifikasi biometrik wajah {$editNama}?");
-    $confirmDelFace = json_encode("Apakah Anda yakin ingin MENGHAPUS data biometrik wajah {$editNama}? Foto dan sampel biometrik akan dihapus secara permanen.");
-    $sideFaceForms = '
-    <form id="sideVerifyFaceForm" method="post" class="d-none" onsubmit="return confirm(' . htmlspecialchars($confirmVerify, ENT_QUOTES, 'UTF-8') . ')">
-      <input type="hidden" name="_csrf" value="'.e(csrf_token()).'">
-      <input type="hidden" name="action" value="approve_face">
-      <input type="hidden" name="user_id" value="'.(int)$editUser['id'].'">
-    </form>
-    <form id="sideUnverifyFaceForm" method="post" class="d-none" onsubmit="return confirm(' . htmlspecialchars($confirmUnverify, ENT_QUOTES, 'UTF-8') . ')">
-      <input type="hidden" name="_csrf" value="'.e(csrf_token()).'">
-      <input type="hidden" name="action" value="unverify_face">
-      <input type="hidden" name="user_id" value="'.(int)$editUser['id'].'">
-    </form>
-    <form id="sideDeleteFaceForm" method="post" class="d-none" onsubmit="return confirm(' . htmlspecialchars($confirmDelFace, ENT_QUOTES, 'UTF-8') . ')">
-      <input type="hidden" name="_csrf" value="'.e(csrf_token()).'">
-      <input type="hidden" name="action" value="delete_face">
-      <input type="hidden" name="user_id" value="'.(int)$editUser['id'].'">
-    </form>';
-}
-
-$body = '
-'.$flashHtml.'
-'.$errorHtml.'
-'.$pendingBannerHtml.'
-
-<!-- BROWSER MOCKUP CONTAINER & HERO BANNER (PERFECTLY SYMMETRICAL RECREATION OF REFERENCE IMAGE) -->
-<div class="browser-mockup-frame mb-4">
-  <!-- Topbar Mockup Header: 3 Mathematically Balanced Sections so Address Pill is DEAD-CENTERED -->
-  <div class="browser-mockup-topbar">
-    <div class="browser-topbar-col-left">
-      <div class="browser-traffic-dots">
-        <span class="browser-traffic-dot browser-dot-amber"></span>
-        <span class="browser-traffic-dot browser-dot-cyan"></span>
-        <span class="browser-traffic-dot browser-dot-green"></span>
-      </div>
-    </div>
-    
-    <div class="browser-topbar-col-center">
-      <div class="browser-address-pill">
-        <i class="bi bi-shield-lock-fill text-success" style="font-size: 0.75rem;"></i>
-        <span>bankmitra.id/users_admin.php</span>
-      </div>
-    </div>
-
-    <div class="browser-topbar-col-right">
-      <div class="floating-toast-pill">
-        <div class="floating-toast-icon-amber">
-          <i class="bi bi-star-fill"></i>
-        </div>
-        <div class="text-start">
-          <div class="fw-bold text-dark" style="font-size: 0.76rem; line-height: 1.2;">IT Security Review</div>
-          <div class="text-muted" style="font-size: 0.68rem;">Operations Center · Active</div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Inner Canvas with Gradient Hero Banner & Modern Metric Cards -->
-  <div class="p-3 p-md-4">
-    <!-- Hero Banner Card with Layered Smooth Waves and Exact Reference Icons -->
-    <div class="card-hero-neo mb-4">
-      <!-- Wave Layer Overlays at Bottom -->
-      <svg class="position-absolute bottom-0 start-0 w-100" style="height: 60px; pointer-events: none; opacity: 0.22;" preserveAspectRatio="none" viewBox="0 0 1200 120">
-        <path d="M0,0 C150,90 400,100 600,40 C800,-20 1050,80 1200,30 L1200,120 L0,120 Z" fill="#FFFFFF"></path>
-      </svg>
-      <svg class="position-absolute bottom-0 start-0 w-100" style="height: 40px; pointer-events: none; opacity: 0.32;" preserveAspectRatio="none" viewBox="0 0 1200 120">
-        <path d="M0,40 C300,10 600,80 900,30 C1050,10 1150,50 1200,60 L1200,120 L0,120 Z" fill="#FFFFFF"></path>
-      </svg>
-
-      <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 position-relative" style="z-index: 2;">
-        <div style="max-width: 620px;">
-          <h2 class="display-6 fw-bold mb-1 text-white" style="letter-spacing: -0.025em;">Bank Mitra IT Operations</h2>
-          <p class="text-white text-opacity-95 mb-3" style="font-size: 0.98rem; font-weight: 500;">
-            Kelola akun petugas, otoritas hak akses cabang, serta verifikasi autentikasi biometrik wajah presensi.
-          </p>
-          <div class="d-flex flex-wrap align-items-center gap-2.5">
-            <a href="#formAddUser" class="btn-hero-pill text-decoration-none d-inline-flex align-items-center gap-2">
-              <i class="bi bi-person-plus-fill"></i> Tambah Pengguna Baru
-            </a>
-          </div>
-        </div>
-
-        <!-- Decorative Right Badges (Exact Teardrop Pin & Radiating Sun Icon from Reference) -->
-        <div class="d-none d-md-flex align-items-center gap-4">
-          <!-- Teardrop Location Marker -->
-          <div class="hero-pin-marker" title="Data Center IT Bank Mitra">
-            <svg width="40" height="48" viewBox="0 0 44 52" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M22 0C9.85 0 0 9.85 0 22C0 36 22 52 22 52C22 52 44 36 44 22C44 9.85 34.15 0 22 0Z" fill="#1D4ED8"/>
-              <circle cx="22" cy="22" r="9" fill="#FFFFFF"/>
-            </svg>
-          </div>
-
-          <!-- Radiating Yellow Sun Icon -->
-          <div class="hero-sun-container" title="System Operational & Normal">
-            <svg width="68" height="68" viewBox="0 0 68 68" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <circle cx="34" cy="34" r="17" fill="#FDE047"/>
-              <rect x="31" y="2" width="6" height="10" rx="3" fill="#FDE047"/>
-              <rect x="31" y="56" width="6" height="10" rx="3" fill="#FDE047"/>
-              <rect x="2" y="31" width="10" height="6" rx="3" fill="#FDE047"/>
-              <rect x="56" y="31" width="10" height="6" rx="3" fill="#FDE047"/>
-              <rect x="11.5" y="11.5" width="6" height="10" rx="3" transform="rotate(-45 11.5 11.5)" fill="#FDE047"/>
-              <rect x="49.5" y="49.5" width="6" height="10" rx="3" transform="rotate(-45 49.5 49.5)" fill="#FDE047"/>
-              <rect x="49.5" y="11.5" width="10" height="6" rx="3" transform="rotate(-45 49.5 11.5)" fill="#FDE047"/>
-              <rect x="11.5" y="49.5" width="10" height="6" rx="3" transform="rotate(-45 11.5 49.5)" fill="#FDE047"/>
-            </svg>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- 3 Symmetrical Metric Cards (Exact Proportions, Balanced Heights) -->
-    <div class="row g-3 mb-2">
-      <!-- Card 1: Visitors Today / Total Pengguna -->
-      <div class="col-md-4">
-        <div class="card-metric-modern">
-          <div>
-            <div class="metric-title-muted">Total Pengguna Terdaftar</div>
-            <div class="metric-number-bold">'.number_format($totalUsers).'</div>
-          </div>
-          <div class="small text-muted mt-2 d-flex align-items-center gap-2" style="font-size: 0.78rem;">
-            <span class="text-success fw-bold"><i class="bi bi-check-circle-fill"></i> '.$countActive.' Aktif</span>
-            <span class="text-secondary">·</span>
-            <span class="text-danger fw-semibold"><i class="bi bi-x-circle-fill"></i> '.$countNonactive.' Nonaktif</span>
-          </div>
-        </div>
-      </div>
-
-      <!-- Card 2: Customer Rating / Biometrik Wajah Rating -->
-      <div class="col-md-4">
-        <div class="card-metric-modern">
-          <div>
-            <div class="metric-title-muted">Verifikasi Biometrik Wajah</div>
-            <div class="metric-number-bold d-flex align-items-center gap-2">
-              <span>'.$ratingScore.'</span>
-              <i class="bi bi-star-fill text-warning" style="font-size: 1.5rem;"></i>
-            </div>
-          </div>
-          <div class="small text-muted mt-2" style="font-size: 0.78rem;">
-            <span class="fw-bold text-dark">'.$countFaceVerified.'</span> dari '.$totalUsers.' petugas terverifikasi
-          </div>
-        </div>
-      </div>
-
-      <!-- Card 3: Open Now / Status Sistem Mint Green -->
-      <div class="col-md-4">
-        <div class="card-status-mint">
-          <div>
-            <div class="metric-title-muted" style="color: #047857 !important;">Status Layanan Sistem</div>
-            <div class="status-heading mt-1">
-              <span class="pulse-dot-green"></span>
-              <span>Sistem Aktif</span>
-            </div>
-          </div>
-          <div class="status-subtext mt-2">
-            <i class="bi bi-shield-check me-1"></i> 24/7 IT Operations Center · Online
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Upward Trend Chart with Overlapping Floating Trend Badge (Exact Reference Layout) -->
-    <div class="position-relative mt-2 pt-1 mb-2">
-      <div class="w-100 position-relative overflow-hidden rounded-4 trend-chart-box" style="height: 72px; border: 1px solid #E2E8F0;">
-        <svg viewBox="0 0 1000 72" preserveAspectRatio="none" style="width: 100%; height: 100%;">
-          <defs>
-            <linearGradient id="chartGrad" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stop-color="#10B981" stop-opacity="0.28"/>
-              <stop offset="100%" stop-color="#10B981" stop-opacity="0.0"/>
-            </linearGradient>
-          </defs>
-          <path d="M0,58 Q250,48 500,34 T1000,10 L1000,72 L0,72 Z" fill="url(#chartGrad)"/>
-          <path d="M0,58 Q250,48 500,34 T1000,10" fill="none" stroke="#10B981" stroke-width="3" stroke-linecap="round"/>
-          <circle cx="994" cy="10" r="5" fill="#10B981" stroke="#FFFFFF" stroke-width="2"/>
-        </svg>
-        <div class="position-absolute top-0 end-0 p-2 text-muted" style="font-size: 0.72rem; font-weight: 600;">
-          Aktivitas Petugas · 7 Hari Terakhir
-        </div>
-      </div>
-
-      <!-- Floating Trend Badge Overlapping Left of Chart -->
-      <div class="position-absolute" style="left: 16px; bottom: 10px; z-index: 4;">
-        <div class="badge-floating-trend shadow">
-          <div class="trend-icon-box">
-            <i class="bi bi-graph-up-arrow"></i>
-          </div>
-          <div>
-            <div class="fw-bold text-dark" style="font-size: 0.88rem;">+'.$countTeknisi.' teknisi bertugas</div>
-            <div class="text-muted small" style="font-size: 0.74rem;">'.$bioPercent.'% cakupan biometrik wajah terverifikasi</div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- DATA SECTION: TABLE & STICKY FORM (PERFECTLY SYMMETRICAL TOP ACCENT STRIPES & INPUTS) -->
-<div class="row g-4 align-items-start">
-  <!-- Kolom Kiri: Tabel Daftar Pengguna & Live Search Toolbar -->
-  <div class="col-xl-8 col-lg-7">
-    <div class="card p-0 overflow-hidden shadow-sm h-100 border-0" style="border-radius: 20px;">
-      
-      <!-- Table Header & Live Search Bar with Symmetrical Responsive Inputs -->
-      <div class="card-header bg-white py-3.5 px-4 border-bottom" style="border-top: 4px solid #0EA5E9; border-top-left-radius: 20px; border-top-right-radius: 20px;">
-        <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-3">
-          <div class="fw-bold text-dark text-uppercase small d-flex align-items-center gap-2" style="letter-spacing: 0.05em;">
-            <i class="bi bi-person-badge text-primary fs-5"></i>
-            <span>Daftar Pengguna Sistem</span>
-            <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 rounded-pill px-2.5 py-1 font-monospace" id="badgeTotalUsers">'.$totalUsers.'</span>
-          </div>
-          <div class="small text-muted" id="userFilteredCounter">
-            Menampilkan <strong id="shownCount" class="text-dark">'.$totalUsers.'</strong> pengguna
-          </div>
-        </div>
-
-        <!-- Filter & Search Toolbar Controls (All 38px High, Perfectly Symmetrical) -->
-        <div class="row g-2 align-items-center">
-          <div class="col-lg-5 col-md-12">
-            <div class="input-group">
-              <span class="input-group-text bg-light border-end-0 text-muted" style="border-radius: 9999px 0 0 9999px; height: 38px;"><i class="bi bi-search"></i></span>
-              <input type="text" id="userSearchInput" class="form-control bg-light border-start-0 ps-0" style="border-radius: 0 9999px 9999px 0; font-size: 0.84rem; height: 38px;" placeholder="Cari nama, username, no. telp...">
-              <button class="btn btn-outline-secondary border" type="button" id="btnClearSearch" title="Reset Pencarian" style="display: none; border-radius: 9999px; height: 38px;"><i class="bi bi-x-lg"></i></button>
-            </div>
-          </div>
-          <div class="col-lg-7 col-md-12">
-            <div class="row g-2">
-              <div class="col-4">
-                <select id="userFilterRole" class="form-select form-select-sm" style="border-radius: 9999px; height: 38px; font-size: 0.8rem;">
-                  <option value="all">Semua Peran</option>
-                  <option value="teknisi">Teknisi IT</option>
-                  <option value="sdm">SDM &amp; Umum</option>
-                  <option value="auditor">Auditor</option>
-                  <option value="admin">Admin</option>
-                </select>
-              </div>
-              <div class="col-4">
-                <select id="userFilterBio" class="form-select form-select-sm" style="border-radius: 9999px; height: 38px; font-size: 0.8rem;">
-                  <option value="all">Biometrik</option>
-                  <option value="verified">Terverifikasi</option>
-                  <option value="pending">Menunggu</option>
-                  <option value="none">Belum Ada</option>
-                </select>
-              </div>
-              <div class="col-4">
-                <select id="userFilterStatus" class="form-select form-select-sm" style="border-radius: 9999px; height: 38px; font-size: 0.8rem;">
-                  <option value="all">Status</option>
-                  <option value="aktif">Aktif</option>
-                  <option value="nonaktif">Nonaktif</option>
-                </select>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- User List Table with Symmetrical Column Widths and Cell Alignments -->
-      <div class="table-responsive">
-        <table class="table table-hover align-middle mb-0" id="userTable">
-          <thead>
-            <tr class="text-uppercase" style="font-size: 0.72rem; letter-spacing: 0.05em; background: #F8FAFC;">
-              <th style="width: 50px;" class="text-center font-monospace">NO</th>
-              <th style="min-width: 220px;">PROFIL PETUGAS</th>
-              <th style="width: 140px;" class="text-center">PERAN</th>
-              <th style="width: 160px;" class="text-center">BIOMETRIK</th>
-              <th style="width: 100px;" class="text-center">STATUS</th>
-              <th style="width: 160px;" class="text-center">AKSI</th>
-            </tr>
-          </thead>
-          <tbody id="userTableBody">
-            '.$userRowsHtml.'
-          </tbody>
-        </table>
-      </div>
-
-      <!-- No Results State -->
-      <div id="noResultsState" class="text-center py-5 d-none">
-        <div class="rounded-circle bg-light d-inline-flex align-items-center justify-content-center p-3 mb-3 text-muted">
-          <i class="bi bi-search fs-2"></i>
-        </div>
-        <h6 class="fw-bold text-dark mb-1">Pengguna Tidak Ditemukan</h6>
-        <p class="text-muted small mb-3">Tidak ada data pengguna yang sesuai dengan kata kunci atau filter yang Anda pilih.</p>
-        <button type="button" class="btn btn-outline-primary btn-sm btn-pill" id="btnResetAllFilters">
-          <i class="bi bi-arrow-counterclockwise me-1"></i> Reset Semua Filter
-        </button>
-      </div>
-    </div>
-  </div>
-
-  <!-- Kolom Kanan: Form Tambah / Edit Pengguna (Sticky, Perfectly Symmetrical Field Groups) -->
-  <div class="col-xl-4 col-lg-5">
-    <div class="card p-0 overflow-hidden shadow-sm border-0 sticky-form" style="border-radius: 20px;">
-      '.$formCardHeader.'
-      '.$formContent.'
-      '.$sideFaceForms.'
-    </div>
-  </div>
-</div>';
-
-// Modal Pratinjau Foto Wajah Petugas (High Elevation & Symmetrical Centered Layout)
-$csrfTokenEscaped = e(csrf_token());
-$modalHtml = <<<HTML
-<div class="modal fade" id="modalPreviewFace" tabindex="-1" aria-labelledby="modalPreviewFaceLabel" aria-hidden="true">
-  <div class="modal-dialog modal-dialog-centered" style="max-width: 440px;">
-    <div class="modal-content border-0 shadow-lg" style="border-radius: 24px; overflow: hidden;">
-      <div class="modal-header py-3 px-4 bg-dark text-white border-0" style="background: linear-gradient(135deg, #051329 0%, #0A1E38 100%) !important;">
-        <h6 class="modal-title fs-6 fw-bold mb-0 d-flex align-items-center gap-2" id="modalPreviewFaceLabel">
-          <i class="bi bi-person-bounding-box text-primary"></i> Kelola Biometrik Wajah
-        </h6>
-        <button type="button" class="btn-close btn-close-white btn-sm" data-bs-dismiss="modal" aria-label="Close"></button>
-      </div>
-      <div class="modal-body text-center p-4">
-        <div class="position-relative d-inline-block mb-3">
-          <img id="previewFaceImg" src="" alt="Foto Wajah Petugas" class="rounded-circle shadow-sm border border-4 border-white" style="width: 140px; height: 140px; object-fit: cover; box-shadow: 0 4px 18px rgba(37,99,235,0.2) !important;">
-        </div>
-        <h5 class="fw-bold mb-1 text-dark" id="previewFaceNama">-</h5>
-        <div class="text-muted small font-monospace mb-2" id="previewFaceUser">@-</div>
-        <div class="d-flex align-items-center justify-content-center gap-2 mb-3">
-          <div id="previewFaceRoleBadge"></div>
-          <div id="previewFaceStatusPill"></div>
-        </div>
-        <div class="p-3 bg-light rounded-4 text-muted small border text-start" style="font-size: 0.78rem; line-height: 1.5;">
-          <div class="d-flex align-items-center gap-1.5 fw-bold text-dark mb-1">
-            <i class="bi bi-shield-lock-fill text-primary"></i> Autentikasi Biometrik Petugas
-          </div>
-          Vektor wajah disimpan secara terenkripsi untuk validasi presensi &amp; kepemilikan checklist kartu pemeliharaan.
-        </div>
-      </div>
-      <div class="modal-footer py-3 px-4 bg-light border-0 d-flex flex-wrap align-items-center justify-content-between gap-2">
-        <div class="d-flex align-items-center gap-1.5">
-          <!-- Form Verifikasi Wajah Modal -->
-          <form method="post" id="formModalVerifyFace" class="m-0" onsubmit="return confirm('Verifikasi dan setujui biometrik wajah petugas ini?')">
-            <input type="hidden" name="_csrf" value="{$csrfTokenEscaped}">
-            <input type="hidden" name="action" value="approve_face">
-            <input type="hidden" name="user_id" id="modalUserIdVerify" value="0">
-            <button type="submit" id="btnModalVerifyFace" class="btn btn-success btn-sm btn-pill fw-semibold">
-              <i class="bi bi-shield-check me-1"></i> Verifikasi Muka
-            </button>
-          </form>
-
-          <!-- Form Batal Verifikasi Modal -->
-          <form method="post" id="formModalUnverifyFace" class="m-0" onsubmit="return confirm('Batalkan status verifikasi biometrik wajah petugas ini?')">
-            <input type="hidden" name="_csrf" value="{$csrfTokenEscaped}">
-            <input type="hidden" name="action" value="unverify_face">
-            <input type="hidden" name="user_id" id="modalUserIdUnverify" value="0">
-            <button type="submit" id="btnModalUnverifyFace" class="btn btn-outline-warning btn-sm btn-pill fw-semibold" style="display: none;">
-              <i class="bi bi-arrow-counterclockwise me-1"></i> Batal Verifikasi
-            </button>
-          </form>
-
-          <!-- Form Hapus Muka Modal -->
-          <form method="post" id="formModalDeleteFace" class="m-0" onsubmit="return confirm('Apakah Anda yakin ingin MENGHAPUS data biometrik wajah petugas ini? Foto dan sampel biometrik akan dihapus secara permanen.')">
-            <input type="hidden" name="_csrf" value="{$csrfTokenEscaped}">
-            <input type="hidden" name="action" value="delete_face">
-            <input type="hidden" name="user_id" id="modalUserIdDelete" value="0">
-            <button type="submit" id="btnModalDeleteFace" class="btn btn-outline-danger btn-sm btn-pill fw-semibold">
-              <i class="bi bi-trash me-1"></i> Hapus Muka
-            </button>
-          </form>
-        </div>
-
-        <div class="d-flex align-items-center gap-2">
-          <a id="btnPreviewEnrollAgain" href="#" class="btn btn-outline-primary btn-sm btn-pill fw-semibold"><i class="bi bi-camera me-1"></i> Foto Ulang</a>
-          <button type="button" class="btn btn-secondary btn-sm px-3 btn-pill fw-semibold" data-bs-dismiss="modal">Tutup</button>
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
-
+// -------------------------------------------------------------
+// 5. Render Halaman (Kombai Teal Design System)
+// -------------------------------------------------------------
+$page_title = 'Kelola Akun Pengguna';
+
+ob_start();
+?>
 <style>
-/* SYMMETRY & BALANCED LAYOUT SYSTEM */
-.cursor-pointer { cursor: pointer; }
-.hover-primary:hover { color: #2563EB !important; }
-
-/* Balanced 3-Column Topbar for Pure Mathematical Center */
-.browser-topbar-col-left {
-  width: 220px;
-  display: flex;
+/* Kombai Table & Badges */
+.status-pill {
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 9999px;
+  white-space: nowrap !important;
+  display: inline-flex;
   align-items: center;
-}
-.browser-topbar-col-center {
-  flex-grow: 1;
-  display: flex;
   justify-content: center;
+  text-align: center;
+  line-height: 1.2;
 }
-.browser-topbar-col-right {
-  width: 220px;
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
+.table thead th {
+  background: #F4F5F7;
+  color: #53595F;
+  font-size: 11px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  font-weight: 700;
+  border-bottom: 1px solid #D1D5D8;
+  padding: 10px 14px;
+  vertical-align: middle;
 }
-@media (max-width: 768px) {
-  .browser-topbar-col-left { width: auto; }
-  .browser-topbar-col-right { display: none !important; }
+.table tbody td {
+  padding: 11px 14px;
+  font-size: 13px;
+  color: #1B2A3A;
+  vertical-align: middle;
+  border-bottom: 1px solid #E5E7EB;
+}
+.table-hover tbody tr:hover {
+  background-color: #F8FAF9 !important;
 }
 
-/* Symmetrical Action Buttons (Uniform 32x32px square) */
+/* Symmetrical Action Buttons (30x30px) */
 .action-btn-sq {
-  width: 32px !important;
-  height: 32px !important;
+  width: 30px !important;
+  height: 30px !important;
   padding: 0 !important;
   display: inline-flex !important;
   align-items: center !important;
   justify-content: center !important;
-  border-radius: 8px !important;
-  font-size: 0.85rem !important;
+  border-radius: 6px !important;
+  font-size: 0.82rem !important;
+  transition: all 0.15s ease;
 }
 .action-btn-sq-placeholder {
-  width: 32px !important;
-  height: 32px !important;
+  width: 30px !important;
+  height: 30px !important;
   display: inline-flex !important;
   align-items: center !important;
   justify-content: center !important;
-  font-size: 0.85rem !important;
+  font-size: 0.82rem !important;
 }
 
-/* Symmetrical Form Input Groups */
-.form-label-custom {
-  font-size: 0.72rem !important;
+/* Symmetrical Form Input Controls */
+.form-label-kombai {
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  color: #1B2A3A !important;
+  text-transform: uppercase !important;
   letter-spacing: 0.04em !important;
-  margin-bottom: 5px !important;
+  margin-bottom: 4px !important;
 }
 .input-icon-box {
-  width: 42px !important;
-  height: 42px !important;
+  width: 38px !important;
+  height: 38px !important;
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
-  border-radius: 12px 0 0 12px !important;
-  border-color: #E2E8F0 !important;
+  border-radius: 8px 0 0 8px !important;
+  border-color: #D1D5D8 !important;
+  background-color: #F8FAF9 !important;
+  color: #53595F !important;
 }
-.form-control-custom {
-  height: 42px !important;
-  border-radius: 0 12px 12px 0 !important;
-  border-color: #E2E8F0 !important;
-  font-size: 0.86rem !important;
+.form-control-kombai {
+  height: 38px !important;
+  border-radius: 0 8px 8px 0 !important;
+  border-color: #D1D5D8 !important;
+  font-size: 13px !important;
+  color: #1B2A3A !important;
 }
-
-/* Reference Image Icons */
-.hero-pin-marker {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  filter: drop-shadow(0 4px 12px rgba(29, 78, 216, 0.4));
-  transition: transform 0.2s ease;
+.form-control-kombai:focus, .form-select:focus {
+  border-color: #0E5C58 !important;
+  box-shadow: 0 0 0 2px rgba(14, 92, 88, 0.15) !important;
 }
-.hero-pin-marker:hover {
-  transform: translateY(-2px);
-}
-.hero-sun-container {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  filter: drop-shadow(0 0 16px rgba(253, 224, 71, 0.6));
-  animation: sunGlow 4s infinite ease-in-out;
-}
-@keyframes sunGlow {
-  0%, 100% { transform: scale(1); filter: drop-shadow(0 0 14px rgba(253, 224, 71, 0.5)); }
-  50% { transform: scale(1.05); filter: drop-shadow(0 0 22px rgba(253, 224, 71, 0.8)); }
-}
+.cursor-pointer { cursor: pointer; }
 
 @media (min-width: 992px) {
   .sticky-form {
@@ -1219,6 +324,775 @@ $modalHtml = <<<HTML
   }
 }
 </style>
+
+<!-- HEADER UTAMA & BREADCRUMB -->
+<div class="flex flex-col md:flex-row md:items-center justify-between gap-3 mb-4">
+  <div>
+    <div class="text-[11px] font-bold text-[#0E5C58] uppercase tracking-wider mb-1 flex items-center gap-1.5">
+      <i class="bi bi-shield-lock-fill"></i> MANAJEMEN AKSES &amp; KEAMANAN
+    </div>
+    <div class="flex items-center gap-2.5 flex-wrap">
+      <h1 class="text-[24px] font-bold text-[#1B2A3A] m-0 leading-tight">Kelola Akun Pengguna</h1>
+      <span class="px-2.5 py-0.5 text-[11px] font-semibold bg-[#D9F1EF] text-[#0E5C58] border border-[#A7E2DC] rounded-full inline-flex items-center gap-1">
+        <i class="bi bi-people-fill"></i> IT Operations
+      </span>
+    </div>
+    <div class="text-[13px] text-[#53595F] mt-1">
+      Manajemen kredensial login, wewenang hak akses peran sistem, dan verifikasi sampel biometrik wajah presensi teknisi.
+    </div>
+  </div>
+
+  <div class="flex flex-wrap items-center gap-2 shrink-0">
+    <a href="#formUserSection" class="h-[36px] px-3.5 bg-[#0E5C58] hover:bg-[#094340] text-white rounded-[8px] text-[13px] font-semibold transition-colors inline-flex items-center gap-1.5 border-0 shadow-xs text-decoration-none cursor-pointer">
+      <i class="bi bi-person-plus-fill"></i> <span>Tambah Pengguna</span>
+    </a>
+    <a href="<?= e(module_url('user_biometric_enroll.php')) ?>" class="h-[36px] px-3 bg-white border border-[#D1D5D8] rounded-[8px] text-[13px] font-medium text-[#1B2A3A] hover:bg-[#F4F5F7] transition-colors inline-flex items-center gap-1.5 text-decoration-none shadow-xs">
+      <i class="bi bi-camera text-[#0E5C58]"></i> <span>Pendaftaran Wajah</span>
+    </a>
+    <a href="<?= e(module_url('dashboard.php')) ?>" class="h-[36px] px-3 bg-white border border-[#D1D5D8] rounded-[8px] text-[13px] font-medium text-[#1B2A3A] hover:bg-[#F4F5F7] transition-colors inline-flex items-center gap-1.5 text-decoration-none shadow-xs">
+      <i class="bi bi-speedometer2 text-[#53595F]"></i> <span>Dashboard</span>
+    </a>
+  </div>
+</div>
+
+<!-- ALERT / FLASH MESSAGES -->
+<?php if ($flash): ?>
+<div class="alert alert-success alert-dismissible fade show border-0 shadow-xs mb-4" style="border-left: 4px solid #10B981 !important; border-radius: 8px; background: #ECFDF5; color: #065F46;">
+  <div class="d-flex align-items-center">
+    <i class="bi bi-check-circle-fill me-2 fs-5 text-[#10B981]"></i>
+    <div class="text-[13px]"><?= e($flash) ?></div>
+  </div>
+  <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+</div>
+<?php endif; ?>
+
+<?php if ($error): ?>
+<div class="alert alert-danger alert-dismissible fade show border-0 shadow-xs mb-4" style="border-left: 4px solid #EF4444 !important; border-radius: 8px; background: #FEF2F2; color: #991B1B;">
+  <div class="d-flex align-items-center">
+    <i class="bi bi-exclamation-triangle-fill me-2 fs-5 text-[#EF4444]"></i>
+    <div class="text-[13px]"><?= e($error) ?></div>
+  </div>
+  <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+</div>
+<?php endif; ?>
+
+<!-- PENDING FACE APPROVAL BANNER (JIKA ADA PERMINTAAN SAMPEL WAJAH) -->
+<?php if (!empty($pendingFaceUsers)): ?>
+<div class="bg-[#FFFDF5] border border-[#FDE68A] rounded-[10px] p-4 mb-4 shadow-xs" style="border-left: 5px solid #F59E0B !important;">
+  <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
+    <div>
+      <div class="flex items-center gap-2 mb-1">
+        <span class="px-2 py-0.5 text-[11px] font-bold bg-[#FEF3C7] text-[#92400E] border border-[#FCD34D] rounded-full inline-flex items-center gap-1">
+          <i class="bi bi-shield-exclamation"></i> MEMERLUKAN PERSETUJUAN ADMIN
+        </span>
+        <span class="px-2 py-0.5 text-[11px] font-bold bg-[#F59E0B] text-white rounded-full font-mono"><?= count($pendingFaceUsers) ?> Permintaan</span>
+      </div>
+      <h6 class="text-[15px] font-bold text-[#1B2A3A] mb-0 flex items-center gap-1.5">
+        <i class="bi bi-person-bounding-box text-[#F59E0B]"></i> Verifikasi Sampel Biometrik Wajah Teknisi Mobile
+      </h6>
+      <div class="text-[12px] text-[#53595F] mt-0.5">
+        Petugas telah mendaftarkan sampel foto wajah melalui smartphone saat bertugas. Silakan tinjau dan setujui untuk autentikasi checklist &amp; presensi.
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-3">
+    <?php foreach ($pendingFaceUsers as $pu): 
+      $puId = (int)$pu['id'];
+      $puNama = (string)($pu['nama'] ?? 'Tanpa Nama');
+      $puUsername = (string)($pu['username'] ?? '');
+      $puRole = (string)($pu['role'] ?? 'teknisi');
+      $puPhoto = trim((string)($pu['face_photo'] ?? ''));
+    ?>
+    <div class="col-md-6 col-lg-4">
+      <div class="bg-white border border-[#E5E7EB] rounded-[10px] p-3 shadow-xs h-100 flex flex-col justify-between">
+        <div class="flex items-center gap-3 mb-2.5">
+          <?php if ($puPhoto !== ''): ?>
+            <img src="<?= e($puPhoto) ?>" class="rounded-full border border-[#D1D5D8] shadow-xs js-preview-face cursor-pointer shrink-0" style="width: 44px; height: 44px; object-fit: cover;" data-photo="<?= e($puPhoto) ?>" data-nama="<?= e($puNama) ?>" data-username="<?= e($puUsername) ?>" data-role="<?= e($puRole) ?>" data-id="<?= $puId ?>" data-stat="pending" data-enroll-url="<?= e(module_url('user_biometric_enroll.php', ['id' => $puId])) ?>" title="Klik untuk pratinjau wajah">
+          <?php else: ?>
+            <div class="rounded-full bg-[#FEF3C7] text-[#D97706] font-bold flex items-center justify-center shrink-0 border border-[#FCD34D]" style="width: 44px; height: 44px;">
+              <i class="bi bi-person-bounding-box"></i>
+            </div>
+          <?php endif; ?>
+          <div class="min-w-0 flex-1">
+            <div class="text-[13px] font-bold text-[#1B2A3A] truncate"><?= e($puNama) ?></div>
+            <div class="text-[11px] font-mono text-[#53595F] truncate">@<?= e($puUsername) ?> &middot; <?= ucfirst(e($puRole)) ?></div>
+            <span class="inline-flex items-center gap-1 text-[10px] font-semibold text-[#D97706] bg-[#FEF3C7] px-1.5 py-0.5 rounded-full mt-0.5">
+              <i class="bi bi-hourglass-split"></i> Menunggu Verifikasi
+            </span>
+          </div>
+        </div>
+        <div class="flex gap-2 pt-2 border-t border-[#F3F4F6] mt-auto">
+          <form method="post" class="flex-1 m-0" onsubmit="return confirm('Setujui dan aktifkan biometrik wajah <?= addslashes($puNama) ?>?')">
+            <input type="hidden" name="_csrf" value="<?= e(csrf_token()) ?>">
+            <input type="hidden" name="action" value="approve_face">
+            <input type="hidden" name="user_id" value="<?= $puId ?>">
+            <button type="submit" class="w-full h-[30px] bg-[#10B981] hover:bg-[#059669] text-white rounded-[6px] text-[12px] font-semibold transition-colors flex items-center justify-center gap-1 border-0 cursor-pointer">
+              <i class="bi bi-check-circle-fill"></i> Setujui
+            </button>
+          </form>
+          <form method="post" class="m-0" onsubmit="return confirm('Tolak sampel foto wajah <?= addslashes($puNama) ?>?')">
+            <input type="hidden" name="_csrf" value="<?= e(csrf_token()) ?>">
+            <input type="hidden" name="action" value="reject_face">
+            <input type="hidden" name="user_id" value="<?= $puId ?>">
+            <button type="submit" class="h-[30px] px-2.5 bg-white hover:bg-[#FEE2E2] text-[#DC2626] border border-[#FECACA] rounded-[6px] text-[12px] font-semibold transition-colors flex items-center justify-center gap-1 cursor-pointer" title="Tolak Pendaftaran">
+              <i class="bi bi-x-circle"></i> Tolak
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+    <?php endforeach; ?>
+  </div>
+</div>
+<?php endif; ?>
+
+<!-- 3 SYMMETRICAL KOMBAI METRIC CARDS (88px) -->
+<div class="bg-[#FFFFFF] border border-[#D1D5D8] rounded-[10px] h-[88px] flex overflow-hidden shrink-0 mb-4">
+  <!-- Card 1: Total Pengguna Terdaftar -->
+  <div class="flex-1 flex flex-col justify-center px-6 border-r border-[#D1D5D8] relative hover:bg-[#F4F5F7] transition-colors">
+    <div class="absolute left-0 top-0 bottom-0 w-1 bg-[#0E5C58]"></div>
+    <div class="text-[28px] font-bold text-[#1B2A3A] tabular-nums leading-none">
+      <?= number_format($totalUsers) ?> <span class="text-[13px] font-normal text-[#53595F]">Pengguna</span>
+    </div>
+    <div class="text-[12px] font-medium text-[#53595F] mt-1.5 flex items-center gap-2">
+      <span class="text-[#10B981] font-semibold"><i class="bi bi-check-circle-fill me-0.5"></i> <?= $countActive ?> Aktif</span>
+      <span>&middot;</span>
+      <span class="text-[#EF4444] font-semibold"><i class="bi bi-x-circle-fill me-0.5"></i> <?= $countNonactive ?> Nonaktif</span>
+      <span class="text-[#53595F] ms-auto text-[11px] font-mono d-none d-lg-inline">100% Terkelola</span>
+    </div>
+  </div>
+
+  <!-- Card 2: Biometrik Wajah Terverifikasi -->
+  <div class="flex-1 flex flex-col justify-center px-6 border-r border-[#D1D5D8] relative hover:bg-[#F4F5F7] transition-colors">
+    <div class="absolute left-0 top-0 bottom-0 w-1 bg-[#10B981]"></div>
+    <div class="text-[28px] font-bold text-[#10B981] tabular-nums leading-none">
+      <?= $countFaceVerified ?> <span class="text-[13px] font-normal text-[#53595F]">/ <?= $totalUsers ?> Petugas</span>
+    </div>
+    <div class="text-[12px] font-medium text-[#53595F] mt-1.5 flex items-center gap-1.5">
+      <span class="text-[#0E5C58] font-bold"><?= $bioPercent ?>% Terverifikasi</span>
+      <span>&middot;</span>
+      <?php if ($countFacePending > 0): ?>
+        <span class="text-[#D97706] font-semibold"><i class="bi bi-hourglass-split"></i> <?= $countFacePending ?> Menunggu Approval</span>
+      <?php else: ?>
+        <span class="text-[#53595F]"><i class="bi bi-check-all text-[#10B981]"></i> Semua Wajah Lengkap</span>
+      <?php endif; ?>
+    </div>
+  </div>
+
+  <!-- Card 3: Distribusi Peran Akses -->
+  <div class="flex-1 flex flex-col justify-center px-6 relative hover:bg-[#F4F5F7] transition-colors">
+    <div class="absolute left-0 top-0 bottom-0 w-1 bg-[#0284C7]"></div>
+    <div class="text-[28px] font-bold text-[#1B2A3A] tabular-nums leading-none">
+      <?= $countTeknisi ?> <span class="text-[13px] font-normal text-[#53595F]">Teknisi IT</span>
+    </div>
+    <div class="text-[12px] font-medium text-[#53595F] mt-1.5 flex items-center gap-2">
+      <span class="text-[#0284C7] font-semibold"><i class="bi bi-tools me-0.5"></i> <?= $countTeknisi ?> IT</span>
+      <span>&middot;</span>
+      <span class="text-[#D97706] font-semibold"><i class="bi bi-person-workspace me-0.5"></i> <?= $countSdm ?> SDM</span>
+      <span>&middot;</span>
+      <span class="text-[#0E5C58] font-semibold"><i class="bi bi-shield-lock-fill me-0.5"></i> <?= $countAdmin ?> Admin</span>
+      <span>&middot;</span>
+      <span class="text-[#64748B] font-semibold"><i class="bi bi-eye-fill me-0.5"></i> <?= $countAuditor ?> Auditor</span>
+    </div>
+  </div>
+</div>
+
+<!-- SECTION DATA: TABEL PENGGUNA (KIRI) & FORM STICKY (KANAN) -->
+<div class="row g-4 align-items-start">
+  <!-- KOLOM KIRI: TABEL DAFTAR PENGGUNA & FILTER TOOLBAR -->
+  <div class="col-xl-8 col-lg-7">
+    <div class="bg-white border border-[#D1D5D8] rounded-[12px] shadow-xs overflow-hidden mb-4">
+      
+      <!-- Table Header & Counter -->
+      <div class="px-5 py-3.5 border-b border-[#D1D5D8] flex flex-wrap items-center justify-between gap-3 bg-white">
+        <div class="flex items-center gap-2">
+          <i class="bi bi-people-fill text-[#0E5C58] text-[16px]"></i>
+          <span class="text-[14px] font-bold text-[#1B2A3A] uppercase tracking-wide">Daftar Pengguna Sistem</span>
+          <span class="px-2 py-0.5 text-[11px] font-bold bg-[#D9F1EF] text-[#0E5C58] border border-[#A7E2DC] rounded-full font-mono" id="badgeTotalUsers"><?= $totalUsers ?></span>
+        </div>
+        <div class="text-[12px] text-[#53595F]" id="userFilteredCounter">
+          Menampilkan <strong id="shownCount" class="text-[#1B2A3A]"><?= $totalUsers ?></strong> pengguna
+        </div>
+      </div>
+
+      <!-- Filter Toolbar (Symmetrical 36px) -->
+      <div class="p-3.5 border-b border-[#D1D5D8] bg-[#F8FAF9]">
+        <div class="row g-2 align-items-center m-0">
+          <div class="col-lg-5 col-md-12 p-0 pe-md-1">
+            <div class="input-group">
+              <span class="input-group-text bg-white border-end-0 text-muted" style="border-radius: 8px 0 0 8px; height: 36px; border-color: #D1D5D8;"><i class="bi bi-search"></i></span>
+              <input type="text" id="userSearchInput" class="form-control border-start-0 ps-0" style="border-radius: 0 8px 8px 0; font-size: 13px; height: 36px; border-color: #D1D5D8;" placeholder="Cari nama, username, telepon...">
+              <button class="btn btn-outline-secondary border" type="button" id="btnClearSearch" title="Reset Pencarian" style="display: none; border-radius: 8px; height: 36px; border-color: #D1D5D8;"><i class="bi bi-x-lg"></i></button>
+            </div>
+          </div>
+          <div class="col-lg-7 col-md-12 p-0 ps-md-1">
+            <div class="row g-2 m-0">
+              <div class="col-4 p-0 pe-1">
+                <select id="userFilterRole" class="form-select form-select-sm" style="border-radius: 8px; height: 36px; font-size: 13px; border-color: #D1D5D8;">
+                  <option value="all">Semua Peran</option>
+                  <option value="teknisi">Teknisi IT</option>
+                  <option value="sdm">SDM &amp; Umum</option>
+                  <option value="auditor">Auditor</option>
+                  <option value="admin">Administrator</option>
+                </select>
+              </div>
+              <div class="col-4 p-0 px-1">
+                <select id="userFilterBio" class="form-select form-select-sm" style="border-radius: 8px; height: 36px; font-size: 13px; border-color: #D1D5D8;">
+                  <option value="all">Semua Biometrik</option>
+                  <option value="verified">Terverifikasi</option>
+                  <option value="pending">Menunggu</option>
+                  <option value="none">Belum Ada</option>
+                </select>
+              </div>
+              <div class="col-4 p-0 ps-1">
+                <select id="userFilterStatus" class="form-select form-select-sm" style="border-radius: 8px; height: 36px; font-size: 13px; border-color: #D1D5D8;">
+                  <option value="all">Semua Status</option>
+                  <option value="aktif">Aktif</option>
+                  <option value="nonaktif">Nonaktif</option>
+                </select>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tabel Pengguna -->
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0" id="userTable">
+          <thead>
+            <tr>
+              <th style="width: 45px;" class="text-center">NO</th>
+              <th style="min-width: 220px;">PROFIL PETUGAS</th>
+              <th style="width: 130px;" class="text-center">PERAN</th>
+              <th style="width: 150px;" class="text-center">BIOMETRIK WAJAH</th>
+              <th style="width: 95px;" class="text-center">STATUS</th>
+              <th style="width: 145px;" class="text-center">AKSI</th>
+            </tr>
+          </thead>
+          <tbody id="userTableBody">
+            <?php 
+            $no = 0;
+            foreach ($users as $u):
+              $no++;
+              $uId = (int)($u['id'] ?? 0);
+              $uNama = (string)($u['nama'] ?? '');
+              $uNick = trim((string)($u['nama_panggilan'] ?? ''));
+              $uUsername = (string)($u['username'] ?? '');
+              $uRole = strtolower((string)($u['role'] ?? 'teknisi'));
+              $uTelRaw = (string)($u['telepon'] ?? '');
+              $uTel = format_phone_number($uTelRaw);
+              $uStatus = (string)($u['status'] ?? 'Aktif');
+              $fDesc = trim((string)($u['face_descriptor'] ?? ''));
+              $fStat = strtolower(trim((string)($u['face_status'] ?? '')));
+              $uPhoto = trim((string)($u['face_photo'] ?? ''));
+              $isBeingEdited = ($editId === $uId);
+
+              // Filter Group
+              $filterRoleGroup = ($uRole === 'admin' || $uRole === 'administrator') ? 'admin' : ((in_array($uRole, ['sdm', 'hrd', 'umum', 'hrd_umum', 'sdm_umum', 'sdm & umum', 'sdm/hrd'], true) || str_contains($uRole, 'sdm')) ? 'sdm' : (($uRole === 'auditor' || $uRole === 'skai') ? 'auditor' : 'teknisi'));
+              $filterBioGroup = ($fStat === 'verified' || $fStat === 'terverifikasi') ? 'verified' : (($fStat === 'pending' || $fStat === 'menunggu') ? 'pending' : 'none');
+              $filterStatusGroup = (strcasecmp($uStatus, 'Nonaktif') === 0) ? 'nonaktif' : 'aktif';
+
+              // Role Badge
+              if ($filterRoleGroup === 'admin') {
+                $roleBadge = '<span class="status-pill" style="background:#D9F1EF; color:#0E5C58; border:1px solid #A7E2DC;"><i class="bi bi-shield-lock-fill me-1"></i> Admin</span>';
+              } elseif ($filterRoleGroup === 'sdm') {
+                $roleBadge = '<span class="status-pill" style="background:#FEF3C7; color:#92400E; border:1px solid #FCD34D;"><i class="bi bi-person-workspace me-1"></i> SDM &amp; Umum</span>';
+              } elseif ($filterRoleGroup === 'auditor') {
+                $roleBadge = '<span class="status-pill" style="background:#F1F5F9; color:#475569; border:1px solid #CBD5E1;"><i class="bi bi-eye-fill me-1"></i> Auditor</span>';
+              } else {
+                $roleBadge = '<span class="status-pill" style="background:#E0F2FE; color:#0369A1; border:1px solid #BAE6FD;"><i class="bi bi-tools me-1"></i> Teknisi IT</span>';
+              }
+
+              // Status Badge
+              if ($filterStatusGroup === 'nonaktif') {
+                $statusBadge = '<span class="status-pill" style="background:#FEF2F2; color:#991B1B; border:1px solid #FECACA;"><i class="bi bi-x-circle-fill me-1"></i> Nonaktif</span>';
+              } else {
+                $statusBadge = '<span class="status-pill" style="background:#ECFDF5; color:#065F46; border:1px solid #A7F3D0;"><i class="bi bi-check-circle-fill me-1"></i> Aktif</span>';
+              }
+
+              // Biometric Status
+              $hasFace = ($uPhoto !== '' || $fDesc !== '');
+              $isFaceVerified = ($fStat === 'verified' || $fStat === 'terverifikasi');
+              $isFacePending = ($fStat === 'pending' || $fStat === 'menunggu');
+
+              if (!$hasFace) {
+                $bioBadge = '<a href="'.e(module_url('user_biometric_enroll.php', ['id'=>$uId])).'" class="status-pill text-decoration-none" style="background:#F3F4F6; color:#6B7280; border:1px solid #E5E7EB;" title="Klik untuk daftarkan wajah"><i class="bi bi-camera me-1"></i> Belum Ada</a>';
+              } elseif ($isFaceVerified) {
+                $thumb = $uPhoto ? '<img src="'.e($uPhoto).'" class="rounded-full border shadow-xs js-preview-face cursor-pointer me-1.5" style="width: 22px; height: 22px; object-fit: cover;" data-photo="'.e($uPhoto).'" data-nama="'.e($uNama).'" data-username="'.e($uUsername).'" data-role="'.e($uRole).'" data-id="'.$uId.'" data-stat="'.e($fStat).'" data-enroll-url="'.e(module_url('user_biometric_enroll.php', ['id'=>$uId])).'">' : '';
+                $bioBadge = '<div class="d-inline-flex items-center">'.$thumb.'<span class="status-pill js-preview-face cursor-pointer" style="background:#ECFDF5; color:#065F46; border:1px solid #A7F3D0;" data-photo="'.e($uPhoto).'" data-nama="'.e($uNama).'" data-username="'.e($uUsername).'" data-role="'.e($uRole).'" data-id="'.$uId.'" data-stat="'.e($fStat).'" data-enroll-url="'.e(module_url('user_biometric_enroll.php', ['id'=>$uId])).'"><i class="bi bi-shield-check me-1"></i> Terverifikasi</span></div>';
+              } elseif ($isFacePending) {
+                $thumb = $uPhoto ? '<img src="'.e($uPhoto).'" class="rounded-full border border-warning shadow-xs js-preview-face cursor-pointer me-1.5" style="width: 22px; height: 22px; object-fit: cover;" data-photo="'.e($uPhoto).'" data-nama="'.e($uNama).'" data-username="'.e($uUsername).'" data-role="'.e($uRole).'" data-id="'.$uId.'" data-stat="'.e($fStat).'" data-enroll-url="'.e(module_url('user_biometric_enroll.php', ['id'=>$uId])).'">' : '';
+                $bioBadge = '<div class="d-inline-flex items-center">'.$thumb.'<span class="status-pill js-preview-face cursor-pointer" style="background:#FEF3C7; color:#92400E; border:1px solid #FCD34D;" data-photo="'.e($uPhoto).'" data-nama="'.e($uNama).'" data-username="'.e($uUsername).'" data-role="'.e($uRole).'" data-id="'.$uId.'" data-stat="'.e($fStat).'" data-enroll-url="'.e(module_url('user_biometric_enroll.php', ['id'=>$uId])).'"><i class="bi bi-hourglass-split me-1"></i> Menunggu</span></div>';
+              } else {
+                $thumb = $uPhoto ? '<img src="'.e($uPhoto).'" class="rounded-full border border-danger shadow-xs js-preview-face cursor-pointer me-1.5" style="width: 22px; height: 22px; object-fit: cover;" data-photo="'.e($uPhoto).'" data-nama="'.e($uNama).'" data-username="'.e($uUsername).'" data-role="'.e($uRole).'" data-id="'.$uId.'" data-stat="'.e($fStat).'" data-enroll-url="'.e(module_url('user_biometric_enroll.php', ['id'=>$uId])).'">' : '';
+                $bioBadge = '<div class="d-inline-flex items-center">'.$thumb.'<span class="status-pill js-preview-face cursor-pointer" style="background:#FEF2F2; color:#991B1B; border:1px solid #FECACA;" data-photo="'.e($uPhoto).'" data-nama="'.e($uNama).'" data-username="'.e($uUsername).'" data-role="'.e($uRole).'" data-id="'.$uId.'" data-stat="'.e($fStat).'" data-enroll-url="'.e(module_url('user_biometric_enroll.php', ['id'=>$uId])).'"><i class="bi bi-x-circle me-1"></i> Ditolak</span></div>';
+              }
+
+              // WhatsApp Link
+              $telHtml = '';
+              if ($uTel !== '-' && $uTel !== '') {
+                $cleanPhone = preg_replace('/[^0-9]/', '', $uTel);
+                $waPhone = str_starts_with($cleanPhone, '0') ? ('62' . substr($cleanPhone, 1)) : $cleanPhone;
+                $telHtml = '<div class="text-[11px] text-[#53595F] mt-0.5"><a href="https://wa.me/'.e($waPhone).'" target="_blank" rel="noopener noreferrer" class="text-decoration-none text-[#53595F] hover:text-[#0E5C58] inline-flex items-center gap-1" title="Kirim Pesan WhatsApp"><i class="bi bi-whatsapp text-[#16A34A]"></i> <span>'.e($uTel).'</span></a></div>';
+              }
+
+              // Avatar
+              if ($uPhoto !== '') {
+                $dot = $isFaceVerified ? '<span class="position-absolute bottom-0 end-0 badge rounded-full bg-success p-0 border border-white" style="width: 9px; height: 9px;"></span>' : ($isFacePending ? '<span class="position-absolute bottom-0 end-0 badge rounded-full bg-warning p-0 border border-white" style="width: 9px; height: 9px;"></span>' : '');
+                $avatarHtml = '<div class="position-relative js-preview-face cursor-pointer shrink-0" data-photo="'.e($uPhoto).'" data-nama="'.e($uNama).'" data-username="'.e($uUsername).'" data-role="'.e($uRole).'" data-id="'.$uId.'" data-stat="'.e($fStat).'" data-enroll-url="'.e(module_url('user_biometric_enroll.php', ['id'=>$uId])).'" title="Klik untuk kelola foto wajah"><img src="'.e($uPhoto).'" class="rounded-full border border-[#D1D5D8] shadow-xs" style="width: 40px; height: 40px; object-fit: cover;">'.$dot.'</div>';
+              } else {
+                $initial = strtoupper(substr($uNama ?: $uUsername, 0, 1));
+                $avatarHtml = '<div class="rounded-full d-flex align-items-center justify-content-center font-bold text-white shadow-xs shrink-0" style="width: 40px; height: 40px; font-size: 0.95rem; background: linear-gradient(135deg, #0E5C58 0%, #1B2A3A 100%);">'.$initial.'</div>';
+              }
+
+              // Permission check
+              $isTargetAdmin = in_array($filterRoleGroup, ['admin'], true);
+              $canManageUser = is_admin() || (!$isTargetAdmin);
+            ?>
+            <tr class="user-row <?= ($isBeingEdited ? 'bg-[#FEF9C3] font-medium' : '') ?>" data-nama="<?= strtolower(e($uNama)) ?>" data-username="<?= strtolower(e($uUsername)) ?>" data-phone="<?= strtolower(e($uTel)) ?>" data-role="<?= $filterRoleGroup ?>" data-bio="<?= $filterBioGroup ?>" data-status="<?= $filterStatusGroup ?>">
+              <td class="text-center font-mono text-[#53595F] text-[12px]"><?= sprintf('%02d', $no) ?></td>
+              <td>
+                <div class="flex items-center gap-2.5">
+                  <?= $avatarHtml ?>
+                  <div class="min-w-0">
+                    <div class="font-bold text-[#1B2A3A] text-[13px] flex items-center flex-wrap gap-1.5 leading-tight">
+                      <span><?= e($uNama) ?></span>
+                      <?php if ($uNick !== ''): ?>
+                        <span class="px-1.5 py-0.2 text-[10px] font-mono bg-[#F4F5F7] text-[#53595F] border border-[#D1D5D8] rounded" title="Paraf Kartu IT">Paraf: <?= e($uNick) ?></span>
+                      <?php endif; ?>
+                    </div>
+                    <div class="text-[11px] font-mono text-[#53595F]">@<?= e($uUsername) ?></div>
+                    <?= $telHtml ?>
+                  </div>
+                </div>
+              </td>
+              <td class="text-center"><?= $roleBadge ?></td>
+              <td class="text-center"><?= $bioBadge ?></td>
+              <td class="text-center"><?= $statusBadge ?></td>
+              <td class="text-center">
+                <div class="d-inline-flex align-items-center justify-content-center gap-1">
+                  <!-- 1. Enroll Button -->
+                  <a href="<?= e(module_url('user_biometric_enroll.php', ['id' => $uId])) ?>" class="btn btn-outline-primary action-btn-sq" title="Daftarkan / Foto Ulang Biometrik Wajah"><i class="bi bi-camera"></i></a>
+
+                  <!-- 2. Verify Face Button -->
+                  <?php if ($hasFace): ?>
+                    <?php if (!$isFaceVerified): ?>
+                      <form method="post" class="d-inline m-0" onsubmit="return confirm('Verifikasi dan setujui biometrik wajah <?= addslashes($uNama) ?>?')">
+                        <input type="hidden" name="_csrf" value="<?= e(csrf_token()) ?>">
+                        <input type="hidden" name="action" value="approve_face">
+                        <input type="hidden" name="user_id" value="<?= $uId ?>">
+                        <button type="submit" class="btn btn-outline-success action-btn-sq" title="Verifikasi / Setujui Wajah"><i class="bi bi-shield-check"></i></button>
+                      </form>
+                    <?php else: ?>
+                      <form method="post" class="d-inline m-0" onsubmit="return confirm('Batalkan status verifikasi wajah <?= addslashes($uNama) ?>?')">
+                        <input type="hidden" name="_csrf" value="<?= e(csrf_token()) ?>">
+                        <input type="hidden" name="action" value="unverify_face">
+                        <input type="hidden" name="user_id" value="<?= $uId ?>">
+                        <button type="submit" class="btn btn-outline-secondary action-btn-sq text-success border-success" title="Wajah Terverifikasi (Klik batalkan)"><i class="bi bi-patch-check-fill"></i></button>
+                      </form>
+                    <?php endif; ?>
+
+                    <!-- 3. Delete Face Button -->
+                    <form method="post" class="d-inline m-0" onsubmit="return confirm('Apakah Anda yakin ingin MENGHAPUS sampel biometrik wajah <?= addslashes($uNama) ?>?')">
+                      <input type="hidden" name="_csrf" value="<?= e(csrf_token()) ?>">
+                      <input type="hidden" name="action" value="delete_face">
+                      <input type="hidden" name="user_id" value="<?= $uId ?>">
+                      <button type="submit" class="btn btn-outline-danger action-btn-sq" title="Reset Biometrik Wajah"><i class="bi bi-person-x"></i></button>
+                    </form>
+                  <?php endif; ?>
+
+                  <!-- 4. Edit Button -->
+                  <?php if ($canManageUser): ?>
+                    <a href="<?= e(module_url('users_admin.php', ['edit' => $uId])) ?>" class="btn btn-outline-primary action-btn-sq <?= ($isBeingEdited ? 'active' : '') ?>" title="Edit Profil / Password"><i class="bi bi-pencil-square"></i></a>
+                  <?php endif; ?>
+
+                  <!-- 5. Delete User Button -->
+                  <?php if ($uId !== current_user_id() && $canManageUser): ?>
+                    <form method="post" class="d-inline m-0" onsubmit="return confirm('Apakah Anda yakin ingin menghapus akun <?= addslashes($uNama) ?> (@<?= addslashes($uUsername) ?>)? Tindakan ini permanen.')">
+                      <input type="hidden" name="_csrf" value="<?= e(csrf_token()) ?>">
+                      <input type="hidden" name="action" value="delete">
+                      <input type="hidden" name="user_id" value="<?= $uId ?>">
+                      <button type="submit" class="btn btn-outline-danger action-btn-sq" title="Hapus Akun Pengguna"><i class="bi bi-trash"></i></button>
+                    </form>
+                  <?php endif; ?>
+                </div>
+              </td>
+            </tr>
+            <?php endforeach; ?>
+            <?php if (empty($users)): ?>
+              <tr>
+                <td colspan="6" class="text-center py-5 text-muted">
+                  <i class="bi bi-people fs-1 d-block mb-2 opacity-50"></i>
+                  Belum ada data pengguna. Silakan buat akun pengguna baru pada form di samping.
+                </td>
+              </tr>
+            <?php endif; ?>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- No Results State -->
+      <div id="noResultsState" class="text-center py-5 d-none">
+        <div class="rounded-full bg-[#F4F5F7] d-inline-flex align-items-center justify-content-center p-3 mb-3 text-muted">
+          <i class="bi bi-search fs-2"></i>
+        </div>
+        <h6 class="font-bold text-[#1B2A3A] mb-1">Pengguna Tidak Ditemukan</h6>
+        <p class="text-[#53595F] text-[13px] mb-3">Tidak ada data pengguna yang sesuai dengan filter atau kata kunci pencarian.</p>
+        <button type="button" class="h-[34px] px-3 bg-white border border-[#D1D5D8] rounded-[8px] text-[13px] font-medium text-[#1B2A3A] hover:bg-[#F4F5F7] transition-colors inline-flex items-center gap-1.5 cursor-pointer shadow-xs" id="btnResetAllFilters">
+          <i class="bi bi-arrow-counterclockwise"></i> Reset Semua Filter
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- KOLOM KANAN: FORM TAMBAH / EDIT PENGGUNA (STICKY) -->
+  <div class="col-xl-4 col-lg-5" id="formUserSection">
+    <div class="bg-white border border-[#D1D5D8] rounded-[12px] shadow-xs overflow-hidden sticky-form">
+      
+      <?php if ($editUser): 
+        $editNama = $editUser['nama'] ?? '';
+        $editNick = $editUser['nama_panggilan'] ?? '';
+        $editUsername = $editUser['username'] ?? '';
+        $editRole = strtolower($editUser['role'] ?? 'teknisi');
+        $editTelepon = format_phone_number((string)($editUser['telepon'] ?? ''));
+        $editTeleponVal = ($editTelepon !== '-' && $editTelepon !== '') ? $editTelepon : '';
+        $editStatus = $editUser['status'] ?? 'Aktif';
+        $editPhoto = trim((string)($editUser['face_photo'] ?? ''));
+        $editFaceStat = strtolower(trim((string)($editUser['face_status'] ?? 'none')));
+      ?>
+        <!-- HEADER EDIT -->
+        <div class="px-4 py-3.5 border-b border-[#D1D5D8] bg-[#F8FAF9] flex items-center justify-between">
+          <div>
+            <div class="text-[11px] font-bold text-[#D97706] uppercase tracking-wider">MODIFIKASI PENGGUNA #<?= (int)$editUser['id'] ?></div>
+            <h6 class="text-[14px] font-bold text-[#1B2A3A] mb-0 flex items-center gap-1.5">
+              <i class="bi bi-pencil-square text-[#D97706]"></i> Edit Akun / Password
+            </h6>
+          </div>
+          <a href="<?= e(module_url('users_admin.php')) ?>" class="h-[30px] px-2.5 bg-white border border-[#D1D5D8] rounded-[6px] text-[12px] font-medium text-[#53595F] hover:bg-[#F4F5F7] transition-colors inline-flex items-center gap-1 text-decoration-none shadow-xs" title="Batal Edit">
+            <i class="bi bi-x-lg"></i> Batal
+          </a>
+        </div>
+
+        <form method="post" action="<?= e(module_url('users_admin.php')) ?>" class="p-4 m-0">
+          <input type="hidden" name="_csrf" value="<?= e(csrf_token()) ?>">
+          <input type="hidden" name="action" value="edit">
+          <input type="hidden" name="user_id" value="<?= (int)$editUser['id'] ?>">
+
+          <!-- Status Biometrik Eksisting User -->
+          <?php if ($editPhoto !== ''): 
+            $isEditVerified = ($editFaceStat === 'verified' || $editFaceStat === 'terverifikasi');
+            $isEditPending = ($editFaceStat === 'pending' || $editFaceStat === 'menunggu');
+          ?>
+          <div class="p-3 mb-3 bg-[#F8FAF9] rounded-[8px] border border-[#D1D5D8]">
+            <div class="flex items-center gap-3 mb-2">
+              <img src="<?= e($editPhoto) ?>" class="rounded-full border border-[#D1D5D8] shadow-xs" style="width: 44px; height: 44px; object-fit: cover;">
+              <div class="min-w-0 flex-1">
+                <div class="text-[12px] font-bold text-[#1B2A3A] truncate"><?= e($editNama) ?></div>
+                <div class="text-[11px] font-mono text-[#53595F]">Biometrik Wajah Tersimpan</div>
+                <div class="mt-0.5">
+                  <?php if ($isEditVerified): ?>
+                    <span class="status-pill" style="background:#ECFDF5; color:#065F46; border:1px solid #A7F3D0; font-size:10px; padding:2px 8px;"><i class="bi bi-shield-check me-1"></i> Terverifikasi</span>
+                  <?php elseif ($isEditPending): ?>
+                    <span class="status-pill" style="background:#FEF3C7; color:#92400E; border:1px solid #FCD34D; font-size:10px; padding:2px 8px;"><i class="bi bi-hourglass-split me-1"></i> Menunggu Approval</span>
+                  <?php else: ?>
+                    <span class="status-pill" style="background:#FEF2F2; color:#991B1B; border:1px solid #FECACA; font-size:10px; padding:2px 8px;"><i class="bi bi-x-circle me-1"></i> Ditolak</span>
+                  <?php endif; ?>
+                </div>
+              </div>
+            </div>
+            <div class="flex gap-1.5 pt-2 border-t border-[#E5E7EB]">
+              <?php if (!$isEditVerified): ?>
+                <button type="submit" form="sideVerifyFaceForm" class="flex-1 h-[28px] bg-[#10B981] hover:bg-[#059669] text-white rounded-[6px] text-[11px] font-semibold border-0 transition-colors flex items-center justify-center gap-1 cursor-pointer">
+                  <i class="bi bi-shield-check"></i> Verifikasi
+                </button>
+              <?php else: ?>
+                <button type="submit" form="sideUnverifyFaceForm" class="flex-1 h-[28px] bg-white border border-[#D1D5D8] hover:bg-[#F4F5F7] text-[#53595F] rounded-[6px] text-[11px] font-semibold transition-colors flex items-center justify-center gap-1 cursor-pointer">
+                  <i class="bi bi-arrow-counterclockwise"></i> Batal Verifikasi
+                </button>
+              <?php endif; ?>
+              <button type="submit" form="sideDeleteFaceForm" class="h-[28px] px-2.5 bg-white border border-[#FECACA] hover:bg-[#FEE2E2] text-[#DC2626] rounded-[6px] text-[11px] font-semibold transition-colors flex items-center justify-center gap-1 cursor-pointer" title="Hapus Sampel Wajah">
+                <i class="bi bi-trash"></i> Hapus
+              </button>
+            </div>
+          </div>
+          <?php endif; ?>
+
+          <div class="mb-3">
+            <label class="form-label-kombai">Username (Login ID)</label>
+            <div class="input-group">
+              <span class="input-group-text input-icon-box"><i class="bi bi-person-fill"></i></span>
+              <input type="text" class="form-control form-control-kombai bg-[#F4F5F7]" value="<?= e($editUsername) ?>" disabled>
+            </div>
+            <div class="text-[11px] text-[#53595F] mt-1">Username tidak dapat diubah setelah dibuat.</div>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label-kombai">Nama Lengkap &amp; Gelar <span class="text-danger">*</span></label>
+            <div class="input-group">
+              <span class="input-group-text input-icon-box"><i class="bi bi-person-badge"></i></span>
+              <input type="text" class="form-control form-control-kombai" name="nama" value="<?= e($editNama) ?>" required placeholder="Contoh: Budi Santoso, S.Kom">
+            </div>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label-kombai">Nama Panggilan / Paraf Kartu</label>
+            <div class="input-group">
+              <span class="input-group-text input-icon-box"><i class="bi bi-pen"></i></span>
+              <input type="text" class="form-control form-control-kombai" name="nama_panggilan" value="<?= e($editNick) ?>" placeholder="Contoh: Budi">
+            </div>
+            <div class="text-[11px] text-[#53595F] mt-1">Nama singkat yang dicetak pada paraf kartu inspeksi fisik.</div>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label-kombai">Hak Akses / Peran <span class="text-danger">*</span></label>
+            <div class="input-group">
+              <span class="input-group-text input-icon-box"><i class="bi bi-shield-check"></i></span>
+              <select class="form-select form-control-kombai" name="role">
+                <option value="teknisi" <?= ($editRole==='teknisi'?'selected':'') ?>>Teknisi IT (Inspeksi &amp; Checklist)</option>
+                <option value="sdm" <?= ($editRole==='sdm'||$editRole==='hrd'||$editRole==='umum'||$editRole==='hrd_umum'||str_contains($editRole,'sdm')?'selected':'') ?>>SDM &amp; Umum / HRD (Inventaris &amp; Karyawan)</option>
+                <option value="auditor" <?= ($editRole==='auditor'?'selected':'') ?>>Auditor / SKAI (Read-Only Audit Trail)</option>
+                <?php if (is_admin()): ?>
+                  <option value="admin" <?= ($editRole==='admin'?'selected':'') ?>>Administrator (Akses Penuh Sistem)</option>
+                <?php endif; ?>
+              </select>
+            </div>
+            <div class="p-2.5 mt-2 bg-[#F8FAF9] rounded-[8px] border border-[#D1D5D8] text-[11px] text-[#53595F] leading-relaxed">
+              <div class="font-bold text-[#1B2A3A] mb-1"><i class="bi bi-info-circle-fill text-[#0E5C58] me-1"></i> Penjelasan Hak Akses:</div>
+              <ul class="mb-0 ps-3">
+                <li><strong>Teknisi IT:</strong> Checklist pemeliharaan, scanner QR, &amp; biometrik.</li>
+                <li><strong>SDM &amp; Umum:</strong> Kartu inventaris fisik, mutasi, &amp; cetak CR80.</li>
+                <li><strong>Auditor:</strong> Monitoring inspeksi &amp; unduh log audit trail.</li>
+                <?php if (is_admin()): ?>
+                  <li><strong>Admin:</strong> Akses penuh seluruh sistem &amp; kelola pengguna.</li>
+                <?php endif; ?>
+              </ul>
+            </div>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label-kombai">Reset Password</label>
+            <div class="input-group">
+              <span class="input-group-text input-icon-box"><i class="bi bi-key"></i></span>
+              <input type="password" class="form-control form-control-kombai" name="password" id="editPasswordInput" placeholder="Kosongkan jika tidak diubah..." autocomplete="new-password">
+              <button class="btn btn-outline-secondary" style="border-radius: 0 8px 8px 0; border-color: #D1D5D8; width: 38px; height: 38px; padding: 0; display: flex; align-items: center; justify-content: center;" type="button" id="btnToggleEditPassword" title="Lihat Password"><i class="bi bi-eye"></i></button>
+            </div>
+            <div class="text-[11px] text-[#53595F] mt-1">Biarkan kosong jika password lama tetap dipertahankan.</div>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label-kombai">No. WhatsApp / Telepon</label>
+            <div class="input-group">
+              <span class="input-group-text input-icon-box"><i class="bi bi-telephone"></i></span>
+              <input type="text" class="form-control form-control-kombai" name="telepon" value="<?= e($editTeleponVal) ?>" placeholder="Contoh: 08123456789">
+            </div>
+          </div>
+
+          <div class="mb-4">
+            <label class="form-label-kombai">Status Akses Akun</label>
+            <div class="input-group">
+              <span class="input-group-text input-icon-box"><i class="bi bi-power"></i></span>
+              <select class="form-select form-control-kombai" name="status">
+                <option value="Aktif" <?= ($editStatus==='Aktif'?'selected':'') ?>>Aktif (Diberikan Akses Login)</option>
+                <option value="Nonaktif" <?= ($editStatus==='Nonaktif'?'selected':'') ?>>Nonaktif (Akses Ditangguhkan)</option>
+              </select>
+            </div>
+          </div>
+
+          <button type="submit" class="h-[40px] bg-[#0E5C58] hover:bg-[#094340] text-white rounded-[8px] text-[13px] font-semibold w-full transition-colors flex items-center justify-center gap-1.5 border-0 shadow-xs cursor-pointer">
+            <i class="bi bi-check-lg"></i> Simpan Perubahan Pengguna
+          </button>
+        </form>
+
+        <!-- Hidden Side Face Forms for Edit Mode -->
+        <form id="sideVerifyFaceForm" method="post" class="d-none" onsubmit="return confirm('Verifikasi dan setujui biometrik wajah <?= addslashes($editNama) ?>?')">
+          <input type="hidden" name="_csrf" value="<?= e(csrf_token()) ?>">
+          <input type="hidden" name="action" value="approve_face">
+          <input type="hidden" name="user_id" value="<?= (int)$editUser['id'] ?>">
+        </form>
+        <form id="sideUnverifyFaceForm" method="post" class="d-none" onsubmit="return confirm('Batalkan status verifikasi biometrik wajah <?= addslashes($editNama) ?>?')">
+          <input type="hidden" name="_csrf" value="<?= e(csrf_token()) ?>">
+          <input type="hidden" name="action" value="unverify_face">
+          <input type="hidden" name="user_id" value="<?= (int)$editUser['id'] ?>">
+        </form>
+        <form id="sideDeleteFaceForm" method="post" class="d-none" onsubmit="return confirm('Apakah Anda yakin ingin MENGHAPUS data biometrik wajah <?= addslashes($editNama) ?>?')">
+          <input type="hidden" name="_csrf" value="<?= e(csrf_token()) ?>">
+          <input type="hidden" name="action" value="delete_face">
+          <input type="hidden" name="user_id" value="<?= (int)$editUser['id'] ?>">
+        </form>
+
+      <?php else: ?>
+        <!-- HEADER TAMBAH -->
+        <div class="px-4 py-3.5 border-b border-[#D1D5D8] bg-[#F8FAF9]">
+          <div class="text-[11px] font-bold text-[#0E5C58] uppercase tracking-wider">REGISTRASI PENGGUNA</div>
+          <h6 class="text-[14px] font-bold text-[#1B2A3A] mb-0 flex items-center gap-1.5">
+            <i class="bi bi-person-plus-fill text-[#0E5C58]"></i> Buat Akun Pengguna Baru
+          </h6>
+        </div>
+
+        <form method="post" action="<?= e(module_url('users_admin.php')) ?>" class="p-4 m-0">
+          <input type="hidden" name="_csrf" value="<?= e(csrf_token()) ?>">
+          <input type="hidden" name="action" value="add">
+
+          <div class="mb-3">
+            <label class="form-label-kombai">Username (Login ID) <span class="text-danger">*</span></label>
+            <div class="input-group">
+              <span class="input-group-text input-icon-box"><i class="bi bi-person-fill"></i></span>
+              <input type="text" class="form-control form-control-kombai" name="username" required placeholder="Contoh: budi.santoso" autocomplete="username">
+            </div>
+            <div class="text-[11px] text-[#53595F] mt-1">Gunakan huruf kecil tanpa spasi.</div>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label-kombai">Password Awal <span class="text-danger">*</span></label>
+            <div class="input-group">
+              <span class="input-group-text input-icon-box"><i class="bi bi-key"></i></span>
+              <input type="password" class="form-control form-control-kombai" name="password" id="addPasswordInput" required placeholder="Minimal 6 karakter" autocomplete="new-password">
+              <button class="btn btn-outline-secondary" style="border-radius: 0 8px 8px 0; border-color: #D1D5D8; width: 38px; height: 38px; padding: 0; display: flex; align-items: center; justify-content: center;" type="button" id="btnToggleAddPassword" title="Lihat Password"><i class="bi bi-eye"></i></button>
+            </div>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label-kombai">Nama Lengkap &amp; Gelar <span class="text-danger">*</span></label>
+            <div class="input-group">
+              <span class="input-group-text input-icon-box"><i class="bi bi-person-badge"></i></span>
+              <input type="text" class="form-control form-control-kombai" name="nama" required placeholder="Contoh: Budi Santoso, S.Kom">
+            </div>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label-kombai">Nama Panggilan / Paraf Kartu</label>
+            <div class="input-group">
+              <span class="input-group-text input-icon-box"><i class="bi bi-pen"></i></span>
+              <input type="text" class="form-control form-control-kombai" name="nama_panggilan" placeholder="Contoh: Budi">
+            </div>
+            <div class="text-[11px] text-[#53595F] mt-1">Nama singkat untuk paraf kartu inspeksi fisik.</div>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label-kombai">Hak Akses / Peran <span class="text-danger">*</span></label>
+            <div class="input-group">
+              <span class="input-group-text input-icon-box"><i class="bi bi-shield-check"></i></span>
+              <select class="form-select form-control-kombai" name="role">
+                <option value="teknisi" selected>Teknisi IT (Inspeksi &amp; Checklist)</option>
+                <option value="sdm">SDM &amp; Umum / HRD (Inventaris &amp; Karyawan)</option>
+                <option value="auditor">Auditor / SKAI (Read-Only Audit Trail)</option>
+                <?php if (is_admin()): ?>
+                  <option value="admin">Administrator (Akses Penuh Sistem)</option>
+                <?php endif; ?>
+              </select>
+            </div>
+            <div class="p-2.5 mt-2 bg-[#F8FAF9] rounded-[8px] border border-[#D1D5D8] text-[11px] text-[#53595F] leading-relaxed">
+              <div class="font-bold text-[#1B2A3A] mb-1"><i class="bi bi-info-circle-fill text-[#0E5C58] me-1"></i> Penjelasan Hak Akses:</div>
+              <ul class="mb-0 ps-3">
+                <li><strong>Teknisi IT:</strong> Checklist pemeliharaan, scanner QR, &amp; biometrik.</li>
+                <li><strong>SDM &amp; Umum:</strong> Kartu inventaris fisik, mutasi, &amp; cetak CR80.</li>
+                <li><strong>Auditor:</strong> Monitoring inspeksi &amp; unduh log audit trail.</li>
+                <?php if (is_admin()): ?>
+                  <li><strong>Admin:</strong> Akses penuh seluruh sistem &amp; kelola pengguna.</li>
+                <?php endif; ?>
+              </ul>
+            </div>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label-kombai">No. WhatsApp / Telepon</label>
+            <div class="input-group">
+              <span class="input-group-text input-icon-box"><i class="bi bi-telephone"></i></span>
+              <input type="text" class="form-control form-control-kombai" name="telepon" placeholder="Contoh: 08123456789">
+            </div>
+          </div>
+
+          <div class="mb-4">
+            <label class="form-label-kombai">Status Akses Akun</label>
+            <div class="input-group">
+              <span class="input-group-text input-icon-box"><i class="bi bi-power"></i></span>
+              <select class="form-select form-control-kombai" name="status">
+                <option value="Aktif" selected>Aktif (Dapat langsung login)</option>
+                <option value="Nonaktif">Nonaktif (Akses ditangguhkan)</option>
+              </select>
+            </div>
+          </div>
+
+          <button type="submit" class="h-[40px] bg-[#0E5C58] hover:bg-[#094340] text-white rounded-[8px] text-[13px] font-semibold w-full transition-colors flex items-center justify-center gap-1.5 border-0 shadow-xs cursor-pointer">
+            <i class="bi bi-person-plus-fill"></i> Buat Akun Pengguna Baru
+          </button>
+        </form>
+      <?php endif; ?>
+
+    </div>
+  </div>
+</div>
+
+<!-- MODAL PRATINJAU & KELOLA FOTO WAJAH PETUGAS -->
+<div class="modal fade" id="modalPreviewFace" tabindex="-1" aria-labelledby="modalPreviewFaceLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered" style="max-width: 440px;">
+    <div class="modal-content border-0 shadow-lg" style="border-radius: 16px; overflow: hidden;">
+      <div class="modal-header py-3 px-4 bg-[#0E5C58] text-white border-0">
+        <h6 class="modal-title fs-6 font-bold mb-0 flex items-center gap-2" id="modalPreviewFaceLabel">
+          <i class="bi bi-person-bounding-box text-white"></i> Kelola Biometrik Wajah Petugas
+        </h6>
+        <button type="button" class="btn-close btn-close-white btn-sm" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body text-center p-4">
+        <div class="position-relative d-inline-block mb-3">
+          <img id="previewFaceImg" src="" alt="Foto Wajah Petugas" class="rounded-full shadow-sm border border-4 border-white" style="width: 140px; height: 140px; object-fit: cover; box-shadow: 0 4px 18px rgba(14,92,88,0.2) !important;">
+        </div>
+        <h5 class="font-bold mb-1 text-[#1B2A3A]" id="previewFaceNama">-</h5>
+        <div class="text-[#53595F] text-[12px] font-mono mb-2" id="previewFaceUser">@-</div>
+        <div class="flex items-center justify-center gap-2 mb-3">
+          <div id="previewFaceRoleBadge"></div>
+          <div id="previewFaceStatusPill"></div>
+        </div>
+        <div class="p-3 bg-[#F8FAF9] rounded-[8px] text-[#53595F] text-[12px] border border-[#D1D5D8] text-start leading-relaxed">
+          <div class="flex items-center gap-1.5 font-bold text-[#1B2A3A] mb-1">
+            <i class="bi bi-shield-lock-fill text-[#0E5C58]"></i> Autentikasi Biometrik Petugas
+          </div>
+          Vektor wajah disimpan secara terenkripsi untuk validasi presensi &amp; kepemilikan checklist kartu pemeliharaan.
+        </div>
+      </div>
+      <div class="modal-footer py-3 px-4 bg-[#F8FAF9] border-t border-[#D1D5D8] flex flex-wrap items-center justify-between gap-2">
+        <div class="flex items-center gap-1.5">
+          <!-- Form Verifikasi Muka Modal -->
+          <form method="post" id="formModalVerifyFace" class="m-0" onsubmit="return confirm('Verifikasi dan setujui biometrik wajah petugas ini?')">
+            <input type="hidden" name="_csrf" value="<?= e(csrf_token()) ?>">
+            <input type="hidden" name="action" value="approve_face">
+            <input type="hidden" name="user_id" id="modalUserIdVerify" value="0">
+            <button type="submit" id="btnModalVerifyFace" class="h-[32px] px-3 bg-[#10B981] hover:bg-[#059669] text-white rounded-[6px] text-[12px] font-semibold border-0 transition-colors flex items-center justify-center gap-1 cursor-pointer">
+              <i class="bi bi-shield-check"></i> Verifikasi Muka
+            </button>
+          </form>
+
+          <!-- Form Batal Verifikasi Modal -->
+          <form method="post" id="formModalUnverifyFace" class="m-0" onsubmit="return confirm('Batalkan status verifikasi biometrik wajah petugas ini?')">
+            <input type="hidden" name="_csrf" value="<?= e(csrf_token()) ?>">
+            <input type="hidden" name="action" value="unverify_face">
+            <input type="hidden" name="user_id" id="modalUserIdUnverify" value="0">
+            <button type="submit" id="btnModalUnverifyFace" class="h-[32px] px-3 bg-white border border-[#D1D5D8] hover:bg-[#F4F5F7] text-[#53595F] rounded-[6px] text-[12px] font-semibold transition-colors flex items-center justify-center gap-1 cursor-pointer" style="display: none;">
+              <i class="bi bi-arrow-counterclockwise"></i> Batal Verifikasi
+            </button>
+          </form>
+
+          <!-- Form Hapus Muka Modal -->
+          <form method="post" id="formModalDeleteFace" class="m-0" onsubmit="return confirm('Apakah Anda yakin ingin MENGHAPUS data biometrik wajah petugas ini? Foto dan sampel biometrik akan dihapus.')">
+            <input type="hidden" name="_csrf" value="<?= e(csrf_token()) ?>">
+            <input type="hidden" name="action" value="delete_face">
+            <input type="hidden" name="user_id" id="modalUserIdDelete" value="0">
+            <button type="submit" id="btnModalDeleteFace" class="h-[32px] px-2.5 bg-white border border-[#FECACA] hover:bg-[#FEE2E2] text-[#DC2626] rounded-[6px] text-[12px] font-semibold transition-colors flex items-center justify-center gap-1 cursor-pointer">
+              <i class="bi bi-trash"></i> Hapus Muka
+            </button>
+          </form>
+        </div>
+
+        <div class="flex items-center gap-1.5">
+          <a id="btnPreviewEnrollAgain" href="#" class="h-[32px] px-3 bg-white border border-[#0E5C58] text-[#0E5C58] hover:bg-[#D9F1EF] rounded-[6px] text-[12px] font-semibold transition-colors inline-flex items-center gap-1 text-decoration-none shadow-xs"><i class="bi bi-camera"></i> Foto Ulang</a>
+          <button type="button" class="h-[32px] px-3 bg-white border border-[#D1D5D8] text-[#53595F] hover:bg-[#F4F5F7] rounded-[6px] text-[12px] font-semibold transition-colors" data-bs-dismiss="modal">Tutup</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
 
 <script>
 function previewFacePhoto(imgSrc, nama, username, role, userId, faceStat, enrollUrl) {
@@ -1244,16 +1118,16 @@ function previewFacePhoto(imgSrc, nama, username, role, userId, faceStat, enroll
   if (modalUserIdDelete) modalUserIdDelete.value = userId || "0";
   if (btnEnrollAgain && enrollUrl) btnEnrollAgain.href = enrollUrl;
 
-  var roleBadge = '<span class="badge bg-secondary">' + (role || "Pengguna") + '</span>';
+  var roleBadge = '<span class="status-pill" style="background:#F1F5F9; color:#475569; border:1px solid #CBD5E1;">' + (role || "Pengguna") + '</span>';
   var roleStr = (role || "").toLowerCase();
   if (roleStr === "admin" || roleStr === "administrator") {
-    roleBadge = '<span class="badge bg-primary" style="border-radius: 9999px;"><i class="bi bi-shield-lock-fill me-1"></i> Administrator</span>';
+    roleBadge = '<span class="status-pill" style="background:#D9F1EF; color:#0E5C58; border:1px solid #A7E2DC;"><i class="bi bi-shield-lock-fill me-1"></i> Administrator</span>';
   } else if (roleStr.indexOf("sdm") !== -1 || roleStr.indexOf("hrd") !== -1 || roleStr.indexOf("umum") !== -1) {
-    roleBadge = '<span class="badge bg-warning text-dark" style="border-radius: 9999px;"><i class="bi bi-person-workspace me-1"></i> SDM & Umum</span>';
+    roleBadge = '<span class="status-pill" style="background:#FEF3C7; color:#92400E; border:1px solid #FCD34D;"><i class="bi bi-person-workspace me-1"></i> SDM &amp; Umum</span>';
   } else if (roleStr === "auditor" || roleStr === "skai") {
-    roleBadge = '<span class="badge bg-secondary" style="border-radius: 9999px;"><i class="bi bi-eye-fill me-1"></i> Auditor</span>';
+    roleBadge = '<span class="status-pill" style="background:#F1F5F9; color:#475569; border:1px solid #CBD5E1;"><i class="bi bi-eye-fill me-1"></i> Auditor</span>';
   } else {
-    roleBadge = '<span class="badge bg-info text-dark" style="border-radius: 9999px;"><i class="bi bi-tools me-1"></i> Teknisi IT</span>';
+    roleBadge = '<span class="status-pill" style="background:#E0F2FE; color:#0369A1; border:1px solid #BAE6FD;"><i class="bi bi-tools me-1"></i> Teknisi IT</span>';
   }
   if (badgeEl) badgeEl.innerHTML = roleBadge;
 
@@ -1261,11 +1135,11 @@ function previewFacePhoto(imgSrc, nama, username, role, userId, faceStat, enroll
   var isVerified = (fStatStr === "verified" || fStatStr === "terverifikasi");
   if (statusPillEl) {
     if (isVerified) {
-      statusPillEl.innerHTML = '<span class="badge bg-success" style="border-radius: 9999px;"><i class="bi bi-shield-check me-1"></i> Terverifikasi</span>';
+      statusPillEl.innerHTML = '<span class="status-pill" style="background:#ECFDF5; color:#065F46; border:1px solid #A7F3D0;"><i class="bi bi-shield-check me-1"></i> Terverifikasi</span>';
     } else if (fStatStr === "pending" || fStatStr === "menunggu") {
-      statusPillEl.innerHTML = '<span class="badge bg-warning text-dark" style="border-radius: 9999px;"><i class="bi bi-hourglass-split me-1"></i> Menunggu Verifikasi</span>';
+      statusPillEl.innerHTML = '<span class="status-pill" style="background:#FEF3C7; color:#92400E; border:1px solid #FCD34D;"><i class="bi bi-hourglass-split me-1"></i> Menunggu Verifikasi</span>';
     } else {
-      statusPillEl.innerHTML = '<span class="badge bg-danger" style="border-radius: 9999px;"><i class="bi bi-x-circle me-1"></i> Ditolak</span>';
+      statusPillEl.innerHTML = '<span class="status-pill" style="background:#FEF2F2; color:#991B1B; border:1px solid #FECACA;"><i class="bi bi-x-circle me-1"></i> Ditolak</span>';
     }
   }
 
@@ -1292,7 +1166,7 @@ function previewFacePhoto(imgSrc, nama, username, role, userId, faceStat, enroll
 }
 
 document.addEventListener("DOMContentLoaded", function() {
-  // Password Visibility Toggle (Add Form)
+  // Password Visibility Toggle for Add Form
   var btnToggleAdd = document.getElementById("btnToggleAddPassword");
   var inputAdd = document.getElementById("addPasswordInput");
   if (btnToggleAdd && inputAdd) {
@@ -1303,7 +1177,7 @@ document.addEventListener("DOMContentLoaded", function() {
     });
   }
 
-  // Password Visibility Toggle (Edit Form)
+  // Password Visibility Toggle for Edit Form
   var btnToggleEdit = document.getElementById("btnToggleEditPassword");
   var inputEdit = document.getElementById("editPasswordInput");
   if (btnToggleEdit && inputEdit) {
@@ -1412,8 +1286,7 @@ document.addEventListener("DOMContentLoaded", function() {
   }
 });
 </script>
-HTML;
+<?php
+$body = ob_get_clean();
 
-$body .= $modalHtml;
-
-render_page('Kelola Akun Pengguna', $body);
+render_page($page_title, $body);
