@@ -20,7 +20,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $trashId = (int)($_POST['trash_id'] ?? 0);
         if ($trashId > 0) {
             $res = restore_photo_from_trash($trashId);
-            set_flash($res['ok'] ? 'success' : 'danger', $res['message']);
+            if (!empty($res['success'])) {
+                $_SESSION['flash'] = 'Foto aset "' . ($res['nama_barang'] ?? '') . '" berhasil dipulihkan (restore) ke Foto Ke-' . (int)($res['restored_slot'] ?? 1) . '!';
+            } else {
+                $_SESSION['flash_error'] = $res['error'] ?? 'Gagal memulihkan foto.';
+            }
         }
         redirect(module_url('photo_trash.php', $redirectParams));
     }
@@ -29,7 +33,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $trashId = (int)($_POST['trash_id'] ?? 0);
         if ($trashId > 0) {
             $res = permanently_delete_photo_from_trash($trashId);
-            set_flash($res['ok'] ? 'success' : 'danger', $res['message']);
+            if (!empty($res['success'])) {
+                $_SESSION['flash'] = 'Foto aset "' . ($res['nama_barang'] ?? '') . '" berhasil dihapus secara permanen dari server.';
+            } else {
+                $_SESSION['flash_error'] = $res['error'] ?? 'Gagal menghapus foto secara permanen.';
+            }
         }
         redirect(module_url('photo_trash.php', $redirectParams));
     }
@@ -41,15 +49,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $tid = (int)($item['id'] ?? 0);
             if ($tid > 0) {
                 $r = restore_photo_from_trash($tid);
-                if (!empty($r['ok'])) {
+                if (!empty($r['success'])) {
                     $okCount++;
                 }
             }
         }
         if ($okCount > 0) {
-            set_flash('success', "Berhasil memulihkan (restore) {$okCount} foto kembali ke data barang/perangkat asalnya.");
+            $_SESSION['flash'] = "Berhasil memulihkan (restore) {$okCount} foto kembali ke data barang/perangkat asalnya.";
         } else {
-            set_flash('warning', 'Tidak ada foto yang dapat dipulihkan.');
+            $_SESSION['flash_error'] = 'Tidak ada foto yang dapat dipulihkan.';
         }
         redirect(module_url('photo_trash.php', $redirectParams));
     }
@@ -61,15 +69,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $tid = (int)($item['id'] ?? 0);
             if ($tid > 0) {
                 $r = permanently_delete_photo_from_trash($tid);
-                if (!empty($r['ok'])) {
+                if (!empty($r['success'])) {
                     $delCount++;
                 }
             }
         }
         if ($delCount > 0) {
-            set_flash('success', "{$delCount} foto di Folder Sampah telah dihapus secara permanen.");
+            $_SESSION['flash'] = "{$delCount} foto di Folder Sampah telah dihapus secara permanen.";
         } else {
-            set_flash('info', 'Folder Sampah sudah kosong.');
+            $_SESSION['flash_error'] = 'Folder Sampah sudah kosong.';
         }
         redirect(module_url('photo_trash.php', $redirectParams));
     }
@@ -158,6 +166,21 @@ ob_start();
     <?php endif; ?>
   </div>
 </div>
+
+<?php if (!empty($_SESSION['flash'])): ?>
+  <div class="alert alert-success alert-dismissible fade show rounded-[10px] mb-3 py-2.5 px-3.5 text-[13px]" role="alert">
+    <i class="bi bi-check-circle-fill me-1 text-success"></i> <?= e($_SESSION['flash']) ?>
+    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+  </div>
+  <?php unset($_SESSION['flash']); ?>
+<?php endif; ?>
+<?php if (!empty($_SESSION['flash_error'])): ?>
+  <div class="alert alert-danger alert-dismissible fade show rounded-[10px] mb-3 py-2.5 px-3.5 text-[13px]" role="alert">
+    <i class="bi bi-exclamation-triangle-fill me-1 text-danger"></i> <?= e($_SESSION['flash_error']) ?>
+    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+  </div>
+  <?php unset($_SESSION['flash_error']); ?>
+<?php endif; ?>
 
 <?php if ($autoPurgedCount > 0): ?>
 <div class="alert alert-info d-flex align-items-center gap-2 rounded-[10px] mb-3 py-2.5 px-3.5 text-[13px]">
