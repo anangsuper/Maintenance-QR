@@ -110,7 +110,7 @@ if (in_array($requestExt, $blockedExts, true)) {
 
 // Support serving static images/assets and PWA files directly on Vercel
 
-$staticExtensions = ['png', 'jpg', 'jpeg', 'svg', 'gif', 'webp', 'ico', 'css', 'js', 'json', 'webmanifest', 'pdf', 'woff', 'woff2', 'ttf', 'map'];
+$staticExtensions = ['png', 'jpg', 'jpeg', 'svg', 'gif', 'webp', 'ico', 'css', 'js', 'json', 'webmanifest', 'pdf', 'woff', 'woff2', 'ttf', 'map', 'pptx'];
 
 $ext = $requestExt;
 
@@ -221,6 +221,8 @@ if (in_array($ext, $staticExtensions, true)) {
             'woff2' => 'font/woff2',
 
             'ttf' => 'font/ttf',
+
+            'pptx' => 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
 
             'html' => 'text/html; charset=utf-8'
 
