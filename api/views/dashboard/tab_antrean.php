@@ -142,7 +142,6 @@
                 'is_overdue' => $isOverdue
             ];
         }
-    } catch (Throwable $e) {}
 
     // Fallback jika database masih kosong
     if (empty($queueAssets)) {

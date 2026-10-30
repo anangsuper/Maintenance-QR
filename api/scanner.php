@@ -255,7 +255,9 @@ $body = '
 
 $html5QrcodeUrl = module_url('html5-qrcode.min.js');
 
-$script = '<script src="' . e($html5QrcodeUrl) . '"></script>' . <<<'SCANNER_JS_CODE'
+$script = '<script src="' . e($html5QrcodeUrl) . '"></script>'
+    . '<script>if(typeof Html5Qrcode === "undefined"){ document.write(\'<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"><\\/script>\'); }</script>'
+    . <<<'SCANNER_JS_CODE'
 <script>
 let html5QrCode = null;
 let currentCameraTrack = null;
@@ -513,26 +515,6 @@ function applyCameraCapabilities() {
   } catch (e) {}
 
   hookVideoForInstantScan();
-}
-
-  const tracks = video.srcObject.getVideoTracks();
-  if (!tracks || tracks.length === 0) return;
-
-  currentCameraTrack = tracks[0];
-  try {
-    const caps = (typeof currentCameraTrack.getCapabilities === "function") ? currentCameraTrack.getCapabilities() : {};
-    
-    // Check Torch capability
-    const torchBtn = document.getElementById("btnToggleTorch");
-    if (torchBtn && caps.torch) {
-      torchBtn.classList.remove("d-none");
-    }
-
-    // Check Zoom capability
-    if (caps.zoom) {
-      setupZoomControls(currentCameraTrack, caps.zoom);
-    }
-  } catch (e) {}
 }
 
 function toggleCameraTorch() {
