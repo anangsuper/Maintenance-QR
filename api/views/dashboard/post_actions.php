@@ -158,4 +158,51 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         ]));
         exit;
     }
+
+    // G. Lewati Pemeliharaan Cabang Bulan Ini (Off-Schedule Exemption)
+    if ($action === 'skip_cabang') {
+        require_admin();
+        $cId = (int)($_POST['cabang_id'] ?? 0);
+        $m = max(1, min(12, (int)($_POST['bulan'] ?? date('n'))));
+        $y = max(2020, min(2100, (int)($_POST['tahun'] ?? date('Y'))));
+        $reason = trim((string)($_POST['reason'] ?? 'Tidak ada jadwal kunjungan cabang bulan ini'));
+
+        $ok = set_branch_exemption($cId, $m, $y, true, $reason, current_user_name());
+        if ($ok) {
+            $_SESSION['flash'] = "Cabang berhasil ditandai 'Dilewati' untuk pemeliharaan periode {$m}/{$y}.";
+        } else {
+            $_SESSION['flash_error'] = "Gagal menandai lewati cabang.";
+        }
+        $retCab = max(0, (int)($_POST['return_cabang'] ?? $_GET['cabang'] ?? 0));
+        header('Location: ' . module_url('dashboard.php', array_filter([
+            'bulan' => $m,
+            'tahun' => $y,
+            'cabang' => $retCab > 0 ? $retCab : null,
+            'tab' => trim((string)($_POST['return_tab'] ?? '')) ?: null
+        ])));
+        exit;
+    }
+
+    // H. Batalkan Lewati Pemeliharaan Cabang (Aktifkan Kembali)
+    if ($action === 'cancel_skip_cabang') {
+        require_admin();
+        $cId = (int)($_POST['cabang_id'] ?? 0);
+        $m = max(1, min(12, (int)($_POST['bulan'] ?? date('n'))));
+        $y = max(2020, min(2100, (int)($_POST['tahun'] ?? date('Y'))));
+
+        $ok = set_branch_exemption($cId, $m, $y, false, '', current_user_name());
+        if ($ok) {
+            $_SESSION['flash'] = "Jadwal pemeliharaan cabang berhasil diaktifkan kembali untuk periode {$m}/{$y}.";
+        } else {
+            $_SESSION['flash_error'] = "Gagal mengaktifkan kembali cabang.";
+        }
+        $retCab = max(0, (int)($_POST['return_cabang'] ?? $_GET['cabang'] ?? 0));
+        header('Location: ' . module_url('dashboard.php', array_filter([
+            'bulan' => $m,
+            'tahun' => $y,
+            'cabang' => $retCab > 0 ? $retCab : null,
+            'tab' => trim((string)($_POST['return_tab'] ?? '')) ?: null
+        ])));
+        exit;
+    }
 }

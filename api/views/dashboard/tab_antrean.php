@@ -12,6 +12,12 @@
         if ($cabangId > 0) {
             $qWhere .= " AND a.id_cabang = ? ";
             $qParams[] = $cabangId;
+        } else {
+            $exemptCabangIds = function_exists('get_branch_exempted_ids') ? get_branch_exempted_ids($month, $year) : [];
+            if (!empty($exemptCabangIds)) {
+                $idList = implode(',', array_map('intval', $exemptCabangIds));
+                $qWhere .= " AND (a.id_cabang NOT IN ({$idList}) OR a.id_cabang IS NULL) ";
+            }
         }
 
         // Filter aset yang belum pernah di-scan di bulan & tahun terpilih

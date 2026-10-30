@@ -19,6 +19,7 @@ require_once __DIR__ . '/includes/photo_trash.php';
 require_once __DIR__ . '/includes/mutasi.php';
 require_once __DIR__ . '/includes/memo.php';
 require_once __DIR__ . '/includes/disposal.php';
+require_once __DIR__ . '/includes/cabang_skip.php';
 require_once __DIR__ . '/helpers/GoogleSheetsBridge.php';
 require_once __DIR__ . '/helpers/fbd3_data_list.php';
 

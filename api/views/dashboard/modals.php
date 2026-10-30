@@ -568,3 +568,113 @@ $body .= '
   <input type="hidden" name="action" value="delete_batch_card">
   <input type="hidden" name="ids" id="deleteBatchCardIds">
 </form>';
+
+// MODAL KELOLA SKIP CABANG (KHUSUS ADMIN)
+$dashboardSkipBranchRowsHtml = '';
+if (!empty($branchSummaries)) {
+    foreach ($branchSummaries as $bsm) {
+        $bId = (int)($bsm['id'] ?? 0);
+        $bNm = (string)($bsm['nama'] ?? ('Cabang #' . $bId));
+        $bSk = !empty($bsm['is_skipped']);
+        $bRs = (string)($bsm['skip_reason'] ?? 'Tidak ada jadwal kunjungan cabang bulan ini');
+
+        $dashboardSkipBranchRowsHtml .= '
+        <div class="d-flex align-items-center justify-content-between p-2.5 rounded border '.($bSk ? 'bg-light border-secondary-subtle' : 'bg-white').' gap-2">
+          <div class="flex-grow-1">
+            <div class="d-flex align-items-center gap-2">
+              <span class="fw-bold text-dark small">'.e($bNm).'</span>
+              '.($bSk ? '<span class="badge bg-secondary-subtle text-secondary border font-monospace" style="font-size: 0.68rem;"><i class="bi bi-calendar-x me-1"></i>Dilewati</span>' : '<span class="badge bg-success-subtle text-success border font-monospace" style="font-size: 0.68rem;"><i class="bi bi-check-circle me-1"></i>Aktif</span>').'
+            </div>
+            <div class="text-muted small" style="font-size: 0.75rem;">'.($bSk ? 'Alasan: '.e($bRs) : (int)($bsm['total'] ?? 0).' unit aset').'</div>
+          </div>
+          <div>
+            '.($bSk ? '
+            <form method="post" class="m-0" onsubmit="return confirm(\'Aktifkan kembali jadwal pemeliharaan '.e(addslashes($bNm)).'?\');">
+              '.csrf_field().'
+              <input type="hidden" name="action" value="cancel_skip_cabang">
+              <input type="hidden" name="cabang_id" value="'.$bId.'">
+              <input type="hidden" name="bulan" value="'.$month.'">
+              <input type="hidden" name="tahun" value="'.$year.'">
+              <input type="hidden" name="return_cabang" value="'.$cabangId.'">
+              <button type="submit" class="btn btn-sm btn-outline-success py-1 px-2" style="font-size: 0.75rem;">
+                <i class="bi bi-calendar-check me-1"></i> Aktifkan
+              </button>
+            </form>' : '
+            <button type="button" class="btn btn-sm btn-outline-warning text-dark py-1 px-2" style="font-size: 0.75rem;" onclick="setDashboardSkipForm('.$bId.', \''.e(addslashes($bNm)).'\')">
+              <i class="bi bi-calendar-x me-1"></i> Lewati
+            </button>').'
+          </div>
+        </div>';
+    }
+}
+
+$body .= '
+<!-- MODAL: KELOLA SKIP / LEWATI PEMELIHARAAN CABANG BULAN INI -->
+<div class="modal fade" id="modalKelolaSkipCabang" tabindex="-1" aria-labelledby="modalKelolaSkipCabangLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-content border-0 shadow">
+      <div class="modal-header bg-dark text-white py-3">
+        <h5 class="modal-title fw-bold fs-6 mb-0" id="modalKelolaSkipCabangLabel">
+          <i class="bi bi-calendar-x me-2 text-warning"></i>Atur Pengecualian / Lewati Cabang ('.($monthNames[$month] ?? 'Bulan Ini').' '.$year.')
+        </h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body p-4">
+        <div class="alert alert-info py-2.5 px-3.5 small mb-3 border-0 rounded-[8px]" style="background-color: #EBF5FF; color: #1E429F;">
+          <i class="bi bi-info-circle-fill me-1"></i>
+          Jika sebuah cabang <strong>dilewati</strong> pada bulan ini (misal tidak ada kunjungan dinas/jadwal berkala), tandai sebagai <strong>Dilewati</strong> agar statusnya tidak menjadi <em>Perlu Dikejar</em> dan unit asetnya tidak membebani persentase Kepatuhan SLA IT.
+        </div>
+
+        <div class="d-flex flex-column gap-2 mb-3">
+          '.$dashboardSkipBranchRowsHtml.'
+        </div>
+
+        <!-- Form Konfirmasi Lewati Cabang Tertentu -->
+        <div id="boxFormConfirmSkip" class="p-3 bg-light rounded-[8px] border mt-3" style="display: none;">
+          <form method="post">
+            '.csrf_field().'
+            <input type="hidden" name="action" value="skip_cabang">
+            <input type="hidden" name="cabang_id" id="dashSkipCabangId" value="0">
+            <input type="hidden" name="bulan" value="'.$month.'">
+            <input type="hidden" name="tahun" value="'.$year.'">
+            <input type="hidden" name="return_cabang" value="'.$cabangId.'">
+
+            <div class="fw-bold text-dark mb-2 small" id="dashSkipCabangTitle">Lewati Pemeliharaan Cabang</div>
+            <div class="mb-2">
+              <label class="form-label small fw-semibold text-muted mb-1">Pilih Alasan Dilewati:</label>
+              <select class="form-select form-select-sm" id="dashSkipSelect" onchange="document.getElementById(\'dashSkipReason\').value = this.value;">
+                <option value="Tidak ada jadwal kunjungan cabang bulan ini">📅 Tidak ada jadwal kunjungan cabang bulan ini</option>
+                <option value="Jadwal pemeliharaan berkala / triwulanan">🔄 Jadwal pemeliharaan berkala / triwulanan (off-schedule)</option>
+                <option value="Kendala akses / dinas luar kota dialihkan">🚗 Kendala akses / dinas luar kota dialihkan</option>
+                <option value="Kunjungan khusus bulan sebelumnya sudah menyeluruh">✓ Kunjungan khusus bulan sebelumnya sudah menyeluruh</option>
+                <option value="Lainnya">✏️ Alasan lainnya...</option>
+              </select>
+            </div>
+            <div class="mb-3">
+              <input type="text" class="form-control form-control-sm" name="reason" id="dashSkipReason" value="Tidak ada jadwal kunjungan cabang bulan ini" required>
+            </div>
+            <div class="d-flex justify-content-end gap-2">
+              <button type="button" class="btn btn-sm btn-outline-secondary" onclick="document.getElementById(\'boxFormConfirmSkip\').style.display = \'none\';">Batal</button>
+              <button type="submit" class="btn btn-sm btn-warning fw-bold text-dark"><i class="bi bi-calendar-x me-1"></i> Simpan &amp; Lewati Cabang</button>
+            </div>
+          </form>
+        </div>
+      </div>
+      <div class="modal-footer py-2 px-4 bg-light justify-content-between">
+        <a href="'.e(module_url('cabang_admin.php', ['bulan'=>$month, 'tahun'=>$year])).'" class="small fw-bold text-decoration-none">Kelola Cabang Selengkapnya &rarr;</a>
+        <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Tutup</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+function setDashboardSkipForm(id, name) {
+  document.getElementById("dashSkipCabangId").value = id;
+  document.getElementById("dashSkipCabangTitle").textContent = "Lewati Jadwal Pemeliharaan: " + name;
+  const box = document.getElementById("boxFormConfirmSkip");
+  box.style.display = "block";
+  box.scrollIntoView({ behavior: "smooth", block: "nearest" });
+}
+</script>
+';

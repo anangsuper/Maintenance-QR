@@ -222,7 +222,13 @@ if (is_hrd() && !is_admin()) {
             // Batasi agar tidak melebihi 100%
             $bPct = min(100, max(0, $bPct));
 
-            if ($bPct >= 100) {
+            $isSkipped = !empty($b['is_skipped']);
+            $skipReason = (string)($b['skip_reason'] ?? 'Tidak ada jadwal kunjungan cabang bulan ini');
+
+            if ($isSkipped) {
+                $bBadge = '<span class="px-2 py-0.5 rounded-[4px] text-[10px] font-bold bg-[#F1F5F9] text-[#64748B] border border-[#CBD5E1] inline-flex items-center gap-1" title="'.e($skipReason).'"><i class="bi bi-calendar-x"></i> Dilewati</span>';
+                $bBar = 'bg-[#CBD5E1]';
+            } elseif ($bPct >= 100) {
                 $bBadge = '<span class="px-2 py-0.5 rounded-[4px] text-[10px] font-bold bg-[#ECFDF5] text-[#10B981] border border-[#A7F3D0] inline-flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-[#10B981]"></span> Selesai</span>';
                 $bBar = 'bg-[#10B981]';
             } elseif ($bPct >= 80) {
@@ -244,15 +250,15 @@ if (is_hrd() && !is_admin()) {
               <div class="flex items-center justify-between mb-1.5">
                 <div class="flex items-center gap-1.5">
                   <span class="text-[12px] font-bold '.($isActive ? 'text-[#0E5C58]' : 'text-[#1B2A3A]').' group-hover:text-[#0E5C58] transition-colors">'.e($cName).'</span>
-                  <span class="text-[11px] text-[#53595F] font-mono">('.$bDone.'/'.$bTotal.' unit)</span>
+                  <span class="text-[11px] text-[#53595F] font-mono">('.$bDone.'/'.$bTotal.' unit)'.($isSkipped ? ' <span class="text-[10px] text-[#64748B] italic">· off-schedule</span>' : '').'</span>
                 </div>
                 <div class="flex items-center gap-2">
-                  <span class="text-[12px] font-bold text-[#1B2A3A] font-mono tabular-nums">'.$bPct.'%</span>
+                  <span class="text-[12px] font-bold '.($isSkipped ? 'text-[#64748B]' : 'text-[#1B2A3A]').' font-mono tabular-nums">'.($isSkipped ? '0%' : $bPct.'%').'</span>
                   '.$bBadge.'
                 </div>
               </div>
               <div class="h-2 w-full bg-[#E5E7EB] rounded-full overflow-hidden">
-                <div class="h-full '.$bBar.' rounded-full transition-all duration-500" style="width: '.$bPct.'%;"></div>
+                <div class="h-full '.$bBar.' rounded-full transition-all duration-500" style="width: '.($isSkipped ? '100' : $bPct).'%;"></div>
               </div>
             </a>';
         }
@@ -507,7 +513,10 @@ if (is_hrd() && !is_admin()) {
           </div>
           <div class="pt-2 mt-2 border-t border-[#F3F4F6] flex items-center justify-between text-[11px] text-[#53595F]">
             <span>Menampilkan '.count($branchSummaries).' Cabang Bank Mitra</span>
-            <a href="'.e(module_url('cabang_admin.php')).'" class="text-[#0E5C58] font-bold hover:underline text-decoration-none">Kelola Cabang &rarr;</a>
+            <div class="flex items-center gap-2">
+              '.(is_admin() ? '<button type="button" class="text-[#0E5C58] bg-[#D9F1EF] hover:bg-[#0E5C58] hover:text-white px-2 py-0.5 rounded font-bold transition-colors border-0 cursor-pointer" data-bs-toggle="modal" data-bs-target="#modalKelolaSkipCabang"><i class="bi bi-calendar-x me-1"></i>Atur Skip Cabang</button>' : '').'
+              <a href="'.e(module_url('cabang_admin.php', ['bulan' => $month, 'tahun' => $year])).'" class="text-[#0E5C58] font-bold hover:underline text-decoration-none">Kelola Cabang &rarr;</a>
+            </div>
           </div>
         </div>
 
@@ -539,6 +548,32 @@ if (is_hrd() && !is_admin()) {
         </div>
       </div>
       ' : '') . '
+
+      <!-- Banner Info Jika Cabang Terpilih Berstatus Dilewati Bulan Ini -->
+      '.($cabangId > 0 && function_exists('is_branch_exempted') && is_branch_exempted($cabangId, $month, $year) ? '
+      <div class="bg-[#F8FAF9] border border-[#CBD5E1] rounded-[10px] p-3 mb-4 shadow-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+        <div class="flex items-center gap-2.5">
+          <div class="w-8 h-8 rounded-[8px] bg-[#64748B] text-white flex items-center justify-center shrink-0">
+            <i class="bi bi-calendar-x"></i>
+          </div>
+          <div>
+            <div class="text-[13px] font-bold text-[#1E293B]">Pemeliharaan '.e($selectedCabangName).' Dilewati untuk Bulan '.e($monthNames[$month]).' '.$year.'</div>
+            <div class="text-[12px] text-[#64748B] mt-0.5">Cabang ini berstatus <em>off-schedule</em> (tidak ada jadwal kunjungan dinas). Unit aset tidak dihitung dalam target kepatuhan bulanan.</div>
+          </div>
+        </div>
+        '.(is_admin() ? '
+        <form method="post" class="m-0 shrink-0" onsubmit="return confirm(\'Aktifkan kembali jadwal pemeliharaan cabang ini?\');">
+          '.csrf_field().'
+          <input type="hidden" name="action" value="cancel_skip_cabang">
+          <input type="hidden" name="cabang_id" value="'.$cabangId.'">
+          <input type="hidden" name="bulan" value="'.$month.'">
+          <input type="hidden" name="tahun" value="'.$year.'">
+          <input type="hidden" name="return_cabang" value="'.$cabangId.'">
+          <button type="submit" class="h-[32px] px-3 bg-[#0E5C58] hover:bg-[#094340] text-white rounded-[6px] text-[11px] font-semibold border-0 shadow-xs cursor-pointer inline-flex items-center gap-1">
+            <i class="bi bi-check-circle"></i> <span>Aktifkan Kembali</span>
+          </button>
+        </form>' : '').'
+      </div>' : '').'
 
       <!-- Tabs Navigation (44px, Mobile Horizontal Scroll) -->
       <div class="flex gap-4 md:gap-6 h-[44px] border-b border-[#D1D5D8] shrink-0 mb-4 overflow-x-auto whitespace-nowrap no-scrollbar">

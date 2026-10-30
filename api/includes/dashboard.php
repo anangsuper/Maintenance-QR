@@ -547,8 +547,15 @@ function get_comprehensive_dashboard_data(int $month, int $year, int $cabangId =
     $cName = name_column('cabang') ?: 'id';
     $whereBranch = $cabangId > 0 ? " AND a.id_cabang = {$cabangId} " : "";
 
+    $exemptCabangIds = function_exists('get_branch_exempted_ids') ? get_branch_exempted_ids($month, $year) : [];
+    $whereExempt = "";
+    if ($cabangId <= 0 && !empty($exemptCabangIds)) {
+        $idList = implode(',', array_map('intval', $exemptCabangIds));
+        $whereExempt = " AND (a.id_cabang NOT IN ({$idList}) OR a.id_cabang IS NULL) ";
+    }
+
     $totalAll = (int)db()->query("SELECT COUNT(*) FROM assets a WHERE 1=1 {$whereBranch}")->fetchColumn();
-    $totalActive = (int)db()->query("SELECT COUNT(*) FROM assets a WHERE (a.status = 'Aktif' OR a.status = 'aktif' OR a.status IS NULL OR a.status = '') {$whereBranch}")->fetchColumn();
+    $totalActive = (int)db()->query("SELECT COUNT(*) FROM assets a WHERE (a.status = 'Aktif' OR a.status = 'aktif' OR a.status IS NULL OR a.status = '') {$whereBranch} {$whereExempt}")->fetchColumn();
     $totalBroken = (int)db()->query("SELECT COUNT(*) FROM assets a WHERE (a.status IN ('Rusak', 'rusak', 'Perlu Perbaikan', 'Temuan')) {$whereBranch}")->fetchColumn();
 
     $doneSt = db()->prepare("
@@ -556,7 +563,7 @@ function get_comprehensive_dashboard_data(int $month, int $year, int $cabangId =
         FROM maintenance_scan ms
         JOIN assets a ON a.id = ms.asset_id
         WHERE ms.maintenance_month = ? AND ms.maintenance_year = ?
-        ".($cabangId > 0 ? " AND a.id_cabang = ? " : "")."
+        ".($cabangId > 0 ? " AND a.id_cabang = ? " : $whereExempt)."
     ");
     $doneParams = [$month, $year];
     if ($cabangId > 0) $doneParams[] = $cabangId;
@@ -736,6 +743,7 @@ function get_comprehensive_dashboard_data(int $month, int $year, int $cabangId =
 function get_branch_maintenance_summary(int $month, int $year): array {
     $cabangs = get_cabang_list();
     $results = [];
+    $exemptions = function_exists('get_branch_exemptions') ? get_branch_exemptions($month, $year) : [];
 
     $lastDay = (int)date('t', strtotime(sprintf('%04d-%02d-01', $year, $month)));
     $periodCutoffTime = strtotime(sprintf('%04d-%02d-%02d 23:59:59', $year, $month, $lastDay));
@@ -799,6 +807,11 @@ function get_branch_maintenance_summary(int $month, int $year): array {
             $pending = max(0, $total - $done);
             $percent = $total > 0 ? round(($done / $total) * 100) : 0;
 
+            $isSkipped = !empty($exemptions[$cId]);
+            $skipReason = $isSkipped ? ($exemptions[$cId]['reason'] ?? 'Tidak ada jadwal kunjungan cabang bulan ini') : '';
+            $skipBy = $isSkipped ? ($exemptions[$cId]['created_by'] ?? '') : '';
+            $skipAt = $isSkipped ? ($exemptions[$cId]['created_at'] ?? '') : '';
+
             $results[] = [
                 'id' => $cId,
                 'nama' => $cName,
@@ -806,7 +819,11 @@ function get_branch_maintenance_summary(int $month, int $year): array {
                 'done' => $done,
                 'pending' => $pending,
                 'findings' => $findings,
-                'percent' => $percent
+                'percent' => $percent,
+                'is_skipped' => $isSkipped,
+                'skip_reason' => $skipReason,
+                'skip_by' => $skipBy,
+                'skip_at' => $skipAt
             ];
         }
 
@@ -866,6 +883,11 @@ function get_branch_maintenance_summary(int $month, int $year): array {
         $pending = max(0, $total - $done);
         $percent = $total > 0 ? round(($done / $total) * 100) : 0;
 
+        $isSkipped = !empty($exemptions[$cId]);
+        $skipReason = $isSkipped ? ($exemptions[$cId]['reason'] ?? 'Tidak ada jadwal kunjungan cabang bulan ini') : '';
+        $skipBy = $isSkipped ? ($exemptions[$cId]['created_by'] ?? '') : '';
+        $skipAt = $isSkipped ? ($exemptions[$cId]['created_at'] ?? '') : '';
+
         $results[] = [
             'id' => $cId,
             'nama' => $cNama,
@@ -873,7 +895,11 @@ function get_branch_maintenance_summary(int $month, int $year): array {
             'done' => $done,
             'pending' => $pending,
             'findings' => $findings,
-            'percent' => $percent
+            'percent' => $percent,
+            'is_skipped' => $isSkipped,
+            'skip_reason' => $skipReason,
+            'skip_by' => $skipBy,
+            'skip_at' => $skipAt
         ];
     }
 
