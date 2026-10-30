@@ -2,6 +2,33 @@
 // Histori & Yearly Card Matrix & Complaints
 $historyList = get_asset_maintenance_history($assetId);
 $cardMatrix = get_asset_yearly_card_matrix($assetId, $year);
+
+// Susun daftar tahun yang tersedia untuk switcher checklist (misal: 2024, 2025, 2026, 2027)
+$currYr = (int)date('Y');
+$cardYears = [];
+for ($y = max(2023, $currYr - 2); $y <= $currYr + 1; $y++) {
+    $cardYears[] = $y;
+}
+if (!in_array($year, $cardYears, true)) {
+    $cardYears[] = $year;
+}
+foreach ($historyList as $hRow) {
+    $hDate = (string)($hRow['maintenance_date'] ?? '');
+    if ($hDate !== '') {
+        $hYear = (int)date('Y', strtotime($hDate));
+        if ($hYear >= 2020 && !in_array($hYear, $cardYears, true)) {
+            $cardYears[] = $hYear;
+        }
+    }
+}
+sort($cardYears);
+
+$yearButtonsHtml = '';
+foreach ($cardYears as $cy) {
+    $isSel = ($cy === $year);
+    $activeClass = $isSel ? 'btn-primary active fw-bold shadow-xs' : 'btn-outline-secondary';
+    $yearButtonsHtml .= '<a href="' . e(module_url('scan.php', ['t' => $token, 'tahun' => $cy])) . '" class="btn btn-sm ' . $activeClass . '" title="Lihat Checklist Tahun ' . $cy . '">' . $cy . ($cy === $currYr ? ' <span class="d-none d-lg-inline opacity-75">★</span>' : '') . '</a>';
+}
 $loggedIn = is_logged_in();
 $enrolledTechs = get_enrolled_technicians(false);
 $hasEnrolledTechs = !empty($enrolledTechs);
@@ -1132,19 +1159,48 @@ $body = '
 
     <!-- KARTU KONTROL CHECKLIST 12 BULAN (PERSIS FORMAT GAMBAR / MOBILE & DESKTOP) -->
     <div class="card p-3 p-md-4 border-0 shadow-sm mb-4 scan-card-section">
-      <div class="d-flex justify-content-between align-items-center mb-3">
-        <h5 class="fw-bold text-dark mb-0 fs-6 fs-md-5"><i class="bi bi-card-checklist text-primary me-2"></i>KARTU CHECKLIST MAINTENANCE IT '.$year.'</h5>
-        <div class="d-flex gap-2">
-          <a class="btn btn-sm btn-outline-primary fw-semibold" target="_blank" href="'.e(module_url('print_card.php', ['id'=>$assetId, 'tahun'=>$year])).'"><i class="bi bi-printer me-1"></i> Cetak Kartu</a>
+      <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-2 mb-3">
+        <div>
+          <h5 class="fw-bold text-dark mb-0 fs-6 fs-md-5">
+            <i class="bi bi-card-checklist text-primary me-2"></i>KARTU CHECKLIST MAINTENANCE IT '.$year.'
+          </h5>
+          <div class="text-secondary small mt-0.5">
+            '.($year === $currYr ? '<span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-2 py-0.5"><i class="bi bi-calendar-check me-1"></i>Tahun Berjalan ('.$year.')</span>' : '<span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle rounded-pill px-2 py-0.5"><i class="bi bi-clock-history me-1"></i>Arsip Riwayat Tahun '.$year.'</span>').'
+          </div>
+        </div>
+
+        <div class="d-flex flex-wrap align-items-center gap-2 w-100 w-md-auto justify-content-between justify-content-md-end">
+          <div class="d-flex align-items-center gap-1.5">
+            <span class="small text-secondary fw-semibold d-none d-sm-inline"><i class="bi bi-calendar3 me-1"></i>Ganti Tahun:</span>
+            <div class="btn-group btn-group-sm" role="group" aria-label="Pilih Tahun">
+              '.$yearButtonsHtml.'
+            </div>
+          </div>
+          <a class="btn btn-sm btn-outline-primary fw-semibold" target="_blank" href="'.e(module_url('print_card.php', ['id'=>$assetId, 'tahun'=>$year])).'">
+            <i class="bi bi-printer me-1"></i> Cetak Kartu '.$year.'
+          </a>
         </div>
       </div>
+
+      '.($year !== $currYr ? '
+      <div class="alert alert-warning py-2 px-3 mb-3 rounded-3 small d-flex align-items-center justify-content-between flex-wrap gap-2">
+        <div class="d-flex align-items-center gap-2">
+          <i class="bi bi-info-circle-fill fs-5 text-warning-emphasis"></i>
+          <div>
+            Anda sedang melihat <strong>Arsip Checklist Maintenance Tahun '.$year.'</strong>. Seluruh riwayat pelaksanaan 12 bulan di tahun '.$year.' tersimpan permanen dan dapat dilihat kembali kapan saja.
+          </div>
+        </div>
+        <a href="'.e(module_url('scan.php', ['t' => $token, 'tahun' => $currYr])).'" class="btn btn-sm btn-warning text-dark fw-bold py-1 px-2.5 rounded-pill shadow-xs">
+          <i class="bi bi-arrow-return-left me-1"></i> Kembali ke Tahun '.$currYr.'
+        </a>
+      </div>' : '').'
 
       <!-- Modern Kartu Kontrol Container (Persis Desain Gambar) -->
       <div class="mobile-card-wrapper">
         
         <!-- Header Banner Berwarna -->
         <div class="grid6-top-banner mb-2">
-          <span class="banner-title"><i class="bi bi-card-checklist me-1"></i> KARTU KONTROL IT · '.$year.'</span>
+          <span class="banner-title"><i class="bi bi-card-checklist me-1"></i> KARTU KONTROL IT · '.$year.($year !== $currYr ? ' (ARSIP)' : '').'</span>
           <span class="grid6-branch-pill">'.e($cabangLabel).'</span>
         </div>
 

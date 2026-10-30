@@ -55,8 +55,11 @@ if (!$asset) {
 }
 
 $assetId = (int)$asset['id'];
-$month = (int)date('n');
-$year = (int)date('Y');
+$currentMonth = (int)date('n');
+$currentYear = (int)date('Y');
+$month = $currentMonth;
+$yearParam = isset($_GET['tahun']) ? (int)$_GET['tahun'] : (isset($_GET['year']) ? (int)$_GET['year'] : 0);
+$year = ($yearParam >= 2020 && $yearParam <= 2035) ? $yearParam : $currentYear;
 $currentDateStr = date('Y-m-d');
 $monthNames = [
     1 => 'Januari', 2 => 'Februari', 3 => 'Maret', 4 => 'April',
@@ -476,7 +479,7 @@ if ($successData || $successTindakLanjut) {
 // =========================================================================
 // 3. ROUTING VIEW BERDASARKAN ACTION
 // =========================================================================
-$currentMonthLog = get_asset_maintenance_status_month($assetId, $month, $year);
+$currentMonthLog = get_asset_maintenance_status_month($assetId, $currentMonth, $currentYear);
 $pendingFinding = get_asset_active_finding($assetId);
 $action = trim((string)($_GET['action'] ?? $_GET['amp;action'] ?? $_POST['action_type'] ?? ''));
 $autoOpenLogin = trim((string)($_GET['open_login'] ?? ''));
