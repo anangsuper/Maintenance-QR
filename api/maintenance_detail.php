@@ -370,6 +370,354 @@ $scanYear = (int)($scan['maintenance_year'] ?? 0);
 if ($scanYear <= 0 && !empty($scanDate)) {
     $scanYear = (int)date('Y', strtotime($scanDate));
 }
+if ($scanYear <= 0) {
+    $scanYear = $curYear;
+}
+
+// Foto Fisik Unit (Mendukung 2 Foto + Zoom Modal + Folder Sampah)
+$fotoUnit = trim((string)($asset['foto'] ?? ''));
+$fotoUnit2 = trim((string)($asset['foto_2'] ?? ''));
+$fotoUnitSrc = function_exists('asset_image_url') ? asset_image_url($fotoUnit) : ($fotoUnit ? (str_starts_with($fotoUnit, 'http') ? $fotoUnit : module_url($fotoUnit)) : '');
+$fotoUnit2Src = function_exists('asset_image_url') ? asset_image_url($fotoUnit2) : ($fotoUnit2 ? (str_starts_with($fotoUnit2, 'http') ? $fotoUnit2 : module_url($fotoUnit2)) : '');
+$hasAnyUnitPhoto = ($fotoUnitSrc !== '' || $fotoUnit2Src !== '');
+$hasBothPhotos = ($fotoUnitSrc !== '' && $fotoUnit2Src !== '');
+$unitPhotoCount = ($fotoUnitSrc !== '' ? 1 : 0) + ($fotoUnit2Src !== '' ? 1 : 0);
+$assetTrashPhotos = function_exists('get_photo_trash_list') ? get_photo_trash_list(['source_type' => 'assets', 'item_id' => $assetId]) : [];
+$totalTrashAssetsCount = function_exists('get_photo_trash_count') ? get_photo_trash_count() : 0;
+
+$slot1BoxHtml = $fotoUnitSrc !== '' ? '
+  <div class="position-relative rounded-3 overflow-hidden border shadow-xs bg-dark bg-opacity-10 d-flex align-items-center justify-content-center h-100" style="cursor: pointer; min-height: 140px; max-height: 180px;" onclick="openDetailPhotoModal(\''.e($fotoUnitSrc).'\', \''.e(addslashes(asset_title($asset) . ' - Foto 1 (Utama)')).'\', \''.e(addslashes($asset['kode_inventaris'] ?? '')).'\')" title="Klik untuk memperbesar Foto 1">
+    <span class="position-absolute top-0 start-0 m-1.5 badge bg-dark bg-opacity-75 text-white rounded-pill px-2 py-0.5" style="font-size: 0.60rem; z-index: 2;"><i class="bi bi-1-circle-fill me-0.5"></i> Foto 1</span>
+    <img src="'.e($fotoUnitSrc).'" alt="Foto 1 '.e(asset_title($asset)).'" class="w-100 h-100 object-fit-cover" style="max-height: 180px; min-height: 140px; display: block;" onerror="this.onerror=null; this.parentElement.style.display=\'none\';">
+    <div class="position-absolute bottom-0 start-0 w-100 bg-dark bg-opacity-75 text-white py-0.5 px-1 small text-center" style="font-size: 0.64rem;">
+      <i class="bi bi-zoom-in"></i> Perbesar
+    </div>
+  </div>' : '';
+
+$slot2BoxHtml = $fotoUnit2Src !== '' ? '
+  <div class="position-relative rounded-3 overflow-hidden border shadow-xs bg-dark bg-opacity-10 d-flex align-items-center justify-content-center h-100" style="cursor: pointer; min-height: 140px; max-height: 180px;" onclick="openDetailPhotoModal(\''.e($fotoUnit2Src).'\', \''.e(addslashes(asset_title($asset) . ' - Foto 2 (Detail)')).'\', \''.e(addslashes($asset['kode_inventaris'] ?? '')).'\')" title="Klik untuk memperbesar Foto 2">
+    <span class="position-absolute top-0 start-0 m-1.5 badge bg-primary text-white rounded-pill px-2 py-0.5" style="font-size: 0.60rem; z-index: 2;"><i class="bi bi-2-circle-fill me-0.5"></i> Foto 2</span>
+    <img src="'.e($fotoUnit2Src).'" alt="Foto 2 '.e(asset_title($asset)).'" class="w-100 h-100 object-fit-cover" style="max-height: 180px; min-height: 140px; display: block;" onerror="this.onerror=null; this.parentElement.style.display=\'none\';">
+    <div class="position-absolute bottom-0 start-0 w-100 bg-dark bg-opacity-75 text-white py-0.5 px-1 small text-center" style="font-size: 0.64rem;">
+      <i class="bi bi-zoom-in"></i> Perbesar
+    </div>
+  </div>' : '';
+
+if ($hasBothPhotos) {
+    $photoColHtml = '
+    <div class="col-12 col-md-5 col-lg-4 text-center mb-2 mb-md-0">
+      <div class="row g-2 mb-1.5">
+        <div class="col-6">'.$slot1BoxHtml.'</div>
+        <div class="col-6">'.$slot2BoxHtml.'</div>
+      </div>
+      '.(!empty($asset['foto_updated_by']) ? '
+      <div class="mt-1">
+        <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 rounded-pill px-2 py-0.5" style="font-size: 0.68rem;">
+          <i class="bi bi-patch-check-fill me-1"></i> Diverifikasi: <strong>'.e($asset['foto_updated_by']).'</strong> (2/2 Foto)
+        </span>
+      </div>' : '').'
+      <div class="mt-1.5 d-flex justify-content-center gap-1.5">
+        <a href="'.e(module_url('photo_trash.php', ['source_type' => 'assets', 'item_id' => $assetId])).'" class="btn btn-sm btn-light border py-0.5 px-2 text-secondary fw-semibold" style="font-size: 0.70rem;" title="Folder Sampah Foto (Tersimpan 7 Hari)">
+          <i class="bi bi-recycle text-success me-0.5"></i> Sampah '.($totalTrashAssetsCount > 0 ? '<span class="badge bg-danger text-white rounded-pill">'.$totalTrashAssetsCount.'</span>' : '').'
+        </a>
+      </div>
+    </div>';
+    $specColClass = 'col-12 col-md-7 col-lg-8';
+} elseif ($hasAnyUnitPhoto) {
+    $photoColHtml = '
+    <div class="col-12 col-md-3 col-lg-2 text-center mb-2 mb-md-0">
+      '.($slot1BoxHtml ?: $slot2BoxHtml).'
+      '.(!empty($asset['foto_updated_by']) ? '
+      <div class="mt-1">
+        <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 rounded-pill px-2 py-0.5" style="font-size: 0.68rem;">
+          <i class="bi bi-patch-check-fill me-1"></i> Diverifikasi: <strong>'.e($asset['foto_updated_by']).'</strong> (1/2 Foto)
+        </span>
+      </div>' : '').'
+      <div class="mt-1.5 d-flex justify-content-center gap-1.5">
+        <a href="'.e(module_url('photo_trash.php', ['source_type' => 'assets', 'item_id' => $assetId])).'" class="btn btn-sm btn-light border py-0.5 px-2 text-secondary fw-semibold" style="font-size: 0.70rem;" title="Folder Sampah Foto (Tersimpan 7 Hari)">
+          <i class="bi bi-recycle text-success me-0.5"></i> Sampah '.($totalTrashAssetsCount > 0 ? '<span class="badge bg-danger text-white rounded-pill">'.$totalTrashAssetsCount.'</span>' : '').'
+        </a>
+      </div>
+    </div>';
+    $specColClass = 'col-12 col-md-9 col-lg-10';
+} else {
+    $photoColHtml = '';
+    $specColClass = 'col-12';
+}
+
+// Catatan Keluhan & Tindak Lanjut Terkait Komputer Ini
+$complaints = function_exists('get_asset_complaints') ? get_asset_complaints($assetId) : [];
+$complaintCount = count($complaints);
+$complaintCardHtml = '';
+if (!empty($complaints)) {
+    $cListHtml = '';
+    foreach ($complaints as $c) {
+        $cId = (int)($c['id'] ?? 0);
+        $cStatus = trim((string)($c['status'] ?? 'Menunggu'));
+        $cIsDone = (strtolower($cStatus) === 'selesai');
+        $cBadge = $cIsDone 
+            ? '<span class="badge bg-success text-white px-2 py-1"><i class="bi bi-check-circle me-1"></i>Selesai</span>'
+            : '<span class="badge bg-warning text-dark px-2 py-1"><i class="bi bi-clock-history me-1"></i>'.$cStatus.'</span>';
+
+        $cListHtml .= '
+        <div class="p-2.5 p-md-3 mb-2 rounded-3 border bg-white shadow-xs" style="border-left: 4px solid '.($cIsDone ? '#10B981' : '#F59E0B').' !important;">
+          <div class="d-flex justify-content-between align-items-center gap-2 mb-1">
+            <div class="d-flex align-items-center gap-1.5 flex-wrap">
+              <span class="badge bg-secondary bg-opacity-10 text-secondary border font-monospace small">#'.$cId.'</span>
+              <span class="fw-bold text-dark small">'.e($c['reporter_name'] ?? 'Karyawan').'</span>
+              <span class="badge bg-light text-secondary border small">'.e($c['kategori'] ?? 'Kendala').'</span>
+            </div>
+            <div>'.$cBadge.'</div>
+          </div>
+          <div class="small text-dark mb-1.5"><strong>Keluhan:</strong> '.e($c['complaint'] ?? '-').'</div>
+          '.(!empty($c['technician_response']) ? '
+          <div class="p-2 rounded bg-light border text-secondary small" style="font-size: 0.78rem;">
+            <i class="bi bi-wrench me-1 text-primary"></i><strong>Tindak Lanjut IT:</strong> '.e($c['technician_response']).'
+            '.(!empty($c['resolved_by']) ? ' &bull; <span class="text-muted">oleh '.e($c['resolved_by']).'</span>' : '').'
+          </div>' : '').'
+        </div>';
+    }
+
+    $complaintCardHtml = '
+    <div class="card p-3 p-md-4 border shadow-sm mb-3 mb-md-4" style="border-radius: 8px; border-color: var(--app-border) !important; background: #fff;">
+      <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-2">
+        <div>
+          <div class="fw-bold text-dark text-uppercase small" style="letter-spacing: 0.05em;">
+            <i class="bi bi-chat-left-dots text-primary me-2"></i>03 · Catatan &amp; Keluhan Pengguna Komputer Ini
+          </div>
+          <div class="text-muted small mt-0.5" style="font-size: 0.78rem;">Rekam jejak keluhan pengguna dan riwayat tindak lanjut penanganan teknisi IT.</div>
+        </div>
+        <button type="button" id="btnToggleComplaintHistory" class="btn btn-sm btn-outline-secondary fw-semibold py-1 px-2.5 rounded-pill shadow-xs" onclick="toggleComplaintHistory(this)" aria-expanded="false" style="font-size: 0.75rem;">
+          <i class="bi bi-chevron-down me-1" id="iconToggleComplaintHistory"></i>
+          <span id="labelToggleComplaintHistory">Tampilkan Riwayat ('.$complaintCount.')</span>
+        </button>
+      </div>
+
+      <div id="complaintHistoryContainer" class="complaint-history-disclosure-panel mt-2" hidden="until-found">
+        '.$cListHtml.'
+      </div>
+    </div>';
+}
+
+// Daftar tahun yang tersedia untuk switcher checklist (misal: 2024, 2025, 2026, 2027)
+$cardYears = [];
+for ($y = max(2023, $curYear - 2); $y <= $curYear + 1; $y++) {
+    $cardYears[] = $y;
+}
+if (!in_array($scanYear, $cardYears, true)) {
+    $cardYears[] = $scanYear;
+}
+foreach ($assetHistory as $hRow) {
+    $hDate = (string)($hRow['maintenance_date'] ?? '');
+    if ($hDate !== '') {
+        $hYear = (int)date('Y', strtotime($hDate));
+        if ($hYear >= 2020 && !in_array($hYear, $cardYears, true)) {
+            $cardYears[] = $hYear;
+        }
+    }
+}
+sort($cardYears);
+
+if (!function_exists('render_asset_card_matrix_tbody')) {
+    function render_asset_card_matrix_tbody(array $matrix, string $token, int $currentLogId = 0): string {
+        $rowsHtml = '';
+        for ($m = 1; $m <= 12; $m++) {
+            $row = $matrix[$m] ?? ['date_str' => '-', 'is_done' => false, 'paraf' => '-', 'log_id' => 0, 'checklists' => []];
+            $dateLabel = (string)($row['date_str'] ?? '-');
+            $isDone = !empty($row['is_done']);
+            $logId = (int)($row['log_id'] ?? 0);
+            $isThisLog = ($currentLogId > 0 && $logId === $currentLogId);
+
+            if ($isDone) {
+                $parafText = htmlspecialchars((string)($row['paraf'] ?? '-'), ENT_QUOTES, 'UTF-8');
+                if ($logId > 0) {
+                    if ($isThisLog) {
+                        $paraf = '<span class="badge bg-primary text-white py-1 px-1.5 font-monospace" style="font-size:0.75rem;" title="Sesi yang sedang Anda lihat">'.$parafText.' <i class="bi bi-eye-fill ms-0.5"></i></span>';
+                    } else {
+                        $paraf = '<a href="'.htmlspecialchars(module_url('maintenance_detail.php', ['id' => $logId, 't' => $token]), ENT_QUOTES, 'UTF-8').'" class="text-decoration-none text-dark fw-bold" title="Lihat Rincian Sesi #'.$logId.'">'.$parafText.'</a>';
+                    }
+                } else {
+                    $paraf = $parafText;
+                }
+            } else {
+                $paraf = '<span class="text-muted" style="font-size: 0.72rem;">-</span>';
+            }
+
+            $rowClass = ($m % 2 === 0) ? 'even-row' : 'odd-row';
+            if ($isDone) $rowClass .= ' done-row';
+
+            $cols1to9 = '';
+            for ($num = 1; $num <= 9; $num++) {
+                $chkVal = (int)($row['checklists'][$num] ?? 0);
+                if ($isDone) {
+                    $cols1to9 .= '<td class="chk-col '.($chkVal ? 'chk-yes' : 'chk-no').'">'.($chkVal ? '✓' : '-').'</td>';
+                } else {
+                    $cols1to9 .= '<td class="chk-col">&nbsp;</td>';
+                }
+            }
+
+            $rowsHtml .= '
+            <tr class="'.$rowClass.'"'.($isThisLog ? ' style="background-color: #EAF3FF !important;"' : '').'>
+              <td class="tgl-col">'.htmlspecialchars($dateLabel, ENT_QUOTES, 'UTF-8').($isThisLog ? ' <span class="badge bg-primary-subtle text-primary border ms-1" style="font-size:0.62rem;">Sesi Ini</span>' : '').'</td>
+              '.$cols1to9.'
+              <td class="paraf-col">'.$paraf.'</td>
+            </tr>';
+        }
+        return $rowsHtml;
+    }
+}
+
+$allYearMatricesData = [];
+foreach ($cardYears as $cy) {
+    $mMatrix = get_asset_yearly_card_matrix($assetId, $cy);
+    $allYearMatricesData[$cy] = [
+        'year' => $cy,
+        'is_current' => ($cy === $curYear),
+        'rows_html' => render_asset_card_matrix_tbody($mMatrix, $token, $id),
+        'print_url' => module_url('print_card.php', ['id' => $assetId, 'tahun' => $cy]),
+        'page_url' => module_url('maintenance_detail.php', ['id' => $id, 't' => $token, 'tahun' => $cy]),
+    ];
+}
+
+$yearButtonsHtml = '';
+foreach ($cardYears as $cy) {
+    $isSel = ($cy === $scanYear);
+    $activeClass = $isSel ? 'btn-primary active fw-bold shadow-xs' : 'btn-outline-secondary';
+    $yearButtonsHtml .= '<button type="button" id="yearBtn_' . $cy . '" class="btn btn-sm ' . $activeClass . ' year-nav-btn" onclick="switchChecklistYear(' . $cy . ')" title="Lihat Checklist Tahun ' . $cy . '">' . $cy . ($cy === $curYear ? ' <span class="d-none d-lg-inline opacity-75">★</span>' : '') . '</button>';
+}
+
+$userDisplay = !empty($asset['karyawan_nama']) && $asset['karyawan_nama'] !== '-' ? $asset['karyawan_nama'] : 'Umum / Pool';
+$divisi = !empty($asset['divisi_nama']) && $asset['divisi_nama'] !== '-' ? $asset['divisi_nama'] : '';
+$userWithDiv = $divisi ? "{$userDisplay} ({$divisi})" : $userDisplay;
+$ipDisplay = !empty($asset['ip_address']) ? $asset['ip_address'] : (!empty($asset['ip']) ? $asset['ip'] : '-');
+$kodeInv = $asset['kode_inventaris'] ?? ('INV-IT-' . sprintf('%03d', $assetId));
+$deviceTitle = asset_title($asset);
+$printerDisplay = !empty($asset['printer']) && $asset['printer'] !== '-' ? $asset['printer'] : '-';
+$cabangLabel = !empty($asset['cabang_nama']) && $asset['cabang_nama'] !== '-' ? $asset['cabang_nama'] : 'KPO';
+$cardMatrixRows = $allYearMatricesData[$scanYear]['rows_html'] ?? '';
+
+$checklistCardHtml = '
+    <div class="card p-3 p-md-4 border shadow-sm mb-3 mb-md-4 scan-card-section" style="border-radius: 8px; border-color: var(--app-border) !important; background: #fff;">
+      <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-2 mb-3">
+        <div>
+          <div class="fw-bold text-dark text-uppercase small" style="letter-spacing: 0.05em;">
+            <i class="bi bi-card-checklist text-primary me-2"></i>04 · KARTU KONTROL CHECKLIST 12 BULAN · <span id="cardChecklistTitleYear">'.$scanYear.'</span>
+          </div>
+          <div class="text-secondary small mt-0.5" id="cardChecklistBadgeYear">
+            '.($scanYear === $curYear ? '<span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-2 py-0.5"><i class="bi bi-calendar-check me-1"></i>Tahun Berjalan ('.$scanYear.')</span>' : '<span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle rounded-pill px-2 py-0.5"><i class="bi bi-clock-history me-1"></i>Arsip Riwayat Tahun '.$scanYear.'</span>').'
+          </div>
+        </div>
+
+        <div class="d-flex flex-wrap align-items-center gap-2 w-100 w-md-auto justify-content-between justify-content-md-end">
+          <div class="d-flex align-items-center gap-1.5">
+            <span class="small text-secondary fw-semibold d-none d-sm-inline"><i class="bi bi-calendar3 me-1"></i>Ganti Tahun:</span>
+            <div class="btn-group btn-group-sm" role="group" aria-label="Pilih Tahun">
+              '.$yearButtonsHtml.'
+            </div>
+          </div>
+          <a id="btnCetakKartuTahun" class="btn btn-sm btn-outline-primary fw-semibold" target="_blank" href="'.e(module_url('print_card.php', ['id'=>$assetId, 'tahun'=>$scanYear])).'">
+            <i class="bi bi-printer me-1"></i> <span id="btnCetakKartuYearText">Cetak Kartu '.$scanYear.'</span>
+          </a>
+        </div>
+      </div>
+
+      <div id="cardChecklistArchiveAlertContainer">
+      '.($scanYear !== $curYear ? '
+      <div class="alert alert-warning py-2 px-3 mb-3 rounded-3 small d-flex align-items-center justify-content-between flex-wrap gap-2">
+        <div class="d-flex align-items-center gap-2">
+          <i class="bi bi-info-circle-fill fs-5 text-warning-emphasis"></i>
+          <div>
+            Anda sedang melihat <strong>Arsip Checklist Maintenance Tahun '.$scanYear.'</strong>. Seluruh riwayat pelaksanaan 12 bulan di tahun '.$scanYear.' tersimpan permanen dan dapat dilihat kembali kapan saja.
+          </div>
+        </div>
+        <button type="button" onclick="switchChecklistYear('.$curYear.')" class="btn btn-sm btn-warning text-dark fw-bold py-1 px-2.5 rounded-pill shadow-xs">
+          <i class="bi bi-arrow-return-left me-1"></i> Kembali ke Tahun '.$curYear.'
+        </button>
+      </div>' : '').'
+      </div>
+
+      <!-- Modern Kartu Kontrol Container (Persis Desain Gambar) -->
+      <div class="mobile-card-wrapper">
+        <!-- Header Banner Berwarna -->
+        <div class="grid6-top-banner mb-2">
+          <span class="banner-title"><i class="bi bi-card-checklist me-1"></i> KARTU KONTROL IT · <span id="bannerCardYear">'.$scanYear.($scanYear !== $curYear ? ' (ARSIP)' : '').'</span></span>
+          <span class="grid6-branch-pill">'.e($cabangLabel).'</span>
+        </div>
+
+        <!-- Header Info -->
+        <table class="grid6-info-table mb-2">
+          <tr>
+            <td class="info-lbl-col"><span class="badge-lbl badge-blue">NAMA</span></td>
+            <td class="info-sep-col">:</td>
+            <td class="info-v"><strong>'.e($userWithDiv).'</strong></td>
+          </tr>
+          <tr>
+            <td class="info-lbl-col"><span class="badge-lbl badge-green">IP / KODE</span></td>
+            <td class="info-sep-col">:</td>
+            <td class="info-v"><span class="text-success fw-bold font-monospace">'.e($ipDisplay).'</span> · <span class="badge-kode font-monospace">'.e($kodeInv).'</span></td>
+          </tr>
+          <tr>
+            <td class="info-lbl-col"><span class="badge-lbl badge-purple">UNIT/PRT</span></td>
+            <td class="info-sep-col">:</td>
+            <td class="info-v">'.e($deviceTitle).' · <span class="text-secondary">'.e($printerDisplay).'</span></td>
+          </tr>
+        </table>
+
+        <!-- 12 Months Matrix Table -->
+        <div class="grid6-matrix-wrapper">
+          <table class="grid6-matrix-table">
+            <colgroup>
+              <col class="col-w-tgl">
+              <col class="col-w-chk">
+              <col class="col-w-chk">
+              <col class="col-w-chk">
+              <col class="col-w-chk">
+              <col class="col-w-chk">
+              <col class="col-w-chk">
+              <col class="col-w-chk">
+              <col class="col-w-chk">
+              <col class="col-w-chk">
+              <col class="col-w-paraf">
+            </colgroup>
+            <thead>
+              <tr>
+                <th class="tgl-h">TGL</th>
+                <th class="chk-h">1</th>
+                <th class="chk-h">2</th>
+                <th class="chk-h">3</th>
+                <th class="chk-h">4</th>
+                <th class="chk-h">5</th>
+                <th class="chk-h">6</th>
+                <th class="chk-h">7</th>
+                <th class="chk-h">8</th>
+                <th class="chk-h">9</th>
+                <th class="paraf-h">PARAF</th>
+              </tr>
+            </thead>
+            <tbody id="cardMatrixTbody">
+              '.$cardMatrixRows.'
+            </tbody>
+          </table>
+        </div>
+
+        <!-- 9 Item Legend Footer Lengkap (1-9) -->
+        <div class="grid6-ket-box mt-2">
+          <div class="grid6-ket-title"><i class="bi bi-info-circle-fill me-1"></i>KETERANGAN ITEM CHECKLIST (1 - 9):</div>
+          <div class="grid6-ket-grid">
+            <span class="leg-tag leg-blue"><b>1.</b> Scan Virus</span>
+            <span class="leg-tag leg-blue"><b>2.</b> Update AV</span>
+            <span class="leg-tag leg-blue"><b>3.</b> Temp File</span>
+            <span class="leg-tag leg-purple"><b>4.</b> Keyboard</span>
+            <span class="leg-tag leg-purple"><b>5.</b> Mouse</span>
+            <span class="leg-tag leg-purple"><b>6.</b> CPU & Mon</span>
+            <span class="leg-tag leg-teal"><b>7.</b> Cek Tinta</span>
+            <span class="leg-tag leg-teal"><b>8.</b> Cartridge</span>
+            <span class="leg-tag leg-teal"><b>9.</b> Cek Nozzle</span>
+          </div>
+        </div>
+
+      </div>
+    </div>';
 
 // Rekapitulasi frekuensi per bulan untuk perangkat ini
 $assetMonthlyBreakdown = [];
@@ -445,7 +793,7 @@ $editBtnTop = $isLoggedIn
     : '<a class="btn btn-outline-primary btn-sm fw-semibold flex-fill flex-sm-grow-0" href="'.e(module_url('login.php')).'"><i class="bi bi-box-arrow-in-right me-1"></i> Login Edit</a>';
 
 $backBtnTop = !empty($token)
-    ? '<a class="btn btn-outline-primary btn-sm fw-bold flex-fill flex-sm-grow-0" href="'.e(module_url('scan.php', ['t' => $token])).'"><i class="bi bi-arrow-left me-1"></i> Kembali ke Kartu QR</a>'
+    ? '<a class="btn btn-outline-primary btn-sm fw-bold flex-fill flex-sm-grow-0" href="'.e(module_url('scan.php', ['t' => $token, 'tahun' => $scanYear])).'"><i class="bi bi-arrow-left me-1"></i> Kembali ke Kartu QR</a>'
     : ($isLoggedIn
         ? '<a class="btn btn-outline-secondary btn-sm fw-semibold flex-fill flex-sm-grow-0" href="'.e(module_url('audit.php')).'"><i class="bi bi-arrow-left me-1"></i> Riwayat Audit</a>'
         : '<a class="btn btn-outline-secondary btn-sm fw-semibold flex-fill flex-sm-grow-0" href="javascript:history.back()"><i class="bi bi-arrow-left me-1"></i> Kembali</a>');
@@ -650,7 +998,7 @@ if (empty($allSessions)) {
 $publicBanner = !empty($token) ? '
 <div class="alert alert-info py-2.5 px-3 small d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center gap-2 mb-3 border-0 shadow-sm rounded-3">
   <span><i class="bi bi-qr-code-scan me-1.5 text-primary"></i> <strong>Rincian Pemeliharaan</strong> · Terhubung dengan Kartu QR Perangkat ('.e($asset['kode_inventaris'] ?? 'Aset').')</span>
-  <a href="'.e(module_url('scan.php', ['t' => $token])).'" class="btn btn-sm btn-primary fw-bold py-1 px-3 w-100 w-sm-auto text-center"><i class="bi bi-arrow-left me-1"></i> Kembali ke Kartu QR & Riwayat</a>
+  <a href="'.e(module_url('scan.php', ['t' => $token, 'tahun' => $scanYear])).'" class="btn btn-sm btn-primary fw-bold py-1 px-3 w-100 w-sm-auto text-center"><i class="bi bi-arrow-left me-1"></i> Kembali ke Kartu QR & Riwayat</a>
 </div>' : (!$isLoggedIn ? '
 <div class="alert alert-info py-2.5 px-3 small d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center gap-2 mb-3 border-0 shadow-sm rounded-3">
   <span><i class="bi bi-qr-code-scan me-1.5 text-primary"></i> <strong>Rincian Pemeliharaan</strong> · Mode Publik</span>
@@ -695,17 +1043,9 @@ $body = '
         <span class="badge-chip chip-secondary font-monospace" style="font-size: 0.72rem;">ID ASET #'.(int)($asset['id'] ?? 0).'</span>
       </div>
       <div class="card-body p-3 p-md-4">
-        '.(($mFoto = trim((string)($asset['foto'] ?? ''))) ? '
         <div class="row g-3 align-items-center mb-1">
-          <div class="col-12 col-md-3 col-lg-2 text-center mb-2 mb-md-0">
-            <div class="position-relative rounded-3 overflow-hidden border shadow-xs bg-light d-flex align-items-center justify-content-center" style="cursor: pointer; min-height: 130px; max-height: 160px;" onclick="window.open(\''.e(function_exists('asset_image_url') ? asset_image_url($mFoto) : module_url($mFoto)).'\', \'_blank\')" title="Klik untuk membuka foto asli di tab baru">
-              <img src="'.e(function_exists('asset_image_url') ? asset_image_url($mFoto) : module_url($mFoto)).'" alt="Foto Unit" class="w-100 h-100 object-fit-cover" style="max-height: 160px; min-height: 130px;" onerror="this.onerror=null; this.parentElement.style.display=\'none\';">
-              <div class="position-absolute bottom-0 start-0 w-100 bg-dark bg-opacity-75 text-white py-1 small text-center" style="font-size: 0.68rem; backdrop-filter: blur(2px);">
-                <i class="bi bi-zoom-in me-1"></i> Foto Unit
-              </div>
-            </div>
-          </div>
-          <div class="col-12 col-md-9 col-lg-10">
+          '.$photoColHtml.'
+          <div class="'.$specColClass.'">
             <div class="row g-2 g-md-3 small">
               <div class="col-6 col-md-3">
                 <div class="p-2.5 p-md-3 bg-light rounded-3 border h-100" style="border-color: var(--app-border) !important;">
@@ -757,57 +1097,7 @@ $body = '
               </div>
             </div>
           </div>
-        </div>' : '
-        <div class="row g-2 g-md-3 small">
-          <div class="col-6 col-md-3">
-            <div class="p-2.5 p-md-3 bg-light rounded-3 border h-100" style="border-color: var(--app-border) !important;">
-              <div class="text-muted text-uppercase fw-bold" style="font-size: 0.68rem; letter-spacing: 0.04em;">Kode Inventaris:</div>
-              <div class="fw-bold font-monospace text-primary fs-6 text-truncate" title="'.e($asset['kode_inventaris'] ?? '-').'">'.e($asset['kode_inventaris'] ?? '-').'</div>
-            </div>
-          </div>
-          <div class="col-6 col-md-3">
-            <div class="p-2.5 p-md-3 bg-light rounded-3 border h-100" style="border-color: var(--app-border) !important;">
-              <div class="text-muted text-uppercase fw-bold" style="font-size: 0.68rem; letter-spacing: 0.04em;">Serial Number:</div>
-              <div class="fw-semibold font-monospace text-dark text-truncate" title="'.e($asset['serial_number'] ?? '-').'">'.e($asset['serial_number'] ?? '-').'</div>
-            </div>
-          </div>
-          <div class="col-6 col-md-3">
-            <div class="p-2.5 p-md-3 bg-light rounded-3 border h-100" style="border-color: var(--app-border) !important;">
-              <div class="text-muted text-uppercase fw-bold" style="font-size: 0.68rem; letter-spacing: 0.04em;">Jenis / Kategori:</div>
-              <div class="fw-semibold text-dark text-truncate">'.e($asset['kategori_nama'] ?? 'Perangkat IT').'</div>
-            </div>
-          </div>
-          <div class="col-6 col-md-3">
-            <div class="p-2.5 p-md-3 bg-light rounded-3 border h-100" style="border-color: var(--app-border) !important;">
-              <div class="text-muted text-uppercase fw-bold" style="font-size: 0.68rem; letter-spacing: 0.04em;">Merk & Model:</div>
-              <div class="fw-bold text-dark text-truncate" title="'.e(asset_title($asset)).'">'.e(asset_title($asset)).'</div>
-            </div>
-          </div>
-          <div class="col-6 col-md-3">
-            <div class="p-2.5 p-md-3 bg-light rounded-3 border h-100" style="border-color: var(--app-border) !important;">
-              <div class="text-muted text-uppercase fw-bold" style="font-size: 0.68rem; letter-spacing: 0.04em;">Pengguna / PIC:</div>
-              <div class="fw-bold text-dark text-truncate"><i class="bi bi-person-circle text-primary me-1"></i>'.e($asset['karyawan_nama'] ?? '-').'</div>
-            </div>
-          </div>
-          <div class="col-6 col-md-3">
-            <div class="p-2.5 p-md-3 bg-light rounded-3 border h-100" style="border-color: var(--app-border) !important;">
-              <div class="text-muted text-uppercase fw-bold" style="font-size: 0.68rem; letter-spacing: 0.04em;">Cabang & Divisi:</div>
-              <div class="fw-semibold text-dark text-truncate" title="'.e($asset['cabang_nama'] ?? '-').' · '.e($asset['divisi_nama'] ?? '-').'">'.e($asset['cabang_nama'] ?? '-').' · '.e($asset['divisi_nama'] ?? '-').'</div>
-            </div>
-          </div>
-          <div class="col-6 col-md-3">
-            <div class="p-2.5 p-md-3 bg-light rounded-3 border h-100" style="border-color: var(--app-border) !important;">
-              <div class="text-muted text-uppercase fw-bold" style="font-size: 0.68rem; letter-spacing: 0.04em;">Alamat IP:</div>
-              <div class="fw-bold font-monospace text-primary text-truncate">'.e($asset['ip_address'] ?? $asset['ip'] ?? '-').'</div>
-            </div>
-          </div>
-          <div class="col-6 col-md-3">
-            <div class="p-2.5 p-md-3 bg-light rounded-3 border h-100" style="border-color: var(--app-border) !important;">
-              <div class="text-muted text-uppercase fw-bold" style="font-size: 0.68rem; letter-spacing: 0.04em;">Printer Terhubung:</div>
-              <div class="fw-semibold text-dark text-truncate">'.e($asset['printer'] ?? '-').'</div>
-            </div>
-          </div>
-        </div>').'
+        </div>
       </div>
     </div>
 
@@ -914,17 +1204,23 @@ $body = '
       </div>
     </div>
 
-    <!-- Card 3: Riwayat Pencatatan Sesi Pemeliharaan (Sesi Komputer Ini vs Seluruh Sistem) -->
+    <!-- Card: Catatan & Keluhan Karyawan / Pengguna -->
+    '.$complaintCardHtml.'
+
+    <!-- Card: KARTU KONTROL CHECKLIST 12 BULAN (DENGAN GANTI TAHUN INSTAN) -->
+    '.$checklistCardHtml.'
+
+    <!-- Card: Riwayat Pencatatan Sesi Pemeliharaan (Sesi Komputer Ini vs Seluruh Sistem) -->
     <div class="card p-0 border shadow-sm mb-3 mb-md-4" style="border-radius: 8px; border-color: var(--app-border) !important; background: #fff;">
       <div class="card-header bg-white py-2.5 px-3 py-md-3 px-md-4 d-flex justify-content-between align-items-center flex-wrap gap-2" style="border-bottom: 1px solid var(--app-border);">
         <div>
           <div class="fw-bold text-dark text-uppercase small" style="letter-spacing: 0.05em;">
-            <i class="bi bi-clock-history text-primary me-2"></i>03 · Pencatatan Sesi Pemeliharaan (Audit Sesi)
+            <i class="bi bi-clock-history text-primary me-2"></i>05 · Pencatatan Sesi Pemeliharaan (Audit Sesi)
           </div>
           <div class="text-muted small mt-0.5" style="font-size: 0.78rem;">Lihat rekam jejak sesi pemeliharaan komputer ini atau seluruh sesi pencatatan sistem operasional.</div>
         </div>
         <div class="d-flex align-items-center gap-2 flex-wrap w-100 w-sm-auto justify-content-start justify-content-sm-end">
-          '.(!empty($asset['token']) ? '<a href="'.e(module_url('scan.php', ['t' => $asset['token']])).'" class="btn btn-outline-secondary btn-sm fw-semibold flex-fill flex-sm-grow-0"><i class="bi bi-card-checklist me-1"></i> Kartu 12 Bulan</a>' : '').'
+          '.(!empty($token) ? '<a href="'.e(module_url('scan.php', ['t' => $token, 'tahun' => $scanYear])).'" class="btn btn-outline-secondary btn-sm fw-semibold flex-fill flex-sm-grow-0"><i class="bi bi-card-checklist me-1"></i> Kartu QR (Tahun '.$scanYear.')</a>' : '').'
           <a href="'.e(module_url('audit.php')).'" class="btn btn-outline-primary btn-sm fw-semibold flex-fill flex-sm-grow-0"><i class="bi bi-table me-1"></i> Audit Lengkap</a>
         </div>
       </div>
@@ -1155,6 +1451,200 @@ $extraHead = '
   --app-navy: #0D2748;
   --app-accent: #124E96;
 }
+/* Modern Kartu Kontrol IT Base Styles */
+.scan-card-section {
+  background: #ffffff;
+  border-radius: 8px;
+}
+.mobile-card-wrapper {
+  background: #ffffff;
+  border: 1.5px solid #2563eb;
+  border-radius: 10px;
+  padding: 10px 12px;
+  box-shadow: 0 4px 18px rgba(37, 99, 235, 0.08);
+  margin: 0 auto;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+.grid6-top-banner {
+  background: linear-gradient(135deg, #1e40af 0%, #2563eb 100%);
+  color: #ffffff;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-weight: 700;
+  font-size: 0.90rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+.grid6-top-banner .banner-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.grid6-branch-pill {
+  background: #ffffff;
+  color: #1e3a8a;
+  font-size: 0.72rem;
+  font-weight: 800;
+  padding: 2px 8px;
+  border-radius: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  flex-shrink: 0;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+}
+.grid6-info-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.84rem;
+  line-height: 1.4;
+  margin: 8px 0;
+}
+.grid6-info-table td {
+  padding: 3px 2px;
+  vertical-align: middle;
+}
+.grid6-info-table .info-lbl-col {
+  width: 82px;
+}
+.grid6-info-table .info-sep-col {
+  width: 8px;
+  text-align: center;
+}
+.grid6-info-table .info-v {
+  word-break: break-word;
+}
+.badge-lbl {
+  font-size: 0.70rem;
+  font-weight: 800;
+  padding: 2px 6px;
+  border-radius: 4px;
+  display: inline-block;
+  text-align: center;
+  white-space: nowrap;
+}
+.badge-blue { background: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd; }
+.badge-green { background: #ecfdf5; color: #047857; border: 1px solid #a7f3d0; }
+.badge-purple { background: #f5f3ff; color: #6d28d9; border: 1px solid #ddd6fe; }
+.badge-kode { background: #f1f5f9; color: #0f172a; padding: 2px 6px; border-radius: 4px; font-weight: bold; border: 1px solid #cbd5e1; }
+.grid6-matrix-wrapper {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  margin-bottom: 8px;
+  border-radius: 6px;
+  border: 1px solid #2563eb;
+  background: #ffffff;
+}
+.grid6-matrix-table {
+  width: 100%;
+  table-layout: fixed;
+  border-collapse: collapse;
+  font-size: 0.82rem;
+  margin: 0;
+}
+.col-w-tgl { width: 17%; }
+.col-w-chk { width: 6.8%; }
+.col-w-paraf { width: 21.8%; }
+.grid6-matrix-table th {
+  background: #2563eb !important;
+  color: #ffffff !important;
+  border: 1px solid #1d4ed8;
+  font-weight: 700;
+  text-align: center;
+  padding: 5px 1px;
+  font-size: 0.74rem;
+  line-height: 1.2;
+}
+.grid6-matrix-table td {
+  border: 1px solid #cbd5e1;
+  text-align: center;
+  padding: 3px 1px;
+  height: 24px;
+  vertical-align: middle;
+}
+.grid6-matrix-table tr.even-row { background-color: #f8fafc; }
+.grid6-matrix-table tr.done-row { background-color: #f0fdf4; }
+.grid6-matrix-table tr.done-row td { border-color: #a7f3d0; }
+.grid6-matrix-table .tgl-col {
+  font-weight: 700;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.72rem;
+  color: #1e40af;
+  white-space: nowrap;
+  overflow: hidden;
+  text-align: center;
+  padding: 3px 1px;
+}
+.grid6-matrix-table .chk-col {
+  font-size: 0.84rem;
+  padding: 0;
+  text-align: center;
+  line-height: 1;
+}
+.grid6-matrix-table .chk-yes {
+  color: #059669;
+  font-weight: 900;
+}
+.grid6-matrix-table .chk-no {
+  color: #94a3b8;
+}
+.grid6-matrix-table .paraf-col {
+  font-size: 0.72rem;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  color: #334155;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  padding: 2px 2px;
+  text-align: center;
+}
+.grid6-ket-box {
+  background: #f8fafc;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  padding: 8px 10px;
+}
+.grid6-ket-title {
+  font-size: 0.72rem;
+  font-weight: 800;
+  color: #1e40af;
+  margin-bottom: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  display: flex;
+  align-items: center;
+}
+.grid6-ket-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 4px 6px;
+}
+.leg-tag {
+  font-size: 0.70rem;
+  font-weight: 600;
+  padding: 2px 5px;
+  border-radius: 4px;
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  justify-content: flex-start;
+}
+.leg-blue { background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; }
+.leg-purple { background: #faf5ff; color: #7e22ce; border: 1px solid #e9d5ff; }
+.leg-teal { background: #f0fdfa; color: #0f766e; border: 1px solid #99f6e4; }
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: 0.18s;
+  animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+}
 .month-pills-scroll {
   display: flex;
   align-items: center;
@@ -1209,8 +1699,205 @@ $extraHead = '
 }
 </style>';
 
+$zoomModalHtml = '
+<!-- Modal Zoom Preview Foto Unit -->
+<div class="modal fade" id="detailPhotoZoomModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-content bg-dark border-0 shadow-lg text-white">
+      <div class="modal-header border-0 pb-0">
+        <h6 class="modal-title fs-6 fw-bold" id="detailPhotoZoomTitle">Foto Unit</h6>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body text-center p-3">
+        <img src="" id="detailPhotoZoomImg" alt="Preview Foto" class="img-fluid rounded border border-secondary shadow" style="max-height: 80vh; object-fit: contain;">
+        <div class="mt-2 text-white-50 small font-monospace" id="detailPhotoZoomCode"></div>
+      </div>
+    </div>
+  </div>
+</div>';
+$body .= $zoomModalHtml;
+
 $extraScript = '
 <script>
+function openDetailPhotoModal(src, title, code) {
+  var modalEl = document.getElementById("detailPhotoZoomModal");
+  if (!modalEl) return;
+  var imgEl = document.getElementById("detailPhotoZoomImg");
+  var titleEl = document.getElementById("detailPhotoZoomTitle");
+  var codeEl = document.getElementById("detailPhotoZoomCode");
+  if (imgEl) imgEl.src = src;
+  if (titleEl) titleEl.textContent = title || "Foto Unit";
+  if (codeEl) codeEl.textContent = code || "";
+  var modal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
+  modal.show();
+}
+
+// Pre-rendered Checklist Matrices for Instant Switching (No Page Reload)
+window.__YEAR_MATRICES = ' . json_encode($allYearMatricesData, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP) . ';
+window.__CURRENT_RUNNING_YEAR = ' . (int)$curYear . ';
+window.__SELECTED_CHECKLIST_YEAR = ' . (int)$scanYear . ';
+
+function updateChecklistDOM(targetYear) {
+  var data = window.__YEAR_MATRICES ? window.__YEAR_MATRICES[targetYear] : null;
+  if (!data) return;
+
+  window.__SELECTED_CHECKLIST_YEAR = targetYear;
+  var currYr = window.__CURRENT_RUNNING_YEAR;
+  var isCurrent = (targetYear === currYr);
+
+  // 1. Update Title and Badge
+  var titleYear = document.getElementById("cardChecklistTitleYear");
+  if (titleYear) titleYear.textContent = targetYear;
+
+  var badgeYear = document.getElementById("cardChecklistBadgeYear");
+  if (badgeYear) {
+    if (isCurrent) {
+      badgeYear.innerHTML = "<span class=\"badge bg-success-subtle text-success border border-success-subtle rounded-pill px-2 py-0.5\"><i class=\"bi bi-calendar-check me-1\"></i>Tahun Berjalan (" + targetYear + ")</span>";
+    } else {
+      badgeYear.innerHTML = "<span class=\"badge bg-warning-subtle text-warning-emphasis border border-warning-subtle rounded-pill px-2 py-0.5\"><i class=\"bi bi-clock-history me-1\"></i>Arsip Riwayat Tahun " + targetYear + "</span>";
+    }
+  }
+
+  // 2. Update Archive Alert
+  var alertContainer = document.getElementById("cardChecklistArchiveAlertContainer");
+  if (alertContainer) {
+    if (!isCurrent) {
+      alertContainer.innerHTML = "<div class=\"alert alert-warning py-2 px-3 mb-3 rounded-3 small d-flex align-items-center justify-content-between flex-wrap gap-2\">" +
+        "<div class=\"d-flex align-items-center gap-2\">" +
+        "<i class=\"bi bi-info-circle-fill fs-5 text-warning-emphasis\"></i>" +
+        "<div>Anda sedang melihat <strong>Arsip Checklist Maintenance Tahun " + targetYear + "</strong>. Seluruh riwayat pelaksanaan 12 bulan di tahun " + targetYear + " tersimpan permanen dan dapat dilihat kembali kapan saja.</div>" +
+        "</div>" +
+        "<button type=\"button\" onclick=\"switchChecklistYear(" + currYr + ")\" class=\"btn btn-sm btn-warning text-dark fw-bold py-1 px-2.5 rounded-pill shadow-xs\">" +
+        "<i class=\"bi bi-arrow-return-left me-1\"></i> Kembali ke Tahun " + currYr + "</button>" +
+        "</div>";
+    } else {
+      alertContainer.innerHTML = "";
+    }
+  }
+
+  // 3. Update Banner Title
+  var bannerYear = document.getElementById("bannerCardYear");
+  if (bannerYear) {
+    bannerYear.textContent = targetYear + (isCurrent ? "" : " (ARSIP)");
+  }
+
+  // 4. Update Cetak Button
+  var printBtn = document.getElementById("btnCetakKartuTahun");
+  if (printBtn && data.print_url) {
+    printBtn.href = data.print_url;
+  }
+  var printText = document.getElementById("btnCetakKartuYearText");
+  if (printText) {
+    printText.textContent = "Cetak Kartu " + targetYear;
+  }
+
+  // 5. Update Table Rows
+  var tbody = document.getElementById("cardMatrixTbody");
+  if (tbody && data.rows_html) {
+    tbody.innerHTML = data.rows_html;
+  }
+
+  // 6. Update Year Nav Buttons active status
+  document.querySelectorAll(".year-nav-btn").forEach(function(btn) {
+    btn.classList.remove("btn-primary", "active", "fw-bold", "shadow-xs");
+    btn.classList.add("btn-outline-secondary");
+  });
+  var activeBtn = document.getElementById("yearBtn_" + targetYear);
+  if (activeBtn) {
+    activeBtn.classList.remove("btn-outline-secondary");
+    activeBtn.classList.add("btn-primary", "active", "fw-bold", "shadow-xs");
+  }
+}
+
+function switchChecklistYear(targetYear) {
+  targetYear = parseInt(targetYear, 10);
+  if (!targetYear || !window.__YEAR_MATRICES || !window.__YEAR_MATRICES[targetYear]) return;
+  if (targetYear === window.__SELECTED_CHECKLIST_YEAR) return;
+
+  var data = window.__YEAR_MATRICES[targetYear];
+
+  // Update browser URL without reloading page
+  if (window.history && window.history.pushState && data.page_url) {
+    window.history.pushState({ year: targetYear }, "", data.page_url);
+  }
+
+  // Modern Web Guidance: same-document-transitions with fallback
+  if (document.startViewTransition) {
+    document.startViewTransition(function() {
+      updateChecklistDOM(targetYear);
+    });
+  } else {
+    updateChecklistDOM(targetYear);
+  }
+}
+
+// Handle Browser Back / Forward buttons
+window.addEventListener("popstate", function(e) {
+  if (e.state && e.state.year) {
+    if (document.startViewTransition) {
+      document.startViewTransition(function() {
+        updateChecklistDOM(e.state.year);
+      });
+    } else {
+      updateChecklistDOM(e.state.year);
+    }
+  } else {
+    var params = new URLSearchParams(window.location.search);
+    var yr = parseInt(params.get("tahun"), 10) || window.__CURRENT_RUNNING_YEAR;
+    if (yr && window.__YEAR_MATRICES && window.__YEAR_MATRICES[yr]) {
+      if (document.startViewTransition) {
+        document.startViewTransition(function() {
+          updateChecklistDOM(yr);
+        });
+      } else {
+        updateChecklistDOM(yr);
+      }
+    }
+  }
+});
+
+// Toggle Hide/Show Riwayat Catatan Keluhan Karyawan
+function toggleComplaintHistory(btn) {
+  var container = document.getElementById("complaintHistoryContainer");
+  if (!container) return;
+  var toggleBtn = btn || document.getElementById("btnToggleComplaintHistory");
+  var isHidden = container.hasAttribute("hidden");
+  var count = ' . (int)$complaintCount . ';
+  var label = document.getElementById("labelToggleComplaintHistory");
+  var icon = document.getElementById("iconToggleComplaintHistory");
+
+  if (isHidden) {
+    container.removeAttribute("hidden");
+    if (toggleBtn) toggleBtn.setAttribute("aria-expanded", "true");
+    if (label) label.textContent = "Sembunyikan Riwayat";
+    if (icon) icon.className = "bi bi-chevron-up me-1";
+  } else {
+    container.setAttribute("hidden", ("onbeforematch" in HTMLElement.prototype) ? "until-found" : "");
+    if (toggleBtn) toggleBtn.setAttribute("aria-expanded", "false");
+    if (label) label.textContent = "Tampilkan Riwayat (" + count + ")";
+    if (icon) icon.className = "bi bi-chevron-down me-1";
+  }
+}
+
+document.addEventListener("DOMContentLoaded", function() {
+  var supportsBeforeMatch = ("onbeforematch" in HTMLElement.prototype);
+  var panels = document.querySelectorAll(".complaint-history-disclosure-panel");
+  panels.forEach(function(panel) {
+    if (!supportsBeforeMatch && panel.getAttribute("hidden") === "until-found") {
+      panel.setAttribute("hidden", "");
+    }
+    panel.addEventListener("beforematch", function() {
+      panel.removeAttribute("hidden");
+      var toggleBtn = document.getElementById("btnToggleComplaintHistory");
+      var label = document.getElementById("labelToggleComplaintHistory");
+      var icon = document.getElementById("iconToggleComplaintHistory");
+      if (toggleBtn) toggleBtn.setAttribute("aria-expanded", "true");
+      if (label) label.textContent = "Sembunyikan Riwayat";
+      if (icon) icon.className = "bi bi-chevron-up me-1";
+    });
+  });
+});
+
 function filterAssetTableByMonth(ym) {
   var rows = document.querySelectorAll(".asset-history-row");
   var visibleCount = 0;
