@@ -122,7 +122,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (($_POST['action'] ?? '') === 'reso
 }
 
 // =========================================================================
-// 0.1. PROSES UPDATE FOTO FISIK ASET DENGAN VERIFIKASI WAJAH TEKNISI (POST)
+// 0.05. PROSES PULIHKAN (RESTORE) FOTO ASET DARI FOLDER SAMPAH (7 HARI)
+// =========================================================================
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && (($_POST['action'] ?? '') === 'restore_asset_photo')) {
+    $trashId = (int)($_POST['trash_id'] ?? 0);
+    $actor = is_logged_in() ? (current_user_name() ?: 'Teknisi IT') : 'Teknisi IT';
+    $resRestore = restore_photo_from_trash($trashId, $actor);
+    if (!empty($resRestore['success'])) {
+        $_SESSION['flash_scan'] = "✓ Foto Ke-{$resRestore['restored_slot']} berhasil dipulihkan dari Folder Sampah!";
+        header('Location: ' . module_url('scan.php', ['t' => $token, 'photo_updated' => 1]));
+        exit;
+    } else {
+        $error = $resRestore['error'] ?? 'Gagal memulihkan foto dari Folder Sampah.';
+    }
+}
+
+// =========================================================================
+// 0.1. PROSES UPDATE / EDIT / HAPUS 1-2 FOTO FISIK ASET (POST)
 // =========================================================================
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && (($_POST['action'] ?? '') === 'update_asset_photo')) {
     $sentCsrf = (string)($_POST['_csrf'] ?? '');
@@ -139,28 +155,71 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (($_POST['action'] ?? '') === 'upda
         $verifierName = is_logged_in() ? current_user_name() : 'Teknisi IT';
     }
 
-    $fotoPath = null;
-    if (!empty($_POST['foto_base64'])) {
-        $fotoPath = save_asset_base64_image($_POST['foto_base64']);
+    $curF1 = trim((string)($asset['foto'] ?? ''));
+    $curF2 = trim((string)($asset['foto_2'] ?? ''));
+    $hapusSemua = !empty($_POST['hapus_semua_foto']);
+    $hapusF1 = $hapusSemua || !empty($_POST['hapus_foto_1']);
+    $hapusF2 = $hapusSemua || !empty($_POST['hapus_foto_2']);
+    $changedLabels = [];
+
+    if ($hapusF1 && $curF1 !== '') {
+        move_photo_to_trash('assets', $assetId, 1, $curF1, $verifierName, 'Dihapus melalui halaman Scan QR (Foto 1)');
+        $curF1 = '';
+        $changedLabels[] = 'Foto 1 dipindah ke Sampah (7 Hari)';
     }
-    if (!$fotoPath && !empty($_FILES['foto_unit']['tmp_name'])) {
-        $fotoPath = upload_asset_image('foto_unit');
+    if ($hapusF2 && $curF2 !== '') {
+        move_photo_to_trash('assets', $assetId, 2, $curF2, $verifierName, 'Dihapus melalui halaman Scan QR (Foto 2)');
+        $curF2 = '';
+        $changedLabels[] = 'Foto 2 dipindah ke Sampah (7 Hari)';
     }
 
-    if ($fotoPath) {
+    // Upload Foto 1 baru jika ada
+    $fotoPath1 = null;
+    if (!empty($_POST['foto_base64'])) {
+        $fotoPath1 = save_asset_base64_image($_POST['foto_base64']);
+    }
+    if (!$fotoPath1 && !empty($_FILES['foto_unit']['tmp_name'])) {
+        $fotoPath1 = upload_asset_image('foto_unit');
+    }
+    if ($fotoPath1) {
+        if ($curF1 !== '') {
+            move_photo_to_trash('assets', $assetId, 1, $curF1, $verifierName, 'Diganti dengan Foto 1 baru pada Scan QR');
+        }
+        $curF1 = $fotoPath1;
+        $changedLabels[] = 'Foto 1 disimpan';
+    }
+
+    // Upload Foto 2 baru jika ada
+    $fotoPath2 = null;
+    if (!empty($_POST['foto_base64_2'])) {
+        $fotoPath2 = save_asset_base64_image($_POST['foto_base64_2']);
+    }
+    if (!$fotoPath2 && !empty($_FILES['foto_unit_2']['tmp_name'])) {
+        $fotoPath2 = upload_asset_image('foto_unit_2');
+    }
+    if ($fotoPath2) {
+        if ($curF2 !== '') {
+            move_photo_to_trash('assets', $assetId, 2, $curF2, $verifierName, 'Diganti dengan Foto 2 baru pada Scan QR');
+        }
+        $curF2 = $fotoPath2;
+        $changedLabels[] = 'Foto 2 disimpan';
+    }
+
+    if (!empty($changedLabels)) {
         $nowStr = date('Y-m-d H:i:s');
         $upPayload = [
-            'foto' => $fotoPath,
-            'foto_updated_by' => $verifierName,
-            'foto_updated_at' => $nowStr
+            'foto' => $curF1,
+            'foto_2' => $curF2,
+            'foto_updated_by' => ($curF1 === '' && $curF2 === '') ? '' : $verifierName,
+            'foto_updated_at' => ($curF1 === '' && $curF2 === '') ? '' : $nowStr
         ];
         update_asset($assetId, $upPayload);
 
-        $_SESSION['flash_scan'] = '✓ Foto fisik perangkat berhasil disimpan dan diverifikasi oleh ' . htmlspecialchars($verifierName) . '.';
+        $_SESSION['flash_scan'] = '✓ Perubahan foto (' . implode(', ', $changedLabels) . ') berhasil diproses dan diverifikasi oleh ' . htmlspecialchars($verifierName) . '.';
         header('Location: ' . module_url('scan.php', ['t' => $token, 'photo_updated' => 1]));
         exit;
     } else {
-        $error = 'File foto tidak valid atau gagal diproses oleh server.';
+        $error = 'Silakan pilih foto baru (Foto 1 / Foto 2) atau centang foto yang ingin dihapus.';
     }
 }
 

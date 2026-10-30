@@ -705,8 +705,9 @@ function ensure_inventaris_kartu_columns(): void {
     static $done = false;
     if ($done) return;
     $done = true;
-    // Kolom-kolom inventaris sudah tersedia di skema database produksi.
-    // Menghindari ALTER TABLE pada setiap HTTP request untuk menjaga kecepatan dan menghindari lock MySQL.
+    if (function_exists('ensure_photo_trash_and_dual_photo_schema')) {
+        ensure_photo_trash_and_dual_photo_schema();
+    }
 }
 
 /**

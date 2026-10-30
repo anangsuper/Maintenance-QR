@@ -97,6 +97,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if (!$fotoUnit && !empty($_POST['foto_url'])) {
             $fotoUnit = trim((string)$_POST['foto_url']);
         }
+        $fotoUnit2 = upload_asset_image('foto_unit_2');
 
         $payload = [
             'kode_inventaris' => $kode,
@@ -114,20 +115,38 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'printer' => $printer,
         ];
 
-        // Biometric Face verification status jika disimpan dengan scan wajah
-        if (!empty($_POST['face_verified'])) {
-            $verifierName = trim((string)($_POST['verifier_name'] ?? ''));
-            if ($verifierName === '') {
-                $verifierName = current_user_name() ?: 'Teknisi IT';
-            }
-            $payload['foto_updated_by'] = $verifierName;
+        $actorName = trim((string)($_POST['verifier_name'] ?? '')) ?: (current_user_name() ?: 'Teknisi IT');
+        if (!empty($_POST['face_verified']) || $fotoUnit !== null || $fotoUnit2 !== null) {
+            $payload['foto_updated_by'] = $actorName;
             $payload['foto_updated_at'] = date('Y-m-d H:i:s');
         }
 
+        $oldF1 = trim((string)($asset['foto'] ?? ''));
+        $oldF2 = trim((string)($asset['foto_2'] ?? ''));
+        $delAll = !empty($_POST['hapus_semua_foto']);
+
         if ($fotoUnit !== null) {
+            if ($oldF1 !== '' && $oldF1 !== $fotoUnit) {
+                move_photo_to_trash('assets', $id, 1, $oldF1, $actorName, 'Diganti dengan Foto 1 baru pada Edit Aset');
+            }
             $payload['foto'] = $fotoUnit;
-        } elseif (!empty($_POST['hapus_foto'])) {
+        } elseif ($delAll || !empty($_POST['hapus_foto'])) {
+            if ($oldF1 !== '') {
+                move_photo_to_trash('assets', $id, 1, $oldF1, $actorName, 'Dihapus pada Edit Aset (Foto 1)');
+            }
             $payload['foto'] = '';
+        }
+
+        if ($fotoUnit2 !== null) {
+            if ($oldF2 !== '' && $oldF2 !== $fotoUnit2) {
+                move_photo_to_trash('assets', $id, 2, $oldF2, $actorName, 'Diganti dengan Foto 2 baru pada Edit Aset');
+            }
+            $payload['foto_2'] = $fotoUnit2;
+        } elseif ($delAll || !empty($_POST['hapus_foto_2'])) {
+            if ($oldF2 !== '') {
+                move_photo_to_trash('assets', $id, 2, $oldF2, $actorName, 'Dihapus pada Edit Aset (Foto 2)');
+            }
+            $payload['foto_2'] = '';
         }
 
         $res = update_asset($id, $payload);
@@ -317,6 +336,11 @@ $existingFotoSrc = '';
 if ($existingFoto) {
     $existingFotoSrc = str_starts_with($existingFoto, 'http') ? $existingFoto : module_url($existingFoto);
 }
+$existingFoto2 = trim((string)($asset['foto_2'] ?? ''));
+$existingFoto2Src = '';
+if ($existingFoto2) {
+    $existingFoto2Src = str_starts_with($existingFoto2, 'http') ? $existingFoto2 : module_url($existingFoto2);
+}
 
 $body = '
 <div class="row justify-content-center">
@@ -493,53 +517,87 @@ $body = '
           </div>
         </div>
 
-        <!-- Section 4: Foto Fisik Unit / Perangkat -->
-        <div class="d-flex align-items-center gap-2 border-bottom pb-2 mb-3">
-          <span class="tech-label text-primary">04 · FOTO FISIK PERANGKAT / UNIT</span>
+        <!-- Section 4: Foto Fisik Unit / Perangkat (Mendukung 2 Foto + Folder Sampah 7 Hari) -->
+        <div class="d-flex align-items-center justify-content-between gap-2 border-bottom pb-2 mb-3 flex-wrap">
+          <span class="tech-label text-primary">04 · FOTO FISIK PERANGKAT / UNIT (MAKS. 2 FOTO)</span>
+          <a href="'.e(module_url('photo_trash.php', ['source_type' => 'assets'])).'" class="btn btn-xs btn-outline-success rounded-pill px-2.5 py-1 fw-bold">
+            <i class="bi bi-recycle me-1"></i>Buka Folder Sampah Foto (7 Hari)
+          </a>
+        </div>
+        <div class="alert alert-success bg-success bg-opacity-10 border-success border-opacity-25 rounded-3 py-2 px-3 mb-3 small">
+          <i class="bi bi-recycle text-success me-1"></i> Foto yang dihapus atau diganti tidak langsung hilang permanen, melainkan disimpan di <strong>Folder Sampah Foto</strong> selama <strong>7 hari</strong> dan dapat di-restore kapan saja.
         </div>
         <div class="row g-3 mb-4">
-          <div class="col-md-7">
-            <div class="d-flex justify-content-between align-items-center mb-1">
-              <label class="form-label text-secondary small fw-semibold mb-0">Ganti / Upload Foto Unit Baru</label>
-              <span id="compressBadgeEdit" class="badge bg-primary bg-opacity-10 text-primary d-none" style="font-size: 0.72rem;">
-                <i class="bi bi-shield-check me-1"></i> Terkompres Cerdas
-              </span>
-            </div>
-            <input type="file" class="form-control" name="foto_unit" id="inputFotoUnit" accept="image/*" capture="environment">
-            <div class="form-text small text-muted">Mendukung format JPG, PNG, WEBP. Foto otomatis dikompres hemat ruang server (~150-250KB).</div>
-
-            '.(!empty($asset['foto_updated_by']) ? '
-            <div class="mt-2">
-              <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 rounded-pill px-2.5 py-1">
-                <i class="bi bi-patch-check-fill me-1"></i> Foto Terverifikasi: <strong>'.e($asset['foto_updated_by']).'</strong>
-                '.(!empty($asset['foto_updated_at']) ? ' ('.date('d/m/Y H:i', strtotime($asset['foto_updated_at'])).')' : '').'
-              </span>
-            </div>
-            ' : '').'
-
-            <div class="mt-3">
-              <label class="form-label text-secondary small fw-semibold">Atau URL Foto Eksternal / Cloud</label>
-              <input type="text" class="form-control font-monospace" name="foto_url" id="inputFotoUrl" value="'.e(str_starts_with($existingFoto, 'http') ? $existingFoto : '').'" placeholder="https://domain.com/path/foto.jpg">
-              <div class="form-text small text-muted">Isi jika foto unit dihosting di server penyimpanan cloud/eksternal.</div>
+          <div class="col-md-6">
+            <div class="p-3 rounded-3 border bg-light h-100">
+              <div class="d-flex justify-content-between align-items-center mb-1.5">
+                <label class="form-label text-dark small fw-bold mb-0"><span class="badge bg-dark me-1">1</span> Foto 1 (Utama / Tampak Unit)</label>
+                <span id="compressBadgeEdit" class="badge bg-primary bg-opacity-10 text-primary d-none" style="font-size: 0.70rem;">
+                  <i class="bi bi-shield-check me-1"></i> Terkompres Cerdas
+                </span>
+              </div>
+              <input type="file" class="form-control form-control-sm mb-2" name="foto_unit" id="inputFotoUnit" accept="image/*" capture="environment">
+              <div id="fotoPreviewContainer" class="border rounded bg-white d-flex align-items-center justify-content-center position-relative overflow-hidden shadow-xs" style="height: 155px;">
+                <img id="imgFotoPreview" src="'.e($existingFotoSrc).'" alt="Pratinjau Foto 1" class="w-100 h-100 object-fit-cover '.($existingFotoSrc ? '' : 'd-none').'">
+                <div id="fotoPlaceholder" class="text-secondary small text-center '.($existingFotoSrc ? 'd-none' : '').'">
+                  <i class="bi bi-camera fs-2 d-block text-muted mb-1"></i>
+                  Belum ada Foto 1
+                </div>
+              </div>
+              '.($existingFotoSrc ? '
+              <div class="form-check text-start mt-2 mb-0">
+                <input class="form-check-input" type="checkbox" name="hapus_foto" value="1" id="checkHapusFoto">
+                <label class="form-check-label small text-danger fw-semibold" for="checkHapusFoto">
+                  <i class="bi bi-trash"></i> Hilangkan Foto 1 Saja (Masuk Sampah 7 Hari)
+                </label>
+              </div>
+              ' : '').'
             </div>
           </div>
-          <div class="col-md-5 text-center">
-            <label class="form-label text-secondary small fw-semibold d-block text-start">Pratinjau Foto Unit</label>
-            <div id="fotoPreviewContainer" class="border rounded bg-light d-flex align-items-center justify-content-center position-relative overflow-hidden shadow-xs" style="height: 160px;">
-              <img id="imgFotoPreview" src="'.e($existingFotoSrc).'" alt="Pratinjau" class="w-100 h-100 object-fit-cover '.($existingFotoSrc ? '' : 'd-none').'">
-              <div id="fotoPlaceholder" class="text-secondary small '.($existingFotoSrc ? 'd-none' : '').'">
-                <i class="bi bi-camera fs-1 d-block text-muted mb-1"></i>
-                Belum ada foto unit
+
+          <div class="col-md-6">
+            <div class="p-3 rounded-3 border bg-light h-100">
+              <div class="d-flex justify-content-between align-items-center mb-1.5">
+                <label class="form-label text-dark small fw-bold mb-0"><span class="badge bg-primary me-1">2</span> Foto 2 (Detail / S/N / Stiker)</label>
               </div>
+              <input type="file" class="form-control form-control-sm mb-2" name="foto_unit_2" id="inputFotoUnit2" accept="image/*" capture="environment" onchange="if(this.files && this.files[0]){ var r=new FileReader(); r.onload=function(e){ var im=document.getElementById(\'imgFotoPreview2\'); var ph=document.getElementById(\'fotoPlaceholder2\'); if(im){im.src=e.target.result; im.classList.remove(\'d-none\');} if(ph) ph.classList.add(\'d-none\'); }; r.readAsDataURL(this.files[0]); }">
+              <div id="fotoPreviewContainer2" class="border rounded bg-white d-flex align-items-center justify-content-center position-relative overflow-hidden shadow-xs" style="height: 155px;">
+                <img id="imgFotoPreview2" src="'.e($existingFoto2Src).'" alt="Pratinjau Foto 2" class="w-100 h-100 object-fit-cover '.($existingFoto2Src ? '' : 'd-none').'">
+                <div id="fotoPlaceholder2" class="text-secondary small text-center '.($existingFoto2Src ? 'd-none' : '').'">
+                  <i class="bi bi-plus-circle-dotted fs-2 d-block text-primary mb-1"></i>
+                  Belum ada Foto 2 (Opsional)
+                </div>
+              </div>
+              '.($existingFoto2Src ? '
+              <div class="form-check text-start mt-2 mb-0">
+                <input class="form-check-input" type="checkbox" name="hapus_foto_2" value="1" id="checkHapusFoto2">
+                <label class="form-check-label small text-danger fw-semibold" for="checkHapusFoto2">
+                  <i class="bi bi-trash"></i> Hilangkan Foto 2 Saja (Masuk Sampah 7 Hari)
+                </label>
+              </div>
+              ' : '').'
             </div>
-            '.($existingFotoSrc ? '
-            <div class="form-check text-start mt-2">
-              <input class="form-check-input" type="checkbox" name="hapus_foto" value="1" id="checkHapusFoto">
-              <label class="form-check-label small text-danger fw-semibold" for="checkHapusFoto">
-                <i class="bi bi-trash"></i> Hapus Foto Unit Ini
-              </label>
+          </div>
+
+          '.(($existingFotoSrc || $existingFoto2Src) ? '
+          <div class="col-12">
+            <div class="p-2.5 rounded-3 border border-danger border-opacity-25 bg-danger bg-opacity-10 d-flex align-items-center justify-content-between flex-wrap gap-2">
+              <div class="form-check mb-0">
+                <input class="form-check-input" type="checkbox" name="hapus_semua_foto" value="1" id="checkHapusSemuaFoto" onchange="if(this.checked){ var c1=document.getElementById(\'checkHapusFoto\'); var c2=document.getElementById(\'checkHapusFoto2\'); if(c1) c1.checked=true; if(c2) c2.checked=true; }">
+                <label class="form-check-label small text-danger fw-bold" for="checkHapusSemuaFoto">
+                  <i class="bi bi-trash3-fill me-1"></i> Hilangkan Semua Foto (Foto 1 &amp; Foto 2 dipindahkan ke Folder Sampah 7 Hari)
+                </label>
+              </div>
+              '.(!empty($asset['foto_updated_by']) ? '
+              <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 rounded-pill px-2.5 py-1">
+                <i class="bi bi-patch-check-fill me-1"></i> Diverifikasi: <strong>'.e($asset['foto_updated_by']).'</strong>
+              </span>' : '').'
             </div>
-            ' : '').'
+          </div>' : '').'
+
+          <div class="col-12">
+            <label class="form-label text-secondary small fw-semibold">Atau URL Foto 1 Eksternal / Cloud (Opsional)</label>
+            <input type="text" class="form-control form-control-sm font-monospace" name="foto_url" id="inputFotoUrl" value="'.e(str_starts_with($existingFoto, 'http') ? $existingFoto : '').'" placeholder="https://domain.com/path/foto.jpg">
           </div>
         </div>
 

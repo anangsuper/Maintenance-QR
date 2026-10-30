@@ -46,13 +46,31 @@ if (!$card && ($cardId > 0 || !empty($_GET['asset_id']))) {
 }
 
 // State notifikasi
-$uploadSuccess = null;
+$uploadSuccess = !empty($_SESSION['flash_kartu_success']) ? (string)$_SESSION['flash_kartu_success'] : null;
+unset($_SESSION['flash_kartu_success']);
 $uploadError = null;
 $dataSuccess = null;
 $dataError = null;
 
 // =========================================================================
-// 0. HANDLE HAPUS / KOSONGKAN FOTO KARTU DENGAN OTORISASI BIOMETRIK / ADMIN
+// -1. HANDLE PULIHKAN (RESTORE) FOTO DARI FOLDER SAMPAH (7 HARI)
+// =========================================================================
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'restore_trash_photo' && $card) {
+    verify_csrf();
+    $trashId = (int)($_POST['trash_id'] ?? 0);
+    $actor = is_logged_in() ? (current_user_name() ?: 'Admin / SDM') : 'Petugas Inventaris';
+    $resRestore = restore_photo_from_trash($trashId, $actor);
+    if (!empty($resRestore['success'])) {
+        $_SESSION['flash_kartu_success'] = "Foto Ke-{$resRestore['restored_slot']} berhasil dipulihkan dari Folder Sampah!";
+        header('Location: ' . module_url('kartu_detail.php', ['id' => (int)$card['id']]));
+        exit;
+    } else {
+        $uploadError = $resRestore['error'] ?? 'Gagal memulihkan foto dari Folder Sampah.';
+    }
+}
+
+// =========================================================================
+// 0. HANDLE HAPUS FOTO (SALAH SATU ATAU SEMUA) -> MASUK FOLDER SAMPAH 7 HARI
 // =========================================================================
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'delete_foto' && $card) {
     verify_csrf();
@@ -61,6 +79,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     $verifierName = trim((string)($_POST['verifier_name'] ?? ''));
     $verifierUserId = (int)($_POST['verifier_user_id'] ?? 0);
     $verifierConfidence = (int)($_POST['verifier_confidence'] ?? 0);
+    $deleteTarget = trim((string)($_POST['delete_target'] ?? 'all')); // '1', '2', atau 'all'
+    if (!in_array($deleteTarget, ['1', '2', 'all'], true)) {
+        $deleteTarget = 'all';
+    }
 
     $isAuthorized = false;
     $verifierLabel = '';
@@ -79,11 +101,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
         $uploadError = "Penghapusan foto barang ditolak! Wajib diverifikasi melalui pemindaian biometrik wajah staf/teknisi atau otorisasi sesi Admin.";
     } else {
         try {
-            db()->prepare("UPDATE inventaris_kartu SET foto = NULL, foto_updated_by = NULL, foto_updated_at = NULL WHERE id = ?")->execute([(int)$card['id']]);
-            $card['foto'] = null;
-            $card['foto_updated_by'] = null;
-            $card['foto_updated_at'] = null;
-            $_SESSION['flash'] = '✓ Foto kartu inventaris berhasil dikosongkan dengan otorisasi: ' . e($verifierLabel) . '.';
+            $curF1 = trim((string)($card['foto'] ?? ''));
+            $curF2 = trim((string)($card['foto_2'] ?? ''));
+            $movedCount = 0;
+
+            if (($deleteTarget === '1' || $deleteTarget === 'all') && $curF1 !== '') {
+                move_photo_to_trash('inventaris_kartu', (int)$card['id'], 1, $curF1, $verifierLabel, 'Dihapus dari Kartu Inventaris (Foto 1)');
+                $curF1 = '';
+                $movedCount++;
+            }
+            if (($deleteTarget === '2' || $deleteTarget === 'all') && $curF2 !== '') {
+                move_photo_to_trash('inventaris_kartu', (int)$card['id'], 2, $curF2, $verifierLabel, 'Dihapus dari Kartu Inventaris (Foto 2)');
+                $curF2 = '';
+                $movedCount++;
+            }
+
+            if ($curF1 === '' && $curF2 === '') {
+                db()->prepare("UPDATE inventaris_kartu SET foto = NULL, foto_2 = NULL, foto_updated_by = NULL, foto_updated_at = NULL WHERE id = ?")
+                    ->execute([(int)$card['id']]);
+            } else {
+                db()->prepare("UPDATE inventaris_kartu SET foto = ?, foto_2 = ?, foto_updated_by = ?, foto_updated_at = ? WHERE id = ?")
+                    ->execute([$curF1 ?: null, $curF2 ?: null, $verifierLabel, date('Y-m-d H:i:s'), (int)$card['id']]);
+            }
+
+            $targetMsg = ($deleteTarget === '1') ? 'Foto Ke-1' : (($deleteTarget === '2') ? 'Foto Ke-2' : 'Semua Foto');
+            $_SESSION['flash_kartu_success'] = "✓ {$targetMsg} berhasil dipindahkan ke Folder Sampah (tersimpan 7 hari & bisa di-restore) oleh: {$verifierLabel}.";
             header('Location: ' . module_url('kartu_detail.php', ['id' => (int)$card['id']]));
             exit;
         } catch (Throwable $e) {
@@ -93,7 +135,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
 }
 
 // =========================================================================
-// 1. HANDLE UPLOAD / GANTI FOTO DENGAN KOMPRESI CERDAS & VERIFIKASI WAJAH
+// 1. HANDLE UPLOAD / EDIT 1 ATAU 2 FOTO SEKALIGUS & HAPUS SALAH SATU/SEMUA
 // =========================================================================
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'upload_foto' && $card) {
     verify_csrf();
@@ -120,58 +162,101 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
 
     if (!$isAuthorized) {
         $uploadError = "Perubahan foto barang ditolak! Wajib diverifikasi melalui pemindaian biometrik wajah staf/teknisi resmi PT BPR Mitratama Arthabuana.";
-    } elseif (!empty($_FILES['foto_barang']['name'])) {
-        $file = $_FILES['foto_barang'];
-        if ($file['error'] === UPLOAD_ERR_OK) {
-            $maxSize = 25 * 1024 * 1024; // 25MB batas awal sebelum kompresi
-            if ($file['size'] > $maxSize) {
-                $uploadError = "Ukuran file terlalu besar (maksimal 25MB).";
-            } else {
-                $ext = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
-                if (!in_array($ext, ['jpg', 'jpeg', 'png', 'webp', 'gif'], true)) {
-                    $ext = 'jpg';
-                }
-                $uploadDir = __DIR__ . '/uploads/assets/';
-                if (!is_dir($uploadDir)) {
-                    @mkdir($uploadDir, 0777, true);
-                    @chmod($uploadDir, 0777);
-                }
-                // Simpan selalu dalam format jpg terkompresi hemat ruang
-                $fileName = 'kartu_' . $card['id'] . '_' . date('Ymd_His') . '_' . bin2hex(random_bytes(3)) . '.jpg';
-                $targetPath = $uploadDir . $fileName;
-
-                // Kompresi & auto-crop gambar rasio 4:5 (max 1200x1500px, quality 82, file size ~150-250KB)
-                if (compress_and_save_uploaded_image($file['tmp_name'], $targetPath, 1600, 82, true)) {
-                    $relativePhoto = 'uploads/assets/' . $fileName;
-                    
-                    // Simpan ke database HANYA untuk ID kartu ini
-                    update_inventaris_kartu_foto((int)$card['id'], $relativePhoto, null, $verifierLabel);
-                    $card['foto'] = $relativePhoto;
-                    $card['foto_updated_by'] = $verifierLabel;
-                    $card['foto_updated_at'] = date('Y-m-d H:i:s');
-
-                    // Catat Audit Log Aktivitas
-                    try {
-                        record_audit_log(
-                            'UPDATE',
-                            'INVENTARIS_KARTU',
-                            (int)$card['id'],
-                            (string)$card['nama_barang'],
-                            "Foto barang diperbarui via Biometrik Wajah oleh: {$verifierLabel}",
-                            ['user_name' => $verifierName, 'user_role' => 'teknisi']
-                        );
-                    } catch (Throwable $e) {}
-
-                    $uploadSuccess = "Foto barang berhasil dikompres dan disimpan ke server! Diverifikasi oleh: " . $verifierLabel;
-                } else {
-                    $uploadError = "Gagal memproses dan mengompres file foto ke folder uploads server.";
-                }
-            }
-        } else {
-            $uploadError = "Terjadi kesalahan saat mengunggah foto (kode error: " . $file['error'] . ").";
-        }
     } else {
-        $uploadError = "Silakan pilih file foto terlebih dahulu.";
+        $uploadDir = __DIR__ . '/uploads/assets/';
+        if (!is_dir($uploadDir)) {
+            @mkdir($uploadDir, 0777, true);
+            @chmod($uploadDir, 0777);
+        }
+
+        $newF1 = trim((string)($card['foto'] ?? ''));
+        $newF2 = trim((string)($card['foto_2'] ?? ''));
+        $changedParts = [];
+
+        // Cek opsi hapus foto 1 atau foto 2 pada form edit
+        if (!empty($_POST['hapus_foto_1']) && $newF1 !== '') {
+            move_photo_to_trash('inventaris_kartu', (int)$card['id'], 1, $newF1, $verifierLabel, 'Dihapus saat edit foto (Foto 1)');
+            $newF1 = '';
+            $changedParts[] = 'Foto 1 dipindah ke Sampah';
+        }
+        if (!empty($_POST['hapus_foto_2']) && $newF2 !== '') {
+            move_photo_to_trash('inventaris_kartu', (int)$card['id'], 2, $newF2, $verifierLabel, 'Dihapus saat edit foto (Foto 2)');
+            $newF2 = '';
+            $changedParts[] = 'Foto 2 dipindah ke Sampah';
+        }
+
+        // Proses upload Foto 1 (mendukung nama input foto_barang_1 atau foto_barang)
+        $file1Key = !empty($_FILES['foto_barang_1']['name']) ? 'foto_barang_1' : (!empty($_FILES['foto_barang']['name']) ? 'foto_barang' : '');
+        if ($file1Key !== '' && $_FILES[$file1Key]['error'] === UPLOAD_ERR_OK) {
+            $f1 = $_FILES[$file1Key];
+            if ($f1['size'] <= 25 * 1024 * 1024) {
+                $fn1 = 'kartu_' . $card['id'] . '_f1_' . date('Ymd_His') . '_' . bin2hex(random_bytes(3)) . '.jpg';
+                if (compress_and_save_uploaded_image($f1['tmp_name'], $uploadDir . $fn1, 1600, 82, true)) {
+                    if ($newF1 !== '') {
+                        move_photo_to_trash('inventaris_kartu', (int)$card['id'], 1, $newF1, $verifierLabel, 'Diganti dengan Foto 1 baru');
+                    }
+                    $newF1 = 'uploads/assets/' . $fn1;
+                    $changedParts[] = 'Foto 1 diunggah';
+                }
+            } else {
+                $uploadError = "Ukuran file Foto 1 terlalu besar (maksimal 25MB).";
+            }
+        }
+
+        // Proses upload Foto 2
+        if (empty($uploadError) && !empty($_FILES['foto_barang_2']['name']) && $_FILES['foto_barang_2']['error'] === UPLOAD_ERR_OK) {
+            $f2 = $_FILES['foto_barang_2'];
+            if ($f2['size'] <= 25 * 1024 * 1024) {
+                $fn2 = 'kartu_' . $card['id'] . '_f2_' . date('Ymd_His') . '_' . bin2hex(random_bytes(3)) . '.jpg';
+                if (compress_and_save_uploaded_image($f2['tmp_name'], $uploadDir . $fn2, 1600, 82, true)) {
+                    if ($newF2 !== '') {
+                        move_photo_to_trash('inventaris_kartu', (int)$card['id'], 2, $newF2, $verifierLabel, 'Diganti dengan Foto 2 baru');
+                    }
+                    $newF2 = 'uploads/assets/' . $fn2;
+                    $changedParts[] = 'Foto 2 diunggah';
+                }
+            } else {
+                $uploadError = "Ukuran file Foto 2 terlalu besar (maksimal 25MB).";
+            }
+        }
+
+        if (empty($uploadError)) {
+            if (!empty($changedParts)) {
+                $nowStr = date('Y-m-d H:i:s');
+                if ($newF1 === '' && $newF2 === '') {
+                    db()->prepare("UPDATE inventaris_kartu SET foto = NULL, foto_2 = NULL, foto_updated_by = NULL, foto_updated_at = NULL WHERE id = ?")
+                        ->execute([(int)$card['id']]);
+                    $card['foto'] = null;
+                    $card['foto_2'] = null;
+                    $card['foto_updated_by'] = null;
+                    $card['foto_updated_at'] = null;
+                } else {
+                    db()->prepare("UPDATE inventaris_kartu SET foto = ?, foto_2 = ?, foto_updated_by = ?, foto_updated_at = ? WHERE id = ?")
+                        ->execute([$newF1 ?: null, $newF2 ?: null, $verifierLabel, $nowStr, (int)$card['id']]);
+                    $card['foto'] = $newF1 ?: null;
+                    $card['foto_2'] = $newF2 ?: null;
+                    $card['foto_updated_by'] = $verifierLabel;
+                    $card['foto_updated_at'] = $nowStr;
+                }
+
+                try {
+                    record_audit_log(
+                        'UPDATE',
+                        'INVENTARIS_KARTU',
+                        (int)$card['id'],
+                        (string)$card['nama_barang'],
+                        "Perubahan foto (" . implode(', ', $changedParts) . ") diverifikasi oleh: {$verifierLabel}",
+                        ['user_name' => $verifierName, 'user_role' => 'teknisi']
+                    );
+                } catch (Throwable $e) {}
+
+                $_SESSION['flash_kartu_success'] = "✓ Perubahan foto (" . implode(', ', $changedParts) . ") berhasil disimpan! Diverifikasi oleh: " . $verifierLabel;
+                header('Location: ' . module_url('kartu_detail.php', ['id' => (int)$card['id']]));
+                exit;
+            } else {
+                $uploadError = "Silakan pilih minimal 1 file foto baru (Foto 1 / Foto 2) atau centang foto yang ingin dihapus.";
+            }
+        }
     }
 }
 
@@ -300,13 +385,21 @@ if (empty($enrolledTechs)) {
     } catch (Throwable $e) {}
 }
 
-// Resolusi foto final: Hanya gunakan foto asli milik kartu inventaris ini
-$displayPhoto = !empty($card['foto']) ? $card['foto'] : null;
+// Resolusi foto final: Mendukung hingga 2 Foto per Kartu Inventaris
+$displayPhoto = !empty($card['foto']) ? trim((string)$card['foto']) : null;
+$displayPhoto2 = !empty($card['foto_2']) ? trim((string)$card['foto_2']) : null;
 
 $photoUrl = '';
 if ($displayPhoto) {
     $photoUrl = str_starts_with($displayPhoto, 'http') ? $displayPhoto : module_url($displayPhoto);
 }
+$photoUrl2 = '';
+if ($displayPhoto2) {
+    $photoUrl2 = str_starts_with($displayPhoto2, 'http') ? $displayPhoto2 : module_url($displayPhoto2);
+}
+$hasAnyPhoto = ($photoUrl !== '' || $photoUrl2 !== '');
+$itemTrashPhotos = $card ? get_photo_trash_list(['source_type' => 'inventaris_kartu', 'item_id' => (int)$card['id']]) : [];
+$totalTrashCountGlobal = get_photo_trash_count();
 
 // URL QR Code Resmi
 $currentUrl = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" : "http") . "://$_SERVER[HTTP_HOST]$_SERVER[REQUEST_URI]";
@@ -463,24 +556,44 @@ $pageTitle = $card ? e($card['nama_barang']) . ' - Kartu Inventaris' : 'Kartu In
 
             <!-- Kartu Paspor Inventaris Resmi -->
             <div class="card card-custom mb-4">
-                <!-- TAMPILAN KHUSUS SMARTPHONE / MOBILE (1X BUKA LANGSUNG TERLIHAT FOTO & DETAIL) -->
+                <!-- TAMPILAN KHUSUS SMARTPHONE / MOBILE (1X BUKA LANGSUNG TERLIHAT 2 FOTO & DETAIL) -->
                 <div class="d-md-none p-3 border-bottom bg-white">
                     <div class="row g-3 align-items-center mb-2">
-                        <!-- Foto Barang (Kiri 42%) -->
+                        <!-- Foto Barang 1 & 2 (Kiri 42%) -->
                         <div class="col-5">
-                            <div class="item-photo-wrapper shadow-xs mb-0 <?= $photoUrl ? 'has-image' : '' ?>" style="max-height: 175px; aspect-ratio: 4 / 5; cursor: pointer; border-radius: 12px;" onclick="<?= $photoUrl ? "viewFullImage('" . e(addslashes($photoUrl)) . "', '" . e(addslashes($card['nama_barang'])) . "')" : "" ?>" title="Klik untuk memperbesar">
-                                <?php if ($photoUrl): ?>
-                                    <img src="<?= e($photoUrl) ?>" alt="Foto <?= e($card['nama_barang']) ?>" style="width: 100%; height: 100%; object-fit: cover; border-radius: 12px;">
-                                    <div class="position-absolute bottom-0 end-0 p-1 bg-dark bg-opacity-75 text-white rounded-start" style="font-size: 0.65rem;">
-                                        <i class="bi bi-arrows-fullscreen"></i>
+                            <?php if ($photoUrl && $photoUrl2): ?>
+                                <div class="row g-1.5">
+                                    <div class="col-6">
+                                        <div class="position-relative overflow-hidden border rounded-3 shadow-xs bg-light" style="aspect-ratio: 4 / 5; cursor: pointer;" onclick="viewFullImage('<?= e(addslashes($photoUrl)) ?>', '<?= e(addslashes($card['nama_barang'] . ' (Foto 1)')) ?>')">
+                                            <img src="<?= e($photoUrl) ?>" alt="Foto 1 <?= e($card['nama_barang']) ?>" fetchpriority="high" style="width: 100%; height: 100%; object-fit: cover; display: block;">
+                                            <span class="position-absolute top-0 start-0 m-1 badge bg-dark bg-opacity-75 text-white" style="font-size: 0.58rem;">Foto 1</span>
+                                        </div>
                                     </div>
-                                <?php else: ?>
-                                    <div class="text-center p-2">
-                                        <i class="bi bi-camera text-muted fs-3 d-block mb-1"></i>
-                                        <div class="text-muted fw-semibold" style="font-size: 0.68rem;">Belum Ada Foto</div>
+                                    <div class="col-6">
+                                        <div class="position-relative overflow-hidden border rounded-3 shadow-xs bg-light" style="aspect-ratio: 4 / 5; cursor: pointer;" onclick="viewFullImage('<?= e(addslashes($photoUrl2)) ?>', '<?= e(addslashes($card['nama_barang'] . ' (Foto 2)')) ?>')">
+                                            <img src="<?= e($photoUrl2) ?>" alt="Foto 2 <?= e($card['nama_barang']) ?>" fetchpriority="low" loading="lazy" style="width: 100%; height: 100%; object-fit: cover; display: block;">
+                                            <span class="position-absolute top-0 start-0 m-1 badge bg-primary text-white" style="font-size: 0.58rem;">Foto 2</span>
+                                        </div>
                                     </div>
-                                <?php endif; ?>
-                            </div>
+                                </div>
+                            <?php else: ?>
+                                <?php $activeMobUrl = $photoUrl ?: $photoUrl2; $activeMobSlot = $photoUrl ? 1 : 2; ?>
+                                <div class="item-photo-wrapper shadow-xs mb-0 <?= $activeMobUrl ? 'has-image' : '' ?>" style="max-height: 175px; aspect-ratio: 4 / 5; cursor: pointer; border-radius: 12px;" onclick="<?= $activeMobUrl ? "viewFullImage('" . e(addslashes($activeMobUrl)) . "', '" . e(addslashes($card['nama_barang'])) . "')" : "" ?>" title="Klik untuk memperbesar">
+                                    <?php if ($activeMobUrl): ?>
+                                        <img src="<?= e($activeMobUrl) ?>" alt="Foto <?= e($card['nama_barang']) ?>" fetchpriority="high" style="width: 100%; height: 100%; object-fit: cover; border-radius: 12px;">
+                                        <span class="position-absolute top-0 start-0 m-1.5 badge bg-dark bg-opacity-75 text-white" style="font-size: 0.62rem;">Foto <?= $activeMobSlot ?>/2</span>
+                                        <div class="position-absolute bottom-0 end-0 p-1 bg-dark bg-opacity-75 text-white rounded-start" style="font-size: 0.65rem;">
+                                            <i class="bi bi-arrows-fullscreen"></i>
+                                        </div>
+                                    <?php else: ?>
+                                        <div class="text-center p-2">
+                                            <i class="bi bi-camera text-muted fs-3 d-block mb-1"></i>
+                                            <div class="text-muted fw-semibold" style="font-size: 0.68rem;">Belum Ada Foto</div>
+                                            <div class="text-muted" style="font-size: 0.60rem;">Bisa upload 2 foto</div>
+                                        </div>
+                                    <?php endif; ?>
+                                </div>
+                            <?php endif; ?>
                         </div>
 
                         <!-- Ringkasan Identitas Utama (Kanan 58%) -->
@@ -597,40 +710,76 @@ $pageTitle = $card ? e($card['nama_barang']) . ' - Kartu Inventaris' : 'Kartu In
                 <div class="p-3 p-md-4">
                     <div class="row g-4 align-items-start">
                         
-                        <!-- Kolom Foto Barang & Biometric Action (Kiri: 5 Kolom) -->
+                        <!-- Kolom Foto Barang (2 Slot Foto) & Biometric Action (Kiri: 5 Kolom) -->
                         <div class="col-lg-5 col-md-5 text-center">
-                            <div class="item-photo-wrapper mb-2 shadow-xs d-none d-md-flex position-relative <?= $photoUrl ? 'has-image' : '' ?>" id="photoWrapper">
-                                <img id="previewImg" src="<?= $photoUrl ? e($photoUrl) : '' ?>" alt="Foto <?= e($card['nama_barang']) ?>" class="<?= $photoUrl ? '' : 'd-none' ?>" onclick="viewFullImage(this.src, '<?= e(addslashes($card['nama_barang'])) ?>')" title="Klik untuk memperbesar">
-                                
-                                <div id="emptyPhotoPlaceholder" class="text-center p-4 <?= $photoUrl ? 'd-none' : '' ?>">
-                                    <i class="bi bi-camera text-muted display-4 mb-2 d-block"></i>
-                                    <div class="small text-secondary fw-semibold">Belum Ada Foto Barang</div>
-                                    <div class="text-muted" style="font-size: 0.72rem;">Pilih foto & scan wajah di bawah</div>
+                            <!-- Galeri 2 Slot Foto Barang (Desktop & Mobile) -->
+                            <div class="row g-2 mb-2">
+                                <!-- SLOT FOTO 1 (UTAMA) -->
+                                <div class="<?= ($photoUrl || $photoUrl2) ? 'col-6' : 'col-12' ?>" id="slotCol1">
+                                    <div class="item-photo-wrapper mb-0 shadow-xs d-flex position-relative <?= $photoUrl ? 'has-image' : '' ?>" id="photoWrapper" style="min-height: 185px; max-height: 235px; aspect-ratio: 4 / 5;">
+                                        <span class="position-absolute top-0 start-0 m-2 badge bg-dark bg-opacity-75 text-white rounded-pill px-2 py-1" style="font-size: 0.65rem; z-index: 3;">
+                                            <i class="bi bi-1-circle-fill me-0.5"></i> Foto 1 (Utama)
+                                        </span>
+                                        <img id="previewImg" src="<?= $photoUrl ? e($photoUrl) : '' ?>" alt="Foto 1 <?= e($card['nama_barang']) ?>" fetchpriority="high" class="<?= $photoUrl ? '' : 'd-none' ?>" onclick="viewFullImage(this.src, '<?= e(addslashes($card['nama_barang'] . ' - Foto 1 (Utama)')) ?>')" title="Klik untuk memperbesar Foto 1">
+                                        
+                                        <div id="emptyPhotoPlaceholder" class="text-center p-3 <?= $photoUrl ? 'd-none' : '' ?>" style="cursor: pointer;" onclick="openPhotoCollapseAndFocus(1)">
+                                            <i class="bi bi-camera text-muted fs-2 mb-1 d-block"></i>
+                                            <div class="small text-secondary fw-semibold" style="font-size: 0.74rem;">Belum Ada Foto 1</div>
+                                            <div class="text-primary fw-semibold mt-1" style="font-size: 0.68rem;"><i class="bi bi-plus-circle me-0.5"></i>Upload Foto 1</div>
+                                        </div>
+
+                                        <div id="previewBadge" class="preview-alert-badge d-none">
+                                            <i class="bi bi-eye me-1"></i> Pratinjau Foto 1
+                                        </div>
+
+                                        <?php if ($photoUrl): ?>
+                                            <button type="button" class="btn btn-danger btn-xs position-absolute top-0 end-0 m-2 rounded-circle shadow-sm" style="width: 28px; height: 28px; padding: 0; display: inline-flex; align-items: center; justify-content: center; z-index: 3;" onclick="event.stopPropagation(); openDeletePhotoConfirmModal(event, '1');" title="Hapus Foto 1 Saja (Masuk Folder Sampah 7 Hari)">
+                                                <i class="bi bi-trash3-fill" style="font-size: 0.75rem;"></i>
+                                            </button>
+                                        <?php endif; ?>
+                                    </div>
                                 </div>
 
-                                <div id="previewBadge" class="preview-alert-badge d-none">
-                                    <i class="bi bi-eye me-1"></i> Pratinjau Terkompresi Siap Simpan
-                                </div>
+                                <!-- SLOT FOTO 2 (DETAIL / TAMBAHAN) -->
+                                <div class="<?= ($photoUrl || $photoUrl2) ? 'col-6' : 'col-12 d-none' ?>" id="slotCol2">
+                                    <div class="item-photo-wrapper mb-0 shadow-xs d-flex position-relative <?= $photoUrl2 ? 'has-image' : '' ?>" id="photoWrapper2" style="min-height: 185px; max-height: 235px; aspect-ratio: 4 / 5;">
+                                        <span class="position-absolute top-0 start-0 m-2 badge bg-primary text-white rounded-pill px-2 py-1" style="font-size: 0.65rem; z-index: 3;">
+                                            <i class="bi bi-2-circle-fill me-0.5"></i> Foto 2 (Detail)
+                                        </span>
+                                        <img id="previewImg2" src="<?= $photoUrl2 ? e($photoUrl2) : '' ?>" alt="Foto 2 <?= e($card['nama_barang']) ?>" fetchpriority="low" loading="lazy" class="<?= $photoUrl2 ? '' : 'd-none' ?>" onclick="viewFullImage(this.src, '<?= e(addslashes($card['nama_barang'] . ' - Foto 2 (Detail)')) ?>')" title="Klik untuk memperbesar Foto 2">
+                                        
+                                        <div id="emptyPhotoPlaceholder2" class="text-center p-3 <?= $photoUrl2 ? 'd-none' : '' ?>" style="cursor: pointer;" onclick="openPhotoCollapseAndFocus(2)">
+                                            <i class="bi bi-plus-circle-dotted text-primary fs-2 mb-1 d-block"></i>
+                                            <div class="small text-secondary fw-semibold" style="font-size: 0.74rem;">Slot Foto Ke-2 Kosong</div>
+                                            <div class="text-primary fw-bold mt-1" style="font-size: 0.68rem;">+ Tambah Foto Ke-2</div>
+                                        </div>
 
-                                <?php if ($photoUrl): ?>
-                                    <button type="button" class="btn btn-danger btn-xs position-absolute top-0 end-0 m-2 rounded-circle shadow-sm" style="width: 28px; height: 28px; padding: 0; display: inline-flex; align-items: center; justify-content: center; z-index: 3;" data-bs-toggle="modal" data-bs-target="#modalConfirmDeletePhoto" onclick="event.stopPropagation(); openDeletePhotoConfirmModal(event);" title="Kosongkan Foto">
-                                        <i class="bi bi-trash3-fill" style="font-size: 0.75rem;"></i>
-                                    </button>
-                                <?php endif; ?>
+                                        <div id="previewBadge2" class="preview-alert-badge d-none">
+                                            <i class="bi bi-eye me-1"></i> Pratinjau Foto 2
+                                        </div>
+
+                                        <?php if ($photoUrl2): ?>
+                                            <button type="button" class="btn btn-danger btn-xs position-absolute top-0 end-0 m-2 rounded-circle shadow-sm" style="width: 28px; height: 28px; padding: 0; display: inline-flex; align-items: center; justify-content: center; z-index: 3;" onclick="event.stopPropagation(); openDeletePhotoConfirmModal(event, '2');" title="Hapus Foto 2 Saja (Masuk Folder Sampah 7 Hari)">
+                                                <i class="bi bi-trash3-fill" style="font-size: 0.75rem;"></i>
+                                            </button>
+                                        <?php endif; ?>
+                                    </div>
+                                </div>
                             </div>
 
-                            <!-- Info Badge Verifikasi Wajah (2 Baris Rapi & Terstruktur) -->
-                            <?php if (!empty($card['foto'])): ?>
+                            <!-- Info Badge Verifikasi Wajah -->
+                            <?php if ($hasAnyPhoto): ?>
                                 <?php 
                                     $rawVerifier = (string)($card['foto_updated_by'] ?? '');
                                     $isFaceScan = str_contains($rawVerifier, 'Scan Wajah');
                                     $verifierCleanName = preg_replace('/\s*\(.*?\)/', '', $rawVerifier) ?: 'Petugas IT';
                                     $verifierTime = !empty($card['foto_updated_at']) ? date('d/m/Y H:i', strtotime($card['foto_updated_at'])) : '-';
+                                    $activePhotoCount = ($photoUrl !== '' ? 1 : 0) + ($photoUrl2 !== '' ? 1 : 0);
                                 ?>
                                 <div class="bg-success bg-opacity-10 border border-success border-opacity-25 rounded-3 p-2.5 mb-2 text-start">
-                                    <div class="d-flex align-items-center gap-1.5 text-success fw-bold" style="font-size: 0.78rem;">
-                                        <i class="bi bi-patch-check-fill fs-6 text-success"></i>
-                                        <span>Foto Terverifikasi <?= $isFaceScan ? '(Scan Wajah)' : '(Sesi Resmi)' ?></span>
+                                    <div class="d-flex align-items-center justify-content-between gap-1.5 text-success fw-bold" style="font-size: 0.78rem;">
+                                        <span><i class="bi bi-patch-check-fill fs-6 text-success me-1"></i>Foto Terverifikasi <?= $isFaceScan ? '(Scan Wajah)' : '(Sesi Resmi)' ?></span>
+                                        <span class="badge bg-success text-white rounded-pill" style="font-size: 0.66rem;"><?= $activePhotoCount ?>/2 Foto Aktif</span>
                                     </div>
                                     <div class="text-secondary small mt-0.5" style="font-size: 0.70rem;">
                                         Oleh <strong class="text-dark"><?= e($verifierCleanName) ?></strong> &bull; <?= e($verifierTime) ?>
@@ -638,28 +787,69 @@ $pageTitle = $card ? e($card['nama_barang']) . ' - Kartu Inventaris' : 'Kartu In
                                 </div>
                             <?php endif; ?>
 
-                            <!-- Tombol Aksi Foto (Perbarui Foto & Kosongkan Foto Sejajar - Desktop Only) -->
-                            <div class="d-none d-md-flex align-items-center justify-content-center gap-2 mb-2">
-                                <button class="btn btn-outline-primary btn-sm rounded-pill px-3 py-1.5 fw-semibold shadow-2xs" type="button" data-bs-toggle="collapse" data-bs-target="#collapseUploadPhoto" aria-expanded="<?= empty($card['foto']) ? 'true' : 'false' ?>" id="btnToggleUpload">
-                                    <i class="bi bi-camera me-1"></i> <?= !empty($card['foto']) ? 'Perbarui Foto' : 'Pilih Foto' ?>
+                            <!-- Banner Foto di Folder Sampah (Jika Barang Ini Punya Foto yang Dihapus < 7 Hari) -->
+                            <?php if (!empty($itemTrashPhotos)): ?>
+                                <div class="bg-warning bg-opacity-10 border border-warning border-opacity-50 rounded-3 p-2.5 mb-2 text-start">
+                                    <div class="d-flex align-items-center justify-content-between mb-1">
+                                        <span class="fw-bold text-dark" style="font-size: 0.75rem;">
+                                            <i class="bi bi-recycle text-success me-1"></i><?= count($itemTrashPhotos) ?> Foto Barang Ini di Folder Sampah
+                                        </span>
+                                        <a href="<?= module_url('photo_trash.php', ['source_type' => 'inventaris_kartu', 'item_id' => (int)$card['id']]) ?>" class="text-primary fw-bold text-decoration-none" style="font-size: 0.70rem;">
+                                            Lihat Detail &rarr;
+                                        </a>
+                                    </div>
+                                    <div class="d-flex flex-column gap-1.5 mt-1">
+                                        <?php foreach (array_slice($itemTrashPhotos, 0, 2) as $tp): 
+                                            $tpUrl = str_starts_with($tp['file_path'], 'http') ? $tp['file_path'] : module_url($tp['file_path']);
+                                        ?>
+                                            <div class="d-flex align-items-center justify-content-between bg-white rounded-2 p-1.5 border gap-2">
+                                                <div class="d-flex align-items-center gap-2 min-w-0">
+                                                    <img src="<?= e($tpUrl) ?>" alt="Trash" fetchpriority="low" loading="lazy" class="rounded border object-fit-cover flex-shrink-0" style="width: 34px; height: 34px; cursor: pointer;" onclick="viewFullImage('<?= e(addslashes($tpUrl)) ?>', 'Foto di Folder Sampah')">
+                                                    <div class="min-w-0">
+                                                        <div class="fw-bold text-dark text-truncate" style="font-size: 0.70rem;">Foto Ke-<?= (int)$tp['photo_slot'] ?> &bull; <span class="text-danger"><?= e($tp['countdown_label']) ?></span></div>
+                                                        <div class="text-muted text-truncate" style="font-size: 0.64rem;">Dihapus: <?= date('d/m H:i', strtotime($tp['deleted_at'])) ?></div>
+                                                    </div>
+                                                </div>
+                                                <form method="post" class="m-0 flex-shrink-0">
+                                                    <input type="hidden" name="_csrf" value="<?= e(csrf_token()) ?>">
+                                                    <input type="hidden" name="action" value="restore_trash_photo">
+                                                    <input type="hidden" name="trash_id" value="<?= (int)$tp['id'] ?>">
+                                                    <button type="submit" class="btn btn-xs btn-success rounded-pill px-2.5 py-1 fw-bold" style="font-size: 0.68rem;">
+                                                        <i class="bi bi-arrow-counterclockwise me-0.5"></i>Restore
+                                                    </button>
+                                                </form>
+                                            </div>
+                                        <?php endforeach; ?>
+                                    </div>
+                                </div>
+                            <?php endif; ?>
+
+                            <!-- Tombol Aksi Foto (Kelola 2 Foto, Hapus Salah Satu/Semua, & Folder Sampah) -->
+                            <div class="d-flex flex-wrap align-items-center justify-content-center gap-1.5 mb-2">
+                                <button class="btn btn-outline-primary btn-sm rounded-pill px-3 py-1.5 fw-semibold shadow-2xs" type="button" data-bs-toggle="collapse" data-bs-target="#collapseUploadPhoto" aria-expanded="<?= !$hasAnyPhoto ? 'true' : 'false' ?>" id="btnToggleUpload" style="font-size: 0.76rem;">
+                                    <i class="bi bi-camera me-1"></i> <?= $hasAnyPhoto ? 'Edit / Tambah Foto (Maks 2)' : 'Upload 1 - 2 Foto' ?>
                                 </button>
-                                <?php if (!empty($card['foto'])): ?>
+                                <?php if ($hasAnyPhoto): ?>
                                     <form method="post" id="deletePhotoForm" class="d-inline">
                                         <input type="hidden" name="_csrf" value="<?= e(csrf_token()) ?>">
                                         <input type="hidden" name="action" value="delete_foto">
+                                        <input type="hidden" name="delete_target" id="delPhotoTargetInput" value="all">
                                         <input type="hidden" name="face_verified" id="delBioVerified" value="0">
                                         <input type="hidden" name="verifier_user_id" id="delBioUserId" value="">
                                         <input type="hidden" name="verifier_name" id="delBioUserName" value="">
                                         <input type="hidden" name="verifier_confidence" id="delBioConfidence" value="">
-                                        <button type="button" class="btn btn-outline-danger btn-sm rounded-pill px-3 py-1.5 fw-semibold shadow-2xs" data-bs-toggle="modal" data-bs-target="#modalConfirmDeletePhoto" onclick="openDeletePhotoConfirmModal(event)">
-                                            <i class="bi bi-trash3 me-1"></i> Kosongkan
+                                        <button type="button" class="btn btn-outline-danger btn-sm rounded-pill px-2.5 py-1.5 fw-semibold shadow-2xs" onclick="openDeletePhotoConfirmModal(event, 'all')" style="font-size: 0.76rem;">
+                                            <i class="bi bi-trash3 me-1"></i> Hapus Foto
                                         </button>
                                     </form>
                                 <?php endif; ?>
+                                <a href="<?= module_url('photo_trash.php', ['source_type' => 'inventaris_kartu']) ?>" class="btn btn-light border btn-sm rounded-pill px-2.5 py-1.5 fw-semibold text-secondary shadow-2xs" style="font-size: 0.74rem;" title="Buka Folder Sampah Foto (Tersimpan 7 Hari)">
+                                    <i class="bi bi-recycle text-success me-1"></i> Sampah Foto <?= $totalTrashCountGlobal > 0 ? '<span class="badge bg-danger text-white rounded-pill ms-0.5">' . $totalTrashCountGlobal . '</span>' : '' ?>
+                                </a>
                             </div>
 
-                            <!-- Form Upload Foto Barang (Collapsible: tertutup jika sudah ada foto) -->
-                            <div class="collapse <?= empty($card['foto']) ? 'show' : '' ?> text-start" id="collapseUploadPhoto">
+                            <!-- Form Upload & Edit 2 Foto Barang (Collapsible) -->
+                            <div class="collapse <?= !$hasAnyPhoto ? 'show' : '' ?> text-start" id="collapseUploadPhoto">
                                 <div class="bg-light p-3 rounded-3 border shadow-xs mb-3">
                                     <form method="post" enctype="multipart/form-data" id="uploadPhotoForm">
                                         <input type="hidden" name="_csrf" value="<?= e(csrf_token()) ?>">
@@ -672,40 +862,88 @@ $pageTitle = $card ? e($card['nama_barang']) . ' - Kartu Inventaris' : 'Kartu In
                                         <input type="hidden" name="verifier_confidence" id="bioConfidence" value="">
                                         <input type="hidden" name="verifier_photo" id="bioPhotoSnap" value="">
 
-                                        <div class="d-flex justify-content-between align-items-center mb-1.5">
-                                            <label class="form-label small fw-bold text-secondary mb-0">
-                                                <i class="bi bi-image me-1"></i> 1. Pilih / Jepret Foto:
+                                        <div class="d-flex justify-content-between align-items-center mb-2">
+                                            <label class="form-label small fw-bold text-dark mb-0">
+                                                <i class="bi bi-images me-1 text-primary"></i> 1. Kelola / Upload Foto (Bisa 2 Foto):
                                             </label>
                                             <span id="compressBadge" class="badge bg-primary bg-opacity-10 text-primary d-none" style="font-size: 0.68rem;">
                                                 <i class="bi bi-shield-check me-1"></i> Kompres Cerdas
                                             </span>
                                         </div>
 
-                                        <!-- Modern Dashed Dropzone -->
-                                        <div class="photo-dropzone p-3 text-center mb-2" id="dropzoneBox" onclick="document.getElementById('fotoBarangInput').click()">
-                                            <input type="file" id="fotoBarangInput" name="foto_barang" class="d-none" accept="image/*" capture="environment" required onchange="handleFileSelect(this)">
-                                            <div id="dropzoneEmpty">
-                                                <div class="d-inline-flex align-items-center justify-content-center p-2 bg-primary bg-opacity-10 text-primary rounded-circle mb-1">
-                                                    <i class="bi bi-camera fs-4"></i>
+                                        <div class="row g-2 mb-2">
+                                            <!-- Input Foto 1 -->
+                                            <div class="col-6">
+                                                <div class="photo-dropzone p-2.5 text-center h-100 d-flex flex-column justify-content-center" id="dropzoneBox" onclick="document.getElementById('fotoBarangInput').click()" style="cursor: pointer;">
+                                                    <input type="file" id="fotoBarangInput" name="foto_barang_1" class="d-none" accept="image/*" capture="environment">
+                                                    <div class="badge bg-dark text-white align-self-center mb-1" style="font-size: 0.62rem;">FOTO 1 (UTAMA)</div>
+                                                    <div id="dropzoneEmpty">
+                                                        <i class="bi bi-camera fs-5 text-primary d-block"></i>
+                                                        <div class="fw-bold text-dark" style="font-size: 0.72rem;"><?= $photoUrl ? 'Ganti Foto 1' : 'Pilih Foto 1' ?></div>
+                                                        <div class="text-muted" style="font-size: 0.62rem;">Tampak Depan</div>
+                                                    </div>
+                                                    <div id="dropzoneSelected" class="d-none">
+                                                        <div class="fw-bold text-success" style="font-size: 0.70rem;">
+                                                            <i class="bi bi-check-circle-fill me-0.5"></i> <span id="selectedFileName">Foto 1 Siap</span>
+                                                        </div>
+                                                        <span class="badge bg-white text-secondary border px-1.5 py-0.5 mt-0.5" id="selectedFileSize" style="font-size: 0.62rem;"></span>
+                                                    </div>
                                                 </div>
-                                                <div class="small fw-bold text-dark">Klik untuk Pilih / Jepret Foto</div>
-                                                <div class="text-muted" style="font-size: 0.68rem;">Format JPG/PNG, dikompres otomatis hemat memori</div>
                                             </div>
-                                            <div id="dropzoneSelected" class="d-none">
-                                                <div class="small fw-bold text-success mb-1">
-                                                    <i class="bi bi-check-circle-fill me-1"></i> <span id="selectedFileName">Foto Terpilih</span>
+
+                                            <!-- Input Foto 2 -->
+                                            <div class="col-6">
+                                                <div class="photo-dropzone p-2.5 text-center h-100 d-flex flex-column justify-content-center" id="dropzoneBox2" onclick="document.getElementById('fotoBarangInput2').click()" style="cursor: pointer;">
+                                                    <input type="file" id="fotoBarangInput2" name="foto_barang_2" class="d-none" accept="image/*" capture="environment">
+                                                    <div class="badge bg-primary text-white align-self-center mb-1" style="font-size: 0.62rem;">FOTO 2 (DETAIL)</div>
+                                                    <div id="dropzoneEmpty2">
+                                                        <i class="bi bi-plus-circle-dotted fs-5 text-primary d-block"></i>
+                                                        <div class="fw-bold text-dark" style="font-size: 0.72rem;"><?= $photoUrl2 ? 'Ganti Foto 2' : 'Tambah Foto 2' ?></div>
+                                                        <div class="text-muted" style="font-size: 0.62rem;">S/N / Detail</div>
+                                                    </div>
+                                                    <div id="dropzoneSelected2" class="d-none">
+                                                        <div class="fw-bold text-success" style="font-size: 0.70rem;">
+                                                            <i class="bi bi-check-circle-fill me-0.5"></i> <span id="selectedFileName2">Foto 2 Siap</span>
+                                                        </div>
+                                                        <span class="badge bg-white text-secondary border px-1.5 py-0.5 mt-0.5" id="selectedFileSize2" style="font-size: 0.62rem;"></span>
+                                                    </div>
                                                 </div>
-                                                <span class="badge bg-light text-secondary border px-2 py-0.5" id="selectedFileSize" style="font-size: 0.68rem;"></span>
-                                                <div class="small text-primary mt-1" style="font-size: 0.68rem;"><i class="bi bi-arrow-repeat me-1"></i>Klik untuk ganti foto</div>
                                             </div>
                                         </div>
+
+                                        <!-- Opsi Hapus Salah Satu atau Semua Foto saat Edit -->
+                                        <?php if ($photoUrl || $photoUrl2): ?>
+                                            <div class="bg-white rounded-3 p-2 border mb-2.5">
+                                                <div class="text-secondary fw-bold mb-1" style="font-size: 0.68rem;">
+                                                    <i class="bi bi-sliders me-1"></i>Opsi Hapus Saat Edit (Masuk Folder Sampah 7 Hari):
+                                                </div>
+                                                <div class="d-flex flex-wrap gap-3">
+                                                    <?php if ($photoUrl): ?>
+                                                        <div class="form-check mb-0">
+                                                            <input class="form-check-input" type="checkbox" name="hapus_foto_1" value="1" id="chkHapusFoto1">
+                                                            <label class="form-check-label text-danger fw-semibold" for="chkHapusFoto1" style="font-size: 0.72rem;">
+                                                                Hilangkan Foto 1
+                                                            </label>
+                                                        </div>
+                                                    <?php endif; ?>
+                                                    <?php if ($photoUrl2): ?>
+                                                        <div class="form-check mb-0">
+                                                            <input class="form-check-input" type="checkbox" name="hapus_foto_2" value="1" id="chkHapusFoto2">
+                                                            <label class="form-check-label text-danger fw-semibold" for="chkHapusFoto2" style="font-size: 0.72rem;">
+                                                                Hilangkan Foto 2
+                                                            </label>
+                                                        </div>
+                                                    <?php endif; ?>
+                                                </div>
+                                            </div>
+                                        <?php endif; ?>
 
                                         <label class="form-label small fw-bold text-secondary mb-1">
                                             <i class="bi bi-person-bounding-box me-1"></i> 2. Otorisasi Perubahan Foto:
                                         </label>
                                         <button type="button" id="btnMulaiScanWajah" class="btn btn-primary btn-sm w-100 rounded-pill fw-bold py-2 shadow-xs d-flex align-items-center justify-content-center gap-2" onclick="startFaceAuthProcess()">
                                             <i class="bi bi-person-bounding-box fs-5"></i>
-                                            <span>Scan Wajah &amp; Simpan Foto</span>
+                                            <span>Scan Wajah &amp; Simpan Perubahan Foto</span>
                                         </button>
 
                                         <?php if (is_logged_in() && (is_admin() || is_hrd())): ?>
@@ -714,7 +952,7 @@ $pageTitle = $card ? e($card['nama_barang']) . ' - Kartu Inventaris' : 'Kartu In
                                                     <i class="bi bi-shield-check text-success"></i>
                                                     <span>Simpan via Sesi <?= e(is_admin() ? 'Admin' : 'SDM & Umum') ?> (<?= e(current_user_name()) ?>)</span>
                                                 </button>
-                                                <div class="form-text text-muted mt-1" style="font-size: 0.68rem;">Tanpa pemindaian biometrik wajah kamera</div>
+                                                <div class="form-text text-muted mt-1" style="font-size: 0.68rem;">Foto yang dihapus/diganti otomatis disimpan 7 hari di Folder Sampah</div>
                                             </div>
                                         <?php endif; ?>
                                     </form>

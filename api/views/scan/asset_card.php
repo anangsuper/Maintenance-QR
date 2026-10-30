@@ -885,44 +885,121 @@ $historyCardHtml = '
   </div>
 </div>';
 
-// Foto Fisik Unit
+// Foto Fisik Unit (Mendukung 2 Foto + Folder Sampah 7 Hari)
 $fotoUnit = trim((string)($asset['foto'] ?? ''));
+$fotoUnit2 = trim((string)($asset['foto_2'] ?? ''));
 $fotoUnitSrc = function_exists('asset_image_url') ? asset_image_url($fotoUnit) : ($fotoUnit ? (str_starts_with($fotoUnit, 'http') ? $fotoUnit : module_url($fotoUnit)) : '');
-
+$fotoUnit2Src = function_exists('asset_image_url') ? asset_image_url($fotoUnit2) : ($fotoUnit2 ? (str_starts_with($fotoUnit2, 'http') ? $fotoUnit2 : module_url($fotoUnit2)) : '');
+$hasAnyUnitPhoto = ($fotoUnitSrc !== '' || $fotoUnit2Src !== '');
+$unitPhotoCount = ($fotoUnitSrc !== '' ? 1 : 0) + ($fotoUnit2Src !== '' ? 1 : 0);
+$assetTrashPhotos = function_exists('get_photo_trash_list') ? get_photo_trash_list(['source_type' => 'assets', 'item_id' => $assetId]) : [];
+$totalTrashAssetsCount = function_exists('get_photo_trash_count') ? get_photo_trash_count() : 0;
 
 $verifiedBadge = !empty($asset['foto_updated_by']) ? '
   <div class="mt-1">
     <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 rounded-pill px-2 py-0.5" style="font-size: 0.68rem;">
-      <i class="bi bi-patch-check-fill me-1"></i> Diverifikasi: <strong>'.e($asset['foto_updated_by']).'</strong>
+      <i class="bi bi-patch-check-fill me-1"></i> Diverifikasi: <strong>'.e($asset['foto_updated_by']).'</strong> ('.$unitPhotoCount.'/2 Foto)
     </span>
   </div>' : '';
 
-if ($fotoUnitSrc !== '') {
-    $fotoCardHtml = '
-    <div class="col-12 col-md-4 col-lg-3 text-center mb-3 mb-md-0">
-      <div class="position-relative rounded-3 overflow-hidden border shadow-xs bg-dark bg-opacity-10 d-flex align-items-center justify-content-center" style="cursor: pointer; aspect-ratio: 4 / 5; max-height: 240px; margin: 0 auto;" onclick="openScanPhotoModal(\''.e($fotoUnitSrc).'\', \''.e(addslashes(asset_title($asset))).'\', \''.e(addslashes($asset['kode_inventaris'] ?? '')).'\')" title="Klik untuk memperbesar foto unit">
-        <img src="'.e($fotoUnitSrc).'" alt="Foto Fisik '.e(asset_title($asset)).'" class="w-100 h-100 object-fit-cover" style="max-height: 210px; min-height: 175px; display: block;" onerror="this.onerror=null; this.parentElement.innerHTML=\'<div class=\\\'p-4 text-muted small\\\'><i class=\\\'bi bi-image fs-1 d-block mb-1 text-secondary opacity-50\\\'></i>Gagal memuat foto</div>\';">
-        <div class="position-absolute bottom-0 start-0 w-100 bg-dark bg-opacity-75 text-white py-1 px-2 small text-center" style="font-size: 0.72rem; backdrop-filter: blur(2px);">
-          <i class="bi bi-zoom-in me-1"></i> Perbesar Foto
+$trashRestoreStripHtml = '';
+if (!empty($assetTrashPhotos)) {
+    $trashItemsMini = '';
+    foreach (array_slice($assetTrashPhotos, 0, 2) as $tp) {
+        $tpUrl = str_starts_with($tp['file_path'], 'http') ? $tp['file_path'] : module_url($tp['file_path']);
+        $trashItemsMini .= '
+        <div class="d-flex align-items-center justify-content-between bg-white rounded-2 p-1.5 border mt-1 gap-1.5 text-start">
+          <div class="d-flex align-items-center gap-1.5 min-w-0">
+            <img src="'.e($tpUrl).'" alt="Sampah" fetchpriority="low" loading="lazy" class="rounded border object-fit-cover flex-shrink-0" style="width: 30px; height: 30px; cursor: pointer;" onclick="openScanPhotoModal(\''.e(addslashes($tpUrl)).'\', \'Foto di Folder Sampah\', \''.e(addslashes($asset['kode_inventaris'] ?? '')).'\')">
+            <div class="min-w-0">
+              <div class="fw-bold text-dark text-truncate" style="font-size: 0.66rem;">Foto Ke-'.(int)$tp['photo_slot'].'</div>
+              <div class="text-danger text-truncate" style="font-size: 0.62rem;">'.e($tp['countdown_label']).'</div>
+            </div>
+          </div>
+          <form method="post" action="'.e(module_url('scan.php', ['t' => $token])).'" class="m-0 flex-shrink-0">
+            <input type="hidden" name="_csrf" value="'.e(csrf_token()).'">
+            <input type="hidden" name="t" value="'.e($token).'">
+            <input type="hidden" name="action" value="restore_asset_photo">
+            <input type="hidden" name="trash_id" value="'.(int)$tp['id'].'">
+            <button type="submit" class="btn btn-xs btn-success rounded-pill px-2 py-0.5 fw-bold" style="font-size: 0.65rem;" title="Pulihkan Foto Ini">
+              <i class="bi bi-arrow-counterclockwise"></i> Restore
+            </button>
+          </form>
+        </div>';
+    }
+    $trashRestoreStripHtml = '
+    <div class="bg-warning bg-opacity-10 border border-warning border-opacity-50 rounded-3 p-2 mt-2 text-start">
+      <div class="d-flex align-items-center justify-content-between">
+        <span class="fw-bold text-dark" style="font-size: 0.68rem;"><i class="bi bi-recycle text-success me-1"></i>'.count($assetTrashPhotos).' Foto di Sampah (7 Hari)</span>
+        <a href="'.e(module_url('photo_trash.php', ['source_type' => 'assets', 'item_id' => $assetId])).'" class="text-primary fw-bold text-decoration-none" style="font-size: 0.66rem;">Buka &rarr;</a>
+      </div>
+      '.$trashItemsMini.'
+    </div>';
+}
+
+if ($hasAnyUnitPhoto) {
+    $slot1BoxHtml = $fotoUnitSrc !== '' ? '
+      <div class="position-relative rounded-3 overflow-hidden border shadow-xs bg-dark bg-opacity-10 d-flex align-items-center justify-content-center h-100" style="cursor: pointer; aspect-ratio: 4 / 5; max-height: 210px;" onclick="openScanPhotoModal(\''.e($fotoUnitSrc).'\', \''.e(addslashes(asset_title($asset) . ' - Foto 1 (Utama)')).'\', \''.e(addslashes($asset['kode_inventaris'] ?? '')).'\')" title="Klik untuk memperbesar Foto 1">
+        <span class="position-absolute top-0 start-0 m-1.5 badge bg-dark bg-opacity-75 text-white" style="font-size: 0.60rem; z-index: 2;">Foto 1</span>
+        <img src="'.e($fotoUnitSrc).'" alt="Foto 1 '.e(asset_title($asset)).'" fetchpriority="high" class="w-100 h-100 object-fit-cover" style="max-height: 210px; min-height: 145px; display: block;" onerror="this.onerror=null; this.parentElement.innerHTML=\'<div class=\\\'p-3 text-muted small\\\'>Gagal memuat</div>\';">
+        <div class="position-absolute bottom-0 start-0 w-100 bg-dark bg-opacity-75 text-white py-0.5 px-1 small text-center" style="font-size: 0.64rem;">
+          <i class="bi bi-zoom-in"></i> Perbesar
         </div>
+      </div>' : '
+      <div class="rounded-3 border border-2 border-dashed bg-light p-2 d-flex flex-column align-items-center justify-content-center h-100" style="min-height: 145px; aspect-ratio: 4 / 5; cursor: pointer;" onclick="openUploadFotoTeknisiModal()">
+        <i class="bi bi-plus-circle-dotted text-primary fs-3 mb-1"></i>
+        <div class="text-secondary fw-bold" style="font-size: 0.66rem;">Slot Foto 1 Kosong</div>
+        <span class="text-primary fw-semibold" style="font-size: 0.62rem;">+ Upload Foto 1</span>
+      </div>';
+
+    $slot2BoxHtml = $fotoUnit2Src !== '' ? '
+      <div class="position-relative rounded-3 overflow-hidden border shadow-xs bg-dark bg-opacity-10 d-flex align-items-center justify-content-center h-100" style="cursor: pointer; aspect-ratio: 4 / 5; max-height: 210px;" onclick="openScanPhotoModal(\''.e($fotoUnit2Src).'\', \''.e(addslashes(asset_title($asset) . ' - Foto 2 (Detail)')).'\', \''.e(addslashes($asset['kode_inventaris'] ?? '')).'\')" title="Klik untuk memperbesar Foto 2">
+        <span class="position-absolute top-0 start-0 m-1.5 badge bg-primary text-white" style="font-size: 0.60rem; z-index: 2;">Foto 2</span>
+        <img src="'.e($fotoUnit2Src).'" alt="Foto 2 '.e(asset_title($asset)).'" fetchpriority="low" loading="lazy" class="w-100 h-100 object-fit-cover" style="max-height: 210px; min-height: 145px; display: block;" onerror="this.onerror=null; this.parentElement.innerHTML=\'<div class=\\\'p-3 text-muted small\\\'>Gagal memuat</div>\';">
+        <div class="position-absolute bottom-0 start-0 w-100 bg-dark bg-opacity-75 text-white py-0.5 px-1 small text-center" style="font-size: 0.64rem;">
+          <i class="bi bi-zoom-in"></i> Perbesar
+        </div>
+      </div>' : '
+      <div class="rounded-3 border border-2 border-dashed bg-light p-2 d-flex flex-column align-items-center justify-content-center h-100" style="min-height: 145px; aspect-ratio: 4 / 5; cursor: pointer;" onclick="openUploadFotoTeknisiModal()">
+        <i class="bi bi-plus-circle-dotted text-primary fs-3 mb-1"></i>
+        <div class="text-secondary fw-bold" style="font-size: 0.66rem;">Slot Foto 2 Kosong</div>
+        <span class="text-primary fw-semibold" style="font-size: 0.62rem;">+ Tambah Foto 2</span>
+      </div>';
+
+    $fotoCardHtml = '
+    <div class="col-12 col-md-5 col-lg-4 text-center mb-3 mb-md-0">
+      <div class="row g-2">
+        <div class="col-6">'.$slot1BoxHtml.'</div>
+        <div class="col-6">'.$slot2BoxHtml.'</div>
       </div>
       '.$verifiedBadge.'
-      <div class="mt-2 d-flex justify-content-center gap-1">
-        <button type="button" class="btn btn-sm btn-light border py-1 px-2.5 text-secondary fw-semibold shadow-xs" style="font-size: 0.75rem;" onclick="openUploadFotoTeknisiModal()" title="Ganti atau perbarui foto unit dengan scan wajah teknisi">
-          <i class="bi bi-camera me-1"></i> Ganti Foto
+      <div class="mt-2 d-flex flex-wrap justify-content-center gap-1.5">
+        <button type="button" class="btn btn-sm btn-outline-primary py-1 px-2.5 fw-semibold shadow-xs" style="font-size: 0.72rem;" onclick="openUploadFotoTeknisiModal()">
+          <i class="bi bi-camera me-1"></i> Edit / Kelola 2 Foto
         </button>
+        <a href="'.e(module_url('photo_trash.php', ['source_type' => 'assets'])).'" class="btn btn-sm btn-light border py-1 px-2 text-secondary fw-semibold shadow-xs" style="font-size: 0.72rem;" title="Folder Sampah Foto (Tersimpan 7 Hari)">
+          <i class="bi bi-recycle text-success me-0.5"></i> Sampah '.($totalTrashAssetsCount > 0 ? '<span class="badge bg-danger text-white rounded-pill">'.$totalTrashAssetsCount.'</span>' : '').'
+        </a>
       </div>
+      '.$trashRestoreStripHtml.'
     </div>';
-    $specColClass = 'col-12 col-md-8 col-lg-9';
+    $specColClass = 'col-12 col-md-7 col-lg-8';
 } else {
     $fotoCardHtml = '
     <div class="col-12 col-md-4 col-lg-3 text-center mb-3 mb-md-0">
       <div class="rounded-3 border border-2 border-dashed bg-light p-3 d-flex flex-column align-items-center justify-content-center h-100" style="min-height: 175px; border-color: #cbd5e1 !important;">
-        <i class="bi bi-camera fs-1 text-secondary opacity-50 mb-1"></i>
-        <div class="small text-muted mb-2 fw-semibold" style="font-size: 0.75rem;">Belum ada foto fisik</div>
-        <button type="button" class="btn btn-sm btn-outline-primary py-1 px-2.5 fw-semibold shadow-xs" onclick="openUploadFotoTeknisiModal()" style="font-size: 0.75rem;">
-          <i class="bi bi-plus-circle me-1"></i> Upload Foto
-        </button>
+        <i class="bi bi-images fs-1 text-secondary opacity-50 mb-1"></i>
+        <div class="small text-muted mb-0.5 fw-semibold" style="font-size: 0.75rem;">Belum ada foto fisik</div>
+        <div class="text-muted mb-2" style="font-size: 0.66rem;">Bisa upload hingga 2 foto</div>
+        <div class="d-flex flex-wrap justify-content-center gap-1">
+          <button type="button" class="btn btn-sm btn-outline-primary py-1 px-2.5 fw-semibold shadow-xs" onclick="openUploadFotoTeknisiModal()" style="font-size: 0.74rem;">
+            <i class="bi bi-plus-circle me-1"></i> Upload 1-2 Foto
+          </button>
+          <a href="'.e(module_url('photo_trash.php', ['source_type' => 'assets'])).'" class="btn btn-sm btn-light border py-1 px-2 text-secondary fw-semibold" style="font-size: 0.72rem;">
+            <i class="bi bi-recycle text-success"></i> Sampah
+          </a>
+        </div>
+        '.$trashRestoreStripHtml.'
       </div>
     </div>';
     $specColClass = 'col-12 col-md-8 col-lg-9';
@@ -1176,13 +1253,13 @@ $body = '
   </div>
 </div>
 
-<!-- Modal Upload Foto Unit dengan Verifikasi Wajah Teknisi -->
+<!-- Modal Upload / Edit / Hapus 2 Foto Unit dengan Verifikasi Wajah Teknisi -->
 <div class="modal fade" id="modalUploadFotoTeknisi" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered">
     <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
       <div class="modal-header bg-primary text-white py-3 px-4">
         <div>
-          <h5 class="modal-title fw-bold mb-0"><i class="bi bi-camera-fill me-2"></i>Foto Fisik Perangkat</h5>
+          <h5 class="modal-title fw-bold mb-0"><i class="bi bi-images me-2"></i>Kelola 2 Foto Fisik Perangkat</h5>
           <small class="text-white-50">'.e($asset['kode_inventaris'] ?? 'Aset').' · '.e(asset_title($asset)).'</small>
         </div>
         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
@@ -1190,35 +1267,81 @@ $body = '
 
       <form method="post" enctype="multipart/form-data" id="formUploadFotoUnit" action="'.e(module_url('scan.php', ['t' => $token])).'">
         <input type="hidden" name="_csrf" value="'.e(csrf_token()).'">
+        <input type="hidden" name="t" value="'.e($token).'">
         <input type="hidden" name="action" value="update_asset_photo">
         <input type="hidden" name="foto_base64" id="scanPhotoBase64" value="">
+        <input type="hidden" name="foto_base64_2" id="scanPhotoBase64_2" value="">
         <input type="hidden" name="face_verified" id="scanPhotoBioVerified" value="0">
         <input type="hidden" name="verifier_name" id="scanPhotoBioUserName" value="">
         <input type="hidden" name="verifier_user_id" id="scanPhotoBioUserId" value="">
         <input type="hidden" name="verifier_confidence" id="scanPhotoBioConfidence" value="">
         <input type="hidden" name="verifier_photo" id="scanPhotoBioSnap" value="">
 
-        <div class="modal-body p-4">
-          <!-- Step 1: Ambil / Pilih Foto Unit -->
-          <div class="mb-3">
-            <label class="form-label small fw-bold text-secondary mb-1">
-              <i class="bi bi-image me-1 text-primary"></i> 1. Jepret Kamera / Pilih Foto Fisik Unit:
-            </label>
-            <input type="file" id="fotoBarangScanInput" name="foto_unit" class="form-control" accept="image/*" capture="environment" onchange="handleScanPhotoSelect(event)" required>
-            <div class="form-text small" style="font-size: 0.73rem;">
-              Format JPEG, JPG, PNG. Otomatis dikompresi cerdas ke resolusi jernih hemat ruang server (~150-250KB).
-            </div>
+        <div class="modal-body p-3.5 p-md-4">
+          <div class="alert alert-success bg-success bg-opacity-10 border-success border-opacity-25 rounded-3 py-2 px-3 mb-3 small">
+            <i class="bi bi-recycle text-success me-1"></i> <strong>Aman 7 Hari:</strong> Foto yang dihapus atau diganti tidak langsung hilang, melainkan disimpan di <a href="'.e(module_url('photo_trash.php', ['source_type' => 'assets'])).'" class="fw-bold text-success text-decoration-underline">Folder Sampah Foto</a> selama <strong>7 hari</strong> dan dapat di-restore.
           </div>
 
-          <!-- Preview & Status Kompresi -->
-          <div id="scanPhotoPreviewContainer" class="d-none mb-3">
-            <div class="position-relative rounded-3 border overflow-hidden bg-light text-center p-2">
-              <img id="scanPhotoPreviewImg" src="" alt="Pratinjau" class="img-fluid rounded" style="max-height: 190px; object-fit: contain;">
-              <div id="scanPhotoCompressBadge" class="mt-2 text-success small fw-semibold">
-                <i class="bi bi-shield-check me-1"></i> Terkompres Cerdas Siap Unggah
+          <!-- Step 1: Ambil / Pilih Foto Unit 1 & 2 -->
+          <div class="row g-2.5 mb-3">
+            <div class="col-12 col-sm-6">
+              <div class="p-2.5 rounded-3 border bg-light h-100">
+                <label class="form-label small fw-bold text-dark mb-1">
+                  <span class="badge bg-dark me-1">1</span> Foto 1 (Utama / Unit):
+                </label>
+                <input type="file" id="fotoBarangScanInput" name="foto_unit" class="form-control form-control-sm" accept="image/*" capture="environment" onchange="handleScanPhotoSelect(event, 1)">
+                <div id="scanPhotoPreviewContainer" class="'.($fotoUnitSrc !== '' ? '' : 'd-none').' mt-2">
+                  <div class="position-relative rounded-3 border overflow-hidden bg-white text-center p-1.5">
+                    <img id="scanPhotoPreviewImg" src="'.e($fotoUnitSrc).'" alt="Pratinjau Foto 1" class="img-fluid rounded" style="max-height: 120px; object-fit: contain;">
+                    <div id="scanPhotoCompressBadge" class="mt-1 text-success fw-semibold" style="font-size: 0.68rem;">
+                      '.($fotoUnitSrc !== '' ? '<i class="bi bi-check-circle me-1"></i>Foto 1 Saat Ini' : '').'
+                    </div>
+                  </div>
+                </div>
+                '.($fotoUnitSrc !== '' ? '
+                <div class="form-check mt-2 mb-0">
+                  <input class="form-check-input" type="checkbox" name="hapus_foto_1" value="1" id="chkScanDelFoto1">
+                  <label class="form-check-label text-danger fw-bold" for="chkScanDelFoto1" style="font-size: 0.72rem;">
+                    <i class="bi bi-trash3 me-0.5"></i>Hilangkan Foto 1
+                  </label>
+                </div>' : '').'
+              </div>
+            </div>
+
+            <div class="col-12 col-sm-6">
+              <div class="p-2.5 rounded-3 border bg-light h-100">
+                <label class="form-label small fw-bold text-dark mb-1">
+                  <span class="badge bg-primary me-1">2</span> Foto 2 (Detail / S/N):
+                </label>
+                <input type="file" id="fotoBarangScanInput2" name="foto_unit_2" class="form-control form-control-sm" accept="image/*" capture="environment" onchange="handleScanPhotoSelect(event, 2)">
+                <div id="scanPhotoPreviewContainer2" class="'.($fotoUnit2Src !== '' ? '' : 'd-none').' mt-2">
+                  <div class="position-relative rounded-3 border overflow-hidden bg-white text-center p-1.5">
+                    <img id="scanPhotoPreviewImg2" src="'.e($fotoUnit2Src).'" alt="Pratinjau Foto 2" class="img-fluid rounded" style="max-height: 120px; object-fit: contain;">
+                    <div id="scanPhotoCompressBadge2" class="mt-1 text-primary fw-semibold" style="font-size: 0.68rem;">
+                      '.($fotoUnit2Src !== '' ? '<i class="bi bi-check-circle me-1"></i>Foto 2 Saat Ini' : '').'
+                    </div>
+                  </div>
+                </div>
+                '.($fotoUnit2Src !== '' ? '
+                <div class="form-check mt-2 mb-0">
+                  <input class="form-check-input" type="checkbox" name="hapus_foto_2" value="1" id="chkScanDelFoto2">
+                  <label class="form-check-label text-danger fw-bold" for="chkScanDelFoto2" style="font-size: 0.72rem;">
+                    <i class="bi bi-trash3 me-0.5"></i>Hilangkan Foto 2
+                  </label>
+                </div>' : '').'
               </div>
             </div>
           </div>
+
+          '.($hasAnyUnitPhoto ? '
+          <div class="p-2 rounded-3 border border-danger border-opacity-25 bg-danger bg-opacity-10 mb-3">
+            <div class="form-check mb-0">
+              <input class="form-check-input" type="checkbox" name="hapus_semua_foto" value="1" id="chkScanDelAllFoto" onchange="if(this.checked){ var c1=document.getElementById(\'chkScanDelFoto1\'); var c2=document.getElementById(\'chkScanDelFoto2\'); if(c1) c1.checked=true; if(c2) c2.checked=true; }">
+              <label class="form-check-label small fw-bold text-danger" for="chkScanDelAllFoto">
+                <i class="bi bi-trash3-fill me-1"></i>Hilangkan Semua Foto Perangkat Ini (Pindahkan Semua ke Folder Sampah 7 Hari)
+              </label>
+            </div>
+          </div>' : '').'
 
           <!-- Step 2: Otorisasi Biometrik Wajah -->
           <div class="bg-light p-3 rounded-3 border mb-2">
@@ -1232,12 +1355,12 @@ $body = '
             </div>
 
             <p class="text-muted small mb-3" style="font-size: 0.75rem;">
-              Untuk menjaga integritas data inventaris Core Banking, perubahan foto fisik unit wajib diverifikasi oleh wajah Teknisi IT terdaftar.
+              Untuk menjaga integritas data inventaris Core Banking, perubahan atau penghapusan foto fisik unit wajib diverifikasi oleh wajah Teknisi IT terdaftar.
             </p>
 
             <button type="button" id="btnMulaiScanWajahFoto" class="btn btn-primary w-100 fw-bold py-2.5 rounded-pill shadow-xs d-flex align-items-center justify-content-center gap-2" onclick="startTeknisiFaceScanForPhoto()">
               <i class="bi bi-person-bounding-box fs-5"></i>
-              <span>Scan Wajah Teknisi & Simpan Foto</span>
+              <span>Scan Wajah Teknisi &amp; Simpan Perubahan</span>
             </button>
 
             '.($loggedIn ? '
@@ -1368,13 +1491,15 @@ function openUploadFotoTeknisiModal() {
   }
 }
 
-function handleScanPhotoSelect(event) {
+function handleScanPhotoSelect(event, slotNum) {
+  const slot = (slotNum === 2) ? 2 : 1;
   const file = event.target.files && event.target.files[0];
   if (!file) return;
 
-  const previewContainer = document.getElementById("scanPhotoPreviewContainer");
-  const previewImg = document.getElementById("scanPhotoPreviewImg");
-  const compressBadge = document.getElementById("scanPhotoCompressBadge");
+  const previewContainer = document.getElementById(slot === 2 ? "scanPhotoPreviewContainer2" : "scanPhotoPreviewContainer");
+  const previewImg = document.getElementById(slot === 2 ? "scanPhotoPreviewImg2" : "scanPhotoPreviewImg");
+  const compressBadge = document.getElementById(slot === 2 ? "scanPhotoCompressBadge2" : "scanPhotoCompressBadge");
+  const b64Input = document.getElementById(slot === 2 ? "scanPhotoBase64_2" : "scanPhotoBase64");
 
   const originalSizeKb = Math.round(file.size / 1024);
 
@@ -1418,19 +1543,38 @@ function handleScanPhotoSelect(event) {
 
       // Export JPEG Quality 0.82
       const compressedDataUrl = canvas.toDataURL("image/jpeg", 0.82);
-      document.getElementById("scanPhotoBase64").value = compressedDataUrl;
+      if (b64Input) b64Input.value = compressedDataUrl;
 
       const approxSizeKb = Math.round((compressedDataUrl.length * 3 / 4) / 1024);
 
       if (previewImg) previewImg.src = compressedDataUrl;
       if (previewContainer) previewContainer.classList.remove("d-none");
       if (compressBadge) {
-        compressBadge.innerHTML = "<i class=\"bi bi-shield-check me-1\"></i> Siap Diunggah: <strong>" + approxSizeKb + " KB</strong> <span class=\"text-muted\">(Semula " + originalSizeKb + " KB)</span>";
+        compressBadge.innerHTML = "<i class=\"bi bi-shield-check me-1\"></i> Siap: <strong>" + approxSizeKb + " KB</strong> <span class=\"text-muted\">(" + originalSizeKb + " KB)</span>";
       }
     };
     tempImg.src = e.target.result;
   };
   reader.readAsDataURL(file);
+}
+
+function hasAnyScanPhotoAction() {
+  const f1 = document.getElementById("fotoBarangScanInput");
+  const f2 = document.getElementById("fotoBarangScanInput2");
+  const b1 = document.getElementById("scanPhotoBase64");
+  const b2 = document.getElementById("scanPhotoBase64_2");
+  const c1 = document.getElementById("chkScanDelFoto1");
+  const c2 = document.getElementById("chkScanDelFoto2");
+  const cAll = document.getElementById("chkScanDelAllFoto");
+  return (
+    (f1 && f1.files && f1.files.length > 0) ||
+    (f2 && f2.files && f2.files.length > 0) ||
+    (b1 && b1.value !== "") ||
+    (b2 && b2.value !== "") ||
+    (c1 && c1.checked) ||
+    (c2 && c2.checked) ||
+    (cAll && cAll.checked)
+  );
 }
 
 async function loadPhotoBioModels() {
@@ -1590,11 +1734,8 @@ async function triggerInstantPhotoFaceVerify() {
 }
 
 async function startTeknisiFaceScanForPhoto() {
-  const fileInput = document.getElementById("fotoBarangScanInput");
-  const base64Input = document.getElementById("scanPhotoBase64");
-  if ((!fileInput.files || !fileInput.files.length) && !base64Input.value) {
-    alert("Silakan pilih atau jepret foto fisik perangkat terlebih dahulu!");
-    fileInput.focus();
+  if (!hasAnyScanPhotoAction()) {
+    alert("Silakan pilih foto baru (Foto 1 / Foto 2) atau centang foto yang ingin dihilangkan terlebih dahulu!");
     return;
   }
 
@@ -1700,11 +1841,8 @@ function closePhotoFaceModal() {
 }
 
 function submitPhotoAsLoggedInAdmin() {
-  const fileInput = document.getElementById("fotoBarangScanInput");
-  const base64Input = document.getElementById("scanPhotoBase64");
-  if ((!fileInput.files || !fileInput.files.length) && !base64Input.value) {
-    alert("Silakan pilih atau jepret foto fisik perangkat terlebih dahulu!");
-    fileInput.focus();
+  if (!hasAnyScanPhotoAction()) {
+    alert("Silakan pilih foto baru (Foto 1 / Foto 2) atau centang foto yang ingin dihilangkan terlebih dahulu!");
     return;
   }
 

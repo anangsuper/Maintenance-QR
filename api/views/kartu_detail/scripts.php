@@ -30,13 +30,30 @@
         const HOLD_FRAMES_REQUIRED = 10;
         const MODEL_URL = "https://cdn.jsdelivr.net/npm/@vladmandic/face-api/model/";
 
-        // 1. Kompresi Gambar Cerdas di Browser (Client-side) sebelum Unggah
+        // 1. Kompresi Gambar Cerdas di Browser (Client-side) sebelum Unggah (Mendukung 2 Foto)
         const fileInput = document.getElementById('fotoBarangInput');
+        const fileInput2 = document.getElementById('fotoBarangInput2');
         const previewImg = document.getElementById('previewImg');
+        const previewImg2 = document.getElementById('previewImg2');
         const emptyPlaceholder = document.getElementById('emptyPhotoPlaceholder');
+        const emptyPlaceholder2 = document.getElementById('emptyPhotoPlaceholder2');
         const previewBadge = document.getElementById('previewBadge');
+        const previewBadge2 = document.getElementById('previewBadge2');
         const compressBadge = document.getElementById('compressBadge');
         const photoWrapper = document.getElementById('photoWrapper');
+        const photoWrapper2 = document.getElementById('photoWrapper2');
+
+        function openPhotoCollapseAndFocus(slot) {
+            const colEl = document.getElementById('collapseUploadPhoto');
+            if (colEl) {
+                colEl.classList.add('show');
+            }
+            if (slot === 2 && fileInput2) {
+                fileInput2.click();
+            } else if (fileInput) {
+                fileInput.click();
+            }
+        }
 
         // Kompresi & Auto-Crop Cerdas Rasio 4:5 (Width 4 : Height 5)
         function compressImageClientSide(file, maxDimension, quality, callback) {
@@ -89,51 +106,74 @@
             reader.readAsDataURL(file);
         }
 
-        if (fileInput) {
-            fileInput.addEventListener('change', function() {
+        function setupSlotPhotoCompression(inputEl, slotNum) {
+            if (!inputEl) return;
+            inputEl.addEventListener('change', function() {
                 const file = this.files && this.files[0];
-                if (file) {
-                    // Tampilkan badge kompresi
-                    if (compressBadge) {
-                        compressBadge.classList.remove('d-none');
-                        compressBadge.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Mengompres...';
-                    }
+                if (!file) return;
 
-                    compressImageClientSide(file, 1600, 0.82, function(compressedBlob, previewDataUrl) {
-                        if (previewImg) {
-                            previewImg.src = previewDataUrl;
-                            previewImg.classList.remove('d-none');
-                        }
-                        if (emptyPlaceholder) {
-                            emptyPlaceholder.classList.add('d-none');
-                        }
-                        if (previewBadge) {
-                            previewBadge.classList.remove('d-none');
-                        }
-                        if (photoWrapper) {
-                            photoWrapper.classList.add('has-image');
-                        }
-
-                        // Gantikan payload input file dengan file terkompres (~150-250KB)
-                        try {
-                            const compressedFile = new File([compressedBlob], "compressed_" + file.name.replace(/\.[^.]+$/, ".jpg"), {
-                                type: "image/jpeg",
-                                lastModified: Date.now()
-                            });
-                            const dataTransfer = new DataTransfer();
-                            dataTransfer.items.add(compressedFile);
-                            fileInput.files = dataTransfer.files;
-
-                            if (compressBadge) {
-                                const kbSize = Math.round(compressedBlob.size / 1024);
-                                compressBadge.innerHTML = '<i class="bi bi-shield-check me-1"></i> ' + kbSize + ' KB (Hemat Ruang)';
-                            }
-                        } catch (e) {
-                            console.warn("DataTransfer update fallback:", e);
-                        }
-                    });
+                if (compressBadge) {
+                    compressBadge.classList.remove('d-none');
+                    compressBadge.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Mengompres Foto ' + slotNum + '...';
                 }
+
+                // Pastikan kedua kolom terlihat berdampingan ketika salah satu foto dipilih
+                const sc1 = document.getElementById('slotCol1');
+                const sc2 = document.getElementById('slotCol2');
+                if (sc1) sc1.className = 'col-6';
+                if (sc2) sc2.className = 'col-6';
+
+                compressImageClientSide(file, 1600, 0.82, function(compressedBlob, previewDataUrl) {
+                    const pImg = (slotNum === 2) ? previewImg2 : previewImg;
+                    const ePlace = (slotNum === 2) ? emptyPlaceholder2 : emptyPlaceholder;
+                    const pBadge = (slotNum === 2) ? previewBadge2 : previewBadge;
+                    const pWrap = (slotNum === 2) ? photoWrapper2 : photoWrapper;
+                    const dzEmpty = document.getElementById(slotNum === 2 ? 'dropzoneEmpty2' : 'dropzoneEmpty');
+                    const dzSel = document.getElementById(slotNum === 2 ? 'dropzoneSelected2' : 'dropzoneSelected');
+                    const selSize = document.getElementById(slotNum === 2 ? 'selectedFileSize2' : 'selectedFileSize');
+
+                    if (pImg) {
+                        pImg.src = previewDataUrl;
+                        pImg.classList.remove('d-none');
+                    }
+                    if (ePlace) ePlace.classList.add('d-none');
+                    if (pBadge) pBadge.classList.remove('d-none');
+                    if (pWrap) pWrap.classList.add('has-image');
+                    if (dzEmpty) dzEmpty.classList.add('d-none');
+                    if (dzSel) dzSel.classList.remove('d-none');
+
+                    try {
+                        const compressedFile = new File([compressedBlob], "compressed_f" + slotNum + "_" + file.name.replace(/\.[^.]+$/, ".jpg"), {
+                            type: "image/jpeg",
+                            lastModified: Date.now()
+                        });
+                        const dataTransfer = new DataTransfer();
+                        dataTransfer.items.add(compressedFile);
+                        inputEl.files = dataTransfer.files;
+
+                        const kbSize = Math.round(compressedBlob.size / 1024);
+                        if (selSize) selSize.textContent = kbSize + ' KB';
+                        if (compressBadge) {
+                            compressBadge.innerHTML = '<i class="bi bi-shield-check me-1"></i> Foto ' + slotNum + ': ' + kbSize + ' KB';
+                        }
+                    } catch (e) {
+                        console.warn("DataTransfer update fallback:", e);
+                    }
+                });
             });
+        }
+
+        setupSlotPhotoCompression(fileInput, 1);
+        setupSlotPhotoCompression(fileInput2, 2);
+
+        function hasAnyPhotoFormChange() {
+            const hasF1 = fileInput && fileInput.files && fileInput.files.length > 0;
+            const hasF2 = fileInput2 && fileInput2.files && fileInput2.files.length > 0;
+            const chk1 = document.getElementById('chkHapusFoto1');
+            const chk2 = document.getElementById('chkHapusFoto2');
+            const hasDel1 = chk1 && chk1.checked;
+            const hasDel2 = chk2 && chk2.checked;
+            return (hasF1 || hasF2 || hasDel1 || hasDel2);
         }
 
         // 2. Tombol Otorisasi Wajah (Upload / Hapus / Edit Data Master)
@@ -171,18 +211,29 @@
 
         function startFaceAuthProcess() {
             window.faceAuthMode = 'upload';
-            if (!fileInput || !fileInput.files || fileInput.files.length === 0) {
-                alert('Silakan pilih file foto barang atau jepret kamera terlebih dahulu sebelum melakukan verifikasi wajah!');
-                fileInput.focus();
+            if (!hasAnyPhotoFormChange()) {
+                alert('Silakan pilih minimal 1 file foto baru (Foto 1 / Foto 2) atau centang foto yang ingin dihilangkan terlebih dahulu!');
+                if (fileInput) fileInput.focus();
                 return;
             }
             openBiometricModal();
         }
 
-        function openDeletePhotoConfirmModal(event) {
+        function setDeleteTargetChoice(val) {
+            var targetInput = document.getElementById("delPhotoTargetInput");
+            if (targetInput) targetInput.value = val || 'all';
+        }
+
+        function openDeletePhotoConfirmModal(event, targetSlot) {
             if (event && typeof event.preventDefault === 'function') {
                 event.preventDefault();
             }
+            var chosen = targetSlot || 'all';
+            setDeleteTargetChoice(chosen);
+            var radios = document.querySelectorAll('input[name="modal_del_target_radio"]');
+            radios.forEach(function(r) {
+                r.checked = (r.value === chosen);
+            });
             var modalEl = document.getElementById("modalConfirmDeletePhoto");
             if (modalEl) {
                 try {
@@ -211,24 +262,20 @@
         }
 
         function submitDeleteAsAuthorizedStaff() {
-            if (!confirm('Konfirmasi: Anda login sebagai Admin/SDM. Lanjutkan menghapus foto inventaris ini?')) {
-                return;
-            }
             document.getElementById("delBioVerified").value = "1";
             document.getElementById("delBioUserName").value = <?= json_encode(current_user_name() ?: 'Admin / SDM') ?>;
             document.getElementById("deletePhotoForm").submit();
         }
 
         function submitAsAuthorizedStaff() {
-            if (!fileInput || !fileInput.files || fileInput.files.length === 0) {
-                alert('Silakan pilih file foto barang terlebih dahulu!');
-                fileInput.focus();
+            if (!hasAnyPhotoFormChange()) {
+                alert('Silakan pilih minimal 1 file foto baru (Foto 1 / Foto 2) atau centang foto yang ingin dihilangkan!');
                 return;
             }
             const btn = document.getElementById('btnMulaiScanWajah');
             if (btn) {
                 btn.disabled = true;
-                btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Menyimpan foto...';
+                btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Menyimpan perubahan foto...';
             }
             document.getElementById('bioVerified').value = "1";
             document.getElementById('bioUserName').value = <?= json_encode(current_user_name() ?: 'Staf SDM & Umum') ?>;

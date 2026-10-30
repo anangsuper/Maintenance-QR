@@ -113,6 +113,7 @@ function map_sheets_assets(bool $refresh = false): array {
             'kategori_nama' => $katMap[$a['id_kategori'] ?? 0] ?? '-',
             'qr_token' => $token,
             'foto' => $a['foto'] ?? '',
+            'foto_2' => $a['foto_2'] ?? '',
             'placement_label' => $qr['placement_label'] ?? 'Bodi Top',
             'qr_active' => $qrActive,
             'nomor_seri_inventaris' => $a['nomor_seri_inventaris'] ?? '',
@@ -138,6 +139,7 @@ function ensure_asset_master_columns(): void {
         if (!in_array('ip_address', $cols, true)) $alterSql[] = "ADD COLUMN ip_address VARCHAR(45) NULL";
         if (!in_array('printer', $cols, true)) $alterSql[] = "ADD COLUMN printer VARCHAR(100) NULL";
         if (!in_array('foto', $cols, true)) $alterSql[] = "ADD COLUMN foto TEXT NULL";
+        if (!in_array('foto_2', $cols, true)) $alterSql[] = "ADD COLUMN foto_2 TEXT NULL";
         if (!in_array('created_at', $cols, true)) $alterSql[] = "ADD COLUMN created_at DATETIME DEFAULT CURRENT_TIMESTAMP";
         if (!in_array('nomor_seri_inventaris', $cols, true)) $alterSql[] = "ADD COLUMN nomor_seri_inventaris VARCHAR(100) NULL";
         if (!in_array('jenis_inventaris', $cols, true)) $alterSql[] = "ADD COLUMN jenis_inventaris VARCHAR(100) NULL";
@@ -424,6 +426,7 @@ function create_new_asset(array $data): array {
         if (in_array('ip_address', $cols, true)) $insertData['ip_address'] = $ip;
         if (in_array('printer', $cols, true)) $insertData['printer'] = $printer;
         if (in_array('foto', $cols, true)) $insertData['foto'] = $foto;
+        if (in_array('foto_2', $cols, true) && isset($data['foto_2'])) $insertData['foto_2'] = trim((string)$data['foto_2']);
         if (in_array('created_at', $cols, true)) $insertData['created_at'] = $nowStr;
         if (in_array('nomor_seri_inventaris', $cols, true)) $insertData['nomor_seri_inventaris'] = $noSeri;
         if (in_array('jenis_inventaris', $cols, true)) $insertData['jenis_inventaris'] = $jenisInv;
@@ -791,6 +794,9 @@ function update_asset(int $id, array $data): array {
         }
         if (array_key_exists('foto', $data)) {
             $updateFields['foto'] = trim((string)$data['foto']);
+        }
+        if (array_key_exists('foto_2', $data) && in_array('foto_2', $cols, true)) {
+            $updateFields['foto_2'] = trim((string)$data['foto_2']);
         }
         if (array_key_exists('foto_updated_by', $data) && in_array('foto_updated_by', $cols, true)) {
             $updateFields['foto_updated_by'] = trim((string)$data['foto_updated_by']);

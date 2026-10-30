@@ -95,8 +95,11 @@ if ($subTab === 'inventaris') {
             $branchStats[$assignedCode]['count']++;
         }
 
-        // Resolusi Foto: Hanya foto asli milik kartu inventaris ini
-        $foto = trim((string)($c['foto'] ?? ''));
+        // Resolusi Foto: Hanya foto asli milik kartu inventaris ini (mendukung Foto 1 & Foto 2)
+        $foto1 = trim((string)($c['foto'] ?? ''));
+        $foto2 = trim((string)($c['foto_2'] ?? ''));
+        $foto = $foto1 !== '' ? $foto1 : $foto2;
+        $fotoCount = ($foto1 !== '' ? 1 : 0) + ($foto2 !== '' ? 1 : 0);
         $fotoBy = trim((string)($c['foto_updated_by'] ?? ''));
         $fotoAt = trim((string)($c['foto_updated_at'] ?? ''));
 
@@ -114,6 +117,7 @@ if ($subTab === 'inventaris') {
         $c['branch_name'] = $branchStats[$assignedCode]['name'] ?? 'Kantor Cabang';
         $c['branch_color'] = $branchStats[$assignedCode]['color'] ?? '#0E5C58';
         $c['resolved_foto'] = $foto;
+        $c['resolved_foto_count'] = $fotoCount;
         $c['resolved_foto_by'] = $fotoBy;
         $c['resolved_foto_at'] = $fotoAt;
 
@@ -213,6 +217,7 @@ if ($subTab === 'inventaris') {
         $cardJson = htmlspecialchars(json_encode($cardJsonData, JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP), ENT_QUOTES, 'UTF-8');
 
         if ($fotoSrc !== '') {
+            $fotoCountBadge = (int)($c['resolved_foto_count'] ?? 1);
             $photoContent = '
             <div class="position-relative overflow-hidden bg-[#F4F5F7] rounded-top-[9px]" style="height: 195px; cursor: pointer;" onclick="openInvGalleryLightbox('.$cardJson.')">
               <img src="'.e($fotoSrc).'" class="w-100 h-100 object-fit-cover gallery-img-thumb transition-transform" alt="Foto '.e($nama).'" loading="lazy" onerror="handleGalleryImgError(this)">
@@ -222,7 +227,7 @@ if ($subTab === 'inventaris') {
                 </span>
               </div>
               <span class="position-absolute top-2.5 start-2.5 px-2 py-0.5 bg-[#ECFDF5] text-[#065F46] border border-[#A7F3D0] rounded-full text-[11px] font-bold shadow-xs">
-                <i class="bi bi-check-circle-fill me-1"></i>Ada Foto
+                <i class="bi bi-check-circle-fill me-1"></i>'.($fotoCountBadge >= 2 ? '2 Foto Lengkap' : 'Ada Foto').'
               </span>
               '.($fotoBy !== '' ? '
               <span class="position-absolute bottom-2.5 start-2.5 px-2 py-0.5 bg-black bg-opacity-70 text-white rounded-full text-[10px] font-medium shadow-xs" title="Diverifikasi oleh: '.e($fotoBy).'">
@@ -403,7 +408,7 @@ if ($subTab === 'inventaris') {
 
     foreach ($rawAssetsForBadge as $a) {
         $cId = (int)($a['id_cabang'] ?? 0);
-        $hasFoto = !empty(trim((string)($a['foto'] ?? '')));
+        $hasFoto = !empty(trim((string)($a['foto'] ?? ''))) || !empty(trim((string)($a['foto_2'] ?? '')));
         if ($hasFoto) {
             $totalWithPhoto++;
             $branchPhotoCounts[$cId] = ($branchPhotoCounts[$cId] ?? 0) + 1;
@@ -420,7 +425,7 @@ if ($subTab === 'inventaris') {
         if ($divisiId > 0 && (int)($a['id_divisi'] ?? 0) !== $divisiId) {
             return false;
         }
-        $hasFoto = !empty(trim((string)($a['foto'] ?? '')));
+        $hasFoto = !empty(trim((string)($a['foto'] ?? ''))) || !empty(trim((string)($a['foto_2'] ?? '')));
         if ($photoFilter === 'with_photo' && !$hasFoto) return false;
         if ($photoFilter === 'no_photo' && $hasFoto) return false;
 
@@ -465,7 +470,10 @@ if ($subTab === 'inventaris') {
         $aid = (int)($a['id'] ?? 0);
         $kode = !empty($a['kode_inventaris']) ? $a['kode_inventaris'] : sprintf('INV-IT-%03d', $aid);
         $device = asset_title($a);
-        $foto = trim((string)($a['foto'] ?? ''));
+        $foto1 = trim((string)($a['foto'] ?? ''));
+        $foto2 = trim((string)($a['foto_2'] ?? ''));
+        $foto = $foto1 !== '' ? $foto1 : $foto2;
+        $unitFotoCount = ($foto1 !== '' ? 1 : 0) + ($foto2 !== '' ? 1 : 0);
         $fotoSrc = function_exists('asset_image_url') ? asset_image_url($foto) : ($foto ? module_url($foto) : '');
         $user = !empty($a['karyawan_nama']) ? $a['karyawan_nama'] : '-';
         $cabang = !empty($a['cabang_nama']) ? $a['cabang_nama'] : '-';
@@ -508,7 +516,7 @@ if ($subTab === 'inventaris') {
                 </span>
               </div>
               <span class="position-absolute top-2.5 start-2.5 px-2 py-0.5 bg-[#ECFDF5] text-[#065F46] border border-[#A7F3D0] rounded-full text-[11px] font-bold shadow-xs">
-                <i class="bi bi-check-circle-fill me-1"></i>Ada Foto
+                <i class="bi bi-check-circle-fill me-1"></i>'.($unitFotoCount >= 2 ? '2 Foto Lengkap' : 'Ada Foto').'
               </span>
             </div>';
         } else {
@@ -773,6 +781,13 @@ ob_start();
   </div>
 
   <div class="flex flex-wrap items-center gap-2 shrink-0">
+    <?php $activeTrashCnt = function_exists('get_photo_trash_count') ? get_photo_trash_count() : 0; ?>
+    <a href="<?= e(module_url('photo_trash.php')) ?>" class="h-[36px] px-3 <?= $activeTrashCnt > 0 ? 'bg-[#FFFBEB] border-[#FDE68A] text-[#92400E]' : 'bg-white border-[#D1D5D8] text-[#1B2A3A]' ?> border rounded-[8px] text-[13px] font-semibold hover:bg-[#F4F5F7] transition-colors inline-flex items-center gap-1.5 text-decoration-none shadow-xs">
+      <i class="bi bi-recycle text-[#D97706]"></i> <span>Folder Sampah Foto</span>
+      <?php if ($activeTrashCnt > 0): ?>
+        <span class="px-1.5 py-0.2 rounded-full bg-[#D97706] text-white text-[11px] font-bold"><?= (int)$activeTrashCnt ?></span>
+      <?php endif; ?>
+    </a>
     <a href="<?= e(module_url('dashboard.php', ['tab' => 'kartu'])) ?>" class="h-[36px] px-3 bg-white border border-[#D1D5D8] rounded-[8px] text-[13px] font-medium text-[#1B2A3A] hover:bg-[#F4F5F7] transition-colors inline-flex items-center gap-1.5 text-decoration-none shadow-xs">
       <i class="bi bi-credit-card-2-front text-[#0E5C58]"></i> <span>Tabel Kartu</span>
     </a>

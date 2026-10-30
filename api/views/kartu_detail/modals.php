@@ -135,33 +135,53 @@
     <?php endif; ?>
 
     <!-- ===================================================================== -->
-    <!-- MODAL KONFIRMASI OTORISASI HAPUS FOTO                                 -->
+    <!-- MODAL KONFIRMASI OTORISASI HAPUS FOTO (MASUK FOLDER SAMPAH 7 HARI)    -->
     <!-- ===================================================================== -->
     <div class="modal fade" id="modalConfirmDeletePhoto" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered modal-sm">
+        <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
                 <div class="modal-header bg-danger text-white border-0 py-2.5 px-3">
                     <div class="d-flex align-items-center gap-2">
-                        <i class="bi bi-shield-exclamation fs-5"></i>
-                        <h6 class="modal-title fw-bold mb-0">Otorisasi Hapus Foto</h6>
+                        <i class="bi bi-trash3-fill fs-5"></i>
+                        <h6 class="modal-title fw-bold mb-0">Hapus Foto &amp; Pindahkan ke Sampah</h6>
                     </div>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
-                <div class="modal-body p-3 text-center">
-                    <div class="text-danger mb-2">
-                        <i class="bi bi-trash-fill fs-1"></i>
+                <div class="modal-body p-3.5 text-start">
+                    <div class="alert alert-success bg-success bg-opacity-10 border-success border-opacity-25 rounded-3 py-2 px-3 mb-3">
+                        <div class="fw-bold text-success small"><i class="bi bi-recycle me-1"></i>Aman! Tidak Langsung Hilang Permanen</div>
+                        <div class="text-secondary" style="font-size: 0.72rem;">
+                            Foto yang dihapus akan disimpan di <strong>Folder Sampah Foto</strong> selama <strong>7 hari</strong> dan dapat dipulihkan (restore) kapan saja sebelum 7 hari berlalu.
+                        </div>
                     </div>
-                    <h6 class="fw-bold text-dark mb-1">Kosongkan Foto Barang?</h6>
-                    <p class="text-muted small mb-3" style="font-size: 0.75rem;">
-                        Foto dokumentasi fisik <strong><?= e($card['nama_barang'] ?? 'Aset') ?></strong> akan dikosongkan. Sesuai standar kepatuhan bank, penghapusan foto wajib melalui verifikasi scan wajah staf atau otorisasi admin.
-                    </p>
+
+                    <label class="form-label small fw-bold text-dark mb-1.5">Pilih Foto yang Ingin Dihilangkan:</label>
+                    <div class="d-flex flex-column gap-1.5 mb-3">
+                        <?php if (!empty($photoUrl)): ?>
+                            <label class="d-flex align-items-center gap-2 p-2 rounded-3 border bg-light cursor-pointer">
+                                <input type="radio" name="modal_del_target_radio" value="1" class="form-check-input m-0" onchange="setDeleteTargetChoice(this.value)">
+                                <span class="small fw-semibold text-dark">Hapus <strong>Foto 1 (Utama)</strong> Saja</span>
+                            </label>
+                        <?php endif; ?>
+                        <?php if (!empty($photoUrl2)): ?>
+                            <label class="d-flex align-items-center gap-2 p-2 rounded-3 border bg-light cursor-pointer">
+                                <input type="radio" name="modal_del_target_radio" value="2" class="form-check-input m-0" onchange="setDeleteTargetChoice(this.value)">
+                                <span class="small fw-semibold text-dark">Hapus <strong>Foto 2 (Detail)</strong> Saja</span>
+                            </label>
+                        <?php endif; ?>
+                        <label class="d-flex align-items-center gap-2 p-2 rounded-3 border bg-danger bg-opacity-10 border-danger border-opacity-25 cursor-pointer">
+                            <input type="radio" name="modal_del_target_radio" value="all" class="form-check-input m-0" checked onchange="setDeleteTargetChoice(this.value)">
+                            <span class="small fw-bold text-danger">Hapus <strong>Semua Foto</strong> Barang Ini</span>
+                        </label>
+                    </div>
+
                     <div class="d-grid gap-2">
                         <button type="button" class="btn btn-primary btn-sm rounded-pill fw-bold py-2 shadow-xs d-flex align-items-center justify-content-center gap-2" onclick="startFaceDeleteProcess()">
                             <i class="bi bi-person-bounding-box fs-5"></i>
-                            <span>Scan Wajah untuk Hapus</span>
+                            <span>Scan Wajah &amp; Pindahkan ke Sampah</span>
                         </button>
                         <?php if (is_logged_in() && (is_admin() || is_hrd())): ?>
-                            <button type="button" class="btn btn-outline-secondary btn-xs py-1.5 rounded-pill fw-semibold" onclick="submitDeleteAsAuthorizedStaff()">
+                            <button type="button" class="btn btn-outline-danger btn-xs py-1.5 rounded-pill fw-semibold" onclick="submitDeleteAsAuthorizedStaff()">
                                 <i class="bi bi-shield-check text-success me-1"></i> Hapus via Sesi <?= e(is_admin() ? 'Admin' : 'SDM & Umum') ?> (<?= e(current_user_name()) ?>)
                             </button>
                         <?php endif; ?>
