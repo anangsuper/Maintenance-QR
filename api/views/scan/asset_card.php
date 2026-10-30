@@ -612,6 +612,8 @@ $userStatusStrip = $loggedIn
        </div>';
 
 // Build Komponen Catatan & Keluhan Karyawan
+$complaintCount = count($complaints);
+$autoOpenHistory = (!empty($_GET['open_complaints']) || !empty($_GET['complaint_saved']) || !empty($_GET['open_complaint_history']));
 $complaintItemsHtml = '';
 if (empty($complaints)) {
     $complaintItemsHtml = '
@@ -822,12 +824,35 @@ $complaintCardHtml = '
     </div>
   </div>
 
-  <!-- Riwayat Catatan Keluhan Pada Perangkat Ini -->
-  <div>
-    <h6 class="fw-bold text-dark mb-2 small text-uppercase text-secondary tracking-wide">
-      <i class="bi bi-clock-history me-1"></i> Riwayat Catatan / Keluhan Perangkat Ini:
-    </h6>
-    '.$complaintItemsHtml.'
+  <!-- Riwayat Catatan Keluhan Pada Perangkat Ini (Collapsible Hide/Show: Default Tertutup) -->
+  <div class="pt-2 border-top" id="boxRiwayatKeluhan">
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2">
+      <div>
+        <h6 class="fw-bold text-dark mb-0 small text-uppercase tracking-wide">
+          <i class="bi bi-clock-history text-primary me-1"></i> Riwayat Catatan / Keluhan ('.$complaintCount.' Catatan)
+        </h6>
+        <div class="small text-muted" style="font-size: 0.74rem;">
+          '.($pendingComplaintsCount > 0 ? '<span class="text-warning-emphasis fw-bold"><i class="bi bi-exclamation-circle-fill me-1"></i>'.$pendingComplaintsCount.' Perlu Tindak Lanjut</span> &bull; ' : '').'
+          <span class="text-success"><i class="bi bi-check2-circle me-1"></i>'.($complaintCount - $pendingComplaintsCount).' Selesai</span>
+        </div>
+      </div>
+      '.($complaintCount > 0 ? '
+      <div>
+        <button type="button" id="btnToggleComplaintHistory" class="btn btn-sm btn-outline-primary fw-semibold px-3 py-1.5 shadow-xs" aria-expanded="'.($autoOpenHistory ? 'true' : 'false').'" aria-controls="complaintHistoryContainer" onclick="toggleComplaintHistory(this)">
+          <i class="bi '.($autoOpenHistory ? 'bi-chevron-up' : 'bi-chevron-down').' me-1" id="iconToggleComplaintHistory"></i>
+          <span id="labelToggleComplaintHistory">'.($autoOpenHistory ? 'Sembunyikan Riwayat' : 'Tampilkan Riwayat ('.$complaintCount.')').'</span>
+        </button>
+      </div>' : '').'
+    </div>
+
+    '.($complaintCount > 0 ? '
+    <!-- Container Riwayat: Default Tersembunyi (Hidden by default) agar halaman mobile tidak panjang ke bawah -->
+    <div id="complaintHistoryContainer" class="complaint-history-disclosure-panel mt-2" '.($autoOpenHistory ? '' : 'hidden="until-found"').'>
+      '.$complaintItemsHtml.'
+    </div>' : '
+    <div class="text-center py-2.5 px-3 text-muted bg-light rounded-3 border border-dashed small">
+      <i class="bi bi-chat-heart text-secondary me-1"></i> Belum ada catatan keluhan yang dilaporkan untuk perangkat ini.
+    </div>').'
   </div>
 </div>';
 
@@ -1985,9 +2010,32 @@ function fillTechResponse(cId, text) {
   }
 }
 
+// Toggle Hide/Show Riwayat Catatan Keluhan Karyawan
+function toggleComplaintHistory(btn) {
+  const container = document.getElementById("complaintHistoryContainer");
+  if (!container) return;
+  const toggleBtn = btn || document.getElementById("btnToggleComplaintHistory");
+  const isHidden = container.hasAttribute("hidden");
+  const count = ' . (int)$complaintCount . ';
+  const label = document.getElementById("labelToggleComplaintHistory");
+  const icon = document.getElementById("iconToggleComplaintHistory");
+
+  if (isHidden) {
+    container.removeAttribute("hidden");
+    if (toggleBtn) toggleBtn.setAttribute("aria-expanded", "true");
+    if (label) label.textContent = "Sembunyikan Riwayat";
+    if (icon) icon.className = "bi bi-chevron-up me-1";
+  } else {
+    container.setAttribute("hidden", ("onbeforematch" in HTMLElement.prototype) ? "until-found" : "");
+    if (toggleBtn) toggleBtn.setAttribute("aria-expanded", "false");
+    if (label) label.textContent = "Tampilkan Riwayat (" + count + ")";
+    if (icon) icon.className = "bi bi-chevron-down me-1";
+  }
+}
+
 document.addEventListener("DOMContentLoaded", function() {
   const supportsBeforeMatch = ("onbeforematch" in HTMLElement.prototype);
-  const disclosurePanels = document.querySelectorAll(".complaint-disclosure-panel, .followup-disclosure-panel");
+  const disclosurePanels = document.querySelectorAll(".complaint-disclosure-panel, .followup-disclosure-panel, .complaint-history-disclosure-panel");
   disclosurePanels.forEach(function(panel) {
     if (!supportsBeforeMatch && panel.getAttribute("hidden") === "until-found") {
       panel.setAttribute("hidden", "");
@@ -2000,6 +2048,13 @@ document.addEventListener("DOMContentLoaded", function() {
           toggleBtn.setAttribute("aria-expanded", "true");
           toggleBtn.innerHTML = "<i class=\"bi bi-x-lg me-1\"></i>Tutup Form";
         }
+      } else if (panel.id === "complaintHistoryContainer") {
+        const toggleBtn = document.getElementById("btnToggleComplaintHistory");
+        const label = document.getElementById("labelToggleComplaintHistory");
+        const icon = document.getElementById("iconToggleComplaintHistory");
+        if (toggleBtn) toggleBtn.setAttribute("aria-expanded", "true");
+        if (label) label.textContent = "Sembunyikan Riwayat";
+        if (icon) icon.className = "bi bi-chevron-up me-1";
       } else if (panel.id.indexOf("followupPanel_") === 0) {
         const cId = panel.id.replace("followupPanel_", "");
         const toggleBtn = document.getElementById("btnFollowupToggle_" + cId);
