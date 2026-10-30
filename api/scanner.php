@@ -23,13 +23,14 @@ $head = '<style>
   overflow: hidden;
   background-color: #000000;
   box-shadow: inset 0 0 16px rgba(0, 0, 0, 0.8);
-  min-height: 280px;
+  min-height: 290px;
 }
 
 #reader {
   width: 100% !important;
   border: none !important;
   background: #000 !important;
+  min-height: 290px;
 }
 
 #reader video {
@@ -94,8 +95,8 @@ $head = '<style>
   border: 1px solid rgba(255, 255, 255, 0.18);
   color: #E2E8F0;
   border-radius: 12px;
-  padding: 7px 12px;
-  font-size: 0.78rem;
+  padding: 8px 14px;
+  font-size: 0.8rem;
   font-weight: 600;
   display: inline-flex;
   align-items: center;
@@ -188,19 +189,22 @@ $body = '
         </div>
         <div id="reader"></div>
 
-        <!-- Tombol Start Manual (jika browser butuh izin ketukan pengguna) -->
+        <!-- Tombol Start Manual (jika browser butuh izin ketukan pengguna / iOS Safari) -->
         <div id="manualStartBox" class="text-center p-4 d-none" style="position: absolute; inset: 0; background: #07172F; z-index: 8;">
           <div class="d-flex flex-column align-items-center justify-content-center h-100">
-            <i class="bi bi-camera-video-fill fs-1 text-primary mb-2"></i>
-            <p class="small text-light mb-3">Browser meminta izin untuk membuka kamera HP:</p>
-            <button type="button" class="btn btn-primary fw-bold px-4 py-2 rounded-pill shadow" onclick="requestStartCamera()">
-              <i class="bi bi-camera me-1"></i> Buka Kamera Scanner
+            <div class="rounded-circle bg-primary bg-opacity-20 p-3 mb-2">
+              <i class="bi bi-camera-video-fill fs-1 text-primary"></i>
+            </div>
+            <h6 class="text-white fw-bold mb-1">Kamera Belum Aktif</h6>
+            <p class="small text-light text-opacity-75 mb-3" style="font-size: 0.78rem; max-width: 280px;">Browser HP meminta izin Anda untuk menyalakan kamera scanner:</p>
+            <button type="button" class="btn btn-primary fw-bold px-4 py-2.5 rounded-pill shadow-lg" onclick="requestStartCamera()">
+              <i class="bi bi-camera me-1.5"></i> Buka Kamera Scanner
             </button>
           </div>
         </div>
       </div>
 
-      <!-- Toolbar Kontrol Kamera: Senter, Balik Kamera, Unggah Galeri -->
+      <!-- Toolbar Kontrol Kamera: Senter, Balik Kamera, Foto Langsung, Unggah Galeri -->
       <div class="d-flex align-items-center justify-content-center flex-wrap gap-2 mb-2">
         <button type="button" class="scanner-tool-btn" id="btnToggleTorch" onclick="toggleCameraTorch()">
           <i class="bi bi-lightning-fill"></i> Flash
@@ -208,9 +212,15 @@ $body = '
         <button type="button" class="scanner-tool-btn" id="btnSwitchCam" onclick="switchCamera()">
           <i class="bi bi-camera-reverse"></i> Balik Kamera
         </button>
-        <button type="button" class="scanner-tool-btn" onclick="document.getElementById(\'galleryInput\').click()">
-          <i class="bi bi-image"></i> Dari Foto
+        <button type="button" class="scanner-tool-btn" onclick="document.getElementById(\'nativeCameraInput\').click()">
+          <i class="bi bi-camera-fill text-warning"></i> Foto Langsung
         </button>
+        <button type="button" class="scanner-tool-btn" onclick="document.getElementById(\'galleryInput\').click()">
+          <i class="bi bi-image"></i> Dari Galeri
+        </button>
+        <!-- Native Camera Input (langsung membuka app kamera HP) -->
+        <input type="file" id="nativeCameraInput" accept="image/*" capture="environment" class="d-none" onchange="handleGalleryScan(this)">
+        <!-- File Picker Input (pilih dari galeri foto) -->
         <input type="file" id="galleryInput" accept="image/*" class="d-none" onchange="handleGalleryScan(this)">
       </div>
 
@@ -264,19 +274,7 @@ let currentCameraTrack = null;
 let isTorchOn = false;
 let currentFacingMode = "environment";
 let isScanLocked = false;
-let isCameraStarting = false;
-let nativeBarcodeDetector = null;
-let nativeLoopId = null;
-let isDetectingNative = false;
-
-// Inisialisasi Native BarcodeDetector (Hardware Accelerated NPU/GPU di Android/Chrome/iOS)
-if ("BarcodeDetector" in window) {
-  try {
-    nativeBarcodeDetector = new BarcodeDetector({ formats: ["qr_code", "data_matrix", "code_128", "ean_13"] });
-  } catch (e) {
-    console.warn("Native BarcodeDetector init:", e);
-  }
-}
+let isStarting = false;
 
 function playScanAudioFeedback() {
   try {
@@ -340,17 +338,12 @@ function onScanSuccess(decodedText) {
   if (isScanLocked) return;
   isScanLocked = true;
 
-  if (nativeLoopId) {
-    cancelAnimationFrame(nativeLoopId);
-    nativeLoopId = null;
-  }
-
   playScanAudioFeedback();
   triggerScanHapticFeedback();
 
   const statusEl = document.getElementById("scannerStatus");
   if (statusEl) {
-    statusEl.innerHTML = '<span class="text-success fw-bold"><i class="bi bi-lightning-charge-fill me-1"></i> QR Terdeteksi Cepat! Membuka data aset...</span>';
+    statusEl.innerHTML = '<span class="text-success fw-bold"><i class="bi bi-lightning-charge-fill me-1"></i> QR Terdeteksi! Membuka data aset...</span>';
   }
 
   const laser = document.getElementById("scanLaserLine");
@@ -390,23 +383,7 @@ function handleGalleryScan(inputEl) {
   const file = inputEl.files[0];
   const statusEl = document.getElementById("scannerStatus");
   if (statusEl) {
-    statusEl.innerHTML = '<span class="text-info"><span class="spinner-border spinner-border-sm me-1"></span> Menganalisis gambar dari galeri...</span>';
-  }
-
-  // Gunakan BarcodeDetector hardware jika tersedia
-  if (nativeBarcodeDetector && typeof createImageBitmap === "function") {
-    createImageBitmap(file).then(function(bmp) {
-      return nativeBarcodeDetector.detect(bmp);
-    }).then(function(barcodes) {
-      if (barcodes && barcodes.length > 0 && (barcodes[0].rawValue || barcodes[0].displayValue)) {
-        onScanSuccess(barcodes[0].rawValue || barcodes[0].displayValue);
-        return;
-      }
-      throw new Error("Tidak terdeteksi oleh hardware");
-    }).catch(function() {
-      runHtml5QrCodeScanFile(file);
-    });
-    return;
+    statusEl.innerHTML = '<span class="text-info"><span class="spinner-border spinner-border-sm me-1"></span> Menganalisis gambar...</span>';
   }
 
   runHtml5QrCodeScanFile(file);
@@ -414,73 +391,21 @@ function handleGalleryScan(inputEl) {
 
 function runHtml5QrCodeScanFile(file) {
   const statusEl = document.getElementById("scannerStatus");
-  if (!html5QrCode) {
-    html5QrCode = new Html5Qrcode("reader", {
-      experimentalFeatures: { useBarCodeDetectorIfSupported: true },
-      verbose: false
-    });
-  }
-
-  html5QrCode.scanFile(file, true)
-    .then(function(decodedText) {
-      onScanSuccess(decodedText);
-    })
-    .catch(function(err) {
-      if (statusEl) {
-        statusEl.innerHTML = '<span class="text-warning"><i class="bi bi-exclamation-circle me-1"></i> QR tidak ditemukan dalam gambar. Coba ambil foto lebih jelas/tegak.</span>';
-      }
-    });
-}
-
-function startNativeHardwareScanner() {
-  if (!nativeBarcodeDetector || nativeLoopId || isScanLocked) return;
-
-  async function scanTick() {
-    if (isScanLocked) {
-      nativeLoopId = null;
-      return;
-    }
-
-    const video = document.querySelector("#reader video");
-    if (video && video.readyState >= 2 && !video.paused && !video.ended && !isDetectingNative) {
-      isDetectingNative = true;
-      try {
-        const barcodes = await nativeBarcodeDetector.detect(video);
-        if (barcodes && barcodes.length > 0 && !isScanLocked) {
-          const raw = barcodes[0].rawValue || barcodes[0].displayValue;
-          if (raw) {
-            nativeLoopId = null;
-            onScanSuccess(raw);
-            return;
-          }
+  try {
+    const fileScanner = new Html5Qrcode("reader");
+    fileScanner.scanFile(file, true)
+      .then(function(decodedText) {
+        onScanSuccess(decodedText);
+      })
+      .catch(function(err) {
+        if (statusEl) {
+          statusEl.innerHTML = '<span class="text-warning"><i class="bi bi-exclamation-circle me-1"></i> QR tidak terbaca pada foto. Pastikan stiker QR terlihat jelas dan tegak, lalu coba lagi.</span>';
         }
-      } catch (err) {
-        // frame processing
-      } finally {
-        isDetectingNative = false;
-      }
+      });
+  } catch(e) {
+    if (statusEl) {
+      statusEl.innerHTML = '<span class="text-danger"><i class="bi bi-exclamation-triangle me-1"></i> Gagal memproses gambar: ' + (e.message || e) + '</span>';
     }
-
-    if (!isScanLocked) {
-      nativeLoopId = requestAnimationFrame(scanTick);
-    } else {
-      nativeLoopId = null;
-    }
-  }
-
-  nativeLoopId = requestAnimationFrame(scanTick);
-}
-
-function hookVideoForInstantScan() {
-  const video = document.querySelector("#reader video");
-  if (video) {
-    video.setAttribute("playsinline", "true");
-    video.setAttribute("webkit-playsinline", "true");
-    video.removeEventListener("play", startNativeHardwareScanner);
-    video.removeEventListener("loadeddata", startNativeHardwareScanner);
-    video.addEventListener("play", startNativeHardwareScanner);
-    video.addEventListener("loadeddata", startNativeHardwareScanner);
-    startNativeHardwareScanner();
   }
 }
 
@@ -513,8 +438,6 @@ function applyCameraCapabilities() {
       setupZoomControls(currentCameraTrack, caps.zoom);
     }
   } catch (e) {}
-
-  hookVideoForInstantScan();
 }
 
 function toggleCameraTorch() {
@@ -581,159 +504,166 @@ function setupZoomControls(track, zoomCap) {
   wrapper.classList.remove("d-none");
 }
 
+async function cleanupScanner() {
+  if (html5QrCode) {
+    try {
+      if (html5QrCode.isScanning) {
+        await html5QrCode.stop();
+      }
+    } catch (e) {}
+    try {
+      html5QrCode.clear();
+    } catch (e) {}
+    html5QrCode = null;
+  }
+  const readerEl = document.getElementById("reader");
+  if (readerEl) {
+    readerEl.innerHTML = "";
+  }
+}
+
 function switchCamera() {
-  if (!html5QrCode) return;
+  currentFacingMode = (currentFacingMode === "environment") ? "user" : "environment";
   const statusEl = document.getElementById("scannerStatus");
   if (statusEl) {
     statusEl.innerHTML = '<span class="spinner-border spinner-border-sm me-1 text-primary"></span> Membalik kamera...';
   }
-
-  currentFacingMode = (currentFacingMode === "environment") ? "user" : "environment";
-  
-  const promise = html5QrCode.isScanning ? html5QrCode.stop() : Promise.resolve();
-  promise.then(function() {
-    isCameraStarting = false;
-    startCameraScanner();
-  }).catch(function() {
-    isCameraStarting = false;
-    startCameraScanner();
-  });
+  startCameraScanner(true);
 }
 
-function startCameraScanner() {
-  if (isCameraStarting) return;
-  isCameraStarting = true;
+async function startCameraScanner(isUserInitiated) {
+  if (isStarting) return;
+  isStarting = true;
 
   const manualBox = document.getElementById("manualStartBox");
   const statusEl = document.getElementById("scannerStatus");
 
   // 1. Cek Protokol Keamanan (Kamera WAJIB HTTPS atau localhost)
   if (!window.isSecureContext && location.hostname !== "localhost" && location.hostname !== "127.0.0.1") {
-    isCameraStarting = false;
+    isStarting = false;
     if (location.protocol === "http:" && location.hostname === "it.bankmitra.co.id") {
       window.location.replace("https://" + location.host + location.pathname + location.search);
       return;
     }
     if (statusEl) {
-      statusEl.innerHTML = '<span class="text-danger fw-bold"><i class="bi bi-shield-x me-1"></i> Kamera membutuhkan koneksi HTTPS aman. Silakan buka melalui <a href="https://it.bankmitra.co.id/scanner.php" class="text-white text-decoration-underline fw-bold">https://it.bankmitra.co.id/scanner.php</a></span>';
+      statusEl.innerHTML = '<span class="text-danger fw-bold"><i class="bi bi-shield-x me-1"></i> Kamera membutuhkan koneksi HTTPS aman. Silakan buka melalui <a href="https://it.bankmitra.co.id/scanner" class="text-white text-decoration-underline fw-bold">https://it.bankmitra.co.id/scanner</a></span>';
     }
     if (manualBox) manualBox.classList.remove("d-none");
     return;
   }
 
-  // 2. Cek apakah Html5Qrcode sudah siap
+  // 2. Cek Html5Qrcode Library
   if (typeof Html5Qrcode === "undefined") {
-    isCameraStarting = false;
+    isStarting = false;
     if (statusEl) {
-      statusEl.innerHTML = '<span class="text-warning"><span class="spinner-border spinner-border-sm me-1 text-primary"></span> Menyiapkan library kamera...</span>';
+      statusEl.innerHTML = '<span class="text-warning"><span class="spinner-border spinner-border-sm me-1 text-primary"></span> Menyiapkan modul scanner...</span>';
     }
-    setTimeout(startCameraScanner, 600);
-    return;
-  }
-
-  if (!html5QrCode) {
-    html5QrCode = new Html5Qrcode("reader", {
-      experimentalFeatures: {
-        useBarCodeDetectorIfSupported: true
-      },
-      verbose: false
-    });
-  }
-
-  if (html5QrCode.isScanning) {
-    html5QrCode.stop().then(function() {
-      isCameraStarting = false;
-      startCameraScanner();
-    }).catch(function() {
-      isCameraStarting = false;
-    });
+    setTimeout(function() { startCameraScanner(isUserInitiated); }, 500);
     return;
   }
 
   if (statusEl) {
-    statusEl.innerHTML = '<span class="spinner-border spinner-border-sm me-1 text-primary"></span> Menghubungkan ke kamera...';
+    statusEl.innerHTML = '<span class="spinner-border spinner-border-sm me-1 text-primary"></span> Menghubungkan ke kamera HP...';
   }
 
-  // Konfigurasi optimal: 25 FPS, full-frame viewport scan (tanpa pembatasan qrbox)
-  const qrConfig = {
-    fps: 25,
-    disableFlip: false
-  };
+  // Bersihkan instans sebelumnya agar aman dari state collision
+  await cleanupScanner();
 
-  const cameraConstraints = {
-    facingMode: currentFacingMode,
-    width: { ideal: 1280, min: 640 },
-    height: { ideal: 720, min: 480 }
-  };
+  // 3. Pada iOS Safari / Mobile, coba cek izin getUserMedia terlebih dahulu
+  if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+    try {
+      const testStream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: { ideal: currentFacingMode } }
+      });
+      // Tutup test stream segera setelah izin didapat
+      testStream.getTracks().forEach(function(tr) { tr.stop(); });
+    } catch (permErr) {
+      console.warn("Izin kamera awal butuh interaksi:", permErr);
+      if (!isUserInitiated) {
+        isStarting = false;
+        if (manualBox) manualBox.classList.remove("d-none");
+        if (statusEl) {
+          statusEl.innerHTML = '<span class="text-warning"><i class="bi bi-camera me-1"></i> Ketuk tombol <b>"Buka Kamera Scanner"</b> untuk mengaktifkan kamera HP Anda.</span>';
+        }
+        return;
+      }
+    }
+  }
 
-  html5QrCode.start(
-    cameraConstraints,
-    qrConfig,
-    onScanSuccess,
-    function() {}
-  ).then(function() {
-    isCameraStarting = false;
+  try {
+    const readerEl = document.getElementById("reader");
+    if (!readerEl) {
+      isStarting = false;
+      return;
+    }
+
+    html5QrCode = new Html5Qrcode("reader", {
+      experimentalFeatures: {
+        useBarCodeDetectorIfSupported: false
+      },
+      verbose: false
+    });
+
+    const qrConfig = {
+      fps: 15,
+      qrbox: function(viewfinderWidth, viewfinderHeight) {
+        var minEdge = Math.min(viewfinderWidth, viewfinderHeight);
+        var edge = Math.floor(minEdge * 0.72);
+        return {
+          width: Math.max(180, Math.min(280, edge)),
+          height: Math.max(180, Math.min(280, edge))
+        };
+      },
+      aspectRatio: 1.0,
+      disableFlip: false
+    };
+
+    const cameraParam = { facingMode: currentFacingMode };
+
+    await html5QrCode.start(
+      cameraParam,
+      qrConfig,
+      onScanSuccess,
+      function() {}
+    );
+
+    isStarting = false;
     if (manualBox) manualBox.classList.add("d-none");
     if (statusEl) {
       statusEl.innerHTML = '<span class="text-success fw-bold"><i class="bi bi-lightning-charge-fill text-warning me-1"></i> Scanner aktif &bull; Arahkan ke stiker QR</span>';
     }
+
+    // Pastikan video mobile memiliki atribut playsinline & muted (krusial di iOS Safari/Chrome)
+    const video = document.querySelector("#reader video");
+    if (video) {
+      video.setAttribute("playsinline", "true");
+      video.setAttribute("webkit-playsinline", "true");
+      video.setAttribute("muted", "true");
+      video.muted = true;
+      video.play().catch(function() {});
+    }
+
     setTimeout(applyCameraCapabilities, 300);
-  }).catch(function(errFirst) {
-    console.warn("Kamera constraints ideal gagal, mencoba fallback facingMode standar:", errFirst);
-    // Fallback 1: jalankan dengan facingMode dasar
-    html5QrCode.start(
-      { facingMode: currentFacingMode },
-      qrConfig,
-      onScanSuccess,
-      function() {}
-    ).then(function() {
-      isCameraStarting = false;
-      if (manualBox) manualBox.classList.add("d-none");
-      if (statusEl) {
-        statusEl.innerHTML = '<span class="text-success fw-bold"><i class="bi bi-lightning-charge-fill text-warning me-1"></i> Scanner aktif &bull; Arahkan ke stiker QR</span>';
+
+  } catch (err) {
+    isStarting = false;
+    console.error("Gagal memulai scanner:", err);
+    await cleanupScanner();
+    if (manualBox) manualBox.classList.remove("d-none");
+
+    if (statusEl) {
+      const errStr = String(err || "");
+      if (errStr.includes("NotAllowedError") || errStr.includes("Permission") || errStr.includes("denied")) {
+        statusEl.innerHTML = '<span class="text-danger fw-bold"><i class="bi bi-shield-x me-1"></i> Izin kamera diblokir browser. Di iPhone: Buka <b>Pengaturan HP &rarr; Safari / Chrome &rarr; Kamera &rarr; Izinkan</b>. Atau gunakan tombol <b>"Foto Langsung"</b> di bawah.</span>';
+      } else if (errStr.includes("NotFoundError") || errStr.includes("DevicesNotFoundError")) {
+        statusEl.innerHTML = '<span class="text-warning fw-bold"><i class="bi bi-camera-video-off me-1"></i> Perangkat kamera tidak ditemukan. Gunakan tombol <b>"Foto Langsung"</b> atau ketik token di bawah.</span>';
+      } else if (errStr.includes("NotReadableError") || errStr.includes("TrackStartError")) {
+        statusEl.innerHTML = '<span class="text-warning fw-bold"><i class="bi bi-exclamation-triangle me-1"></i> Kamera sedang dipakai oleh aplikasi lain. Tutup aplikasi lain lalu coba lagi.</span>';
+      } else {
+        statusEl.innerHTML = '<span class="text-warning"><i class="bi bi-camera me-1"></i> Ketuk tombol <b>"Buka Kamera Scanner"</b> di atas atau <b>"Foto Langsung"</b> di bawah.</span>';
       }
-      setTimeout(applyCameraCapabilities, 300);
-    }).catch(function(errSecond) {
-      console.warn("Fallback facingMode gagal, mencoba deteksi perangkat kamera spesifik:", errSecond);
-      // Fallback 2: ambil daftar kamera perangkat
-      Html5Qrcode.getCameras().then(function(cameras) {
-        if (!cameras || cameras.length === 0) {
-          throw new Error("Tidak ada kamera yang terdeteksi.");
-        }
-        let selectedCam = cameras[0];
-        if (currentFacingMode === "environment" && cameras.length > 1) {
-          const back = cameras.find(function(c) {
-            return /back|rear|environment|belakang|main/i.test(c.label);
-          });
-          selectedCam = back || cameras[cameras.length - 1];
-        }
-        return html5QrCode.start(selectedCam.id, qrConfig, onScanSuccess, function() {});
-      }).then(function() {
-        isCameraStarting = false;
-        if (manualBox) manualBox.classList.add("d-none");
-        if (statusEl) {
-          statusEl.innerHTML = '<span class="text-success fw-bold"><i class="bi bi-lightning-charge-fill text-warning me-1"></i> Scanner aktif &bull; Arahkan ke stiker QR</span>';
-        }
-        setTimeout(applyCameraCapabilities, 300);
-      }).catch(function(errFinal) {
-        isCameraStarting = false;
-        console.error("Kamera sepenuhnya gagal:", errFinal);
-        if (manualBox) manualBox.classList.remove("d-none");
-        if (statusEl) {
-          const errStr = String(errFinal || errSecond || errFirst || "");
-          if (errStr.includes("NotAllowedError") || errStr.includes("Permission") || errStr.includes("denied")) {
-            statusEl.innerHTML = '<span class="text-danger fw-bold"><i class="bi bi-shield-x me-1"></i> Izin kamera diblokir browser. Ketuk ikon gembok di address bar lalu pilih <b>Izinkan Kamera</b>.</span>';
-          } else if (errStr.includes("NotFoundError") || errStr.includes("DevicesNotFoundError")) {
-            statusEl.innerHTML = '<span class="text-warning fw-bold"><i class="bi bi-camera-video-off me-1"></i> Perangkat kamera tidak ditemukan.</span>';
-          } else if (errStr.includes("NotReadableError") || errStr.includes("TrackStartError")) {
-            statusEl.innerHTML = '<span class="text-warning fw-bold"><i class="bi bi-exclamation-triangle me-1"></i> Kamera sedang dipakai oleh aplikasi lain. Tutup aplikasi lain lalu coba lagi.</span>';
-          } else {
-            statusEl.innerHTML = '<span class="text-warning"><i class="bi bi-camera-video me-1"></i> Ketuk tombol <b>"Buka Kamera Scanner"</b> untuk menyalakan kamera.</span>';
-          }
-        }
-      });
-    });
-  });
+    }
+  }
 }
 
 function requestStartCamera() {
@@ -743,14 +673,16 @@ function requestStartCamera() {
   if (statusEl) {
     statusEl.innerHTML = '<span class="spinner-border spinner-border-sm me-1 text-primary"></span> Meminta izin kamera ke browser...';
   }
-  isCameraStarting = false;
-  startCameraScanner();
+  isStarting = false;
+  startCameraScanner(true);
 }
 
 if (document.readyState === "loading") {
-  document.addEventListener("DOMContentLoaded", startCameraScanner);
+  document.addEventListener("DOMContentLoaded", function() {
+    startCameraScanner(false);
+  });
 } else {
-  startCameraScanner();
+  startCameraScanner(false);
 }
 </script>
 SCANNER_JS_CODE;
