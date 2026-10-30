@@ -8,10 +8,23 @@ $hasEnrolledTechs = !empty($enrolledTechs);
 $complaints = get_asset_complaints($assetId);
 $pendingComplaintsCount = 0;
 foreach ($complaints as $c) {
-    if (($c['status'] ?? '') === 'Menunggu Teknisi') {
+    $cStLower = strtolower(trim((string)($c['status'] ?? 'Menunggu Teknisi')));
+    if (!in_array($cStLower, ['selesai', 'resolved', 'closed', 'ok'], true)) {
         $pendingComplaintsCount++;
     }
 }
+
+$allUsersForScan = get_user_list(false);
+$techDatalistOptions = '';
+$seenTechNames = [];
+foreach ($allUsersForScan as $uRow) {
+    $uNama = trim((string)($uRow['nama'] ?? ''));
+    if ($uNama !== '' && !in_array($uNama, $seenTechNames, true)) {
+        $seenTechNames[] = $uNama;
+        $techDatalistOptions .= '<option value="' . e($uNama) . '"></option>';
+    }
+}
+$defaultTechName = $loggedIn ? current_user_name() : '';
 
 // Status Bulan Berjalan
 if ($currentMonthLog) {
@@ -444,6 +457,11 @@ $headStyle = '<style>
 .tracking-wide { letter-spacing: 0.05em; }
 .shadow-xs { box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
 
+/* Ensure Tailwind .collapse never hides Bootstrap/disclosure panels */
+.collapse { visibility: visible !important; }
+.collapse:not(.show) { display: none !important; }
+.collapse.show { display: block !important; visibility: visible !important; }
+
 /* MOBILE RESPONSIVE TWEAKS (PLACED AFTER BASE STYLES SO THEY WIN SPECIFICITY) */
 @media (max-width: 576px) {
   .scan-card-section {
@@ -577,49 +595,99 @@ if (empty($complaints)) {
 } else {
     foreach ($complaints as $item) {
         $cId = (int)($item['id'] ?? 0);
-        $cStatus = $item['status'] ?? 'Menunggu Teknisi';
-        $isResolved = ($cStatus === 'Selesai');
-        $statusBadge = $isResolved
-            ? '<span class="badge bg-success"><i class="bi bi-check-circle-fill me-1"></i>Selesai</span>'
-            : '<span class="badge bg-warning text-dark"><i class="bi bi-hourglass-split me-1"></i>Menunggu Teknisi</span>';
+        $cStatus = trim((string)($item['status'] ?? 'Menunggu Teknisi'));
+        $cStatusLower = strtolower($cStatus);
+        $isResolved = in_array($cStatusLower, ['selesai', 'resolved', 'closed', 'ok'], true);
+        $isInProgress = in_array($cStatusLower, ['sedang diproses', 'proses', 'in progress'], true);
+
+        if ($isResolved) {
+            $statusBadge = '<span class="badge bg-success"><i class="bi bi-check-circle-fill me-1"></i>Selesai Diperbaiki</span>';
+        } elseif ($isInProgress) {
+            $statusBadge = '<span class="badge bg-info text-dark"><i class="bi bi-gear-wide-connected me-1"></i>Sedang Diproses Teknisi</span>';
+        } else {
+            $statusBadge = '<span class="badge bg-warning text-dark"><i class="bi bi-hourglass-split me-1"></i>Menunggu Teknisi</span>';
+        }
         
         $cDate = !empty($item['created_at']) ? format_id_date(substr($item['created_at'], 0, 10)) . ' ' . substr($item['created_at'], 11, 5) : '-';
-        $cContact = !empty($item['contact']) ? '<span class="badge bg-light text-secondary border ms-1"><i class="bi bi-whatsapp me-1"></i>' . e($item['contact']) . '</span>' : '';
+        $cContact = !empty($item['contact']) ? '<span class="badge bg-light text-secondary border ms-1"><i class="bi bi-whatsapp me-1 text-success"></i>' . e($item['contact']) . '</span>' : '';
         $cCategory = !empty($item['kategori']) ? '<span class="badge bg-primary-subtle text-primary border border-primary-subtle">' . e($item['kategori']) . '</span>' : '';
         
         $techResponseHtml = '';
-        if ($isResolved && !empty($item['technician_response'])) {
+        if (!empty($item['technician_response'])) {
             $resolvedDate = !empty($item['resolved_at']) ? format_id_date(substr($item['resolved_at'], 0, 10)) . ' ' . substr($item['resolved_at'], 11, 5) : '';
+            $respBg = $isResolved ? '#f0fdf4' : '#eff6ff';
+            $respBorder = $isResolved ? '#bbf7d0' : '#bfdbfe';
+            $respTitleColor = $isResolved ? 'text-success' : 'text-primary';
+            $respTitleText = $isResolved ? 'Respon / Solusi Penyelesaian Teknisi:' : 'Catatan Progres Pengecekan Teknisi:';
             $techResponseHtml = '
-            <div class="mt-2 p-2 rounded small" style="background-color: #f0fdf4; border: 1px solid #bbf7d0;">
-                <div class="fw-bold text-success mb-1"><i class="bi bi-check2-all me-1"></i>Respon / Solusi Teknisi:</div>
+            <div class="mt-2 p-2.5 rounded-3 small" style="background-color: '.$respBg.'; border: 1px solid '.$respBorder.';">
+                <div class="fw-bold '.$respTitleColor.' mb-1"><i class="bi '.($isResolved ? 'bi-check2-all' : 'bi-tools').' me-1"></i>'.$respTitleText.'</div>
                 <div class="text-dark">' . nl2br(e($item['technician_response'])) . '</div>
                 <div class="text-muted mt-1" style="font-size: 0.75rem;">Ditindaklanjuti oleh <strong>' . e($item['resolved_by'] ?? 'Teknisi IT') . '</strong>' . ($resolvedDate ? ' pada ' . e($resolvedDate) : '') . '</div>
             </div>';
         }
 
         $resolveActionForm = '';
-        if (!$isResolved && $loggedIn) {
+        if (!$isResolved) {
+            $existingResp = trim((string)($item['technician_response'] ?? ''));
+            $existingTech = trim((string)($item['resolved_by'] ?? '')) ?: $defaultTechName;
             $resolveActionForm = '
-            <div class="mt-2 p-2 bg-white rounded border">
-                <form method="POST" action="" class="row g-2 align-items-center">
-                    <input type="hidden" name="action" value="resolve_complaint">
-                    <input type="hidden" name="complaint_id" value="' . $cId . '">
-                    <div class="col-12 col-md-8">
-                        <input type="text" name="technician_response" class="form-control form-control-sm" placeholder="Tuliskan tindakan perbaikan teknisi..." required>
-                    </div>
-                    <div class="col-12 col-md-4 text-end">
-                        <button type="submit" class="btn btn-sm btn-success w-100 fw-semibold"><i class="bi bi-check-lg me-1"></i> Tandai Selesai</button>
-                    </div>
-                </form>
+            <div class="mt-2 pt-2 border-top d-flex flex-wrap align-items-center justify-content-between gap-2">
+                <span class="small text-secondary fw-semibold"><i class="bi bi-wrench-adjustable-circle text-primary me-1"></i>Menu Tindak Lanjut Teknisi IT:</span>
+                <div class="d-flex flex-wrap gap-1.5">
+                    <button type="button" class="btn btn-sm btn-primary fw-semibold py-1 px-2.5" aria-expanded="false" aria-controls="followupPanel_' . $cId . '" onclick="toggleFollowupPanel(' . $cId . ', this)">
+                        <i class="bi bi-reply-fill me-1"></i> Follow Up / Respon Cepat
+                    </button>
+                    <a href="' . e(module_url('scan.php', ['t' => $token, 'action' => 'tindak_lanjut'])) . '" class="btn btn-sm btn-outline-danger fw-semibold py-1 px-2.5" title="Buka Form Tindak Lanjut Lengkap + Update Checklist 9 Item">
+                        <i class="bi bi-card-checklist me-1"></i> Tindak Lanjut + Checklist
+                    </a>
+                </div>
+            </div>
+            <div id="followupPanel_' . $cId . '" class="followup-disclosure-panel" hidden="until-found">
+                <div class="mt-2 p-3 bg-light rounded-3 border border-primary border-opacity-25">
+                    <div class="fw-bold text-dark small mb-2"><i class="bi bi-tools text-primary me-1"></i>Form Tindak Lanjut Keluhan #' . $cId . '</div>
+                    <form method="POST" action="' . e(module_url('scan.php', ['t' => $token])) . '">
+                        <input type="hidden" name="_csrf" value="' . e(csrf_token()) . '">
+                        <input type="hidden" name="t" value="' . e($token) . '">
+                        <input type="hidden" name="action" value="resolve_complaint">
+                        <input type="hidden" name="complaint_id" value="' . $cId . '">
+                        <div class="row g-2">
+                            <div class="col-12 col-md-6">
+                                <label class="form-label small fw-semibold text-secondary mb-1">Nama Teknisi Pemeriksa <span class="text-danger">*</span></label>
+                                <input type="text" name="technician_name" list="listTeknisiComplaint" class="form-control form-control-sm bg-white" value="' . e($existingTech) . '" placeholder="Ketik atau pilih nama teknisi..." required>
+                            </div>
+                            <div class="col-12 col-md-6">
+                                <label class="form-label small fw-semibold text-secondary mb-1">Status Penanganan</label>
+                                <select name="status" class="form-select form-select-sm bg-white">
+                                    <option value="Selesai" selected>✅ Selesai Diperbaiki (Normal Kembali)</option>
+                                    <option value="Sedang Diproses">⏳ Sedang Diproses (Menunggu Sparepart / Lanjutan)</option>
+                                </select>
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label small fw-semibold text-secondary mb-1">Tindakan Perbaikan / Solusi Teknisi <span class="text-danger">*</span></label>
+                                <textarea name="technician_response" id="techRespInput_' . $cId . '" class="form-control form-control-sm bg-white" rows="2" placeholder="Tuliskan hasil pengecekan atau tindakan perbaikan yang dilakukan..." required>' . e($existingResp) . '</textarea>
+                                <div class="d-flex flex-wrap gap-1 mt-1.5">
+                                    <button type="button" class="btn btn-xs btn-outline-secondary py-0.5 px-2" style="font-size: 0.72rem;" onclick="fillTechResponse(' . $cId . ', \'Sudah dilakukan pengecekan, pembersihan cache/temp, dan perangkat normal kembali.\')">✅ Sudah Dicek & Normal</button>
+                                    <button type="button" class="btn btn-xs btn-outline-secondary py-0.5 px-2" style="font-size: 0.72rem;" onclick="fillTechResponse(' . $cId . ', \'Sudah dilakukan head cleaning, reset printer spooler, dan hasil cetak kembali bersih.\')">🖨️ Perbaikan Printer</button>
+                                    <button type="button" class="btn btn-xs btn-outline-secondary py-0.5 px-2" style="font-size: 0.72rem;" onclick="fillTechResponse(' . $cId . ', \'Sudah dilakukan pengecekan kabel LAN, konfigurasi ulang IP Address, dan koneksi kembali stabil.\')">🌐 Perbaikan Jaringan</button>
+                                    <button type="button" class="btn btn-xs btn-outline-secondary py-0.5 px-2" style="font-size: 0.72rem;" onclick="fillTechResponse(' . $cId . ', \'Sedang dalam proses pemesanan/penggantian komponen hardware oleh Tim IT.\')">🔧 Ganti Komponen</button>
+                                </div>
+                            </div>
+                            <div class="col-12 d-flex justify-content-end gap-2 mt-2">
+                                <button type="button" class="btn btn-sm btn-outline-secondary" onclick="toggleFollowupPanel(' . $cId . ')">Batal</button>
+                                <button type="submit" class="btn btn-sm btn-success fw-semibold px-3"><i class="bi bi-check2-circle me-1"></i> Simpan Tindak Lanjut</button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
             </div>';
         }
 
         $complaintItemsHtml .= '
-        <div class="p-3 mb-2 rounded-3 border bg-white shadow-xs">
+        <div class="p-3 mb-2.5 rounded-3 border bg-white shadow-xs">
             <div class="d-flex flex-wrap justify-content-between align-items-center gap-1 mb-2">
                 <div class="d-flex align-items-center flex-wrap gap-1">
-                    <strong class="text-dark"><i class="bi bi-person me-1 text-primary"></i>' . e($item['reporter_name'] ?? 'Karyawan') . '</strong>
+                    <strong class="text-dark"><i class="bi bi-person-circle me-1 text-primary"></i>' . e($item['reporter_name'] ?? 'Karyawan') . '</strong>
                     ' . $cContact . '
                     ' . $cCategory . '
                 </div>
@@ -628,7 +696,7 @@ if (empty($complaints)) {
                     ' . $statusBadge . '
                 </div>
             </div>
-            <div class="p-2 rounded bg-light text-dark small" style="border-left: 3px solid #3b82f6;">
+            <div class="p-2.5 rounded bg-light text-dark small" style="border-left: 3.5px solid #0E5C58;">
                 ' . nl2br(e($item['complaint'] ?? '')) . '
             </div>
             ' . $techResponseHtml . '
@@ -641,40 +709,50 @@ $defaultReporter = (!empty($asset['karyawan_nama']) && $asset['karyawan_nama'] !
 $autoOpenForm = (!empty($_GET['tulis']) || !empty($_GET['complaint_form']));
 
 $complaintCardHtml = '
+<datalist id="listTeknisiComplaint">' . $techDatalistOptions . '</datalist>
 <div class="card p-3 p-md-4 border-0 shadow-sm mb-4" id="catatan-karyawan">
   <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
     <div>
       <h5 class="fw-bold text-dark mb-0">
-        <i class="bi bi-chat-left-dots-fill text-primary me-2"></i>Catatan & Keluhan Karyawan
+        <i class="bi bi-chat-left-dots-fill text-primary me-2"></i>Catatan &amp; Keluhan Karyawan
       </h5>
-      <p class="small text-secondary mb-0">Sampaikan keluhan, kerusakan hardware, kendala aplikasi, atau kebutuhan IT pada perangkat ini.</p>
+      <p class="small text-secondary mb-0">Lapor kendala perangkat ke Tim IT &bull; Otomatis masuk ke antrean <strong>Temuan Kendala Dashboard IT</strong>.</p>
     </div>
-    <div class="d-flex align-items-center gap-2">
+    <div class="d-flex align-items-center gap-2 flex-wrap">
       '.($pendingComplaintsCount > 0 ? '<span class="badge bg-warning text-dark px-3 py-2"><i class="bi bi-exclamation-circle-fill me-1"></i> '.$pendingComplaintsCount.' Perlu Ditangani</span>' : '<span class="badge bg-success-subtle text-success px-3 py-2 border border-success-subtle"><i class="bi bi-check-circle me-1"></i> Normal</span>').'
-      <button class="btn btn-sm btn-primary fw-semibold" type="button" data-bs-toggle="collapse" data-bs-target="#formComplaintCollapse" aria-expanded="'.($autoOpenForm ? 'true' : 'false').'" aria-controls="formComplaintCollapse">
-        <i class="bi bi-pencil-square me-1"></i> Tulis Catatan
+      <button id="btnToggleComplaintForm" class="btn btn-sm btn-primary fw-semibold px-3 py-2 shadow-xs" type="button" aria-expanded="'.($autoOpenForm ? 'true' : 'false').'" aria-controls="formComplaintCollapse" onclick="toggleComplaintForm(this)">
+        <i class="bi '.($autoOpenForm ? 'bi-x-lg' : 'bi-pencil-square').' me-1" id="iconToggleComplaintForm"></i>
+        <span id="labelToggleComplaintForm">'.($autoOpenForm ? 'Tutup Form' : 'Tulis Catatan').'</span>
       </button>
     </div>
   </div>
 
-  <!-- Form Tambah Catatan / Keluhan -->
-  <div class="collapse mb-3 '.($autoOpenForm ? 'show' : '').'" id="formComplaintCollapse">
-    <div class="p-3 p-md-4 rounded-3 border bg-light">
-      <h6 class="fw-bold text-dark mb-3"><i class="bi bi-send-plus text-primary me-2"></i>Kirim Catatan / Lapor Kendala ke Tim IT</h6>
-      <form method="POST" action="">
+  <!-- Form Tambah Catatan / Keluhan (Menggunakan hidden="until-found" + Sinkronisasi JS bebas konflik Tailwind .collapse) -->
+  <div id="formComplaintCollapse" class="complaint-disclosure-panel" '.($autoOpenForm ? '' : 'hidden="until-found"').'>
+    <div class="p-3 p-md-4 mb-3 rounded-3 border bg-light shadow-xs" style="border-left: 4px solid #0E5C58 !important;">
+      <div class="d-flex justify-content-between align-items-center mb-2">
+        <h6 class="fw-bold text-dark mb-0"><i class="bi bi-send-plus text-primary me-2"></i>Kirim Catatan / Lapor Kendala ke Tim IT</h6>
+        <button type="button" class="btn-close small" aria-label="Tutup" onclick="toggleComplaintForm()"></button>
+      </div>
+      <p class="text-muted small mb-3" style="font-size: 0.78rem;">
+        Catatan yang Anda kirim otomatis tampil di <strong>Dashboard Temuan Kendala IT</strong> agar segera ditindaklanjuti oleh teknisi.
+      </p>
+      <form method="POST" action="' . e(module_url('scan.php', ['t' => $token])) . '">
+        <input type="hidden" name="_csrf" value="' . e(csrf_token()) . '">
+        <input type="hidden" name="t" value="' . e($token) . '">
         <input type="hidden" name="action" value="submit_complaint">
         <div class="row g-3">
           <div class="col-12 col-md-6">
-            <label class="form-label small fw-semibold text-secondary">Nama Karyawan / Pelapor <span class="text-danger">*</span></label>
-            <input type="text" name="reporter_name" class="form-control form-control-sm" value="'.e($defaultReporter).'" placeholder="Nama pengguna PC" required>
+            <label class="form-label small fw-semibold text-secondary mb-1">Nama Karyawan / Pelapor <span class="text-danger">*</span></label>
+            <input type="text" name="reporter_name" class="form-control form-control-sm bg-white" value="'.e($defaultReporter).'" placeholder="Nama pengguna PC" required>
           </div>
           <div class="col-12 col-md-6">
-            <label class="form-label small fw-semibold text-secondary">No. WhatsApp / HP <span class="text-muted">(Opsional untuk konfirmasi)</span></label>
-            <input type="text" name="contact" class="form-control form-control-sm" placeholder="Contoh: 08123456789">
+            <label class="form-label small fw-semibold text-secondary mb-1">No. WhatsApp / HP <span class="text-muted">(Opsional untuk konfirmasi)</span></label>
+            <input type="text" name="contact" class="form-control form-control-sm bg-white" placeholder="Contoh: 08123456789">
           </div>
           <div class="col-12">
-            <label class="form-label small fw-semibold text-secondary">Kategori Kendala</label>
-            <select name="kategori" class="form-select form-select-sm">
+            <label class="form-label small fw-semibold text-secondary mb-1">Kategori Kendala</label>
+            <select name="kategori" id="complaintKategoriSelect" class="form-select form-select-sm bg-white">
               <option value="Komputer Lambat / Hang">Komputer Lambat / Sering Hang</option>
               <option value="Aplikasi / Software Error">Aplikasi / Software Error / Tidak Bisa Dibuka</option>
               <option value="Koneksi Jaringan / Internet">Koneksi Jaringan / Internet / Sambungan LAN-WiFi</option>
@@ -685,16 +763,35 @@ $complaintCardHtml = '
             </select>
           </div>
           <div class="col-12">
-            <label class="form-label small fw-semibold text-secondary">Isi Catatan / Kendala yang Dialami <span class="text-danger">*</span></label>
-            <textarea name="complaint" class="form-control form-control-sm" rows="3" placeholder="Tuliskan kendala yang dialami secara rinci agar teknisi dapat membawa peralatan yang sesuai..." required></textarea>
+            <label class="form-label small fw-semibold text-secondary mb-1">Isi Catatan / Kendala yang Dialami <span class="text-danger">*</span></label>
+            <textarea name="complaint" id="complaintTextInput" class="form-control form-control-sm bg-white" rows="3" placeholder="Tuliskan kendala yang dialami secara rinci agar teknisi dapat membawa peralatan yang sesuai..." required></textarea>
+            <div class="mt-2">
+              <div class="text-muted mb-1" style="font-size: 0.74rem;"><i class="bi bi-lightning-charge me-1 text-warning"></i>Pilih cepat contoh keluhan:</div>
+              <div class="d-flex flex-wrap gap-1.5">
+                <button type="button" class="btn btn-xs btn-outline-secondary bg-white py-1 px-2" style="font-size: 0.73rem;" onclick="selectQuickComplaint(\'Komputer Lambat / Hang\', \'Komputer terasa lambat dan sering not responding saat membuka aplikasi kerja.\')">🖥️ PC Lambat / Hang</button>
+                <button type="button" class="btn btn-xs btn-outline-secondary bg-white py-1 px-2" style="font-size: 0.73rem;" onclick="selectQuickComplaint(\'Printer / Scanner Bermasalah\', \'Printer tidak bisa mencetak / hasil cetakan bergaris dan putus-putus.\')">🖨️ Printer Bermasalah</button>
+                <button type="button" class="btn btn-xs btn-outline-secondary bg-white py-1 px-2" style="font-size: 0.73rem;" onclick="selectQuickComplaint(\'Koneksi Jaringan / Internet\', \'Koneksi jaringan LAN / internet sering terputus dan tidak bisa akses server.\')">🌐 Jaringan / LAN Putus</button>
+                <button type="button" class="btn btn-xs btn-outline-secondary bg-white py-1 px-2" style="font-size: 0.73rem;" onclick="selectQuickComplaint(\'Aplikasi / Software Error\', \'Aplikasi kerja muncul pesan error dan tidak bisa dibuka.\')">⚠️ Aplikasi Error</button>
+                <button type="button" class="btn btn-xs btn-outline-secondary bg-white py-1 px-2" style="font-size: 0.73rem;" onclick="selectQuickComplaint(\'Hardware (Keyboard / Mouse / Monitor)\', \'Tombol keyboard / mouse kurang responsif atau layar monitor berkedip.\')">⌨️ Keyboard / Mouse / Monitor</button>
+              </div>
+            </div>
           </div>
-          <div class="col-12 text-end">
-            <button type="submit" class="btn btn-primary fw-semibold px-4 py-2">
+          <div class="col-12 d-flex justify-content-end gap-2 pt-1">
+            <button type="button" class="btn btn-sm btn-outline-secondary px-3" onclick="toggleComplaintForm()">Batal</button>
+            <button type="submit" class="btn btn-sm btn-primary fw-semibold px-4 py-2 shadow-xs">
               <i class="bi bi-send-fill me-1"></i> Kirim Catatan ke Tim IT
             </button>
           </div>
         </div>
       </form>
+    </div>
+  </div>
+
+  <!-- Info Singkat Alur Follow-Up Teknisi -->
+  <div class="p-2.5 px-3 mb-3 rounded-3 bg-light border d-flex flex-wrap align-items-center justify-content-between gap-2" style="font-size: 0.76rem;">
+    <div class="text-secondary">
+      <strong class="text-dark"><i class="bi bi-info-circle-fill text-primary me-1"></i>Alur Tindak Lanjut (Follow-Up):</strong>
+      <span>1. Karyawan tulis catatan &rarr; 2. Masuk ke <strong>Dashboard Temuan IT</strong> &amp; kartu ini &rarr; 3. Teknisi klik <strong>Follow Up / Respon Cepat</strong> atau <strong>Tindak Lanjut + Checklist</strong>.</span>
     </div>
   </div>
 
@@ -1629,6 +1726,93 @@ window.addEventListener("pageshow", function(event) {
   if (event.persisted) {
     window.location.reload();
   }
+});
+
+// Disclosure Form Catatan & Keluhan Karyawan + Follow-up Teknisi (hidden="until-found" & beforematch)
+function toggleComplaintForm(btn) {
+  const panel = document.getElementById("formComplaintCollapse");
+  if (!panel) return;
+  const toggleBtn = btn || document.getElementById("btnToggleComplaintForm");
+  const isHidden = panel.hasAttribute("hidden");
+  if (isHidden) {
+    panel.removeAttribute("hidden");
+    if (toggleBtn) {
+      toggleBtn.setAttribute("aria-expanded", "true");
+      toggleBtn.innerHTML = "<i class=\"bi bi-x-lg me-1\"></i>Tutup Form";
+    }
+    const nameInput = document.getElementById("complaintReporterName");
+    if (nameInput && !nameInput.value) {
+      setTimeout(() => nameInput.focus(), 80);
+    }
+  } else {
+    panel.setAttribute("hidden", ("onbeforematch" in HTMLElement.prototype) ? "until-found" : "");
+    if (toggleBtn) {
+      toggleBtn.setAttribute("aria-expanded", "false");
+      toggleBtn.innerHTML = "<i class=\"bi bi-plus-circle me-1\"></i>Tulis Catatan";
+    }
+  }
+}
+
+function selectQuickComplaint(kategori, text) {
+  const panel = document.getElementById("formComplaintCollapse");
+  if (panel && panel.hasAttribute("hidden")) {
+    toggleComplaintForm(document.getElementById("btnToggleComplaintForm"));
+  }
+  const catSelect = document.getElementById("complaintCategorySelect");
+  const msgArea = document.getElementById("complaintMessageText");
+  if (catSelect && kategori) {
+    catSelect.value = kategori;
+  }
+  if (msgArea && text) {
+    msgArea.value = text;
+    msgArea.focus();
+  }
+}
+
+function toggleFollowupPanel(cId, btn) {
+  const panel = document.getElementById("followupPanel_" + cId);
+  if (!panel) return;
+  const toggleBtn = btn || document.getElementById("btnFollowupToggle_" + cId);
+  const isHidden = panel.hasAttribute("hidden");
+  if (isHidden) {
+    panel.removeAttribute("hidden");
+    if (toggleBtn) toggleBtn.setAttribute("aria-expanded", "true");
+  } else {
+    panel.setAttribute("hidden", ("onbeforematch" in HTMLElement.prototype) ? "until-found" : "");
+    if (toggleBtn) toggleBtn.setAttribute("aria-expanded", "false");
+  }
+}
+
+function fillTechResponse(cId, text) {
+  const respArea = document.getElementById("techResp_" + cId);
+  if (respArea && text) {
+    respArea.value = text;
+    respArea.focus();
+  }
+}
+
+document.addEventListener("DOMContentLoaded", function() {
+  const supportsBeforeMatch = ("onbeforematch" in HTMLElement.prototype);
+  const disclosurePanels = document.querySelectorAll(".complaint-disclosure-panel, .followup-disclosure-panel");
+  disclosurePanels.forEach(function(panel) {
+    if (!supportsBeforeMatch && panel.getAttribute("hidden") === "until-found") {
+      panel.setAttribute("hidden", "");
+    }
+    panel.addEventListener("beforematch", function() {
+      panel.removeAttribute("hidden");
+      if (panel.id === "formComplaintCollapse") {
+        const toggleBtn = document.getElementById("btnToggleComplaintForm");
+        if (toggleBtn) {
+          toggleBtn.setAttribute("aria-expanded", "true");
+          toggleBtn.innerHTML = "<i class=\"bi bi-x-lg me-1\"></i>Tutup Form";
+        }
+      } else if (panel.id.indexOf("followupPanel_") === 0) {
+        const cId = panel.id.replace("followupPanel_", "");
+        const toggleBtn = document.getElementById("btnFollowupToggle_" + cId);
+        if (toggleBtn) toggleBtn.setAttribute("aria-expanded", "true");
+      }
+    });
+  });
 });
 </script>';
 render_page('Detail Perangkat · ' . ($asset['kode_inventaris'] ?? 'QR'), $body, $headStyle, '', false);

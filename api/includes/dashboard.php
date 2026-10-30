@@ -588,6 +588,37 @@ function get_comprehensive_dashboard_data(int $month, int $year, int $cabangId =
         ");
         $findSt->execute($cabangId > 0 ? [$cabangId] : []);
         $topUnresolvedFindings = $findSt->fetchAll();
+
+        // Sertakan juga keluhan karyawan yang belum selesai (employee_complaints)
+        try {
+            $compSt = db()->prepare("
+                SELECT ec.id, 0 AS log_id, ec.asset_id,
+                       CONCAT('[Keluhan Karyawan - ', ec.kategori, '] ', ec.complaint) AS finding,
+                       COALESCE(ec.technician_response, 'Menunggu tindak lanjut teknisi IT') AS action_taken,
+                       'Sedang' AS severity,
+                       ec.status, ec.created_at,
+                       a.kode_inventaris, a.merk, a.model, a.token,
+                       c.`{$cName}` AS cabang_nama,
+                       ec.reporter_name AS reporter
+                FROM employee_complaints ec
+                JOIN assets a ON a.id = ec.asset_id
+                LEFT JOIN cabang c ON c.id = a.id_cabang
+                WHERE LOWER(COALESCE(ec.status, 'Menunggu Teknisi')) NOT IN ('selesai', 'resolved', 'closed', 'ok')
+                ".($cabangId > 0 ? " AND a.id_cabang = ? " : "")."
+                ORDER BY ec.created_at DESC
+                LIMIT 5
+            ");
+            $compSt->execute($cabangId > 0 ? [$cabangId] : []);
+            $compRows = $compSt->fetchAll();
+            $existingAids = array_column($topUnresolvedFindings, 'asset_id');
+            foreach ($compRows as $cr) {
+                if (!in_array($cr['asset_id'], $existingAids, false)) {
+                    $topUnresolvedFindings[] = $cr;
+                    $existingAids[] = $cr['asset_id'];
+                }
+            }
+        } catch (Throwable $e) {}
+
         $totalUnresolvedFindings = count($topUnresolvedFindings);
     } catch (Throwable $e) {
         $topUnresolvedFindings = [];

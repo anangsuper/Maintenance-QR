@@ -355,6 +355,30 @@ function get_asset_active_finding(int $assetId): ?array {
                 ];
             }
         }
+
+        // 3. Cek keluhan karyawan aktif (employee_complaints)
+        $complaints = get_asset_complaints($assetId);
+        foreach ($complaints as $comp) {
+            $cSt = strtolower(trim((string)($comp['status'] ?? 'Menunggu Teknisi')));
+            if (!in_array($cSt, ['selesai', 'resolved', 'closed', 'ok'], true)) {
+                $kat = trim((string)($comp['kategori'] ?? 'Keluhan'));
+                $txt = trim((string)($comp['complaint'] ?? ''));
+                return [
+                    'type' => 'employee_complaint',
+                    'id' => (int)($comp['id'] ?? 0),
+                    'complaint_id' => (int)($comp['id'] ?? 0),
+                    'finding_id' => 0,
+                    'log_id' => (int)($scan['id'] ?? 0),
+                    'asset_id' => $assetId,
+                    'finding' => ($kat !== '' ? "[{$kat}] " : '') . $txt,
+                    'recommendation' => !empty($comp['technician_response']) ? (string)$comp['technician_response'] : 'Keluhan dilaporkan oleh pengguna melalui Scan QR',
+                    'status' => (string)($comp['status'] ?? 'Menunggu Teknisi'),
+                    'reporter' => (string)($comp['reporter_name'] ?? 'Karyawan') . (!empty($comp['contact']) ? ' (' . $comp['contact'] . ')' : ''),
+                    'date' => substr((string)($comp['created_at'] ?? date('Y-m-d')), 0, 10),
+                    'severity' => 'Sedang'
+                ];
+            }
+        }
         return null;
     } catch (Throwable $e) {
         return null;
@@ -514,10 +538,19 @@ function resolve_asset_finding(int $assetId, array $data): array {
             $fStatus = ($status === 'Selesai') ? 'Resolved' : 'In Progress';
             $st = db()->prepare("
                 UPDATE maintenance_findings 
-                SET repair_status = ?, resolved_by = ?, resolved_at = NOW(), action_taken = ?
+                SET repair_status = ?, resolved_by = ?, resolved_at = NOW(), action_taken = ?, catatan_penyelesaian = ?
                 WHERE (id = ? AND ? > 0) OR (maintenance_scan_id = ? AND ? > 0) OR asset_id = ?
             ");
-            $st->execute([$fStatus, $techResolvedStr, $actionTaken, $findingId, $findingId, $logId, $logId, $assetId]);
+            $st->execute([$fStatus, $techResolvedStr, $actionTaken, $actionTaken, $findingId, $findingId, $logId, $logId, $assetId]);
+        } catch (Throwable $e) {}
+        try {
+            $compSt = ($status === 'Selesai') ? 'Selesai' : 'Sedang Diproses';
+            $stComp = db()->prepare("
+                UPDATE employee_complaints
+                SET status = ?, technician_response = ?, resolved_by = ?, resolved_at = NOW()
+                WHERE asset_id = ? AND LOWER(COALESCE(status, '')) NOT IN ('selesai', 'resolved', 'closed')
+            ");
+            $stComp->execute([$compSt, $actionTaken, $techResolvedStr, $assetId]);
         } catch (Throwable $e) {}
     }
 
@@ -712,6 +745,18 @@ function update_finding_progress(int $findingId, int $scanId, int $assetId, stri
                     WHERE id = ?
                 ");
                 $stScan->execute([$scanStatus, $formattedLog, $scanId]);
+            }
+
+            if ($assetId > 0) {
+                try {
+                    $compStatus = ($finalStatus === 'Resolved') ? 'Selesai' : 'Sedang Diproses';
+                    $stComp = db()->prepare("
+                        UPDATE employee_complaints
+                        SET status = ?, technician_response = ?, resolved_by = ?, resolved_at = NOW()
+                        WHERE asset_id = ? AND LOWER(COALESCE(status, '')) NOT IN ('selesai', 'resolved', 'closed')
+                    ");
+                    $stComp->execute([$compStatus, $notes, $techName, $assetId]);
+                } catch (Throwable $e) {}
             }
 
             $assetData = get_asset_by_id($assetId);
@@ -1356,6 +1401,15 @@ function save_maintenance_record(array $data): array {
                     WHERE asset_id = ? AND LOWER(COALESCE(repair_status, 'open')) NOT IN ('resolved', 'closed', 'selesai', 'done')
                 ");
                 $stFind->execute([$techName, $assetId]);
+            } catch (Throwable $e) {}
+            try {
+                $compNote = $recommendation !== '' ? $recommendation : 'Telah dilakukan pemeriksaan & pemeliharaan berkala oleh teknisi IT.';
+                $stComp = db()->prepare("
+                    UPDATE employee_complaints
+                    SET status = 'Selesai', technician_response = ?, resolved_by = ?, resolved_at = NOW()
+                    WHERE asset_id = ? AND LOWER(COALESCE(status, '')) NOT IN ('selesai', 'resolved', 'closed')
+                ");
+                $stComp->execute([$compNote, $techName, $assetId]);
             } catch (Throwable $e) {}
         }
 
@@ -2121,7 +2175,7 @@ function get_findings_report(int $month, int $year, int $cabangId): array {
         $kName = name_column('karyawan') ?: 'id';
         $uName = name_column('users') ?: 'id';
 
-        // 1. Ambil dari maintenance_findings
+        // 1. Ambil dari maintenance_findings (LEFT JOIN ke maintenance_scan agar temuan/keluhan tanpa scan tetap muncul)
         $sql = "
             SELECT mf.*, a.kode_inventaris, a.merk, a.model, a.token,
                    c.`{$cName}` AS cabang_nama,
@@ -2132,7 +2186,7 @@ function get_findings_report(int $month, int $year, int $cabangId): array {
                    ms.recommendation AS scan_recommendation,
                    ms.maintenance_date AS scan_date
             FROM maintenance_findings mf
-            JOIN maintenance_scan ms ON ms.id = mf.maintenance_scan_id
+            LEFT JOIN maintenance_scan ms ON ms.id = mf.maintenance_scan_id
             JOIN assets a ON a.id = mf.asset_id
             LEFT JOIN cabang c ON c.id = a.id_cabang
             LEFT JOIN divisi d ON d.id = a.id_divisi
@@ -2142,11 +2196,13 @@ function get_findings_report(int $month, int $year, int $cabangId): array {
         $whereMf = ["1=1"];
         $params = [];
         if ($month > 0) {
-            $whereMf[] = "ms.maintenance_month = ?";
+            $whereMf[] = "(ms.maintenance_month = ? OR (ms.id IS NULL AND MONTH(COALESCE(mf.created_at, NOW())) = ?))";
+            $params[] = $month;
             $params[] = $month;
         }
         if ($year > 0) {
-            $whereMf[] = "ms.maintenance_year = ?";
+            $whereMf[] = "(ms.maintenance_year = ? OR (ms.id IS NULL AND YEAR(COALESCE(mf.created_at, NOW())) = ?))";
+            $params[] = $year;
             $params[] = $year;
         }
         if ($cabangId > 0) {
@@ -2277,6 +2333,80 @@ function get_findings_report(int $month, int $year, int $cabangId): array {
                 'created_at' => substr((string)($s['maintenance_date'] ?? ''), 0, 10),
             ];
         }
+
+        // 3. Sertakan keluhan karyawan dari tabel employee_complaints agar langsung terpantau di Tab Temuan
+        try {
+            $sqlComp = "
+                SELECT ec.*, a.kode_inventaris, a.merk, a.model, a.token,
+                       c.`{$cName}` AS cabang_nama,
+                       d.`{$dName}` AS divisi_nama,
+                       k.`{$kName}` AS karyawan_nama
+                FROM employee_complaints ec
+                JOIN assets a ON a.id = ec.asset_id
+                LEFT JOIN cabang c ON c.id = a.id_cabang
+                LEFT JOIN divisi d ON d.id = a.id_divisi
+                LEFT JOIN karyawan k ON k.id = a.id_karyawan
+                WHERE 1=1
+            ";
+            $pComp = [];
+            if ($month > 0) {
+                $sqlComp .= " AND MONTH(ec.created_at) = ?";
+                $pComp[] = $month;
+            }
+            if ($year > 0) {
+                $sqlComp .= " AND YEAR(ec.created_at) = ?";
+                $pComp[] = $year;
+            }
+            if ($cabangId > 0) {
+                $sqlComp .= " AND a.id_cabang = ?";
+                $pComp[] = $cabangId;
+            }
+            $sqlComp .= " ORDER BY ec.id DESC";
+            $stComp = db()->prepare($sqlComp);
+            $stComp->execute($pComp);
+            foreach ($stComp->fetchAll() as $ec) {
+                $aid = (int)($ec['asset_id'] ?? 0);
+                $ecSt = strtolower(trim((string)($ec['status'] ?? 'Menunggu Teknisi')));
+                if (in_array($ecSt, ['selesai', 'resolved', 'closed', 'ok'], true)) {
+                    $repSt = 'Resolved';
+                } elseif (in_array($ecSt, ['sedang diproses', 'proses', 'in progress'], true)) {
+                    $repSt = 'In Progress';
+                } else {
+                    $repSt = 'Perlu Perbaikan';
+                }
+                if (isset($assetIdsProcessed[$aid]) && $repSt === 'Resolved') {
+                    continue;
+                }
+                $kat = trim((string)($ec['kategori'] ?? 'Keluhan'));
+                $txt = trim((string)($ec['complaint'] ?? ''));
+                $resp = trim((string)($ec['technician_response'] ?? ''));
+                $results[] = [
+                    'id' => (int)$ec['id'],
+                    'finding_id' => 0,
+                    'scan_id' => 0,
+                    'complaint_id' => (int)$ec['id'],
+                    'asset_id' => $aid,
+                    'token' => $ec['token'] ?? '',
+                    'kode_inventaris' => $ec['kode_inventaris'] ?? '-',
+                    'merk_model' => trim(($ec['merk'] ?? '') . ' ' . ($ec['model'] ?? '')),
+                    'karyawan_nama' => $ec['reporter_name'] ?: ($ec['karyawan_nama'] ?? '-'),
+                    'cabang_nama' => $ec['cabang_nama'] ?? '-',
+                    'divisi_nama' => $ec['divisi_nama'] ?? '-',
+                    'finding' => '[Keluhan Karyawan - ' . $kat . '] ' . $txt,
+                    'action_taken' => $resp !== '' ? $resp : 'Menunggu pengecekan & tindak lanjut teknisi IT',
+                    'proses_perbaikan' => $resp,
+                    'catatan_penyelesaian' => $resp,
+                    'severity' => 'Sedang',
+                    'repair_status' => $repSt,
+                    'teknisi' => !empty($ec['resolved_by']) ? $ec['resolved_by'] : ('Pelapor: ' . ($ec['reporter_name'] ?? 'Karyawan')),
+                    'reported_by' => $ec['reporter_name'] ?? 'Karyawan',
+                    'reported_at' => substr((string)($ec['created_at'] ?? ''), 0, 10),
+                    'resolved_by' => $ec['resolved_by'] ?? '',
+                    'resolved_at' => $ec['resolved_at'] ?? '',
+                    'created_at' => substr((string)($ec['created_at'] ?? ''), 0, 10),
+                ];
+            }
+        } catch (Throwable $e) {}
 
         return $results;
     } catch (Throwable $e) {
@@ -2499,6 +2629,32 @@ function save_employee_complaint(int $assetId, array $data): array {
         $st->execute([$assetId, $reporter, $kategori, $complaint, $contact, $now]);
         $id = (int)$pdo->lastInsertId();
 
+        // Sinkronkan juga ke maintenance_findings agar langsung masuk ke daftar Temuan Kendala IT di Dashboard
+        try {
+            $findingSummary = "[Keluhan Karyawan - {$kategori}] {$complaint}";
+            $actionSummary = "Dilaporkan oleh {$reporter}" . ($contact !== '' ? " (WA/HP: {$contact})" : "");
+            $stF = $pdo->prepare("INSERT INTO maintenance_findings 
+                (maintenance_scan_id, asset_id, finding, action_taken, severity, repair_status, created_at)
+                VALUES (0, ?, ?, ?, 'Sedang', 'Perlu Perbaikan', ?)");
+            $stF->execute([$assetId, $findingSummary, $actionSummary, $now]);
+        } catch (Throwable $e) {}
+
+        try {
+            $assetData = get_asset_by_id($assetId);
+            broadcast_dashboard_change('finding_reported', [
+                'action' => 'complaint_reported',
+                'complaint_id' => $id,
+                'asset_id' => $assetId,
+                'kode_inventaris' => $assetData['kode_inventaris'] ?? ('INV-IT-' . $assetId),
+                'perangkat' => trim(($assetData['merk'] ?? '') . ' ' . ($assetData['model'] ?? '')),
+                'cabang_id' => (int)($assetData['id_cabang'] ?? 0),
+                'cabang_nama' => $assetData['cabang_nama'] ?? 'Cabang',
+                'status' => 'Temuan',
+                'technician_name' => $reporter,
+                'findings' => "[{$kategori}] {$complaint}"
+            ]);
+        } catch (Throwable $e) {}
+
         if (function_exists('record_audit_log')) {
             record_audit_log('COMPLAINT_CREATED', 'MAINTENANCE', $assetId, "Asset #{$assetId}", "Keluhan diajukan oleh {$reporter} ({$kategori}): {$complaint}");
         }
@@ -2552,13 +2708,44 @@ function resolve_employee_complaint(int $complaintId, array $data): array {
     // MySQL Mode
     try {
         $pdo = db();
+        $stGet = $pdo->prepare("SELECT asset_id FROM employee_complaints WHERE id = ? LIMIT 1");
+        $stGet->execute([$complaintId]);
+        $compRow = $stGet->fetch();
+        $compAssetId = (int)($compRow['asset_id'] ?? 0);
+
         $st = $pdo->prepare("UPDATE employee_complaints SET 
             status = ?, technician_response = ?, resolved_by = ?, resolved_at = ?
             WHERE id = ?");
         $st->execute([$status, $resp, $resolver, $now, $complaintId]);
 
+        if ($compAssetId > 0) {
+            try {
+                $fRepStatus = (in_array(strtolower($status), ['selesai', 'resolved', 'closed', 'ok'], true)) ? 'Resolved' : 'In Progress';
+                $stUpF = $pdo->prepare("
+                    UPDATE maintenance_findings
+                    SET repair_status = ?, resolved_by = ?, resolved_at = ?, action_taken = ?, catatan_penyelesaian = ?
+                    WHERE asset_id = ? AND LOWER(COALESCE(repair_status, 'open')) NOT IN ('resolved', 'closed', 'selesai', 'done')
+                ");
+                $stUpF->execute([$fRepStatus, $resolver, $now, $resp, $resp, $compAssetId]);
+            } catch (Throwable $e) {}
+
+            try {
+                $assetData = get_asset_by_id($compAssetId);
+                broadcast_dashboard_change('finding_resolved', [
+                    'action' => 'complaint_resolved',
+                    'complaint_id' => $complaintId,
+                    'asset_id' => $compAssetId,
+                    'kode_inventaris' => $assetData['kode_inventaris'] ?? ('INV-IT-' . $compAssetId),
+                    'perangkat' => trim(($assetData['merk'] ?? '') . ' ' . ($assetData['model'] ?? '')),
+                    'status' => $status,
+                    'technician_name' => $resolver,
+                    'action_taken' => $resp
+                ]);
+            } catch (Throwable $e) {}
+        }
+
         if (function_exists('record_audit_log')) {
-            record_audit_log('COMPLAINT_RESOLVED', 'MAINTENANCE', $complaintId, "Complaint #{$complaintId}", "Keluhan ditindaklanjuti oleh {$resolver}: {$resp}");
+            record_audit_log('COMPLAINT_RESOLVED', 'MAINTENANCE', $complaintId, "Complaint #{$complaintId}", "Keluhan ditindaklanjuti oleh {$resolver} ({$status}): {$resp}");
         }
 
         return ['success' => true];

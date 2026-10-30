@@ -95,16 +95,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (($_POST['action'] ?? '') === 'subm
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && (($_POST['action'] ?? '') === 'resolve_complaint')) {
-    require_login();
     $cId = (int)($_POST['complaint_id'] ?? 0);
     $cResp = trim((string)($_POST['technician_response'] ?? ''));
+    $cTech = trim((string)($_POST['technician_name'] ?? ''));
+    if ($cTech === '') {
+        $cTech = is_logged_in() ? current_user_name() : 'Teknisi IT';
+    }
+    $cStatus = trim((string)($_POST['status'] ?? 'Selesai'));
+    if (!in_array($cStatus, ['Selesai', 'Sedang Diproses'], true)) {
+        $cStatus = 'Selesai';
+    }
     if ($cId > 0) {
         resolve_employee_complaint($cId, [
-            'technician_response' => $cResp ?: 'Telah dilakukan pengecekan dan perbaikan oleh teknisi IT.',
-            'resolved_by' => current_user_name(),
-            'status' => 'Selesai'
+            'technician_response' => $cResp ?: ($cStatus === 'Selesai' ? 'Telah dilakukan pengecekan dan perbaikan oleh teknisi IT.' : 'Sedang dalam pengecekan dan tindak lanjut teknisi IT.'),
+            'resolved_by' => $cTech,
+            'status' => $cStatus
         ]);
-        $_SESSION['flash_scan'] = '✓ Catatan keluhan karyawan berhasil ditandai selesai ditindaklanjuti.';
+        if ($cStatus === 'Selesai') {
+            $_SESSION['flash_scan'] = '✓ Keluhan karyawan telah ditindaklanjuti dan ditandai SELESAI oleh ' . $cTech . '.';
+        } else {
+            $_SESSION['flash_scan'] = '✓ Progres tindak lanjut keluhan ("Sedang Diproses") berhasil disimpan oleh ' . $cTech . '.';
+        }
         header('Location: ' . module_url('scan.php', ['t' => $token]));
         exit;
     }

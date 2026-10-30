@@ -3046,3 +3046,18 @@ label.form-label,
 .scan-info-capsule {
   display: none !important;
 }
+
+/* Fix Tailwind CSS .collapse (visibility: collapse) overriding Bootstrap 5 Collapse components */
+.collapse {
+  visibility: visible !important;
+}
+.collapse:not(.show) {
+  display: none !important;
+}
+.collapse.show {
+  display: block !important;
+  visibility: visible !important;
+}
+.collapsing {
+  visibility: visible !important;
+}

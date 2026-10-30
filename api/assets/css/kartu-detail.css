@@ -400,3 +400,13 @@
                 border-radius: 10px;
             }
         }
+        .collapse {
+            visibility: visible !important;
+        }
+        .collapse:not(.show) {
+            display: none !important;
+        }
+        .collapse.show {
+            display: block !important;
+            visibility: visible !important;
+        }
