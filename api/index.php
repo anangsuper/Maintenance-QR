@@ -8,22 +8,6 @@
 
 
 
-// If PRODUCTION_SERVER_URL is explicitly configured, redirect to it; otherwise run serverless PHP locally
-
-$prodUrl = getenv('PRODUCTION_SERVER_URL') ?: ($_ENV['PRODUCTION_SERVER_URL'] ?? '');
-
-if (!empty($prodUrl)) {
-
-    $targetHost = rtrim($prodUrl, '/');
-
-    $fullUri = $_SERVER['REQUEST_URI'] ?? '/';
-
-    header('Location: ' . $targetHost . $fullUri, true, 302);
-
-    exit;
-
-}
-
 
 
 $uri = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH);
