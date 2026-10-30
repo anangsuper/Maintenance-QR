@@ -126,31 +126,137 @@ function app_auth_secret(): string {
 }
 
 
-function is_google_cloud_mode(): bool {
-    $sheetId = cfg('google_spreadsheet_id', envv('GOOGLE_SPREADSHEET_ID', ''));
+function get_google_service_account_credentials(): array {
+    static $creds = null;
+    if ($creds !== null) return $creds;
+
+    $sheetId = cfg('google_spreadsheet_id', envv('GOOGLE_SPREADSHEET_ID', envv('GOOGLE_SHEET_ID', envv('SPREADSHEET_ID', '19V_qkLtFmaH93dA9h1ZqM2T7JqZ6H_IEI94PVkPnNIc'))));
     $email = cfg('google_client_email', envv('GOOGLE_CLIENT_EMAIL', ''));
-    return (!empty($sheetId) && !empty($email));
+    $key = cfg('google_private_key', envv('GOOGLE_PRIVATE_KEY', ''));
+
+    // Cek jika kredensial utuh diberikan dalam format JSON di environment variable
+    $rawJson = envv('GOOGLE_SERVICE_ACCOUNT_JSON', envv('GOOGLE_CREDENTIALS', envv('GCP_SERVICE_ACCOUNT', '')));
+    if (!empty($rawJson)) {
+        $decoded = json_decode($rawJson, true);
+        if (is_array($decoded)) {
+            if (empty($email) && !empty($decoded['client_email'])) $email = (string)$decoded['client_email'];
+            if (empty($key) && !empty($decoded['private_key'])) $key = (string)$decoded['private_key'];
+            if (empty($sheetId) && !empty($decoded['spreadsheet_id'])) $sheetId = (string)$decoded['spreadsheet_id'];
+        }
+    }
+
+    // Cek berkas service-account.json lokal jika ada
+    $filePaths = [
+        dirname(__DIR__) . '/service-account.json',
+        dirname(__DIR__) . '/credentials.json',
+        dirname(__DIR__, 2) . '/service-account.json',
+        dirname(__DIR__, 2) . '/config/service-account.json',
+    ];
+    foreach ($filePaths as $fp) {
+        if (is_file($fp) && is_readable($fp)) {
+            $decoded = json_decode((string)@file_get_contents($fp), true);
+            if (is_array($decoded)) {
+                if (empty($email) && !empty($decoded['client_email'])) $email = (string)$decoded['client_email'];
+                if (empty($key) && !empty($decoded['private_key'])) $key = (string)$decoded['private_key'];
+                if (empty($sheetId) && !empty($decoded['spreadsheet_id'])) $sheetId = (string)$decoded['spreadsheet_id'];
+                break;
+            }
+        }
+    }
+
+    if (!empty($key)) {
+        $key = str_replace(['\\n', "\r"], ["\n", ''], trim($key));
+    }
+
+    $creds = [
+        'spreadsheet_id' => trim((string)$sheetId),
+        'client_email' => trim((string)$email),
+        'private_key' => trim((string)$key)
+    ];
+    return $creds;
+}
+
+function is_google_cloud_mode(): bool {
+    $c = get_google_service_account_credentials();
+    return (!empty($c['spreadsheet_id']) && !empty($c['client_email']) && !empty($c['private_key']));
 }
 
 function google_sheets_v4_client(): ?GoogleSheetsV4Client {
     static $client = null;
     if ($client !== null) return $client;
 
-    $sheetId = cfg('google_spreadsheet_id', envv('GOOGLE_SPREADSHEET_ID', ''));
-    $email = cfg('google_client_email', envv('GOOGLE_CLIENT_EMAIL', ''));
-    $key = cfg('google_private_key', envv('GOOGLE_PRIVATE_KEY', ''));
-
-    if ($sheetId && $email && $key) {
-        $client = new GoogleSheetsV4Client($sheetId, $email, $key);
+    $c = get_google_service_account_credentials();
+    if (!empty($c['spreadsheet_id']) && !empty($c['client_email']) && !empty($c['private_key'])) {
+        $client = new GoogleSheetsV4Client($c['spreadsheet_id'], $c['client_email'], $c['private_key']);
     }
     return $client;
+}
+
+function render_vercel_spreadsheet_setup_guide(?string $technicalMsg = null): void {
+    http_response_code(503);
+    $c = get_google_service_account_credentials();
+    $currSheetId = htmlspecialchars($c['spreadsheet_id'] ?: '19V_qkLtFmaH93dA9h1ZqM2T7JqZ6H_IEI94PVkPnNIc');
+
+    echo '<!DOCTYPE html><html lang="id"><head><meta charset="utf-8">';
+    echo '<title>Aktivasi Google Spreadsheet &bull; Vercel</title>';
+    echo '<meta name="viewport" content="width=device-width, initial-scale=1">';
+    echo '<link href="assets/vendor/bootstrap.min.css" rel="stylesheet">';
+    echo '<style>
+        body { background: #0B192C; color: #E2E8F0; font-family: system-ui, -apple-system, sans-serif; }
+        .setup-card { background: #1E293B; border: 1px solid rgba(255,255,255,0.08); border-radius: 1.25rem; }
+        .step-num { width: 28px; height: 28px; border-radius: 50%; background: #38BDF8; color: #0B192C; font-weight: bold; display: inline-flex; align-items: center; justify-content: center; }
+        code { color: #38BDF8; background: rgba(56, 189, 248, 0.12); padding: 2px 6px; border-radius: 4px; }
+    </style>';
+    echo '</head><body class="p-4 d-flex align-items-center justify-content-center min-vh-100">';
+    echo '<div class="container" style="max-width: 680px;">';
+    echo '<div class="setup-card shadow-lg p-4 p-md-5 text-start">';
+    
+    echo '<div class="text-center mb-4">';
+    echo '<div class="mb-3" style="font-size: 3rem;">📊</div>';
+    echo '<h3 class="fw-bold text-white mb-2">Aktivasi Database Google Spreadsheet</h3>';
+    echo '<p class="text-secondary small">Aplikasi berjalan di <strong>Vercel Serverless</strong> dan menggunakan <strong>Google Cloud Sheets API v4</strong> (tanpa membutuhkan server database lokal).</p>';
+    echo '</div>';
+
+    echo '<div class="p-3 mb-4 rounded-3" style="background: rgba(14, 165, 233, 0.1); border: 1px solid rgba(14, 165, 233, 0.25);">';
+    echo '<div class="d-flex align-items-center justify-content-between">';
+    echo '<span class="small text-secondary">Target Spreadsheet ID:</span>';
+    echo '<span class="badge bg-primary text-wrap text-break font-monospace">' . $currSheetId . '</span>';
+    echo '</div>';
+    echo '</div>';
+
+    echo '<h6 class="text-white fw-bold mb-3">Langkah Aktivasi di Vercel Dashboard:</h6>';
+    echo '<ol class="list-unstyled d-flex flex-column gap-3 small">';
+    echo '<li class="d-flex gap-3 align-items-start"><span class="step-num flex-shrink-0">1</span><div>Buka <strong>Vercel Dashboard</strong> &rarr; Pilih Proyek <strong>Maintenance-QR</strong> &rarr; Tab <strong>Settings</strong> &rarr; <strong>Environment Variables</strong>.</div></li>';
+    echo '<li class="d-flex gap-3 align-items-start"><span class="step-num flex-shrink-0">2</span><div>Tambahkan salah satu opsi kredensial berikut:';
+    echo '<div class="mt-2 p-3 rounded-2" style="background: #0F172A;">';
+    echo '<div class="fw-bold text-info mb-1">Opsi A (Paling Praktis - 1 Variabel):</div>';
+    echo '<div class="mb-2">Nama: <code>GOOGLE_SERVICE_ACCOUNT_JSON</code><br>Nilai: Salin dan tempel seluruh teks dari berkas Service Account <code>.json</code> Google Anda.</div>';
+    echo '<div class="fw-bold text-info mb-1">Opsi B (Terpisah):</div>';
+    echo '<div>- <code>GOOGLE_CLIENT_EMAIL</code>: Email Service Account Google Anda<br>- <code>GOOGLE_PRIVATE_KEY</code>: Private key dari Service Account Anda</div>';
+    echo '</div></div></li>';
+    echo '<li class="d-flex gap-3 align-items-start"><span class="step-num flex-shrink-0">3</span><div>Pastikan Google Sheet Anda telah dibagikan (<strong>Share / Bagikan</strong>) ke email Service Account tersebut dengan hak akses <strong>Editor</strong>.</div></li>';
+    echo '<li class="d-flex gap-3 align-items-start"><span class="step-num flex-shrink-0">4</span><div>Klik <strong>Redeploy</strong> pada deployment terakhir Anda di Vercel. Aplikasi akan langsung aktif!</div></li>';
+    echo '</ol>';
+
+    if ($technicalMsg) {
+        echo '<div class="mt-4 pt-3 border-top border-secondary border-opacity-25 text-secondary small"><em>Status Sistem: ' . htmlspecialchars($technicalMsg) . '</em></div>';
+    }
+
+    echo '</div></div></body></html>';
 }
 
 function db(): PDO {
     static $pdo = null;
     if ($pdo instanceof PDO) return $pdo;
 
-    $host = cfg('db_host', envv('DB_HOST', envv('MYSQLHOST', '127.0.0.1')));
+    $isVercelEnv = (
+        !empty($_SERVER['VERCEL']) ||
+        !empty($_ENV['VERCEL']) ||
+        getenv('VERCEL') === '1' ||
+        str_ends_with(strtolower((string)($_SERVER['HTTP_HOST'] ?? '')), '.vercel.app')
+    );
+
+    $host = cfg('db_host', envv('DB_HOST', envv('MYSQLHOST', '')));
     $port = cfg('db_port', envv('DB_PORT', envv('MYSQLPORT', '3306')));
     $name = cfg('db_name', envv('DB_NAME', envv('MYSQLDATABASE', 'rekap_it')));
     $user = cfg('db_user', envv('DB_USER', envv('MYSQLUSER', 'root')));
@@ -164,6 +270,17 @@ function db(): PDO {
         if (!empty($parsed['user'])) $user = urldecode($parsed['user']);
         if (!empty($parsed['pass'])) $pass = urldecode($parsed['pass']);
         if (!empty($parsed['path'])) $name = ltrim(urldecode($parsed['path']), '/');
+    }
+
+    // Jika berjalan di Vercel dan tidak ada MySQL remote eksternal yang dikonfigurasi,
+    // cegah loopback ke 127.0.0.1:3306 yang pasti gagal dan tampilkan panduan aktivasi Google Sheets.
+    if ($isVercelEnv && (empty($host) || $host === '127.0.0.1' || $host === 'localhost') && empty($dbUrl)) {
+        render_vercel_spreadsheet_setup_guide();
+        exit;
+    }
+
+    if (empty($host)) {
+        $host = '127.0.0.1';
     }
 
     $ssl = cfg('db_ssl', envv('DB_SSL', envv('MYSQL_SSL', '')));
@@ -185,21 +302,8 @@ function db(): PDO {
         } catch (Throwable $eTz) {}
         return $pdo;
     } catch (PDOException $e) {
-        if (!empty($_SERVER['VERCEL']) || str_ends_with(strtolower((string)($_SERVER['HTTP_HOST'] ?? '')), '.vercel.app')) {
-            http_response_code(500);
-            echo '<!DOCTYPE html><html lang="id"><head><meta charset="utf-8"><title>Koneksi Database Vercel</title>';
-            echo '<meta name="viewport" content="width=device-width, initial-scale=1">';
-            echo '<link href="assets/vendor/bootstrap.min.css" rel="stylesheet">';
-            echo '</head><body class="bg-light p-4"><div class="container" style="max-width: 680px; margin-top: 50px;">';
-            echo '<div class="card shadow-sm border-0 rounded-4 p-4 text-center">';
-            echo '<div class="text-warning mb-3" style="font-size: 3rem;">⚠️</div>';
-            echo '<h4 class="fw-bold mb-2">Konfigurasi Database Diperlukan</h4>';
-            echo '<p class="text-muted">Aplikasi telah berhasil berjalan di <strong>Vercel Serverless</strong>, namun belum terhubung ke database cloud (MySQL) atau Google Sheets API.</p>';
-            echo '<div class="alert alert-primary text-start fs-6"><p class="mb-2 fw-semibold">Silakan tambahkan Environment Variables di Dashboard Vercel Anda (Settings &rarr; Environment Variables):</p>';
-            echo '<ul class="mb-0"><li><strong>Opsi 1 (MySQL Cloud):</strong> <code>DB_HOST</code>, <code>DB_USER</code>, <code>DB_PASS</code>, <code>DB_NAME</code>, <code>DB_PORT</code> (atau <code>DATABASE_URL</code>)</li>';
-            echo '<li><strong>Opsi 2 (Google Sheets Serverless):</strong> <code>GOOGLE_SPREADSHEET_ID</code>, <code>GOOGLE_CLIENT_EMAIL</code>, <code>GOOGLE_PRIVATE_KEY</code></li></ul></div>';
-            echo '<div class="text-secondary small text-start"><em>Pesan Teknis: ' . htmlspecialchars($e->getMessage()) . '</em></div>';
-            echo '</div></div></body></html>';
+        if ($isVercelEnv) {
+            render_vercel_spreadsheet_setup_guide($e->getMessage());
             exit;
         }
         throw $e;
@@ -319,6 +423,22 @@ function table_columns(string $table): array {
     if (isset($cache[$table])) return $cache[$table];
 
     if (!preg_match('/^[A-Za-z0-9_]+$/', $table)) return [];
+    if (is_google_cloud_mode()) {
+        $defaultCols = [
+            'users' => ['id', 'nama', 'username', 'password', 'role', 'id_cabang', 'face_photo', 'passkey_credential', 'created_at'],
+            'cabang' => ['id', 'nama_cabang', 'nama', 'alamat', 'telepon', 'penanggung_jawab'],
+            'divisi' => ['id', 'nama_divisi', 'nama', 'id_cabang'],
+            'kategori_aset' => ['id', 'nama_kategori', 'nama'],
+            'karyawan' => ['id', 'nama_karyawan', 'nama', 'nip', 'id_cabang', 'id_divisi', 'jabatan'],
+            'assets' => ['id', 'kode_inventaris', 'merk', 'model', 'serial_number', 'id_kategori', 'id_cabang', 'id_divisi', 'id_karyawan', 'status', 'keterangan', 'ruangan', 'ip_address', 'printer', 'created_at'],
+            'asset_qr_tokens' => ['id', 'asset_id', 'token', 'placement_label', 'is_active', 'created_at'],
+            'maintenance_scan' => ['id', 'asset_id', 'technician_user_id', 'technician_name', 'maintenance_date', 'maintenance_time', 'maintenance_month', 'maintenance_year', 'status', 'source', 'findings', 'created_at'],
+            'maintenance_findings' => ['id', 'maintenance_scan_id', 'asset_id', 'kategori_temuan', 'deskripsi_temuan', 'tindakan_diperlukan', 'status', 'reported_by', 'reported_at', 'resolved_by', 'resolved_at', 'catatan_penyelesaian'],
+            'inventaris_kartu' => ['id', 'kode_inventaris', 'nama_barang', 'kategori', 'lokasi', 'tahun_perolehan', 'kondisi', 'created_at'],
+        ];
+        $cache[$table] = $defaultCols[strtolower($table)] ?? [];
+        return $cache[$table];
+    }
     try {
         $rows = db()->query("SHOW COLUMNS FROM `{$table}`")->fetchAll();
         $cache[$table] = array_column($rows, 'Field');

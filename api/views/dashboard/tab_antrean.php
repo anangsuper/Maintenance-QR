@@ -4,59 +4,109 @@
     $pageQueue = max(1, (int)($_GET['p_queue'] ?? 1));
     $perPageQueue = 8;
 
-    // Ambil seluruh daftar aset yang belum dilakukan maintenance di bulan & tahun terpilih langsung dari Database
+    // Ambil seluruh daftar aset yang belum dilakukan maintenance di bulan & tahun terpilih langsung dari Database / Google Sheets
     $queueAssets = [];
-    try {
-        $qWhere = " WHERE (a.status = 'Aktif' OR a.status IS NULL OR a.status = '') ";
-        $qParams = [];
-        if ($cabangId > 0) {
-            $qWhere .= " AND a.id_cabang = ? ";
-            $qParams[] = $cabangId;
-        } else {
-            $exemptCabangIds = function_exists('get_branch_exempted_ids') ? get_branch_exempted_ids($month, $year) : [];
-            if (!empty($exemptCabangIds)) {
-                $idList = implode(',', array_map('intval', $exemptCabangIds));
-                $qWhere .= " AND (a.id_cabang NOT IN ({$idList}) OR a.id_cabang IS NULL) ";
+    if (is_google_cloud_mode()) {
+        $client = google_sheets_v4_client();
+        $scans = $client ? $client->getSheetData('Maintenance_Scan') : [];
+        $scannedAssetIds = [];
+        foreach ($scans as $s) {
+            $sAid = (int)($s['asset_id'] ?? $s['id_asset'] ?? 0);
+            $sMonth = (int)($s['maintenance_month'] ?? 0);
+            $sYear = (int)($s['maintenance_year'] ?? 0);
+            if ($sAid > 0 && $sMonth === $month && $sYear === $year) {
+                $scannedAssetIds[$sAid] = true;
             }
         }
 
-        // Filter aset yang belum pernah di-scan di bulan & tahun terpilih
-        $qWhere .= " AND a.id NOT IN (
-            SELECT asset_id FROM maintenance_scan 
-            WHERE maintenance_month = ? AND maintenance_year = ?
-        ) ";
-        $qParams[] = $month;
-        $qParams[] = $year;
+        $exemptCabangIds = function_exists('get_branch_exempted_ids') ? get_branch_exempted_ids($month, $year) : [];
+        $exemptLookup = array_flip($exemptCabangIds);
 
-        $cCab = name_column('cabang') ?: 'nama_cabang';
-        $cDiv = name_column('divisi') ?: 'nama_divisi';
-        $cKar = name_column('karyawan') ?: 'nama_karyawan';
+        $allAssets = map_sheets_assets();
+        $dueRows = [];
+        foreach ($allAssets as $a) {
+            $aid = (int)($a['id'] ?? 0);
+            if ($aid <= 0) continue;
+            $st = strtolower((string)($a['status'] ?? ''));
+            if ($st !== 'aktif' && $st !== '') continue;
+            if (isset($scannedAssetIds[$aid])) continue;
+            $assetCabId = (int)($a['id_cabang'] ?? 0);
+            if ($cabangId > 0) {
+                if ($assetCabId !== $cabangId) continue;
+            } else {
+                if ($assetCabId > 0 && isset($exemptLookup[$assetCabId])) continue;
+            }
 
-        $qSql = "
-            SELECT 
-                a.id, a.kode_inventaris, a.merk, a.model, a.keterangan, a.ruangan,
-                c.`{$cCab}` AS cabang_nama,
-                d.`{$cDiv}` AS divisi_nama,
-                k.`{$cKar}` AS karyawan_nama,
-                q.token AS qr_token,
-                last_m.max_date AS last_maint_date
-            FROM assets a
-            LEFT JOIN cabang c ON c.id = a.id_cabang
-            LEFT JOIN divisi d ON d.id = a.id_divisi
-            LEFT JOIN karyawan k ON k.id = a.id_karyawan
-            LEFT JOIN asset_qr_tokens q ON q.asset_id = a.id
-            LEFT JOIN (
-                SELECT asset_id, MAX(maintenance_date) AS max_date 
-                FROM maintenance_scan 
-                GROUP BY asset_id
-            ) last_m ON last_m.asset_id = a.id
-            {$qWhere}
-            ORDER BY last_m.max_date ASC, a.kode_inventaris ASC
-        ";
+            $dueRows[] = [
+                'id' => $aid,
+                'kode_inventaris' => $a['kode_inventaris'] ?? '',
+                'merk' => $a['merk'] ?? '',
+                'model' => $a['model'] ?? '',
+                'keterangan' => $a['keterangan'] ?? '',
+                'ruangan' => $a['ruangan'] ?? '',
+                'cabang_nama' => $a['cabang_nama'] ?? '',
+                'divisi_nama' => $a['divisi_nama'] ?? '',
+                'karyawan_nama' => $a['karyawan_nama'] ?? '',
+                'qr_token' => $a['qr_token'] ?? get_static_qr_token($aid),
+                'last_maint_date' => $a['last_maintenance_date'] ?? ''
+            ];
+        }
+    } else {
+        try {
+            $qWhere = " WHERE (a.status = 'Aktif' OR a.status IS NULL OR a.status = '') ";
+            $qParams = [];
+            if ($cabangId > 0) {
+                $qWhere .= " AND a.id_cabang = ? ";
+                $qParams[] = $cabangId;
+            } else {
+                $exemptCabangIds = function_exists('get_branch_exempted_ids') ? get_branch_exempted_ids($month, $year) : [];
+                if (!empty($exemptCabangIds)) {
+                    $idList = implode(',', array_map('intval', $exemptCabangIds));
+                    $qWhere .= " AND (a.id_cabang NOT IN ({$idList}) OR a.id_cabang IS NULL) ";
+                }
+            }
 
-        $qStmt = db()->prepare($qSql);
-        $qStmt->execute($qParams);
-        $dueRows = $qStmt->fetchAll();
+            // Filter aset yang belum pernah di-scan di bulan & tahun terpilih
+            $qWhere .= " AND a.id NOT IN (
+                SELECT asset_id FROM maintenance_scan 
+                WHERE maintenance_month = ? AND maintenance_year = ?
+            ) ";
+            $qParams[] = $month;
+            $qParams[] = $year;
+
+            $cCab = name_column('cabang') ?: 'nama_cabang';
+            $cDiv = name_column('divisi') ?: 'nama_divisi';
+            $cKar = name_column('karyawan') ?: 'nama_karyawan';
+
+            $qSql = "
+                SELECT 
+                    a.id, a.kode_inventaris, a.merk, a.model, a.keterangan, a.ruangan,
+                    c.`{$cCab}` AS cabang_nama,
+                    d.`{$cDiv}` AS divisi_nama,
+                    k.`{$cKar}` AS karyawan_nama,
+                    q.token AS qr_token,
+                    last_m.max_date AS last_maint_date
+                FROM assets a
+                LEFT JOIN cabang c ON c.id = a.id_cabang
+                LEFT JOIN divisi d ON d.id = a.id_divisi
+                LEFT JOIN karyawan k ON k.id = a.id_karyawan
+                LEFT JOIN asset_qr_tokens q ON q.asset_id = a.id
+                LEFT JOIN (
+                    SELECT asset_id, MAX(maintenance_date) AS max_date 
+                    FROM maintenance_scan 
+                    GROUP BY asset_id
+                ) last_m ON last_m.asset_id = a.id
+                {$qWhere}
+                ORDER BY last_m.max_date ASC, a.kode_inventaris ASC
+            ";
+
+            $qStmt = db()->prepare($qSql);
+            $qStmt->execute($qParams);
+            $dueRows = $qStmt->fetchAll();
+        } catch (Throwable $e) {
+            $dueRows = [];
+        }
+    }
 
         foreach ($dueRows as $r) {
             $aid = (int)$r['id'];

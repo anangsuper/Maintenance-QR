@@ -204,10 +204,12 @@ if (is_hrd() && !is_admin()) {
 
     // Status Tamu Ruang Server Data Center
     $activeServerGuests = 0;
-    try {
-        $stDc = db()->query("SELECT COUNT(*) FROM server_room_logs WHERE status = 'in_room'");
-        if ($stDc) $activeServerGuests = (int)$stDc->fetchColumn();
-    } catch (Throwable $e) {}
+    if (!is_google_cloud_mode()) {
+        try {
+            $stDc = db()->query("SELECT COUNT(*) FROM server_room_logs WHERE status = 'in_room'");
+            if ($stDc) $activeServerGuests = (int)$stDc->fetchColumn();
+        } catch (Throwable $e) {}
+    }
     $displayGuestsCount = $activeServerGuests;
 
     // 2. DATA WIDGET SEBARAN KEPATUHAN KANTOR CABANG (LANGSUNG DARI get_branch_maintenance_summary SEPERTI DI cabang_admin.php)
@@ -280,33 +282,63 @@ if (is_hrd() && !is_admin()) {
     }
 
     $liveActivities = [];
-    try {
-        $stAct = db()->query("
-            SELECT s.id, s.technician_name, s.created_at, s.maintenance_date, s.status, s.findings,
-                   a.kode_inventaris, a.merk, a.model, c.nama_cabang
-            FROM maintenance_scan s
-            LEFT JOIN assets a ON s.asset_id = a.id
-            LEFT JOIN cabang c ON a.id_cabang = c.id
-            ORDER BY s.id DESC
-            LIMIT 5
-        ");
-        if ($stAct) {
-            while ($r = $stAct->fetch(PDO::FETCH_ASSOC)) {
-                $dev = trim(($r['merk'] ?? '') . ' ' . ($r['model'] ?? '')) ?: ($r['kode_inventaris'] ?? 'Perangkat IT');
-                $cab = $r['nama_cabang'] ?: 'Kantor Cabang';
-                $tech = $r['technician_name'] ?: 'Teknisi IT';
+    if (is_google_cloud_mode()) {
+        $client = google_sheets_v4_client();
+        $scans = $client ? $client->getSheetData('Maintenance_Scan') : [];
+        if (!empty($scans)) {
+            $scans = array_reverse($scans);
+            $scans = array_slice($scans, 0, 5);
+            $assetMap = [];
+            foreach (map_sheets_assets() as $ma) {
+                $assetMap[(int)($ma['id'] ?? 0)] = $ma;
+            }
+            foreach ($scans as $r) {
+                $aid = (int)($r['asset_id'] ?? $r['id_asset'] ?? 0);
+                $matchedAsset = $assetMap[$aid] ?? null;
+                $dev = $matchedAsset ? trim(($matchedAsset['merk'] ?? '') . ' ' . ($matchedAsset['model'] ?? '')) : ($r['kode_inventaris'] ?? 'Perangkat IT');
+                if ($dev === '') $dev = 'Perangkat IT';
+                $cab = $matchedAsset['cabang_nama'] ?? 'Kantor Cabang';
+                $tech = (string)($r['technician_name'] ?? 'Teknisi IT');
                 $ts = !empty($r['created_at']) ? strtotime($r['created_at']) : (!empty($r['maintenance_date']) ? strtotime($r['maintenance_date']) : time());
-                $hasFinding = !empty($r['findings']) || ($r['status'] === 'Temuan');
+                $hasFinding = !empty($r['findings']) || (($r['status'] ?? '') === 'Temuan');
 
                 $liveActivities[] = [
-                    'time_ago' => format_dashboard_time_ago($ts),
+                    'time_ago' => format_dashboard_time_ago($ts ?: time()),
                     'title' => $tech . ' menyelesaikan checklist ' . $dev . ' (' . $cab . ')',
-                    'detail' => $hasFinding ? ('Temuan kendala: ' . $r['findings']) : 'Kondisi hardware normal & checklist selesai diverifikasi.',
+                    'detail' => $hasFinding ? ('Temuan kendala: ' . ($r['findings'] ?? 'Temuan kerusakan terdeteksi')) : 'Kondisi hardware normal & checklist selesai diverifikasi.',
                     'color' => $hasFinding ? '#DC2626' : '#10B981'
                 ];
             }
         }
-    } catch (Throwable $e) {}
+    } else {
+        try {
+            $stAct = db()->query("
+                SELECT s.id, s.technician_name, s.created_at, s.maintenance_date, s.status, s.findings,
+                       a.kode_inventaris, a.merk, a.model, c.nama_cabang
+                FROM maintenance_scan s
+                LEFT JOIN assets a ON s.asset_id = a.id
+                LEFT JOIN cabang c ON a.id_cabang = c.id
+                ORDER BY s.id DESC
+                LIMIT 5
+            ");
+            if ($stAct) {
+                while ($r = $stAct->fetch(PDO::FETCH_ASSOC)) {
+                    $dev = trim(($r['merk'] ?? '') . ' ' . ($r['model'] ?? '')) ?: ($r['kode_inventaris'] ?? 'Perangkat IT');
+                    $cab = $r['nama_cabang'] ?: 'Kantor Cabang';
+                    $tech = $r['technician_name'] ?: 'Teknisi IT';
+                    $ts = !empty($r['created_at']) ? strtotime($r['created_at']) : (!empty($r['maintenance_date']) ? strtotime($r['maintenance_date']) : time());
+                    $hasFinding = !empty($r['findings']) || ($r['status'] === 'Temuan');
+
+                    $liveActivities[] = [
+                        'time_ago' => format_dashboard_time_ago($ts),
+                        'title' => $tech . ' menyelesaikan checklist ' . $dev . ' (' . $cab . ')',
+                        'detail' => $hasFinding ? ('Temuan kendala: ' . $r['findings']) : 'Kondisi hardware normal & checklist selesai diverifikasi.',
+                        'color' => $hasFinding ? '#DC2626' : '#10B981'
+                    ];
+                }
+            }
+        } catch (Throwable $e) {}
+    }
 
     // Fallback jika aktivitas di database masih sedikit
     if (count($liveActivities) < 5) {
