@@ -1043,7 +1043,7 @@ if ($hasAnyUnitPhoto) {
     }
 
     $fotoCardHtml = '
-    <div class="col-12 col-md-5 col-lg-4 text-center mb-3 mb-md-0">
+    <div id="assetPhotoCardSection" class="col-12 col-md-5 col-lg-4 text-center mb-3 mb-md-0">
       '.$slotsDisplayHtml.'
       '.$verifiedBadge.'
       <div class="mt-2 d-flex flex-wrap justify-content-center gap-1.5">
@@ -1059,7 +1059,7 @@ if ($hasAnyUnitPhoto) {
     $specColClass = 'col-12 col-md-7 col-lg-8';
 } else {
     $fotoCardHtml = '
-    <div class="col-12 col-md-4 col-lg-3 text-center mb-3 mb-md-0">
+    <div id="assetPhotoCardSection" class="col-12 col-md-4 col-lg-3 text-center mb-3 mb-md-0">
       <div class="rounded-3 border border-2 border-dashed bg-light p-3 d-flex flex-column align-items-center justify-content-center h-100" style="min-height: 175px; border-color: #cbd5e1 !important; cursor: pointer;" onclick="openUploadFotoTeknisiModal()">
         <i class="bi bi-camera fs-1 text-secondary opacity-50 mb-1"></i>
         <div class="small text-muted mb-0.5 fw-semibold" style="font-size: 0.75rem;">Belum ada foto fisik unit</div>
@@ -1538,13 +1538,16 @@ $body = '
         </div>
       </div>
 
-      <div class="modal-footer border-secondary border-opacity-25 py-2 px-3 d-flex justify-content-between">
+      <div class="modal-footer border-secondary border-opacity-25 py-2 px-3 d-flex justify-content-between align-items-center">
         <button type="button" class="btn btn-outline-secondary btn-sm rounded-pill px-3" onclick="closePhotoFaceModal()">
           Batal
         </button>
-        <button type="button" id="btnManualTriggerPhotoBio" class="btn btn-primary btn-sm rounded-pill px-3 fw-bold" onclick="triggerInstantPhotoFaceVerify()">
-          <i class="bi bi-camera me-1"></i> Verifikasi Sekarang
-        </button>
+        <div class="d-flex align-items-center gap-2">
+          '.($loggedIn ? '<button type="button" class="btn btn-link btn-sm text-info text-decoration-none p-0 me-1" style="font-size: 0.75rem;" onclick="bypassPhotoBioAndSubmit()"><i class="bi bi-lightning-fill me-0.5"></i>Simpan (Login)</button>' : '').'
+          <button type="button" id="btnManualTriggerPhotoBio" class="btn btn-primary btn-sm rounded-pill px-3 fw-bold" onclick="triggerInstantPhotoFaceVerify()">
+            <i class="bi bi-camera me-1"></i> Verifikasi Sekarang
+          </button>
+        </div>
       </div>
     </div>
   </div>
@@ -1601,6 +1604,8 @@ function openUploadFotoTeknisiModal() {
     var modal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
     modal.show();
   }
+  // Preload modul AI biometrik secara instan di background saat teknisi membuka form
+  loadPhotoBioModels();
 }
 
 function bukaScanSlot2() {
@@ -1719,9 +1724,9 @@ async function loadPhotoBioModels() {
   photoBioModelsLoading = true;
   try {
     const statusBox = document.getElementById("bioPhotoStatusBox");
-    if (statusBox) {
-      statusBox.className = "alert alert-info py-2 px-3 small fw-semibold mt-3 mb-2 text-start";
-      statusBox.innerHTML = "<span class=\"spinner-border spinner-border-sm me-2 text-primary\"></span> Mengunduh model pengenalan wajah AI...";
+    if (statusBox && !photoBioCompleted) {
+      statusBox.className = "alert alert-info py-2 px-3 small fw-semibold mt-3 mb-2 text-start text-dark";
+      statusBox.innerHTML = "<span class=\"spinner-border spinner-border-sm me-2 text-primary\"></span> Menyiapkan modul AI biometrik...";
     }
     if (typeof faceapi !== "undefined" && faceapi.tf) {
       try {
@@ -1731,21 +1736,34 @@ async function loadPhotoBioModels() {
     }
     await Promise.all([
       faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL),
-      faceapi.nets.faceLandmark68TinyNet.loadFromUri(MODEL_URL),
+      faceapi.nets.faceLandmark68TinyNet.loadFromUri(MODEL_URL).catch(() => faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL)),
       faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL)
     ]);
     photoBioModelsLoaded = true;
     photoBioModelsLoading = false;
+    if (statusBox && !photoBioCompleted) {
+      statusBox.className = "alert alert-success py-2 px-3 small fw-semibold mt-3 mb-2 text-start text-dark";
+      statusBox.innerHTML = "<i class=\"bi bi-check-circle-fill text-success me-1\"></i> Modul AI siap. Posisikan wajah di tengah oval.";
+    }
     return true;
   } catch(err) {
-    console.error("Gagal memuat face-api models:", err);
+    console.warn("Gagal memuat face-api models:", err);
     photoBioModelsLoading = false;
     const statusBox = document.getElementById("bioPhotoStatusBox");
     if (statusBox) {
       statusBox.className = "alert alert-danger py-2 px-3 small fw-semibold mt-3 mb-2 text-start";
-      statusBox.innerHTML = "<i class=\"bi bi-exclamation-triangle-fill me-1\"></i> Gagal memuat model AI biometrik. Periksa koneksi internet.";
+      statusBox.innerHTML = "<i class=\"bi bi-exclamation-triangle-fill me-1\"></i> Gagal memuat modul AI. Gunakan tombol 'Verifikasi Sekarang'.";
     }
     return false;
+  }
+}
+
+// Preload model AI secara senyap di background saat browser idle
+if (typeof window !== "undefined") {
+  if ("requestIdleCallback" in window) {
+    window.requestIdleCallback(function() { loadPhotoBioModels(); }, { timeout: 3000 });
+  } else {
+    setTimeout(function() { loadPhotoBioModels(); }, 1000);
   }
 }
 
@@ -1819,16 +1837,28 @@ function finalizePhotoFaceVerification(tech, dist, videoEl) {
   const statusBox = document.getElementById("bioPhotoStatusBox");
   if (statusBox) {
     statusBox.className = "alert alert-success py-2 px-3 small fw-bold mt-3 mb-2 text-start";
-    statusBox.innerHTML = "<i class=\"bi bi-check-circle-fill me-1\"></i> Wajah Terverifikasi: <strong>" + tech.nama + "</strong>! Menyimpan foto...";
+    statusBox.innerHTML = "<i class=\"bi bi-check-circle-fill me-1\"></i> Wajah Terverifikasi: <strong>" + tech.nama + "</strong>! Menyimpan dan kembali ke Scan...";
   }
 
+  // Matikan kamera seketika agar hemat baterai & memori
   if (photoBioVideoStream) {
     try { photoBioVideoStream.getTracks().forEach(t => t.stop()); } catch(e) {}
+    photoBioVideoStream = null;
   }
 
+  // OPTIMASI KRUSIAL: Kosongkan file input mentah berukuran puluhan MB jika base64 terkompresi sudah siap
+  // Memangkas ukuran HTTP POST dari 20-30MB menjadi ~100KB (200x lebih cepat)
+  const f1 = document.getElementById("fotoBarangScanInput");
+  const f2 = document.getElementById("fotoBarangScanInput2");
+  const b1 = document.getElementById("scanPhotoBase64");
+  const b2 = document.getElementById("scanPhotoBase64_2");
+  if (b1 && b1.value && f1) { try { f1.value = ""; } catch(e) {} }
+  if (b2 && b2.value && f2) { try { f2.value = ""; } catch(e) {} }
+
   setTimeout(() => {
-    document.getElementById("formUploadFotoUnit").submit();
-  }, 700);
+    const form = document.getElementById("formUploadFotoUnit");
+    if (form) form.submit();
+  }, 150);
 }
 
 async function triggerInstantPhotoFaceVerify() {
@@ -1839,7 +1869,7 @@ async function triggerInstantPhotoFaceVerify() {
   statusBox.className = "alert alert-warning py-2 px-3 small fw-bold mt-3 mb-2 text-start text-dark";
   statusBox.innerHTML = "<span class=\"spinner-border spinner-border-sm me-2 text-warning\"></span> Memproses pencocokan biometrik...";
 
-  const detectorOptions = new faceapi.TinyFaceDetectorOptions({ inputSize: 224, scoreThreshold: 0.3 });
+  const detectorOptions = new faceapi.TinyFaceDetectorOptions({ inputSize: 160, scoreThreshold: 0.25 });
   try {
     const detection = await faceapi.detectSingleFace(video, detectorOptions)
       .withFaceLandmarks(true)
@@ -1853,16 +1883,17 @@ async function triggerInstantPhotoFaceVerify() {
 
     if (!parsedEnrolledTechs.length) {
       statusBox.className = "alert alert-danger py-2 px-3 small fw-semibold mt-3 mb-2 text-start";
-      statusBox.innerHTML = "<i class=\"bi bi-person-x me-1\"></i> Belum ada teknisi terdaftar di sistem Core Banking.";
+      statusBox.innerHTML = "<i class=\"bi bi-person-x me-1\"></i> Belum ada teknisi terdaftar di sistem.";
       return;
     }
 
     const { tech, dist } = findBestMatchTech(detection.descriptor);
-    if (tech && dist < 0.60) {
+    // Toleransi hingga 0.65 saat ditekan manual agar tidak terganjal lighting
+    if (tech && dist < 0.65) {
       finalizePhotoFaceVerification(tech, dist, video);
     } else {
       statusBox.className = "alert alert-danger py-2 px-3 small fw-semibold mt-3 mb-2 text-start";
-      statusBox.innerHTML = "<i class=\"bi bi-person-x me-1\"></i> Wajah tidak cocok dengan teknisi terdaftar (Jarak: " + dist.toFixed(2) + "). Pastikan Anda terdaftar.";
+      statusBox.innerHTML = "<i class=\"bi bi-person-x me-1\"></i> Wajah tidak cocok dengan teknisi terdaftar (Jarak: " + dist.toFixed(2) + ").";
     }
   } catch(err) {
     console.error("Error trigger bio verify:", err);
@@ -1896,13 +1927,18 @@ async function startTeknisiFaceScanForPhoto() {
   const statusBox = document.getElementById("bioPhotoStatusBox");
   if (statusBox) {
     statusBox.className = "alert alert-secondary py-2 px-3 small fw-semibold mt-3 mb-2 text-start text-dark";
-    statusBox.innerHTML = "<span class=\"spinner-border spinner-border-sm me-2 text-primary\"></span> Menyiapkan kamera...";
+    statusBox.innerHTML = "<span class=\"spinner-border spinner-border-sm me-2 text-primary\"></span> Menghubungkan kamera...";
   }
 
-  // Nyalakan Kamera
+  // Nyalakan Kamera dengan resolusi optimal agar ringan dan cepat di HP
   try {
     const stream = await navigator.mediaDevices.getUserMedia({
-      video: { facingMode: "user", width: { ideal: 640 }, height: { ideal: 480 } },
+      video: {
+        facingMode: "user",
+        width: { ideal: 480, max: 640 },
+        height: { ideal: 480, max: 640 },
+        frameRate: { ideal: 30, max: 30 }
+      },
       audio: false
     });
     photoBioVideoStream = stream;
@@ -1918,23 +1954,31 @@ async function startTeknisiFaceScanForPhoto() {
     return;
   }
 
-  // Load Model AI
-  const loaded = await loadPhotoBioModels();
-  if (!loaded) return;
+  // Pastikan Model AI terpasang (biasanya sudah preloaded)
+  if (!photoBioModelsLoaded) {
+    if (statusBox) {
+      statusBox.className = "alert alert-info py-2 px-3 small fw-semibold mt-3 mb-2 text-start text-dark";
+      statusBox.innerHTML = "<span class=\"spinner-border spinner-border-sm me-2 text-primary\"></span> Menyiapkan modul AI biometrik...";
+    }
+    const loaded = await loadPhotoBioModels();
+    if (!loaded) return;
+  }
 
   if (statusBox) {
     statusBox.className = "alert alert-primary py-2 px-3 small fw-semibold mt-3 mb-2 text-start text-dark";
-    statusBox.innerHTML = "<i class=\"bi bi-person-check me-1 text-primary\"></i> Posisikan wajah di tengah oval. Sistem otomatis mencocokkan wajah...";
+    statusBox.innerHTML = "<i class=\"bi bi-person-check me-1 text-primary\"></i> Posisikan wajah di tengah oval. Sistem otomatis mencocokkan...";
   }
 
-  // Tracking Loop Otomatis
-  const detectorOptions = new faceapi.TinyFaceDetectorOptions({ inputSize: 224, scoreThreshold: 0.35 });
+  // Tracking Loop Otomatis dengan inputSize: 160 (super cepat & hemat CPU/GPU di HP)
+  const detectorOptions = new faceapi.TinyFaceDetectorOptions({ inputSize: 160, scoreThreshold: 0.25 });
   const video = document.getElementById("bioPhotoVideo");
 
   if (photoBioTrackingTimer) clearInterval(photoBioTrackingTimer);
-  photoBioTrackingTimer = setInterval(async () => {
-    if (photoBioCompleted || !video || !video.videoWidth || video.paused || video.ended) return;
+  let isCheckingFace = false;
 
+  photoBioTrackingTimer = setInterval(async () => {
+    if (photoBioCompleted || isCheckingFace || !video || !video.videoWidth || video.paused || video.ended) return;
+    isCheckingFace = true;
     try {
       const detection = await faceapi.detectSingleFace(video, detectorOptions)
         .withFaceLandmarks(true)
@@ -1944,29 +1988,36 @@ async function startTeknisiFaceScanForPhoto() {
         if (!parsedEnrolledTechs.length) {
           if (statusBox) {
             statusBox.className = "alert alert-danger py-2 px-3 small fw-semibold mt-3 mb-2 text-start";
-            statusBox.innerHTML = "<i class=\"bi bi-person-x me-1\"></i> Belum ada teknisi terdaftar.";
+            statusBox.innerHTML = "<i class=\"bi bi-person-x me-1\"></i> Belum ada data teknisi terdaftar.";
           }
           return;
         }
 
         const { tech, dist } = findBestMatchTech(detection.descriptor);
-        if (tech && dist < 0.60) {
+        // Ambang batas 0.62 untuk verifikasi cepat dan akurat
+        if (tech && dist < 0.62) {
           finalizePhotoFaceVerification(tech, dist, video);
+          return;
         } else {
           if (statusBox) {
             statusBox.className = "alert alert-warning py-2 px-3 small fw-semibold mt-3 mb-2 text-start text-dark";
-            statusBox.innerHTML = "<i class=\"bi bi-search me-1 text-primary\"></i> Wajah terdeteksi, mencocokkan dengan data teknisi...";
+            statusBox.innerHTML = "<i class=\"bi bi-search me-1 text-primary\"></i> Wajah terdeteksi (Jarak: " + dist.toFixed(2) + "), sesuaikan posisi wajah...";
           }
         }
       }
-    } catch(e) {}
-  }, 450);
+    } catch(e) {
+      console.warn("Frame check warning:", e);
+    } finally {
+      isCheckingFace = false;
+    }
+  }, 160);
 }
 
 function closePhotoFaceModal() {
   if (photoBioTrackingTimer) clearInterval(photoBioTrackingTimer);
   if (photoBioVideoStream) {
     try { photoBioVideoStream.getTracks().forEach(t => t.stop()); } catch(e) {}
+    photoBioVideoStream = null;
   }
   const bioModalEl = document.getElementById("modalFaceVerifyPhoto");
   if (bioModalEl && typeof bootstrap !== "undefined") {
@@ -1976,11 +2027,33 @@ function closePhotoFaceModal() {
   openUploadFotoTeknisiModal();
 }
 
+function bypassPhotoBioAndSubmit() {
+  if (photoBioTrackingTimer) clearInterval(photoBioTrackingTimer);
+  if (photoBioVideoStream) {
+    try { photoBioVideoStream.getTracks().forEach(t => t.stop()); } catch(e) {}
+    photoBioVideoStream = null;
+  }
+  const bioModalEl = document.getElementById("modalFaceVerifyPhoto");
+  if (bioModalEl && typeof bootstrap !== "undefined") {
+    const bioModal = bootstrap.Modal.getInstance(bioModalEl);
+    if (bioModal) bioModal.hide();
+  }
+  submitPhotoAsLoggedInAdmin();
+}
+
 function submitPhotoAsLoggedInAdmin() {
   if (!hasAnyScanPhotoAction()) {
     alert("Silakan pilih foto baru (Foto 1 / Foto 2) atau centang foto yang ingin dihilangkan terlebih dahulu!");
     return;
   }
+
+  // OPTIMASI KRUSIAL: Kosongkan file input mentah berukuran puluhan MB jika base64 terkompresi sudah siap
+  const f1 = document.getElementById("fotoBarangScanInput");
+  const f2 = document.getElementById("fotoBarangScanInput2");
+  const b1 = document.getElementById("scanPhotoBase64");
+  const b2 = document.getElementById("scanPhotoBase64_2");
+  if (b1 && b1.value && f1) { try { f1.value = ""; } catch(e) {} }
+  if (b2 && b2.value && f2) { try { f2.value = ""; } catch(e) {} }
 
   document.getElementById("scanPhotoBioVerified").value = "1";
   document.getElementById("scanPhotoBioUserName").value = "'.e(addslashes(current_user_name())).'";
@@ -1995,10 +2068,22 @@ function submitPhotoAsLoggedInAdmin() {
   form.submit();
 }
 
-// Pastikan jika pengguna kembali via tombol Back, halaman memuat data terbaru
+// Pastikan jika pengguna kembali via tombol Back atau setelah reload, halaman memuat data terbaru
 window.addEventListener("pageshow", function(event) {
   if (event.persisted) {
     window.location.reload();
+  }
+});
+
+// Auto-scroll ke kartu foto jika baru saja update foto dari scan.php?photo_updated=1
+document.addEventListener("DOMContentLoaded", function() {
+  if (window.location.search.includes("photo_updated=1")) {
+    const photoSection = document.getElementById("assetPhotoCardSection");
+    if (photoSection) {
+      setTimeout(function() {
+        photoSection.scrollIntoView({ behavior: "smooth", block: "center" });
+      }, 250);
+    }
   }
 });
 
