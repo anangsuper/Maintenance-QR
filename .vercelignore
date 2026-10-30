@@ -3,7 +3,6 @@
 scratch/
 sql/
 *.xlsx
-*.pptx
 *.py
 *.sh
 *.bat
