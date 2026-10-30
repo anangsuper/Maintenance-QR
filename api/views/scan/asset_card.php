@@ -1752,7 +1752,7 @@ async function loadPhotoBioModels() {
     const statusBox = document.getElementById("bioPhotoStatusBox");
     if (statusBox) {
       statusBox.className = "alert alert-danger py-2 px-3 small fw-semibold mt-3 mb-2 text-start";
-      statusBox.innerHTML = "<i class=\"bi bi-exclamation-triangle-fill me-1\"></i> Gagal memuat modul AI. Gunakan tombol 'Verifikasi Sekarang'.";
+      statusBox.innerHTML = "<i class=\"bi bi-exclamation-triangle-fill me-1\"></i> Gagal memuat modul AI. Gunakan tombol \\\"Verifikasi Sekarang\\\".";
     }
     return false;
   }
