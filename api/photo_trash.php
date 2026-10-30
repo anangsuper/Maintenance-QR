@@ -286,7 +286,17 @@ ob_start();
       $itemId = (int)($tr['item_id'] ?? 0);
       $slot = (int)($tr['photo_slot'] ?? 1);
       $slotLabel = (string)($tr['slot_label'] ?? ($slot === 2 ? 'Foto Ke-2 (Detail)' : 'Foto Ke-1 (Utama)'));
-      $photoUrl = (string)($tr['photo_url'] ?? '');
+      $rawFilePath = trim((string)($tr['file_path'] ?? ''));
+      $photoUrl = trim((string)($tr['photo_url'] ?? ''));
+      if ($photoUrl === '' && $rawFilePath !== '') {
+          if (str_starts_with($rawFilePath, 'http://') || str_starts_with($rawFilePath, 'https://') || str_starts_with($rawFilePath, '//')) {
+              $photoUrl = $rawFilePath;
+          } elseif (function_exists('asset_image_url')) {
+              $photoUrl = asset_image_url($rawFilePath);
+          } else {
+              $photoUrl = module_url(ltrim($rawFilePath, '/'));
+          }
+      }
       $namaBarang = trim((string)($tr['nama_barang'] ?? '-'));
       $kodeInv = trim((string)($tr['kode_inventaris'] ?? '-'));
       $nomorSeri = trim((string)($tr['nomor_seri'] ?? '-'));
@@ -345,6 +355,7 @@ ob_start();
                     loading="lazy"
                     class="w-100 h-100"
                     style="object-fit: cover; cursor: zoom-in;"
+                    onerror="this.onerror=null; this.parentElement.innerHTML='<div class=\'text-center p-3 text-muted\'><i class=\'bi bi-image fs-1 opacity-50\'></i><div class=\'small mt-1\'>Foto tidak ditemukan</div></div>';"
                     onclick="openTrashZoomModal('<?= e($photoUrl) ?>', '<?= e($namaBarang) ?> — <?= e($slotLabel) ?>', '<?= e($kodeInv) ?>')"
                   >
                   <button

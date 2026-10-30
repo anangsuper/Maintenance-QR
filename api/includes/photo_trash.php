@@ -336,6 +336,23 @@ function get_photo_trash_list(array $filters = []): array {
                 $minsLeft = max(1, (int)ceil($diffSec / 60));
                 $r['countdown_label'] = "{$minsLeft} menit lagi";
             }
+
+            // Resolusi URL Foto Fisik (Kompatibel dengan semua hosting & subdirektori)
+            $fPath = trim((string)($r['file_path'] ?? ''));
+            if ($fPath !== '') {
+                if (str_starts_with($fPath, 'http://') || str_starts_with($fPath, 'https://') || str_starts_with($fPath, '//')) {
+                    $r['photo_url'] = $fPath;
+                } elseif (function_exists('asset_image_url')) {
+                    $r['photo_url'] = asset_image_url($fPath);
+                } else {
+                    $r['photo_url'] = module_url(ltrim($fPath, '/'));
+                }
+            } else {
+                $r['photo_url'] = '';
+            }
+
+            $slotNum = (int)($r['photo_slot'] ?? 1);
+            $r['slot_label'] = ($slotNum === 2) ? 'Foto Ke-2 (Detail / S/N)' : 'Foto Ke-1 (Utama / Unit)';
         }
         unset($r);
 
