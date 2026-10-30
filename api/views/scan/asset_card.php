@@ -632,7 +632,7 @@ $userStatusStrip = $loggedIn
 
 // Build Komponen Catatan & Keluhan Karyawan
 $complaintCount = count($complaints);
-$autoOpenHistory = (!empty($_GET['open_complaints']) || !empty($_GET['complaint_saved']) || !empty($_GET['open_complaint_history']));
+$autoOpenHistory = (!empty($_GET['open_complaints']) || !empty($_GET['complaint_saved']) || !empty($_GET['open_complaint_history']) || $complaintCount > 0);
 $complaintItemsHtml = '';
 if (empty($complaints)) {
     $complaintItemsHtml = '
@@ -847,12 +847,12 @@ $complaintCardHtml = '
   <div class="pt-2 border-top" id="boxRiwayatKeluhan">
     <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2">
       <div>
-        <h6 class="fw-bold text-dark mb-0 small text-uppercase tracking-wide">
-          <i class="bi bi-clock-history text-primary me-1"></i> Riwayat Catatan / Keluhan ('.$complaintCount.' Catatan)
+        <h6 class="fw-bold text-dark mb-0 small text-uppercase tracking-wide" style="letter-spacing: 0.05em;">
+          <i class="bi bi-chat-left-dots text-primary me-2"></i>03 · Catatan &amp; Keluhan Pengguna Komputer Ini
         </h6>
-        <div class="small text-muted" style="font-size: 0.74rem;">
-          '.($pendingComplaintsCount > 0 ? '<span class="text-warning-emphasis fw-bold"><i class="bi bi-exclamation-circle-fill me-1"></i>'.$pendingComplaintsCount.' Perlu Tindak Lanjut</span> &bull; ' : '').'
-          <span class="text-success"><i class="bi bi-check2-circle me-1"></i>'.($complaintCount - $pendingComplaintsCount).' Selesai</span>
+        <div class="text-muted small mt-0.5" style="font-size: 0.78rem;">
+          Rekam jejak keluhan pengguna dan riwayat tindak lanjut penanganan teknisi IT.
+          '.($pendingComplaintsCount > 0 ? ' &bull; <span class="text-warning-emphasis fw-bold"><i class="bi bi-exclamation-circle-fill me-1"></i>'.$pendingComplaintsCount.' Perlu Tindak Lanjut</span>' : '').'
         </div>
       </div>
       '.($complaintCount > 0 ? '

@@ -28,6 +28,60 @@ if ($action === 'tindak_lanjut') {
     $findingId = (int)($pendingFinding['finding_id'] ?? 0);
     $initialRecom = $pendingFinding['recommendation'] ?? ($currentMonthLog['recommendation'] ?? '');
 
+    // Catatan Keluhan & Tindak Lanjut Terkait Komputer Ini
+    $complaints = function_exists('get_asset_complaints') ? get_asset_complaints($assetId) : [];
+    $complaintCount = count($complaints);
+    $complaintCardHtml = '';
+    if (!empty($complaints)) {
+        $cListHtml = '';
+        foreach ($complaints as $c) {
+            $cId = (int)($c['id'] ?? 0);
+            $cStatus = trim((string)($c['status'] ?? 'Menunggu'));
+            $cIsDone = in_array(strtolower($cStatus), ['selesai', 'resolved', 'closed', 'ok'], true);
+            $cBadge = $cIsDone 
+                ? '<span class="badge bg-success text-white px-2 py-1"><i class="bi bi-check-circle me-1"></i>Selesai</span>'
+                : '<span class="badge bg-warning text-dark px-2 py-1"><i class="bi bi-clock-history me-1"></i>'.$cStatus.'</span>';
+
+            $cListHtml .= '
+            <div class="p-2.5 p-md-3 mb-2 rounded-3 border bg-white shadow-xs" style="border-left: 4px solid '.($cIsDone ? '#10B981' : '#F59E0B').' !important;">
+              <div class="d-flex justify-content-between align-items-center gap-2 mb-1">
+                <div class="d-flex align-items-center gap-1.5 flex-wrap">
+                  <span class="badge bg-secondary bg-opacity-10 text-secondary border font-monospace small">#'.$cId.'</span>
+                  <span class="fw-bold text-dark small">'.e($c['reporter_name'] ?? 'Karyawan').'</span>
+                  <span class="badge bg-light text-secondary border small">'.e($c['kategori'] ?? 'Kendala').'</span>
+                </div>
+                <div>'.$cBadge.'</div>
+              </div>
+              <div class="small text-dark mb-1.5"><strong>Keluhan:</strong> '.e($c['complaint'] ?? '-').'</div>
+              '.(!empty($c['technician_response']) ? '
+              <div class="p-2 rounded bg-light border text-secondary small" style="font-size: 0.78rem;">
+                <i class="bi bi-wrench me-1 text-primary"></i><strong>Tindak Lanjut IT:</strong> '.e($c['technician_response']).'
+                '.(!empty($c['resolved_by']) ? ' &bull; <span class="text-muted">oleh '.e($c['resolved_by']).'</span>' : '').'
+              </div>' : '').'
+            </div>';
+        }
+
+        $complaintCardHtml = '
+        <div class="card p-3 p-md-4 border shadow-sm mb-3 mb-md-4" style="border-radius: 8px; border-color: var(--app-border) !important; background: #fff;">
+          <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-2">
+            <div>
+              <div class="fw-bold text-dark text-uppercase small" style="letter-spacing: 0.05em;">
+                <i class="bi bi-chat-left-dots text-primary me-2"></i>03 · Catatan &amp; Keluhan Pengguna Komputer Ini
+              </div>
+              <div class="text-muted small mt-0.5" style="font-size: 0.78rem;">Rekam jejak keluhan pengguna dan riwayat tindak lanjut penanganan teknisi IT.</div>
+            </div>
+            <button type="button" id="btnToggleComplaintHistory" class="btn btn-sm btn-outline-secondary fw-semibold py-1 px-2.5 rounded-pill shadow-xs" onclick="toggleComplaintHistory(this)" aria-expanded="true" style="font-size: 0.75rem;">
+              <i class="bi bi-chevron-up me-1" id="iconToggleComplaintHistory"></i>
+              <span id="labelToggleComplaintHistory">Sembunyikan Riwayat</span>
+            </button>
+          </div>
+
+          <div id="complaintHistoryContainer" class="complaint-history-disclosure-panel mt-2">
+            '.$cListHtml.'
+          </div>
+        </div>';
+    }
+
     $body = '
     <div class="row justify-content-center">
       <div class="col-md-9 col-lg-7">
@@ -64,6 +118,9 @@ if ($action === 'tindak_lanjut') {
               '.($initialRecom !== '' && $initialRecom !== '-' ? '<div class="mt-1"><i class="bi bi-lightbulb me-1"></i> Catatan awal: '.e($initialRecom).'</div>' : '').'
             </div>
           </div>
+
+          <!-- 03 · Catatan & Keluhan Pengguna Komputer Ini -->
+          '.$complaintCardHtml.'
 
           '.($error ? '<div class="alert alert-danger py-2 mb-3">'.e($error).'</div>' : '').'
 
@@ -188,6 +245,30 @@ if ($action === 'tindak_lanjut') {
     ' . render_biometric_modal_html($token, 'tindak_lanjut');
 
     $extraActionJs = '
+    function toggleComplaintHistory(btn) {
+      var container = document.getElementById("complaintHistoryContainer");
+      if (!container) return;
+      var toggleBtn = btn || document.getElementById("btnToggleComplaintHistory");
+      var isHidden = container.hasAttribute("hidden") || container.style.display === "none";
+      var count = ' . (int)$complaintCount . ';
+      var label = document.getElementById("labelToggleComplaintHistory");
+      var icon = document.getElementById("iconToggleComplaintHistory");
+
+      if (isHidden) {
+        container.removeAttribute("hidden");
+        container.style.display = "block";
+        if (toggleBtn) toggleBtn.setAttribute("aria-expanded", "true");
+        if (label) label.textContent = "Sembunyikan Riwayat";
+        if (icon) icon.className = "bi bi-chevron-up me-1";
+      } else {
+        container.setAttribute("hidden", ("onbeforematch" in HTMLElement.prototype) ? "until-found" : "");
+        container.style.display = "none";
+        if (toggleBtn) toggleBtn.setAttribute("aria-expanded", "false");
+        if (label) label.textContent = "Tampilkan Riwayat (" + count + ")";
+        if (icon) icon.className = "bi bi-chevron-down me-1";
+      }
+    }
+
     function appendAction(text) {
       var box = document.getElementById("action_taken_box");
       if (!box) return;
