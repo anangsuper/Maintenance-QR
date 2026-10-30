@@ -486,3 +486,4 @@ function openTrashZoomModal(src, title, code) {
 <?php
 $body = ob_get_clean();
 render_page('Folder Sampah Foto (Retensi 7 Hari)', $body);
+

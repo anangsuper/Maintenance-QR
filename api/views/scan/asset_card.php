@@ -23,11 +23,67 @@ foreach ($historyList as $hRow) {
 }
 sort($cardYears);
 
+if (!function_exists('render_asset_card_matrix_tbody')) {
+    function render_asset_card_matrix_tbody(array $matrix, string $token): string {
+        $rowsHtml = '';
+        for ($m = 1; $m <= 12; $m++) {
+            $row = $matrix[$m] ?? ['date_str' => '-', 'is_done' => false, 'paraf' => '-', 'log_id' => 0, 'checklists' => []];
+            $dateLabel = (string)($row['date_str'] ?? '-');
+            $isDone = !empty($row['is_done']);
+            $logId = (int)($row['log_id'] ?? 0);
+
+            if ($isDone) {
+                $parafText = htmlspecialchars((string)($row['paraf'] ?? '-'), ENT_QUOTES, 'UTF-8');
+                if ($logId > 0) {
+                    $paraf = '<a href="'.htmlspecialchars(module_url('maintenance_detail.php', ['id' => $logId, 't' => $token]), ENT_QUOTES, 'UTF-8').'" class="text-decoration-none text-dark fw-bold" title="Lihat Rincian Audit">'.$parafText.'</a>';
+                } else {
+                    $paraf = $parafText;
+                }
+            } else {
+                $paraf = '<span class="text-muted" style="font-size: 0.72rem;">-</span>';
+            }
+
+            $rowClass = ($m % 2 === 0) ? 'even-row' : 'odd-row';
+            if ($isDone) $rowClass .= ' done-row';
+
+            $cols1to9 = '';
+            for ($num = 1; $num <= 9; $num++) {
+                $chkVal = (int)($row['checklists'][$num] ?? 0);
+                if ($isDone) {
+                    $cols1to9 .= '<td class="chk-col '.($chkVal ? 'chk-yes' : 'chk-no').'">'.($chkVal ? '✓' : '-').'</td>';
+                } else {
+                    $cols1to9 .= '<td class="chk-col">&nbsp;</td>';
+                }
+            }
+
+            $rowsHtml .= '
+            <tr class="'.$rowClass.'">
+              <td class="tgl-col">'.htmlspecialchars($dateLabel, ENT_QUOTES, 'UTF-8').'</td>
+              '.$cols1to9.'
+              <td class="paraf-col">'.$paraf.'</td>
+            </tr>';
+        }
+        return $rowsHtml;
+    }
+}
+
+$allYearMatricesData = [];
+foreach ($cardYears as $cy) {
+    $mMatrix = ($cy === $year) ? $cardMatrix : get_asset_yearly_card_matrix($assetId, $cy);
+    $allYearMatricesData[$cy] = [
+        'year' => $cy,
+        'is_current' => ($cy === $currYr),
+        'rows_html' => render_asset_card_matrix_tbody($mMatrix, $token),
+        'print_url' => module_url('print_card.php', ['id' => $assetId, 'tahun' => $cy]),
+        'page_url' => module_url('scan.php', ['t' => $token, 'tahun' => $cy]),
+    ];
+}
+
 $yearButtonsHtml = '';
 foreach ($cardYears as $cy) {
     $isSel = ($cy === $year);
     $activeClass = $isSel ? 'btn-primary active fw-bold shadow-xs' : 'btn-outline-secondary';
-    $yearButtonsHtml .= '<a href="' . e(module_url('scan.php', ['t' => $token, 'tahun' => $cy])) . '" class="btn btn-sm ' . $activeClass . '" title="Lihat Checklist Tahun ' . $cy . '">' . $cy . ($cy === $currYr ? ' <span class="d-none d-lg-inline opacity-75">★</span>' : '') . '</a>';
+    $yearButtonsHtml .= '<button type="button" id="yearBtn_' . $cy . '" class="btn btn-sm ' . $activeClass . ' year-nav-btn" onclick="switchChecklistYear(' . $cy . ')" title="Lihat Checklist Tahun ' . $cy . '">' . $cy . ($cy === $currYr ? ' <span class="d-none d-lg-inline opacity-75">★</span>' : '') . '</button>';
 }
 $loggedIn = is_logged_in();
 $enrolledTechs = get_enrolled_technicians(false);
@@ -230,44 +286,7 @@ if ($rawMerk !== '-' && $rawModel !== '-' && stripos($rawModel, $rawMerk) === 0)
 }
 $displayMerkModel = ($rawMerk !== '-' && $cleanModel !== '-') ? ($rawMerk . ' / ' . $cleanModel) : ($rawMerk !== '-' ? $rawMerk : $cleanModel);
 
-$cardMatrixRows = '';
-for ($m = 1; $m <= 12; $m++) {
-    $row = $cardMatrix[$m];
-    $dateLabel = $row['date_str'];
-    $isDone = $row['is_done'];
-    $logId = (int)($row['log_id'] ?? 0);
-
-    if ($isDone) {
-        $parafText = e($row['paraf']);
-        if ($logId > 0) {
-            $paraf = '<a href="'.e(module_url('maintenance_detail.php', ['id' => $logId, 't' => $token])).'" class="text-decoration-none text-dark fw-bold" title="Lihat Rincian Audit">'.$parafText.'</a>';
-        } else {
-            $paraf = $parafText;
-        }
-    } else {
-        $paraf = '<span class="text-muted" style="font-size: 0.72rem;">-</span>';
-    }
-
-    $rowClass = ($m % 2 === 0) ? 'even-row' : 'odd-row';
-    if ($isDone) $rowClass .= ' done-row';
-
-    $cols1to9 = '';
-    for ($num = 1; $num <= 9; $num++) {
-        $chkVal = $row['checklists'][$num] ?? 0;
-        if ($isDone) {
-            $cols1to9 .= '<td class="chk-col '.($chkVal ? 'chk-yes' : 'chk-no').'">'.($chkVal ? '✓' : '-').'</td>';
-        } else {
-            $cols1to9 .= '<td class="chk-col">&nbsp;</td>';
-        }
-    }
-
-    $cardMatrixRows .= '
-    <tr class="'.$rowClass.'">
-      <td class="tgl-col">'.e($dateLabel).'</td>
-      '.$cols1to9.'
-      <td class="paraf-col">'.$paraf.'</td>
-    </tr>';
-}
+$cardMatrixRows = $allYearMatricesData[$year]['rows_html'] ?? render_asset_card_matrix_tbody($cardMatrix, $token);
 
 // Maintenance Terakhir
 $lastMaintStr = !empty($historyList[0])
@@ -1188,9 +1207,9 @@ $body = '
       <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-2 mb-3">
         <div>
           <h5 class="fw-bold text-dark mb-0 fs-6 fs-md-5">
-            <i class="bi bi-card-checklist text-primary me-2"></i>KARTU CHECKLIST MAINTENANCE IT '.$year.'
+            <i class="bi bi-card-checklist text-primary me-2"></i>KARTU CHECKLIST MAINTENANCE IT <span id="cardChecklistTitleYear">'.$year.'</span>
           </h5>
-          <div class="text-secondary small mt-0.5">
+          <div class="text-secondary small mt-0.5" id="cardChecklistBadgeYear">
             '.($year === $currYr ? '<span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-2 py-0.5"><i class="bi bi-calendar-check me-1"></i>Tahun Berjalan ('.$year.')</span>' : '<span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle rounded-pill px-2 py-0.5"><i class="bi bi-clock-history me-1"></i>Arsip Riwayat Tahun '.$year.'</span>').'
           </div>
         </div>
@@ -1202,12 +1221,13 @@ $body = '
               '.$yearButtonsHtml.'
             </div>
           </div>
-          <a class="btn btn-sm btn-outline-primary fw-semibold" target="_blank" href="'.e(module_url('print_card.php', ['id'=>$assetId, 'tahun'=>$year])).'">
-            <i class="bi bi-printer me-1"></i> Cetak Kartu '.$year.'
+          <a id="btnCetakKartuTahun" class="btn btn-sm btn-outline-primary fw-semibold" target="_blank" href="'.e(module_url('print_card.php', ['id'=>$assetId, 'tahun'=>$year])).'">
+            <i class="bi bi-printer me-1"></i> <span id="btnCetakKartuYearText">Cetak Kartu '.$year.'</span>
           </a>
         </div>
       </div>
 
+      <div id="cardChecklistArchiveAlertContainer">
       '.($year !== $currYr ? '
       <div class="alert alert-warning py-2 px-3 mb-3 rounded-3 small d-flex align-items-center justify-content-between flex-wrap gap-2">
         <div class="d-flex align-items-center gap-2">
@@ -1216,17 +1236,18 @@ $body = '
             Anda sedang melihat <strong>Arsip Checklist Maintenance Tahun '.$year.'</strong>. Seluruh riwayat pelaksanaan 12 bulan di tahun '.$year.' tersimpan permanen dan dapat dilihat kembali kapan saja.
           </div>
         </div>
-        <a href="'.e(module_url('scan.php', ['t' => $token, 'tahun' => $currYr])).'" class="btn btn-sm btn-warning text-dark fw-bold py-1 px-2.5 rounded-pill shadow-xs">
+        <button type="button" onclick="switchChecklistYear('.$currYr.')" class="btn btn-sm btn-warning text-dark fw-bold py-1 px-2.5 rounded-pill shadow-xs">
           <i class="bi bi-arrow-return-left me-1"></i> Kembali ke Tahun '.$currYr.'
-        </a>
+        </button>
       </div>' : '').'
+      </div>
 
       <!-- Modern Kartu Kontrol Container (Persis Desain Gambar) -->
       <div class="mobile-card-wrapper">
         
         <!-- Header Banner Berwarna -->
         <div class="grid6-top-banner mb-2">
-          <span class="banner-title"><i class="bi bi-card-checklist me-1"></i> KARTU KONTROL IT · '.$year.($year !== $currYr ? ' (ARSIP)' : '').'</span>
+          <span class="banner-title"><i class="bi bi-card-checklist me-1"></i> KARTU KONTROL IT · <span id="bannerCardYear">'.$year.($year !== $currYr ? ' (ARSIP)' : '').'</span></span>
           <span class="grid6-branch-pill">'.e($cabangLabel).'</span>
         </div>
 
@@ -1280,7 +1301,7 @@ $body = '
                 <th class="paraf-h">PARAF</th>
               </tr>
             </thead>
-            <tbody>
+            <tbody id="cardMatrixTbody">
               '.$cardMatrixRows.'
             </tbody>
           </table>
@@ -2043,6 +2064,130 @@ function fillTechResponse(cId, text) {
     respArea.focus();
   }
 }
+
+// Pre-rendered Checklist Matrices for Instant Switching (No Page Reload)
+window.__YEAR_MATRICES = ' . json_encode($allYearMatricesData, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP) . ';
+window.__CURRENT_RUNNING_YEAR = ' . (int)$currYr . ';
+window.__SELECTED_CHECKLIST_YEAR = ' . (int)$year . ';
+
+function updateChecklistDOM(targetYear) {
+  const data = window.__YEAR_MATRICES ? window.__YEAR_MATRICES[targetYear] : null;
+  if (!data) return;
+
+  window.__SELECTED_CHECKLIST_YEAR = targetYear;
+  const currYr = window.__CURRENT_RUNNING_YEAR;
+  const isCurrent = (targetYear === currYr);
+
+  // 1. Update Title and Badge
+  const titleYear = document.getElementById("cardChecklistTitleYear");
+  if (titleYear) titleYear.textContent = targetYear;
+
+  const badgeYear = document.getElementById("cardChecklistBadgeYear");
+  if (badgeYear) {
+    if (isCurrent) {
+      badgeYear.innerHTML = "<span class=\"badge bg-success-subtle text-success border border-success-subtle rounded-pill px-2 py-0.5\"><i class=\"bi bi-calendar-check me-1\"></i>Tahun Berjalan (" + targetYear + ")</span>";
+    } else {
+      badgeYear.innerHTML = "<span class=\"badge bg-warning-subtle text-warning-emphasis border border-warning-subtle rounded-pill px-2 py-0.5\"><i class=\"bi bi-clock-history me-1\"></i>Arsip Riwayat Tahun " + targetYear + "</span>";
+    }
+  }
+
+  // 2. Update Archive Alert
+  const alertContainer = document.getElementById("cardChecklistArchiveAlertContainer");
+  if (alertContainer) {
+    if (!isCurrent) {
+      alertContainer.innerHTML = "<div class=\"alert alert-warning py-2 px-3 mb-3 rounded-3 small d-flex align-items-center justify-content-between flex-wrap gap-2\">" +
+        "<div class=\"d-flex align-items-center gap-2\">" +
+        "<i class=\"bi bi-info-circle-fill fs-5 text-warning-emphasis\"></i>" +
+        "<div>Anda sedang melihat <strong>Arsip Checklist Maintenance Tahun " + targetYear + "</strong>. Seluruh riwayat pelaksanaan 12 bulan di tahun " + targetYear + " tersimpan permanen dan dapat dilihat kembali kapan saja.</div>" +
+        "</div>" +
+        "<button type=\"button\" onclick=\"switchChecklistYear(" + currYr + ")\" class=\"btn btn-sm btn-warning text-dark fw-bold py-1 px-2.5 rounded-pill shadow-xs\">" +
+        "<i class=\"bi bi-arrow-return-left me-1\"></i> Kembali ke Tahun " + currYr + "</button>" +
+        "</div>";
+    } else {
+      alertContainer.innerHTML = "";
+    }
+  }
+
+  // 3. Update Banner Title
+  const bannerYear = document.getElementById("bannerCardYear");
+  if (bannerYear) {
+    bannerYear.textContent = targetYear + (isCurrent ? "" : " (ARSIP)");
+  }
+
+  // 4. Update Cetak Button
+  const printBtn = document.getElementById("btnCetakKartuTahun");
+  if (printBtn && data.print_url) {
+    printBtn.href = data.print_url;
+  }
+  const printText = document.getElementById("btnCetakKartuYearText");
+  if (printText) {
+    printText.textContent = "Cetak Kartu " + targetYear;
+  }
+
+  // 5. Update Table Rows
+  const tbody = document.getElementById("cardMatrixTbody");
+  if (tbody && data.rows_html) {
+    tbody.innerHTML = data.rows_html;
+  }
+
+  // 6. Update Year Nav Buttons active status
+  document.querySelectorAll(".year-nav-btn").forEach(function(btn) {
+    btn.classList.remove("btn-primary", "active", "fw-bold", "shadow-xs");
+    btn.classList.add("btn-outline-secondary");
+  });
+  const activeBtn = document.getElementById("yearBtn_" + targetYear);
+  if (activeBtn) {
+    activeBtn.classList.remove("btn-outline-secondary");
+    activeBtn.classList.add("btn-primary", "active", "fw-bold", "shadow-xs");
+  }
+}
+
+function switchChecklistYear(targetYear) {
+  targetYear = parseInt(targetYear, 10);
+  if (!targetYear || !window.__YEAR_MATRICES || !window.__YEAR_MATRICES[targetYear]) return;
+  if (targetYear === window.__SELECTED_CHECKLIST_YEAR) return;
+
+  const data = window.__YEAR_MATRICES[targetYear];
+
+  // Update browser URL without reloading page
+  if (window.history && window.history.pushState && data.page_url) {
+    window.history.pushState({ year: targetYear }, "", data.page_url);
+  }
+
+  // Modern Web Guidance: same-document-transitions with fallback
+  if (document.startViewTransition) {
+    document.startViewTransition(function() {
+      updateChecklistDOM(targetYear);
+    });
+  } else {
+    updateChecklistDOM(targetYear);
+  }
+}
+
+// Handle Browser Back / Forward buttons
+window.addEventListener("popstate", function(e) {
+  if (e.state && e.state.year) {
+    if (document.startViewTransition) {
+      document.startViewTransition(function() {
+        updateChecklistDOM(e.state.year);
+      });
+    } else {
+      updateChecklistDOM(e.state.year);
+    }
+  } else {
+    const params = new URLSearchParams(window.location.search);
+    const yr = parseInt(params.get("tahun"), 10) || window.__CURRENT_RUNNING_YEAR;
+    if (yr && window.__YEAR_MATRICES && window.__YEAR_MATRICES[yr]) {
+      if (document.startViewTransition) {
+        document.startViewTransition(function() {
+          updateChecklistDOM(yr);
+        });
+      } else {
+        updateChecklistDOM(yr);
+      }
+    }
+  }
+});
 
 // Toggle Hide/Show Riwayat Catatan Keluhan Karyawan
 function toggleComplaintHistory(btn) {

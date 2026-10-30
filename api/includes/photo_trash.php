@@ -529,3 +529,4 @@ function permanently_delete_photo_from_trash(int $trashId, ?string $deletedBy = 
         return ['success' => false, 'error' => $e->getMessage()];
     }
 }
+
