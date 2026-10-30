@@ -712,11 +712,16 @@ $pageTitle = $card ? e($card['nama_barang']) . ' - Kartu Inventaris' : 'Kartu In
                         
                         <!-- Kolom Foto Barang (2 Slot Foto) & Biometric Action (Kiri: 5 Kolom) -->
                         <div class="col-lg-5 col-md-5 text-center">
-                            <!-- Galeri 2 Slot Foto Barang (Desktop & Mobile) -->
-                            <div class="row g-2 mb-2">
+                            <!-- Galeri Foto Barang (1 Tampilan Default, Menjadi 2 Tampilan Hanya Bila Ada 2 Foto) -->
+                            <?php 
+                                $hasFoto1 = !empty($photoUrl);
+                                $hasFoto2 = !empty($photoUrl2);
+                                $hasBothPhotos = ($hasFoto1 && $hasFoto2);
+                            ?>
+                            <div class="row g-2 mb-2" id="cardGalleryRow">
                                 <!-- SLOT FOTO 1 (UTAMA) -->
-                                <div class="<?= ($photoUrl || $photoUrl2) ? 'col-6' : 'col-12' ?>" id="slotCol1">
-                                    <div class="item-photo-wrapper mb-0 shadow-xs d-flex position-relative <?= $photoUrl ? 'has-image' : '' ?>" id="photoWrapper" style="min-height: 185px; max-height: 235px; aspect-ratio: 4 / 5;">
+                                <div class="<?= $hasBothPhotos ? 'col-6' : ($hasFoto1 || !$hasFoto2 ? 'col-12' : 'col-12 d-none') ?>" id="slotCol1">
+                                    <div class="item-photo-wrapper mb-0 shadow-xs d-flex position-relative <?= $photoUrl ? 'has-image' : '' ?>" id="photoWrapper" style="min-height: 185px; max-height: 250px; aspect-ratio: 4 / 5;">
                                         <span class="position-absolute top-0 start-0 m-2 badge bg-dark bg-opacity-75 text-white rounded-pill px-2 py-1" style="font-size: 0.65rem; z-index: 3;">
                                             <i class="bi bi-1-circle-fill me-0.5"></i> Foto 1 (Utama)
                                         </span>
@@ -724,8 +729,8 @@ $pageTitle = $card ? e($card['nama_barang']) . ' - Kartu Inventaris' : 'Kartu In
                                         
                                         <div id="emptyPhotoPlaceholder" class="text-center p-3 <?= $photoUrl ? 'd-none' : '' ?>" style="cursor: pointer;" onclick="openPhotoCollapseAndFocus(1)">
                                             <i class="bi bi-camera text-muted fs-2 mb-1 d-block"></i>
-                                            <div class="small text-secondary fw-semibold" style="font-size: 0.74rem;">Belum Ada Foto 1</div>
-                                            <div class="text-primary fw-semibold mt-1" style="font-size: 0.68rem;"><i class="bi bi-plus-circle me-0.5"></i>Upload Foto 1</div>
+                                            <div class="small text-secondary fw-semibold" style="font-size: 0.74rem;">Belum Ada Foto Barang</div>
+                                            <div class="text-primary fw-semibold mt-1" style="font-size: 0.68rem;"><i class="bi bi-plus-circle me-0.5"></i>Ambil / Upload Foto</div>
                                         </div>
 
                                         <div id="previewBadge" class="preview-alert-badge d-none">
@@ -740,9 +745,9 @@ $pageTitle = $card ? e($card['nama_barang']) . ' - Kartu Inventaris' : 'Kartu In
                                     </div>
                                 </div>
 
-                                <!-- SLOT FOTO 2 (DETAIL / TAMBAHAN) -->
-                                <div class="<?= ($photoUrl || $photoUrl2) ? 'col-6' : 'col-12 d-none' ?>" id="slotCol2">
-                                    <div class="item-photo-wrapper mb-0 shadow-xs d-flex position-relative <?= $photoUrl2 ? 'has-image' : '' ?>" id="photoWrapper2" style="min-height: 185px; max-height: 235px; aspect-ratio: 4 / 5;">
+                                <!-- SLOT FOTO 2 (DETAIL) - Hanya Tampil Jika Ada Foto 2 -->
+                                <div class="<?= $hasBothPhotos ? 'col-6' : ($hasFoto2 ? 'col-12' : 'col-6 d-none') ?>" id="slotCol2">
+                                    <div class="item-photo-wrapper mb-0 shadow-xs d-flex position-relative <?= $photoUrl2 ? 'has-image' : '' ?>" id="photoWrapper2" style="min-height: 185px; max-height: 250px; aspect-ratio: 4 / 5;">
                                         <span class="position-absolute top-0 start-0 m-2 badge bg-primary text-white rounded-pill px-2 py-1" style="font-size: 0.65rem; z-index: 3;">
                                             <i class="bi bi-2-circle-fill me-0.5"></i> Foto 2 (Detail)
                                         </span>
@@ -750,8 +755,8 @@ $pageTitle = $card ? e($card['nama_barang']) . ' - Kartu Inventaris' : 'Kartu In
                                         
                                         <div id="emptyPhotoPlaceholder2" class="text-center p-3 <?= $photoUrl2 ? 'd-none' : '' ?>" style="cursor: pointer;" onclick="openPhotoCollapseAndFocus(2)">
                                             <i class="bi bi-plus-circle-dotted text-primary fs-2 mb-1 d-block"></i>
-                                            <div class="small text-secondary fw-semibold" style="font-size: 0.74rem;">Slot Foto Ke-2 Kosong</div>
-                                            <div class="text-primary fw-bold mt-1" style="font-size: 0.68rem;">+ Tambah Foto Ke-2</div>
+                                            <div class="small text-secondary fw-semibold" style="font-size: 0.74rem;">Foto Ke-2 Siap</div>
+                                            <div class="text-primary fw-bold mt-1" style="font-size: 0.68rem;">+ Upload Foto 2</div>
                                         </div>
 
                                         <div id="previewBadge2" class="preview-alert-badge d-none">
@@ -871,10 +876,10 @@ $pageTitle = $card ? e($card['nama_barang']) . ' - Kartu Inventaris' : 'Kartu In
                                             </span>
                                         </div>
 
-                                        <div class="row g-2 mb-2">
+                                        <div class="row g-2 mb-2" id="rowDropzones">
                                             <!-- Input Foto 1 -->
-                                            <div class="col-6">
-                                                <div class="photo-dropzone p-2.5 text-center h-100 d-flex flex-column justify-content-center" id="dropzoneBox" onclick="document.getElementById('fotoBarangInput').click()" style="cursor: pointer;">
+                                            <div class="<?= $hasFoto2 ? 'col-6' : 'col-12' ?>" id="colDropzone1">
+                                                <div class="photo-dropzone p-2.5 text-center h-100 d-flex flex-column justify-content-center" id="dropzoneBox" onclick="document.getElementById('fotoBarangInput').click()" style="cursor: pointer; min-height: 105px;">
                                                     <input type="file" id="fotoBarangInput" name="foto_barang_1" class="d-none" accept="image/*" capture="environment">
                                                     <div class="badge bg-dark text-white align-self-center mb-1" style="font-size: 0.62rem;">FOTO 1 (UTAMA)</div>
                                                     <div id="dropzoneEmpty">
@@ -891,14 +896,17 @@ $pageTitle = $card ? e($card['nama_barang']) . ' - Kartu Inventaris' : 'Kartu In
                                                 </div>
                                             </div>
 
-                                            <!-- Input Foto 2 -->
-                                            <div class="col-6">
-                                                <div class="photo-dropzone p-2.5 text-center h-100 d-flex flex-column justify-content-center" id="dropzoneBox2" onclick="document.getElementById('fotoBarangInput2').click()" style="cursor: pointer;">
+                                            <!-- Input Foto 2 (Hanya Tampil Jika Foto 2 Ada atau Tombol Tambah Ditekan) -->
+                                            <div class="<?= $hasFoto2 ? 'col-6' : 'col-6 d-none' ?>" id="colDropzone2">
+                                                <div class="photo-dropzone p-2.5 text-center h-100 d-flex flex-column justify-content-center position-relative" id="dropzoneBox2" onclick="document.getElementById('fotoBarangInput2').click()" style="cursor: pointer; min-height: 105px;">
+                                                    <button type="button" class="btn btn-xs btn-outline-danger position-absolute top-0 end-0 m-1.5 py-0 px-1 rounded" style="font-size: 0.62rem; z-index: 5;" onclick="event.stopPropagation(); tutupSlotFoto2()" title="Batal tambah foto 2">
+                                                        <i class="bi bi-x-lg"></i>
+                                                    </button>
                                                     <input type="file" id="fotoBarangInput2" name="foto_barang_2" class="d-none" accept="image/*" capture="environment">
                                                     <div class="badge bg-primary text-white align-self-center mb-1" style="font-size: 0.62rem;">FOTO 2 (DETAIL)</div>
                                                     <div id="dropzoneEmpty2">
                                                         <i class="bi bi-plus-circle-dotted fs-5 text-primary d-block"></i>
-                                                        <div class="fw-bold text-dark" style="font-size: 0.72rem;"><?= $photoUrl2 ? 'Ganti Foto 2' : 'Tambah Foto 2' ?></div>
+                                                        <div class="fw-bold text-dark" style="font-size: 0.72rem;"><?= $photoUrl2 ? 'Ganti Foto 2' : 'Pilih Foto 2' ?></div>
                                                         <div class="text-muted" style="font-size: 0.62rem;">S/N / Detail</div>
                                                     </div>
                                                     <div id="dropzoneSelected2" class="d-none">
@@ -909,6 +917,13 @@ $pageTitle = $card ? e($card['nama_barang']) . ' - Kartu Inventaris' : 'Kartu In
                                                     </div>
                                                 </div>
                                             </div>
+                                        </div>
+
+                                        <!-- Tombol Tambah Slot Foto 2 (Jika Belum Mau Ditambah, Tetap 1 Tampilan) -->
+                                        <div id="boxBtnTambahFoto2" class="<?= $hasFoto2 ? 'd-none' : 'text-center mb-2' ?>">
+                                            <button type="button" class="btn btn-xs btn-outline-primary fw-semibold px-3 py-1 rounded-pill shadow-2xs" onclick="bukaSlotFoto2()" style="font-size: 0.74rem;">
+                                                <i class="bi bi-plus-circle me-1"></i> + Tambah Foto Ke-2 (Detail / S/N)
+                                            </button>
                                         </div>
 
                                         <!-- Opsi Hapus Salah Satu atau Semua Foto saat Edit -->

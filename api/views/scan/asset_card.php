@@ -990,44 +990,46 @@ if (!empty($assetTrashPhotos)) {
 }
 
 if ($hasAnyUnitPhoto) {
+    $hasBoth = ($fotoUnitSrc !== '' && $fotoUnit2Src !== '');
+
     $slot1BoxHtml = $fotoUnitSrc !== '' ? '
-      <div class="position-relative rounded-3 overflow-hidden border shadow-xs bg-dark bg-opacity-10 d-flex align-items-center justify-content-center h-100" style="cursor: pointer; aspect-ratio: 4 / 5; max-height: 210px;" onclick="openScanPhotoModal(\''.e($fotoUnitSrc).'\', \''.e(addslashes(asset_title($asset) . ' - Foto 1 (Utama)')).'\', \''.e(addslashes($asset['kode_inventaris'] ?? '')).'\')" title="Klik untuk memperbesar Foto 1">
-        <span class="position-absolute top-0 start-0 m-1.5 badge bg-dark bg-opacity-75 text-white" style="font-size: 0.60rem; z-index: 2;">Foto 1</span>
-        <img src="'.e($fotoUnitSrc).'" alt="Foto 1 '.e(asset_title($asset)).'" fetchpriority="high" class="w-100 h-100 object-fit-cover" style="max-height: 210px; min-height: 145px; display: block;" onerror="this.onerror=null; this.parentElement.innerHTML=\'<div class=\\\'p-3 text-muted small\\\'>Gagal memuat</div>\';">
+      <div class="position-relative rounded-3 overflow-hidden border shadow-xs bg-dark bg-opacity-10 d-flex align-items-center justify-content-center h-100" style="cursor: pointer; aspect-ratio: 4 / 5; max-height: 240px;" onclick="openScanPhotoModal(\''.e($fotoUnitSrc).'\', \''.e(addslashes(asset_title($asset) . ' - Foto 1 (Utama)')).'\', \''.e(addslashes($asset['kode_inventaris'] ?? '')).'\')" title="Klik untuk memperbesar Foto 1">
+        <span class="position-absolute top-0 start-0 m-1.5 badge bg-dark bg-opacity-75 text-white rounded-pill px-2 py-0.5" style="font-size: 0.60rem; z-index: 2;"><i class="bi bi-1-circle-fill me-0.5"></i> Foto 1</span>
+        <img src="'.e($fotoUnitSrc).'" alt="Foto 1 '.e(asset_title($asset)).'" fetchpriority="high" class="w-100 h-100 object-fit-cover" style="max-height: 240px; min-height: 155px; display: block;" onerror="this.onerror=null; this.parentElement.innerHTML=\'<div class=\\\'p-3 text-muted small\\\'>Gagal memuat</div>\';">
         <div class="position-absolute bottom-0 start-0 w-100 bg-dark bg-opacity-75 text-white py-0.5 px-1 small text-center" style="font-size: 0.64rem;">
-          <i class="bi bi-zoom-in"></i> Perbesar
+          <i class="bi bi-zoom-in"></i> Perbesar Foto
         </div>
-      </div>' : '
-      <div class="rounded-3 border border-2 border-dashed bg-light p-2 d-flex flex-column align-items-center justify-content-center h-100" style="min-height: 145px; aspect-ratio: 4 / 5; cursor: pointer;" onclick="openUploadFotoTeknisiModal()">
-        <i class="bi bi-plus-circle-dotted text-primary fs-3 mb-1"></i>
-        <div class="text-secondary fw-bold" style="font-size: 0.66rem;">Slot Foto 1 Kosong</div>
-        <span class="text-primary fw-semibold" style="font-size: 0.62rem;">+ Upload Foto 1</span>
-      </div>';
+      </div>' : '';
 
     $slot2BoxHtml = $fotoUnit2Src !== '' ? '
-      <div class="position-relative rounded-3 overflow-hidden border shadow-xs bg-dark bg-opacity-10 d-flex align-items-center justify-content-center h-100" style="cursor: pointer; aspect-ratio: 4 / 5; max-height: 210px;" onclick="openScanPhotoModal(\''.e($fotoUnit2Src).'\', \''.e(addslashes(asset_title($asset) . ' - Foto 2 (Detail)')).'\', \''.e(addslashes($asset['kode_inventaris'] ?? '')).'\')" title="Klik untuk memperbesar Foto 2">
-        <span class="position-absolute top-0 start-0 m-1.5 badge bg-primary text-white" style="font-size: 0.60rem; z-index: 2;">Foto 2</span>
-        <img src="'.e($fotoUnit2Src).'" alt="Foto 2 '.e(asset_title($asset)).'" fetchpriority="low" loading="lazy" class="w-100 h-100 object-fit-cover" style="max-height: 210px; min-height: 145px; display: block;" onerror="this.onerror=null; this.parentElement.innerHTML=\'<div class=\\\'p-3 text-muted small\\\'>Gagal memuat</div>\';">
+      <div class="position-relative rounded-3 overflow-hidden border shadow-xs bg-dark bg-opacity-10 d-flex align-items-center justify-content-center h-100" style="cursor: pointer; aspect-ratio: 4 / 5; max-height: 240px;" onclick="openScanPhotoModal(\''.e($fotoUnit2Src).'\', \''.e(addslashes(asset_title($asset) . ' - Foto 2 (Detail)')).'\', \''.e(addslashes($asset['kode_inventaris'] ?? '')).'\')" title="Klik untuk memperbesar Foto 2">
+        <span class="position-absolute top-0 start-0 m-1.5 badge bg-primary text-white rounded-pill px-2 py-0.5" style="font-size: 0.60rem; z-index: 2;"><i class="bi bi-2-circle-fill me-0.5"></i> Foto 2</span>
+        <img src="'.e($fotoUnit2Src).'" alt="Foto 2 '.e(asset_title($asset)).'" fetchpriority="low" loading="lazy" class="w-100 h-100 object-fit-cover" style="max-height: 240px; min-height: 155px; display: block;" onerror="this.onerror=null; this.parentElement.innerHTML=\'<div class=\\\'p-3 text-muted small\\\'>Gagal memuat</div>\';">
         <div class="position-absolute bottom-0 start-0 w-100 bg-dark bg-opacity-75 text-white py-0.5 px-1 small text-center" style="font-size: 0.64rem;">
-          <i class="bi bi-zoom-in"></i> Perbesar
+          <i class="bi bi-zoom-in"></i> Perbesar Foto
         </div>
-      </div>' : '
-      <div class="rounded-3 border border-2 border-dashed bg-light p-2 d-flex flex-column align-items-center justify-content-center h-100" style="min-height: 145px; aspect-ratio: 4 / 5; cursor: pointer;" onclick="openUploadFotoTeknisiModal()">
-        <i class="bi bi-plus-circle-dotted text-primary fs-3 mb-1"></i>
-        <div class="text-secondary fw-bold" style="font-size: 0.66rem;">Slot Foto 2 Kosong</div>
-        <span class="text-primary fw-semibold" style="font-size: 0.62rem;">+ Tambah Foto 2</span>
-      </div>';
+      </div>' : '';
+
+    if ($hasBoth) {
+        $slotsDisplayHtml = '
+        <div class="row g-2">
+          <div class="col-6">'.$slot1BoxHtml.'</div>
+          <div class="col-6">'.$slot2BoxHtml.'</div>
+        </div>';
+    } else {
+        $slotsDisplayHtml = '
+        <div class="row g-2">
+          <div class="col-12">'.($slot1BoxHtml ?: $slot2BoxHtml).'</div>
+        </div>';
+    }
 
     $fotoCardHtml = '
     <div class="col-12 col-md-5 col-lg-4 text-center mb-3 mb-md-0">
-      <div class="row g-2">
-        <div class="col-6">'.$slot1BoxHtml.'</div>
-        <div class="col-6">'.$slot2BoxHtml.'</div>
-      </div>
+      '.$slotsDisplayHtml.'
       '.$verifiedBadge.'
       <div class="mt-2 d-flex flex-wrap justify-content-center gap-1.5">
         <button type="button" class="btn btn-sm btn-outline-primary py-1 px-2.5 fw-semibold shadow-xs" style="font-size: 0.72rem;" onclick="openUploadFotoTeknisiModal()">
-          <i class="bi bi-camera me-1"></i> Edit / Kelola 2 Foto
+          <i class="bi bi-camera me-1"></i> '.($hasBoth ? 'Edit / Ganti Foto' : 'Edit / Tambah Foto 2').'
         </button>
         <a href="'.e(module_url('photo_trash.php', ['source_type' => 'assets'])).'" class="btn btn-sm btn-light border py-1 px-2 text-secondary fw-semibold shadow-xs" style="font-size: 0.72rem;" title="Folder Sampah Foto (Tersimpan 7 Hari)">
           <i class="bi bi-recycle text-success me-0.5"></i> Sampah '.($totalTrashAssetsCount > 0 ? '<span class="badge bg-danger text-white rounded-pill">'.$totalTrashAssetsCount.'</span>' : '').'
@@ -1039,20 +1041,19 @@ if ($hasAnyUnitPhoto) {
 } else {
     $fotoCardHtml = '
     <div class="col-12 col-md-4 col-lg-3 text-center mb-3 mb-md-0">
-      <div class="rounded-3 border border-2 border-dashed bg-light p-3 d-flex flex-column align-items-center justify-content-center h-100" style="min-height: 175px; border-color: #cbd5e1 !important;">
-        <i class="bi bi-images fs-1 text-secondary opacity-50 mb-1"></i>
-        <div class="small text-muted mb-0.5 fw-semibold" style="font-size: 0.75rem;">Belum ada foto fisik</div>
-        <div class="text-muted mb-2" style="font-size: 0.66rem;">Bisa upload hingga 2 foto</div>
-        <div class="d-flex flex-wrap justify-content-center gap-1">
-          <button type="button" class="btn btn-sm btn-outline-primary py-1 px-2.5 fw-semibold shadow-xs" onclick="openUploadFotoTeknisiModal()" style="font-size: 0.74rem;">
-            <i class="bi bi-plus-circle me-1"></i> Upload 1-2 Foto
-          </button>
-          <a href="'.e(module_url('photo_trash.php', ['source_type' => 'assets'])).'" class="btn btn-sm btn-light border py-1 px-2 text-secondary fw-semibold" style="font-size: 0.72rem;">
-            <i class="bi bi-recycle text-success"></i> Sampah
-          </a>
-        </div>
-        '.$trashRestoreStripHtml.'
+      <div class="rounded-3 border border-2 border-dashed bg-light p-3 d-flex flex-column align-items-center justify-content-center h-100" style="min-height: 175px; border-color: #cbd5e1 !important; cursor: pointer;" onclick="openUploadFotoTeknisiModal()">
+        <i class="bi bi-camera fs-1 text-secondary opacity-50 mb-1"></i>
+        <div class="small text-muted mb-0.5 fw-semibold" style="font-size: 0.75rem;">Belum ada foto fisik unit</div>
+        <button type="button" class="btn btn-xs btn-outline-primary fw-semibold mt-1 py-1 px-2.5 rounded-pill shadow-xs" style="font-size: 0.70rem;">
+          <i class="bi bi-camera me-1"></i> Ambil / Upload Foto
+        </button>
       </div>
+      <div class="mt-2">
+        <a href="'.e(module_url('photo_trash.php', ['source_type' => 'assets'])).'" class="btn btn-sm btn-light border py-1 px-2 text-secondary fw-semibold shadow-xs" style="font-size: 0.72rem;" title="Folder Sampah Foto (Tersimpan 7 Hari)">
+          <i class="bi bi-recycle text-success me-0.5"></i> Folder Sampah '.($totalTrashAssetsCount > 0 ? '<span class="badge bg-danger text-white rounded-pill">'.$totalTrashAssetsCount.'</span>' : '').'
+        </a>
+      </div>
+      '.$trashRestoreStripHtml.'
     </div>';
     $specColClass = 'col-12 col-md-8 col-lg-9';
 }
@@ -1363,9 +1364,9 @@ $body = '
             <i class="bi bi-recycle text-success me-1"></i> <strong>Aman 7 Hari:</strong> Foto yang dihapus atau diganti tidak langsung hilang, melainkan disimpan di <a href="'.e(module_url('photo_trash.php', ['source_type' => 'assets'])).'" class="fw-bold text-success text-decoration-underline">Folder Sampah Foto</a> selama <strong>7 hari</strong> dan dapat di-restore.
           </div>
 
-          <!-- Step 1: Ambil / Pilih Foto Unit 1 & 2 -->
-          <div class="row g-2.5 mb-3">
-            <div class="col-12 col-sm-6">
+          <!-- Step 1: Ambil / Pilih Foto Unit (1 Tampilan Default, Bisa Jadi 2 Bila Ingin Tambah) -->
+          <div class="row g-2.5 mb-2" id="scanPhotoInputsRow">
+            <div class="' . ($fotoUnit2Src !== '' ? 'col-12 col-sm-6' : 'col-12') . '" id="scanSlot1Col">
               <div class="p-2.5 rounded-3 border bg-light h-100">
                 <label class="form-label small fw-bold text-dark mb-1">
                   <span class="badge bg-dark me-1">1</span> Foto 1 (Utama / Unit):
@@ -1389,8 +1390,11 @@ $body = '
               </div>
             </div>
 
-            <div class="col-12 col-sm-6">
-              <div class="p-2.5 rounded-3 border bg-light h-100">
+            <div class="' . ($fotoUnit2Src !== '' ? 'col-12 col-sm-6' : 'col-12 col-sm-6 d-none') . '" id="scanSlot2Col">
+              <div class="p-2.5 rounded-3 border bg-light h-100 position-relative">
+                <button type="button" class="btn btn-xs btn-outline-danger position-absolute top-0 end-0 m-2 py-0 px-1 rounded" style="font-size: 0.62rem; z-index: 5;" onclick="tutupScanSlot2()" title="Batal tambah foto 2">
+                  <i class="bi bi-x-lg"></i>
+                </button>
                 <label class="form-label small fw-bold text-dark mb-1">
                   <span class="badge bg-primary me-1">2</span> Foto 2 (Detail / S/N):
                 </label>
@@ -1412,6 +1416,12 @@ $body = '
                 </div>' : '').'
               </div>
             </div>
+          </div>
+
+          <div id="scanBtnTambahSlot2Box" class="'.($fotoUnit2Src !== '' ? 'd-none' : 'text-center my-2').'">
+            <button type="button" class="btn btn-xs btn-outline-primary fw-semibold px-3 py-1.5 rounded-pill shadow-xs" onclick="bukaScanSlot2()" style="font-size: 0.74rem;">
+              <i class="bi bi-plus-circle me-1"></i> + Tambah Foto Ke-2 (Detail / S/N)
+            </button>
           </div>
 
           '.($hasAnyUnitPhoto ? '
@@ -1570,6 +1580,30 @@ function openUploadFotoTeknisiModal() {
     var modal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
     modal.show();
   }
+}
+
+function bukaScanSlot2() {
+  const s1 = document.getElementById("scanSlot1Col");
+  const s2 = document.getElementById("scanSlot2Col");
+  const btn = document.getElementById("scanBtnTambahSlot2Box");
+  if (s1) { s1.classList.remove("col-12"); s1.classList.add("col-12", "col-sm-6"); }
+  if (s2) { s2.classList.remove("d-none"); }
+  if (btn) { btn.classList.add("d-none"); }
+}
+
+function tutupScanSlot2() {
+  const s1 = document.getElementById("scanSlot1Col");
+  const s2 = document.getElementById("scanSlot2Col");
+  const btn = document.getElementById("scanBtnTambahSlot2Box");
+  const f2 = document.getElementById("fotoBarangScanInput2");
+  const b64 = document.getElementById("scanPhotoBase64_2");
+  if (f2) f2.value = "";
+  if (b64) b64.value = "";
+  const prev2 = document.getElementById("scanPhotoPreviewContainer2");
+  if (prev2) prev2.classList.add("d-none");
+  if (s2) s2.classList.add("d-none");
+  if (s1) { s1.classList.remove("col-sm-6"); s1.classList.add("col-12"); }
+  if (btn) btn.classList.remove("d-none");
 }
 
 function handleScanPhotoSelect(event, slotNum) {

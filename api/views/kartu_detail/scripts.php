@@ -43,13 +43,53 @@
         const photoWrapper = document.getElementById('photoWrapper');
         const photoWrapper2 = document.getElementById('photoWrapper2');
 
+        function bukaSlotFoto2() {
+            const col1 = document.getElementById('colDropzone1');
+            const col2 = document.getElementById('colDropzone2');
+            const btnBox = document.getElementById('boxBtnTambahFoto2');
+            if (col1) { col1.classList.remove('col-12'); col1.classList.add('col-6'); }
+            if (col2) { col2.classList.remove('d-none'); }
+            if (btnBox) { btnBox.classList.add('d-none'); }
+            const sc1 = document.getElementById('slotCol1');
+            const sc2 = document.getElementById('slotCol2');
+            if (sc1 && sc2 && !sc1.classList.contains('col-6')) {
+                sc1.classList.remove('col-12'); sc1.classList.add('col-6');
+                sc2.classList.remove('d-none'); sc2.classList.add('col-6');
+            }
+        }
+
+        function tutupSlotFoto2() {
+            const col1 = document.getElementById('colDropzone1');
+            const col2 = document.getElementById('colDropzone2');
+            const btnBox = document.getElementById('boxBtnTambahFoto2');
+            const input2 = document.getElementById('fotoBarangInput2');
+            if (input2) { input2.value = ''; }
+            const sel2 = document.getElementById('dropzoneSelected2');
+            const emp2 = document.getElementById('dropzoneEmpty2');
+            if (sel2) sel2.classList.add('d-none');
+            if (emp2) emp2.classList.remove('d-none');
+            if (col2) { col2.classList.add('d-none'); }
+            if (col1) { col1.classList.remove('col-6'); col1.classList.add('col-12'); }
+            if (btnBox) { btnBox.classList.remove('d-none'); }
+            const img2 = document.getElementById('previewImg2');
+            if (img2 && (!img2.src || img2.src === window.location.href || img2.classList.contains('d-none'))) {
+                const sc1 = document.getElementById('slotCol1');
+                const sc2 = document.getElementById('slotCol2');
+                if (sc1 && sc2) {
+                    sc1.classList.remove('col-6'); sc1.classList.add('col-12');
+                    sc2.classList.add('d-none'); sc2.classList.remove('col-6');
+                }
+            }
+        }
+
         function openPhotoCollapseAndFocus(slot) {
             const colEl = document.getElementById('collapseUploadPhoto');
             if (colEl) {
                 colEl.classList.add('show');
             }
-            if (slot === 2 && fileInput2) {
-                fileInput2.click();
+            if (slot === 2) {
+                bukaSlotFoto2();
+                if (fileInput2) fileInput2.click();
             } else if (fileInput) {
                 fileInput.click();
             }

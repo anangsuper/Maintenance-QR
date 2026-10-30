@@ -527,8 +527,8 @@ $body = '
         <div class="alert alert-success bg-success bg-opacity-10 border-success border-opacity-25 rounded-3 py-2 px-3 mb-3 small">
           <i class="bi bi-recycle text-success me-1"></i> Foto yang dihapus atau diganti tidak langsung hilang permanen, melainkan disimpan di <strong>Folder Sampah Foto</strong> selama <strong>7 hari</strong> dan dapat di-restore kapan saja.
         </div>
-        <div class="row g-3 mb-4">
-          <div class="col-md-6">
+        <div class="row g-3 mb-4" id="editPhotoInputsRow">
+          <div class="'.($existingFoto2Src !== '' ? 'col-md-6' : 'col-12').'" id="editSlot1Col">
             <div class="p-3 rounded-3 border bg-light h-100">
               <div class="d-flex justify-content-between align-items-center mb-1.5">
                 <label class="form-label text-dark small fw-bold mb-0"><span class="badge bg-dark me-1">1</span> Foto 1 (Utama / Tampak Unit)</label>
@@ -555,8 +555,11 @@ $body = '
             </div>
           </div>
 
-          <div class="col-md-6">
-            <div class="p-3 rounded-3 border bg-light h-100">
+          <div class="'.($existingFoto2Src !== '' ? 'col-md-6' : 'col-md-6 d-none').'" id="editSlot2Col">
+            <div class="p-3 rounded-3 border bg-light h-100 position-relative">
+              <button type="button" class="btn btn-xs btn-outline-danger position-absolute top-0 end-0 m-2 py-0 px-1 rounded" style="font-size: 0.62rem; z-index: 5;" onclick="tutupEditSlot2()" title="Batal tambah foto 2">
+                <i class="bi bi-x-lg"></i>
+              </button>
               <div class="d-flex justify-content-between align-items-center mb-1.5">
                 <label class="form-label text-dark small fw-bold mb-0"><span class="badge bg-primary me-1">2</span> Foto 2 (Detail / S/N / Stiker)</label>
               </div>
@@ -578,6 +581,13 @@ $body = '
               ' : '').'
             </div>
           </div>
+
+          <div id="editBtnTambahFoto2Box" class="'.($existingFoto2Src !== '' ? 'd-none' : 'col-12 text-center my-1').'">
+            <button type="button" class="btn btn-xs btn-outline-primary fw-semibold px-3 py-1.5 rounded-pill shadow-xs" onclick="bukaEditSlot2()" style="font-size: 0.74rem;">
+              <i class="bi bi-plus-circle me-1"></i> + Tambah Foto Ke-2 (Detail / S/N)
+            </button>
+          </div>
+        </div>
 
           '.(($existingFotoSrc || $existingFoto2Src) ? '
           <div class="col-12">
@@ -921,6 +931,30 @@ document.addEventListener("DOMContentLoaded", function() {
     });
   }
 });
+
+function bukaEditSlot2() {
+  const s1 = document.getElementById("editSlot1Col");
+  const s2 = document.getElementById("editSlot2Col");
+  const btn = document.getElementById("editBtnTambahFoto2Box");
+  if (s1) { s1.classList.remove("col-12"); s1.classList.add("col-md-6"); }
+  if (s2) { s2.classList.remove("d-none"); }
+  if (btn) { btn.classList.add("d-none"); }
+}
+
+function tutupEditSlot2() {
+  const s1 = document.getElementById("editSlot1Col");
+  const s2 = document.getElementById("editSlot2Col");
+  const btn = document.getElementById("editBtnTambahFoto2Box");
+  const f2 = document.getElementById("inputFotoUnit2");
+  if (f2) f2.value = "";
+  const img2 = document.getElementById("imgFotoPreview2");
+  const ph2 = document.getElementById("fotoPlaceholder2");
+  if (img2) { img2.src = ""; img2.classList.add("d-none"); }
+  if (ph2) { ph2.classList.remove("d-none"); }
+  if (s2) { s2.classList.add("d-none"); }
+  if (s1) { s1.classList.remove("col-md-6"); s1.classList.add("col-12"); }
+  if (btn) { btn.classList.remove("d-none"); }
+}
 </script>';
 
 render_page('Edit Data Komputer', $body, '', $script);
