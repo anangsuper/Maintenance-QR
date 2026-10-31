@@ -49,6 +49,7 @@ foreach ($cabangs as $c) {
 }
 
 $table = '';
+$cardsHtml = '';
 $num = 0;
 foreach ($rows as $r) {
     $num++;
@@ -114,9 +115,10 @@ foreach ($rows as $r) {
     $action .= '<a class="h-[28px] w-[28px] bg-white border border-[#D1D5D8] hover:bg-[#FEE2E2] text-[#DC2626] rounded-[6px] inline-flex items-center justify-center transition-colors text-decoration-none" href="'.e(module_url('asset_delete.php', ['id'=>$aid])).'" title="Hapus Aset" onclick="return confirm(&#39;Hapus aset '.e(addslashes($kode)).' ini dari sistem?&#39;)"><i class="bi bi-trash text-[13px]"></i></a>';
     $action .= '</div>';
 
-    $table .= '<tr class="asset-table-row hover:bg-[#F9FAFB] transition-colors" id="row-asset-'.$aid.'" data-search="'.e($searchKeyword).'" data-has-token="'.($hasToken ? '1' : '0').'">
+        // Desktop Table Row
+    $table .= '<tr class="asset-row asset-table-row hover:bg-[#F9FAFB] transition-colors" id="row-asset-'.$aid.'" data-search="'.e($searchKeyword).'" data-has-token="'.($hasToken ? '1' : '0').'">
       <td class="text-center py-2.5">
-        <input type="checkbox" class="form-check-input row-chk cursor-pointer" value="'.$aid.'" onchange="onRowCheckChange()">
+        <input type="checkbox" class="form-check-input row-chk cursor-pointer" value="'.$aid.'" onchange="onRowCheckChange(this)">
       </td>
       <td class="text-center font-mono text-[#53595F] text-[12px] py-2.5">'.sprintf('%02d', $num).'</td>
       <td class="py-2.5">
@@ -141,10 +143,73 @@ foreach ($rows as $r) {
       <td class="text-center py-2.5">'.$qrStatus.'</td>
       <td class="text-nowrap text-end py-2.5 pe-3">'.$action.'</td>
     </tr>';
+
+    // Mobile Responsive Card Item
+    $cardsHtml .= '
+    <div class="asset-row asset-card-row bg-white border border-[#D1D5D8] rounded-[10px] p-3.5 shadow-xs transition-colors" id="card-asset-'.$aid.'" data-search="'.e($searchKeyword).'" data-has-token="'.($hasToken ? '1' : '0').'">
+      <!-- Header Bar: Checkbox + No + Kode + QR Status -->
+      <div class="flex items-center justify-between gap-2 pb-2 mb-2.5 border-b border-[#F3F4F6]">
+        <div class="flex items-center gap-2">
+          <input type="checkbox" class="form-check-input row-chk cursor-pointer m-0" value="'.$aid.'" onchange="onRowCheckChange(this)">
+          <span class="font-mono text-[#53595F] text-[11px] font-bold">#'.sprintf('%02d', $num).'</span>
+          <span class="font-mono font-bold text-[#0E5C58] text-[13px]">'.e($kode).'</span>
+        </div>
+        <div>
+          '.$qrStatus.'
+        </div>
+      </div>
+
+      <!-- Main Info: Device Title + SN & Kategori -->
+      <div class="mb-2.5">
+        <div class="font-bold text-[#1B2A3A] text-[14px] leading-snug">'.e($deviceTitle).'</div>
+        <div class="text-[#53595F] text-[12px] mt-0.5">SN: <span class="font-mono font-medium">'.e($sn).'</span> &middot; Tipe: '.e($kategori).'</div>
+      </div>
+
+      <!-- User & Branch Detail Box -->
+      <div class="bg-[#F8FAF9] rounded-[8px] p-2.5 border border-[#E5E7EB] text-[12px] space-y-1 mb-2.5">
+        <div class="flex items-center justify-between gap-2">
+          <span class="text-[#53595F]"><i class="bi bi-person me-1"></i> Pengguna:</span>
+          <span class="font-semibold text-[#1B2A3A] truncate">'.e($userNama).($divisiNama ? ' <span class="text-[#53595F] font-normal">('.e($divisiNama).')</span>' : '').'</span>
+        </div>
+        <div class="flex items-center justify-between gap-2">
+          <span class="text-[#53595F]"><i class="bi bi-building me-1"></i> Cabang:</span>
+          <span class="px-2 py-0.5 rounded-[4px] text-[11px] font-medium bg-white border border-[#D1D5D8] text-[#1B2A3A]">'.e($cabangNama).'</span>
+        </div>
+      </div>
+
+      <!-- Mobile Action Bar (Touch-Optimized) -->
+      <div class="flex items-center justify-between gap-1.5 pt-2 border-t border-[#F3F4F6]">
+        <div class="flex items-center gap-1.5 flex-wrap">
+          <a class="h-[30px] px-2.5 bg-white border border-[#D1D5D8] hover:bg-[#F4F5F7] text-[#53595F] hover:text-[#0E5C58] rounded-[6px] text-[12px] font-medium inline-flex items-center gap-1 transition-colors text-decoration-none shadow-xs" href="'.e(module_url('asset_edit.php', ['id'=>$aid])).'" title="Edit Detail Aset">
+            <i class="bi bi-pencil-square text-[#0E5C58]"></i> Edit
+          </a>
+          '.($url ? '
+          <a class="h-[30px] px-2.5 bg-[#D9F1EF] hover:bg-[#0E5C58] hover:text-white text-[#0E5C58] border border-[#A7E2DC] rounded-[6px] text-[12px] font-semibold inline-flex items-center gap-1 transition-colors text-decoration-none shadow-xs" target="_blank" href="'.e(module_url('print_qr.php', ['asset_id'=>$aid])).'" title="Cetak Stiker Label">
+            <i class="bi bi-printer text-[12px]"></i> Cetak
+          </a>' : '').'
+          <form method="post" class="inline m-0">
+            <input type="hidden" name="_csrf" value="'.e(csrf_token()).'">
+            <input type="hidden" name="action" value="regenerate">
+            <input type="hidden" name="asset_id" value="'.$aid.'">
+            <button type="submit" class="h-[30px] px-2.5 bg-white border border-[#D1D5D8] hover:bg-[#FEF3C7] text-[#D97706] rounded-[6px] text-[12px] font-medium inline-flex items-center gap-1 transition-colors cursor-pointer shadow-xs" title="Generate Ulang & Revoke Token QR" onclick="return confirm(&#39;Generate ulang token QR ini? QR lama otomatis tidak berlaku lagi demi keamanan.&#39;)">
+              <i class="bi bi-arrow-repeat text-[12px]"></i> Regen
+            </button>
+          </form>
+        </div>
+        <div>
+          <a class="h-[30px] w-[30px] bg-white border border-[#D1D5D8] hover:bg-[#FEE2E2] text-[#DC2626] rounded-[6px] inline-flex items-center justify-center transition-colors text-decoration-none shadow-xs" href="'.e(module_url('asset_delete.php', ['id'=>$aid])).'" title="Hapus Aset" onclick="return confirm(&#39;Hapus aset '.e(addslashes($kode)).' ini dari sistem?&#39;)">
+            <i class="bi bi-trash text-[13px]"></i>
+          </a>
+        </div>
+      </div>
+    </div>';
 }
 
 if (!$table) {
     $table = '<tr><td colspan="8" class="text-center py-5 text-[#53595F]"><i class="bi bi-qr-code text-[32px] text-[#9CA3AF] d-block mb-2"></i>Tidak ada inventaris aset yang memerlukan label QR di cabang ini.</td></tr>';
+}
+if (!$cardsHtml) {
+    $cardsHtml = '<div class="text-center py-5 text-[#53595F] bg-white border border-[#D1D5D8] rounded-[10px] p-4"><i class="bi bi-qr-code text-[32px] text-[#9CA3AF] d-block mb-2"></i>Tidak ada inventaris aset yang memerlukan label QR di cabang ini.</div>';
 }
 
 $flashHtml = $flash ? '<div class="alert alert-success alert-dismissible fade show border-0 shadow-sm mb-4" style="border-left: 4px solid #10B981 !important;"><i class="bi bi-check-circle-fill me-2 text-success"></i>'.e($flash).'<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>' : '';
@@ -169,6 +234,16 @@ $head = '
   transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s ease;
   opacity: 0;
   pointer-events: none;
+  max-width: calc(100vw - 24px);
+  width: max-content;
+}
+@media (max-width: 640px) {
+  .floating-bulk-bar {
+    bottom: 16px;
+    padding: 6px 14px;
+    gap: 8px;
+    border-radius: 14px;
+  }
 }
 .floating-bulk-bar.active {
   transform: translateX(-50%) translateY(0);
@@ -218,73 +293,73 @@ $body = '
     </h1>
     <p class="text-[13px] text-[#53595F] mt-1 mb-0">Kelola token QR terenkripsi, pratinjau kode QR langsung di layar, dan cetak stiker label bodi komputer.</p>
   </div>
-  <div class="flex flex-wrap items-center gap-2 shrink-0">
-    <a href="'.e(module_url('print_qr.php', $cabangId > 0 ? ['cabang'=>$cabangId] : [])).'" target="_blank" class="h-[36px] px-3.5 bg-[#0E5C58] hover:bg-[#094340] text-white rounded-[8px] text-[13px] font-semibold transition-colors inline-flex items-center gap-1.5 text-decoration-none shadow-xs">
-      <i class="bi bi-printer-fill"></i> Cetak Stiker QR Cabang Ini
+  <div class="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-2 shrink-0 w-full sm:w-auto">
+    <a href="'.e(module_url('print_qr.php', $cabangId > 0 ? ['cabang'=>$cabangId] : [])).'" target="_blank" class="h-[36px] px-3 bg-[#0E5C58] hover:bg-[#094340] text-white rounded-[8px] text-[12px] sm:text-[13px] font-semibold transition-colors inline-flex items-center justify-center gap-1.5 text-decoration-none shadow-xs text-center">
+      <i class="bi bi-printer-fill"></i> Cetak Stiker QR
     </a>
-    <a href="'.e(module_url('print_inventory_card.php', $cabangId > 0 ? ['cabang'=>$cabangId] : [])).'" target="_blank" class="h-[36px] px-3 bg-white border border-[#D1D5D8] rounded-[8px] text-[13px] font-medium text-[#1B2A3A] hover:bg-[#F4F5F7] transition-colors inline-flex items-center gap-1.5 text-decoration-none shadow-xs">
+    <a href="'.e(module_url('print_inventory_card.php', $cabangId > 0 ? ['cabang'=>$cabangId] : [])).'" target="_blank" class="h-[36px] px-3 bg-white border border-[#D1D5D8] rounded-[8px] text-[12px] sm:text-[13px] font-medium text-[#1B2A3A] hover:bg-[#F4F5F7] transition-colors inline-flex items-center justify-center gap-1.5 text-decoration-none shadow-xs text-center">
       <i class="bi bi-credit-card-2-front text-[#0E5C58]"></i> Cetak Kartu A4
     </a>
-    <a href="'.e(module_url('asset_add.php')).'" class="h-[36px] px-3 bg-white border border-[#D1D5D8] rounded-[8px] text-[13px] font-medium text-[#1B2A3A] hover:bg-[#F4F5F7] transition-colors inline-flex items-center gap-1.5 text-decoration-none shadow-xs">
+    <a href="'.e(module_url('asset_add.php')).'" class="h-[36px] px-3 bg-white border border-[#D1D5D8] rounded-[8px] text-[12px] sm:text-[13px] font-medium text-[#1B2A3A] hover:bg-[#F4F5F7] transition-colors inline-flex items-center justify-center gap-1.5 text-decoration-none shadow-xs text-center">
       <i class="bi bi-plus-lg text-[#0E5C58]"></i> Tambah Aset
     </a>
-    <a href="'.e(module_url('dashboard.php')).'" class="h-[36px] px-3 bg-white border border-[#D1D5D8] rounded-[8px] text-[13px] font-medium text-[#53595F] hover:bg-[#F4F5F7] transition-colors inline-flex items-center gap-1.5 text-decoration-none shadow-xs">
+    <a href="'.e(module_url('dashboard.php')).'" class="h-[36px] px-3 bg-white border border-[#D1D5D8] rounded-[8px] text-[12px] sm:text-[13px] font-medium text-[#53595F] hover:bg-[#F4F5F7] transition-colors inline-flex items-center justify-center gap-1.5 text-decoration-none shadow-xs text-center">
       <i class="bi bi-arrow-left"></i> Dashboard
     </a>
   </div>
 </div>
 
-<!-- Symmetrical Metric Strip (88px) -->
-<div class="bg-[#FFFFFF] border border-[#D1D5D8] rounded-[10px] flex flex-col sm:flex-row overflow-hidden shrink-0 mb-4 shadow-xs">
+<!-- Symmetrical Metric Strip (Responsive 2x2 on Mobile, 4x1 on Desktop) -->
+<div class="bg-[#FFFFFF] border border-[#D1D5D8] rounded-[10px] grid grid-cols-2 lg:grid-cols-4 overflow-hidden shrink-0 mb-4 shadow-xs">
   <!-- Card 1: Total Unit Aset -->
-  <div class="flex-1 flex flex-col justify-center px-5 py-3 border-b sm:border-b-0 sm:border-r border-[#D1D5D8] relative">
+  <div class="flex flex-col justify-center px-4 py-3 sm:px-5 sm:py-3.5 border-b sm:border-b-0 border-r border-[#D1D5D8] relative hover:bg-[#F9FAFB] transition-colors">
     <div class="absolute left-0 top-0 bottom-0 w-1 bg-[#0E5C58]"></div>
-    <div class="text-[26px] font-bold text-[#1B2A3A] tabular-nums leading-none">
-      '.$totalUnits.' <span class="text-[13px] font-normal text-[#53595F]">Unit</span>
+    <div class="text-[22px] sm:text-[26px] font-bold text-[#1B2A3A] tabular-nums leading-none">
+      '.$totalUnits.' <span class="text-[12px] sm:text-[13px] font-normal text-[#53595F]">Unit</span>
     </div>
-    <div class="text-[12px] font-medium text-[#53595F] mt-1.5 flex items-center gap-1.5">
-      <span class="text-[#0E5C58] font-bold">Total Unit Aset</span>
-      <span>&middot;</span>
-      <span class="text-[11px] text-[#53595F]">Semua Inventaris</span>
+    <div class="text-[11px] sm:text-[12px] font-medium text-[#53595F] mt-1.5 flex items-center gap-1 flex-wrap">
+      <span class="text-[#0E5C58] font-bold">Total Unit</span>
+      <span class="text-[#D1D5D8]">&middot;</span>
+      <span class="text-[10px] sm:text-[11px] text-[#53595F]">Inventaris</span>
     </div>
   </div>
 
   <!-- Card 2: Token QR Aktif -->
-  <div class="flex-1 flex flex-col justify-center px-5 py-3 border-b sm:border-b-0 sm:border-r border-[#D1D5D8] relative">
+  <div class="flex flex-col justify-center px-4 py-3 sm:px-5 sm:py-3.5 border-b sm:border-b-0 lg:border-r border-[#D1D5D8] relative hover:bg-[#F9FAFB] transition-colors">
     <div class="absolute left-0 top-0 bottom-0 w-1 bg-[#10B981]"></div>
-    <div class="text-[26px] font-bold text-[#10B981] tabular-nums leading-none">
-      '.$countValid.' <span class="text-[13px] font-normal text-[#53595F]">Siap Scan</span>
+    <div class="text-[22px] sm:text-[26px] font-bold text-[#10B981] tabular-nums leading-none">
+      '.$countValid.' <span class="text-[12px] sm:text-[13px] font-normal text-[#53595F]">Siap Scan</span>
     </div>
-    <div class="text-[12px] font-medium text-[#53595F] mt-1.5 flex items-center gap-1.5">
-      <span class="text-[#10B981] font-bold">Token QR Aktif</span>
-      <span>&middot;</span>
-      <span class="text-[11px] text-[#53595F]">Label Terbit</span>
+    <div class="text-[11px] sm:text-[12px] font-medium text-[#53595F] mt-1.5 flex items-center gap-1 flex-wrap">
+      <span class="text-[#10B981] font-bold">QR Aktif</span>
+      <span class="text-[#D1D5D8]">&middot;</span>
+      <span class="text-[10px] sm:text-[11px] text-[#53595F]">Terbit</span>
     </div>
   </div>
 
   <!-- Card 3: Belum Punya Token -->
-  <div class="flex-1 flex flex-col justify-center px-5 py-3 border-b sm:border-b-0 sm:border-r border-[#D1D5D8] relative">
+  <div class="flex flex-col justify-center px-4 py-3 sm:px-5 sm:py-3.5 border-r border-[#D1D5D8] relative hover:bg-[#F9FAFB] transition-colors">
     <div class="absolute left-0 top-0 bottom-0 w-1 '.($countMissing > 0 ? 'bg-[#F59E0B]' : 'bg-[#6B7280]').'"></div>
-    <div class="text-[26px] font-bold '.($countMissing > 0 ? 'text-[#D97706]' : 'text-[#6B7280]').' tabular-nums leading-none">
-      '.$countMissing.' <span class="text-[13px] font-normal text-[#53595F]">Unit</span>
+    <div class="text-[22px] sm:text-[26px] font-bold '.($countMissing > 0 ? 'text-[#D97706]' : 'text-[#6B7280]').' tabular-nums leading-none">
+      '.$countMissing.' <span class="text-[12px] sm:text-[13px] font-normal text-[#53595F]">Unit</span>
     </div>
-    <div class="text-[12px] font-medium text-[#53595F] mt-1.5 flex items-center gap-1.5">
-      <span class="'.($countMissing > 0 ? 'text-[#D97706]' : 'text-[#6B7280]').' font-bold">Belum Ada Token</span>
-      <span>&middot;</span>
-      <span class="text-[11px] text-[#53595F]">Perlu Generate</span>
+    <div class="text-[11px] sm:text-[12px] font-medium text-[#53595F] mt-1.5 flex items-center gap-1 flex-wrap">
+      <span class="'.($countMissing > 0 ? 'text-[#D97706]' : 'text-[#6B7280]').' font-bold">Belum Ada</span>
+      <span class="text-[#D1D5D8]">&middot;</span>
+      <span class="text-[10px] sm:text-[11px] text-[#53595F]">Perlu Generate</span>
     </div>
   </div>
 
   <!-- Card 4: Cabang Terpilih -->
-  <div class="flex-1 flex flex-col justify-center px-5 py-3 relative">
+  <div class="flex flex-col justify-center px-4 py-3 sm:px-5 sm:py-3.5 relative hover:bg-[#F9FAFB] transition-colors">
     <div class="absolute left-0 top-0 bottom-0 w-1 bg-[#0284C7]"></div>
-    <div class="text-[20px] font-bold text-[#1B2A3A] truncate leading-none" title="'.e($activeBranchName).'">
+    <div class="text-[16px] sm:text-[20px] font-bold text-[#1B2A3A] truncate leading-tight" title="'.e($activeBranchName).'">
       '.e($activeBranchName).'
     </div>
-    <div class="text-[12px] font-medium text-[#53595F] mt-1.5 flex items-center gap-1.5">
+    <div class="text-[11px] sm:text-[12px] font-medium text-[#53595F] mt-1.5 flex items-center gap-1 flex-wrap">
       <span class="text-[#0284C7] font-bold">Kantor Cabang</span>
-      <span>&middot;</span>
-      <span class="text-[11px] text-[#53595F]">Filter Wilayah</span>
+      <span class="text-[#D1D5D8]">&middot;</span>
+      <span class="text-[10px] sm:text-[11px] text-[#53595F]">Filter</span>
     </div>
   </div>
 </div>
@@ -333,15 +408,15 @@ $body = '
 
   <!-- Filter Status Tabs / Chips -->
   <div class="flex flex-wrap items-center justify-between gap-2 mt-3 pt-3 border-t border-[#F3F4F6]">
-    <div class="flex items-center gap-1.5">
-      <span class="text-[12px] font-bold text-[#53595F] me-1">Filter Status:</span>
-      <button type="button" class="filter-chip-btn active" id="chipAll" onclick="setTokenFilter(\'all\')">
+    <div class="flex items-center gap-1.5 overflow-x-auto pb-1 max-w-full">
+      <span class="text-[12px] font-bold text-[#53595F] me-1 shrink-0">Filter Status:</span>
+      <button type="button" class="filter-chip-btn shrink-0 active" id="chipAll" onclick="setTokenFilter(\'all\')">
         Semua ('.$totalUnits.')
       </button>
-      <button type="button" class="filter-chip-btn" id="chipValid" onclick="setTokenFilter(\'valid\')">
+      <button type="button" class="filter-chip-btn shrink-0" id="chipValid" onclick="setTokenFilter(\'valid\')">
         <i class="bi bi-check2"></i> Token Valid ('.$countValid.')
       </button>
-      <button type="button" class="filter-chip-btn" id="chipMissing" onclick="setTokenFilter(\'missing\')">
+      <button type="button" class="filter-chip-btn shrink-0" id="chipMissing" onclick="setTokenFilter(\'missing\')">
         <i class="bi bi-dash-circle"></i> Belum Ada ('.$countMissing.')
       </button>
     </div>
@@ -370,7 +445,8 @@ $body = '
     </div>
   </div>
 
-  <div class="table-responsive">
+  <!-- Desktop Table View -->
+  <div class="hidden md:block table-responsive">
     <table class="table table-hover align-middle mb-0" id="qrAssetTable" style="font-size: 13px;">
       <thead style="background: #F4F5F7; border-bottom: 1px solid #D1D5D8;">
         <tr>
@@ -388,6 +464,18 @@ $body = '
       </thead>
       <tbody>'.$table.'</tbody>
     </table>
+  </div>
+
+  <!-- Mobile Cards View -->
+  <div class="block md:hidden p-3 space-y-3 bg-[#F4F5F7]">
+    <div class="flex items-center justify-between px-1 py-1 text-[12px] text-[#53595F]">
+      <label class="flex items-center gap-2 cursor-pointer font-semibold text-[#1B2A3A] m-0">
+        <input type="checkbox" id="checkAllRowsMobile" class="form-check-input cursor-pointer m-0" onchange="toggleSelectAllRows(this)">
+        <span>Pilih Semua Aset</span>
+      </label>
+      <span class="text-[11px] text-[#53595F] font-mono">'.$totalUnits.' Unit Terdaftar</span>
+    </div>
+    '.$cardsHtml.'
   </div>
 </div>
 
