@@ -2017,7 +2017,7 @@ async function startTeknisiFaceScanForPhoto() {
   const successOverlay = document.getElementById("bioPhotoSuccessOverlay");
   if (successOverlay) successOverlay.classList.add("d-none");
 
-  ['pillPhotoFaceDetected', 'pillPhotoLivenessBlink', 'pillPhotoMatchId'].forEach(id => {
+  ["pillPhotoFaceDetected", "pillPhotoLivenessBlink", "pillPhotoMatchId"].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.className = "badge bg-secondary bg-opacity-50 text-white-50 small py-1 px-2.5 border border-secondary border-opacity-50";
   });
