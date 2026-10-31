@@ -453,18 +453,24 @@ function resolve_asset_finding(int $assetId, array $data): array {
             $checklistsPayload = $detail['checklists'];
         }
 
-        $upRes = update_maintenance_detail($logId, [
+        $upPayload = [
             'status' => $status,
             'findings' => $oldFindings,
             'recommendation' => $newRecom,
             'technician_name' => $techName,
-            'maintenance_date' => $date,
-            'maintenance_time' => $time,
             'checklists' => $checklistsPayload,
             'biometric_verified' => $bioVerified,
             'biometric_confidence' => $bioConfidence,
             'biometric_photo' => $bioPhoto
-        ]);
+        ];
+        $oldScanMonth = (int)($oldScan['maintenance_month'] ?? 0);
+        $newScanMonth = (int)date('n', strtotime($date));
+        if ($oldScanMonth === 0 || $oldScanMonth === $newScanMonth) {
+            $upPayload['maintenance_date'] = $date;
+            $upPayload['maintenance_time'] = $time;
+        }
+
+        $upRes = update_maintenance_detail($logId, $upPayload);
 
         if (empty($upRes['success'])) {
             return ['success' => false, 'error' => $upRes['error'] ?? 'Gagal memperbarui log maintenance'];
@@ -2239,6 +2245,15 @@ function get_findings_report(int $month, int $year, int $cabangId): array {
                 $repSt = 'Perlu Perbaikan';
             }
 
+            $fDate = '';
+            if (!empty($r['reported_at']) && trim((string)$r['reported_at']) !== '' && trim((string)$r['reported_at']) !== '-') {
+                $fDate = substr((string)$r['reported_at'], 0, 10);
+            } elseif (!empty($r['created_at']) && trim((string)$r['created_at']) !== '' && trim((string)$r['created_at']) !== '-') {
+                $fDate = substr((string)$r['created_at'], 0, 10);
+            } elseif (!empty($r['scan_date']) && trim((string)$r['scan_date']) !== '' && trim((string)$r['scan_date']) !== '-') {
+                $fDate = substr((string)$r['scan_date'], 0, 10);
+            }
+
             $results[] = [
                 'id' => $r['id'],
                 'finding_id' => $r['id'],
@@ -2258,10 +2273,10 @@ function get_findings_report(int $month, int $year, int $cabangId): array {
                 'repair_status' => $repSt,
                 'teknisi' => $r['resolved_by'] ?: ($r['teknisi'] ?? 'Teknisi'),
                 'reported_by' => $r['reported_by'] ?? ($r['teknisi'] ?? 'Teknisi'),
-                'reported_at' => $r['reported_at'] ?? ($r['scan_date'] ?? ''),
+                'reported_at' => $fDate ?: ($r['reported_at'] ?? ($r['scan_date'] ?? '')),
                 'resolved_by' => $r['resolved_by'] ?? '',
                 'resolved_at' => $r['resolved_at'] ?? '',
-                'created_at' => substr((string)($r['created_at'] ?? $r['scan_date'] ?? ''), 0, 10),
+                'created_at' => $fDate ?: substr((string)($r['created_at'] ?? $r['scan_date'] ?? ''), 0, 10),
             ];
         }
 
