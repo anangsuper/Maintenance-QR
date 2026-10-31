@@ -998,13 +998,8 @@ $body = '
     </div>
   </div>
 
-  <!-- TAMPILAN MOBILE: Card List (Rapi & Tidak Terpotong di Layar HP) -->
-  <div class="d-md-none p-3 d-flex flex-column gap-2.5 bg-[#F9FAFB] border-b border-[#D1D5D8]">
-    '.$mobileCards.'
-  </div>
-
-  <!-- TAMPILAN DESKTOP/LAPTOP: Tabel Lengkap 10 Kolom -->
-  <div class="table-responsive d-none d-md-block" style="overflow-x: auto;">
+  <!-- TAMPILAN TABEL RESPONSIF (Dapat Digulir Halus di Smartphone & Desktop) -->
+  <div class="table-responsive" style="overflow-x: auto; -webkit-overflow-scrolling: touch;">
     <table class="table table-hover align-middle mb-0" style="table-layout: auto;">
       <thead class="bg-[#F4F5F7] text-[#53595F] text-[12px] font-bold uppercase tracking-wider border-b border-[#D1D5D8]">
         <tr>

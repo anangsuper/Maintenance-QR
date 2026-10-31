@@ -2254,6 +2254,14 @@ function get_findings_report(int $month, int $year, int $cabangId): array {
                 $fDate = substr((string)$r['scan_date'], 0, 10);
             }
 
+            // Validasi filter bulan & tahun ketat: cegah temuan bulan lalu (misal Sept) bocor ke laporan bulan ini (misal Okt)
+            if ($month > 0 && !empty($fDate)) {
+                if ((int)date('n', strtotime($fDate)) !== $month) continue;
+            }
+            if ($year > 0 && !empty($fDate)) {
+                if ((int)date('Y', strtotime($fDate)) !== $year) continue;
+            }
+
             $results[] = [
                 'id' => $r['id'],
                 'finding_id' => $r['id'],
@@ -2414,6 +2422,14 @@ function get_findings_report(int $month, int $year, int $cabangId): array {
                         continue;
                     }
                 }
+                $ecDateVal = substr((string)($ec['created_at'] ?? ''), 0, 10);
+                if ($month > 0 && !empty($ecDateVal)) {
+                    if ((int)date('n', strtotime($ecDateVal)) !== $month) continue;
+                }
+                if ($year > 0 && !empty($ecDateVal)) {
+                    if ((int)date('Y', strtotime($ecDateVal)) !== $year) continue;
+                }
+
                 $results[] = [
                     'id' => (int)$ec['id'],
                     'finding_id' => 0,

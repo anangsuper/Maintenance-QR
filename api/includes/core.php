@@ -130,7 +130,7 @@ function get_google_service_account_credentials(): array {
     static $creds = null;
     if ($creds !== null) return $creds;
 
-    $sheetId = cfg('google_spreadsheet_id', envv('GOOGLE_SPREADSHEET_ID', envv('GOOGLE_SHEET_ID', envv('SPREADSHEET_ID', '1EeyPxxLv2frKp7OH2rMVIq4zoDCaPvyD4crJh_nyARg'))));
+    $sheetId = cfg('google_spreadsheet_id', envv('GOOGLE_SPREADSHEET_ID', envv('GOOGLE_SHEET_ID', envv('SPREADSHEET_ID', '19V_qkLtFmaH93dA9h1ZqM2T7JqZ6H_IEI94PVkPnNIc'))));
     $email = cfg('google_client_email', envv('GOOGLE_CLIENT_EMAIL', ''));
     $key = cfg('google_private_key', envv('GOOGLE_PRIVATE_KEY', ''));
 
@@ -180,8 +180,33 @@ function get_google_service_account_credentials(): array {
 }
 
 function is_google_cloud_mode(): bool {
-    $c = get_google_service_account_credentials();
-    return (!empty($c['spreadsheet_id']) && !empty($c['client_email']) && !empty($c['private_key']));
+    // Mode Google Sheets HANYA aktif jika:
+    // 1. Dikonfigurasi eksplisit via environment/config (USE_GOOGLE_SHEETS / GOOGLE_CLOUD_MODE = 1)
+    // 2. ATAU aplikasi berjalan di lingkungan Vercel Serverless tanpa database MySQL eksternal
+    $explicit = cfg('use_google_sheets', envv('USE_GOOGLE_SHEETS', envv('GOOGLE_CLOUD_MODE', '')));
+    if ($explicit === '1' || strtolower((string)$explicit) === 'true') {
+        $c = get_google_service_account_credentials();
+        return (!empty($c['spreadsheet_id']) && !empty($c['client_email']) && !empty($c['private_key']));
+    }
+
+    $isVercelEnv = (
+        !empty($_SERVER['VERCEL']) ||
+        !empty($_ENV['VERCEL']) ||
+        getenv('VERCEL') === '1' ||
+        str_ends_with(strtolower((string)($_SERVER['HTTP_HOST'] ?? '')), '.vercel.app')
+    );
+    if ($isVercelEnv) {
+        $host = cfg('db_host', envv('DB_HOST', envv('MYSQLHOST', '')));
+        $dbUrl = envv('DATABASE_URL', envv('MYSQL_URL', ''));
+        if ((empty($host) || $host === '127.0.0.1' || $host === 'localhost') && empty($dbUrl)) {
+            $c = get_google_service_account_credentials();
+            return (!empty($c['spreadsheet_id']) && !empty($c['client_email']) && !empty($c['private_key']));
+        }
+    }
+
+    // Server Ubuntu Produksi Bank Mitra (172.20.75.2 / it.bankmitra.co.id) dan LAN:
+    // Selalu gunakan MySQL database utama (rekap_it) tempat seluruh 69+ data aset dan riwayat maintenance tersimpan.
+    return false;
 }
 
 function google_sheets_v4_client(): ?GoogleSheetsV4Client {
@@ -198,7 +223,7 @@ function google_sheets_v4_client(): ?GoogleSheetsV4Client {
 function render_vercel_spreadsheet_setup_guide(?string $technicalMsg = null): void {
     http_response_code(503);
     $c = get_google_service_account_credentials();
-    $currSheetId = htmlspecialchars($c['spreadsheet_id'] ?: '1EeyPxxLv2frKp7OH2rMVIq4zoDCaPvyD4crJh_nyARg');
+    $currSheetId = htmlspecialchars($c['spreadsheet_id'] ?: '19V_qkLtFmaH93dA9h1ZqM2T7JqZ6H_IEI94PVkPnNIc');
 
     echo '<!DOCTYPE html><html lang="id"><head><meta charset="utf-8">';
     echo '<title>Aktivasi Google Spreadsheet &bull; Vercel</title>';
