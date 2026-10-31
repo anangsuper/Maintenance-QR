@@ -139,9 +139,9 @@ function get_google_service_account_credentials(): array {
     if (!empty($rawJson)) {
         $decoded = json_decode($rawJson, true);
         if (is_array($decoded)) {
-            if (empty($email) && !empty($decoded['client_email'])) $email = (string)$decoded['client_email'];
-            if (empty($key) && !empty($decoded['private_key'])) $key = (string)$decoded['private_key'];
-            if (empty($sheetId) && !empty($decoded['spreadsheet_id'])) $sheetId = (string)$decoded['spreadsheet_id'];
+            if (!empty($decoded['client_email'])) $email = (string)$decoded['client_email'];
+            if (!empty($decoded['private_key'])) $key = (string)$decoded['private_key'];
+            if (!empty($decoded['spreadsheet_id'])) $sheetId = (string)$decoded['spreadsheet_id'];
         }
     }
 
@@ -156,16 +156,19 @@ function get_google_service_account_credentials(): array {
         if (is_file($fp) && is_readable($fp)) {
             $decoded = json_decode((string)@file_get_contents($fp), true);
             if (is_array($decoded)) {
-                if (empty($email) && !empty($decoded['client_email'])) $email = (string)$decoded['client_email'];
-                if (empty($key) && !empty($decoded['private_key'])) $key = (string)$decoded['private_key'];
-                if (empty($sheetId) && !empty($decoded['spreadsheet_id'])) $sheetId = (string)$decoded['spreadsheet_id'];
+                if (!empty($decoded['client_email'])) $email = (string)$decoded['client_email'];
+                if (!empty($decoded['private_key'])) $key = (string)$decoded['private_key'];
+                if (!empty($decoded['spreadsheet_id'])) $sheetId = (string)$decoded['spreadsheet_id'];
                 break;
             }
         }
     }
 
     if (!empty($key)) {
-        $key = str_replace(['\\n', "\r"], ["\n", ''], trim($key));
+        $key = str_replace(['\n', "\\n", "\r"], ["\n", "\n", ''], trim($key, " \t\n\r\0\x0B\"'"));
+        if (!str_contains($key, 'BEGIN PRIVATE KEY') && !str_contains($key, 'BEGIN RSA PRIVATE KEY')) {
+            $key = '';
+        }
     }
 
     $creds = [
@@ -275,8 +278,11 @@ function db(): PDO {
     // Jika berjalan di Vercel dan tidak ada MySQL remote eksternal yang dikonfigurasi,
     // cegah loopback ke 127.0.0.1:3306 yang pasti gagal dan tampilkan panduan aktivasi Google Sheets.
     if ($isVercelEnv && (empty($host) || $host === '127.0.0.1' || $host === 'localhost') && empty($dbUrl)) {
-        render_vercel_spreadsheet_setup_guide();
-        exit;
+        if (!is_google_cloud_mode()) {
+            render_vercel_spreadsheet_setup_guide();
+            exit;
+        }
+        throw new RuntimeException('Database MySQL tidak aktif di lingkungan Vercel Serverless (Mode Google Sheets aktif).');
     }
 
     if (empty($host)) {

@@ -2048,8 +2048,9 @@ function get_findings_report(int $month, int $year, int $cabangId): array {
             $scanId = (int)($f['maintenance_scan_id'] ?? $f['maintenance_id'] ?? $f['col_1'] ?? 0);
             $scan = $scanMap[$scanId] ?? [];
             
-            $fMonth = (int)($scan['maintenance_month'] ?? $scan['month'] ?? (int)date('n', strtotime((string)($f['created_at'] ?? $f['reported_at'] ?? ''))));
-            $fYear = (int)($scan['maintenance_year'] ?? $scan['year'] ?? (int)date('Y', strtotime((string)($f['created_at'] ?? $f['reported_at'] ?? ''))));
+            $rawFDate = (string)($f['reported_at'] ?? $f['created_at'] ?? $scan['maintenance_date'] ?? '');
+            $fMonth = $rawFDate !== '' ? (int)date('n', strtotime($rawFDate)) : (int)($scan['maintenance_month'] ?? $scan['month'] ?? 0);
+            $fYear = $rawFDate !== '' ? (int)date('Y', strtotime($rawFDate)) : (int)($scan['maintenance_year'] ?? $scan['year'] ?? 0);
 
             if ($month > 0 && $fMonth !== $month) continue;
             if ($year > 0 && $fYear !== $year) continue;
@@ -2197,13 +2198,11 @@ function get_findings_report(int $month, int $year, int $cabangId): array {
         $whereMf = ["1=1"];
         $params = [];
         if ($month > 0) {
-            $whereMf[] = "(ms.maintenance_month = ? OR (ms.id IS NULL AND MONTH(COALESCE(mf.created_at, NOW())) = ?))";
-            $params[] = $month;
+            $whereMf[] = "MONTH(COALESCE(mf.reported_at, mf.created_at, ms.maintenance_date)) = ?";
             $params[] = $month;
         }
         if ($year > 0) {
-            $whereMf[] = "(ms.maintenance_year = ? OR (ms.id IS NULL AND YEAR(COALESCE(mf.created_at, NOW())) = ?))";
-            $params[] = $year;
+            $whereMf[] = "YEAR(COALESCE(mf.reported_at, mf.created_at, ms.maintenance_date)) = ?";
             $params[] = $year;
         }
         if ($cabangId > 0) {
