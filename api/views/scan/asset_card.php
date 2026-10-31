@@ -1047,7 +1047,7 @@ if ($hasAnyUnitPhoto) {
       '.$slotsDisplayHtml.'
       '.$verifiedBadge.'
       <div class="mt-2 d-flex flex-wrap justify-content-center gap-1.5">
-        <button type="button" class="btn btn-sm btn-outline-primary py-1 px-2.5 fw-semibold shadow-xs" style="font-size: 0.72rem;" onclick="openUploadFotoTeknisiModal()">
+        <button type="button" class="btn btn-sm btn-outline-primary py-1 px-2.5 fw-semibold shadow-xs" style="font-size: 0.72rem;" onclick="openUploadFotoTeknisiModal()" data-bs-toggle="modal" data-bs-target="#modalUploadFotoTeknisi">
           <i class="bi bi-camera me-1"></i> '.($hasBoth ? 'Edit / Ganti Foto' : 'Edit / Tambah Foto 2').'
         </button>
         <a href="'.e(module_url('photo_trash.php', ['source_type' => 'assets'])).'" class="btn btn-sm btn-light border py-1 px-2 text-secondary fw-semibold shadow-xs" style="font-size: 0.72rem;" title="Folder Sampah Foto (Tersimpan 7 Hari)">
@@ -1060,10 +1060,10 @@ if ($hasAnyUnitPhoto) {
 } else {
     $fotoCardHtml = '
     <div id="assetPhotoCardSection" class="col-12 col-md-4 col-lg-3 text-center mb-3 mb-md-0">
-      <div class="rounded-3 border border-2 border-dashed bg-light p-3 d-flex flex-column align-items-center justify-content-center h-100" style="min-height: 175px; border-color: #cbd5e1 !important; cursor: pointer;" onclick="openUploadFotoTeknisiModal()">
+      <div class="rounded-3 border border-2 border-dashed bg-light p-3 d-flex flex-column align-items-center justify-content-center h-100" style="min-height: 175px; border-color: #cbd5e1 !important; cursor: pointer;" onclick="openUploadFotoTeknisiModal()" data-bs-toggle="modal" data-bs-target="#modalUploadFotoTeknisi">
         <i class="bi bi-camera fs-1 text-secondary opacity-50 mb-1"></i>
         <div class="small text-muted mb-0.5 fw-semibold" style="font-size: 0.75rem;">Belum ada foto fisik unit</div>
-        <button type="button" class="btn btn-xs btn-outline-primary fw-semibold mt-1 py-1 px-2.5 rounded-pill shadow-xs" style="font-size: 0.70rem;">
+        <button type="button" class="btn btn-xs btn-outline-primary fw-semibold mt-1 py-1 px-2.5 rounded-pill shadow-xs" style="font-size: 0.70rem;" onclick="openUploadFotoTeknisiModal()" data-bs-toggle="modal" data-bs-target="#modalUploadFotoTeknisi">
           <i class="bi bi-camera me-1"></i> Ambil / Upload Foto
         </button>
       </div>
@@ -1389,10 +1389,17 @@ $body = '
           <div class="row g-2.5 mb-2" id="scanPhotoInputsRow">
             <div class="' . ($fotoUnit2Src !== '' ? 'col-12 col-sm-6' : 'col-12') . '" id="scanSlot1Col">
               <div class="p-2.5 rounded-3 border bg-light h-100">
-                <label class="form-label small fw-bold text-dark mb-1">
-                  <span class="badge bg-dark me-1">1</span> Foto 1 (Utama / Unit):
+                <label class="form-label small fw-bold text-dark mb-1 d-flex justify-content-between align-items-center">
+                  <span><span class="badge bg-dark me-1">1</span> Foto 1 (Utama / Unit):</span>
+                  <button type="button" class="btn btn-link btn-xs text-primary p-0 text-decoration-none" onclick="document.getElementById(\'fotoBarangScanInputCam\').click()" title="Buka kamera langsung di HP">
+                    <i class="bi bi-camera-fill me-0.5"></i> Kamera HP
+                  </button>
                 </label>
-                <input type="file" id="fotoBarangScanInput" name="foto_unit" class="form-control form-control-sm" accept="image/*" capture="environment" onchange="handleScanPhotoSelect(event, 1)">
+                <!-- Input Standar (membuka File Explorer di PC & Galeri/Kamera di HP) -->
+                <input type="file" id="fotoBarangScanInput" name="foto_unit" class="form-control form-control-sm" accept="image/jpeg,image/png,image/webp,image/*" onchange="handleScanPhotoSelect(event, 1)">
+                <!-- Input Kamera Langsung (khusus shortcut kamera HP) -->
+                <input type="file" id="fotoBarangScanInputCam" name="foto_unit_cam" accept="image/*" capture="environment" class="d-none" onchange="handleScanPhotoSelect(event, 1)">
+                
                 <div id="scanPhotoPreviewContainer" class="'.($fotoUnitSrc !== '' ? '' : 'd-none').' mt-2">
                   <div class="position-relative rounded-3 border overflow-hidden bg-white text-center p-1.5">
                     <img id="scanPhotoPreviewImg" src="'.e($fotoUnitSrc).'" alt="Pratinjau Foto 1" class="img-fluid rounded" style="max-height: 120px; object-fit: contain;">
@@ -1416,10 +1423,17 @@ $body = '
                 <button type="button" class="btn btn-xs btn-outline-danger position-absolute top-0 end-0 m-2 py-0 px-1 rounded" style="font-size: 0.62rem; z-index: 5;" onclick="tutupScanSlot2()" title="Batal tambah foto 2">
                   <i class="bi bi-x-lg"></i>
                 </button>
-                <label class="form-label small fw-bold text-dark mb-1">
-                  <span class="badge bg-primary me-1">2</span> Foto 2 (Detail / S/N):
+                <label class="form-label small fw-bold text-dark mb-1 d-flex justify-content-between align-items-center">
+                  <span><span class="badge bg-primary me-1">2</span> Foto 2 (Detail / S/N):</span>
+                  <button type="button" class="btn btn-link btn-xs text-primary p-0 text-decoration-none me-3" onclick="document.getElementById(\'fotoBarangScanInputCam2\').click()" title="Buka kamera langsung di HP">
+                    <i class="bi bi-camera-fill me-0.5"></i> Kamera HP
+                  </button>
                 </label>
-                <input type="file" id="fotoBarangScanInput2" name="foto_unit_2" class="form-control form-control-sm" accept="image/*" capture="environment" onchange="handleScanPhotoSelect(event, 2)">
+                <!-- Input Standar (membuka File Explorer di PC & Galeri/Kamera di HP) -->
+                <input type="file" id="fotoBarangScanInput2" name="foto_unit_2" class="form-control form-control-sm" accept="image/jpeg,image/png,image/webp,image/*" onchange="handleScanPhotoSelect(event, 2)">
+                <!-- Input Kamera Langsung (khusus shortcut kamera HP) -->
+                <input type="file" id="fotoBarangScanInputCam2" name="foto_unit_2_cam" accept="image/*" capture="environment" class="d-none" onchange="handleScanPhotoSelect(event, 2)">
+
                 <div id="scanPhotoPreviewContainer2" class="'.($fotoUnit2Src !== '' ? '' : 'd-none').' mt-2">
                   <div class="position-relative rounded-3 border overflow-hidden bg-white text-center p-1.5">
                     <img id="scanPhotoPreviewImg2" src="'.e($fotoUnit2Src).'" alt="Pratinjau Foto 2" class="img-fluid rounded" style="max-height: 120px; object-fit: contain;">
@@ -1455,7 +1469,28 @@ $body = '
             </div>
           </div>' : '').'
 
-          <!-- Step 2: Otorisasi Biometrik Wajah -->
+          <!-- Step 2: Otorisasi & Simpan Foto -->
+          '.($loggedIn ? '
+          <div class="p-3 rounded-3 bg-success bg-opacity-10 border border-success border-opacity-25 mb-3">
+            <div class="d-flex align-items-center justify-content-between mb-1.5">
+              <span class="small fw-bold text-success">
+                <i class="bi bi-shield-check me-1"></i> Terotentikasi: '.e(current_user_name()).'
+              </span>
+              <span class="badge bg-success text-white px-2 py-0.5 rounded-pill" style="font-size: 0.68rem;">Sesi Admin Aktif</span>
+            </div>
+            <p class="text-secondary small mb-2.5" style="font-size: 0.76rem;">
+              Anda terverifikasi sebagai <strong>'.e(current_user_name()).'</strong>. Foto yang Anda pilih akan langsung tersimpan dan tercatat di riwayat audit log.
+            </p>
+            <button type="button" id="btnSimpanFotoAdmin" class="btn btn-success w-100 fw-bold py-2.5 rounded-pill shadow-xs d-flex align-items-center justify-content-center gap-2" onclick="submitPhotoAsLoggedInAdmin()">
+              <i class="bi bi-cloud-arrow-up-fill fs-5"></i>
+              <span>Simpan Foto Perangkat Sekarang</span>
+            </button>
+            <div class="text-center mt-2">
+              <button type="button" class="btn btn-link btn-xs text-muted p-0 text-decoration-none" onclick="startTeknisiFaceScanForPhoto()" style="font-size: 0.72rem;">
+                <i class="bi bi-person-bounding-box me-1"></i> (Opsional) Verifikasi via Scan Wajah
+              </button>
+            </div>
+          </div>' : '
           <div class="bg-light p-3 rounded-3 border mb-2">
             <div class="d-flex align-items-center justify-content-between mb-2">
               <span class="small fw-bold text-dark">
@@ -1466,22 +1501,19 @@ $body = '
                 : '<span class="badge bg-warning bg-opacity-10 text-dark border border-warning border-opacity-25 px-2 py-0.5 rounded-pill" style="font-size: 0.68rem;"><i class="bi bi-exclamation-triangle me-1"></i>Belum Ada Wajah Terdaftar</span>').'
             </div>
 
-            <p class="text-muted small mb-3" style="font-size: 0.75rem;">
-              Untuk menjaga integritas data inventaris Core Banking, perubahan atau penghapusan foto fisik unit wajib diverifikasi oleh wajah Teknisi IT terdaftar.
+            <p class="text-muted small mb-2.5" style="font-size: 0.75rem;">
+              Untuk menjaga integritas data inventaris, perubahan foto fisik unit dapat diverifikasi via wajah Teknisi IT atau input nama teknisi pemeriksa.
             </p>
 
-            <button type="button" id="btnMulaiScanWajahFoto" class="btn btn-primary w-100 fw-bold py-2.5 rounded-pill shadow-xs d-flex align-items-center justify-content-center gap-2" onclick="startTeknisiFaceScanForPhoto()">
+            <button type="button" id="btnMulaiScanWajahFoto" class="btn btn-primary w-100 fw-bold py-2.5 rounded-pill shadow-xs d-flex align-items-center justify-content-center gap-2 mb-2" onclick="startTeknisiFaceScanForPhoto()">
               <i class="bi bi-person-bounding-box fs-5"></i>
               <span>Scan Wajah Teknisi &amp; Simpan Perubahan</span>
             </button>
 
-            '.($loggedIn ? '
-              <div class="mt-2 text-center">
-                <button type="button" class="btn btn-link btn-xs text-muted p-0 text-decoration-none" onclick="submitPhotoAsLoggedInAdmin()" style="font-size: 0.72rem;">
-                  <i class="bi bi-shield-lock me-1"></i> Otorisasi Cepat via Sesi Login ('.e(current_user_name()).')
-                </button>
-              </div>' : '').'
-          </div>
+            <button type="button" class="btn btn-outline-secondary w-100 btn-sm rounded-pill fw-semibold py-1.5" onclick="submitPhotoAsGuestTech()">
+              <i class="bi bi-pencil-square me-1"></i> Simpan dengan Input Nama Teknisi
+            </button>
+          </div>').'
 
           <div class="text-center">
             <a href="'.e(module_url('user_biometric_enroll.php', ['ret' => module_url('scan.php', ['t' => $token])])).'" class="text-decoration-none small text-primary" style="font-size: 0.72rem;">
@@ -1490,8 +1522,15 @@ $body = '
           </div>
         </div>
 
-        <div class="modal-footer py-2 px-3 bg-light">
+        <div class="modal-footer py-2 px-3 bg-light d-flex justify-content-between align-items-center">
           <button type="button" class="btn btn-sm btn-secondary rounded-pill px-3" data-bs-dismiss="modal">Batal</button>
+          '.($loggedIn ? '
+            <button type="button" id="btnSimpanFotoAdminFooter" class="btn btn-sm btn-success rounded-pill px-4 fw-bold shadow-xs" onclick="submitPhotoAsLoggedInAdmin()">
+              <i class="bi bi-cloud-arrow-up-fill me-1"></i> Simpan Foto
+            </button>' : '
+            <button type="button" class="btn btn-sm btn-primary rounded-pill px-4 fw-bold shadow-xs" onclick="submitPhotoAsGuestTech()">
+              <i class="bi bi-cloud-arrow-up-fill me-1"></i> Simpan Foto
+            </button>').'
         </div>
       </form>
     </div>
@@ -1702,6 +1741,8 @@ function handleScanPhotoSelect(event, slotNum) {
 function hasAnyScanPhotoAction() {
   const f1 = document.getElementById("fotoBarangScanInput");
   const f2 = document.getElementById("fotoBarangScanInput2");
+  const f1Cam = document.getElementById("fotoBarangScanInputCam");
+  const f2Cam = document.getElementById("fotoBarangScanInputCam2");
   const b1 = document.getElementById("scanPhotoBase64");
   const b2 = document.getElementById("scanPhotoBase64_2");
   const c1 = document.getElementById("chkScanDelFoto1");
@@ -1710,12 +1751,47 @@ function hasAnyScanPhotoAction() {
   return (
     (f1 && f1.files && f1.files.length > 0) ||
     (f2 && f2.files && f2.files.length > 0) ||
+    (f1Cam && f1Cam.files && f1Cam.files.length > 0) ||
+    (f2Cam && f2Cam.files && f2Cam.files.length > 0) ||
     (b1 && b1.value !== "") ||
     (b2 && b2.value !== "") ||
     (c1 && c1.checked) ||
     (c2 && c2.checked) ||
     (cAll && cAll.checked)
   );
+}
+
+function submitPhotoAsGuestTech() {
+  if (!hasAnyScanPhotoAction()) {
+    alert("Silakan pilih foto baru (Foto 1 / Foto 2) atau centang foto yang ingin dihilangkan terlebih dahulu!");
+    return;
+  }
+  var techName = prompt("Masukkan Nama Teknisi / Pemeriksa:", "Teknisi IT");
+  if (!techName || !techName.trim()) {
+    return;
+  }
+  const f1 = document.getElementById("fotoBarangScanInput");
+  const f2 = document.getElementById("fotoBarangScanInput2");
+  const f1Cam = document.getElementById("fotoBarangScanInputCam");
+  const f2Cam = document.getElementById("fotoBarangScanInputCam2");
+  const b1 = document.getElementById("scanPhotoBase64");
+  const b2 = document.getElementById("scanPhotoBase64_2");
+  if (b1 && b1.value && f1) { try { f1.value = ""; } catch(e) {} }
+  if (b2 && b2.value && f2) { try { f2.value = ""; } catch(e) {} }
+  if (b1 && b1.value && f1Cam) { try { f1Cam.value = ""; } catch(e) {} }
+  if (b2 && b2.value && f2Cam) { try { f2Cam.value = ""; } catch(e) {} }
+
+  document.getElementById("scanPhotoBioVerified").value = "1";
+  document.getElementById("scanPhotoBioUserName").value = techName.trim();
+  document.getElementById("scanPhotoBioConfidence").value = "100";
+
+  const form = document.getElementById("formUploadFotoUnit");
+  const allSubmitBtns = document.querySelectorAll("#modalUploadFotoTeknisi button[type=submit], #btnSimpanFotoAdmin, #btnSimpanFotoAdminFooter, #btnMulaiScanWajahFoto");
+  allSubmitBtns.forEach(function(b) {
+    b.disabled = true;
+    b.innerHTML = "<span class=\"spinner-border spinner-border-sm me-2\"></span>Menyimpan Foto...";
+  });
+  form.submit();
 }
 
 async function loadPhotoBioModels() {
@@ -2050,21 +2126,25 @@ function submitPhotoAsLoggedInAdmin() {
   // OPTIMASI KRUSIAL: Kosongkan file input mentah berukuran puluhan MB jika base64 terkompresi sudah siap
   const f1 = document.getElementById("fotoBarangScanInput");
   const f2 = document.getElementById("fotoBarangScanInput2");
+  const f1Cam = document.getElementById("fotoBarangScanInputCam");
+  const f2Cam = document.getElementById("fotoBarangScanInputCam2");
   const b1 = document.getElementById("scanPhotoBase64");
   const b2 = document.getElementById("scanPhotoBase64_2");
   if (b1 && b1.value && f1) { try { f1.value = ""; } catch(e) {} }
   if (b2 && b2.value && f2) { try { f2.value = ""; } catch(e) {} }
+  if (b1 && b1.value && f1Cam) { try { f1Cam.value = ""; } catch(e) {} }
+  if (b2 && b2.value && f2Cam) { try { f2Cam.value = ""; } catch(e) {} }
 
   document.getElementById("scanPhotoBioVerified").value = "1";
   document.getElementById("scanPhotoBioUserName").value = "'.e(addslashes(current_user_name())).'";
   document.getElementById("scanPhotoBioConfidence").value = "100";
   
   const form = document.getElementById("formUploadFotoUnit");
-  const btn = document.getElementById("btnMulaiScanWajahFoto");
-  if (btn) {
-    btn.disabled = true;
-    btn.innerHTML = "<span class=\"spinner-border spinner-border-sm me-2\"></span>Menyimpan Foto...";
-  }
+  const allSubmitBtns = document.querySelectorAll("#modalUploadFotoTeknisi button[type=submit], #btnSimpanFotoAdmin, #btnSimpanFotoAdminFooter, #btnMulaiScanWajahFoto");
+  allSubmitBtns.forEach(function(b) {
+    b.disabled = true;
+    b.innerHTML = "<span class=\"spinner-border spinner-border-sm me-2\"></span>Menyimpan Foto...";
+  });
   form.submit();
 }
 

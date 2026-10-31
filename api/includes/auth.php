@@ -195,6 +195,31 @@ if (!function_exists('redirect')) {
     }
 }
 
+if (!function_exists('set_flash')) {
+    function set_flash(string $message, string $type = 'success'): void {
+        if (session_status() !== PHP_SESSION_ACTIVE) {
+            @session_start();
+        }
+        if ($type === 'error' || $type === 'danger') {
+            $_SESSION['flash_error'] = $message;
+        } else {
+            $_SESSION['flash'] = $message;
+        }
+    }
+}
+
+if (!function_exists('get_flash')) {
+    function get_flash(string $type = 'success'): ?string {
+        $key = ($type === 'error' || $type === 'danger') ? 'flash_error' : 'flash';
+        if (!empty($_SESSION[$key])) {
+            $msg = $_SESSION[$key];
+            unset($_SESSION[$key]);
+            return $msg;
+        }
+        return null;
+    }
+}
+
 function login_url(): string {
     $u = cfg('login_url', envv('LOGIN_URL', '/login'));
     if (preg_match('~^https?://~i', $u)) return $u;

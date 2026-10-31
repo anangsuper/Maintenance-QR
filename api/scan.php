@@ -184,6 +184,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (($_POST['action'] ?? '') === 'upda
     if (!$fotoPath1 && !empty($_FILES['foto_unit']['tmp_name'])) {
         $fotoPath1 = upload_asset_image('foto_unit');
     }
+    if (!$fotoPath1 && !empty($_FILES['foto_unit_cam']['tmp_name'])) {
+        $fotoPath1 = upload_asset_image('foto_unit_cam');
+    }
     if ($fotoPath1) {
         if ($curF1 !== '') {
             move_photo_to_trash('assets', $assetId, 1, $curF1, $verifierName, 'Diganti dengan Foto 1 baru pada Scan QR');
@@ -199,6 +202,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (($_POST['action'] ?? '') === 'upda
     }
     if (!$fotoPath2 && !empty($_FILES['foto_unit_2']['tmp_name'])) {
         $fotoPath2 = upload_asset_image('foto_unit_2');
+    }
+    if (!$fotoPath2 && !empty($_FILES['foto_unit_2_cam']['tmp_name'])) {
+        $fotoPath2 = upload_asset_image('foto_unit_2_cam');
     }
     if ($fotoPath2) {
         if ($curF2 !== '') {
