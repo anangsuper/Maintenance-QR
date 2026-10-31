@@ -4,8 +4,8 @@ require __DIR__ . '/bootstrap.php';
 $cabang = trim((string)($_GET['cabang'] ?? 'Kantor Pusat (KPO)'));
 $ruangan = trim((string)($_GET['ruangan'] ?? 'Ruang Server & Data Center Lt. 2'));
 
-// URL Tunggal Portal Akses Resmi Ruang Server via HP
-$portalUrl = module_base_url() . '/server_room_log.php';
+// URL Tunggal Portal Akses Resmi Ruang Server via HP (Selalu https://it.bankmitra.co.id)
+$portalUrl = qr_url('server_room_log.php');
 ?>
 <!DOCTYPE html>
 <html lang="id">

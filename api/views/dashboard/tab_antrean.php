@@ -192,8 +192,8 @@
         $dotColor = !empty($item['is_overdue']) ? 'bg-[#A5292B]' : 'bg-[#875315]';
         $textColor = !empty($item['is_overdue']) ? 'text-[#A5292B]' : 'text-[#875315]';
         $actionUrl = !empty($item['token'])
-            ? module_url('scan.php', ['t' => $item['token']])
-            : (!empty($item['id']) ? module_url('scan.php', ['id' => $item['id']]) : module_url('scanner.php'));
+            ? qr_url('scan.php', ['t' => $item['token']])
+            : (!empty($item['id']) ? qr_url('scan.php', ['id' => $item['id']]) : qr_url('scanner.php'));
 
         $isSel = ($pageQueue === 1 && $rIdx === 3);
         $rowBg = $isSel ? 'bg-[#D9F1EF]' : 'hover:bg-[#F4F5F7]';

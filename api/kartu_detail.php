@@ -21,6 +21,9 @@ require_once __DIR__ . '/includes/inventaris_kartu.php';
 require_once __DIR__ . '/includes/users.php';
 require_once __DIR__ . '/includes/audit_trail.php';
 
+// Pastikan akses kartu inventaris diarahkan ke domain resmi ber-HTTPS https://it.bankmitra.co.id
+enforce_qr_domain('kartu_detail.php');
+
 // Pastikan skema tabel inventaris_kartu & master_ruangan siap
 ensure_inventaris_kartu_columns();
 ensure_inventaris_kartu_print_columns();
@@ -28,12 +31,23 @@ csrf_token();
 
 $cardId = (int)($_GET['id'] ?? 0);
 $rekParam = trim((string)($_GET['rek'] ?? $_GET['no_rek'] ?? ''));
+$scanParam = trim((string)($_GET['barcode'] ?? $_GET['canva'] ?? $_GET['url'] ?? $_GET['t'] ?? $_GET['token'] ?? ''));
 
 $card = null;
 if ($cardId > 0) {
     $card = get_inventaris_kartu_by_id($cardId);
 } elseif ($rekParam !== '') {
     $card = get_inventaris_kartu_by_norek($rekParam);
+}
+
+// Coba cari dari barcode / canva link / token hasil scan kartu fisik lama
+if (!$card && $scanParam !== '') {
+    $card = find_inventaris_kartu_by_scan($scanParam);
+}
+
+// Coba cari fleksibel menggunakan rekParam jika format rekening bervariasi
+if (!$card && $rekParam !== '') {
+    $card = find_inventaris_kartu_by_scan($rekParam);
 }
 
 // Fallback jika ID yang dikirim berasal dari tabel assets
@@ -401,9 +415,8 @@ $hasAnyPhoto = ($photoUrl !== '' || $photoUrl2 !== '');
 $itemTrashPhotos = $card ? get_photo_trash_list(['source_type' => 'inventaris_kartu', 'item_id' => (int)$card['id']]) : [];
 $totalTrashCountGlobal = get_photo_trash_count();
 
-// URL QR Code Resmi
-$currentUrl = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" : "http") . "://$_SERVER[HTTP_HOST]$_SERVER[REQUEST_URI]";
-$canonicalQrUrl = $card ? module_url('kartu_detail.php', ['id' => $card['id']]) : $currentUrl;
+// URL QR Code Resmi (Selalu https://it.bankmitra.co.id)
+$canonicalQrUrl = $card ? qr_url('kartu_detail.php', ['id' => $card['id']]) : qr_url('kartu_detail.php');
 
 $pageTitle = $card ? e($card['nama_barang']) . ' - Kartu Inventaris' : 'Kartu Inventaris Tidak Ditemukan';
 ?>
@@ -1080,7 +1093,7 @@ $pageTitle = $card ? e($card['nama_barang']) . ' - Kartu Inventaris' : 'Kartu In
                             <span class="badge bg-info text-dark rounded-pill px-2.5 py-1">Aset TI Terhubung</span>
                             <h6 class="mb-0 fw-bold"><?= e($matchedNama) ?> (<?= e($matchedKode) ?>)</h6>
                         </div>
-                        <a href="<?= module_url('scan.php', ['t' => $matchedScanToken]) ?>" class="btn btn-outline-primary btn-sm rounded-pill px-3 w-100 w-sm-auto text-center">
+                        <a href="<?= qr_url('scan.php', ['t' => $matchedScanToken]) ?>" class="btn btn-outline-primary btn-sm rounded-pill px-3 w-100 w-sm-auto text-center">
                             <i class="bi bi-wrench me-1"></i> Buka Maintenance TI
                         </a>
                     </div>

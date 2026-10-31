@@ -179,6 +179,89 @@ function module_url(string $file = '', array $params = []): string {
     return $url;
 }
 
+/**
+ * URL dasar domain resmi untuk Kode QR (Stiker Unit, Kartu ATM CR80, QR Pintu Ruang Server).
+ * Default selalu mengarah ke domain produksi resmi Bank Mitra: https://it.bankmitra.co.id
+ */
+function qr_base_url(): string {
+    $configured = cfg('qr_base_url', envv('QR_BASE_URL', envv('APP_QR_BASE_URL', '')));
+    if ($configured) {
+        return rtrim($configured, '/');
+    }
+    return 'https://it.bankmitra.co.id';
+}
+
+/**
+ * URL berdomain resmi untuk target scan Kode QR (https://it.bankmitra.co.id/...)
+ */
+function qr_url(string $file = '', array $params = []): string {
+    if ($file !== '') {
+        $file = preg_replace('/\.php(?=\?|$)/i', '', $file);
+    }
+    $url = qr_base_url() . ($file ? '/' . ltrim($file, '/') : '');
+    if ($params) {
+        $url .= '?' . http_build_query($params);
+    }
+    return $url;
+}
+
+/**
+ * Normalisasi URL target QR agar selalu menggunakan domain resmi https://it.bankmitra.co.id
+ */
+function normalize_qr_target_url(string $url, string $fallback = ''): string {
+    $url = trim($url);
+    if ($url === '') return $fallback;
+
+    // Abaikan link eksternal Canva jika ada fallback resmi
+    if (str_contains($url, 'canva.link')) {
+        return $fallback ?: $url;
+    }
+
+    $targetBase = qr_base_url();
+
+    // Jika URL adalah URL internal sistem (scan, kartu_detail, server_room_log, assets)
+    if (preg_match('/\b(scan|kartu_detail|server_room_log|assets)\b/i', $url)) {
+        $parsed = parse_url($url);
+        $path = $parsed['path'] ?? '';
+        $path = preg_replace('~^/api~i', '', $path);
+        if ($path !== '') {
+            $path = preg_replace('/\.php(?=\?|$)/i', '', $path);
+        }
+        $query = !empty($parsed['query']) ? '?' . $parsed['query'] : '';
+        return rtrim($targetBase, '/') . '/' . ltrim($path, '/') . $query;
+    }
+
+    return $url;
+}
+
+/**
+ * Pengalihan otomatis akses halaman QR ke domain resmi ber-HTTPS https://it.bankmitra.co.id
+ * agar kamera smartphone, WebAuthn & AI Liveness Biometrik berfungsi secara sah.
+ */
+function enforce_qr_domain(string $targetScript): void {
+    $currentHost = explode(':', (string)($_SERVER['HTTP_X_FORWARDED_HOST'] ?? $_SERVER['HTTP_HOST'] ?? ''))[0];
+    $isLocalDev = in_array(strtolower($currentHost), ['localhost', '127.0.0.1'], true) || str_ends_with(strtolower($currentHost), '.local');
+    if ($isLocalDev || !empty($_SERVER['VERCEL']) || str_ends_with(strtolower($currentHost), '.vercel.app')) {
+        return;
+    }
+
+    $targetBase = qr_base_url();
+    $targetHost = (string)parse_url($targetBase, PHP_URL_HOST);
+    if ($targetHost === '') {
+        return;
+    }
+
+    if (strcasecmp($currentHost, $targetHost) !== 0 || !is_https()) {
+        $fileClean = preg_replace('/\.php(?=\?|$)/i', '', ltrim($targetScript, '/'));
+        $targetUrl = rtrim($targetBase, '/') . '/' . $fileClean;
+        if (!empty($_SERVER['QUERY_STRING'])) {
+            $targetUrl .= '?' . $_SERVER['QUERY_STRING'];
+        }
+        header('Location: ' . $targetUrl, true, 301);
+        exit;
+    }
+}
+
 if (!function_exists('app_url')) {
     function app_url(string $path = '', array $params = []): string {
         return module_url($path, $params);

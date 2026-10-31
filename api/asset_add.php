@@ -171,7 +171,7 @@ if ($successData) {
 
           <div class="d-flex flex-column flex-sm-row gap-2 justify-content-center">
             <a class="btn btn-primary btn-lg px-4 fw-semibold" target="_blank" href="'.e($printUrl).'"><i class="bi bi-printer me-1"></i> Cetak Label Stiker QR</a>
-            <a class="btn btn-success btn-lg px-4 fw-semibold" target="_blank" href="'.e(module_url('scan.php', ['t' => $successData['qr_token']])).'"><i class="bi bi-qr-code-scan me-1"></i> Buka Halaman Scan QR</a>
+            <a class="btn btn-success btn-lg px-4 fw-semibold" target="_blank" href="'.e(qr_url('scan.php', ['t' => $successData['qr_token']])).'"><i class="bi bi-qr-code-scan me-1"></i> Buka Halaman Scan QR</a>
             <a class="btn btn-light border btn-lg" href="'.e(module_url('asset_add.php')).'"><i class="bi bi-plus-lg me-1"></i> Tambah Aset Lain</a>
           </div>
 

@@ -793,13 +793,13 @@ $editBtnTop = $isLoggedIn
     : '<a class="btn btn-outline-primary btn-sm fw-semibold flex-fill flex-sm-grow-0" href="'.e(module_url('login.php')).'"><i class="bi bi-box-arrow-in-right me-1"></i> Login Edit</a>';
 
 $backBtnTop = !empty($token)
-    ? '<a class="btn btn-outline-primary btn-sm fw-bold flex-fill flex-sm-grow-0" href="'.e(module_url('scan.php', ['t' => $token, 'tahun' => $scanYear])).'"><i class="bi bi-arrow-left me-1"></i> Kembali ke Kartu QR</a>'
+    ? '<a class="btn btn-outline-primary btn-sm fw-bold flex-fill flex-sm-grow-0" href="'.e(qr_url('scan.php', ['t' => $token, 'tahun' => $scanYear])).'"><i class="bi bi-arrow-left me-1"></i> Kembali ke Kartu QR</a>'
     : ($isLoggedIn
         ? '<a class="btn btn-outline-secondary btn-sm fw-semibold flex-fill flex-sm-grow-0" href="'.e(module_url('audit.php')).'"><i class="bi bi-arrow-left me-1"></i> Riwayat Audit</a>'
         : '<a class="btn btn-outline-secondary btn-sm fw-semibold flex-fill flex-sm-grow-0" href="javascript:history.back()"><i class="bi bi-arrow-left me-1"></i> Kembali</a>');
 
 $tindakBtnTop = (!empty($token) && ($status === 'Temuan' || $status === 'Perlu Perbaikan' || $status === 'Proses'))
-    ? '<a class="btn btn-danger btn-sm fw-bold flex-fill flex-sm-grow-0" href="'.e(module_url('scan.php', ['t' => $token, 'action' => 'tindak_lanjut'])).'"><i class="bi bi-tools me-1"></i> Form Tindak Lanjut</a>'
+    ? '<a class="btn btn-danger btn-sm fw-bold flex-fill flex-sm-grow-0" href="'.e(qr_url('scan.php', ['t' => $token, 'action' => 'tindak_lanjut'])).'"><i class="bi bi-tools me-1"></i> Form Tindak Lanjut</a>'
     : '';
 
 // Pills dan Dropdown Filter Per Bulan
@@ -998,7 +998,7 @@ if (empty($allSessions)) {
 $publicBanner = !empty($token) ? '
 <div class="alert alert-info py-2.5 px-3 small d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center gap-2 mb-3 border-0 shadow-sm rounded-3">
   <span><i class="bi bi-qr-code-scan me-1.5 text-primary"></i> <strong>Rincian Pemeliharaan</strong> · Terhubung dengan Kartu QR Perangkat ('.e($asset['kode_inventaris'] ?? 'Aset').')</span>
-  <a href="'.e(module_url('scan.php', ['t' => $token, 'tahun' => $scanYear])).'" class="btn btn-sm btn-primary fw-bold py-1 px-3 w-100 w-sm-auto text-center"><i class="bi bi-arrow-left me-1"></i> Kembali ke Kartu QR & Riwayat</a>
+  <a href="'.e(qr_url('scan.php', ['t' => $token, 'tahun' => $scanYear])).'" class="btn btn-sm btn-primary fw-bold py-1 px-3 w-100 w-sm-auto text-center"><i class="bi bi-arrow-left me-1"></i> Kembali ke Kartu QR & Riwayat</a>
 </div>' : (!$isLoggedIn ? '
 <div class="alert alert-info py-2.5 px-3 small d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center gap-2 mb-3 border-0 shadow-sm rounded-3">
   <span><i class="bi bi-qr-code-scan me-1.5 text-primary"></i> <strong>Rincian Pemeliharaan</strong> · Mode Publik</span>
@@ -1197,7 +1197,7 @@ $body = '
             <div class="small text-danger-emphasis">Perangkat ini terdaftar dalam daftar kendala aktif dashboard. Anda dapat langsung mencatat hasil perbaikan (tindak lanjut) atau mengubah status menjadi Selesai.</div>
           </div>
           <div class="d-flex gap-2 flex-wrap flex-shrink-0">
-            '.(!empty($token) ? '<a href="'.e(module_url('scan.php', ['t' => $token, 'action' => 'tindak_lanjut'])).'" class="btn btn-danger btn-sm fw-bold shadow-sm"><i class="bi bi-wrench-adjustable me-1"></i> Form Tindak Lanjut</a>' : '').'
+            '.(!empty($token) ? '<a href="'.e(qr_url('scan.php', ['t' => $token, 'action' => 'tindak_lanjut'])).'" class="btn btn-danger btn-sm fw-bold shadow-sm"><i class="bi bi-wrench-adjustable me-1"></i> Form Tindak Lanjut</a>' : '').'
             '.($isLoggedIn ? '<button type="button" class="btn btn-outline-danger btn-sm fw-bold" data-bs-toggle="modal" data-bs-target="#editChecklistModal"><i class="bi bi-pencil-square me-1"></i> Selesaikan / Edit Status</button>' : '').'
           </div>
         </div>' : '').'
@@ -1220,7 +1220,7 @@ $body = '
           <div class="text-muted small mt-0.5" style="font-size: 0.78rem;">Lihat rekam jejak sesi pemeliharaan komputer ini atau seluruh sesi pencatatan sistem operasional.</div>
         </div>
         <div class="d-flex align-items-center gap-2 flex-wrap w-100 w-sm-auto justify-content-start justify-content-sm-end">
-          '.(!empty($token) ? '<a href="'.e(module_url('scan.php', ['t' => $token, 'tahun' => $scanYear])).'" class="btn btn-outline-secondary btn-sm fw-semibold flex-fill flex-sm-grow-0"><i class="bi bi-card-checklist me-1"></i> Kartu QR (Tahun '.$scanYear.')</a>' : '').'
+          '.(!empty($token) ? '<a href="'.e(qr_url('scan.php', ['t' => $token, 'tahun' => $scanYear])).'" class="btn btn-outline-secondary btn-sm fw-semibold flex-fill flex-sm-grow-0"><i class="bi bi-card-checklist me-1"></i> Kartu QR (Tahun '.$scanYear.')</a>' : '').'
           <a href="'.e(module_url('audit.php')).'" class="btn btn-outline-primary btn-sm fw-semibold flex-fill flex-sm-grow-0"><i class="bi bi-table me-1"></i> Audit Lengkap</a>
         </div>
       </div>

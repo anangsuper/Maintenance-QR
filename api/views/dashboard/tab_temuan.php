@@ -221,11 +221,11 @@
             $actionsDesktop = '';
             if ($isIssueActive) {
                 if ($token !== '') {
-                    $actionsDesktop .= '<a href="'.e(module_url('scan.php', ['t' => $token, 'action' => 'tindak_lanjut'])).'" class="h-[30px] px-2.5 bg-[#DC2626] hover:bg-[#B91C1C] text-white rounded-[6px] text-[11px] font-bold transition-all inline-flex items-center gap-1 text-decoration-none shadow-xs" title="Buka Form Tindak Lanjut"><i class="bi bi-tools"></i> Selesaikan</a>';
+                    $actionsDesktop .= '<a href="'.e(qr_url('scan.php', ['t' => $token, 'action' => 'tindak_lanjut'])).'" class="h-[30px] px-2.5 bg-[#DC2626] hover:bg-[#B91C1C] text-white rounded-[6px] text-[11px] font-bold transition-all inline-flex items-center gap-1 text-decoration-none shadow-xs" title="Buka Form Tindak Lanjut"><i class="bi bi-tools"></i> Selesaikan</a>';
                 }
                 $actionsDesktop .= '<button type="button" class="h-[30px] w-[30px] bg-white border border-[#D1D5D8] rounded-[6px] text-[12px] text-[#53595F] hover:bg-[#F4F5F7] transition-all inline-flex items-center justify-center cursor-pointer" onclick="openProsesPerbaikanModal('.$jsonModalAttr.')" title="Catat / Update Catatan Progres"><i class="bi bi-pencil-square"></i></button>';
                 if ($token !== '') {
-                    $actionsDesktop .= '<a href="'.e(module_url('scan.php', ['t' => $token])).'" target="_blank" class="h-[30px] w-[30px] bg-white border border-[#D1D5D8] rounded-[6px] text-[12px] text-[#0E5C58] hover:bg-[#F4F5F7] transition-all inline-flex items-center justify-center text-decoration-none" title="Buka Kartu QR Komputer"><i class="bi bi-qr-code"></i></a>';
+                    $actionsDesktop .= '<a href="'.e(qr_url('scan.php', ['t' => $token])).'" target="_blank" class="h-[30px] w-[30px] bg-white border border-[#D1D5D8] rounded-[6px] text-[12px] text-[#0E5C58] hover:bg-[#F4F5F7] transition-all inline-flex items-center justify-center text-decoration-none" title="Buka Kartu QR Komputer"><i class="bi bi-qr-code"></i></a>';
                 }
             } else {
                 $actionsDesktop .= '<button type="button" class="h-[30px] px-2.5 bg-[#ECFDF5] hover:bg-[#D1FAE5] text-[#059669] border border-[#A7F3D0] rounded-[6px] text-[11px] font-bold transition-all inline-flex items-center gap-1 cursor-pointer" onclick="openProsesPerbaikanModal('.$jsonModalAttr.')"><i class="bi bi-check2-circle"></i> Rincian</button>';
@@ -233,7 +233,7 @@
                     $actionsDesktop .= '<a href="'.e(module_url('maintenance_detail.php', ['id' => $scanId])).'" class="h-[30px] px-2 bg-white border border-[#D1D5D8] rounded-[6px] text-[11px] text-[#53595F] hover:bg-[#F4F5F7] transition-all inline-flex items-center gap-0.5 text-decoration-none" title="Hasil Audit"><i class="bi bi-file-earmark-medical"></i> #'.$scanId.'</a>';
                 }
                 if ($token !== '') {
-                    $actionsDesktop .= '<a href="'.e(module_url('scan.php', ['t' => $token])).'" target="_blank" class="h-[30px] w-[30px] bg-white border border-[#D1D5D8] rounded-[6px] text-[12px] text-[#0E5C58] hover:bg-[#F4F5F7] transition-all inline-flex items-center justify-center text-decoration-none" title="Buka Kartu QR Komputer"><i class="bi bi-qr-code"></i></a>';
+                    $actionsDesktop .= '<a href="'.e(qr_url('scan.php', ['t' => $token])).'" target="_blank" class="h-[30px] w-[30px] bg-white border border-[#D1D5D8] rounded-[6px] text-[12px] text-[#0E5C58] hover:bg-[#F4F5F7] transition-all inline-flex items-center justify-center text-decoration-none" title="Buka Kartu QR Komputer"><i class="bi bi-qr-code"></i></a>';
                 }
             }
 
@@ -324,9 +324,9 @@
                 </div>
                 <div class="flex items-center gap-1.5 w-full sm:w-auto justify-end">
                   '.($isIssueActive ? '
-                    '.($token !== '' ? '<a href="'.e(module_url('scan.php', ['t' => $token, 'action' => 'tindak_lanjut'])).'" class="h-[34px] px-3 bg-[#DC2626] hover:bg-[#B91C1C] text-white rounded-[6px] text-[12px] font-bold transition-all flex-fill sm:flex-initial inline-flex items-center justify-center gap-1.5 text-decoration-none shadow-xs"><i class="bi bi-tools"></i> Selesaikan</a>' : '').'
+                    '.($token !== '' ? '<a href="'.e(qr_url('scan.php', ['t' => $token, 'action' => 'tindak_lanjut'])).'" class="h-[34px] px-3 bg-[#DC2626] hover:bg-[#B91C1C] text-white rounded-[6px] text-[12px] font-bold transition-all flex-fill sm:flex-initial inline-flex items-center justify-center gap-1.5 text-decoration-none shadow-xs"><i class="bi bi-tools"></i> Selesaikan</a>' : '').'
                     <button type="button" class="h-[34px] px-3 bg-white border border-[#D1D5D8] rounded-[6px] text-[12px] font-semibold text-[#1B2A3A] hover:bg-[#F4F5F7] transition-all inline-flex items-center justify-center gap-1 cursor-pointer" onclick="openProsesPerbaikanModal('.$jsonModalAttr.')"><i class="bi bi-pencil-square"></i> Progres</button>
-                    '.($token !== '' ? '<a href="'.e(module_url('scan.php', ['t' => $token])).'" target="_blank" class="h-[34px] w-[34px] bg-white border border-[#D1D5D8] rounded-[6px] text-[13px] text-[#0E5C58] hover:bg-[#F4F5F7] transition-all inline-flex items-center justify-center text-decoration-none" title="Buka Kartu QR"><i class="bi bi-qr-code"></i></a>' : '').'
+                    '.($token !== '' ? '<a href="'.e(qr_url('scan.php', ['t' => $token])).'" target="_blank" class="h-[34px] w-[34px] bg-white border border-[#D1D5D8] rounded-[6px] text-[13px] text-[#0E5C58] hover:bg-[#F4F5F7] transition-all inline-flex items-center justify-center text-decoration-none" title="Buka Kartu QR"><i class="bi bi-qr-code"></i></a>' : '').'
                   ' : '
                     <button type="button" class="h-[34px] px-3 bg-[#ECFDF5] hover:bg-[#D1FAE5] text-[#059669] border border-[#A7F3D0] rounded-[6px] text-[12px] font-bold transition-all flex-fill inline-flex items-center justify-center gap-1.5 cursor-pointer" onclick="openProsesPerbaikanModal('.$jsonModalAttr.')"><i class="bi bi-check2-circle"></i> Lihat Rincian Penyelesaian</button>
                     '.($scanId > 0 ? '<a href="'.e(module_url('maintenance_detail.php', ['id' => $scanId])).'" class="h-[34px] px-2.5 bg-white border border-[#D1D5D8] rounded-[6px] text-[12px] text-[#53595F] hover:bg-[#F4F5F7] transition-all inline-flex items-center gap-1 text-decoration-none" title="Audit Log"><i class="bi bi-file-earmark-medical"></i> #'.$scanId.'</a>' : '').'

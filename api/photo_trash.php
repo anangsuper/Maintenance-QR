@@ -340,8 +340,8 @@ ob_start();
           ? 'bg-[#ECFDF5] text-[#065F46] border-[#A7F3D0]'
           : 'bg-[#E0F2FE] text-[#0369A1] border-[#BAE6FD]';
       $itemDetailUrl = $isAsset
-          ? module_url('scan.php', ['token' => get_static_qr_token($itemId)])
-          : module_url('kartu_detail.php', ['id' => $itemId]);
+          ? qr_url('scan.php', ['token' => get_static_qr_token($itemId)])
+          : qr_url('kartu_detail.php', ['id' => $itemId]);
 
       $countdownBadgeClass = $daysLeft <= 2
           ? 'bg-[#FEF2F2] text-[#DC2626] border-[#FECACA]'

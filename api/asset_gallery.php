@@ -197,7 +197,7 @@ if ($subTab === 'inventaris') {
         $fotoBy = $c['resolved_foto_by'] ?? '';
         $fotoSrc = function_exists('asset_image_url') ? asset_image_url($foto) : ($foto ? module_url($foto) : '');
 
-        $detailUrl = module_url('kartu_detail.php', ['id' => $cid]);
+        $detailUrl = qr_url('kartu_detail.php', ['id' => $cid]);
         $printUrl = module_url('print_inventory_card.php', ['id' => $cid]);
 
         $cardJsonData = [
@@ -212,7 +212,7 @@ if ($subTab === 'inventaris') {
             'foto_by' => $fotoBy,
             'detail_url' => $detailUrl,
             'print_url' => $printUrl,
-            'barcode' => $barcode ?: $rek
+            'barcode' => normalize_qr_target_url($barcode, $detailUrl)
         ];
         $cardJson = htmlspecialchars(json_encode($cardJsonData, JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP), ENT_QUOTES, 'UTF-8');
 
@@ -488,7 +488,7 @@ if ($subTab === 'inventaris') {
             'user' => $user,
             'cabang' => $cabang,
             'divisi' => $divisi,
-            'scan_url' => module_url('scan.php', ['token' => $token]),
+            'scan_url' => qr_url('scan.php', ['token' => $token]),
             'edit_url' => $editUrl
         ];
         $qrJson = htmlspecialchars(json_encode($qrData, JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP), ENT_QUOTES, 'UTF-8');
@@ -568,7 +568,7 @@ if ($subTab === 'inventaris') {
                   <a href="'.e($editUrl).'" class="h-[30px] w-[30px] bg-white border border-[#D1D5D8] rounded-[6px] text-[#53595F] hover:bg-[#F4F5F7] transition-colors inline-flex items-center justify-center text-decoration-none shadow-xs" title="Ganti / Edit Foto">
                     <i class="bi bi-camera"></i>
                   </a>
-                  <a href="'.e(module_url('scan.php', ['token' => $token])).'" class="h-[30px] w-[30px] bg-white border border-[#D1D5D8] rounded-[6px] text-[#53595F] hover:bg-[#F4F5F7] transition-colors inline-flex items-center justify-center text-decoration-none shadow-xs" title="Buka Detail Aset">
+                  <a href="'.e(qr_url('scan.php', ['token' => $token])).'" class="h-[30px] w-[30px] bg-white border border-[#D1D5D8] rounded-[6px] text-[#53595F] hover:bg-[#F4F5F7] transition-colors inline-flex items-center justify-center text-decoration-none shadow-xs" title="Buka Detail Aset">
                     <i class="bi bi-arrow-up-right"></i>
                   </a>
                 </div>

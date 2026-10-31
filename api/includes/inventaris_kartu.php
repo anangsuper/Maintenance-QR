@@ -444,7 +444,7 @@ function insert_inventaris_kartu(array $data): array {
             }
             $newId = $maxId + 1;
             if ($barcode === '' || str_contains($barcode, 'canva.link')) {
-                $barcode = module_url('kartu_detail.php', ['id' => $newId]);
+                $barcode = qr_url('kartu_detail.php', ['id' => $newId]);
             }
             $client->appendValues('inventaris_kartu!A:G', [[
                 $newId, sheet_cell_text($rek), $nama, $tgl, $barcode, $lokasi, $nowStr
@@ -481,8 +481,8 @@ function insert_inventaris_kartu(array $data): array {
             $nowStr
         ]);
         $newId = (int)db()->lastInsertId();
-        $canonicalQr = module_url('kartu_detail.php', ['id' => $newId]);
-        $finalBarcode = ($barcode === '' || str_contains($barcode, 'canva.link')) ? $canonicalQr : $barcode;
+        $canonicalQr = qr_url('kartu_detail.php', ['id' => $newId]);
+        $finalBarcode = ($barcode === '' || str_contains($barcode, 'canva.link')) ? $canonicalQr : normalize_qr_target_url($barcode, $canonicalQr);
         $finalNoSeri = $noSeri !== '' ? $noSeri : generate_default_nomor_seri([
             'id' => $newId,
             'nomor_rekening' => $rek,
@@ -656,6 +656,136 @@ function get_inventaris_kartu_by_norek(string $noRek): ?array {
             return $r;
         }
     }
+    return null;
+}
+
+/**
+ * Cari kartu inventaris berdasarkan input apa pun dari hasil scan kartu fisik lama:
+ * - Link Canva (misal: https://canva.link/axqdgjgztd1uu3r atau axqdgjgztd1uu3r)
+ * - Barcode data atau URL lama (192.168.88.x, 172.20.75.x)
+ * - Nomor rekening / nomor inventaris (01.05.0492, 01.5.00492, 01050492...)
+ * - Nomor gabungan (01.05.0492/26082026)
+ * - Nomor seri inventaris
+ * - ID kartu numerik
+ * - QR token dari tabel assets (jika kartu inventaris terhubung dengan aset IT)
+ */
+function find_inventaris_kartu_by_scan(string $query): ?array {
+    $raw = trim($query);
+    if ($raw === '') return null;
+    $raw = trim($raw, " '\t\n\r\0\x0B");
+
+    // 1. Jika berupa URL lengkap, ekstrak parameter id, rek, token, atau t
+    if (str_starts_with($raw, 'http://') || str_starts_with($raw, 'https://')) {
+        $parsed = parse_url($raw);
+        if (!empty($parsed['query'])) {
+            parse_str($parsed['query'], $params);
+            if (!empty($params['id']) && is_numeric($params['id'])) {
+                $c = get_inventaris_kartu_by_id((int)$params['id']);
+                if ($c) return $c;
+            }
+            if (!empty($params['rek']) || !empty($params['no_rek'])) {
+                $c = get_inventaris_kartu_by_norek((string)($params['rek'] ?? $params['no_rek']));
+                if ($c) return $c;
+            }
+            if (!empty($params['t']) || !empty($params['token'])) {
+                $tok = (string)($params['t'] ?? $params['token']);
+                if (function_exists('get_asset_by_token')) {
+                    $asset = get_asset_by_token($tok);
+                    if ($asset && !empty($asset['kode_inventaris'])) {
+                        $c = get_inventaris_kartu_by_norek($asset['kode_inventaris']);
+                        if ($c) return $c;
+                    }
+                }
+            }
+        }
+    }
+
+    // 2. Ekstrak slug Canva jika URL berasal dari canva.link
+    $canvaSlug = '';
+    if (str_contains($raw, 'canva.link/')) {
+        $parts = explode('canva.link/', $raw);
+        $canvaSlug = trim(explode('?', $parts[1] ?? '')[0], '/');
+    }
+
+    // Ekstrak nomor rekening dari nomor gabungan jika format "01.05.0492/26082026"
+    $cleanRek = $raw;
+    if (str_contains($cleanRek, '/')) {
+        $cleanRek = explode('/', $cleanRek)[0];
+    }
+
+    // Ekstrak digit angka untuk nomor rekening (misal 01.05.0492 -> 01050492)
+    $digits = preg_replace('/[^0-9]/', '', $cleanRek);
+
+    // Cari di database MySQL
+    try {
+        if (!is_google_cloud_mode()) {
+            // A. Cari berdasarkan barcode_data persis atau slug Canva
+            if ($canvaSlug !== '') {
+                $st = db()->prepare("SELECT * FROM inventaris_kartu WHERE barcode_data LIKE ? LIMIT 1");
+                $st->execute(['%' . $canvaSlug . '%']);
+                $row = $st->fetch();
+                if ($row) return $row;
+            }
+
+            $st = db()->prepare("SELECT * FROM inventaris_kartu WHERE barcode_data = ? OR barcode_data LIKE ? LIMIT 1");
+            $st->execute([$raw, '%' . $raw . '%']);
+            $row = $st->fetch();
+            if ($row) return $row;
+
+            // B. Cari berdasarkan nomor rekening
+            $st = db()->prepare("SELECT * FROM inventaris_kartu WHERE nomor_rekening = ? OR REPLACE(nomor_rekening, '.', '') = ? LIMIT 1");
+            $st->execute([$cleanRek, $digits]);
+            $row = $st->fetch();
+            if ($row) return $row;
+
+            // C. Cari berdasarkan nomor seri inventaris
+            $st = db()->prepare("SELECT * FROM inventaris_kartu WHERE nomor_seri_inventaris = ? LIMIT 1");
+            $st->execute([$raw]);
+            $row = $st->fetch();
+            if ($row) return $row;
+
+            // D. Jika input berupa angka murni (ID kartu)
+            if (is_numeric($raw) && (int)$raw > 0) {
+                $c = get_inventaris_kartu_by_id((int)$raw);
+                if ($c) return $c;
+            }
+
+            // E. Cek apakah cocok dengan aset IT (assets) lalu ambil kartu inventarisnya
+            if (function_exists('get_asset_by_token')) {
+                $asset = get_asset_by_token($raw);
+                if ($asset && !empty($asset['kode_inventaris'])) {
+                    $c = get_inventaris_kartu_by_norek($asset['kode_inventaris']);
+                    if ($c) return $c;
+                }
+            }
+        }
+    } catch (Throwable $e) {}
+
+    // Fallback: cari di rows (Google Sheets / in-memory array)
+    $rows = get_inventaris_kartu_rows();
+    foreach ($rows as $r) {
+        $bData = (string)($r['barcode_data'] ?? '');
+        $rRek = (string)($r['nomor_rekening'] ?? '');
+        $rSeri = (string)($r['nomor_seri_inventaris'] ?? '');
+        $rId = (int)($r['id'] ?? 0);
+
+        if ($canvaSlug !== '' && str_contains($bData, $canvaSlug)) {
+            return $r;
+        }
+        if ($bData !== '' && (strcasecmp($bData, $raw) === 0 || str_contains($bData, $raw))) {
+            return $r;
+        }
+        if ($rRek === $cleanRek || ($digits !== '' && preg_replace('/[^0-9]/', '', $rRek) === $digits)) {
+            return $r;
+        }
+        if ($rSeri !== '' && strcasecmp($rSeri, $raw) === 0) {
+            return $r;
+        }
+        if (is_numeric($raw) && (int)$raw === $rId) {
+            return $r;
+        }
+    }
+
     return null;
 }
 
@@ -1572,7 +1702,13 @@ window.BANK_MITRA_PRINT_AJAX_URL = __PRINT_AJAX_URL__;
     ctx.lineWidth = 1.5;
     ctx.stroke();
 
-    const qrSource = await generateQrCanvas(cardData.qr_url || window.location.href, 280);
+    const qrOfficialBase = window.QR_BASE_URL || "https://it.bankmitra.co.id";
+    let cardQrTarget = cardData.qr_url || "";
+    if (!cardQrTarget || cardQrTarget.includes("localhost") || cardQrTarget.includes("192.168.") || cardQrTarget.includes("172.20.") || cardQrTarget.startsWith("http://")) {
+      cardQrTarget = cardData.id ? (qrOfficialBase + "/kartu_detail.php?id=" + cardData.id) : qrOfficialBase;
+    }
+
+    const qrSource = await generateQrCanvas(cardQrTarget, 280);
     if (qrSource) {
       ctx.imageSmoothingEnabled = false;
       ctx.drawImage(
@@ -1650,7 +1786,7 @@ window.BANK_MITRA_PRINT_AJAX_URL = __PRINT_AJAX_URL__;
           `• *No. Asset:* ${cardData.nomor_asset || '-'}\n` +
           `• *Tanggal:* ${cardData.tgl || '-'}\n` +
           `• *Lokasi:* ${cardData.lokasi || '-'}\n` +
-          `• *Link QR:* ${cardData.qr_url || window.location.href}\n\n` +
+          `• *Link QR:* ${cardQrTarget}\n\n` +
           `_(File gambar kartu ukuran asli CR80 85.6mm x 54.0mm telah diunduh otomatis, silakan lampirkan pada chat ini)_`
         );
         window.open(`https://wa.me/?text=${waText}`, '_blank', 'noopener');

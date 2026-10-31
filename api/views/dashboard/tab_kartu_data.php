@@ -51,15 +51,16 @@ if (empty($displayCards)) {
         $tglRaw = $c['tanggal_perolehan'] ?? '';
         $tglCard = format_card_date($tglRaw);
         $gabungan = get_nomor_asset_gabungan($rek, $tglRaw);
-        $canonicalCardUrl = module_url('kartu_detail.php', ['id' => $cId]);
+        $canonicalCardUrl = qr_url('kartu_detail.php', ['id' => $cId]);
         $rawBarcode = trim((string)($c['barcode_data'] ?? ''));
-        $barcode = ($rawBarcode !== '' && !str_contains($rawBarcode, 'canva.link')) ? $rawBarcode : $canonicalCardUrl;
+        $barcode = normalize_qr_target_url($rawBarcode, $canonicalCardUrl);
         $noSeriVal = !empty($c['nomor_seri_inventaris']) ? $c['nomor_seri_inventaris'] : generate_default_nomor_seri($c);
         $lokasi = !empty($c['ruangan']) ? $c['ruangan'] : (!empty($c['lokasi']) ? $c['lokasi'] : 'KPO');
         $jsonPayload = json_encode(array_merge($c, [
             'nomor_rekening' => $rek,
             'nomor_seri_inventaris' => $noSeriVal,
             'barcode_data' => $barcode,
+            'qr_url' => $barcode,
             'gabungan' => $gabungan
         ]), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP);
 

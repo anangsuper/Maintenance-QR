@@ -341,6 +341,7 @@ function render_page(string $title, string $content, string $extraHead = '', str
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>'.e($title).' · IT Operations Bank Mitra</title>
 <script>
+window.QR_BASE_URL = '.json_encode(qr_base_url()).';
 (function() {
   try {
     var storedTheme = localStorage.getItem("app_theme");

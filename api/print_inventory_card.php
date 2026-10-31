@@ -256,8 +256,8 @@ if ($source === 'inventaris_kartu') {
 
         $tglFormatted = format_card_date($tglRaw);
 
-        // Arahkan QR code kartu inventaris ke halaman web detail resmi sistem (bukan Canva)
-        $qrTarget = module_url('kartu_detail.php', ['id' => $id]);
+        // Arahkan QR code kartu inventaris ke halaman web detail resmi sistem (bukan Canva, selalu https://it.bankmitra.co.id)
+        $qrTarget = qr_url('kartu_detail.php', ['id' => $id]);
 
         $cardsData[] = [
             'index'        => $index,
@@ -269,7 +269,7 @@ if ($source === 'inventaris_kartu') {
             'nomor_gabungan' => get_nomor_asset_gabungan($rek, $tglRaw),
             'lokasi'       => $lokasi,
             'ruangan'      => $ruanganDisplay,
-            'barcode_data' => $barcode,
+            'barcode_data' => normalize_qr_target_url($barcode, $qrTarget),
             'qr_url'       => $qrTarget,
             'created_at'   => $r['created_at'] ?? ''
         ];
@@ -321,7 +321,7 @@ if ($source === 'inventaris_kartu') {
         $tglFormatted = format_card_date($tglRaw);
 
         $token = !empty($a['qr_token']) ? $a['qr_token'] : ($id > 0 ? get_static_qr_token($id) : '');
-        $qrUrl = $token ? module_url('scan.php', ['t' => $token]) : module_url('assets.php');
+        $qrUrl = $token ? qr_url('scan.php', ['t' => $token]) : qr_url('assets.php');
 
         $cardsData[] = [
             'index'        => $index,
@@ -512,8 +512,8 @@ if ($exportMode === 'doc') {
     foreach ($cardsData as $c) {
         $cId = (int)($c['id'] ?? 0);
         $qrTarget = ($source === 'inventaris_kartu' && $cId > 0)
-            ? module_url('kartu_detail.php', ['id' => $cId])
-            : (!empty($c['barcode_data']) ? $c['barcode_data'] : ($c['qr_url'] ?? module_url('scan.php', ['t' => get_static_qr_token($cId)])));
+            ? qr_url('kartu_detail.php', ['id' => $cId])
+            : (!empty($c['barcode_data']) ? normalize_qr_target_url($c['barcode_data'], qr_url('scan.php', ['t' => get_static_qr_token($cId)])) : ($c['qr_url'] ?? qr_url('scan.php', ['t' => get_static_qr_token($cId)])));
         $qrImgUrl = 'https://api.qrserver.com/v1/create-qr-code/?size=110x110&margin=0&data=' . urlencode($qrTarget);
 
         if ($colCount % 2 === 0) {
@@ -1355,7 +1355,7 @@ unset($_SESSION['flash'], $_SESSION['flash_error']);
                     <!-- Right: QR Code -->
                     <div class="bottom-right-qr">
                       <div class="qr-border-box">
-                        <div id="qr-box-<?= $cIdx ?>" class="card-qr-img qr-box-inner" data-qr="<?= e($card['qr_url']) ?>"></div>
+                        <div id="qr-box-<?= $cIdx ?>" class="card-qr-img qr-box-inner" data-qr="<?= e(normalize_qr_target_url($card['qr_url'] ?? $card['barcode_data'] ?? '', qr_url('kartu_detail.php', ['id' => $card['id'] ?? 0]))) ?>"></div>
                       </div>
                     </div>
                   </div>

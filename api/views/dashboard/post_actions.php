@@ -111,7 +111,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $asset = get_asset_by_id($aid);
             if ($asset) {
                 $token = !empty($asset['qr_token']) ? $asset['qr_token'] : get_static_qr_token($aid);
-                $qrUrl = module_url('scan.php', ['t' => $token]);
+                $qrUrl = qr_url('scan.php', ['t' => $token]);
                 $cId = (int)($asset['id_cabang'] ?? $asset['cabang_id'] ?? 0);
                 $cabangName = $asset['cabang_nama'] ?? 'KPO';
                 $divName = !empty($asset['divisi_nama']) && $asset['divisi_nama'] !== '-' ? $asset['divisi_nama'] : '';

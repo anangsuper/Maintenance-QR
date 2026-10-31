@@ -633,6 +633,8 @@ Panduan ini mencakup seluruh langkah teknis yang dibutuhkan untuk membangun ulan
        'db_pass' => 'password_kuat_123!',
        'session_timeout' => '1800',
        'app_key' => 'bank_mitra_secret_production_key_2026',
+       // Domain resmi ber-HTTPS tujuan pemindaian QR Code (Kamera HP & AI Biometrik)
+       'qr_base_url' => 'https://it.bankmitra.co.id',
    ];
    ```
 

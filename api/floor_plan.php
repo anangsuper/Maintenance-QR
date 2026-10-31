@@ -546,7 +546,7 @@ function render_desk_card_html(array $ast, int $deskCounter, array $maintStatusM
         'notes' => $mNotes ?: 'Tidak ada catatan temuan.',
         'token' => $token,
         'foto' => !empty($ast['foto']) ? $ast['foto'] : '',
-        'scan_url' => $token ? module_url('scan.php', ['t' => $token]) : '',
+        'scan_url' => $token ? qr_url('scan.php', ['t' => $token]) : '',
         'edit_url' => module_url('asset_edit.php', ['id' => $aid]),
         'replace_url' => module_url('asset_add.php', ['replace_id' => $aid])
     ];

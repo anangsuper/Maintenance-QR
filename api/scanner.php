@@ -308,30 +308,61 @@ function resolveScanDestination(rawInput) {
   var text = (rawInput || "").trim();
   if (!text) return "";
 
+  var qrBase = window.QR_BASE_URL || "https://it.bankmitra.co.id";
+
+  // 1. Kartu fisik lama dengan link Canva (misal: https://canva.link/axqdgjgztd1uu3r)
+  if (text.includes("canva.link") || text.includes("canva.com")) {
+    return qrBase + "/kartu_detail.php?barcode=" + encodeURIComponent(text);
+  }
+
+  // 2. URL lengkap berprotokol (http:// atau https://)
   if (text.startsWith("http://") || text.startsWith("https://")) {
     try {
       var parsedUrl = new URL(text);
       var tokenVal = parsedUrl.searchParams.get("t") || parsedUrl.searchParams.get("token");
       if (tokenVal) {
-        return "scan.php?t=" + encodeURIComponent(tokenVal.trim());
+        return qrBase + "/scan.php?t=" + encodeURIComponent(tokenVal.trim());
       }
+      var idVal = parsedUrl.searchParams.get("id");
+      var rekVal = parsedUrl.searchParams.get("rek") || parsedUrl.searchParams.get("no_rek");
       var pathName = parsedUrl.pathname.replace(/^\/api\//, "/").replace(/^\//, "");
-      if (pathName && pathName.endsWith(".php")) {
-        return pathName + (parsedUrl.search || "");
+
+      // Jika URL mengarah ke kartu_detail (dari kartu fisik lama yang memakai IP LAN / domain lama)
+      if (pathName.includes("kartu_detail") || idVal || rekVal) {
+        return qrBase + "/kartu_detail.php" + (parsedUrl.search || "");
+      }
+
+      // Jika URL mengarah ke scan.php
+      if (pathName.includes("scan")) {
+        return qrBase + "/scan.php" + (parsedUrl.search || "");
+      }
+
+      if (pathName) {
+        if (!pathName.endsWith(".php") && !pathName.includes(".")) {
+          pathName += ".php";
+        }
+        return qrBase + "/" + pathName + (parsedUrl.search || "");
       }
     } catch (e) {}
   }
 
+  // 3. Jika URL relatif scan.php
   if (text.indexOf("scan.php?t=") !== -1 || text.indexOf("scan.php?") !== -1) {
     var queryPart = text.split("?")[1] || "";
     var searchParams = new URLSearchParams(queryPart);
     var tVal = searchParams.get("t") || searchParams.get("token");
     if (tVal) {
-      return "scan.php?t=" + encodeURIComponent(tVal.trim());
+      return qrBase + "/scan.php?t=" + encodeURIComponent(tVal.trim());
     }
   }
 
-  return "scan.php?t=" + encodeURIComponent(text);
+  // 4. Jika URL relatif kartu_detail.php
+  if (text.indexOf("kartu_detail.php?") !== -1 || text.indexOf("kartu_detail?") !== -1) {
+    return qrBase + "/" + text.replace(/^\/+/, "");
+  }
+
+  // 5. Default: Arahkan ke scan.php di domain resmi (scan.php otomatis meneruskan ke kartu_detail jika ini kartu fisik inventaris)
+  return qrBase + "/scan.php?t=" + encodeURIComponent(text);
 }
 
 function onScanSuccess(decodedText) {

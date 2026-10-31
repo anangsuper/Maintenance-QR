@@ -5,6 +5,9 @@ error_reporting(E_ALL);
 
 require __DIR__ . '/bootstrap.php';
 
+// Pastikan akses portal buku tamu diarahkan ke domain resmi ber-HTTPS https://it.bankmitra.co.id
+enforce_qr_domain('server_room_log.php');
+
 // Auto-repair tabel server_room_logs jika tabel/kolom belum lengkap
 try {
     db()->exec("CREATE TABLE IF NOT EXISTS server_room_logs (

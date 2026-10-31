@@ -350,42 +350,42 @@ ob_start();
   </div>
 
   <!-- Action Buttons Group -->
-  <div class="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-2 shrink-0 w-full sm:w-auto">
-    <button type="button" class="h-[36px] px-3 bg-[#0E5C58] hover:bg-[#094340] text-white rounded-[8px] text-[12px] sm:text-[13px] font-semibold transition-colors inline-flex items-center justify-center gap-1.5 border-0 shadow-xs cursor-pointer text-center" data-bs-toggle="modal" data-bs-target="#modalDisposal" onclick="resetDisposalModal()">
-      <i class="bi bi-plus-lg"></i> <span>Catat BA-Afkir</span>
+  <div class="flex flex-wrap items-center gap-2 shrink-0">
+    <button type="button" class="h-[36px] px-3.5 bg-[#0E5C58] hover:bg-[#094340] text-white rounded-[8px] text-[13px] font-semibold transition-colors inline-flex items-center gap-1.5 border-0 shadow-xs cursor-pointer" data-bs-toggle="modal" data-bs-target="#modalDisposal" onclick="resetDisposalModal()">
+      <i class="bi bi-plus-lg"></i> <span>Catat BA-Afkir Baru</span>
     </button>
-    <a href="<?= e(module_url('asset_disposal.php', array_merge($_GET, ['export' => 'excel']))) ?>" class="h-[36px] px-3 bg-white border border-[#D1D5D8] rounded-[8px] text-[12px] sm:text-[13px] font-medium text-[#1B2A3A] hover:bg-[#F4F5F7] transition-colors inline-flex items-center justify-center gap-1.5 text-decoration-none shadow-xs text-center">
+    <a href="<?= e(module_url('asset_disposal.php', array_merge($_GET, ['export' => 'excel']))) ?>" class="h-[36px] px-3 bg-white border border-[#D1D5D8] rounded-[8px] text-[13px] font-medium text-[#1B2A3A] hover:bg-[#F4F5F7] transition-colors inline-flex items-center gap-1.5 text-decoration-none shadow-xs">
       <i class="bi bi-file-earmark-excel text-[#16A34A]"></i> <span>Ekspor Excel</span>
     </a>
-    <a href="<?= e(module_url('dashboard.php', ['tab' => 'kartu'])) ?>" class="h-[36px] px-3 bg-white border border-[#D1D5D8] rounded-[8px] text-[12px] sm:text-[13px] font-medium text-[#1B2A3A] hover:bg-[#F4F5F7] transition-colors inline-flex items-center justify-center gap-1.5 text-decoration-none shadow-xs text-center">
+    <a href="<?= e(module_url('dashboard.php', ['tab' => 'kartu'])) ?>" class="h-[36px] px-3 bg-white border border-[#D1D5D8] rounded-[8px] text-[13px] font-medium text-[#1B2A3A] hover:bg-[#F4F5F7] transition-colors inline-flex items-center gap-1.5 text-decoration-none shadow-xs">
       <i class="bi bi-credit-card-2-front text-[#53595F]"></i> <span>Data Kartu</span>
     </a>
-    <a href="<?= e(module_url('memo_pengajuan.php')) ?>" class="h-[36px] px-3 bg-white border border-[#D1D5D8] rounded-[8px] text-[12px] sm:text-[13px] font-medium text-[#1B2A3A] hover:bg-[#F4F5F7] transition-colors inline-flex items-center justify-center gap-1.5 text-decoration-none shadow-xs text-center">
+    <a href="<?= e(module_url('memo_pengajuan.php')) ?>" class="h-[36px] px-3 bg-white border border-[#D1D5D8] rounded-[8px] text-[13px] font-medium text-[#1B2A3A] hover:bg-[#F4F5F7] transition-colors inline-flex items-center gap-1.5 text-decoration-none shadow-xs">
       <i class="bi bi-file-earmark-text text-[#0E5C58]"></i> <span>Memo Pengadaan</span>
     </a>
   </div>
 </div>
 
-<!-- 3 SYMMETRICAL KOMBAI METRIC CARDS (Responsive Grid) -->
-<div class="bg-[#FFFFFF] border border-[#D1D5D8] rounded-[10px] grid grid-cols-1 md:grid-cols-3 overflow-hidden shrink-0 mb-4 shadow-xs">
+<!-- 3 SYMMETRICAL KOMBAI METRIC CARDS (88px) -->
+<div class="bg-[#FFFFFF] border border-[#D1D5D8] rounded-[10px] h-[88px] flex overflow-hidden shrink-0 mb-4">
   <!-- Card 1: Total Aset Diafkirkan -->
-  <div class="flex flex-col justify-center px-4 sm:px-6 py-3 border-b md:border-b-0 md:border-r border-[#D1D5D8] relative hover:bg-[#F4F5F7] transition-colors">
+  <div class="flex-1 flex flex-col justify-center px-6 border-r border-[#D1D5D8] relative hover:bg-[#F4F5F7] transition-colors">
     <div class="absolute left-0 top-0 bottom-0 w-1 bg-[#0E5C58]"></div>
-    <div class="text-[24px] sm:text-[28px] font-bold text-[#1B2A3A] tabular-nums leading-none">
+    <div class="text-[28px] font-bold text-[#1B2A3A] tabular-nums leading-none">
       <?= number_format($kpi['total_unit']) ?> <span class="text-[13px] font-normal text-[#53595F]">Unit</span>
     </div>
-    <div class="text-[12px] font-medium text-[#53595F] mt-1.5 flex items-center gap-2 flex-wrap">
+    <div class="text-[12px] font-medium text-[#53595F] mt-1.5 flex items-center gap-2">
       <span class="text-[#D97706] font-semibold"><i class="bi bi-credit-card-2-front-fill me-0.5"></i> <?= $kpi['total_sdm'] ?> SDM</span>
       <span>&middot;</span>
       <span class="text-[#0284C7] font-semibold"><i class="bi bi-pc-display me-0.5"></i> <?= $kpi['total_it'] ?> IT</span>
-      <span class="text-[#53595F] ms-auto small">(+<?= $kpi['total_bulan_ini'] ?> bulan ini)</span>
+      <span class="text-[#53595F] ms-auto small d-none d-lg-inline">(+<?= $kpi['total_bulan_ini'] ?> bulan ini)</span>
     </div>
   </div>
 
   <!-- Card 2: Masa Tenggang 7 Hari -->
-  <div class="flex flex-col justify-center px-4 sm:px-6 py-3 border-b md:border-b-0 md:border-r border-[#D1D5D8] relative hover:bg-[#F4F5F7] transition-colors">
+  <div class="flex-1 flex flex-col justify-center px-6 border-r border-[#D1D5D8] relative hover:bg-[#F4F5F7] transition-colors">
     <div class="absolute left-0 top-0 bottom-0 w-1 bg-[#10B981]"></div>
-    <div class="text-[24px] sm:text-[28px] font-bold text-[#10B981] tabular-nums leading-none">
+    <div class="text-[28px] font-bold text-[#10B981] tabular-nums leading-none">
       <?= $countRestorable ?> <span class="text-[13px] font-normal text-[#53595F]">Unit</span>
     </div>
     <div class="text-[12px] font-medium text-[#53595F] mt-1.5 flex items-center gap-1.5">
@@ -394,9 +394,9 @@ ob_start();
   </div>
 
   <!-- Card 3: Status Kepatuhan SOP Afkir -->
-  <div class="flex flex-col justify-center px-4 sm:px-6 py-3 relative hover:bg-[#F4F5F7] transition-colors">
+  <div class="flex-1 flex flex-col justify-center px-6 relative hover:bg-[#F4F5F7] transition-colors">
     <div class="absolute left-0 top-0 bottom-0 w-1 bg-[#3B82F6]"></div>
-    <div class="text-[24px] sm:text-[28px] font-bold text-[#1B2A3A] tabular-nums leading-none">
+    <div class="text-[28px] font-bold text-[#1B2A3A] tabular-nums leading-none">
       100% <span class="text-[13px] font-normal text-[#53595F]">Terarsip</span>
     </div>
     <div class="text-[12px] font-medium text-[#53595F] mt-1.5 flex items-center gap-1.5">
@@ -447,8 +447,7 @@ ob_start();
     </form>
   </div>
 
-  <!-- Desktop Table View -->
-  <div class="hidden md:block table-responsive">
+  <div class="table-responsive">
     <table class="table table-hover align-middle mb-0" style="font-size: 13px;">
       <thead>
         <tr>
@@ -591,123 +590,6 @@ ob_start();
       </tbody>
     </table>
   </div>
-
-  <!-- Mobile Cards View -->
-  <div class="block md:hidden p-3 space-y-3 bg-[#F4F5F7]">
-    <?php if (empty($disposalList)): ?>
-      <div class="text-center py-5 bg-white border border-[#D1D5D8] rounded-[10px] p-4 text-muted">
-        <i class="bi bi-trash3 fs-1 text-secondary opacity-50 d-block mb-2"></i>
-        <div class="fw-semibold text-[14px]">Belum Ada Catatan Berita Acara Penghapusan Aset</div>
-        <p class="small text-muted mb-3">Klik tombol "Catat BA-Afkir" di atas untuk memproses penghapusan inventaris rusak.</p>
-        <button type="button" class="btn btn-sm btn-primary-teal fw-bold px-3 py-1.5" data-bs-toggle="modal" data-bs-target="#modalDisposal" onclick="resetDisposalModal()">
-          <i class="bi bi-plus-circle me-1"></i> Buat Berita Acara
-        </button>
-      </div>
-    <?php else: ?>
-      <?php foreach ($disposalList as $row): 
-        $assetBadge = ($row['asset_type'] === 'inventaris') 
-            ? '<span class="badge bg-[#FEF3C7] text-[#92400E] border border-[#FDE68A] px-2 py-0.5 text-[11px] font-semibold"><i class="bi bi-credit-card-2-front me-1"></i>Kartu SDM</span>' 
-            : '<span class="badge bg-[#E0F2FE] text-[#0369A1] border border-[#BAE6FD] px-2 py-0.5 text-[11px] font-semibold"><i class="bi bi-pc-display me-1"></i>Perangkat IT</span>';
-
-        $restoreInfo = is_disposal_restorable($row);
-        $canRestore = $restoreInfo['can_restore'];
-        $daysRemaining = $restoreInfo['days_remaining'];
-        $printUrl = module_url('print_bast_disposal.php', ['id' => $row['id']]);
-      ?>
-      <div class="bg-white border border-[#D1D5D8] rounded-[10px] p-3.5 shadow-xs relative">
-        <!-- Top Row: Badge Type, Code & Status -->
-        <div class="flex items-center justify-between gap-2 pb-2 mb-2 border-b border-[#F3F4F6]">
-          <div class="flex items-center gap-1.5 flex-wrap">
-            <?= $assetBadge ?>
-            <span class="font-mono text-[11px] font-bold text-[#53595F]">[<?= e($row['kode_aset']) ?>]</span>
-          </div>
-          <div>
-            <?php if ($canRestore): ?>
-              <span class="badge bg-[#DCFCE7] text-[#15803D] border border-[#86EFAC] py-0.5 px-2 font-semibold text-[10px]">
-                <i class="bi bi-arrow-counterclockwise"></i> Sisa <?= $daysRemaining ?> hari
-              </span>
-            <?php else: ?>
-              <span class="badge bg-[#F4F5F7] text-[#53595F] border border-[#D1D5D8] py-0.5 px-2 text-[10px]">
-                <i class="bi bi-lock-fill"></i> Permanen
-              </span>
-            <?php endif; ?>
-          </div>
-        </div>
-
-        <!-- BA & Asset Name -->
-        <div class="mb-2">
-          <a href="<?= $printUrl ?>" target="_blank" class="font-bold text-[#0E5C58] font-mono text-[13px] text-decoration-none hover:underline flex items-center gap-1">
-            <i class="bi bi-file-earmark-pdf-fill text-[#DC2626]"></i> <?= e($row['nomor_ba']) ?>
-          </a>
-          <div class="font-bold text-[#1B2A3A] text-[14px] mt-1"><?= e($row['nama_aset']) ?></div>
-          <?php if (!empty($row['merk_model']) && $row['merk_model'] !== '-'): ?>
-            <div class="text-[#53595F] text-[12px]"><?= e($row['merk_model']) ?></div>
-          <?php endif; ?>
-        </div>
-
-        <!-- Detail Box -->
-        <div class="bg-[#F9FAFB] p-2.5 rounded-[8px] border border-[#E5E7EB] text-[12px] space-y-1.5 mb-2.5">
-          <div class="flex items-center justify-between text-[#53595F]">
-            <span><i class="bi bi-calendar3 me-1"></i> Tanggal:</span>
-            <span class="font-semibold text-[#1B2A3A]"><?= date('d/m/Y', strtotime($row['tanggal_disposal'])) ?></span>
-          </div>
-          <div class="flex items-center justify-between text-[#53595F]">
-            <span><i class="bi bi-geo-alt me-1"></i> Lokasi:</span>
-            <span class="font-semibold text-[#1B2A3A]"><?= e($row['cabang']) ?><?= $row['lokasi_ruangan'] ? ' &middot; ' . e($row['lokasi_ruangan']) : '' ?></span>
-          </div>
-          <div class="flex items-center justify-between text-[#53595F]">
-            <span><i class="bi bi-person me-1"></i> Petugas / PJ:</span>
-            <span class="text-[#1B2A3A]"><?= e($row['petugas_nama']) ?><?= $row['pengguna_terakhir'] ? ' (PJ: ' . e($row['pengguna_terakhir']) . ')' : '' ?></span>
-          </div>
-          <div class="pt-1.5 border-t border-[#E5E7EB]">
-            <div class="text-[#DC2626] font-bold flex items-center gap-1">
-              <i class="bi bi-exclamation-triangle-fill"></i> <?= e($row['kondisi_terakhir']) ?>
-            </div>
-            <div class="text-[#53595F] text-[11px] mt-0.5 italic">
-              "<?= e($row['alasan_penghapusan']) ?>"
-            </div>
-            <div class="mt-1">
-              <span class="badge bg-white text-[#53595F] border border-[#D1D5D8] text-[10px]">
-                Metode: <?= e($row['metode_pemusnahan']) ?>
-              </span>
-            </div>
-          </div>
-        </div>
-
-        <!-- Dokumentasi & Aksi -->
-        <div class="flex items-center justify-between gap-2 pt-2 border-t border-[#F3F4F6] flex-wrap">
-          <div class="flex items-center gap-1.5 flex-wrap">
-            <?php if (!empty($row['foto_barang'])): ?>
-              <a href="<?= e(disposal_file_url($row['foto_barang'])) ?>" target="_blank" class="badge bg-light text-secondary border shadow-xs text-decoration-none d-inline-flex align-items-center gap-1 px-2 py-1 text-[11px]">
-                <i class="bi bi-camera text-primary"></i> Foto
-              </a>
-            <?php endif; ?>
-            <?php if (!empty($row['dokumen_ba_disetujui'])): ?>
-              <a href="<?= e(disposal_file_url($row['dokumen_ba_disetujui'])) ?>" target="_blank" class="badge bg-[#DCFCE7] text-[#15803D] border border-[#86EFAC] shadow-xs text-decoration-none d-inline-flex align-items-center gap-1 px-2 py-1 text-[11px]">
-                <i class="bi bi-file-earmark-check-fill"></i> Scan BA Acc
-              </a>
-            <?php else: ?>
-              <button type="button" class="btn btn-sm btn-kombai-white py-0.5 px-2 text-[11px] d-inline-flex align-items-center gap-1 shadow-xs" onclick="openUploadAccModal(<?= (int)$row['id'] ?>, <?= htmlspecialchars(json_encode($row['nomor_ba']), ENT_QUOTES, 'UTF-8') ?>)">
-                <i class="bi bi-cloud-arrow-up text-[#0E5C58]"></i> Upload Scan
-              </button>
-            <?php endif; ?>
-          </div>
-
-          <div class="flex items-center gap-1.5 ms-auto">
-            <a href="<?= $printUrl ?>" target="_blank" class="h-[30px] px-2.5 bg-[#0E5C58] hover:bg-[#094340] text-white rounded-[6px] text-[12px] font-semibold transition-colors inline-flex items-center gap-1 text-decoration-none shadow-xs">
-              <i class="bi bi-printer"></i> Cetak BA
-            </a>
-            <?php if ($canRestore): ?>
-              <button type="button" class="h-[30px] px-2.5 bg-[#DCFCE7] hover:bg-[#BBF7D0] text-[#15803D] border border-[#86EFAC] rounded-[6px] font-semibold text-[12px] shadow-xs cursor-pointer inline-flex items-center gap-1" onclick="openRestoreModal(<?= (int)$row['id'] ?>, <?= htmlspecialchars(json_encode($row['nama_aset']), ENT_QUOTES, 'UTF-8') ?>, <?= (int)$daysRemaining ?>)" title="Batalkan penghapusan &amp; kembalikan ke inventaris aktif">
-                <i class="bi bi-arrow-counterclockwise"></i> Batal
-              </button>
-            <?php endif; ?>
-          </div>
-        </div>
-      </div>
-      <?php endforeach; ?>
-    <?php endif; ?>
-  </div>
 </div>
 
 <!-- ==================================================== -->
@@ -730,9 +612,9 @@ ob_start();
         <!-- 1. Pilihan Kategori Sumber Aset -->
         <div class="mb-3">
           <label class="form-label fw-bold text-[#1B2A3A] text-[12px] uppercase">PILIH SUMBER BUKU REGISTER ASET <span class="text-danger">*</span></label>
-          <div class="d-flex flex-column flex-sm-row gap-2 gap-sm-3">
+          <div class="d-flex gap-3">
             <div class="form-check border border-[#D1D5D8] rounded-[8px] p-2.5 flex-fill bg-[#F8FAF9]">
-              <input class="form-check-input ms-0 me-2" type="radio" name="asset_type" id="typeInventaris"  value="inventaris" checked onchange="switchAssetType(this.value)">
+              <input class="form-check-input ms-0 me-2" type="radio" name="asset_type" id="typeInventaris" value="inventaris" checked onchange="switchAssetType(this.value)">
               <label class="form-check-label fw-semibold text-[#1B2A3A]" for="typeInventaris" style="cursor: pointer;">
                 <i class="bi bi-credit-card-2-front text-warning me-1"></i> Kartu Inventaris Fisik (SDM &amp; Umum)
                 <div class="text-[#53595F] fw-normal text-[11px]">Perabot, Meja, Kursi, AC, Brankas, Kipas, Dispenser, Kendaraan</div>

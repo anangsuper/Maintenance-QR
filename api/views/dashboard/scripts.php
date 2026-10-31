@@ -435,7 +435,17 @@ function buildCardDataForPng(card) {
       tglDisplay = tglRaw;
     }
   }
-  const qrTarget = card.id ? (window.location.origin + "/kartu_detail.php?id=" + card.id) : (card.barcode_data || window.location.origin);
+  const qrBase = window.QR_BASE_URL || "https://it.bankmitra.co.id";
+  let qrTarget = card.qr_url || "";
+  if (!qrTarget) {
+    qrTarget = card.id ? (qrBase + "/kartu_detail.php?id=" + card.id) : (card.barcode_data || qrBase);
+  }
+  if (qrTarget && typeof qrTarget === "string" && !qrTarget.includes("canva.link") && (qrTarget.includes("localhost") || qrTarget.includes("192.168.") || qrTarget.includes("172.20.") || qrTarget.startsWith("http://"))) {
+    try {
+      const pUrl = new URL(qrTarget);
+      qrTarget = qrBase + pUrl.pathname.replace(/^\/api\//, "/") + pUrl.search;
+    } catch (e) {}
+  }
   return {
     id: card.id || 0,
     kode: rek,

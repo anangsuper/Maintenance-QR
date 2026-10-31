@@ -31,7 +31,7 @@ foreach ($rows as $r) {
     $tok = !empty($r['qr_token']) ? $r['qr_token'] : ($aid > 0 ? get_static_qr_token($aid) : '');
     if (empty($tok)) continue;
     $i++;
-    $url = module_url('scan.php', ['t' => $tok]);
+    $url = qr_url('scan.php', ['t' => $tok]);
     $cabangLabel = !empty($r['cabang_nama']) && $r['cabang_nama'] !== '-' ? $r['cabang_nama'] : 'KPO';
     $userLabel = !empty($r['karyawan_nama']) && $r['karyawan_nama'] !== '-' ? $r['karyawan_nama'] : 'Umum / Pool';
     $divisiLabel = !empty($r['divisi_nama']) && $r['divisi_nama'] !== '-' ? $r['divisi_nama'] : '';

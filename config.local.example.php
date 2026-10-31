@@ -20,5 +20,9 @@ return [
 
     // URL Aplikasi jika berada di subfolder (kosongkan jika di root domain)
     'app_url' => '',
+
+    // Domain / URL resmi tujuan pemindaian Kode QR (Stiker Unit, Kartu CR80, QR Pintu Server)
+    // Default: https://it.bankmitra.co.id
+    'qr_base_url' => 'https://it.bankmitra.co.id',
 ];
 

@@ -591,8 +591,8 @@ foreach ($pageAssets as $a) {
         $maintBadge = '<span class="badge-chip chip-warning"><i class="bi bi-clock"></i> Belum Diperiksa</span>';
     }
 
-    // Link Action
-    $scanUrl = $token ? module_url('scan.php', ['t' => $token]) : '';
+    // Link Action (Target QR & Scan Resmi selalu menggunakan https://it.bankmitra.co.id)
+    $scanUrl = $token ? qr_url('scan.php', ['t' => $token]) : '';
     $cardUrl = module_url('print_card.php', ['id' => $aid, 'layout' => 'single']);
     $editUrl = module_url('asset_edit.php', ['id' => $aid]);
     $deleteUrl = module_url('asset_delete.php', ['id' => $aid, 'redirect' => $_SERVER['REQUEST_URI'] ?? module_url('assets.php')]);

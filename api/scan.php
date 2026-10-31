@@ -2,6 +2,9 @@
 require __DIR__ . '/bootstrap.php';
 require_once __DIR__ . '/views/scan/biometric_modal.php';
 
+// Pastikan akses scan diarahkan ke domain resmi ber-HTTPS https://it.bankmitra.co.id
+enforce_qr_domain('scan.php');
+
 $rawToken = (string)($_GET['t'] ?? $_POST['t'] ?? $_GET['token'] ?? $_POST['token'] ?? '');
 if (stripos($rawToken, 'scan.php') !== false || stripos($rawToken, '?t=') !== false) {
     $parsedQuery = parse_url($rawToken, PHP_URL_QUERY);
@@ -50,6 +53,15 @@ if (is_google_cloud_mode()) {
 $asset = get_asset_by_token($token);
 
 if (!$asset) {
+    // Jika tidak ditemukan di tabel assets, periksa apakah ini kartu fisik inventaris (CR80)
+    if (function_exists('find_inventaris_kartu_by_scan')) {
+        $foundCard = find_inventaris_kartu_by_scan($token);
+        if ($foundCard && !empty($foundCard['id'])) {
+            header('Location: ' . qr_url('kartu_detail.php', ['id' => (int)$foundCard['id']]), true, 301);
+            exit;
+        }
+    }
+
     render_page('QR Tidak Ditemukan', '<div class="alert alert-danger border-0 shadow-sm"><i class="bi bi-exclamation-triangle-fill me-2"></i><strong>QR tidak ditemukan atau belum terdaftar di sistem.</strong> Pastikan kode QR sudah di-generate di menu admin QR Aset atau periksa nomor inventaris perangkat.</div>', '', '', false);
     exit;
 }
@@ -90,7 +102,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (($_POST['action'] ?? '') === 'subm
 
     if (!empty($cRes['success'])) {
         $_SESSION['flash_scan'] = '✓ Catatan keluhan Anda berhasil dikirim ke Tim IT. Teknisi akan segera memeriksa dan menindaklanjuti.';
-        header('Location: ' . module_url('scan.php', ['t' => $token, 'complaint_saved' => 1]));
+        header('Location: ' . qr_url('scan.php', ['t' => $token, 'complaint_saved' => 1]));
         exit;
     } else {
         $error = $cRes['error'] ?? 'Gagal menyimpan catatan keluhan.';
@@ -119,7 +131,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (($_POST['action'] ?? '') === 'reso
         } else {
             $_SESSION['flash_scan'] = '✓ Progres tindak lanjut keluhan ("Sedang Diproses") berhasil disimpan oleh ' . $cTech . '.';
         }
-        header('Location: ' . module_url('scan.php', ['t' => $token]));
+        header('Location: ' . qr_url('scan.php', ['t' => $token]));
         exit;
     }
 }
@@ -133,7 +145,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (($_POST['action'] ?? '') === 'rest
     $resRestore = restore_photo_from_trash($trashId, $actor);
     if (!empty($resRestore['success'])) {
         $_SESSION['flash_scan'] = "✓ Foto Ke-{$resRestore['restored_slot']} berhasil dipulihkan dari Folder Sampah!";
-        header('Location: ' . module_url('scan.php', ['t' => $token, 'photo_updated' => 1]));
+        header('Location: ' . qr_url('scan.php', ['t' => $token, 'photo_updated' => 1]));
         exit;
     } else {
         $error = $resRestore['error'] ?? 'Gagal memulihkan foto dari Folder Sampah.';
@@ -225,7 +237,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (($_POST['action'] ?? '') === 'upda
         update_asset($assetId, $upPayload);
 
         $_SESSION['flash_scan'] = '✓ Perubahan foto (' . implode(', ', $changedLabels) . ') berhasil diproses dan diverifikasi oleh ' . htmlspecialchars($verifierName) . '.';
-        header('Location: ' . module_url('scan.php', ['t' => $token, 'photo_updated' => 1]));
+        header('Location: ' . qr_url('scan.php', ['t' => $token, 'photo_updated' => 1]));
         exit;
     } else {
         $error = 'Silakan pilih foto baru (Foto 1 / Foto 2) atau centang foto yang ingin dihapus.';
