@@ -575,11 +575,12 @@ function get_comprehensive_dashboard_data(int $month, int $year, int $cabangId =
         $findSt = db()->prepare("
             SELECT mf.id, mf.maintenance_scan_id AS log_id, mf.asset_id, mf.finding, mf.action_taken, mf.severity,
                    COALESCE(mf.repair_status, 'Open') AS status, mf.created_at,
-                   a.kode_inventaris, a.merk, a.model,
+                   a.kode_inventaris, a.merk, a.model, COALESCE(aqt.token, '') AS token,
                    c.`{$cName}` AS cabang_nama,
                    COALESCE(u.nama, u.username, 'Teknisi') AS reporter
             FROM maintenance_findings mf
             JOIN assets a ON a.id = mf.asset_id
+            LEFT JOIN asset_qr_tokens aqt ON aqt.asset_id = a.id
             LEFT JOIN cabang c ON c.id = a.id_cabang
             LEFT JOIN users u ON u.id = mf.created_by
             WHERE COALESCE(mf.repair_status, 'Open') NOT IN ('Resolved', 'Closed', 'Selesai', 'Done')

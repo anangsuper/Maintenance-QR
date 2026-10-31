@@ -306,7 +306,7 @@ function get_asset_active_finding(int $assetId): ?array {
               AND NOT EXISTS (
                   SELECT 1 FROM maintenance_scan ms 
                   WHERE ms.asset_id = mf.asset_id 
-                    AND ms.id >= COALESCE(mf.maintenance_scan_id, 0)
+                    AND ms.created_at >= mf.created_at
                     AND LOWER(ms.status) IN ('selesai', 'ok', 'resolved')
               )
             ORDER BY mf.id DESC LIMIT 1
@@ -2377,12 +2377,29 @@ function get_findings_report(int $month, int $year, int $cabangId): array {
                 } else {
                     $repSt = 'Perlu Perbaikan';
                 }
-                if (isset($assetIdsProcessed[$aid]) && $repSt === 'Resolved') {
-                    continue;
-                }
                 $kat = trim((string)($ec['kategori'] ?? 'Keluhan'));
                 $txt = trim((string)($ec['complaint'] ?? ''));
                 $resp = trim((string)($ec['technician_response'] ?? ''));
+
+                if (isset($assetIdsProcessed[$aid])) {
+                    if ($repSt === 'Resolved') {
+                        continue;
+                    }
+                    // Cegah duplikasi jika keluhan sudah tersinkron ke maintenance_findings
+                    $alreadyExists = false;
+                    foreach ($results as $ex) {
+                        if ($ex['asset_id'] === $aid && (
+                            ($ex['scan_id'] === 0) ||
+                            ($txt !== '' && str_contains(strtolower($ex['finding']), strtolower(substr($txt, 0, 30))))
+                        )) {
+                            $alreadyExists = true;
+                            break;
+                        }
+                    }
+                    if ($alreadyExists) {
+                        continue;
+                    }
+                }
                 $results[] = [
                     'id' => (int)$ec['id'],
                     'finding_id' => 0,
