@@ -505,16 +505,22 @@ body {
    CETAK (PRINT)
    ========================================================================= */
 @media print {
-  html, body {
+  html, body, .app-layout-wrapper, .app-main-viewport, .app-content-container, main {
     background: #fff !important;
     width: 100% !important;
     margin: 0 !important;
     padding: 0 !important;
+    height: auto !important;
+    min-height: auto !important;
+    max-height: none !important;
+    overflow: visible !important;
+    display: block !important;
+    position: static !important;
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
   }
 
-  .no-print, nav, header, footer, .qr-control-bar, .qr-sticker-actions, .qr-sticker-wrapper.is-unselected, .qr-sticker-wrapper.d-none {
+  .no-print, nav, header, footer, aside, .sidebar-wrapper, .app-topbar, .offcanvas, .modal, .alert, #printTipsCollapse, .qr-control-bar, .qr-sticker-actions, .qr-sticker-wrapper.is-unselected, .qr-sticker-wrapper.d-none {
     display: none !important;
   }
 
@@ -522,6 +528,12 @@ body {
     max-width: 100% !important;
     width: 100% !important;
     padding: 0 !important;
+    height: auto !important;
+    min-height: auto !important;
+    max-height: none !important;
+    overflow: visible !important;
+    display: block !important;
+    position: static !important;
     margin: 0 !important;
   }
 
@@ -529,6 +541,12 @@ body {
     display: block !important;
     text-align: center !important;
     padding: 0 !important;
+    height: auto !important;
+    min-height: auto !important;
+    max-height: none !important;
+    overflow: visible !important;
+    display: block !important;
+    position: static !important;
     margin: 0 auto !important;
     width: 100% !important;
   }
@@ -797,7 +815,18 @@ function toggleSelectAll(select) {
 }
 
 function updateSelectedCount() {
-  var visibleSelected = document.querySelectorAll(".qr-sticker-wrapper:not(.d-none) .sticker-check:checked").length;
+  var wrappers = document.querySelectorAll(".qr-sticker-wrapper");
+  var visibleSelected = 0;
+  wrappers.forEach(function(w) {
+    if (w.classList.contains("d-none")) return;
+    var chk = w.querySelector(".sticker-check");
+    if (chk && chk.checked) {
+      w.classList.remove("is-unselected");
+      visibleSelected++;
+    } else {
+      w.classList.add("is-unselected");
+    }
+  });
   var countEl = document.getElementById("printSelectedCount");
   if (countEl) countEl.textContent = visibleSelected;
 }
@@ -834,7 +863,18 @@ function clearFilter() {
 }
 
 function printSelectedStickers() {
-  var visibleSelected = document.querySelectorAll(".qr-sticker-wrapper:not(.d-none) .sticker-check:checked").length;
+  var wrappers = document.querySelectorAll(".qr-sticker-wrapper");
+  var visibleSelected = 0;
+  wrappers.forEach(function(w) {
+    if (w.classList.contains("d-none")) return;
+    var chk = w.querySelector(".sticker-check");
+    if (chk && chk.checked) {
+      w.classList.remove("is-unselected");
+      visibleSelected++;
+    } else {
+      w.classList.add("is-unselected");
+    }
+  });
   if (visibleSelected === 0) {
     alert("Silakan pilih minimal 1 stiker untuk dicetak.");
     return;

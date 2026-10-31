@@ -1047,7 +1047,7 @@ if ($hasAnyUnitPhoto) {
       '.$slotsDisplayHtml.'
       '.$verifiedBadge.'
       <div class="mt-2 d-flex flex-wrap justify-content-center gap-1.5">
-        <button type="button" class="btn btn-sm btn-outline-primary py-1 px-2.5 fw-semibold shadow-xs" style="font-size: 0.72rem;" onclick="openUploadFotoTeknisiModal()" data-bs-toggle="modal" data-bs-target="#modalUploadFotoTeknisi">
+        <button type="button" class="btn btn-sm btn-outline-primary py-1 px-2.5 fw-semibold shadow-xs" style="font-size: 0.72rem;" onclick="openUploadFotoTeknisiModal()">
           <i class="bi bi-camera me-1"></i> '.($hasBoth ? 'Edit / Ganti Foto' : 'Edit / Tambah Foto 2').'
         </button>
         '.($loggedIn ? '<a href="'.e(module_url('photo_trash.php', ['source_type' => 'assets'])).'" class="btn btn-sm btn-light border py-1 px-2 text-secondary fw-semibold shadow-xs" style="font-size: 0.72rem;" title="Folder Sampah Foto (Tersimpan 7 Hari)"><i class="bi bi-recycle text-success me-0.5"></i> Sampah '.($totalTrashAssetsCount > 0 ? '<span class="badge bg-danger text-white rounded-pill">'.$totalTrashAssetsCount.'</span>' : '').'</a>' : '').'
@@ -1058,10 +1058,10 @@ if ($hasAnyUnitPhoto) {
 } else {
     $fotoCardHtml = '
     <div id="assetPhotoCardSection" class="col-12 col-md-4 col-lg-3 text-center mb-3 mb-md-0">
-      <div class="rounded-3 border border-2 border-dashed bg-light p-3 d-flex flex-column align-items-center justify-content-center h-100" style="min-height: 175px; border-color: #cbd5e1 !important; cursor: pointer;" onclick="openUploadFotoTeknisiModal()" data-bs-toggle="modal" data-bs-target="#modalUploadFotoTeknisi">
+      <div class="rounded-3 border border-2 border-dashed bg-light p-3 d-flex flex-column align-items-center justify-content-center h-100" style="min-height: 175px; border-color: #cbd5e1 !important; cursor: pointer;" onclick="openUploadFotoTeknisiModal()">
         <i class="bi bi-camera fs-1 text-secondary opacity-50 mb-1"></i>
         <div class="small text-muted mb-0.5 fw-semibold" style="font-size: 0.75rem;">Belum ada foto fisik unit</div>
-        <button type="button" class="btn btn-xs btn-outline-primary fw-semibold mt-1 py-1 px-2.5 rounded-pill shadow-xs" style="font-size: 0.70rem;" onclick="openUploadFotoTeknisiModal()" data-bs-toggle="modal" data-bs-target="#modalUploadFotoTeknisi">
+        <button type="button" class="btn btn-xs btn-outline-primary fw-semibold mt-1 py-1 px-2.5 rounded-pill shadow-xs" style="font-size: 0.70rem;" onclick="openUploadFotoTeknisiModal(); event.stopPropagation();">
           <i class="bi bi-camera me-1"></i> Ambil / Upload Foto
         </button>
       </div>
@@ -1375,7 +1375,7 @@ $body = '
         <input type="hidden" name="verifier_photo" id="scanPhotoBioSnap" value="">
 
         <div class="modal-body p-3.5 p-md-4">
-          <div class="alert alert-success bg-success bg-opacity-10 border-success border-opacity-25 rounded-3 py-2 px-3 mb-3 small">
+          '.($loggedIn ? '<div class="alert alert-success bg-success bg-opacity-10 border-success border-opacity-25 rounded-3 py-2 px-3 mb-3 small">' : '<div class="d-none">').'
             <i class="bi bi-recycle text-success me-1"></i> <strong>Aman 7 Hari:</strong> Foto yang dihapus atau diganti tidak langsung hilang, melainkan disimpan di <a href="'.e(module_url('photo_trash.php', ['source_type' => 'assets'])).'" class="fw-bold text-success text-decoration-underline">Folder Sampah Foto</a> selama <strong>7 hari</strong> dan dapat di-restore.
           </div>
 

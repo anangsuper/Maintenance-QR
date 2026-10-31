@@ -442,7 +442,7 @@ $pageTitle = $card ? e($card['nama_barang']) . ' - Kartu Inventaris' : 'Kartu In
     <header class="header-brand py-2.5 py-md-3 px-2.5 px-md-4 shadow-sm" style="background: #0E5C58 !important; border-bottom: 3px solid #094340;">
         <div class="container d-flex align-items-center justify-content-between gap-2 gap-md-3" style="max-width: 1200px;">
             <div class="d-flex align-items-center gap-2 gap-md-3 min-w-0 flex-grow-1">
-                <div class="bg-white px-2 px-md-3 py-1 py-md-1.5 rounded-3 shadow-sm flex-shrink-0 d-flex align-items-center justify-content-center" style="height: 42px; min-width: 52px; max-width: 80px;">
+                <div class="bg-white px-1.5 px-md-3 py-1 rounded-3 shadow-sm flex-shrink-0 d-flex align-items-center justify-content-center" style="height: clamp(34px, 4vw, 42px); width: clamp(42px, 5vw, 68px);">
                     <img src="<?= module_url('logo_img.php') ?>" alt="Logo Bank Mitra" style="height: 32px; width: auto; max-width: 100%; object-fit: contain;" onerror="this.onerror=null; this.src='data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'32\' height=\'32\' viewBox=\'0 0 24 24\' fill=\'%230E5C58\'%3E%3Cpath d=\'M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5\'/%3E%3C/svg%3E';">
                 </div>
                 <div class="min-w-0 pe-1">
@@ -454,11 +454,11 @@ $pageTitle = $card ? e($card['nama_barang']) . ' - Kartu Inventaris' : 'Kartu In
             </div>
             <div class="flex-shrink-0">
                 <?php if (is_logged_in()): ?>
-                    <a href="<?= module_url('dashboard.php', ['tab' => 'kartu']) ?>" class="btn btn-outline-light rounded-pill px-2.5 px-sm-3.5 py-1.5 d-inline-flex align-items-center gap-1.5 fw-bold shadow-xs" style="font-size: 0.80rem; border-color: rgba(255,255,255,0.6); white-space: nowrap;">
+                    <a href="<?= module_url('dashboard.php', ['tab' => 'kartu']) ?>" class="btn btn-outline-light rounded-pill px-2 px-sm-3 py-1 py-sm-1.5 d-inline-flex align-items-center gap-1 fw-bold shadow-xs flex-shrink-0" style="font-size: clamp(0.74rem, 2.2vw, 0.82rem); border-color: rgba(255,255,255,0.6); white-space: nowrap;">
                         <i class="bi bi-arrow-left"></i> <span class="d-none d-sm-inline">Dashboard</span><span class="d-inline d-sm-none">Menu</span>
                     </a>
                 <?php else: ?>
-                    <a href="<?= module_url('login.php') ?>" class="btn btn-outline-light rounded-pill px-2.5 px-sm-3.5 py-1.5 d-inline-flex align-items-center gap-1.5 fw-bold shadow-xs" style="font-size: 0.80rem; border-color: rgba(255,255,255,0.6); white-space: nowrap;">
+                    <a href="<?= module_url('login.php') ?>" class="btn btn-outline-light rounded-pill px-2 px-sm-3 py-1 py-sm-1.5 d-inline-flex align-items-center gap-1 fw-bold shadow-xs flex-shrink-0" style="font-size: clamp(0.74rem, 2.2vw, 0.82rem); border-color: rgba(255,255,255,0.6); white-space: nowrap;">
                         <i class="bi bi-box-arrow-in-right"></i> <span>Login</span>
                     </a>
                 <?php endif; ?>

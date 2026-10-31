@@ -160,7 +160,7 @@ function ensure_asset_master_columns(): void {
 function asset_image_url(?string $foto): string {
     $foto = trim((string)$foto);
     if ($foto === '') return '';
-    if (str_starts_with($foto, 'http://') || str_starts_with($foto, 'https://') || str_starts_with($foto, '//')) {
+    if (str_starts_with($foto, 'http://') || str_starts_with($foto, 'https://') || str_starts_with($foto, '//') || str_starts_with($foto, 'data:image/')) {
         return $foto;
     }
     $clean = ltrim($foto, '/');
@@ -180,23 +180,30 @@ function upload_asset_image(string $fileKey = 'foto_unit'): ?string {
         return null;
     }
     $uploadDir = dirname(__DIR__) . '/uploads/assets/';
-    if (!is_dir($uploadDir)) {
-        @mkdir($uploadDir, 0777, true);
-        @chmod($uploadDir, 0777);
-    }
-    $fileName = 'unit_' . date('Ymd_His') . '_' . bin2hex(random_bytes(4)) . '.jpg';
-    $targetPath = $uploadDir . $fileName;
+    $dirWritable = is_dir($uploadDir) ? is_writable($uploadDir) : @mkdir($uploadDir, 0777, true);
+    
+    if ($dirWritable) {
+        $fileName = 'unit_' . date('Ymd_His') . '_' . bin2hex(random_bytes(4)) . '.jpg';
+        $targetPath = $uploadDir . $fileName;
 
-    // Kompresi otomatis (PHP GD max 1600px quality 82%) agar hemat storage server
-    if (function_exists('compress_and_save_uploaded_image')) {
-        if (compress_and_save_uploaded_image($file['tmp_name'], $targetPath, 1600, 82)) {
+        // Kompresi otomatis (PHP GD max 1600px quality 82%) agar hemat storage server
+        if (function_exists('compress_and_save_uploaded_image')) {
+            if (compress_and_save_uploaded_image($file['tmp_name'], $targetPath, 1600, 82)) {
+                return 'uploads/assets/' . $fileName;
+            }
+        }
+
+        if (move_uploaded_file($file['tmp_name'], $targetPath)) {
+            @chmod($targetPath, 0666);
             return 'uploads/assets/' . $fileName;
         }
     }
 
-    if (move_uploaded_file($file['tmp_name'], $targetPath)) {
-        @chmod($targetPath, 0666);
-        return 'uploads/assets/' . $fileName;
+    // Fallback bila direktori serverless read-only: konversi ke base64 data URI
+    $fileBytes = @file_get_contents($file['tmp_name']);
+    if ($fileBytes !== false && strlen($fileBytes) > 0) {
+        $mime = function_exists('mime_content_type') ? @mime_content_type($file['tmp_name']) : 'image/jpeg';
+        return 'data:' . ($mime ?: 'image/jpeg') . ';base64,' . base64_encode($fileBytes);
     }
     return null;
 }
@@ -204,36 +211,42 @@ function upload_asset_image(string $fileKey = 'foto_unit'): ?string {
 function save_asset_base64_image(string $base64Data): ?string {
     $clean = trim($base64Data);
     if ($clean === '') return null;
+    $rawBase64 = $clean;
     if (preg_match('/^data:image\/(\w+);base64,/', $clean)) {
-        $clean = substr($clean, strpos($clean, ',') + 1);
+        $rawBase64 = substr($clean, strpos($clean, ',') + 1);
     }
-    $decoded = base64_decode($clean);
+    $decoded = base64_decode($rawBase64);
     if ($decoded === false || strlen($decoded) === 0) return null;
 
     $uploadDir = dirname(__DIR__) . '/uploads/assets/';
-    if (!is_dir($uploadDir)) {
-        @mkdir($uploadDir, 0777, true);
-        @chmod($uploadDir, 0777);
-    }
-    $fileName = 'unit_' . date('Ymd_His') . '_' . bin2hex(random_bytes(4)) . '.jpg';
-    $targetPath = $uploadDir . $fileName;
-    $tmpPath = $uploadDir . 'tmp_' . bin2hex(random_bytes(6)) . '.jpg';
-    @file_put_contents($tmpPath, $decoded);
+    $dirWritable = is_dir($uploadDir) ? is_writable($uploadDir) : @mkdir($uploadDir, 0777, true);
 
-    $saved = false;
-    if (function_exists('compress_and_save_uploaded_image')) {
-        $saved = compress_and_save_uploaded_image($tmpPath, $targetPath, 1600, 82);
+    if ($dirWritable) {
+        $fileName = 'unit_' . date('Ymd_His') . '_' . bin2hex(random_bytes(4)) . '.jpg';
+        $targetPath = $uploadDir . $fileName;
+        $tmpPath = $uploadDir . 'tmp_' . bin2hex(random_bytes(6)) . '.jpg';
+        if (@file_put_contents($tmpPath, $decoded) !== false) {
+            $saved = false;
+            if (function_exists('compress_and_save_uploaded_image')) {
+                $saved = compress_and_save_uploaded_image($tmpPath, $targetPath, 1600, 82);
+            }
+            if (!$saved) {
+                $saved = @rename($tmpPath, $targetPath);
+            } else {
+                @unlink($tmpPath);
+            }
+            if ($saved && file_exists($targetPath)) {
+                @chmod($targetPath, 0666);
+                return 'uploads/assets/' . $fileName;
+            }
+        }
     }
-    if (!$saved) {
-        $saved = @rename($tmpPath, $targetPath);
-    } else {
-        @unlink($tmpPath);
+
+    // Fallback jika filesystem read-only (misal Vercel Serverless): simpan data URI langsung
+    if (str_starts_with($clean, 'data:image/')) {
+        return $clean;
     }
-    if ($saved && file_exists($targetPath)) {
-        @chmod($targetPath, 0666);
-        return 'uploads/assets/' . $fileName;
-    }
-    return null;
+    return 'data:image/jpeg;base64,' . base64_encode($decoded);
 }
 
 function get_asset_replacement_info(array $asset): array {
@@ -684,6 +697,12 @@ function update_asset(int $id, array $data): array {
             $kode = !empty($oldAsset['kode_inventaris']) ? $oldAsset['kode_inventaris'] : sprintf('INV-IT-%03d', $id);
         }
 
+        $curF1 = array_key_exists('foto', $data) ? trim((string)$data['foto']) : ($oldAsset['foto'] ?? '');
+        $curF2 = array_key_exists('foto_2', $data) ? trim((string)$data['foto_2']) : ($oldAsset['foto_2'] ?? '');
+        $curBy = array_key_exists('foto_updated_by', $data) ? trim((string)$data['foto_updated_by']) : ($oldAsset['foto_updated_by'] ?? '');
+        $curAt = array_key_exists('foto_updated_at', $data) ? trim((string)$data['foto_updated_at']) : ($oldAsset['foto_updated_at'] ?? '');
+        $curCreated = !empty($oldAsset['created_at']) ? $oldAsset['created_at'] : date('Y-m-d H:i:s');
+
         $assetRow = [
             $id,
             sheet_cell_text($kode),
@@ -697,12 +716,21 @@ function update_asset(int $id, array $data): array {
             $status,
             $ket,
             $ip,
-            $printer
+            $printer,
+            $curCreated,
+            $curF1,
+            $curF2,
+            $curBy,
+            $curAt
         ];
 
-        $updated = $client->updateValues("Assets!A{$rowNum}:M{$rowNum}", [$assetRow]);
+        $updated = $client->updateValues("Assets!A{$rowNum}:R{$rowNum}", [$assetRow]);
         if (!$updated) {
-            return ['success' => false, 'error' => 'Gagal memperbarui data di Google Sheets'];
+            // Fallback coba update kolom A:M jika sheet belum memiliki kolom O..R
+            $updated = $client->updateValues("Assets!A{$rowNum}:M{$rowNum}", [array_slice($assetRow, 0, 13)]);
+            if (!$updated) {
+                return ['success' => false, 'error' => 'Gagal memperbarui data di Google Sheets'];
+            }
         }
 
         // Update placement label di Asset_QR_Tokens dan pastikan token tetap utuh & permanen
