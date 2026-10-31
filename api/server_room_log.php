@@ -688,8 +688,8 @@ ob_start();
     </div>
   <?php endif; ?>
 
-  <!-- 4 SYMMETRICAL KOMBAI METRIC CARDS (88px) -->
-  <div class="bg-[#FFFFFF] border border-[#D1D5D8] rounded-[10px] h-[88px] flex overflow-hidden shrink-0 mb-4">
+  <!-- 4 SYMMETRICAL KOMBAI METRIC CARDS (88px) - DESKTOP -->
+  <div class="d-none d-md-flex bg-[#FFFFFF] border border-[#D1D5D8] rounded-[10px] h-[88px] overflow-hidden shrink-0 mb-4">
     <!-- Card 1: Live Occupants -->
     <a href="<?= module_url('server_room_log.php', ['status' => 'in_room']) ?>" class="flex-1 flex flex-col justify-center px-6 border-r border-[#D1D5D8] relative cursor-pointer text-decoration-none transition-colors <?= $statusFilter === 'in_room' ? 'bg-[#D9F1EF]' : 'hover:bg-[#F4F5F7]' ?>">
       <div class="absolute left-0 top-0 bottom-0 w-1 <?= count($liveOccupants) > 0 ? 'bg-[#16A34A]' : 'bg-[#0E5C58]' ?>"></div>
@@ -732,6 +732,70 @@ ob_start();
       </div>
       <div class="text-[12px] font-medium text-[#53595F] mt-1.5">
         Rata-Rata Suhu Ruangan
+      </div>
+    </div>
+  </div>
+
+  <!-- 4 KOMBAI METRIC CARDS - MOBILE (2x2 GRID) -->
+  <div class="d-md-none row g-2 mb-4">
+    <!-- Card 1: Live Occupants -->
+    <div class="col-6">
+      <a href="<?= module_url('server_room_log.php', ['status' => 'in_room']) ?>" class="card h-100 p-2.5 rounded-[10px] border border-[#D1D5D8] text-decoration-none shadow-xs position-relative overflow-hidden <?= $statusFilter === 'in_room' ? 'bg-[#D9F1EF]' : 'bg-white' ?>">
+        <div class="position-absolute start-0 top-0 bottom-0" style="width: 4px; background: <?= count($liveOccupants) > 0 ? '#16A34A' : '#0E5C58' ?>;"></div>
+        <div class="ps-2">
+          <div class="text-[20px] font-bold <?= count($liveOccupants) > 0 ? 'text-[#16A34A]' : 'text-[#1B2A3A]' ?> leading-none">
+            <?= count($liveOccupants) ?> <span class="text-[11px] font-normal text-[#53595F]">Orang</span>
+          </div>
+          <div class="text-[11px] font-medium text-[#53595F] mt-1.5 d-flex align-items-center gap-1">
+            <span class="door-badge-pulse" style="width:6px;height:6px;background: <?= count($liveOccupants) > 0 ? '#16A34A' : '#9CA3AF' ?>;"></span>
+            <span>Di Dalam</span>
+          </div>
+        </div>
+      </a>
+    </div>
+
+    <!-- Card 2: Total Kunjungan Bulan Ini -->
+    <div class="col-6">
+      <a href="<?= module_url('server_room_log.php', ['status' => 'all']) ?>" class="card h-100 p-2.5 rounded-[10px] border border-[#D1D5D8] text-decoration-none shadow-xs position-relative overflow-hidden <?= ($statusFilter === 'all' && empty($search)) ? 'bg-[#D9F1EF]' : 'bg-white' ?>">
+        <div class="position-absolute start-0 top-0 bottom-0" style="width: 4px; background: #0E5C58;"></div>
+        <div class="ps-2">
+          <div class="text-[20px] font-bold text-[#1B2A3A] leading-none">
+            <?= number_format($kpiTotalMonth) ?> <span class="text-[11px] font-normal text-[#53595F]">Akses</span>
+          </div>
+          <div class="text-[11px] font-medium text-[#53595F] mt-1.5">
+            Total Kunjungan
+          </div>
+        </div>
+      </a>
+    </div>
+
+    <!-- Card 3: Tamu / Vendor Eksternal -->
+    <div class="col-6">
+      <div class="card h-100 p-2.5 rounded-[10px] border border-[#D1D5D8] shadow-xs position-relative overflow-hidden bg-white">
+        <div class="position-absolute start-0 top-0 bottom-0" style="width: 4px; background: #D97706;"></div>
+        <div class="ps-2">
+          <div class="text-[20px] font-bold text-[#D97706] leading-none">
+            <?= number_format($kpiVendorMonth) ?> <span class="text-[11px] font-normal text-[#53595F]">Tamu</span>
+          </div>
+          <div class="text-[11px] font-medium text-[#53595F] mt-1.5">
+            Vendor &amp; Tamu
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Card 4: Suhu Rata-rata Server -->
+    <div class="col-6">
+      <div class="card h-100 p-2.5 rounded-[10px] border border-[#D1D5D8] shadow-xs position-relative overflow-hidden bg-white">
+        <div class="position-absolute start-0 top-0 bottom-0" style="width: 4px; background: #0284C7;"></div>
+        <div class="ps-2">
+          <div class="text-[20px] font-bold text-[#0284C7] leading-none">
+            <?= $avgTempFormatted ?>
+          </div>
+          <div class="text-[11px] font-medium text-[#53595F] mt-1.5">
+            Suhu Rata-Rata
+          </div>
+        </div>
       </div>
     </div>
   </div>

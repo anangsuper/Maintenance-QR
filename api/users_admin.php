@@ -447,8 +447,8 @@ ob_start();
 </div>
 <?php endif; ?>
 
-<!-- 3 SYMMETRICAL KOMBAI METRIC CARDS (88px) -->
-<div class="bg-[#FFFFFF] border border-[#D1D5D8] rounded-[10px] h-[88px] flex overflow-hidden shrink-0 mb-4">
+<!-- 3 SYMMETRICAL KOMBAI METRIC CARDS (88px) - DESKTOP -->
+<div class="d-none d-md-flex bg-[#FFFFFF] border border-[#D1D5D8] rounded-[10px] h-[88px] overflow-hidden shrink-0 mb-4">
   <!-- Card 1: Total Pengguna Terdaftar -->
   <div class="flex-1 flex flex-col justify-center px-6 border-r border-[#D1D5D8] relative hover:bg-[#F4F5F7] transition-colors">
     <div class="absolute left-0 top-0 bottom-0 w-1 bg-[#0E5C58]"></div>
@@ -494,6 +494,58 @@ ob_start();
       <span class="text-[#0E5C58] font-semibold"><i class="bi bi-shield-lock-fill me-0.5"></i> <?= $countAdmin ?> Admin</span>
       <span>&middot;</span>
       <span class="text-[#64748B] font-semibold"><i class="bi bi-eye-fill me-0.5"></i> <?= $countAuditor ?> Auditor</span>
+    </div>
+  </div>
+</div>
+
+<!-- 3 KOMBAI METRIC CARDS - MOBILE (RESPONSIVE) -->
+<div class="d-md-none row g-2 mb-4">
+  <div class="col-12">
+    <div class="bg-white border border-[#D1D5D8] rounded-[10px] p-3 shadow-xs position-relative overflow-hidden">
+      <div class="position-absolute start-0 top-0 bottom-0" style="width: 4px; background: #0E5C58;"></div>
+      <div class="ps-2">
+        <div class="text-[22px] font-bold text-[#1B2A3A] leading-none">
+          <?= number_format($totalUsers) ?> <span class="text-[12px] font-normal text-[#53595F]">Pengguna Terdaftar</span>
+        </div>
+        <div class="text-[11px] font-medium text-[#53595F] mt-1.5 flex items-center gap-2">
+          <span class="text-[#10B981] font-semibold"><i class="bi bi-check-circle-fill me-0.5"></i> <?= $countActive ?> Aktif</span>
+          <span>&middot;</span>
+          <span class="text-[#EF4444] font-semibold"><i class="bi bi-x-circle-fill me-0.5"></i> <?= $countNonactive ?> Nonaktif</span>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-6">
+    <div class="bg-white border border-[#D1D5D8] rounded-[10px] p-2.5 shadow-xs position-relative overflow-hidden h-100">
+      <div class="position-absolute start-0 top-0 bottom-0" style="width: 4px; background: #10B981;"></div>
+      <div class="ps-2">
+        <div class="text-[20px] font-bold text-[#10B981] leading-none">
+          <?= $countFaceVerified ?> <span class="text-[11px] font-normal text-[#53595F]">/ <?= $totalUsers ?></span>
+        </div>
+        <div class="text-[11px] font-medium text-[#53595F] mt-1">
+          <span class="text-[#0E5C58] font-bold"><?= $bioPercent ?>% Terverifikasi</span>
+          <?php if ($countFacePending > 0): ?>
+            <div class="text-[#D97706] font-semibold mt-0.5"><i class="bi bi-hourglass-split"></i> <?= $countFacePending ?> Menunggu</div>
+          <?php endif; ?>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-6">
+    <div class="bg-white border border-[#D1D5D8] rounded-[10px] p-2.5 shadow-xs position-relative overflow-hidden h-100">
+      <div class="position-absolute start-0 top-0 bottom-0" style="width: 4px; background: #0284C7;"></div>
+      <div class="ps-2">
+        <div class="text-[20px] font-bold text-[#1B2A3A] leading-none">
+          <?= $countTeknisi ?> <span class="text-[11px] font-normal text-[#53595F]">Teknisi IT</span>
+        </div>
+        <div class="text-[11px] font-medium text-[#53595F] mt-1 flex flex-wrap gap-1">
+          <span class="text-[#0284C7] font-semibold"><?= $countTeknisi ?> IT</span>
+          <span>&middot;</span>
+          <span class="text-[#D97706] font-semibold"><?= $countSdm ?> SDM</span>
+          <span>&middot;</span>
+          <span class="text-[#0E5C58] font-semibold"><?= $countAdmin ?> Adm</span>
+        </div>
+      </div>
     </div>
   </div>
 </div>
@@ -557,8 +609,166 @@ ob_start();
         </div>
       </div>
 
-      <!-- Tabel Pengguna -->
-      <div class="table-responsive">
+      <!-- MOBILE (HP) USER CARDS VIEW -->
+      <div class="d-md-none p-3 d-flex flex-column gap-2.5 bg-[#F9FAFB] border-b border-[#D1D5D8]" id="userCardsMobile">
+        <?php 
+        $mNo = 0;
+        foreach ($users as $u): 
+          $mNo++;
+          $uId = (int)($u['id'] ?? 0);
+          $uNama = (string)($u['nama'] ?? '');
+          $uNick = trim((string)($u['nama_panggilan'] ?? ''));
+          $uUsername = (string)($u['username'] ?? '');
+          $uRole = strtolower((string)($u['role'] ?? 'teknisi'));
+          $uTelRaw = (string)($u['telepon'] ?? '');
+          $uTel = format_phone_number($uTelRaw);
+          $uStatus = (string)($u['status'] ?? 'Aktif');
+          $fDesc = trim((string)($u['face_descriptor'] ?? ''));
+          $fStat = strtolower(trim((string)($u['face_status'] ?? '')));
+          $uPhoto = trim((string)($u['face_photo'] ?? ''));
+          $isBeingEdited = ($editId === $uId);
+
+          $filterRoleGroup = ($uRole === 'admin' || $uRole === 'administrator') ? 'admin' : ((in_array($uRole, ['sdm', 'hrd', 'umum', 'hrd_umum', 'sdm_umum', 'sdm & umum', 'sdm/hrd'], true) || str_contains($uRole, 'sdm')) ? 'sdm' : (($uRole === 'auditor' || $uRole === 'skai') ? 'auditor' : 'teknisi'));
+          $filterBioGroup = ($fStat === 'verified' || $fStat === 'terverifikasi') ? 'verified' : (($fStat === 'pending' || $fStat === 'menunggu') ? 'pending' : 'none');
+          $filterStatusGroup = (strcasecmp($uStatus, 'Nonaktif') === 0) ? 'nonaktif' : 'aktif';
+
+          if ($filterRoleGroup === 'admin') {
+            $mRoleBadge = '<span class="status-pill" style="background:#D9F1EF; color:#0E5C58; border:1px solid #A7E2DC;"><i class="bi bi-shield-lock-fill me-1"></i> Admin</span>';
+          } elseif ($filterRoleGroup === 'sdm') {
+            $mRoleBadge = '<span class="status-pill" style="background:#FEF3C7; color:#92400E; border:1px solid #FCD34D;"><i class="bi bi-person-workspace me-1"></i> SDM</span>';
+          } elseif ($filterRoleGroup === 'auditor') {
+            $mRoleBadge = '<span class="status-pill" style="background:#F1F5F9; color:#475569; border:1px solid #CBD5E1;"><i class="bi bi-eye-fill me-1"></i> Auditor</span>';
+          } else {
+            $mRoleBadge = '<span class="status-pill" style="background:#E0F2FE; color:#0369A1; border:1px solid #BAE6FD;"><i class="bi bi-tools me-1"></i> Teknisi</span>';
+          }
+
+          if ($filterStatusGroup === 'nonaktif') {
+            $mStatusBadge = '<span class="status-pill" style="background:#FEF2F2; color:#991B1B; border:1px solid #FECACA;"><i class="bi bi-x-circle-fill me-1"></i> Nonaktif</span>';
+          } else {
+            $mStatusBadge = '<span class="status-pill" style="background:#ECFDF5; color:#065F46; border:1px solid #A7F3D0;"><i class="bi bi-check-circle-fill me-1"></i> Aktif</span>';
+          }
+
+          $hasFace = ($uPhoto !== '' || $fDesc !== '');
+          $isFaceVerified = ($fStat === 'verified' || $fStat === 'terverifikasi');
+          $isFacePending = ($fStat === 'pending' || $fStat === 'menunggu');
+
+          if (!$hasFace) {
+            $mBioBadge = '<a href="'.e(module_url('user_biometric_enroll.php', ['id'=>$uId])).'" class="status-pill text-decoration-none" style="background:#F3F4F6; color:#6B7280; border:1px solid #E5E7EB;"><i class="bi bi-camera me-1"></i> Belum Ada Wajah</a>';
+          } elseif ($isFaceVerified) {
+            $mBioBadge = '<span class="status-pill js-preview-face cursor-pointer" style="background:#ECFDF5; color:#065F46; border:1px solid #A7F3D0;" data-photo="'.e($uPhoto).'" data-nama="'.e($uNama).'" data-username="'.e($uUsername).'" data-role="'.e($uRole).'" data-id="'.$uId.'" data-stat="'.e($fStat).'" data-enroll-url="'.e(module_url('user_biometric_enroll.php', ['id'=>$uId])).'"><i class="bi bi-shield-check me-1"></i> Wajah Terverifikasi</span>';
+          } elseif ($isFacePending) {
+            $mBioBadge = '<span class="status-pill js-preview-face cursor-pointer" style="background:#FEF3C7; color:#92400E; border:1px solid #FCD34D;" data-photo="'.e($uPhoto).'" data-nama="'.e($uNama).'" data-username="'.e($uUsername).'" data-role="'.e($uRole).'" data-id="'.$uId.'" data-stat="'.e($fStat).'" data-enroll-url="'.e(module_url('user_biometric_enroll.php', ['id'=>$uId])).'"><i class="bi bi-hourglass-split me-1"></i> Menunggu Verifikasi</span>';
+          } else {
+            $mBioBadge = '<span class="status-pill js-preview-face cursor-pointer" style="background:#FEF2F2; color:#991B1B; border:1px solid #FECACA;" data-photo="'.e($uPhoto).'" data-nama="'.e($uNama).'" data-username="'.e($uUsername).'" data-role="'.e($uRole).'" data-id="'.$uId.'" data-stat="'.e($fStat).'" data-enroll-url="'.e(module_url('user_biometric_enroll.php', ['id'=>$uId])).'"><i class="bi bi-x-circle me-1"></i> Wajah Ditolak</span>';
+          }
+
+          if ($uPhoto !== '') {
+            $dot = $isFaceVerified ? '<span class="position-absolute bottom-0 end-0 badge rounded-full bg-success p-0 border border-white" style="width: 10px; height: 10px;"></span>' : ($isFacePending ? '<span class="position-absolute bottom-0 end-0 badge rounded-full bg-warning p-0 border border-white" style="width: 10px; height: 10px;"></span>' : '');
+            $mAvatarHtml = '<div class="position-relative js-preview-face cursor-pointer shrink-0" data-photo="'.e($uPhoto).'" data-nama="'.e($uNama).'" data-username="'.e($uUsername).'" data-role="'.e($uRole).'" data-id="'.$uId.'" data-stat="'.e($fStat).'" data-enroll-url="'.e(module_url('user_biometric_enroll.php', ['id'=>$uId])).'"><img src="'.e($uPhoto).'" class="rounded-full border border-[#D1D5D8] shadow-xs" style="width: 44px; height: 44px; object-fit: cover;">'.$dot.'</div>';
+          } else {
+            $initial = strtoupper(substr($uNama ?: $uUsername, 0, 1));
+            $mAvatarHtml = '<div class="rounded-full d-flex align-items-center justify-content-center font-bold text-white shadow-xs shrink-0" style="width: 44px; height: 44px; font-size: 1.05rem; background: linear-gradient(135deg, #0E5C58 0%, #1B2A3A 100%);">'.$initial.'</div>';
+          }
+
+          $mTelHtml = '';
+          if ($uTel !== '-' && $uTel !== '') {
+            $cleanPhone = preg_replace('/[^0-9]/', '', $uTel);
+            $waPhone = str_starts_with($cleanPhone, '0') ? ('62' . substr($cleanPhone, 1)) : $cleanPhone;
+            $mTelHtml = '<a href="https://wa.me/'.e($waPhone).'" target="_blank" rel="noopener noreferrer" class="text-decoration-none text-[#16A34A] hover:underline inline-flex items-center gap-1 small mt-0.5" title="Kirim Pesan WhatsApp"><i class="bi bi-whatsapp"></i> <span>'.e($uTel).'</span></a>';
+          }
+
+          $isTargetAdmin = in_array($filterRoleGroup, ['admin'], true);
+          $canManageUser = is_admin() || (!$isTargetAdmin);
+        ?>
+        <div class="user-card bg-white border border-[#D1D5D8] rounded-[10px] p-3 shadow-xs position-relative <?= ($isBeingEdited ? 'bg-[#FEF9C3] border-warning' : '') ?>" data-nama="<?= strtolower(e($uNama)) ?>" data-username="<?= strtolower(e($uUsername)) ?>" data-phone="<?= strtolower(e($uTel)) ?>" data-role="<?= $filterRoleGroup ?>" data-bio="<?= $filterBioGroup ?>" data-status="<?= $filterStatusGroup ?>">
+          <div class="d-flex align-items-center justify-content-between mb-2">
+            <span class="badge bg-light text-dark border font-mono small">#<?= sprintf('%02d', $mNo) ?></span>
+            <div class="d-flex align-items-center gap-1.5">
+              <?= $mRoleBadge ?>
+              <?= $mStatusBadge ?>
+            </div>
+          </div>
+
+          <div class="d-flex align-items-center gap-3 mb-2.5">
+            <?= $mAvatarHtml ?>
+            <div class="min-w-0 flex-grow-1">
+              <div class="fw-bold text-[#1B2A3A] text-[14px] text-truncate">
+                <?= e($uNama) ?>
+                <?php if ($uNick !== ''): ?>
+                  <span class="px-1.5 py-0.2 text-[10px] font-mono bg-[#F4F5F7] text-[#53595F] border border-[#D1D5D8] rounded" title="Paraf Kartu IT"><?= e($uNick) ?></span>
+                <?php endif; ?>
+              </div>
+              <div class="text-[12px] font-mono text-[#53595F]">@<?= e($uUsername) ?></div>
+              <?= $mTelHtml ?>
+            </div>
+          </div>
+
+          <div class="bg-[#F8FAFC] rounded-[8px] p-2 mb-2.5 d-flex align-items-center justify-content-between">
+            <div class="small text-[#53595F] fw-medium">Biometrik:</div>
+            <div><?= $mBioBadge ?></div>
+          </div>
+
+          <div class="d-flex align-items-center justify-content-end gap-1.5 pt-2 border-top border-[#F1F5F9] flex-wrap">
+            <a href="<?= e(module_url('user_biometric_enroll.php', ['id' => $uId])) ?>" class="btn btn-sm btn-outline-primary py-1 px-2.5 rounded-[6px]" title="Daftarkan / Foto Ulang Biometrik Wajah">
+              <i class="bi bi-camera me-1"></i> Foto
+            </a>
+
+            <?php if ($hasFace): ?>
+              <?php if (!$isFaceVerified): ?>
+                <form method="post" class="d-inline m-0" onsubmit="return confirm('Verifikasi dan setujui biometrik wajah <?= addslashes($uNama) ?>?')">
+                  <input type="hidden" name="_csrf" value="<?= e(csrf_token()) ?>">
+                  <input type="hidden" name="action" value="approve_face">
+                  <input type="hidden" name="user_id" value="<?= $uId ?>">
+                  <button type="submit" class="btn btn-sm btn-outline-success py-1 px-2.5 rounded-[6px]" title="Verifikasi / Setujui Wajah"><i class="bi bi-shield-check me-1"></i> Setujui</button>
+                </form>
+              <?php else: ?>
+                <form method="post" class="d-inline m-0" onsubmit="return confirm('Batalkan status verifikasi wajah <?= addslashes($uNama) ?>?')">
+                  <input type="hidden" name="_csrf" value="<?= e(csrf_token()) ?>">
+                  <input type="hidden" name="action" value="unverify_face">
+                  <input type="hidden" name="user_id" value="<?= $uId ?>">
+                  <button type="submit" class="btn btn-sm btn-outline-secondary py-1 px-2 rounded-[6px] text-success border-success" title="Wajah Terverifikasi (Klik batalkan)"><i class="bi bi-patch-check-fill"></i></button>
+                </form>
+              <?php endif; ?>
+
+              <form method="post" class="d-inline m-0" onsubmit="return confirm('Apakah Anda yakin ingin MENGHAPUS sampel biometrik wajah <?= addslashes($uNama) ?>?')">
+                <input type="hidden" name="_csrf" value="<?= e(csrf_token()) ?>">
+                <input type="hidden" name="action" value="delete_face">
+                <input type="hidden" name="user_id" value="<?= $uId ?>">
+                <button type="submit" class="btn btn-sm btn-outline-danger py-1 px-2 rounded-[6px]" title="Reset Biometrik Wajah"><i class="bi bi-person-x"></i></button>
+              </form>
+            <?php endif; ?>
+
+            <?php if ($canManageUser): ?>
+              <a href="<?= e(module_url('users_admin.php', ['edit' => $uId])) ?>" class="btn btn-sm btn-outline-primary py-1 px-2.5 rounded-[6px] <?= ($isBeingEdited ? 'active' : '') ?>" title="Edit Profil / Password">
+                <i class="bi bi-pencil-square me-1"></i> Edit
+              </a>
+            <?php endif; ?>
+
+            <?php if ($uId !== current_user_id() && $canManageUser): ?>
+              <form method="post" class="d-inline m-0" onsubmit="return confirm('Apakah Anda yakin ingin menghapus akun <?= addslashes($uNama) ?> (@<?= addslashes($uUsername) ?>)? Tindakan ini permanen.')">
+                <input type="hidden" name="_csrf" value="<?= e(csrf_token()) ?>">
+                <input type="hidden" name="action" value="delete">
+                <input type="hidden" name="user_id" value="<?= $uId ?>">
+                <button type="submit" class="btn btn-sm btn-outline-danger py-1 px-2 rounded-[6px]" title="Hapus Akun Pengguna"><i class="bi bi-trash"></i></button>
+              </form>
+            <?php endif; ?>
+          </div>
+        </div>
+        <?php endforeach; ?>
+        <?php if (empty($users)): ?>
+          <div class="text-center py-5 text-muted">
+            <i class="bi bi-people fs-1 d-block mb-2 opacity-50"></i>
+            Belum ada data pengguna. Silakan buat akun pengguna baru pada form di bawah.
+          </div>
+        <?php endif; ?>
+        <div id="userCardsEmptyFilter" class="text-center py-4 bg-white rounded-[10px] border p-3 text-secondary" style="display: none;">
+          <i class="bi bi-search fs-2 d-block mb-1 opacity-50"></i>
+          Tidak ada pengguna yang cocok dengan kriteria pencarian/filter.
+        </div>
+      </div>
+
+      <!-- Tabel Pengguna (Desktop) -->
+      <div class="table-responsive d-none d-md-block">
         <table class="table table-hover align-middle mb-0" id="userTable">
           <thead>
             <tr>
@@ -1210,8 +1420,10 @@ document.addEventListener("DOMContentLoaded", function() {
   var filterBio = document.getElementById("userFilterBio");
   var filterStatus = document.getElementById("userFilterStatus");
   var rows = document.querySelectorAll(".user-row");
+  var cards = document.querySelectorAll(".user-card");
   var shownCountEl = document.getElementById("shownCount");
   var noResultsEl = document.getElementById("noResultsState");
+  var emptyCardFilterEl = document.getElementById("userCardsEmptyFilter");
   var tableEl = document.getElementById("userTable");
   var btnResetAll = document.getElementById("btnResetAllFilters");
 
@@ -1247,6 +1459,26 @@ document.addEventListener("DOMContentLoaded", function() {
       }
     });
 
+    cards.forEach(function(card) {
+      var rNama = card.getAttribute("data-nama") || "";
+      var rUser = card.getAttribute("data-username") || "";
+      var rPhone = card.getAttribute("data-phone") || "";
+      var rRole = card.getAttribute("data-role") || "";
+      var rBio = card.getAttribute("data-bio") || "";
+      var rStat = card.getAttribute("data-status") || "";
+
+      var matchesSearch = !q || (rNama.indexOf(q) !== -1 || rUser.indexOf(q) !== -1 || rPhone.indexOf(q) !== -1);
+      var matchesRole = (rVal === "all") || (rRole === rVal);
+      var matchesBio = (bVal === "all") || (rBio === bVal);
+      var matchesStat = (sVal === "all") || (rStat === sVal);
+
+      if (matchesSearch && matchesRole && matchesBio && matchesStat) {
+        card.style.display = "";
+      } else {
+        card.style.display = "none";
+      }
+    });
+
     if (shownCountEl) {
       shownCountEl.innerText = visibleCount;
     }
@@ -1254,9 +1486,11 @@ document.addEventListener("DOMContentLoaded", function() {
     if (visibleCount === 0 && rows.length > 0) {
       if (noResultsEl) noResultsEl.classList.remove("d-none");
       if (tableEl) tableEl.classList.add("d-none");
+      if (emptyCardFilterEl) emptyCardFilterEl.style.display = "block";
     } else {
       if (noResultsEl) noResultsEl.classList.add("d-none");
       if (tableEl) tableEl.classList.remove("d-none");
+      if (emptyCardFilterEl) emptyCardFilterEl.style.display = "none";
     }
   }
 

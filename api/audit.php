@@ -151,6 +151,7 @@ foreach ($kategoris as $k) {
 
 // Table Rows
 $tableRows = '';
+$mobileAuditCards = '';
 $no = 0;
 foreach ($rows as $r) {
     $no++;
@@ -173,6 +174,43 @@ foreach ($rows as $r) {
         ? '<div class="mt-1"><span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-50 py-1" style="font-size: 0.68rem;" title="Terverifikasi Biometrik Wajah"><i class="bi bi-shield-fill-check me-1"></i>AI ('.e((int)($r['biometric_confidence'] ?? 98)).'%)</span></div>'
         : '';
 
+    $mobileAuditCards .= '
+    <div class="bg-white border rounded-[10px] p-3 shadow-xs position-relative '.(!$isDone ? 'border-danger border-opacity-50' : 'border-[#D1D5D8]').'">
+      <div class="d-flex align-items-center justify-content-between mb-2">
+        <div class="d-flex align-items-center gap-2">
+          <span class="badge bg-light text-dark border font-mono small">#'.$no.'</span>
+          <span class="fw-bold font-monospace text-[#0E5C58]">'.e($r['kode_inventaris']).'</span>
+        </div>
+        <div>'.$badge.'</div>
+      </div>
+
+      <div class="mb-2">
+        <div class="fw-bold text-[#1B2A3A]" style="font-size: 0.92rem;">'.e($r['perangkat']).'</div>
+        <div class="text-[#53595F] small">
+          <span class="badge bg-light text-secondary border">'.e($r['kategori_nama']).'</span>
+        </div>
+      </div>
+
+      <div class="bg-[#F8FAFC] rounded-[8px] p-2 mb-2 text-[#53595F]" style="font-size: 0.75rem;">
+        <div class="d-flex align-items-center justify-content-between mb-1">
+          <div><i class="bi bi-person text-secondary me-1"></i><strong class="text-[#1B2A3A]">'.e($r['karyawan_nama']).'</strong>'.(!empty($r['divisi_nama']) ? ' <span class="text-muted">('.e($r['divisi_nama']).')</span>' : '').'</div>
+        </div>
+        <div class="d-flex align-items-center justify-content-between text-muted">
+          <div><i class="bi bi-building me-1"></i>'.e($r['cabang_nama']).'</div>
+          <div><i class="bi bi-calendar-event me-1"></i>'.e($r['maintenance_date']).'</div>
+        </div>
+      </div>
+
+      <div class="d-flex align-items-center justify-content-between gap-2 pt-1 border-top border-[#F1F5F9]">
+        <div class="small">
+          <span class="text-muted me-1">Teknisi:</span>
+          <strong class="text-[#1B2A3A]">'.e($r['technician_name']).'</strong>
+          '.$bioBadge.'
+        </div>
+        <div>'.$actionBtn.'</div>
+      </div>
+    </div>';
+
     $tableRows .= '
     <tr class="'.(!$isDone ? 'table-danger bg-opacity-10' : '').'">
       <td class="text-center text-muted small">'.$no.'</td>
@@ -189,6 +227,10 @@ foreach ($rows as $r) {
       <td>'.$badge.'</td>
       <td class="text-end text-nowrap">'.$actionBtn.'</td>
     </tr>';
+}
+
+if (!$mobileAuditCards) {
+    $mobileAuditCards = '<div class="text-center py-4 bg-white rounded-[10px] border p-3 text-secondary"><i class="bi bi-search fs-2 d-block mb-1 opacity-50"></i>Tidak ada data perangkat yang cocok dengan kriteria filter.</div>';
 }
 
 if (!$tableRows) {
@@ -354,7 +396,13 @@ $body .= '
       <div class="text-secondary small">Total '.count($rows).' unit komputer &amp; laptop tercatat dalam log audit</div>
     </div>
   </div>
-  <div class="table-responsive">
+  <!-- Tampilan Mobile (Card List) -->
+  <div class="d-md-none p-3 d-flex flex-column gap-2.5 bg-[#F9FAFB] border-bottom">
+    '.$mobileAuditCards.'
+  </div>
+
+  <!-- Tampilan Desktop (Tabel) -->
+  <div class="table-responsive d-none d-md-block">
     <table class="table table-hover align-middle mb-0">
       <thead>
         <tr>
@@ -378,6 +426,7 @@ $body .= '
 // Lampiran Temuan & Solusi Pemeliharaan
 $findingsList = get_findings_report($month, $year, $cabangId);
 $findingsTableRows = '';
+$mobileFindingsCards = '';
 $fNo = 0;
 foreach ($findingsList as $fl) {
     $fNo++;
@@ -426,6 +475,44 @@ foreach ($findingsList as $fl) {
 
     $detailUrl = !empty($fl['scan_id']) ? module_url('maintenance_detail.php', ['id' => (int)$fl['scan_id']]) : '';
 
+    $mobileFindingsCards .= '
+    <div class="bg-white border rounded-[10px] p-3 shadow-xs position-relative '.($isDoneFl ? 'border-[#86EFAC]' : 'border-danger border-opacity-50').'">
+      <div class="d-flex align-items-center justify-content-between mb-2">
+        <div class="d-flex align-items-center gap-2">
+          <span class="badge bg-light text-dark border font-mono small">#'.$fNo.'</span>
+          <span class="fw-bold font-monospace text-primary">'.e($fl['kode_inventaris']).'</span>
+        </div>
+        <div>'.$flBadge.'</div>
+      </div>
+
+      <div class="mb-2">
+        <div class="fw-bold text-[#1B2A3A]" style="font-size: 0.92rem;">'.e($fl['merk_model']).'</div>
+        <div class="text-secondary small"><i class="bi bi-person me-1"></i>'.e($fl['karyawan_nama']).' &bull; <i class="bi bi-geo-alt me-1"></i>'.$loc.'</div>
+      </div>
+
+      <div class="alert alert-danger py-2 px-2.5 mb-2 small">
+        <div class="fw-bold text-danger mb-0.5"><i class="bi bi-exclamation-triangle-fill me-1"></i>Temuan Kendala:</div>
+        <div>'.e($fl['finding']).'</div>
+        '.(!empty($fl['reported_by']) ? '<div class="text-muted mt-1" style="font-size: 0.72rem;">Dilaporkan: '.e($fl['reported_by']).(!empty($fl['reported_at']) ? ' ('.e(substr($fl['reported_at'], 0, 10)).')' : '').'</div>' : '').'
+      </div>
+
+      <div class="p-2 bg-[#F8FAFC] rounded border mb-2 small">
+        <div class="text-success fw-bold mb-0.5"><i class="bi bi-tools me-1"></i>Tindakan Solusi:</div>
+        <div class="text-dark">'.e($fl['action_taken']).'</div>
+      </div>
+
+      <div class="mb-2">
+        '.$prosesHtml.'
+      </div>
+
+      <div class="d-flex align-items-center justify-content-end gap-1.5 pt-2 border-top border-[#F1F5F9]">
+        <button type="button" class="btn btn-sm btn-primary py-1 px-2.5 fw-semibold" onclick="openProsesPerbaikanModal('.$fDataJson.')" title="Update Proses Perbaikan">
+          <i class="bi bi-tools me-1"></i> Update
+        </button>
+        '.($detailUrl ? '<a href="'.e($detailUrl).'" class="btn btn-sm btn-light border py-1 px-2.5" title="Lihat Rincian Maintenance"><i class="bi bi-eye me-1"></i> Detail</a>' : '').'
+      </div>
+    </div>';
+
     $findingsTableRows .= '<tr>
       <td class="text-center text-muted small">'.$fNo.'</td>
       <td>
@@ -457,6 +544,10 @@ foreach ($findingsList as $fl) {
     </tr>';
 }
 
+if (!$mobileFindingsCards) {
+    $mobileFindingsCards = '<div class="text-center py-4 bg-white rounded-[10px] border p-3 text-secondary"><i class="bi bi-check-circle-fill text-success fs-2 d-block mb-1"></i>Tidak ditemukan kendala maupun kerusakan pada periode pemeliharaan ini (Kondisi 100% Normal).</div>';
+}
+
 if (!$findingsTableRows) {
     $findingsTableRows = '<tr><td colspan="8" class="text-center py-4 text-secondary"><i class="bi bi-check-circle-fill text-success fs-4 d-block mb-1"></i>Tidak ditemukan kendala maupun kerusakan pada periode pemeliharaan ini (Kondisi 100% Normal).</td></tr>';
 }
@@ -474,7 +565,13 @@ $body .= '
       '.count($findingsList).' Temuan
     </span>
   </div>
-  <div class="table-responsive">
+  <!-- Tampilan Mobile (Card List) -->
+  <div class="d-md-none p-3 d-flex flex-column gap-2.5 bg-[#F9FAFB] border-bottom">
+    '.$mobileFindingsCards.'
+  </div>
+
+  <!-- Tampilan Desktop (Tabel) -->
+  <div class="table-responsive d-none d-md-block">
     <table class="table table-hover align-middle mb-0">
       <thead class="table-light">
         <tr>

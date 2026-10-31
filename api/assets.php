@@ -469,6 +469,7 @@ $todoTabsHtml = '
 
 // Render Baris Tabel
 $tableRows = '';
+$mobileCards = '';
 $startNum = $offset;
 foreach ($pageAssets as $a) {
     $startNum++;
@@ -586,6 +587,67 @@ foreach ($pageAssets as $a) {
         $quickActionBtn = '<span class="inline-flex items-center h-[28px] px-2 bg-[#F4F5F7] text-[#53595F] text-[11px] font-semibold rounded-[6px]" title="Unit Bebas Maintenance">Bebas Maint</span>';
     }
 
+    $mobileCards .= '
+    <div class="bg-white border border-[#D1D5D8] rounded-[10px] p-3 shadow-xs position-relative" id="m-card-asset-'.$aid.'">
+      <div class="d-flex align-items-center justify-content-between mb-2">
+        <div class="d-flex align-items-center gap-2">
+          <input class="form-check-input asset-checkbox mt-0" type="checkbox" value="'.$aid.'" data-id="'.$aid.'" data-kode="'.e($kode).'" data-device="'.e($device).'" data-user="'.e($user).'" data-cabang="'.e($cabang).'" data-sn="'.e($sn).'" style="cursor: pointer; width: 1.2rem; height: 1.2rem;">
+          <span class="badge bg-light text-dark border font-mono small">#'.$startNum.'</span>
+          <a href="'.e($scanUrl ?: $editUrl).'" class="fw-bold font-monospace text-[#0E5C58] text-decoration-none">'.e($kode).'</a>
+        </div>
+        <div class="d-flex align-items-center gap-1">
+          '.$statusBadge.'
+          '.$maintBadge.'
+        </div>
+      </div>
+      
+      <div class="d-flex align-items-start gap-2.5 mb-2">
+        '.$thumbHtml.'
+        <div class="min-w-0 flex-grow-1">
+          <div class="fw-bold text-[#1B2A3A] text-truncate" style="font-size: 0.92rem;">'.e($device).'</div>
+          <div class="text-[#53595F] small text-truncate" style="font-size: 0.76rem;">
+            '.($sn ? '<span class="me-1">SN: <code>'.e($sn).'</code></span> &bull; ' : '').'
+            <span class="badge bg-light text-secondary border">'.e($a['kategori_nama'] ?? 'PC').'</span>
+          </div>
+          '.$crossLinkTag.'
+        </div>
+      </div>
+
+      <div class="bg-[#F8FAFC] rounded-[8px] p-2 mb-2 text-[#53595F]" style="font-size: 0.75rem;">
+        <div class="d-flex align-items-center justify-content-between mb-1">
+          <div><i class="bi bi-person text-secondary me-1"></i><strong class="text-[#1B2A3A]">'.e($user).'</strong>'.($divisi ? ' <span class="text-muted">('.e($divisi).')</span>' : '').'</div>
+        </div>
+        <div class="d-flex align-items-center justify-content-between text-muted">
+          <div><i class="bi bi-building me-1"></i>'.e($cabang).'</div>
+          '.($ip !== '-' ? '<div><i class="bi bi-hdd-network me-1 text-success"></i><code class="text-dark">'.e($ip).'</code></div>' : '').'
+        </div>
+      </div>
+
+      <div class="d-flex align-items-center justify-content-between gap-2 pt-1 border-top border-[#F1F5F9]">
+        <div class="d-flex align-items-center gap-1.5 flex-grow-1">
+          '.$quickActionBtn.'
+          '.($qrModalJson ? '
+          <button type="button" class="btn btn-sm btn-outline-primary py-1 px-2.5 rounded-[6px]" onclick="openQrModal('.$qrModalJson.')" title="Lihat Label QR">
+            <i class="bi bi-qr-code"></i>
+          </button>' : '').'
+        </div>
+        <div class="dropdown">
+          <button class="btn btn-sm btn-light border px-2.5 py-1 shadow-xs" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+            <i class="bi bi-three-dots"></i>
+          </button>
+          <ul class="dropdown-menu dropdown-menu-end shadow-sm border py-1" style="font-size: 0.82rem; min-width: 170px;">
+            '.($scanUrl ? '<li><a class="dropdown-item py-1.5" href="'.e($scanUrl).'"><i class="bi bi-qr-code-scan me-2 text-info"></i> Buka / Scan</a></li>' : '').'
+            <li><a class="dropdown-item py-1.5 text-primary fw-semibold" href="'.e(module_url('asset_add.php', ['replace_id' => $aid])).'"><i class="bi bi-arrow-repeat me-2"></i> Ganti Unit Baru</a></li>
+            <li><a class="dropdown-item py-1.5" href="'.e(module_url('asset_mutation.php', ['id' => $aid, 'type' => 'komputer'])).'"><i class="bi bi-arrow-left-right me-2 text-primary"></i> Mutasi Aset</a></li>
+            <li><a class="dropdown-item py-1.5" target="_blank" href="'.e($cardUrl).'"><i class="bi bi-printer me-2 text-secondary"></i> Cetak Kartu</a></li>
+            <li><a class="dropdown-item py-1.5" href="'.e($editUrl).'"><i class="bi bi-pencil me-2 text-warning"></i> Edit Data</a></li>
+            <li><hr class="dropdown-divider my-1"></li>
+            <li><a class="dropdown-item py-1.5 text-danger" href="'.e($deleteUrl).'" onclick="return confirm(\'Yakin ingin menghapus aset '.e(addslashes($kode)).'?\');"><i class="bi bi-trash me-2"></i> Hapus</a></li>
+          </ul>
+        </div>
+      </div>
+    </div>';
+
     $tableRows .= '
     <tr id="row-asset-'.$aid.'">
       <td class="text-center">
@@ -650,6 +712,16 @@ foreach ($pageAssets as $a) {
         </div>
       </td>
     </tr>';
+}
+
+if (empty($mobileCards)) {
+    $mobileCards = '
+    <div class="text-center py-5 bg-white rounded-[10px] border border-[#D1D5D8] p-4">
+      <div class="text-secondary opacity-75 mb-2"><i class="bi bi-pc-display fs-1"></i></div>
+      <h6 class="fw-bold text-secondary">Tidak ada data komputer yang cocok dengan filter.</h6>
+      <p class="text-muted small mb-3">Coba ubah kata kunci pencarian atau reset filter di atas.</p>
+      <a class="btn btn-sm btn-outline-primary" href="'.e(module_url('assets.php')).'"><i class="bi bi-arrow-counterclockwise me-1"></i> Reset Filter</a>
+    </div>';
 }
 
 if (empty($tableRows)) {
@@ -877,7 +949,13 @@ $body = '
     </div>
   </div>
 
-  <div class="table-responsive" style="overflow-x: auto;">
+  <!-- TAMPILAN MOBILE: Card List (Rapi & Tidak Terpotong di Layar HP) -->
+  <div class="d-md-none p-3 d-flex flex-column gap-2.5 bg-[#F9FAFB] border-b border-[#D1D5D8]">
+    '.$mobileCards.'
+  </div>
+
+  <!-- TAMPILAN DESKTOP/LAPTOP: Tabel Lengkap 10 Kolom -->
+  <div class="table-responsive d-none d-md-block" style="overflow-x: auto;">
     <table class="table table-hover align-middle mb-0" style="table-layout: auto;">
       <thead class="bg-[#F4F5F7] text-[#53595F] text-[12px] font-bold uppercase tracking-wider border-b border-[#D1D5D8]">
         <tr>
@@ -1440,6 +1518,14 @@ document.addEventListener("DOMContentLoaded", function() {
           row.classList.remove("table-row-selected");
         }
       }
+      const card = document.getElementById("m-card-asset-" + cb.value);
+      if (card) {
+        if (isSelected) {
+          card.classList.add("border-[#0E5C58]", "bg-[#F0FDF4]");
+        } else {
+          card.classList.remove("border-[#0E5C58]", "bg-[#F0FDF4]");
+        }
+      }
     });
 
     if (checkAll) {
@@ -1550,9 +1636,12 @@ document.addEventListener("DOMContentLoaded", function() {
     delete selectedMap[id];
     saveStoredSelection(selectedMap);
 
-    const targetCb = document.querySelector(\'.asset-checkbox[value="\' + id + \'"]\');
-    if (targetCb) {
+    document.querySelectorAll(\'.asset-checkbox[value="\' + id + \'"]\').forEach(function(targetCb) {
       targetCb.checked = false;
+    });
+    const targetCard = document.getElementById("m-card-asset-" + id);
+    if (targetCard) {
+      targetCard.classList.remove("border-[#0E5C58]", "bg-[#F0FDF4]");
     }
 
     updateSelectionUI();
