@@ -130,7 +130,7 @@ function get_google_service_account_credentials(): array {
     static $creds = null;
     if ($creds !== null) return $creds;
 
-    $sheetId = cfg('google_spreadsheet_id', envv('GOOGLE_SPREADSHEET_ID', envv('GOOGLE_SHEET_ID', envv('SPREADSHEET_ID', '19V_qkLtFmaH93dA9h1ZqM2T7JqZ6H_IEI94PVkPnNIc'))));
+    $sheetId = cfg('google_spreadsheet_id', envv('GOOGLE_SPREADSHEET_ID', envv('GOOGLE_SHEET_ID', envv('SPREADSHEET_ID', '1EeyPxxLv2frKp7OH2rMVIq4zoDCaPvyD4crJh_nyARg'))));
     $email = cfg('google_client_email', envv('GOOGLE_CLIENT_EMAIL', ''));
     $key = cfg('google_private_key', envv('GOOGLE_PRIVATE_KEY', ''));
 
@@ -198,7 +198,7 @@ function google_sheets_v4_client(): ?GoogleSheetsV4Client {
 function render_vercel_spreadsheet_setup_guide(?string $technicalMsg = null): void {
     http_response_code(503);
     $c = get_google_service_account_credentials();
-    $currSheetId = htmlspecialchars($c['spreadsheet_id'] ?: '19V_qkLtFmaH93dA9h1ZqM2T7JqZ6H_IEI94PVkPnNIc');
+    $currSheetId = htmlspecialchars($c['spreadsheet_id'] ?: '1EeyPxxLv2frKp7OH2rMVIq4zoDCaPvyD4crJh_nyARg');
 
     echo '<!DOCTYPE html><html lang="id"><head><meta charset="utf-8">';
     echo '<title>Aktivasi Google Spreadsheet &bull; Vercel</title>';
