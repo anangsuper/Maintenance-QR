@@ -586,7 +586,7 @@ function get_comprehensive_dashboard_data(int $month, int $year, int $cabangId =
               AND NOT EXISTS (
                   SELECT 1 FROM maintenance_scan ms2 
                   WHERE ms2.asset_id = mf.asset_id 
-                    AND ms2.id >= COALESCE(mf.maintenance_scan_id, 0)
+                    AND ms2.created_at >= mf.created_at
                     AND LOWER(ms2.status) IN ('selesai', 'ok', 'resolved')
               )
             ".($cabangId > 0 ? " AND a.id_cabang = ? " : "")."
@@ -604,11 +604,12 @@ function get_comprehensive_dashboard_data(int $month, int $year, int $cabangId =
                        COALESCE(ec.technician_response, 'Menunggu tindak lanjut teknisi IT') AS action_taken,
                        'Sedang' AS severity,
                        ec.status, ec.created_at,
-                       a.kode_inventaris, a.merk, a.model, a.token,
+                       a.kode_inventaris, a.merk, a.model, COALESCE(aqt.token, '') AS token,
                        c.`{$cName}` AS cabang_nama,
                        ec.reporter_name AS reporter
                 FROM employee_complaints ec
                 JOIN assets a ON a.id = ec.asset_id
+                LEFT JOIN asset_qr_tokens aqt ON aqt.asset_id = a.id
                 LEFT JOIN cabang c ON c.id = a.id_cabang
                 WHERE LOWER(COALESCE(ec.status, 'Menunggu Teknisi')) NOT IN ('selesai', 'resolved', 'closed', 'ok')
                 ".($cabangId > 0 ? " AND a.id_cabang = ? " : "")."

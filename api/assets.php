@@ -133,6 +133,55 @@ if (session_status() === PHP_SESSION_ACTIVE) {
     }
 }
 
+// Cek temuan kerusakan & keluhan karyawan aktif yang belum selesai agar langsung masuk ke filter Temuan Kendala IT
+try {
+    $cSql = "
+        SELECT mf.asset_id, mf.finding, mf.repair_status, mf.created_at
+        FROM maintenance_findings mf
+        WHERE COALESCE(mf.repair_status, 'Open') NOT IN ('Resolved', 'Closed', 'Selesai', 'Done')
+          AND NOT EXISTS (
+              SELECT 1 FROM maintenance_scan ms2 
+              WHERE ms2.asset_id = mf.asset_id 
+                AND ms2.created_at >= mf.created_at
+                AND LOWER(ms2.status) IN ('selesai', 'ok', 'resolved')
+          )
+    ";
+    $cSt = db()->query($cSql);
+    foreach ($cSt->fetchAll() as $cf) {
+        $aid = (int)($cf['asset_id'] ?? 0);
+        if ($aid > 0) {
+            $maintStatusMap[$aid] = [
+                'is_done' => true,
+                'status' => 'Perlu Perbaikan',
+                'date' => substr((string)($cf['created_at'] ?? date('Y-m-d')), 0, 10),
+                'tech' => 'Temuan Kerusakan',
+                'is_active_issue' => true,
+                'finding_text' => $cf['finding']
+            ];
+        }
+    }
+
+    $ecSt = db()->query("
+        SELECT ec.asset_id, ec.complaint, ec.kategori, ec.reporter_name, ec.created_at
+        FROM employee_complaints ec
+        WHERE LOWER(COALESCE(ec.status, 'Menunggu Teknisi')) NOT IN ('selesai', 'resolved', 'closed', 'ok')
+    ");
+    foreach ($ecSt->fetchAll() as $ec) {
+        $aid = (int)($ec['asset_id'] ?? 0);
+        if ($aid > 0) {
+            $maintStatusMap[$aid] = [
+                'is_done' => true,
+                'status' => 'Perlu Perbaikan',
+                'date' => substr((string)($ec['created_at'] ?? date('Y-m-d')), 0, 10),
+                'tech' => $ec['reporter_name'] ?: 'Pengguna Komputer',
+                'is_active_issue' => true,
+                'is_complaint' => true,
+                'finding_text' => '[' . $ec['kategori'] . '] ' . $ec['complaint']
+            ];
+        }
+    }
+} catch (Throwable $e) {}
+
 // 4. Hitung Statistik Sesuai Filter Lokasi (Cabang & Divisi)
 $statTotal = 0;
 $statAktif = 0;

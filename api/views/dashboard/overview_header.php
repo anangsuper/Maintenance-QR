@@ -613,7 +613,8 @@ if (is_hrd() && !is_admin()) {
           <i class="bi bi-clock-history me-1.5 '.($isTabAntrean ? 'text-[#0E5C58]' : '').'"></i> Belum dipelihara ('.$displayDueCount.')
         </a>
         <a href="'.e(module_url('dashboard.php', ['tab'=>'temuan', 'cabang'=>$cabangId, 'bulan'=>$month, 'tahun'=>$year])).'" class="h-full flex items-center font-'.($isTabTemuan ? 'bold text-[#1B2A3A] border-b-[3px] border-[#0E5C58]' : 'semibold text-[#53595F] hover:text-[#1B2A3A] border-b-[3px] border-transparent').' px-1 relative top-[1px] transition-colors text-decoration-none">
-          <i class="bi bi-exclamation-triangle me-1.5 '.($isTabTemuan ? 'text-[#DC2626]' : '').'"></i> Temuan terbuka ('.$displayFindingsCount.')
+          <i class="bi bi-exclamation-triangle me-1.5 '.($isTabTemuan ? 'text-[#DC2626]' : ($displayFindingsCount > 0 ? 'text-[#DC2626]' : '')).'"></i> Temuan terbuka ('.$displayFindingsCount.')
+          '.($displayFindingsCount > 0 ? '<span class="badge bg-danger rounded-pill ms-1 text-[10px] px-1.5 py-0.2">'.$displayFindingsCount.'</span>' : '').'
         </a>
         <a href="'.e(module_url('dashboard.php', ['tab'=>'kartu'])).'" class="h-full flex items-center font-'.($isTabKartu ? 'bold text-[#1B2A3A] border-b-[3px] border-[#0E5C58]' : 'semibold text-[#53595F] hover:text-[#1B2A3A] border-b-[3px] border-transparent').' px-1 relative top-[1px] transition-colors text-decoration-none">
           <i class="bi bi-credit-card-2-front me-1.5 '.($isTabKartu ? 'text-[#0E5C58]' : '').'"></i> Kartu Inventaris ('.$totalCardsCount.')
@@ -623,5 +624,20 @@ if (is_hrd() && !is_admin()) {
         </a>
         '.(is_admin_or_auditor() ? '<a href="'.e(module_url('audit_trail.php')).'" class="h-full flex items-center font-semibold text-[#53595F] hover:text-[#1B2A3A] border-b-[3px] border-transparent px-1 relative top-[1px] transition-colors text-decoration-none"><i class="bi bi-journal-text me-1.5"></i> Log Audit</a>' : '').'
       </div>
+
+      <!-- Banner Temuan Kerusakan / Keluhan Aktif Menunggu Tindak Lanjut -->
+      '.($isTabAntrean && $displayFindingsCount > 0 ? '
+      <div class="alert alert-danger border-danger border-start border-4 shadow-sm rounded-3 py-3 px-3 mb-4 d-flex align-items-center justify-content-between flex-wrap gap-2">
+        <div class="d-flex align-items-center gap-2.5">
+          <i class="bi bi-exclamation-triangle-fill text-danger fs-3 flex-shrink-0"></i>
+          <div>
+            <div class="fw-bold text-dark fs-6">Perangkat Membutuhkan Tindak Lanjut Teknisi ('.$displayFindingsCount.' Unit)</div>
+            <div class="small text-secondary mt-0.5">Ada keluhan/temuan kerusakan aktif dari pengguna komputer yang menunggu penanganan teknisi IT.</div>
+          </div>
+        </div>
+        <a href="'.e(module_url('dashboard.php', ['tab'=>'temuan', 'cabang'=>$cabangId, 'bulan'=>$month, 'tahun'=>$year])).'" class="btn btn-danger btn-sm fw-bold px-3 py-2 shadow-xs text-decoration-none">
+          <i class="bi bi-tools me-1"></i> Buka Temuan &amp; Selesaikan Sekarang &rarr;
+        </a>
+      </div>' : '').'
     ';
 }

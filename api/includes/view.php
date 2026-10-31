@@ -37,6 +37,36 @@ function render_page(string $title, string $content, string $extraHead = '', str
     $brandTag = $isHrdRole ? 'SDM & UMUM' : 'IT OPS';
     $displayRole = $isHrdRole ? 'SDM & Umum' : (($role === 'admin') ? 'Administrator' : ucfirst($role));
 
+    // Hitung temuan kerusakan & keluhan karyawan aktif untuk badge notifikasi menu
+    $activeIssuesCount = 0;
+    try {
+        if (!is_google_cloud_mode()) {
+            $cntSt = db()->query("
+                SELECT COUNT(DISTINCT a.id)
+                FROM assets a
+                WHERE EXISTS (
+                    SELECT 1 FROM maintenance_findings mf
+                    WHERE mf.asset_id = a.id
+                      AND COALESCE(mf.repair_status, 'Open') NOT IN ('Resolved', 'Closed', 'Selesai', 'Done')
+                      AND NOT EXISTS (
+                          SELECT 1 FROM maintenance_scan ms2 
+                          WHERE ms2.asset_id = mf.asset_id 
+                            AND ms2.created_at >= mf.created_at
+                            AND LOWER(ms2.status) IN ('selesai', 'ok', 'resolved')
+                      )
+                ) OR EXISTS (
+                    SELECT 1 FROM employee_complaints ec
+                    WHERE ec.asset_id = a.id
+                      AND LOWER(COALESCE(ec.status, 'Menunggu Teknisi')) NOT IN ('selesai', 'resolved', 'closed', 'ok')
+                )
+            ");
+            if ($cntSt) $activeIssuesCount = (int)$cntSt->fetchColumn();
+        }
+    } catch (Throwable $e) {}
+    $findingMenuBadge = $activeIssuesCount > 0
+        ? '<span class="badge bg-danger rounded-pill ms-auto px-2 py-0.5 text-[11px] fw-bold shadow-xs">' . $activeIssuesCount . '</span>'
+        : '';
+
     // ==========================================
     // SUSUN MENU NAVIGASI SESUAI KATEGORI RESMI
     // ==========================================
@@ -69,7 +99,7 @@ function render_page(string $title, string $content, string $extraHead = '', str
             ['title' => 'Dashboard IT Ops', 'url' => module_url('dashboard.php'), 'icon' => 'bi-grid-1x2', 'active' => ($currentPage === 'dashboard.php' && !in_array($_GET['tab'] ?? '', ['kartu', 'temuan'], true))],
             ['title' => 'Pemeliharaan Rutin', 'url' => module_url('audit.php'), 'icon' => 'bi-clipboard-check', 'active' => in_array($currentPage, ['audit.php', 'history.php', 'maintenance_detail.php'], true)],
             ['title' => 'Data Komputer & PC', 'url' => module_url('assets.php'), 'icon' => 'bi-pc-display', 'active' => in_array($currentPage, ['assets.php', 'asset_add.php', 'asset_edit.php', 'asset_delete.php', 'asset_import.php'], true)],
-            ['title' => 'Temuan Kendala IT', 'url' => module_url('dashboard.php', ['tab' => 'temuan']), 'icon' => 'bi-exclamation-triangle', 'active' => ($currentPage === 'dashboard.php' && ($_GET['tab'] ?? '') === 'temuan')],
+            ['title' => 'Temuan Kendala IT', 'url' => module_url('dashboard.php', ['tab' => 'temuan']), 'icon' => 'bi-exclamation-triangle', 'active' => ($currentPage === 'dashboard.php' && ($_GET['tab'] ?? '') === 'temuan'), 'badge' => $findingMenuBadge],
             ['title' => 'Log Ruang Server', 'url' => module_url('server_room_log.php'), 'icon' => 'bi-door-closed', 'active' => in_array($currentPage, ['server_room_log.php', 'server_room_print_qr.php'], true)],
             ['title' => 'Riwayat Bulanan', 'url' => module_url('monthly_history.php'), 'icon' => 'bi-calendar3', 'active' => ($currentPage === 'monthly_history.php')],
         ];
@@ -97,7 +127,7 @@ function render_page(string $title, string $content, string $extraHead = '', str
             ['title' => 'Dashboard IT Ops', 'url' => module_url('dashboard.php'), 'icon' => 'bi-grid-1x2', 'active' => ($currentPage === 'dashboard.php' && !in_array($_GET['tab'] ?? '', ['kartu', 'temuan'], true))],
             ['title' => 'Pemeliharaan Rutin', 'url' => module_url('audit.php'), 'icon' => 'bi-clipboard-check', 'active' => in_array($currentPage, ['audit.php', 'history.php', 'maintenance_detail.php'], true)],
             ['title' => 'Data Komputer & PC', 'url' => module_url('assets.php'), 'icon' => 'bi-pc-display', 'active' => in_array($currentPage, ['assets.php', 'asset_add.php', 'asset_edit.php', 'asset_delete.php', 'asset_import.php'], true)],
-            ['title' => 'Temuan Kendala IT', 'url' => module_url('dashboard.php', ['tab' => 'temuan']), 'icon' => 'bi-exclamation-triangle', 'active' => ($currentPage === 'dashboard.php' && ($_GET['tab'] ?? '') === 'temuan')],
+            ['title' => 'Temuan Kendala IT', 'url' => module_url('dashboard.php', ['tab' => 'temuan']), 'icon' => 'bi-exclamation-triangle', 'active' => ($currentPage === 'dashboard.php' && ($_GET['tab'] ?? '') === 'temuan'), 'badge' => $findingMenuBadge],
             ['title' => 'Log Ruang Server', 'url' => module_url('server_room_log.php'), 'icon' => 'bi-door-closed', 'active' => in_array($currentPage, ['server_room_log.php', 'server_room_print_qr.php'], true)],
             ['title' => 'Riwayat Bulanan', 'url' => module_url('monthly_history.php'), 'icon' => 'bi-calendar3', 'active' => ($currentPage === 'monthly_history.php')],
             ['title' => 'Scanner QR Unit', 'url' => module_url('scanner.php'), 'icon' => 'bi-qr-code-scan', 'active' => in_array($currentPage, ['scanner.php', 'scan.php'], true)],
@@ -137,10 +167,12 @@ function render_page(string $title, string $content, string $extraHead = '', str
                 ? 'nav-item-link active flex items-center h-[40px] px-3 rounded-[8px] bg-[#D9F1EF] text-[#1B2A3A] font-semibold text-[14px] text-decoration-none'
                 : 'nav-item-link flex items-center h-[40px] px-3 rounded-[8px] text-[#53595F] hover:bg-[#F4F5F7] hover:text-[#1B2A3A] font-medium text-[14px] transition-colors text-decoration-none';
             $iconColor = $isActive ? 'text-[#0E5C58]' : '';
+            $itemBadge = !empty($item['badge']) ? $item['badge'] : '';
             $sidebarMenuHtml .= '
               <a class="' . $linkClass . '" href="' . e($item['url']) . '">
                 <i class="bi ' . e($item['icon']) . ' ' . $iconColor . ' w-7"></i>
-                <span class="truncate">' . e($item['title']) . '</span>
+                <span class="truncate flex-grow-1">' . e($item['title']) . '</span>
+                ' . $itemBadge . '
               </a>';
         }
         $sidebarMenuHtml .= '</div>';
@@ -235,6 +267,12 @@ function render_page(string $title, string $content, string $extraHead = '', str
           <kbd class="ml-2 font-mono text-[10px] font-semibold bg-[#FFFFFF] border border-[#D1D5D8] rounded-[4px] px-1.5 py-0.5 text-[#53595F] d-none d-md-inline-block">Ctrl+K</kbd>
         </button>
         <div class="w-px h-6 bg-[#D1D5D8] d-none d-sm-block"></div>
+        ' . ($activeIssuesCount > 0 ? '
+        <a href="' . e(module_url('dashboard.php', ['tab' => 'temuan'])) . '" class="flex items-center gap-1.5 h-[34px] md:h-[36px] px-2.5 bg-[#FEF2F2] border border-[#FECACA] rounded-[8px] text-[#DC2626] text-[12px] md:text-[13px] font-bold text-decoration-none shadow-xs hover:bg-[#FEE2E2] transition-colors" title="' . $activeIssuesCount . ' Perangkat Membutuhkan Tindak Lanjut Teknisi">
+          <i class="bi bi-exclamation-triangle-fill text-[#DC2626]"></i>
+          <span>' . $activeIssuesCount . ' Kendala</span>
+        </a>
+        <div class="w-px h-6 bg-[#D1D5D8] d-none d-sm-block"></div>' : '') . '
         <button type="button" class="flex items-center gap-1 text-[12px] md:text-[13px] font-semibold text-[#875315] hover:opacity-80 transition-opacity pwa-queue-btn border-0 bg-transparent cursor-pointer px-1" data-bs-toggle="modal" data-bs-target="#modalPWAQueue" title="Antrean Pemeliharaan Offline">
           <i class="bi bi-cloud-slash"></i>
           <span class="pwa-queue-text d-none d-md-inline">2 tertunda</span>

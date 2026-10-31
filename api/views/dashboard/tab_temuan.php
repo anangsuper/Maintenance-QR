@@ -222,7 +222,7 @@
                 : '';
 
             $qrBtn = $token !== ''
-                ? '<a href="'.e(module_url('scan.php', ['t' => $token])).'" target="_blank" class="btn btn-sm btn-outline-primary py-1 px-2 small" title="Buka Kartu QR Komputer"><i class="bi bi-qr-code"></i></a>'
+                ? '<a href="'.e(module_url('scan.php', ['t' => $token, 'action' => 'tindak_lanjut'])).'" class="btn btn-sm btn-danger py-1 px-2.5 small fw-semibold text-white text-decoration-none shadow-xs" title="Buka Form Selesaikan Temuan Langsung"><i class="bi bi-tools me-1"></i> Selesaikan</a><a href="'.e(module_url('scan.php', ['t' => $token])).'" target="_blank" class="btn btn-sm btn-outline-primary py-1 px-2 small" title="Buka Kartu QR Komputer"><i class="bi bi-qr-code"></i></a>'
                 : '';
 
             $findingsTableRows .= '

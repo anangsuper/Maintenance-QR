@@ -2177,7 +2177,7 @@ function get_findings_report(int $month, int $year, int $cabangId): array {
 
         // 1. Ambil dari maintenance_findings (LEFT JOIN ke maintenance_scan agar temuan/keluhan tanpa scan tetap muncul)
         $sql = "
-            SELECT mf.*, a.kode_inventaris, a.merk, a.model, a.token,
+            SELECT mf.*, a.kode_inventaris, a.merk, a.model, COALESCE(aqt.token, '') AS token,
                    c.`{$cName}` AS cabang_nama,
                    d.`{$dName}` AS divisi_nama,
                    k.`{$kName}` AS karyawan_nama,
@@ -2188,6 +2188,7 @@ function get_findings_report(int $month, int $year, int $cabangId): array {
             FROM maintenance_findings mf
             LEFT JOIN maintenance_scan ms ON ms.id = mf.maintenance_scan_id
             JOIN assets a ON a.id = mf.asset_id
+            LEFT JOIN asset_qr_tokens aqt ON aqt.asset_id = a.id
             LEFT JOIN cabang c ON c.id = a.id_cabang
             LEFT JOIN divisi d ON d.id = a.id_divisi
             LEFT JOIN karyawan k ON k.id = a.id_karyawan
@@ -2267,13 +2268,14 @@ function get_findings_report(int $month, int $year, int $cabangId): array {
 
         // 2. Cek scan logs langsung yang punya findings
         $sqlScan = "
-            SELECT ms.*, a.kode_inventaris, a.merk, a.model, a.token,
+            SELECT ms.*, a.kode_inventaris, a.merk, a.model, COALESCE(aqt.token, '') AS token,
                    c.`{$cName}` AS cabang_nama,
                    d.`{$dName}` AS divisi_nama,
                    k.`{$kName}` AS karyawan_nama,
                    COALESCE(ms.technician_name, u.`{$uName}`, 'Teknisi') AS teknisi
             FROM maintenance_scan ms
             JOIN assets a ON a.id = ms.asset_id
+            LEFT JOIN asset_qr_tokens aqt ON aqt.asset_id = a.id
             LEFT JOIN cabang c ON c.id = a.id_cabang
             LEFT JOIN divisi d ON d.id = a.id_divisi
             LEFT JOIN karyawan k ON k.id = a.id_karyawan
@@ -2337,12 +2339,13 @@ function get_findings_report(int $month, int $year, int $cabangId): array {
         // 3. Sertakan keluhan karyawan dari tabel employee_complaints agar langsung terpantau di Tab Temuan
         try {
             $sqlComp = "
-                SELECT ec.*, a.kode_inventaris, a.merk, a.model, a.token,
+                SELECT ec.*, a.kode_inventaris, a.merk, a.model, COALESCE(aqt.token, '') AS token,
                        c.`{$cName}` AS cabang_nama,
                        d.`{$dName}` AS divisi_nama,
                        k.`{$kName}` AS karyawan_nama
                 FROM employee_complaints ec
                 JOIN assets a ON a.id = ec.asset_id
+                LEFT JOIN asset_qr_tokens aqt ON aqt.asset_id = a.id
                 LEFT JOIN cabang c ON c.id = a.id_cabang
                 LEFT JOIN divisi d ON d.id = a.id_divisi
                 LEFT JOIN karyawan k ON k.id = a.id_karyawan
