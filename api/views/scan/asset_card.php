@@ -974,7 +974,7 @@ $verifiedBadge = !empty($asset['foto_updated_by']) ? '
   </div>' : '';
 
 $trashRestoreStripHtml = '';
-if (!empty($assetTrashPhotos)) {
+if ($loggedIn && !empty($assetTrashPhotos)) {
     $trashItemsMini = '';
     foreach (array_slice($assetTrashPhotos, 0, 2) as $tp) {
         $tpUrl = str_starts_with($tp['file_path'], 'http') ? $tp['file_path'] : module_url($tp['file_path']);
@@ -1050,9 +1050,7 @@ if ($hasAnyUnitPhoto) {
         <button type="button" class="btn btn-sm btn-outline-primary py-1 px-2.5 fw-semibold shadow-xs" style="font-size: 0.72rem;" onclick="openUploadFotoTeknisiModal()" data-bs-toggle="modal" data-bs-target="#modalUploadFotoTeknisi">
           <i class="bi bi-camera me-1"></i> '.($hasBoth ? 'Edit / Ganti Foto' : 'Edit / Tambah Foto 2').'
         </button>
-        <a href="'.e(module_url('photo_trash.php', ['source_type' => 'assets'])).'" class="btn btn-sm btn-light border py-1 px-2 text-secondary fw-semibold shadow-xs" style="font-size: 0.72rem;" title="Folder Sampah Foto (Tersimpan 7 Hari)">
-          <i class="bi bi-recycle text-success me-0.5"></i> Sampah '.($totalTrashAssetsCount > 0 ? '<span class="badge bg-danger text-white rounded-pill">'.$totalTrashAssetsCount.'</span>' : '').'
-        </a>
+        '.($loggedIn ? '<a href="'.e(module_url('photo_trash.php', ['source_type' => 'assets'])).'" class="btn btn-sm btn-light border py-1 px-2 text-secondary fw-semibold shadow-xs" style="font-size: 0.72rem;" title="Folder Sampah Foto (Tersimpan 7 Hari)"><i class="bi bi-recycle text-success me-0.5"></i> Sampah '.($totalTrashAssetsCount > 0 ? '<span class="badge bg-danger text-white rounded-pill">'.$totalTrashAssetsCount.'</span>' : '').'</a>' : '').'
       </div>
       '.$trashRestoreStripHtml.'
     </div>';
@@ -1067,11 +1065,7 @@ if ($hasAnyUnitPhoto) {
           <i class="bi bi-camera me-1"></i> Ambil / Upload Foto
         </button>
       </div>
-      <div class="mt-2">
-        <a href="'.e(module_url('photo_trash.php', ['source_type' => 'assets'])).'" class="btn btn-sm btn-light border py-1 px-2 text-secondary fw-semibold shadow-xs" style="font-size: 0.72rem;" title="Folder Sampah Foto (Tersimpan 7 Hari)">
-          <i class="bi bi-recycle text-success me-0.5"></i> Folder Sampah '.($totalTrashAssetsCount > 0 ? '<span class="badge bg-danger text-white rounded-pill">'.$totalTrashAssetsCount.'</span>' : '').'
-        </a>
-      </div>
+      '.($loggedIn ? '<div class="mt-2"><a href="'.e(module_url('photo_trash.php', ['source_type' => 'assets'])).'" class="btn btn-sm btn-light border py-1 px-2 text-secondary fw-semibold shadow-xs" style="font-size: 0.72rem;" title="Folder Sampah Foto (Tersimpan 7 Hari)"><i class="bi bi-recycle text-success me-0.5"></i> Folder Sampah '.($totalTrashAssetsCount > 0 ? '<span class="badge bg-danger text-white rounded-pill">'.$totalTrashAssetsCount.'</span>' : '').'</a></div>' : '').'
       '.$trashRestoreStripHtml.'
     </div>';
     $specColClass = 'col-12 col-md-8 col-lg-9';
@@ -1537,7 +1531,7 @@ $body = '
   </div>
 </div>
 
-<!-- Modal Scanner Biometrik Wajah Teknisi -->
+<!-- Modal Scanner Biometrik Wajah Teknisi (Sesuai Foto Standar Maintenance Bank Mitra) -->
 <div class="modal fade" id="modalFaceVerifyPhoto" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered">
     <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden bg-dark text-white">
@@ -1551,11 +1545,11 @@ $body = '
 
       <div class="modal-body p-3 text-center position-relative">
         <!-- Video Box & Scanner Frame -->
-        <div class="position-relative mx-auto rounded-3 overflow-hidden bg-black shadow-inner" style="max-width: 320px; aspect-ratio: 1/1;">
-          <video id="bioPhotoVideo" autoplay muted playsinline class="w-100 h-100 object-fit-cover" style="transform: scaleX(-1);"></video>
+        <div class="position-relative mx-auto rounded-3 overflow-hidden bg-black shadow-inner bio-scanner-wrapper" style="max-width: 320px; aspect-ratio: 1/1;">
+          <video id="bioPhotoVideo" autoplay muted playsinline class="w-100 h-100 object-fit-cover bio-video-el" style="transform: scaleX(-1);"></video>
           
           <!-- Oval Guide Frame -->
-          <div class="position-absolute top-50 start-50 translate-middle pointer-events-none" style="width: 72%; height: 85%; border: 2.5px dashed rgba(59, 130, 246, 0.85); border-radius: 50%; box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.35);"></div>
+          <div id="bioPhotoFaceOval" class="position-absolute top-50 start-50 translate-middle pointer-events-none bio-face-oval" style="width: 72%; height: 85%; border: 2.5px dashed rgba(59, 130, 246, 0.85); border-radius: 50%; box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.35);"></div>
           
           <!-- Scanning Ray Animation -->
           <div id="bioPhotoScanRay" class="position-absolute start-0 w-100" style="height: 3px; background: linear-gradient(90deg, transparent, #3b82f6, #60a5fa, transparent); animation: scanRayAnim 2s infinite ease-in-out;"></div>
@@ -1568,12 +1562,33 @@ $body = '
           </div>
         </div>
 
-        <div id="bioPhotoStatusBox" class="alert alert-secondary py-2 px-3 small fw-semibold mt-3 mb-2 text-start text-dark">
-          <span class="spinner-border spinner-border-sm me-2 text-primary"></span> Menyiapkan kamera dan modul pengenalan wajah...
+        <!-- Status Box -->
+        <div id="bioPhotoStatusBox" class="alert alert-primary py-2 px-3 small fw-semibold mt-3 mb-2 text-start text-dark">
+          <i class="bi bi-person-bounding-box me-1"></i> Arahkan wajah ke lingkaran oval (Tahan 1 detik atau kedipkan mata).
         </div>
 
-        <div class="text-white-50 small" style="font-size: 0.72rem;">
+        <div class="text-white-50 small mb-2" style="font-size: 0.72rem;">
           Pastikan wajah berada di dalam oval, tidak memakai masker, dan pencahayaan memadai.
+        </div>
+
+        <!-- Checklist Pills (Wajah, Kedip, Identitas Cocok) -->
+        <div class="d-flex justify-content-center gap-1.5 mb-2">
+          <span id="pillPhotoFaceDetected" class="badge bg-secondary bg-opacity-50 text-white-50 small py-1 px-2.5 border border-secondary border-opacity-50">
+            <i class="bi bi-person me-1"></i> Wajah
+          </span>
+          <span id="pillPhotoLivenessBlink" class="badge bg-secondary bg-opacity-50 text-white-50 small py-1 px-2.5 border border-secondary border-opacity-50">
+            <i class="bi bi-eye me-1"></i> Kedip
+          </span>
+          <span id="pillPhotoMatchId" class="badge bg-secondary bg-opacity-50 text-white-50 small py-1 px-2.5 border border-secondary border-opacity-50">
+            <i class="bi bi-check-all me-1"></i> Identitas Cocok
+          </span>
+        </div>
+
+        <!-- Link Pendaftaran Wajah -->
+        <div class="mt-2 text-center">
+          <a href="'.e(module_url('user_biometric_enroll.php', ['ret' => module_url('scan.php', ['t' => $token])])).'" class="text-white-50 text-decoration-none small" style="font-size: 0.72rem;">
+            <i class="bi bi-phone me-1"></i> Wajah belum terdaftar? <span class="text-primary text-decoration-underline">Daftarkan di sini</span>
+          </a>
         </div>
       </div>
 
@@ -1582,7 +1597,9 @@ $body = '
           Batal
         </button>
         <div class="d-flex align-items-center gap-2">
-          '.($loggedIn ? '<button type="button" class="btn btn-link btn-sm text-info text-decoration-none p-0 me-1" style="font-size: 0.75rem;" onclick="bypassPhotoBioAndSubmit()"><i class="bi bi-lightning-fill me-0.5"></i>Simpan (Login)</button>' : '').'
+          <button type="button" class="btn btn-link btn-sm text-danger text-decoration-none p-0" style="font-size: 0.75rem;" onclick="bypassPhotoBioAndSubmit()">
+            Lewati Manual
+          </button>
           <button type="button" id="btnManualTriggerPhotoBio" class="btn btn-primary btn-sm rounded-pill px-3 fw-bold" onclick="triggerInstantPhotoFaceVerify()">
             <i class="bi bi-camera me-1"></i> Verifikasi Sekarang
           </button>
@@ -2000,6 +2017,13 @@ async function startTeknisiFaceScanForPhoto() {
   const successOverlay = document.getElementById("bioPhotoSuccessOverlay");
   if (successOverlay) successOverlay.classList.add("d-none");
 
+  ['pillPhotoFaceDetected', 'pillPhotoLivenessBlink', 'pillPhotoMatchId'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.className = "badge bg-secondary bg-opacity-50 text-white-50 small py-1 px-2.5 border border-secondary border-opacity-50";
+  });
+  const bioOval = document.getElementById("bioPhotoFaceOval");
+  if (bioOval) bioOval.classList.remove("active");
+
   const statusBox = document.getElementById("bioPhotoStatusBox");
   if (statusBox) {
     statusBox.className = "alert alert-secondary py-2 px-3 small fw-semibold mt-3 mb-2 text-start text-dark";
@@ -2042,7 +2066,7 @@ async function startTeknisiFaceScanForPhoto() {
 
   if (statusBox) {
     statusBox.className = "alert alert-primary py-2 px-3 small fw-semibold mt-3 mb-2 text-start text-dark";
-    statusBox.innerHTML = "<i class=\"bi bi-person-check me-1 text-primary\"></i> Posisikan wajah di tengah oval. Sistem otomatis mencocokkan...";
+    statusBox.innerHTML = "<i class=\"bi bi-person-bounding-box me-1\"></i> Arahkan wajah ke lingkaran oval (Tahan 1 detik atau kedipkan mata).";
   }
 
   // Tracking Loop Otomatis dengan inputSize: 160 (super cepat & hemat CPU/GPU di HP)
@@ -2061,6 +2085,13 @@ async function startTeknisiFaceScanForPhoto() {
         .withFaceDescriptor();
 
       if (detection && !photoBioCompleted) {
+        const oval = document.getElementById("bioPhotoFaceOval");
+        if (oval) oval.classList.add("active");
+        const pFace = document.getElementById("pillPhotoFaceDetected");
+        if (pFace) pFace.className = "badge bg-success text-white small py-1 px-2.5 border border-success fw-bold";
+        const pBlink = document.getElementById("pillPhotoLivenessBlink");
+        if (pBlink) pBlink.className = "badge bg-success text-white small py-1 px-2.5 border border-success fw-bold";
+
         if (!parsedEnrolledTechs.length) {
           if (statusBox) {
             statusBox.className = "alert alert-danger py-2 px-3 small fw-semibold mt-3 mb-2 text-start";
@@ -2072,6 +2103,8 @@ async function startTeknisiFaceScanForPhoto() {
         const { tech, dist } = findBestMatchTech(detection.descriptor);
         // Ambang batas 0.62 untuk verifikasi cepat dan akurat
         if (tech && dist < 0.62) {
+          const pMatch = document.getElementById("pillPhotoMatchId");
+          if (pMatch) pMatch.className = "badge bg-success text-white small py-1 px-2.5 border border-success fw-bold";
           finalizePhotoFaceVerification(tech, dist, video);
           return;
         } else {

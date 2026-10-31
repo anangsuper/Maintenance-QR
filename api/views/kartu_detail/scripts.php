@@ -372,8 +372,10 @@
             bioCompleted = false;
             bioFaceHoldFrames = 0;
 
-            document.getElementById("pillFaceDetected").className = "badge bg-[#F1F5F9] text-[#475569] small py-1.5 px-3 border border-[#CBD5E1] fw-semibold";
-            document.getElementById("pillMatchId").className = "badge bg-[#F1F5F9] text-[#475569] small py-1.5 px-3 border border-[#CBD5E1] fw-semibold";
+            ['pillFaceDetected', 'pillLivenessBlink', 'pillMatchId'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.className = "badge bg-secondary bg-opacity-50 text-white-50 small py-1 px-2.5 border border-secondary border-opacity-50";
+            });
             document.getElementById("bioSuccessOverlay").classList.add("d-none");
             document.getElementById("bioScanLine").classList.add("d-none");
             document.getElementById("bioFaceOval").classList.remove("active");
@@ -386,6 +388,22 @@
 
             loadBioModels();
             startBioCamera();
+        }
+
+        function bypassBiometricAndSubmit() {
+            closeBiometricModal();
+            if (window.faceAuthMode === 'edit_data') {
+                const f = document.getElementById("editDataKartuForm");
+                if (f) f.submit();
+                return;
+            }
+            if (window.faceAuthMode === 'delete') {
+                const f = document.getElementById("deletePhotoForm");
+                if (f) f.submit();
+                return;
+            }
+            const f = document.getElementById("uploadPhotoForm");
+            if (f) f.submit();
         }
 
         function closeBiometricModal() {
@@ -444,7 +462,7 @@
                 document.getElementById("bioScanLine").classList.remove("d-none");
                 if (statusBox) {
                     statusBox.className = "alert alert-primary py-2 px-3 small fw-semibold mb-2";
-                    statusBox.innerHTML = '<i class="bi bi-person-bounding-box me-1"></i> Posisikan wajah di lingkaran oval (Tahan 1 detik).';
+                    statusBox.innerHTML = '<i class="bi bi-person-bounding-box me-1"></i> Arahkan wajah ke lingkaran oval (Tahan 1 detik atau kedipkan mata).';
                 }
 
                 startBioTracking();
@@ -504,7 +522,8 @@
 
         function finalizeFaceVerification(user, dist, videoEl) {
             bioCompleted = true;
-            document.getElementById("pillMatchId").className = "badge bg-success text-white small py-1.5 px-3 border border-success fw-bold";
+            const pMatchFin = document.getElementById("pillMatchId");
+            if (pMatchFin) pMatchFin.className = "badge bg-success text-white small py-1 px-2.5 border border-success fw-bold";
 
             let conf = Math.round((1.0 - (dist / 0.60)) * 100);
             if (conf > 99) conf = 99;
@@ -659,7 +678,9 @@
 
                     if (detection) {
                         oval.classList.add("active");
-                        pillFace.className = "badge bg-success text-white small py-1.5 px-3 border border-success fw-bold";
+                        if (pillFace) pillFace.className = "badge bg-success text-white small py-1 px-2.5 border border-success fw-bold";
+                        const pBlink = document.getElementById("pillLivenessBlink");
+                        if (pBlink) pBlink.className = "badge bg-success text-white small py-1 px-2.5 border border-success fw-bold";
                         if (instantBox) instantBox.classList.remove("d-none");
 
                         if (detection.descriptor) {
@@ -685,7 +706,11 @@
                         }
                     } else {
                         oval.classList.remove("active");
-                        pillFace.className = "badge bg-[#F1F5F9] text-[#475569] small py-1.5 px-3 border border-[#CBD5E1] fw-semibold";
+                        if (pillFace) pillFace.className = "badge bg-secondary bg-opacity-50 text-white-50 small py-1 px-2.5 border border-secondary border-opacity-50";
+                        const pBlink = document.getElementById("pillLivenessBlink");
+                        if (pBlink) pBlink.className = "badge bg-secondary bg-opacity-50 text-white-50 small py-1 px-2.5 border border-secondary border-opacity-50";
+                        const pMatch = document.getElementById("pillMatchId");
+                        if (pMatch) pMatch.className = "badge bg-secondary bg-opacity-50 text-white-50 small py-1 px-2.5 border border-secondary border-opacity-50";
                         bioFaceHoldFrames = 0;
                         if (statusBox) {
                             statusBox.className = "alert alert-primary py-2 px-3 small fw-semibold mb-2";

@@ -195,33 +195,33 @@
     </div>
 
     <!-- ===================================================================== -->
-    <!-- MODAL BIOMETRIK SCAN WAJAH (FACE RECOGNITION AI)                      -->
+    <!-- MODAL BIOMETRIK SCAN WAJAH (STANDAR RESMI SESUAI MAINTENANCE BANK MITRA)-->
     <!-- ===================================================================== -->
     <div class="modal fade" id="modalFaceVerify" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content border-0 shadow-xl rounded-[16px] overflow-hidden bg-white text-[#1B2A3A]">
-                <div class="modal-header py-3 px-4 text-white" style="background: #0E5C58 !important;">
+            <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden bg-dark text-white">
+                <div class="modal-header border-secondary border-opacity-25 py-3 px-4">
                     <div>
                         <h6 class="modal-title fw-bold text-white mb-0 d-flex align-items-center gap-2">
-                            <i class="bi bi-person-bounding-box text-[#D9F1EF] fs-5"></i>
-                            <span>Verifikasi Biometrik Wajah Petugas</span>
+                            <i class="bi bi-person-bounding-box text-primary me-2"></i>
+                            <span>Verifikasi Biometrik Wajah Teknisi</span>
                         </h6>
-                        <small class="text-[#D9F1EF] opacity-90 fw-medium d-block mt-0.5" style="font-size: 0.78rem;">Arahkan wajah Anda ke lingkaran pemindai kamera</small>
+                        <small class="text-white-50">Arahkan wajah Anda ke kamera</small>
                     </div>
                     <button type="button" class="btn-close btn-close-white" onclick="closeBiometricModal()"></button>
                 </div>
 
-                <div class="modal-body p-3.5 text-center position-relative bg-white">
+                <div class="modal-body p-3 text-center position-relative">
                     <!-- Scanner Viewport -->
                     <div class="bio-scanner-wrapper position-relative mx-auto rounded-3 overflow-hidden bg-black shadow-inner" style="max-width: 320px; aspect-ratio: 1/1;">
                         <video id="bioVideo" class="bio-video-el w-100 h-100 object-fit-cover" autoplay playsinline webkit-playsinline muted style="transform: scaleX(-1);"></video>
                         <canvas id="bioCanvas" class="bio-canvas-el position-absolute top-0 start-0 w-100 h-100 pointer-events-none" style="transform: scaleX(-1);"></canvas>
                         
                         <!-- Oval Guide Frame -->
-                        <div id="bioFaceOval" class="position-absolute top-50 start-50 translate-middle pointer-events-none bio-face-oval" style="width: 72%; height: 85%; border: 2.5px dashed #0E5C58; border-radius: 50%; box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.45);"></div>
+                        <div id="bioFaceOval" class="position-absolute top-50 start-50 translate-middle pointer-events-none bio-face-oval" style="width: 72%; height: 85%; border: 2.5px dashed rgba(59, 130, 246, 0.85); border-radius: 50%; box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.35);"></div>
                         
                         <!-- Scanning Ray Animation -->
-                        <div id="bioScanLine" class="position-absolute start-0 w-100" style="height: 3px; background: linear-gradient(90deg, transparent, #0E5C58, #2DD4BF, transparent); animation: scanRayAnim 2s infinite ease-in-out;"></div>
+                        <div id="bioScanLine" class="position-absolute start-0 w-100" style="height: 3px; background: linear-gradient(90deg, transparent, #3b82f6, #60a5fa, transparent); animation: scanRayAnim 2s infinite ease-in-out;"></div>
 
                         <!-- Success Overlay -->
                         <div id="bioSuccessOverlay" class="position-absolute top-0 start-0 w-100 h-100 bg-success bg-opacity-75 d-flex flex-column align-items-center justify-content-center text-white d-none" style="backdrop-filter: blur(4px);">
@@ -232,41 +232,44 @@
                     </div>
 
                     <!-- Status Text -->
-                    <div id="bioStatusBox" class="alert alert-info py-2 px-3 small fw-bold mt-3 mb-2 text-start text-[#0E5C58] bg-[#D9F1EF] border border-[#A7E2DC]">
-                        <span class="spinner-border spinner-border-sm me-2 text-[#0E5C58]"></span>
-                        Menyiapkan kamera dan modul pengenalan wajah...
+                    <div id="bioStatusBox" class="alert alert-primary py-2 px-3 small fw-semibold mt-3 mb-2 text-start text-dark">
+                        <i class="bi bi-person-bounding-box me-1"></i> Arahkan wajah ke lingkaran oval (Tahan 1 detik atau kedipkan mata).
                     </div>
 
-                    <div class="text-[#1B2A3A] small mb-2.5 fw-semibold" style="font-size: 0.80rem; line-height: 1.4;">
+                    <div class="text-white-50 small mb-2" style="font-size: 0.72rem;">
                         Pastikan wajah berada di dalam oval, tidak memakai masker, dan pencahayaan memadai.
                     </div>
 
-                    <!-- Tombol Verifikasi Cepat (Muncul saat wajah terdeteksi) -->
-                    <div class="mb-2 d-none" id="bioInstantVerifyBox"></div>
-
-                    <!-- Checklist Indikator -->
-                    <div class="d-flex justify-content-center gap-2 mb-2">
-                        <span id="pillFaceDetected" class="badge bg-[#F1F5F9] text-[#475569] small py-1.5 px-3 border border-[#CBD5E1] fw-semibold">
-                            <i class="bi bi-person me-1"></i> Wajah Terdeteksi
+                    <!-- Checklist Indikator (Wajah, Kedip, Identitas Cocok) -->
+                    <div class="d-flex justify-content-center gap-1.5 mb-2">
+                        <span id="pillFaceDetected" class="badge bg-secondary bg-opacity-50 text-white-50 small py-1 px-2.5 border border-secondary border-opacity-50">
+                            <i class="bi bi-person me-1"></i> Wajah
                         </span>
-                        <span id="pillMatchId" class="badge bg-[#F1F5F9] text-[#475569] small py-1.5 px-3 border border-[#CBD5E1] fw-semibold">
+                        <span id="pillLivenessBlink" class="badge bg-secondary bg-opacity-50 text-white-50 small py-1 px-2.5 border border-secondary border-opacity-50">
+                            <i class="bi bi-eye me-1"></i> Kedip
+                        </span>
+                        <span id="pillMatchId" class="badge bg-secondary bg-opacity-50 text-white-50 small py-1 px-2.5 border border-secondary border-opacity-50">
                             <i class="bi bi-check-all me-1"></i> Identitas Cocok
                         </span>
                     </div>
 
-                    <div class="mt-2.5 text-center text-[#53595F] small" style="font-size: 0.78rem;">
-                        <i class="bi bi-camera me-1"></i> Belum rekam wajah? <a href="<?= module_url('user_biometric_enroll.php') ?>" class="text-[#0E5C58] fw-bold text-decoration-underline">Daftarkan di sini</a>
+                    <div class="mt-2 text-center text-white-50 small" style="font-size: 0.72rem;">
+                        <i class="bi bi-phone me-1"></i> Wajah belum terdaftar? <a href="<?= module_url('user_biometric_enroll.php', ['ret' => module_url('kartu_detail.php', ['id' => $card['id']])]) ?>" class="text-primary text-decoration-underline">Daftarkan di sini</a>
                     </div>
                 </div>
 
-                <div class="modal-footer bg-[#F8FAFC] border-top border-[#E2E8F0] py-2.5 px-3.5 d-flex justify-content-between align-items-center">
-                    <button type="button" class="btn btn-outline-secondary btn-sm rounded-pill px-3.5 fw-semibold" onclick="closeBiometricModal()">
+                <div class="modal-footer border-secondary border-opacity-25 py-2 px-3 d-flex justify-content-between align-items-center">
+                    <button type="button" class="btn btn-outline-secondary btn-sm rounded-pill px-3" onclick="closeBiometricModal()">
                         Batal
                     </button>
-                    <button type="button" id="btnManualTriggerFace" class="btn btn-primary btn-sm rounded-pill px-4 fw-bold shadow-xs d-inline-flex align-items-center gap-1.5" onclick="triggerInstantFaceVerify()">
-                        <i class="bi bi-camera-fill"></i>
-                        <span>Verifikasi Sekarang</span>
-                    </button>
+                    <div class="d-flex align-items-center gap-2">
+                        <button type="button" class="btn btn-link btn-sm text-danger text-decoration-none p-0" style="font-size: 0.75rem;" onclick="bypassBiometricAndSubmit()">
+                            Lewati Manual
+                        </button>
+                        <button type="button" id="btnManualTriggerFace" class="btn btn-primary btn-sm rounded-pill px-3 fw-bold" onclick="triggerInstantFaceVerify()">
+                            <i class="bi bi-camera me-1"></i> Verifikasi Sekarang
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>

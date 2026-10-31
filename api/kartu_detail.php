@@ -425,28 +425,28 @@ $pageTitle = $card ? e($card['nama_barang']) . ' - Kartu Inventaris' : 'Kartu In
 </head>
 <body>
 
-    <!-- Header Brand BPR Mitratama -->
-    <header class="header-brand py-3.5 px-3 px-md-4 shadow-sm" style="background: #0E5C58 !important; border-bottom: 3px solid #094340;">
-        <div class="container d-flex align-items-center justify-content-between gap-3" style="max-width: 1200px;">
-            <div class="d-flex align-items-center gap-3 min-w-0">
-                <div class="bg-white px-3 py-1.5 rounded-3 shadow-sm flex-shrink-0 d-flex align-items-center justify-content-center" style="height: 54px; min-width: 75px;">
-                    <img src="<?= module_url('logo_img.php') ?>" alt="Logo Bank Mitra" style="height: 42px; width: auto; max-width: 160px; object-fit: contain;" onerror="this.onerror=null; this.src='data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'32\' height=\'32\' viewBox=\'0 0 24 24\' fill=\'%230E5C58\'%3E%3Cpath d=\'M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5\'/%3E%3C/svg%3E';">
+    <!-- Header Brand BPR Mitratama (Rapi & Responsif di Semua Ukuran Layar HP & Desktop) -->
+    <header class="header-brand py-2.5 py-md-3 px-2.5 px-md-4 shadow-sm" style="background: #0E5C58 !important; border-bottom: 3px solid #094340;">
+        <div class="container d-flex align-items-center justify-content-between gap-2 gap-md-3" style="max-width: 1200px;">
+            <div class="d-flex align-items-center gap-2 gap-md-3 min-w-0 flex-grow-1">
+                <div class="bg-white px-2 px-md-3 py-1 py-md-1.5 rounded-3 shadow-sm flex-shrink-0 d-flex align-items-center justify-content-center" style="height: 42px; min-width: 52px; max-width: 80px;">
+                    <img src="<?= module_url('logo_img.php') ?>" alt="Logo Bank Mitra" style="height: 32px; width: auto; max-width: 100%; object-fit: contain;" onerror="this.onerror=null; this.src='data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'32\' height=\'32\' viewBox=\'0 0 24 24\' fill=\'%230E5C58\'%3E%3Cpath d=\'M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5\'/%3E%3C/svg%3E';">
                 </div>
-                <div class="min-w-0">
-                    <h1 class="h5 mb-0 text-white fw-bold tracking-tight text-truncate" style="font-size: 1.25rem; line-height: 1.2;">
+                <div class="min-w-0 pe-1">
+                    <h1 class="h6 h5-md mb-0 text-white fw-bold tracking-tight text-truncate" style="font-size: clamp(0.82rem, 3.2vw, 1.25rem); line-height: 1.2;">
                         PT. BPR MITRATAMA ARTHABUANA
                     </h1>
-                    <div class="text-teal-light text-truncate fw-semibold mt-0.5" style="font-size: 0.85rem; letter-spacing: 0.5px;">DATA MASTER KARTU INVENTARIS RESMI</div>
+                    <div class="text-teal-light text-truncate fw-semibold mt-0.5" style="font-size: clamp(0.66rem, 2.2vw, 0.85rem); letter-spacing: 0.3px;">DATA MASTER KARTU INVENTARIS RESMI</div>
                 </div>
             </div>
             <div class="flex-shrink-0">
                 <?php if (is_logged_in()): ?>
-                    <a href="<?= module_url('dashboard.php', ['tab' => 'kartu']) ?>" class="btn btn-outline-light rounded-pill px-4 py-2 d-inline-flex align-items-center gap-2 fw-bold shadow-xs" style="font-size: 0.92rem; border-color: rgba(255,255,255,0.6);">
-                        <i class="bi bi-arrow-left fs-6"></i> <span>Dashboard</span>
+                    <a href="<?= module_url('dashboard.php', ['tab' => 'kartu']) ?>" class="btn btn-outline-light rounded-pill px-2.5 px-sm-3.5 py-1.5 d-inline-flex align-items-center gap-1.5 fw-bold shadow-xs" style="font-size: 0.80rem; border-color: rgba(255,255,255,0.6); white-space: nowrap;">
+                        <i class="bi bi-arrow-left"></i> <span class="d-none d-sm-inline">Dashboard</span><span class="d-inline d-sm-none">Menu</span>
                     </a>
                 <?php else: ?>
-                    <a href="<?= module_url('login.php') ?>" class="btn btn-outline-light rounded-pill px-4 py-2 d-inline-flex align-items-center gap-2 fw-bold shadow-xs" style="font-size: 0.92rem; border-color: rgba(255,255,255,0.6);">
-                        <i class="bi bi-box-arrow-in-right fs-6"></i> <span>Login</span>
+                    <a href="<?= module_url('login.php') ?>" class="btn btn-outline-light rounded-pill px-2.5 px-sm-3.5 py-1.5 d-inline-flex align-items-center gap-1.5 fw-bold shadow-xs" style="font-size: 0.80rem; border-color: rgba(255,255,255,0.6); white-space: nowrap;">
+                        <i class="bi bi-box-arrow-in-right"></i> <span>Login</span>
                     </a>
                 <?php endif; ?>
             </div>
@@ -556,65 +556,21 @@ $pageTitle = $card ? e($card['nama_barang']) . ' - Kartu Inventaris' : 'Kartu In
 
             <!-- Kartu Paspor Inventaris Resmi -->
             <div class="card card-custom mb-4">
-                <!-- TAMPILAN KHUSUS SMARTPHONE / MOBILE (1X BUKA LANGSUNG TERLIHAT 2 FOTO & DETAIL) -->
+                <!-- TAMPILAN KHUSUS SMARTPHONE / MOBILE (BERSIH, LEGA & TANPA DUPLIKASI FOTO KECIL) -->
                 <div class="d-md-none p-3 border-bottom bg-white">
-                    <div class="row g-3 align-items-center mb-2">
-                        <!-- Foto Barang 1 & 2 (Kiri 42%) -->
-                        <div class="col-5">
-                            <?php if ($photoUrl && $photoUrl2): ?>
-                                <div class="row g-1.5">
-                                    <div class="col-6">
-                                        <div class="position-relative overflow-hidden border rounded-3 shadow-xs bg-light" style="aspect-ratio: 4 / 5; cursor: pointer;" onclick="viewFullImage('<?= e(addslashes($photoUrl)) ?>', '<?= e(addslashes($card['nama_barang'] . ' (Foto 1)')) ?>')">
-                                            <img src="<?= e($photoUrl) ?>" alt="Foto 1 <?= e($card['nama_barang']) ?>" fetchpriority="high" style="width: 100%; height: 100%; object-fit: cover; display: block;">
-                                            <span class="position-absolute top-0 start-0 m-1 badge bg-dark bg-opacity-75 text-white" style="font-size: 0.58rem;">Foto 1</span>
-                                        </div>
-                                    </div>
-                                    <div class="col-6">
-                                        <div class="position-relative overflow-hidden border rounded-3 shadow-xs bg-light" style="aspect-ratio: 4 / 5; cursor: pointer;" onclick="viewFullImage('<?= e(addslashes($photoUrl2)) ?>', '<?= e(addslashes($card['nama_barang'] . ' (Foto 2)')) ?>')">
-                                            <img src="<?= e($photoUrl2) ?>" alt="Foto 2 <?= e($card['nama_barang']) ?>" fetchpriority="low" loading="lazy" style="width: 100%; height: 100%; object-fit: cover; display: block;">
-                                            <span class="position-absolute top-0 start-0 m-1 badge bg-primary text-white" style="font-size: 0.58rem;">Foto 2</span>
-                                        </div>
-                                    </div>
-                                </div>
-                            <?php else: ?>
-                                <?php $activeMobUrl = $photoUrl ?: $photoUrl2; $activeMobSlot = $photoUrl ? 1 : 2; ?>
-                                <div class="item-photo-wrapper shadow-xs mb-0 <?= $activeMobUrl ? 'has-image' : '' ?>" style="max-height: 175px; aspect-ratio: 4 / 5; cursor: pointer; border-radius: 12px;" onclick="<?= $activeMobUrl ? "viewFullImage('" . e(addslashes($activeMobUrl)) . "', '" . e(addslashes($card['nama_barang'])) . "')" : "" ?>" title="Klik untuk memperbesar">
-                                    <?php if ($activeMobUrl): ?>
-                                        <img src="<?= e($activeMobUrl) ?>" alt="Foto <?= e($card['nama_barang']) ?>" fetchpriority="high" style="width: 100%; height: 100%; object-fit: cover; border-radius: 12px;">
-                                        <span class="position-absolute top-0 start-0 m-1.5 badge bg-dark bg-opacity-75 text-white" style="font-size: 0.62rem;">Foto <?= $activeMobSlot ?>/2</span>
-                                        <div class="position-absolute bottom-0 end-0 p-1 bg-dark bg-opacity-75 text-white rounded-start" style="font-size: 0.65rem;">
-                                            <i class="bi bi-arrows-fullscreen"></i>
-                                        </div>
-                                    <?php else: ?>
-                                        <div class="text-center p-2">
-                                            <i class="bi bi-camera text-muted fs-3 d-block mb-1"></i>
-                                            <div class="text-muted fw-semibold" style="font-size: 0.68rem;">Belum Ada Foto</div>
-                                            <div class="text-muted" style="font-size: 0.60rem;">Bisa upload 2 foto</div>
-                                        </div>
-                                    <?php endif; ?>
-                                </div>
+                    <div class="mb-2">
+                        <div class="d-flex align-items-center justify-content-between mb-1.5 flex-wrap gap-1">
+                            <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 rounded-pill px-2.5 py-1 d-inline-flex align-items-center gap-1.5 fw-bold" style="font-size: 0.72rem;"><span class="status-pulse-dot"></span><span><?= e($cleanStatus) ?></span></span>
+                            <?php if ($isPrintedDetail): ?>
+                                <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 rounded-pill px-2.5 py-1 fw-bold" style="font-size: 0.68rem;" title="Dicetak pada <?= e($printedTimeDetail) ?>">
+                                    <i class="bi bi-check-circle-fill me-0.5"></i>Sudah Dicetak
+                                </span>
                             <?php endif; ?>
                         </div>
-
-                        <!-- Ringkasan Identitas Utama (Kanan 58%) -->
-                        <div class="col-7">
-                            <div class="d-flex align-items-center justify-content-between mb-1 flex-wrap gap-1">
-                                <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 rounded-pill px-2 py-0.5 d-inline-flex align-items-center gap-1.5 fw-bold" style="font-size: 0.70rem;"><span class="status-pulse-dot"></span><span><?= e($cleanStatus) ?></span></span>
-                                <?php if ($isPrintedDetail): ?>
-                                    <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 rounded-pill px-2 py-0.5 fw-bold" style="font-size: 0.66rem;" title="Dicetak pada <?= e($printedTimeDetail) ?>">
-                                        <i class="bi bi-check-circle-fill me-0.5"></i>Sudah Dicetak
-                                    </span>
-                                <?php else: ?>
-                                    <span class="badge bg-warning bg-opacity-15 text-warning-emphasis border border-warning border-opacity-50 rounded-pill px-2 py-0.5 fw-bold" style="font-size: 0.66rem;">
-                                        <i class="bi bi-hourglass-split me-0.5"></i>Belum Dicetak
-                                    </span>
-                                <?php endif; ?>
-                            </div>
-                            <h2 class="h6 fw-bold text-dark mb-1 lh-sm" style="font-size: 0.95rem;"><?= e($card['nama_barang']) ?></h2>
-                            <div class="font-mono text-primary fw-bold small mb-1" style="font-size: 0.78rem;"><?= e($kodeInventaris) ?> <span class="text-muted fw-normal">(#<?= (int)$card['id'] ?>)</span></div>
-                            <div class="small text-muted mb-0.5" style="font-size: 0.72rem;">
-                                <i class="bi bi-geo-alt-fill text-warning me-1"></i><strong><?= e($lokasiBarangVal) ?></strong>
-                            </div>
+                        <h2 class="h6 fw-bold text-dark mb-1 lh-sm" style="font-size: 1.05rem;"><?= e($card['nama_barang']) ?></h2>
+                        <div class="font-mono text-primary fw-bold small mb-1" style="font-size: 0.82rem;"><?= e($kodeInventaris) ?> <span class="text-muted fw-normal">(#<?= (int)$card['id'] ?>)</span></div>
+                        <div class="small text-muted mb-0.5" style="font-size: 0.76rem;">
+                            <i class="bi bi-geo-alt-fill text-warning me-1"></i><strong><?= e($lokasiBarangVal) ?></strong>
                         </div>
                     </div>
 
@@ -681,10 +637,6 @@ $pageTitle = $card ? e($card['nama_barang']) . ' - Kartu Inventaris' : 'Kartu In
                         <?php if ($isPrintedDetail): ?>
                             <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 px-3 py-2 rounded-pill fw-bold shadow-2xs" style="font-size: 0.84rem;" title="Dicetak pada <?= e($printedTimeDetail) ?>">
                                 <i class="bi bi-check-circle-fill me-1"></i> Sudah Dicetak (<?= e($printedTimeDetail) ?>)
-                            </span>
-                        <?php else: ?>
-                            <span class="badge bg-warning bg-opacity-15 text-warning-emphasis border border-warning border-opacity-50 px-3 py-2 rounded-pill fw-bold shadow-2xs" style="font-size: 0.84rem;">
-                                <i class="bi bi-hourglass-split me-1"></i> Belum Dicetak
                             </span>
                         <?php endif; ?>
                     </div>
@@ -792,8 +744,8 @@ $pageTitle = $card ? e($card['nama_barang']) . ' - Kartu Inventaris' : 'Kartu In
                                 </div>
                             <?php endif; ?>
 
-                            <!-- Banner Foto di Folder Sampah (Jika Barang Ini Punya Foto yang Dihapus < 7 Hari) -->
-                            <?php if (!empty($itemTrashPhotos)): ?>
+                            <!-- Banner Foto di Folder Sampah (Khusus User yang Sedang Login - Tidak Ditampilkan ke Tamu/Publik) -->
+                            <?php if (is_logged_in() && !empty($itemTrashPhotos)): ?>
                                 <div class="bg-warning bg-opacity-10 border border-warning border-opacity-50 rounded-3 p-2.5 mb-2 text-start">
                                     <div class="d-flex align-items-center justify-content-between mb-1">
                                         <span class="fw-bold text-dark" style="font-size: 0.75rem;">
@@ -848,9 +800,11 @@ $pageTitle = $card ? e($card['nama_barang']) . ' - Kartu Inventaris' : 'Kartu In
                                         </button>
                                     </form>
                                 <?php endif; ?>
-                                <a href="<?= module_url('photo_trash.php', ['source_type' => 'inventaris_kartu']) ?>" class="btn btn-light border btn-sm rounded-pill px-2.5 py-1.5 fw-semibold text-secondary shadow-2xs" style="font-size: 0.74rem;" title="Buka Folder Sampah Foto (Tersimpan 7 Hari)">
-                                    <i class="bi bi-recycle text-success me-1"></i> Sampah Foto <?= $totalTrashCountGlobal > 0 ? '<span class="badge bg-danger text-white rounded-pill ms-0.5">' . $totalTrashCountGlobal . '</span>' : '' ?>
-                                </a>
+                                <?php if (is_logged_in()): ?>
+                                    <a href="<?= module_url('photo_trash.php', ['source_type' => 'inventaris_kartu']) ?>" class="btn btn-light border btn-sm rounded-pill px-2.5 py-1.5 fw-semibold text-secondary shadow-2xs" style="font-size: 0.74rem;" title="Buka Folder Sampah Foto (Tersimpan 7 Hari)">
+                                        <i class="bi bi-recycle text-success me-1"></i> Sampah Foto <?= $totalTrashCountGlobal > 0 ? '<span class="badge bg-danger text-white rounded-pill ms-0.5">' . $totalTrashCountGlobal . '</span>' : '' ?>
+                                    </a>
+                                <?php endif; ?>
                             </div>
 
                             <!-- Form Upload & Edit 2 Foto Barang (Collapsible) -->
