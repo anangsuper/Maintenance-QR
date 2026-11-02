@@ -2231,7 +2231,7 @@ function submitPhotoAsLoggedInAdmin() {
 
 // Delegasi klik data-bs-dismiss untuk menangani penutupan modal fallback
 document.addEventListener("click", function(e) {
-  var btn = e.target.closest("[data-bs-dismiss='modal']");
+  var btn = e.target.closest('[data-bs-dismiss="modal"]');
   if (btn) {
     var m = btn.closest(".modal");
     if (m) {
