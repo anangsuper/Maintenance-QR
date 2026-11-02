@@ -73,7 +73,7 @@ if ($action === 'start' || $action === 'form' || $action === 'ulang' || $action 
               </div>
               <div class="text-muted small mt-0.5" style="font-size: 0.78rem;">Rekam jejak keluhan pengguna dan riwayat tindak lanjut penanganan teknisi IT.</div>
             </div>
-            <button type="button" id="btnToggleComplaintHistory" class="btn btn-sm btn-outline-secondary fw-semibold py-1 px-2.5 rounded-pill shadow-xs" onclick="toggleComplaintHistory(this)" aria-expanded="true" style="font-size: 0.75rem;">
+            <button type="button" id="btnToggleComplaintHistory" data-count="'.(int)$complaintCount.'" class="btn btn-sm btn-outline-secondary fw-semibold py-1 px-2.5 rounded-pill shadow-xs" onclick="toggleComplaintHistory(this)" aria-expanded="true" style="font-size: 0.75rem;">
               <i class="bi bi-chevron-up me-1" id="iconToggleComplaintHistory"></i>
               <span id="labelToggleComplaintHistory">Sembunyikan Riwayat</span>
             </button>
@@ -688,7 +688,8 @@ if ($action === 'start' || $action === 'form' || $action === 'ulang' || $action 
       if (!container) return;
       var toggleBtn = btn || document.getElementById("btnToggleComplaintHistory");
       var isHidden = container.hasAttribute("hidden") || container.style.display === "none";
-      var count = '.(int)$complaintCount.';
+      var count = toggleBtn ? (toggleBtn.getAttribute("data-count") || "") : "";
+      var countSuffix = (count !== "" && count !== null) ? " (" + count + ")" : "";
       var label = document.getElementById("labelToggleComplaintHistory");
       var icon = document.getElementById("iconToggleComplaintHistory");
 
@@ -699,10 +700,10 @@ if ($action === 'start' || $action === 'form' || $action === 'ulang' || $action 
         if (label) label.textContent = "Sembunyikan Riwayat";
         if (icon) icon.className = "bi bi-chevron-up me-1";
       } else {
-        container.setAttribute("hidden", ("onbeforematch" in HTMLElement.prototype) ? "until-found" : "");
+        container.setAttribute("hidden", "");
         container.style.display = "none";
         if (toggleBtn) toggleBtn.setAttribute("aria-expanded", "false");
-        if (label) label.textContent = "Tampilkan Riwayat (" + count + ")";
+        if (label) label.textContent = "Tampilkan Riwayat" + countSuffix;
         if (icon) icon.className = "bi bi-chevron-down me-1";
       }
     }
