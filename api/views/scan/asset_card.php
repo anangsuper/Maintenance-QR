@@ -1012,7 +1012,7 @@ if ($hasAnyUnitPhoto) {
     $hasBoth = ($fotoUnitSrc !== '' && $fotoUnit2Src !== '');
 
     $slot1BoxHtml = $fotoUnitSrc !== '' ? '
-      <div class="position-relative rounded-3 overflow-hidden border shadow-xs bg-dark bg-opacity-10 d-flex align-items-center justify-content-center h-100" style="cursor: pointer; aspect-ratio: 4 / 5; max-height: 240px;" onclick="openScanPhotoModal(\''.e($fotoUnitSrc).'\', \''.e(addslashes(asset_title($asset) . ' - Foto 1 (Utama)')).'\', \''.e(addslashes($asset['kode_inventaris'] ?? '')).'\')" title="Klik untuk memperbesar Foto 1">
+      <div class="position-relative rounded-3 overflow-hidden border shadow-xs bg-dark bg-opacity-10 d-flex align-items-center justify-content-center h-100" style="cursor: pointer; aspect-ratio: 4 / 5; max-height: 240px;" data-bs-toggle="modal" data-bs-target="#modalScanPhoto" onclick="openScanPhotoModal(\''.e($fotoUnitSrc).'\', \''.e(addslashes(asset_title($asset) . ' - Foto 1 (Utama)')).'\', \''.e(addslashes($asset['kode_inventaris'] ?? '')).'\')" title="Klik untuk memperbesar Foto 1">
         <span class="position-absolute top-0 start-0 m-1.5 badge bg-dark bg-opacity-75 text-white rounded-pill px-2 py-0.5" style="font-size: 0.60rem; z-index: 2;"><i class="bi bi-1-circle-fill me-0.5"></i> Foto 1</span>
         <img src="'.e($fotoUnitSrc).'" alt="Foto 1 '.e(asset_title($asset)).'" fetchpriority="high" class="w-100 h-100 object-fit-cover" style="max-height: 240px; min-height: 155px; display: block;" onerror="this.onerror=null; this.parentElement.innerHTML=\'<div class=\\\'p-3 text-muted small\\\'>Gagal memuat</div>\';">
         <div class="position-absolute bottom-0 start-0 w-100 bg-dark bg-opacity-75 text-white py-0.5 px-1 small text-center" style="font-size: 0.64rem;">
@@ -1021,7 +1021,7 @@ if ($hasAnyUnitPhoto) {
       </div>' : '';
 
     $slot2BoxHtml = $fotoUnit2Src !== '' ? '
-      <div class="position-relative rounded-3 overflow-hidden border shadow-xs bg-dark bg-opacity-10 d-flex align-items-center justify-content-center h-100" style="cursor: pointer; aspect-ratio: 4 / 5; max-height: 240px;" onclick="openScanPhotoModal(\''.e($fotoUnit2Src).'\', \''.e(addslashes(asset_title($asset) . ' - Foto 2 (Detail)')).'\', \''.e(addslashes($asset['kode_inventaris'] ?? '')).'\')" title="Klik untuk memperbesar Foto 2">
+      <div class="position-relative rounded-3 overflow-hidden border shadow-xs bg-dark bg-opacity-10 d-flex align-items-center justify-content-center h-100" style="cursor: pointer; aspect-ratio: 4 / 5; max-height: 240px;" data-bs-toggle="modal" data-bs-target="#modalScanPhoto" onclick="openScanPhotoModal(\''.e($fotoUnit2Src).'\', \''.e(addslashes(asset_title($asset) . ' - Foto 2 (Detail)')).'\', \''.e(addslashes($asset['kode_inventaris'] ?? '')).'\')" title="Klik untuk memperbesar Foto 2">
         <span class="position-absolute top-0 start-0 m-1.5 badge bg-primary text-white rounded-pill px-2 py-0.5" style="font-size: 0.60rem; z-index: 2;"><i class="bi bi-2-circle-fill me-0.5"></i> Foto 2</span>
         <img src="'.e($fotoUnit2Src).'" alt="Foto 2 '.e(asset_title($asset)).'" fetchpriority="low" loading="lazy" class="w-100 h-100 object-fit-cover" style="max-height: 240px; min-height: 155px; display: block;" onerror="this.onerror=null; this.parentElement.innerHTML=\'<div class=\\\'p-3 text-muted small\\\'>Gagal memuat</div>\';">
         <div class="position-absolute bottom-0 start-0 w-100 bg-dark bg-opacity-75 text-white py-0.5 px-1 small text-center" style="font-size: 0.64rem;">
@@ -1047,7 +1047,7 @@ if ($hasAnyUnitPhoto) {
       '.$slotsDisplayHtml.'
       '.$verifiedBadge.'
       <div class="mt-2 d-flex flex-wrap justify-content-center gap-1.5">
-        <button type="button" class="btn btn-sm btn-outline-primary py-1 px-2.5 fw-semibold shadow-xs" style="font-size: 0.72rem;" onclick="openUploadFotoTeknisiModal()">
+        <button type="button" class="btn btn-sm btn-outline-primary py-1 px-2.5 fw-semibold shadow-xs" style="font-size: 0.72rem;" data-bs-toggle="modal" data-bs-target="#modalUploadFotoTeknisi" onclick="openUploadFotoTeknisiModal()">
           <i class="bi bi-camera me-1"></i> '.($hasBoth ? 'Edit / Ganti Foto' : 'Edit / Tambah Foto 2').'
         </button>
         '.($loggedIn ? '<a href="'.e(module_url('photo_trash.php', ['source_type' => 'assets'])).'" class="btn btn-sm btn-light border py-1 px-2 text-secondary fw-semibold shadow-xs" style="font-size: 0.72rem;" title="Folder Sampah Foto (Tersimpan 7 Hari)"><i class="bi bi-recycle text-success me-0.5"></i> Sampah '.($totalTrashAssetsCount > 0 ? '<span class="badge bg-danger text-white rounded-pill">'.$totalTrashAssetsCount.'</span>' : '').'</a>' : '').'
@@ -1058,10 +1058,10 @@ if ($hasAnyUnitPhoto) {
 } else {
     $fotoCardHtml = '
     <div id="assetPhotoCardSection" class="col-12 col-md-4 col-lg-3 text-center mb-3 mb-md-0">
-      <div class="rounded-3 border border-2 border-dashed bg-light p-3 d-flex flex-column align-items-center justify-content-center h-100" style="min-height: 175px; border-color: #cbd5e1 !important; cursor: pointer;" onclick="openUploadFotoTeknisiModal()">
+      <div class="rounded-3 border border-2 border-dashed bg-light p-3 d-flex flex-column align-items-center justify-content-center h-100" style="min-height: 175px; border-color: #cbd5e1 !important; cursor: pointer;" data-bs-toggle="modal" data-bs-target="#modalUploadFotoTeknisi" onclick="openUploadFotoTeknisiModal()">
         <i class="bi bi-camera fs-1 text-secondary opacity-50 mb-1"></i>
         <div class="small text-muted mb-0.5 fw-semibold" style="font-size: 0.75rem;">Belum ada foto fisik unit</div>
-        <button type="button" class="btn btn-xs btn-outline-primary fw-semibold mt-1 py-1 px-2.5 rounded-pill shadow-xs" style="font-size: 0.70rem;" onclick="openUploadFotoTeknisiModal(); event.stopPropagation();">
+        <button type="button" class="btn btn-xs btn-outline-primary fw-semibold mt-1 py-1 px-2.5 rounded-pill shadow-xs" style="font-size: 0.70rem;" data-bs-toggle="modal" data-bs-target="#modalUploadFotoTeknisi" onclick="openUploadFotoTeknisiModal(); event.stopPropagation();">
           <i class="bi bi-camera me-1"></i> Ambil / Upload Foto
         </button>
       </div>
@@ -1644,24 +1644,71 @@ function openScanPhotoModal(src, title, kode) {
   var img = document.getElementById("scanPhotoImg");
   var t = document.getElementById("scanPhotoTitle");
   var s = document.getElementById("scanPhotoSubtitle");
-  if (img) img.src = src;
+  if (img && src) img.src = src;
   if (t) t.textContent = title || "Foto Unit Perangkat";
   if (s) s.textContent = kode || "";
   var modalEl = document.getElementById("modalScanPhoto");
-  if (modalEl && typeof bootstrap !== "undefined") {
-    var modal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
-    modal.show();
+  if (modalEl) {
+    if (typeof bootstrap !== "undefined" && bootstrap.Modal) {
+      try {
+        var modal = (typeof bootstrap.Modal.getOrCreateInstance === "function")
+          ? bootstrap.Modal.getOrCreateInstance(modalEl)
+          : (bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl));
+        modal.show();
+        return;
+      } catch(err) {
+        console.warn("Bootstrap modal show error:", err);
+      }
+    }
+    // Fallback langsung jika Bootstrap belum terinisiasi
+    modalEl.classList.add("show");
+    modalEl.style.display = "block";
+    modalEl.removeAttribute("aria-hidden");
+    document.body.classList.add("modal-open");
+    if (!document.querySelector(".modal-backdrop")) {
+      var backdrop = document.createElement("div");
+      backdrop.className = "modal-backdrop fade show";
+      document.body.appendChild(backdrop);
+    }
   }
 }
 
 function openUploadFotoTeknisiModal() {
   var modalEl = document.getElementById("modalUploadFotoTeknisi");
-  if (modalEl && typeof bootstrap !== "undefined") {
-    var modal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
-    modal.show();
+  if (modalEl) {
+    if (typeof bootstrap !== "undefined" && bootstrap.Modal) {
+      try {
+        var modal = (typeof bootstrap.Modal.getOrCreateInstance === "function")
+          ? bootstrap.Modal.getOrCreateInstance(modalEl)
+          : (bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl));
+        modal.show();
+      } catch(err) {
+        console.warn("Bootstrap modal show error:", err);
+        modalEl.classList.add("show");
+        modalEl.style.display = "block";
+        modalEl.removeAttribute("aria-hidden");
+        document.body.classList.add("modal-open");
+        if (!document.querySelector(".modal-backdrop")) {
+          var backdrop = document.createElement("div");
+          backdrop.className = "modal-backdrop fade show";
+          document.body.appendChild(backdrop);
+        }
+      }
+    } else {
+      modalEl.classList.add("show");
+      modalEl.style.display = "block";
+      modalEl.removeAttribute("aria-hidden");
+      document.body.classList.add("modal-open");
+      if (!document.querySelector(".modal-backdrop")) {
+        var backdrop = document.createElement("div");
+        backdrop.className = "modal-backdrop fade show";
+        document.body.appendChild(backdrop);
+      }
+    }
   }
-  // Preload modul AI biometrik secara instan di background saat teknisi membuka form
-  loadPhotoBioModels();
+  try {
+    loadPhotoBioModels();
+  } catch(e) {}
 }
 
 function bukaScanSlot2() {
@@ -1814,6 +1861,7 @@ function submitPhotoAsGuestTech() {
 async function loadPhotoBioModels() {
   if (photoBioModelsLoaded) return true;
   if (photoBioModelsLoading) return true;
+  if (typeof faceapi === 'undefined') { return false; }
   photoBioModelsLoading = true;
   try {
     const statusBox = document.getElementById("bioPhotoStatusBox");
@@ -2180,6 +2228,28 @@ function submitPhotoAsLoggedInAdmin() {
   });
   form.submit();
 }
+
+// Delegasi klik data-bs-dismiss untuk menangani penutupan modal fallback
+document.addEventListener("click", function(e) {
+  var btn = e.target.closest("[data-bs-dismiss='modal']");
+  if (btn) {
+    var m = btn.closest(".modal");
+    if (m) {
+      if (typeof bootstrap !== "undefined" && bootstrap.Modal) {
+        try {
+          var inst = bootstrap.Modal.getInstance(m);
+          if (inst) inst.hide();
+        } catch(err) {}
+      }
+      m.classList.remove("show");
+      m.style.display = "none";
+      m.setAttribute("aria-hidden", "true");
+      document.body.classList.remove("modal-open");
+      var bd = document.querySelector(".modal-backdrop");
+      if (bd) bd.remove();
+    }
+  }
+});
 
 // Pastikan jika pengguna kembali via tombol Back atau setelah reload, halaman memuat data terbaru
 window.addEventListener("pageshow", function(event) {
