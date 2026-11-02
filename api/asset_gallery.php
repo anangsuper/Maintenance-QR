@@ -39,14 +39,17 @@ if (!function_exists('render_gallery_card_photo')) {
 function render_gallery_card_photo(string $sliderId, array $photos, string $altTitle, array $lightboxData, ?string $verifiedBy = null, string $noPhotoEditUrl = '', string $noPhotoLabel = 'Belum ada foto'): string {
     $photoCount = count($photos);
     if ($photoCount === 0) {
+        $noPhotoBtn = '';
+        if ($noPhotoEditUrl !== '') {
+            $noPhotoBtn = '<a href="' . e($noPhotoEditUrl) . '" class="h-[28px] px-3 bg-white border border-[#0E5C58] text-[#0E5C58] hover:bg-[#D9F1EF] rounded-[6px] text-[11px] font-semibold transition-colors inline-flex items-center gap-1 text-decoration-none shadow-xs">' .
+                '<i class="bi bi-camera"></i> Upload Foto' .
+                '</a>';
+        }
         return '
         <div class="position-relative bg-[#F8FAF9] rounded-top-[9px] d-flex flex-column align-items-center justify-content-center border-b border-[#D1D5D8] text-[#53595F]" style="height: 195px;">
           <div class="text-[#9CA3AF] mb-2"><i class="bi bi-camera-fill" style="font-size: 2.2rem;"></i></div>
-          <span class="text-[12px] text-[#53595F] font-medium mb-2">'.e($noPhotoLabel).'</span>
-          '.($noPhotoEditUrl !== '' ? '
-          <a href="'.e($noPhotoEditUrl).'" class="h-[28px] px-3 bg-white border border-[#0E5C58] text-[#0E5C58] hover:bg-[#D9F1EF] rounded-[6px] text-[11px] font-semibold transition-colors inline-flex items-center gap-1 text-decoration-none shadow-xs">
-            <i class="bi bi-camera"></i> Upload Foto
-          </a>' : '').'
+          <span class="text-[12px] text-[#53595F] font-medium mb-2">' . e($noPhotoLabel) . '</span>
+          ' . $noPhotoBtn . '
           <span class="position-absolute top-2.5 start-2.5 px-2 py-0.5 bg-[#F3F4F6] text-[#6B7280] border border-[#E5E7EB] rounded-full text-[10px] font-semibold shadow-xs">
             Belum Difoto
           </span>
@@ -54,110 +57,70 @@ function render_gallery_card_photo(string $sliderId, array $photos, string $altT
     }
 
     $lightboxData['photos'] = $photos;
-    $jsonDataJson = htmlspecialchars(json_encode($lightboxData, JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP), ENT_QUOTES, 'UTF-8');
+    $dataPayloadAttr = htmlspecialchars(json_encode($lightboxData, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE), ENT_QUOTES, 'UTF-8');
 
-    $html = '
-    <div class="position-relative overflow-hidden bg-[#F4F5F7] rounded-top-[9px] card-photo-slider" 
-         id="slider-'.e($sliderId).'" 
-         data-slider-id="'.e($sliderId).'" 
-         data-current-idx="0" 
-         data-total="'.$photoCount.'" 
-         style="height: 195px; user-select: none;">
+    $html = '<div class="position-relative overflow-hidden bg-[#F4F5F7] rounded-top-[9px] card-photo-slider" ' .
+         'id="slider-' . e($sliderId) . '" ' .
+         'data-slider-id="' . e($sliderId) . '" ' .
+         'data-current-idx="0" ' .
+         'data-total="' . $photoCount . '" ' .
+         'data-payload="' . $dataPayloadAttr . '" ' .
+         'style="height: 195px; user-select: none;">';
 
-      <!-- Slide Track -->
-      <div class="slider-track w-100 h-100 d-flex" 
-           id="track-'.e($sliderId).'" 
-           style="width: 100%; height: 100%; transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); cursor: pointer;" 
-           onclick="openCardLightbox(\''.e($sliderId).'\')">';
+    // Slide Track
+    $html .= '<div class="slider-track w-100 h-100 d-flex" ' .
+         'id="track-' . e($sliderId) . '" ' .
+         'style="width: 100%; height: 100%; transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); cursor: zoom-in;" ' .
+         'onclick="openCardLightbox(this)" ' .
+         'title="Klik untuk memperbesar foto">';
 
     foreach ($photos as $idx => $pUrl) {
-        $html .= '
-        <div class="w-100 h-100 flex-shrink-0" style="flex: 0 0 100%; max-width: 100%; height: 100%;">
-          <img src="'.e($pUrl).'" class="w-100 h-100 object-fit-cover gallery-img-thumb" alt="Foto '.($idx + 1).' '.e($altTitle).'" loading="lazy" onerror="handleGalleryImgError(this)">
-        </div>';
+        $html .= '<div class="w-100 h-100 flex-shrink-0" style="flex: 0 0 100%; max-width: 100%; height: 100%;">' .
+          '<img src="' . e($pUrl) . '" class="w-100 h-100 object-fit-cover gallery-img-thumb" alt="Foto ' . ($idx + 1) . ' ' . e($altTitle) . '" loading="lazy" onerror="handleGalleryImgError(this)">' .
+        '</div>';
     }
 
-    $html .= '
-      </div>
+    $html .= '</div>';
 
-      <!-- Hover Overlay (Perbesar Foto) -->
-      <div class="gallery-hover-overlay position-absolute top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center bg-dark bg-opacity-40 text-white opacity-0 transition-opacity pointer-events-none" style="z-index: 2;">
-        <span class="px-3 py-1.5 bg-[#0E5C58] text-white rounded-full text-[12px] font-semibold shadow-xs">
-          <i class="bi bi-zoom-in me-1"></i> Perbesar Foto
-        </span>
-      </div>
-
-      <!-- Badge Top-Left: "2 Foto Lengkap" / "Ada Foto" -->
-      <span class="position-absolute top-2.5 start-2.5 px-2 py-0.5 bg-[#ECFDF5] text-[#065F46] border border-[#A7F3D0] rounded-full text-[11px] font-bold shadow-xs pointer-events-none" style="z-index: 3;">
-        <i class="bi bi-check-circle-fill me-1"></i>'.($photoCount >= 2 ? '2 Foto Lengkap' : 'Ada Foto').'
-      </span>';
+    // Badge Top-Left
+    $badgeText = ($photoCount >= 2 ? '2 Foto Lengkap' : 'Ada Foto');
+    $html .= '<span class="position-absolute top-2.5 start-2.5 px-2 py-0.5 bg-[#ECFDF5] text-[#065F46] border border-[#A7F3D0] rounded-full text-[11px] font-bold shadow-xs pointer-events-none" style="z-index: 3;">' .
+        '<i class="bi bi-check-circle-fill me-1"></i>' . $badgeText .
+      '</span>';
 
     if ($verifiedBy !== null && $verifiedBy !== '') {
-        $html .= '
-      <span class="position-absolute bottom-2.5 start-2.5 px-2 py-0.5 bg-black bg-opacity-70 text-white rounded-full text-[10px] font-medium shadow-xs pointer-events-none" style="z-index: 3;" title="Diverifikasi oleh: '.e($verifiedBy).'">
-        <i class="bi bi-patch-check-fill text-[#34D399] me-1"></i>'.e(mb_strimwidth($verifiedBy, 0, 18, '...')).'
-      </span>';
+        $html .= '<span class="position-absolute bottom-2.5 start-2.5 px-2 py-0.5 bg-black bg-opacity-70 text-white rounded-full text-[10px] font-medium shadow-xs pointer-events-none" style="z-index: 3;" title="Diverifikasi oleh: ' . e($verifiedBy) . '">' .
+            '<i class="bi bi-patch-check-fill text-[#34D399] me-1"></i>' . e(mb_strimwidth($verifiedBy, 0, 18, '...')) .
+          '</span>';
     }
 
     if ($photoCount > 1) {
-        $html .= '
-      <!-- Navigation Arrow Left (Prev) -->
-      <button type="button" 
-              class="card-slider-nav card-slider-prev" 
-              onclick="event.stopPropagation(); slideCard(\''.e($sliderId).'\', -1)" 
-              aria-label="Foto Sebelumnya" 
-              title="Lihat Foto 1">
-        <i class="bi bi-chevron-left text-[12px] font-bold"></i>
-      </button>
+        // Navigation Arrow Left (Prev)
+        $html .= '<button type="button" class="card-slider-nav card-slider-prev" onclick="event.stopPropagation(); slideCard(this, -1)" aria-label="Foto Sebelumnya" title="Lihat Foto Sebelumnya">' .
+            '<i class="bi bi-chevron-left text-[12px] font-bold"></i>' .
+          '</button>';
 
-      <!-- Navigation Arrow Right (Next) -->
-      <button type="button" 
-              class="card-slider-nav card-slider-next" 
-              onclick="event.stopPropagation(); slideCard(\''.e($sliderId).'\', 1)" 
-              aria-label="Foto Selanjutnya" 
-              title="Lihat Foto 2">
-        <i class="bi bi-chevron-right text-[12px] font-bold"></i>
-      </button>
+        // Navigation Arrow Right (Next)
+        $html .= '<button type="button" class="card-slider-nav card-slider-next" onclick="event.stopPropagation(); slideCard(this, 1)" aria-label="Foto Selanjutnya" title="Lihat Foto Selanjutnya">' .
+            '<i class="bi bi-chevron-right text-[12px] font-bold"></i>' .
+          '</button>';
 
-      <!-- Bottom Indicator (Pill & Dots) -->
-      <div class="card-slider-indicator">
-        <span class="card-slider-counter" id="counter-'.e($sliderId).'">1/'.$photoCount.'</span>
-        <div class="d-flex align-items-center gap-1">';
+        // Bottom Indicator (Pill & Dots)
+        $html .= '<div class="card-slider-indicator">' .
+            '<span class="card-slider-counter" id="counter-' . e($sliderId) . '">1/' . $photoCount . '</span>' .
+            '<div class="d-flex align-items-center gap-1">';
         for ($i = 0; $i < $photoCount; $i++) {
-            $html .= '
-          <span class="card-slider-dot '.($i === 0 ? 'active' : 'inactive').'" 
-                id="dot-'.e($sliderId).'-'.$i.'" 
-                onclick="event.stopPropagation(); setCardSlide(\''.e($sliderId).'\', '.$i.')" 
-                title="Foto '.($i + 1).'"></span>';
+            $dotClass = ($i === 0 ? 'active' : 'inactive');
+            $html .= '<span class="card-slider-dot ' . $dotClass . '" onclick="event.stopPropagation(); setCardSlide(this, ' . $i . ')" title="Foto ' . ($i + 1) . '"></span>';
         }
-        $html .= '
-        </div>
-      </div>';
+        $html .= '</div></div>';
     }
 
-    $html .= '
-      <script type="application/json" id="data-'.e($sliderId).'">'.$jsonDataJson.'</script>
-    </div>';
+    $html .= '</div>';
 
     return $html;
 }
 }
-
-
-// Hitung total untuk badge switcher
-$rawCardsForBadge = get_inventaris_kartu_rows();
-$totalInvCount = count($rawCardsForBadge);
-
-$rawAssetsForBadge = [];
-if (is_google_cloud_mode()) {
-    $rawAssetsForBadge = map_sheets_assets();
-} else {
-    try {
-        $stB = db()->query(asset_query_base() . " ORDER BY a.id DESC LIMIT 3000");
-        $rawAssetsForBadge = $stB ? $stB->fetchAll() : [];
-    } catch (Throwable $e) {}
-}
-$totalUnitCount = count($rawAssetsForBadge);
 
 // =========================================================================
 // SUB-TAB 1: GALERI FOTO KARTU INVENTARIS (BANK CORE BANKING)
@@ -799,12 +762,7 @@ ob_start();
 .gallery-card:hover .gallery-img-thumb {
   transform: scale(1.04);
 }
-.gallery-hover-overlay {
-  transition: opacity 0.2s ease;
-}
-.gallery-card:hover .gallery-hover-overlay {
-  opacity: 1 !important;
-}
+
 
 /* Branch Filter Navigation Pills */
 .branch-nav-bar {
@@ -1348,30 +1306,66 @@ function setCardSlide(sliderId, newIdx) {
   }
 }
 
-function openCardLightbox(sliderId) {
-  var container = document.getElementById('slider-' + sliderId);
-  if (container && container._wasDragged) return;
-  var scriptEl = document.getElementById('data-' + sliderId);
-  if (!container || !scriptEl) return;
+function openCardLightbox(target) {
+  var container = (target instanceof HTMLElement) ? target.closest('.card-photo-slider') : document.getElementById('slider-' + target);
+  if (!container) return;
+  var rawPayload = container.getAttribute('data-payload');
+  if (!rawPayload) return;
+  
   var currentIdx = parseInt(container.getAttribute('data-current-idx') || '0', 10);
   try {
-    var data = JSON.parse(scriptEl.textContent);
+    var data = JSON.parse(rawPayload);
     openUniversalLightbox(data, currentIdx);
   } catch(e) {
     console.error('Error opening card lightbox', e);
   }
 }
 
+function slideCard(target, direction) {
+  var container = (target instanceof HTMLElement) ? target.closest('.card-photo-slider') : document.getElementById('slider-' + target);
+  if (!container) return;
+  var currentIdx = parseInt(container.getAttribute('data-current-idx') || '0', 10);
+  var total = parseInt(container.getAttribute('data-total') || '1', 10);
+  if (total <= 1) return;
+  
+  var newIdx = currentIdx + direction;
+  if (newIdx < 0) newIdx = total - 1;
+  if (newIdx >= total) newIdx = 0;
+  
+  setCardSlide(container, newIdx);
+}
+
+function setCardSlide(target, newIdx) {
+  var container = (target instanceof HTMLElement) ? (target.closest('.card-photo-slider') || target) : document.getElementById('slider-' + target);
+  if (!container) return;
+  var track = container.querySelector('.slider-track');
+  var total = parseInt(container.getAttribute('data-total') || '1', 10);
+  if (newIdx < 0 || newIdx >= total || !track) return;
+  
+  container.setAttribute('data-current-idx', newIdx);
+  track.style.transform = 'translateX(-' + (newIdx * 100) + '%)';
+  
+  var counter = container.querySelector('.card-slider-counter');
+  if (counter) counter.textContent = (newIdx + 1) + '/' + total;
+  
+  var dots = container.querySelectorAll('.card-slider-dot');
+  dots.forEach(function(dot, idx) {
+    if (idx === newIdx) {
+      dot.className = 'card-slider-dot active';
+    } else {
+      dot.className = 'card-slider-dot inactive';
+    }
+  });
+}
+
 // Gesture & Touch Navigation setup
 function initCardSliders() {
   document.querySelectorAll('.card-photo-slider').forEach(function(sliderEl) {
-    var sliderId = sliderEl.getAttribute('data-slider-id');
     var total = parseInt(sliderEl.getAttribute('data-total') || '1', 10);
     if (total <= 1) return;
 
-    var startX = 0, startY = 0, isDragging = false, dragThreshold = 35;
+    var startX = 0, startY = 0;
 
-    // Touch swipe
     sliderEl.addEventListener('touchstart', function(e) {
       if (e.touches && e.touches[0]) {
         startX = e.touches[0].clientX;
@@ -1383,36 +1377,15 @@ function initCardSliders() {
       if (e.changedTouches && e.changedTouches[0]) {
         var diffX = e.changedTouches[0].clientX - startX;
         var diffY = e.changedTouches[0].clientY - startY;
-        if (Math.abs(diffX) > dragThreshold && Math.abs(diffX) > Math.abs(diffY)) {
-          if (diffX < 0) slideCard(sliderId, 1);
-          else slideCard(sliderId, -1);
+        if (Math.abs(diffX) > 40 && Math.abs(diffX) > Math.abs(diffY)) {
+          if (diffX < 0) slideCard(sliderEl, 1);
+          else slideCard(sliderEl, -1);
         }
       }
     }, { passive: true });
-
-    // Mouse drag
-    sliderEl.addEventListener('mousedown', function(e) {
-      if (e.button !== 0 || e.target.closest('button') || e.target.closest('.card-slider-dot')) return;
-      startX = e.clientX;
-      startY = e.clientY;
-      isDragging = true;
-    });
-
-    window.addEventListener('mouseup', function(e) {
-      if (!isDragging) return;
-      isDragging = false;
-      var diffX = e.clientX - startX;
-      var diffY = e.clientY - startY;
-      if (Math.abs(diffX) > dragThreshold && Math.abs(diffX) > Math.abs(diffY)) {
-        sliderEl._wasDragged = true;
-        setTimeout(function() { sliderEl._wasDragged = false; }, 50);
-        if (diffX < 0) slideCard(sliderId, 1);
-        else slideCard(sliderId, -1);
-      }
-    });
   });
 
-  // Modal touch swipe & keyboard navigation
+  // Modal touch swipe for Lightbox
   var modalBody = document.getElementById('lightboxModalBody');
   if (modalBody) {
     var mStartX = 0, mStartY = 0;
