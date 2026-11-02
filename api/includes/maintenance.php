@@ -2077,7 +2077,7 @@ function get_findings_report(int $month, int $year, int $cabangId): array {
             $catatanPerbaikan = trim((string)($f['catatan_penyelesaian'] ?? $f['col_11'] ?? ''));
 
             $lowSt = strtolower($rawSt);
-            if (in_array($lowSt, ['resolved', 'selesai', 'closed', 'ok', 'done'], true) && ($resolvedAt !== '' || $catatanPerbaikan !== '')) {
+            if (in_array($lowSt, ['resolved', 'selesai', 'closed', 'ok', 'done'], true)) {
                 $repairStatus = 'Resolved';
             } elseif (in_array($lowSt, ['proses', 'in progress', 'sedang perbaikan', 'dalam proses'], true) || $catatanPerbaikan !== '') {
                 $repairStatus = 'In Progress';
@@ -2237,7 +2237,7 @@ function get_findings_report(int $month, int $year, int $cabangId): array {
             $rawSt = strtolower(trim((string)($r['repair_status'] ?? 'Open')));
             $resAt = trim((string)($r['resolved_at'] ?? ''));
             $catatan = trim((string)($r['catatan_penyelesaian'] ?? ''));
-            if (in_array($rawSt, ['resolved', 'selesai', 'closed', 'ok'], true) && ($resAt !== '' || $catatan !== '')) {
+            if (in_array($rawSt, ['resolved', 'selesai', 'closed', 'ok', 'done'], true)) {
                 $repSt = 'Resolved';
             } elseif (in_array($rawSt, ['proses', 'in progress', 'sedang perbaikan', 'dalam proses'], true) || $catatan !== '') {
                 $repSt = 'In Progress';

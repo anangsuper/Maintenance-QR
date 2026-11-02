@@ -492,7 +492,7 @@ if (is_hrd() && !is_admin()) {
         </div>
 
         <!-- Card 3: Temuan Terbuka [Aksen Merah] -->
-        <a href="'.e(module_url('dashboard.php', ['tab'=>'temuan', 'cabang'=>$cabangId, 'bulan'=>$month, 'tahun'=>$year])).'" class="flex-1 flex flex-col justify-center px-5 py-3 border-b md:border-b-0 md:border-r border-[#D1D5D8] relative cursor-pointer '.($isTabTemuan ? 'bg-[#FDEDEC]' : 'hover:bg-[#F4F5F7]').' transition-colors text-decoration-none">
+        <a href="'.e(module_url('dashboard.php', ['tab'=>'temuan', 'cabang'=>$cabangId, 'bulan_temuan'=>'all', 'tahun'=>$year])).'" class="flex-1 flex flex-col justify-center px-5 py-3 border-b md:border-b-0 md:border-r border-[#D1D5D8] relative cursor-pointer '.($isTabTemuan ? 'bg-[#FDEDEC]' : 'hover:bg-[#F4F5F7]').' transition-colors text-decoration-none">
           <div class="absolute left-0 top-0 bottom-0 w-1 bg-[#DC2626]"></div>
           <div class="text-[26px] font-bold text-[#DC2626] tabular-nums leading-none tracking-tight flex items-center justify-between">
             <span>'.$displayFindingsCount.' <span class="text-[13px] font-normal text-[#53595F]">Kendala</span></span>
@@ -612,7 +612,7 @@ if (is_hrd() && !is_admin()) {
         <a href="'.e(module_url('dashboard.php', ['cabang'=>$cabangId, 'bulan'=>$month, 'tahun'=>$year])).'" class="h-full flex items-center font-'.($isTabAntrean ? 'bold text-[#1B2A3A] border-b-[3px] border-[#0E5C58]' : 'semibold text-[#53595F] hover:text-[#1B2A3A] border-b-[3px] border-transparent').' px-1 relative top-[1px] transition-colors text-decoration-none">
           <i class="bi bi-clock-history me-1.5 '.($isTabAntrean ? 'text-[#0E5C58]' : '').'"></i> Belum dipelihara ('.$displayDueCount.')
         </a>
-        <a href="'.e(module_url('dashboard.php', ['tab'=>'temuan', 'cabang'=>$cabangId, 'bulan'=>$month, 'tahun'=>$year])).'" class="h-full flex items-center font-'.($isTabTemuan ? 'bold text-[#1B2A3A] border-b-[3px] border-[#0E5C58]' : 'semibold text-[#53595F] hover:text-[#1B2A3A] border-b-[3px] border-transparent').' px-1 relative top-[1px] transition-colors text-decoration-none">
+        <a href="'.e(module_url('dashboard.php', ['tab'=>'temuan', 'cabang'=>$cabangId, 'bulan_temuan'=>'all', 'tahun'=>$year])).'" class="h-full flex items-center font-'.($isTabTemuan ? 'bold text-[#1B2A3A] border-b-[3px] border-[#0E5C58]' : 'semibold text-[#53595F] hover:text-[#1B2A3A] border-b-[3px] border-transparent').' px-1 relative top-[1px] transition-colors text-decoration-none">
           <i class="bi bi-exclamation-triangle me-1.5 '.($isTabTemuan ? 'text-[#DC2626]' : ($displayFindingsCount > 0 ? 'text-[#DC2626]' : '')).'"></i> Temuan terbuka ('.$displayFindingsCount.')
           '.($displayFindingsCount > 0 ? '<span class="badge bg-danger rounded-pill ms-1 text-[10px] px-1.5 py-0.2">'.$displayFindingsCount.'</span>' : '').'
         </a>
@@ -635,7 +635,7 @@ if (is_hrd() && !is_admin()) {
             <div class="small text-secondary mt-0.5">Ada keluhan/temuan kerusakan aktif dari pengguna komputer yang menunggu penanganan teknisi IT.</div>
           </div>
         </div>
-        <a href="'.e(module_url('dashboard.php', ['tab'=>'temuan', 'cabang'=>$cabangId, 'bulan'=>$month, 'tahun'=>$year])).'" class="btn btn-danger btn-sm fw-bold px-3 py-2 shadow-xs text-decoration-none">
+        <a href="'.e(module_url('dashboard.php', ['tab'=>'temuan', 'cabang'=>$cabangId, 'bulan_temuan'=>'all', 'tahun'=>$year])).'" class="btn btn-danger btn-sm fw-bold px-3 py-2 shadow-xs text-decoration-none">
           <i class="bi bi-tools me-1"></i> Buka Temuan &amp; Selesaikan Sekarang &rarr;
         </a>
       </div>' : '').'
