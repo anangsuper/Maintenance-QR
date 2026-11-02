@@ -1861,18 +1861,20 @@ function toggleComplaintHistory(btn) {
   var container = document.getElementById("complaintHistoryContainer");
   if (!container) return;
   var toggleBtn = btn || document.getElementById("btnToggleComplaintHistory");
-  var isHidden = container.hasAttribute("hidden");
+  var isHidden = container.hasAttribute("hidden") || container.style.display === "none";
   var count = ' . (int)$complaintCount . ';
   var label = document.getElementById("labelToggleComplaintHistory");
   var icon = document.getElementById("iconToggleComplaintHistory");
 
   if (isHidden) {
     container.removeAttribute("hidden");
+    container.style.display = "block";
     if (toggleBtn) toggleBtn.setAttribute("aria-expanded", "true");
     if (label) label.textContent = "Sembunyikan Riwayat";
     if (icon) icon.className = "bi bi-chevron-up me-1";
   } else {
-    container.setAttribute("hidden", ("onbeforematch" in HTMLElement.prototype) ? "until-found" : "");
+    container.setAttribute("hidden", "");
+    container.style.display = "none";
     if (toggleBtn) toggleBtn.setAttribute("aria-expanded", "false");
     if (label) label.textContent = "Tampilkan Riwayat (" + count + ")";
     if (icon) icon.className = "bi bi-chevron-down me-1";

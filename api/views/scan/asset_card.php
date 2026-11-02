@@ -1845,7 +1845,7 @@ async function loadPhotoBioModels() {
     const statusBox = document.getElementById("bioPhotoStatusBox");
     if (statusBox) {
       statusBox.className = "alert alert-danger py-2 px-3 small fw-semibold mt-3 mb-2 text-start";
-      statusBox.innerHTML = "<i class=\"bi bi-exclamation-triangle-fill me-1\"></i> Gagal memuat modul AI. Gunakan tombol \\\"Verifikasi Sekarang\\\".";
+      statusBox.innerHTML = "<i class=\"bi bi-exclamation-triangle-fill me-1\"></i> Gagal memuat modul AI. Gunakan tombol &quot;Verifikasi Sekarang&quot;.";
     }
     return false;
   }
@@ -2392,18 +2392,20 @@ function toggleComplaintHistory(btn) {
   const container = document.getElementById("complaintHistoryContainer");
   if (!container) return;
   const toggleBtn = btn || document.getElementById("btnToggleComplaintHistory");
-  const isHidden = container.hasAttribute("hidden");
+  const isHidden = container.hasAttribute("hidden") || container.style.display === "none";
   const count = ' . (int)$complaintCount . ';
   const label = document.getElementById("labelToggleComplaintHistory");
   const icon = document.getElementById("iconToggleComplaintHistory");
 
   if (isHidden) {
     container.removeAttribute("hidden");
+    container.style.display = "block";
     if (toggleBtn) toggleBtn.setAttribute("aria-expanded", "true");
     if (label) label.textContent = "Sembunyikan Riwayat";
     if (icon) icon.className = "bi bi-chevron-up me-1";
   } else {
-    container.setAttribute("hidden", ("onbeforematch" in HTMLElement.prototype) ? "until-found" : "");
+    container.setAttribute("hidden", "");
+    container.style.display = "none";
     if (toggleBtn) toggleBtn.setAttribute("aria-expanded", "false");
     if (label) label.textContent = "Tampilkan Riwayat (" + count + ")";
     if (icon) icon.className = "bi bi-chevron-down me-1";
