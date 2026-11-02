@@ -1861,7 +1861,7 @@ function submitPhotoAsGuestTech() {
 async function loadPhotoBioModels() {
   if (photoBioModelsLoaded) return true;
   if (photoBioModelsLoading) return true;
-  if (typeof faceapi === 'undefined') { return false; }
+  if (typeof faceapi === "undefined") { return false; }
   photoBioModelsLoading = true;
   try {
     const statusBox = document.getElementById("bioPhotoStatusBox");
