@@ -3,6 +3,19 @@
     // Menampilkan rekapitulasi temuan kendala teknis, audit berkala, dan keluhan pengguna komputer.
     // Menjamin seluruh temuan (aktif berjalan maupun riwayat terselesaikan) dapat diakses dengan mudah dan transparan.
 
+    if (empty($monthNames) || !is_array($monthNames)) {
+        $monthNames = [
+            1 => 'Januari', 2 => 'Februari', 3 => 'Maret', 4 => 'April',
+            5 => 'Mei', 6 => 'Juni', 7 => 'Juli', 8 => 'Agustus',
+            9 => 'September', 10 => 'Oktober', 11 => 'November', 12 => 'Desember'
+        ];
+    }
+    if (!function_exists('qr_url')) {
+        function qr_url(string $file = '', array $params = []): string {
+            return function_exists('module_url') ? module_url($file, $params) : $file;
+        }
+    }
+
     $statusTemuanFilter  = trim((string)($_GET['status_temuan'] ?? 'all'));
     $tingkatTemuanFilter = trim((string)($_GET['tingkat_temuan'] ?? 'all'));
     $qTemuan             = trim((string)($_GET['q_temuan'] ?? ''));
