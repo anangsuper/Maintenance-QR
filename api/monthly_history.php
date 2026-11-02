@@ -63,12 +63,20 @@ foreach ($overview as $mNum => $m) {
     $isCurrent = $m['is_current'];
     $isFuture = $m['is_future'];
     $percent = $m['percent'];
+    $percentWajib = $m['percent_wajib'] ?? $percent;
     $done = $m['done'];
     $total = $m['total'];
+    $skipped = $m['skipped'] ?? 0;
+    $pending = $m['pending'];
+    $targetWajib = $m['target_wajib'] ?? ($total - $skipped);
+
+    // Jika ada yang dilewatkan resmi, evaluasi kepatuhan terhadap target wajib
+    $effectivePercent = $skipped > 0 ? $percentWajib : $percent;
+    $isCompliant = ($effectivePercent >= 95 || ($done === $targetWajib && $targetWajib > 0));
 
     $iconClass = $isCurrent
         ? '<span class="d-inline-flex align-items-center justify-content-center rounded-circle" style="width: 36px; height: 36px; background-color: #D9F1EF; color: #0E5C58;"><i class="bi bi-play-circle-fill fs-5"></i></span>'
-        : ($done === $total && $total > 0
+        : ($isCompliant
             ? '<span class="d-inline-flex align-items-center justify-content-center rounded-circle" style="width: 36px; height: 36px; background-color: #DCFCE7; color: #16A34A;"><i class="bi bi-check-circle-fill fs-5"></i></span>'
             : ($isFuture
                 ? '<span class="d-inline-flex align-items-center justify-content-center rounded-circle" style="width: 36px; height: 36px; background-color: #F1F5F9; color: #94A3B8;"><i class="bi bi-clock fs-5"></i></span>'
@@ -77,11 +85,66 @@ foreach ($overview as $mNum => $m) {
     $cardBorder = $isCurrent ? 'border-2 shadow-sm' : 'border shadow-2xs';
     $cardBorderInline = $isCurrent ? 'border-color: #0E5C58 !important;' : 'border-color: #D1D5D8 !important;';
 
-    $barColor = ($percent >= 100) ? '#16A34A' : (($percent >= 50) ? '#0E5C58' : '#D97706');
+    $barColor = ($effectivePercent >= 95) ? '#16A34A' : (($effectivePercent >= 50) ? '#0E5C58' : '#D97706');
     $progressBar = '
     <div class="rounded-pill overflow-hidden" style="height: 7px; background-color: #E2E8F0;">
-      <div class="h-100 rounded-pill transition-all" style="width: '.$percent.'%; background-color: '.$barColor.';"></div>
+      <div class="h-100 rounded-pill transition-all" style="width: '.$effectivePercent.'%; background-color: '.$barColor.';"></div>
     </div>';
+
+    if ($skipped > 0) {
+        $statsBoxes = '
+        <div class="row g-1.5 small text-center mb-2">
+          <div class="col-3">
+            <div class="p-1.5 rounded-[8px] border" style="background-color: #F8FAFC; border-color: #E2E8F0 !important;">
+              <div class="text-[#53595F] fw-semibold" style="font-size: 0.65rem; letter-spacing: 0.05em;">TOTAL</div>
+              <div class="fw-bold text-[#1B2A3A] fs-6">'.$total.'</div>
+            </div>
+          </div>
+          <div class="col-3">
+            <div class="p-1.5 rounded-[8px] border" style="background-color: #F0FDF4; border-color: #BBF7D0 !important;">
+              <div class="text-[#15803D] fw-bold" style="font-size: 0.65rem; letter-spacing: 0.05em;">SUDAH</div>
+              <div class="fw-bold text-[#16A34A] fs-6">'.$done.'</div>
+            </div>
+          </div>
+          <div class="col-3">
+            <div class="p-1.5 rounded-[8px] border" style="background-color: #EFF6FF; border-color: #BFDBFE !important;" title="'.$skipped.' unit cabang dilewatkan resmi">
+              <div class="text-[#1E40AF] fw-bold" style="font-size: 0.65rem; letter-spacing: 0.05em;">LEWAT</div>
+              <div class="fw-bold text-[#2563EB] fs-6">'.$skipped.'</div>
+            </div>
+          </div>
+          <div class="col-3">
+            <div class="p-1.5 rounded-[8px] border" style="background-color: '.($pending > 0 ? '#FEF2F2' : '#F8FAFC').'; border-color: '.($pending > 0 ? '#FECACA' : '#E2E8F0').' !important;">
+              <div class="text-[#B91C1C] fw-bold" style="font-size: 0.65rem; letter-spacing: 0.05em;">BELUM</div>
+              <div class="fw-bold text-[#DC2626] fs-6">'.$pending.'</div>
+            </div>
+          </div>
+        </div>
+        <div class="text-[#53595F] mb-3 px-0.5 d-flex align-items-center gap-1 leading-snug" style="font-size: 0.72rem;">
+          <i class="bi bi-info-circle text-[#0E5C58]"></i> <span>'.$skipped.' unit dilewatkan (Off-schedule) &bull; '.$pending.' unit belum</span>
+        </div>';
+    } else {
+        $statsBoxes = '
+        <div class="row g-2 small text-center mb-3">
+          <div class="col-4">
+            <div class="p-2 rounded-[8px] border" style="background-color: #F8FAFC; border-color: #E2E8F0 !important;">
+              <div class="text-[#53595F] fw-semibold" style="font-size: 0.68rem; letter-spacing: 0.05em;">TOTAL</div>
+              <div class="fw-bold text-[#1B2A3A] fs-6">'.$total.'</div>
+            </div>
+          </div>
+          <div class="col-4">
+            <div class="p-2 rounded-[8px] border" style="background-color: #F0FDF4; border-color: #BBF7D0 !important;">
+              <div class="text-[#15803D] fw-bold" style="font-size: 0.68rem; letter-spacing: 0.05em;">SUDAH</div>
+              <div class="fw-bold text-[#16A34A] fs-6">'.$done.'</div>
+            </div>
+          </div>
+          <div class="col-4">
+            <div class="p-2 rounded-[8px] border" style="background-color: '.($pending > 0 ? '#FEF2F2' : '#F8FAFC').'; border-color: '.($pending > 0 ? '#FECACA' : '#E2E8F0').' !important;">
+              <div class="text-[#B91C1C] fw-bold" style="font-size: 0.68rem; letter-spacing: 0.05em;">BELUM</div>
+              <div class="fw-bold text-[#DC2626] fs-6">'.$pending.'</div>
+            </div>
+          </div>
+        </div>';
+    }
 
     $monthCardsHtml .= '
     <div class="col-md-6 col-lg-4">
@@ -97,33 +160,16 @@ foreach ($overview as $mNum => $m) {
         </div>
 
         <div class="my-2.5">
-          <div class="d-flex justify-content-between small text-[#53595F] mb-1.5" style="font-size: 0.78rem;">
+          <div class="d-flex justify-content-between align-items-center small text-[#53595F] mb-1.5" style="font-size: 0.78rem;">
             <span>Progress Pemeliharaan</span>
-            <span class="fw-bold text-[#1B2A3A]">'.$done.' / '.$total.' Unit ('.$percent.'%)</span>
+            '.($skipped > 0 
+                ? '<span class="fw-bold text-[#1B2A3A]">'.$done.' / '.$targetWajib.' Wajib ('.$effectivePercent.'%) <span class="badge bg-[#EFF6FF] text-[#1E40AF] border border-[#BFDBFE] ms-1" style="font-size: 0.65rem;">+'.$skipped.' Lewat</span></span>' 
+                : '<span class="fw-bold text-[#1B2A3A]">'.$done.' / '.$total.' Unit ('.$percent.'%)</span>').'
           </div>
           '.$progressBar.'
         </div>
 
-        <div class="row g-2 small text-center mb-3">
-          <div class="col-4">
-            <div class="p-2 rounded-[8px] border" style="background-color: #F8FAFC; border-color: #E2E8F0 !important;">
-              <div class="text-[#53595F] fw-semibold" style="font-size: 0.68rem; letter-spacing: 0.05em;">TOTAL</div>
-              <div class="fw-bold text-[#1B2A3A] fs-6">'.$total.'</div>
-            </div>
-          </div>
-          <div class="col-4">
-            <div class="p-2 rounded-[8px] border" style="background-color: #F0FDF4; border-color: #BBF7D0 !important;">
-              <div class="text-[#15803D] fw-bold" style="font-size: 0.68rem; letter-spacing: 0.05em;">SUDAH</div>
-              <div class="fw-bold text-[#16A34A] fs-6">'.$done.'</div>
-            </div>
-          </div>
-          <div class="col-4">
-            <div class="p-2 rounded-[8px] border" style="background-color: #FEF2F2; border-color: #FECACA !important;">
-              <div class="text-[#B91C1C] fw-bold" style="font-size: 0.68rem; letter-spacing: 0.05em;">BELUM</div>
-              <div class="fw-bold text-[#DC2626] fs-6">'.$m['pending'].'</div>
-            </div>
-          </div>
-        </div>
+        '.$statsBoxes.'
 
         <div class="mt-auto">
           <a class="btn btn-outline-teal btn-sm w-100 fw-bold rounded-[8px] py-1.5 shadow-2xs d-inline-flex align-items-center justify-content-center gap-1.5" href="'.e(module_url('audit.php', ['bulan'=>$mNum,'tahun'=>$year,'cabang'=>$cabangId])).'" style="font-size: 0.82rem;">

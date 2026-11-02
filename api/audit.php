@@ -158,13 +158,17 @@ foreach ($rows as $r) {
     $isDone = !empty($r['is_done']);
     $st = $r['status'];
     
+    $isSkipped = !empty($r['is_skipped']);
+
     $badge = $isDone
         ? (($st === 'Temuan' || $st === 'Perlu Perbaikan')
             ? '<span class="badge-chip chip-danger"><i class="bi bi-exclamation-triangle-fill"></i> '.$st.'</span>'
             : ($st === 'Proses'
                 ? '<span class="badge-chip chip-warning"><i class="bi bi-hourglass-split"></i> '.$st.'</span>'
                 : '<span class="badge-chip chip-success"><i class="bi bi-check-circle-fill"></i> Selesai</span>'))
-        : '<span class="badge-chip chip-danger"><i class="bi bi-x-circle-fill"></i> Belum Maintenance</span>';
+        : ($isSkipped
+            ? '<span class="badge-chip" style="background-color: #EFF6FF; color: #1E40AF; border: 1px solid #BFDBFE;" title="'.e($r['skip_reason'] ?? 'Dilewatkan').'"><i class="bi bi-dash-circle"></i> Dilewatkan</span>'
+            : '<span class="badge-chip chip-danger"><i class="bi bi-x-circle-fill"></i> Belum Maintenance</span>');
 
     $actionBtn = ($isDone && !empty($r['log_id']))
         ? '<a class="btn btn-sm btn-primary fw-semibold" href="'.e(module_url('maintenance_detail.php', ['id' => $r['log_id']])).'"><i class="bi bi-file-earmark-medical me-1"></i> Detail</a>'
@@ -318,6 +322,37 @@ $body = '
 </div>
 
 <!-- Statistik Cards -->
+'.(!empty($stats['skipped']) && $stats['skipped'] > 0 ? '
+<div class="row g-3 mb-4">
+  <div class="col-6 col-md-3">
+    <div class="card card-metric h-100" style="border-left-color: var(--blue-corporate);">
+      <div class="metric-value">'.$stats['total'].'</div>
+      <div class="metric-label">Total Unit Terdaftar</div>
+      <div class="small text-muted mt-2" style="font-size: 0.72rem;">'.$stats['target_wajib'].' unit wajib dikunjungi</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="card card-metric h-100" style="border-left-color: #16803C;">
+      <div class="metric-value text-success">'.$stats['done'].'</div>
+      <div class="metric-label">Sudah Maintenance</div>
+      <div class="small text-success mt-2" style="font-size: 0.72rem;"><i class="bi bi-check-circle me-1"></i>'.$stats['percent_wajib'].'% Kepatuhan Wajib</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="card card-metric h-100" style="border-left-color: #2563EB;">
+      <div class="metric-value text-primary">'.$stats['skipped'].'</div>
+      <div class="metric-label">Dilewatkan Resmi</div>
+      <div class="small text-primary mt-2" style="font-size: 0.72rem;"><i class="bi bi-info-circle me-1"></i>Off-schedule cabang</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="card card-metric h-100" style="border-left-color: #B42318;">
+      <div class="metric-value text-danger">'.$stats['pending'].'</div>
+      <div class="metric-label">Belum Maintenance</div>
+      <div class="small text-danger mt-2" style="font-size: 0.72rem;">'.$stats['pending'].' unit tersisa</div>
+    </div>
+  </div>
+</div>' : '
 <div class="row g-3 mb-4">
   <div class="col-6 col-md-3">
     <div class="card card-metric h-100" style="border-left-color: var(--blue-corporate);">
@@ -347,7 +382,7 @@ $body = '
       <div class="small text-danger mt-2" style="font-size: 0.72rem;">Perlu perbaikan</div>
     </div>
   </div>
-</div>
+</div>').'
 
 <!-- Compact Filter Box -->
 <div class="card p-3 mb-4">

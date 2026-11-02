@@ -1221,7 +1221,7 @@ function get_audit_maintenance_data(array $filters): array {
     $lngCol = in_array('longitude', $scanCols, true) ? 'ms.longitude' : "'' AS longitude";
 
     $sql = "
-        SELECT a.id AS asset_id, a.kode_inventaris, a.serial_number, a.merk, a.model,
+        SELECT a.id AS asset_id, a.id_cabang, a.kode_inventaris, a.serial_number, a.merk, a.model,
                {$ipCol}, {$prtCol},
                {$createdCol} AS asset_created_at,
                c.`{$cName}` AS cabang_nama,
@@ -1250,15 +1250,26 @@ function get_audit_maintenance_data(array $filters): array {
     $st->execute($params);
     $allRows = $st->fetchAll();
 
+    $exemptions = function_exists('get_branch_exemptions') ? get_branch_exemptions($month, $year) : [];
     $rows = [];
     $total = 0;
     $done = 0;
+    $skipped = 0;
     $pending = 0;
     $repair = 0;
 
     foreach ($allRows as $r) {
         $isDone = !empty($r['log_id']);
-        $stVal = $isDone ? ($r['scan_status'] ?: 'Selesai') : 'Belum Maintenance';
+        $assetCabangId = (int)($r['id_cabang'] ?? 0);
+        $isBranchSkipped = isset($exemptions[$assetCabangId]);
+
+        if ($isDone) {
+            $stVal = $r['scan_status'] ?: 'Selesai';
+        } elseif ($isBranchSkipped) {
+            $stVal = 'Dilewatkan';
+        } else {
+            $stVal = 'Belum Maintenance';
+        }
 
         // Cut-off baseline: jika aset baru didaftarkan setelah bulan audit berakhir dan belum pernah discan pada bulan ini,
         // jangan dimasukkan ke target/rekapitulasi bulan lampau ini agar total komputer bulan lampau tidak bertambah.
@@ -1276,21 +1287,27 @@ function get_audit_maintenance_data(array $filters): array {
 
         if ($filterStatus !== '') {
             if ($filterStatus === 'done' && !$isDone) continue;
-            if ($filterStatus === 'pending' && $isDone) continue;
+            if ($filterStatus === 'pending' && ($isDone || $isBranchSkipped)) continue;
+            if ($filterStatus === 'skipped' && ($isDone || !$isBranchSkipped)) continue;
             if ($filterStatus === 'repair' && (!in_array($stVal, ['Temuan', 'Perlu Perbaikan', 'Proses'], true))) continue;
-            if (!in_array($filterStatus, ['done', 'pending', 'repair'], true) && strcasecmp($stVal, $filterStatus) !== 0) continue;
+            if (!in_array($filterStatus, ['done', 'pending', 'skipped', 'repair'], true) && strcasecmp($stVal, $filterStatus) !== 0) continue;
         }
 
         $total++;
         if ($isDone) {
             $done++;
             if (in_array($stVal, ['Temuan', 'Perlu Perbaikan', 'Proses'], true)) $repair++;
+        } elseif ($isBranchSkipped) {
+            $skipped++;
         } else {
             $pending++;
         }
 
         $rows[] = [
             'asset_id' => (int)$r['asset_id'],
+            'id_cabang' => $assetCabangId,
+            'is_skipped' => ($isBranchSkipped && !$isDone),
+            'skip_reason' => ($isBranchSkipped && !$isDone) ? ($exemptions[$assetCabangId]['reason'] ?? 'Tidak ada jadwal kunjungan cabang bulan ini') : '',
             'kode_inventaris' => $r['kode_inventaris'] ?? '-',
             'serial_number' => $r['serial_number'] ?? '-',
             'perangkat' => trim(($r['merk'] ?? '').' '.($r['model'] ?? '')),
@@ -1318,9 +1335,20 @@ function get_audit_maintenance_data(array $filters): array {
         ];
     }
 
+    $targetWajib = max(0, $total - $skipped);
     $percent = $total > 0 ? round(($done / $total) * 100) : 0;
+    $percentWajib = $targetWajib > 0 ? round(($done / $targetWajib) * 100) : 100;
     return [
-        'stats' => ['total' => $total, 'done' => $done, 'pending' => $pending, 'repair' => $repair, 'percent' => $percent],
+        'stats' => [
+            'total' => $total,
+            'done' => $done,
+            'skipped' => $skipped,
+            'pending' => $pending,
+            'repair' => $repair,
+            'target_wajib' => $targetWajib,
+            'percent' => $percent,
+            'percent_wajib' => $percentWajib
+        ],
         'rows' => $rows
     ];
 }
@@ -1462,9 +1490,12 @@ function get_monthly_overview(int $year, int $cabangId = 0, bool $forceRefresh =
             'month_name' => $monthNames[$m],
             'total' => $stats['total'],
             'done' => $stats['done'],
+            'skipped' => $stats['skipped'] ?? 0,
             'pending' => $stats['pending'],
             'repair' => $stats['repair'],
+            'target_wajib' => $stats['target_wajib'] ?? ($stats['total'] - ($stats['skipped'] ?? 0)),
             'percent' => $stats['percent'],
+            'percent_wajib' => $stats['percent_wajib'] ?? $stats['percent'],
             'is_future' => $isFuture,
             'is_current' => $isCurrent
         ];
