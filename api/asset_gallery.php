@@ -122,6 +122,21 @@ function render_gallery_card_photo(string $sliderId, array $photos, string $altT
 }
 }
 
+// Hitung total untuk badge switcher
+$rawCardsForBadge = get_inventaris_kartu_rows();
+$totalInvCount = count($rawCardsForBadge);
+
+$rawAssetsForBadge = [];
+if (is_google_cloud_mode()) {
+    $rawAssetsForBadge = map_sheets_assets();
+} else {
+    try {
+        $stB = db()->query(asset_query_base() . " ORDER BY a.id DESC LIMIT 3000");
+        $rawAssetsForBadge = $stB ? $stB->fetchAll() : [];
+    } catch (Throwable $e) {}
+}
+$totalUnitCount = count($rawAssetsForBadge);
+
 // =========================================================================
 // SUB-TAB 1: GALERI FOTO KARTU INVENTARIS (BANK CORE BANKING)
 // =========================================================================
