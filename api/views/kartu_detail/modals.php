@@ -197,8 +197,8 @@
                                     </div>
 
                                     <!-- Preview Box Foto 1 -->
-                                    <div class="position-relative rounded-3 border bg-light d-flex align-items-center justify-content-center overflow-hidden mb-2.5" style="height: 180px;">
-                                        <img id="modalPreviewImg1" src="<?= $photoUrl ? e($photoUrl) : '' ?>" alt="Foto 1" class="<?= $photoUrl ? '' : 'd-none' ?> w-100 h-100 object-fit-cover">
+                                    <div class="position-relative rounded-3 border bg-white d-flex align-items-center justify-content-center overflow-hidden mb-2.5" style="min-height: 180px; aspect-ratio: 4 / 5; background-color: #ffffff;">
+                                        <img id="modalPreviewImg1" src="<?= $photoUrl ? e($photoUrl) : '' ?>" alt="Foto 1" class="<?= $photoUrl ? '' : 'd-none' ?> w-100 h-100 object-fit-contain bg-white">
                                         
                                         <div id="modalEmptyPlace1" class="<?= $photoUrl ? 'd-none' : '' ?> text-center p-3 text-muted">
                                             <i class="bi bi-camera fs-1 d-block text-secondary opacity-50 mb-1"></i>
@@ -247,8 +247,8 @@
                                     </div>
 
                                     <!-- Preview Box Foto 2 -->
-                                    <div class="position-relative rounded-3 border bg-light d-flex align-items-center justify-content-center overflow-hidden mb-2.5" style="height: 180px;">
-                                        <img id="modalPreviewImg2" src="<?= $photoUrl2 ? e($photoUrl2) : '' ?>" alt="Foto 2" class="<?= $photoUrl2 ? '' : 'd-none' ?> w-100 h-100 object-fit-cover">
+                                    <div class="position-relative rounded-3 border bg-white d-flex align-items-center justify-content-center overflow-hidden mb-2.5" style="min-height: 180px; aspect-ratio: 4 / 5; background-color: #ffffff;">
+                                        <img id="modalPreviewImg2" src="<?= $photoUrl2 ? e($photoUrl2) : '' ?>" alt="Foto 2" class="<?= $photoUrl2 ? '' : 'd-none' ?> w-100 h-100 object-fit-contain bg-white">
                                         
                                         <div id="modalEmptyPlace2" class="<?= $photoUrl2 ? 'd-none' : '' ?> text-center p-3 text-muted">
                                             <i class="bi bi-image fs-1 d-block text-secondary opacity-50 mb-1"></i>
@@ -480,7 +480,7 @@
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body text-center p-3">
-                    <img src="" id="imageModalSrc" class="img-fluid rounded-3" style="max-height: 80vh;" alt="Foto Barang Penuh">
+                    <img src="" id="imageModalSrc" class="img-fluid rounded-3" style="max-height: 80vh; object-fit: contain; background-color: #ffffff;" alt="Foto Barang Penuh">
                 </div>
             </div>
         </div>

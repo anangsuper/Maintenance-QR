@@ -13,20 +13,20 @@
           </span>
         </div>
         <div class="flex flex-wrap items-center gap-2 shrink-0">
-          <button type="button" class="h-[34px] px-3.5 bg-[#0E5C58] hover:bg-[#094340] text-white rounded-[6px] text-[12px] font-semibold transition-colors inline-flex items-center gap-1.5 border-0 shadow-xs cursor-pointer" data-bs-toggle="modal" data-bs-target="#addCardModal">
+          <button type="button" class="min-h-[44px] md:min-h-0 md:h-[34px] px-3.5 bg-[#0E5C58] hover:bg-[#094340] text-white rounded-[6px] text-[12px] font-semibold transition-colors inline-flex items-center gap-1.5 border-0 shadow-xs cursor-pointer" data-bs-toggle="modal" data-bs-target="#addCardModal">
             <i class="bi bi-plus-lg"></i> Tambah Data Kartu
           </button>
-          <a href="'.e(module_url('inventaris_import.php')).'" class="h-[34px] px-3.5 bg-white border border-[#D1D5D8] hover:bg-[#F4F5F7] text-[#10B981] rounded-[6px] text-[12px] font-semibold transition-colors inline-flex items-center gap-1.5 text-decoration-none shadow-xs" title="Impor data kartu inventaris dari Excel / CSV (hanya membuat kartu baru, data lama tidak ditimpa)">
+          <a href="'.e(module_url('inventaris_import.php')).'" class="min-h-[44px] md:min-h-0 md:h-[34px] px-3.5 bg-white border border-[#D1D5D8] hover:bg-[#F4F5F7] text-[#10B981] rounded-[6px] text-[12px] font-semibold transition-colors inline-flex items-center gap-1.5 text-decoration-none shadow-xs" title="Impor data kartu inventaris dari Excel / CSV (hanya membuat kartu baru, data lama tidak ditimpa)">
             <i class="bi bi-file-earmark-arrow-up-fill text-[#10B981]"></i> Impor Excel
           </a>
-          <a href="'.e(module_url('print_inventory_card.php', ['source'=>'inventaris_kartu', 'status_cetak'=>'belum'])).'" target="_blank" class="h-[34px] px-3 bg-[#FFFBEB] border border-[#FDE68A] rounded-[6px] text-[12px] font-bold text-[#B45309] hover:bg-[#FEF3C7] transition-colors inline-flex items-center gap-1.5 text-decoration-none shadow-xs" title="Cetak massal A4 khusus kartu yang belum pernah dicetak">
+          <a href="'.e(module_url('print_inventory_card.php', ['source'=>'inventaris_kartu', 'status_cetak'=>'belum'])).'" target="_blank" class="min-h-[44px] md:min-h-0 md:h-[34px] px-3 bg-[#FFFBEB] border border-[#FDE68A] rounded-[6px] text-[12px] font-bold text-[#B45309] hover:bg-[#FEF3C7] transition-colors inline-flex items-center gap-1.5 text-decoration-none shadow-xs" title="Cetak massal A4 khusus kartu yang belum pernah dicetak">
             <i class="bi bi-printer-fill"></i> Cetak Belum Dicetak ('.$unprintedCardsCount.')
           </a>
-          <a href="'.e(module_url('print_inventory_card.php', ['source'=>'inventaris_kartu'])).'" target="_blank" class="h-[34px] px-3 bg-white border border-[#D1D5D8] rounded-[6px] text-[12px] font-medium text-[#1B2A3A] hover:bg-[#F4F5F7] transition-colors inline-flex items-center gap-1.5 text-decoration-none shadow-xs">
+          <a href="'.e(module_url('print_inventory_card.php', ['source'=>'inventaris_kartu'])).'" target="_blank" class="min-h-[44px] md:min-h-0 md:h-[34px] px-3 bg-white border border-[#D1D5D8] rounded-[6px] text-[12px] font-medium text-[#1B2A3A] hover:bg-[#F4F5F7] transition-colors inline-flex items-center gap-1.5 text-decoration-none shadow-xs">
             <i class="bi bi-printer text-[#0E5C58]"></i> Cetak Semua A4
           </a>
           <div class="dropdown">
-            <button class="h-[34px] px-3 bg-white border border-[#D1D5D8] rounded-[6px] text-[12px] font-medium text-[#1B2A3A] hover:bg-[#F4F5F7] transition-colors inline-flex items-center gap-1.5 shadow-xs dropdown-toggle cursor-pointer" type="button" data-bs-toggle="dropdown">
+            <button class="min-h-[44px] md:min-h-0 md:h-[34px] px-3 bg-white border border-[#D1D5D8] rounded-[6px] text-[12px] font-medium text-[#1B2A3A] hover:bg-[#F4F5F7] transition-colors inline-flex items-center gap-1.5 shadow-xs dropdown-toggle cursor-pointer" type="button" data-bs-toggle="dropdown">
               <i class="bi bi-download text-[#53595F]"></i> Ekspor
             </button>
             <ul class="dropdown-menu dropdown-menu-end shadow-sm border border-[#D1D5D8] rounded-[8px]" style="font-size: 0.85rem;">
@@ -184,8 +184,8 @@
             </span>
           </div>
           <div class="flex gap-2">
-            <a class="h-[34px] px-3 bg-white border border-[#D1D5D8] rounded-[6px] text-[12px] font-medium text-[#1B2A3A] hover:bg-[#F4F5F7] transition-colors inline-flex items-center gap-1 text-decoration-none" href="'.e(module_url('dashboard.php', ['tab' => 'kartu'])).'"><i class="bi bi-x-circle"></i> Reset</a>
-            <button type="submit" class="h-[34px] px-3.5 bg-[#0E5C58] hover:bg-[#094340] text-white rounded-[6px] text-[12px] font-semibold transition-colors inline-flex items-center gap-1 border-0 shadow-xs cursor-pointer"><i class="bi bi-filter"></i> Terapkan</button>
+            <a class="min-h-[44px] md:min-h-0 md:h-[34px] px-3 bg-white border border-[#D1D5D8] rounded-[6px] text-[12px] font-medium text-[#1B2A3A] hover:bg-[#F4F5F7] transition-colors inline-flex items-center gap-1 text-decoration-none" href="'.e(module_url('dashboard.php', ['tab' => 'kartu'])).'"><i class="bi bi-x-circle"></i> Reset</a>
+            <button type="submit" class="min-h-[44px] md:min-h-0 md:h-[34px] px-3.5 bg-[#0E5C58] hover:bg-[#094340] text-white rounded-[6px] text-[12px] font-semibold transition-colors inline-flex items-center gap-1 border-0 shadow-xs cursor-pointer"><i class="bi bi-filter"></i> Terapkan</button>
           </div>
         </div>
       </form>
@@ -200,19 +200,19 @@
           <span class="text-[13px] text-[#1E40AF] font-semibold">Aksi untuk kartu inventaris terpilih:</span>
         </div>
         <div class="flex items-center gap-2 flex-wrap">
-          <button type="button" class="h-[32px] px-3 bg-[#059669] hover:bg-[#047857] text-white rounded-[6px] text-[12px] font-semibold transition-colors flex items-center gap-1.5 border-0 shadow-xs cursor-pointer" onclick="bulkMarkPrintedCards()">
+          <button type="button" class="min-h-[44px] md:min-h-0 md:h-[32px] px-3 bg-[#059669] hover:bg-[#047857] text-white rounded-[6px] text-[12px] font-semibold transition-colors flex items-center gap-1.5 border-0 shadow-xs cursor-pointer" onclick="bulkMarkPrintedCards()">
             <i class="bi bi-check2-all"></i> Tandai Sudah Dicetak
           </button>
-          <button type="button" class="h-[32px] px-3 bg-[#10B981] hover:bg-[#059669] text-white rounded-[6px] text-[12px] font-semibold transition-colors flex items-center gap-1.5 border-0 shadow-xs cursor-pointer" id="btnExportExcelSelected" onclick="exportExcelSelectedCards()">
+          <button type="button" class="min-h-[44px] md:min-h-0 md:h-[32px] px-3 bg-[#10B981] hover:bg-[#059669] text-white rounded-[6px] text-[12px] font-semibold transition-colors flex items-center gap-1.5 border-0 shadow-xs cursor-pointer" id="btnExportExcelSelected" onclick="exportExcelSelectedCards()">
             <i class="bi bi-file-earmark-excel-fill"></i> Ekspor Excel (<span id="countExcel">0</span>)
           </button>
-          <button type="button" class="h-[32px] px-3 bg-[#0E5C58] hover:bg-[#094340] text-white rounded-[6px] text-[12px] font-semibold transition-colors flex items-center gap-1.5 border-0 shadow-xs cursor-pointer" id="btnPrintSelected" onclick="printSelectedCards()">
+          <button type="button" class="min-h-[44px] md:min-h-0 md:h-[32px] px-3 bg-[#0E5C58] hover:bg-[#094340] text-white rounded-[6px] text-[12px] font-semibold transition-colors flex items-center gap-1.5 border-0 shadow-xs cursor-pointer" id="btnPrintSelected" onclick="printSelectedCards()">
             <i class="bi bi-printer-fill"></i> Cetak Kartu (<span id="countPrint">0</span>)
           </button>
-          <button type="button" class="h-[32px] px-3 bg-[#DC2626] hover:bg-[#B91C1C] text-white rounded-[6px] text-[12px] font-semibold transition-colors flex items-center gap-1.5 border-0 shadow-xs cursor-pointer" id="btnDeleteSelected" onclick="bulkDeleteCards()">
+          <button type="button" class="min-h-[44px] md:min-h-0 md:h-[32px] px-3 bg-[#DC2626] hover:bg-[#B91C1C] text-white rounded-[6px] text-[12px] font-semibold transition-colors flex items-center gap-1.5 border-0 shadow-xs cursor-pointer" id="btnDeleteSelected" onclick="bulkDeleteCards()">
             <i class="bi bi-trash"></i> Hapus Terpilih (<span id="countDelete">0</span>)
           </button>
-          <button type="button" class="h-[32px] px-3 bg-white border border-[#D1D5D8] hover:bg-[#F4F5F7] text-[#1B2A3A] rounded-[6px] text-[12px] font-medium transition-colors flex items-center gap-1 cursor-pointer" onclick="deselectAllCards()">
+          <button type="button" class="min-h-[44px] md:min-h-0 md:h-[32px] px-3 bg-white border border-[#D1D5D8] hover:bg-[#F4F5F7] text-[#1B2A3A] rounded-[6px] text-[12px] font-medium transition-colors flex items-center gap-1 cursor-pointer" onclick="deselectAllCards()">
             <i class="bi bi-x-circle"></i> Batal
           </button>
         </div>
@@ -252,13 +252,13 @@
         <nav aria-label="Halaman Kartu">
           <ul class="pagination pagination-sm m-0 flex items-center gap-1">
             <li class="page-item '.($pageKartu <= 1 ? 'disabled opacity-50' : '').'">
-              <a class="h-[28px] px-2 bg-white border border-[#D1D5D8] rounded-[4px] text-[12px] text-[#1B2A3A] flex items-center text-decoration-none" href="'.e(module_url('dashboard.php', array_merge($_GET, ['tab'=>'kartu', 'p_kartu'=>max(1, $pageKartu - 1)]))).'"><i class="bi bi-chevron-left"></i></a>
+              <a class="min-h-[44px] md:min-h-0 md:h-[28px] px-2 bg-white border border-[#D1D5D8] rounded-[4px] text-[12px] text-[#1B2A3A] flex items-center text-decoration-none" href="'.e(module_url('dashboard.php', array_merge($_GET, ['tab'=>'kartu', 'p_kartu'=>max(1, $pageKartu - 1)]))).'"><i class="bi bi-chevron-left"></i></a>
             </li>
             '.implode('', array_map(function($p) use ($pageKartu) {
                 if ($p === '...') return '<li class="page-item disabled px-1 text-[#A0A5AA]">&hellip;</li>';
                 $isAct = ($p == $pageKartu);
                 $cls = $isAct ? 'bg-[#0E5C58] text-white font-bold border-[#0E5C58]' : 'bg-white text-[#1B2A3A] border-[#D1D5D8] hover:bg-[#F4F5F7]';
-                return '<li class="page-item"><a class="h-[28px] min-w-[28px] px-2 border rounded-[4px] text-[12px] flex items-center justify-center text-decoration-none '.$cls.'" href="'.e(module_url('dashboard.php', array_merge($_GET, ['tab'=>'kartu', 'p_kartu'=>$p]))).'">'.$p.'</a></li>';
+                return '<li class="page-item"><a class="min-h-[44px] md:min-h-0 md:h-[28px] min-min-w-[44px] md:min-w-0 md:w-[28px] px-2 border rounded-[4px] text-[12px] flex items-center justify-center text-decoration-none '.$cls.'" href="'.e(module_url('dashboard.php', array_merge($_GET, ['tab'=>'kartu', 'p_kartu'=>$p]))).'">'.$p.'</a></li>';
             }, (function() use ($pageKartu, $totalPagesCards) {
                 $pages = [];
                 $start = max(1, $pageKartu - 2);
@@ -275,7 +275,7 @@
                 return $pages;
             })())).'
             <li class="page-item '.($pageKartu >= $totalPagesCards ? 'disabled opacity-50' : '').'">
-              <a class="h-[28px] px-2 bg-white border border-[#D1D5D8] rounded-[4px] text-[12px] text-[#1B2A3A] flex items-center text-decoration-none" href="'.e(module_url('dashboard.php', array_merge($_GET, ['tab'=>'kartu', 'p_kartu'=>min($totalPagesCards, $pageKartu + 1)]))).'"><i class="bi bi-chevron-right"></i></a>
+              <a class="min-h-[44px] md:min-h-0 md:h-[28px] px-2 bg-white border border-[#D1D5D8] rounded-[4px] text-[12px] text-[#1B2A3A] flex items-center text-decoration-none" href="'.e(module_url('dashboard.php', array_merge($_GET, ['tab'=>'kartu', 'p_kartu'=>min($totalPagesCards, $pageKartu + 1)]))).'"><i class="bi bi-chevron-right"></i></a>
             </li>
           </ul>
         </nav>

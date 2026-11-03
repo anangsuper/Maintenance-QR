@@ -339,14 +339,14 @@ ob_start();
           </div>
           <div class="flex items-center gap-1.5 shrink-0">
             <?php if ($isAdmin || is_hrd()): ?>
-              <button type="button" class="h-[34px] px-3 bg-[#10B981] hover:bg-[#059669] text-white rounded-[6px] text-[12px] font-bold transition-colors inline-flex items-center gap-1 border-0 cursor-pointer shadow-xs" onclick="adminReviewFace(<?= $pfId ?>, 'approve_face', '<?= e(addslashes($pfNama)) ?>')">
+              <button type="button" class="min-h-[44px] md:min-h-0 md:h-[34px] px-3 bg-[#10B981] hover:bg-[#059669] text-white rounded-[6px] text-[12px] font-bold transition-colors inline-flex items-center gap-1 border-0 cursor-pointer shadow-xs" onclick="adminReviewFace(<?= $pfId ?>, 'approve_face', '<?= e(addslashes($pfNama)) ?>')">
                 <i class="bi bi-check-lg"></i> Accept
               </button>
-              <button type="button" class="h-[34px] px-2.5 bg-white border border-[#D1D5D8] hover:bg-[#FEE2E2] hover:text-[#DC2626] text-[#53595F] rounded-[6px] text-[12px] font-medium transition-colors inline-flex items-center gap-1 cursor-pointer" onclick="adminReviewFace(<?= $pfId ?>, 'reject_face', '<?= e(addslashes($pfNama)) ?>')">
+              <button type="button" class="min-h-[44px] md:min-h-0 md:h-[34px] px-2.5 bg-white border border-[#D1D5D8] hover:bg-[#FEE2E2] hover:text-[#DC2626] text-[#53595F] rounded-[6px] text-[12px] font-medium transition-colors inline-flex items-center gap-1 cursor-pointer" onclick="adminReviewFace(<?= $pfId ?>, 'reject_face', '<?= e(addslashes($pfNama)) ?>')">
                 <i class="bi bi-x-lg"></i>
               </button>
             <?php else: ?>
-              <a href="<?= e(module_url('login.php', ['ret' => 'user_biometric_enroll.php'])) ?>" class="h-[32px] px-2.5 bg-white border border-[#D1D5D8] hover:bg-[#F4F5F7] text-[#0E5C58] rounded-[6px] text-[11px] font-bold transition-colors inline-flex items-center gap-1 text-decoration-none shadow-xs">
+              <a href="<?= e(module_url('login.php', ['ret' => 'user_biometric_enroll.php'])) ?>" class="min-h-[44px] md:min-h-0 md:h-[32px] px-2.5 bg-white border border-[#D1D5D8] hover:bg-[#F4F5F7] text-[#0E5C58] rounded-[6px] text-[11px] font-bold transition-colors inline-flex items-center gap-1 text-decoration-none shadow-xs">
                 Login Verifikasi &rarr;
               </a>
             <?php endif; ?>
@@ -465,7 +465,7 @@ ob_start();
           <i class="bi bi-shield-lock-fill text-[#0E5C58] me-1"></i>
           Buka lewat <strong>HTTPS</strong> agar kamera webcam aktif langsung di browser.
         </div>
-        <a href="javascript:;" id="linkToHttps" role="button" class="h-[28px] px-2.5 bg-[#0E5C58] text-white rounded-[6px] text-[11px] font-bold flex items-center gap-1 text-decoration-none shadow-xs text-nowrap ms-2">
+        <a href="javascript:;" id="linkToHttps" role="button" class="min-h-[44px] md:min-h-0 md:h-[28px] px-2.5 bg-[#0E5C58] text-white rounded-[6px] text-[11px] font-bold flex items-center gap-1 text-decoration-none shadow-xs text-nowrap ms-2">
           Buka via HTTPS <i class="bi bi-arrow-right-short"></i>
         </a>
       </div>

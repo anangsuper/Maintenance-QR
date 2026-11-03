@@ -702,11 +702,11 @@ $pageTitle = $card ? e($card['nama_barang']) . ' - Kartu Inventaris' : 'Kartu In
                             <div class="row g-2 mb-2" id="cardGalleryRow">
                                 <!-- SLOT FOTO 1 (UTAMA) -->
                                 <div class="<?= $hasBothPhotos ? 'col-6' : ($hasFoto1 || !$hasFoto2 ? 'col-12' : 'col-12 d-none') ?>" id="slotCol1">
-                                    <div class="item-photo-wrapper mb-0 shadow-xs d-flex position-relative <?= $photoUrl ? 'has-image' : '' ?>" id="photoWrapper" style="min-height: 185px; max-height: 250px; aspect-ratio: 4 / 5;">
+                                    <div class="item-photo-wrapper mb-0 shadow-xs d-flex position-relative <?= $photoUrl ? 'has-image' : '' ?>" id="photoWrapper" style="min-height: 185px; max-height: 250px; aspect-ratio: 4 / 5; background-color: #ffffff;">
                                         <span class="position-absolute top-0 start-0 m-2 badge bg-dark bg-opacity-75 text-white rounded-pill px-2 py-1" style="font-size: 0.65rem; z-index: 3;">
                                             <i class="bi bi-1-circle-fill me-0.5"></i> Foto 1 (Utama)
                                         </span>
-                                        <img id="previewImg" src="<?= $photoUrl ? e($photoUrl) : '' ?>" alt="Foto 1 <?= e($card['nama_barang']) ?>" fetchpriority="high" class="<?= $photoUrl ? '' : 'd-none' ?>" onclick="viewFullImage(this.src, '<?= e(addslashes($card['nama_barang'] . ' - Foto 1 (Utama)')) ?>')" title="Klik untuk memperbesar Foto 1">
+                                        <img id="previewImg" src="<?= $photoUrl ? e($photoUrl) : '' ?>" alt="Foto 1 <?= e($card['nama_barang']) ?>" fetchpriority="high" class="<?= $photoUrl ? '' : 'd-none' ?>" style="object-fit: contain !important; background-color: #ffffff;" onclick="viewFullImage(this.src, '<?= e(addslashes($card['nama_barang'] . ' - Foto 1 (Utama)')) ?>')" title="Klik untuk memperbesar Foto 1">
                                         
                                         <div id="emptyPhotoPlaceholder" class="text-center p-3 <?= $photoUrl ? 'd-none' : '' ?>" style="cursor: pointer;" data-bs-toggle="modal" data-bs-target="#modalUploadFotoBarang">
                                             <i class="bi bi-camera text-muted fs-2 mb-1 d-block"></i>
@@ -728,11 +728,11 @@ $pageTitle = $card ? e($card['nama_barang']) . ' - Kartu Inventaris' : 'Kartu In
 
                                 <!-- SLOT FOTO 2 (DETAIL) - Hanya Tampil Jika Ada Foto 2 -->
                                 <div class="<?= $hasBothPhotos ? 'col-6' : ($hasFoto2 ? 'col-12' : 'col-6 d-none') ?>" id="slotCol2">
-                                    <div class="item-photo-wrapper mb-0 shadow-xs d-flex position-relative <?= $photoUrl2 ? 'has-image' : '' ?>" id="photoWrapper2" style="min-height: 185px; max-height: 250px; aspect-ratio: 4 / 5;">
+                                    <div class="item-photo-wrapper mb-0 shadow-xs d-flex position-relative <?= $photoUrl2 ? 'has-image' : '' ?>" id="photoWrapper2" style="min-height: 185px; max-height: 250px; aspect-ratio: 4 / 5; background-color: #ffffff;">
                                         <span class="position-absolute top-0 start-0 m-2 badge bg-primary text-white rounded-pill px-2 py-1" style="font-size: 0.65rem; z-index: 3;">
                                             <i class="bi bi-2-circle-fill me-0.5"></i> Foto 2 (Detail)
                                         </span>
-                                        <img id="previewImg2" src="<?= $photoUrl2 ? e($photoUrl2) : '' ?>" alt="Foto 2 <?= e($card['nama_barang']) ?>" fetchpriority="low" loading="lazy" class="<?= $photoUrl2 ? '' : 'd-none' ?>" onclick="viewFullImage(this.src, '<?= e(addslashes($card['nama_barang'] . ' - Foto 2 (Detail)')) ?>')" title="Klik untuk memperbesar Foto 2">
+                                        <img id="previewImg2" src="<?= $photoUrl2 ? e($photoUrl2) : '' ?>" alt="Foto 2 <?= e($card['nama_barang']) ?>" fetchpriority="low" loading="lazy" class="<?= $photoUrl2 ? '' : 'd-none' ?>" style="object-fit: contain !important; background-color: #ffffff;" onclick="viewFullImage(this.src, '<?= e(addslashes($card['nama_barang'] . ' - Foto 2 (Detail)')) ?>')" title="Klik untuk memperbesar Foto 2">
                                         
                                         <div id="emptyPhotoPlaceholder2" class="text-center p-3 <?= $photoUrl2 ? 'd-none' : '' ?>" style="cursor: pointer;" data-bs-toggle="modal" data-bs-target="#modalUploadFotoBarang">
                                             <i class="bi bi-plus-circle-dotted text-primary fs-2 mb-1 d-block"></i>

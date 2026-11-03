@@ -442,16 +442,16 @@ if (is_hrd() && !is_admin()) {
             </div>
           </div>
           <div class="flex flex-wrap items-center gap-2">
-            <a href="'.e(module_url('scan_mobile.php')).'" class="h-[32px] px-3 bg-[#0E5C58] hover:bg-[#094340] text-white rounded-[6px] text-[12px] font-semibold transition-colors inline-flex items-center gap-1.5 text-decoration-none shadow-xs">
+            <a href="'.e(module_url('scan_mobile.php')).'" class="min-h-[44px] md:min-h-0 md:h-[32px] px-3 bg-[#0E5C58] hover:bg-[#094340] text-white rounded-[6px] text-[12px] font-semibold transition-colors inline-flex items-center gap-1.5 text-decoration-none shadow-xs">
               <i class="bi bi-qr-code-scan"></i> Pindai QR Kamera
             </a>
-            <a href="'.e(module_url('server_room_log.php')).'" class="h-[32px] px-3 bg-white border border-[#D1D5D8] hover:bg-[#F4F5F7] text-[#1B2A3A] rounded-[6px] text-[12px] font-medium transition-colors inline-flex items-center gap-1.5 text-decoration-none shadow-xs">
+            <a href="'.e(module_url('server_room_log.php')).'" class="min-h-[44px] md:min-h-0 md:h-[32px] px-3 bg-white border border-[#D1D5D8] hover:bg-[#F4F5F7] text-[#1B2A3A] rounded-[6px] text-[12px] font-medium transition-colors inline-flex items-center gap-1.5 text-decoration-none shadow-xs">
               <i class="bi bi-door-open-fill text-[#0E5C58]"></i> Buku Tamu Data Center
             </a>
-            <a href="'.e(module_url('system_report.php')).'" target="_blank" class="h-[32px] px-3 bg-white border border-[#D1D5D8] hover:bg-[#F4F5F7] text-[#1B2A3A] rounded-[6px] text-[12px] font-medium transition-colors inline-flex items-center gap-1.5 text-decoration-none shadow-xs">
+            <a href="'.e(module_url('system_report.php')).'" target="_blank" class="min-h-[44px] md:min-h-0 md:h-[32px] px-3 bg-white border border-[#D1D5D8] hover:bg-[#F4F5F7] text-[#1B2A3A] rounded-[6px] text-[12px] font-medium transition-colors inline-flex items-center gap-1.5 text-decoration-none shadow-xs">
               <i class="bi bi-file-earmark-bar-graph-fill text-[#0284C7]"></i> Cetak Laporan Bulanan
             </a>
-            <a href="'.e(module_url('dashboard.php', ['tab' => 'temuan'])).'" class="h-[32px] px-3 bg-white border border-[#D1D5D8] hover:bg-[#FEF2F2] text-[#DC2626] rounded-[6px] text-[12px] font-medium transition-colors inline-flex items-center gap-1.5 text-decoration-none shadow-xs">
+            <a href="'.e(module_url('dashboard.php', ['tab' => 'temuan'])).'" class="min-h-[44px] md:min-h-0 md:h-[32px] px-3 bg-white border border-[#D1D5D8] hover:bg-[#FEF2F2] text-[#DC2626] rounded-[6px] text-[12px] font-medium transition-colors inline-flex items-center gap-1.5 text-decoration-none shadow-xs">
               <i class="bi bi-exclamation-triangle-fill"></i> Lapor Temuan Kerusakan
             </a>
           </div>
@@ -601,7 +601,7 @@ if (is_hrd() && !is_admin()) {
           <input type="hidden" name="bulan" value="'.$month.'">
           <input type="hidden" name="tahun" value="'.$year.'">
           <input type="hidden" name="return_cabang" value="'.$cabangId.'">
-          <button type="submit" class="h-[32px] px-3 bg-[#0E5C58] hover:bg-[#094340] text-white rounded-[6px] text-[11px] font-semibold border-0 shadow-xs cursor-pointer inline-flex items-center gap-1">
+          <button type="submit" class="min-h-[44px] md:min-h-0 md:h-[32px] px-3 bg-[#0E5C58] hover:bg-[#094340] text-white rounded-[6px] text-[11px] font-semibold border-0 shadow-xs cursor-pointer inline-flex items-center gap-1">
             <i class="bi bi-check-circle"></i> <span>Aktifkan Kembali</span>
           </button>
         </form>' : '').'

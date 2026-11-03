@@ -1235,20 +1235,33 @@ function compress_and_save_uploaded_image(string $tmpPath, string $targetPath, i
                 $cropH = $h;
 
                 if ($crop4by5) {
-                    $targetRatio = 4 / 5; // 0.8
-                    if ($w / $h > $targetRatio) {
-                        $cropW = (int)round($h * $targetRatio);
-                        $cropH = $h;
-                        $srcX = (int)round(($w - $cropW) / 2);
-                        $srcY = 0;
-                    } else {
-                        $cropW = $w;
-                        $cropH = (int)round($w / $targetRatio);
-                        $srcX = 0;
-                        $srcY = (int)round(($h - $cropH) / 2);
+                    // Rasio 4:5 tanpa memotong foto: pasang di kanvas 1200x1500 dengan latar putih bersih
+                    $outW = 1200;
+                    $outH = 1500;
+                    $scale = min($outW / $w, $outH / $h);
+                    $drawW = (int)round($w * $scale);
+                    $drawH = (int)round($h * $scale);
+                    $dstX = (int)round(($outW - $drawW) / 2);
+                    $dstY = (int)round(($outH - $drawH) / 2);
+
+                    $dst = imagecreatetruecolor($outW, $outH);
+                    $white = imagecolorallocate($dst, 255, 255, 255);
+                    imagefilledrectangle($dst, 0, 0, $outW, $outH, $white);
+
+                    imagecopyresampled($dst, $src, $dstX, $dstY, 0, 0, $drawW, $drawH, $w, $h);
+
+                    $saved = @imagejpeg($dst, $targetPath, $quality);
+                    imagedestroy($src);
+                    imagedestroy($dst);
+
+                    if ($saved && file_exists($targetPath) && filesize($targetPath) > 0) {
+                        @chmod($targetPath, 0666);
+                        return true;
                     }
-                    $newW = min(1200, $cropW);
-                    $newH = (int)round($newW / $targetRatio);
+                    if (file_exists($targetPath) && filesize($targetPath) === 0) {
+                        @unlink($targetPath);
+                    }
+                    return false;
                 } else {
                     // Hitung skala baru (maksimum 1600px pada sisi terpanjang)
                     $newW = $w;

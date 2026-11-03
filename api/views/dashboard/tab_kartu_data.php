@@ -168,25 +168,25 @@ if (empty($displayCards)) {
           </td>
           <td class="text-end py-2.5 pe-3" style="min-width: 280px; width: 290px; white-space: nowrap;">
             <div class="inline-flex items-center gap-1 justify-end flex-nowrap">
-              <button type="button" class="h-[28px] px-2 bg-[#D9F1EF] border border-[#A7E2DC] hover:bg-[#0E5C58] hover:text-white text-[#0E5C58] rounded-[5px] text-[11px] font-semibold transition-colors inline-flex items-center gap-1 shadow-2xs cursor-pointer" title="Unduh Gambar Kartu PNG Ukuran Asli CR80 (85.6mm x 54mm)" onclick=\'downloadCardPngFromRow('.$jsonPayload.', this)\'>
+              <button type="button" class="min-h-[44px] md:min-h-0 md:h-[28px] px-2 bg-[#D9F1EF] border border-[#A7E2DC] hover:bg-[#0E5C58] hover:text-white text-[#0E5C58] rounded-[5px] text-[11px] font-semibold transition-colors inline-flex items-center gap-1 shadow-2xs cursor-pointer" title="Unduh Gambar Kartu PNG Ukuran Asli CR80 (85.6mm x 54mm)" onclick=\'downloadCardPngFromRow('.$jsonPayload.', this)\'>
                 <i class="bi bi-download"></i><span class="d-none d-xl-inline"> PNG</span>
               </button>
-              <a class="h-[28px] px-2 bg-white border border-[#D1D5D8] hover:bg-[#ECFDF5] text-[#10B981] rounded-[5px] text-[11px] font-medium transition-colors inline-flex items-center gap-1 text-decoration-none shadow-2xs" target="_blank" href="'.e(module_url('inventaris_mutation.php', ['id'=>$cId])).'" title="Mutasi Fasilitas &amp; Kartu Inventaris">
+              <a class="min-h-[44px] md:min-h-0 md:h-[28px] px-2 bg-white border border-[#D1D5D8] hover:bg-[#ECFDF5] text-[#10B981] rounded-[5px] text-[11px] font-medium transition-colors inline-flex items-center gap-1 text-decoration-none shadow-2xs" target="_blank" href="'.e(module_url('inventaris_mutation.php', ['id'=>$cId])).'" title="Mutasi Fasilitas &amp; Kartu Inventaris">
                 <i class="bi bi-arrow-left-right"></i><span class="d-none d-xxl-inline"> Mutasi</span>
               </a>
-              <a class="h-[28px] px-2 bg-white border border-[#D1D5D8] hover:bg-[#D9F1EF] text-[#0E5C58] rounded-[5px] text-[11px] font-medium transition-colors inline-flex items-center gap-1 text-decoration-none shadow-2xs" target="_blank" href="'.e($canonicalCardUrl).'" title="Buka Detail Web &amp; Foto">
+              <a class="min-h-[44px] md:min-h-0 md:h-[28px] px-2 bg-white border border-[#D1D5D8] hover:bg-[#D9F1EF] text-[#0E5C58] rounded-[5px] text-[11px] font-medium transition-colors inline-flex items-center gap-1 text-decoration-none shadow-2xs" target="_blank" href="'.e($canonicalCardUrl).'" title="Buka Detail Web &amp; Foto">
                 <i class="bi bi-box-arrow-up-right"></i><span class="d-none d-xxl-inline"> Detail</span>
               </a>
-              <button type="button" class="h-[28px] px-2 bg-white border border-[#D1D5D8] hover:bg-[#E0F2FE] text-[#0284C7] rounded-[5px] text-[11px] font-medium transition-colors inline-flex items-center gap-1 shadow-2xs cursor-pointer" title="Pratinjau Fisik Kartu &amp; Kirim WA" onclick=\'openCardPreviewModal('.$jsonPayload.')\'>
+              <button type="button" class="min-h-[44px] md:min-h-0 md:h-[28px] px-2 bg-white border border-[#D1D5D8] hover:bg-[#E0F2FE] text-[#0284C7] rounded-[5px] text-[11px] font-medium transition-colors inline-flex items-center gap-1 shadow-2xs cursor-pointer" title="Pratinjau Fisik Kartu &amp; Kirim WA" onclick=\'openCardPreviewModal('.$jsonPayload.')\'>
                 <i class="bi bi-eye"></i><span class="d-none d-xl-inline"> Lihat</span>
               </button>
-              <a class="h-[28px] px-2 bg-white border border-[#D1D5D8] hover:bg-[#F4F5F7] text-[#1B2A3A] rounded-[5px] text-[11px] font-medium transition-colors inline-flex items-center gap-1 text-decoration-none shadow-2xs" target="_blank" href="'.e(module_url('print_inventory_card.php', ['source'=>'inventaris_kartu', 'id'=>$cId])).'" title="Cetak Kartu Ini">
+              <a class="min-h-[44px] md:min-h-0 md:h-[28px] px-2 bg-white border border-[#D1D5D8] hover:bg-[#F4F5F7] text-[#1B2A3A] rounded-[5px] text-[11px] font-medium transition-colors inline-flex items-center gap-1 text-decoration-none shadow-2xs" target="_blank" href="'.e(module_url('print_inventory_card.php', ['source'=>'inventaris_kartu', 'id'=>$cId])).'" title="Cetak Kartu Ini">
                 <i class="bi bi-printer"></i><span class="d-none d-xl-inline"> Cetak</span>
               </a>
-              <button type="button" class="h-[28px] px-2 bg-white border border-[#D1D5D8] hover:bg-[#FEF3C7] text-[#D97706] rounded-[5px] text-[11px] font-medium transition-colors inline-flex items-center gap-1 shadow-2xs cursor-pointer" title="Edit Kartu" onclick=\'openCardEditModal('.$jsonPayload.')\'>
+              <button type="button" class="min-h-[44px] md:min-h-0 md:h-[28px] px-2 bg-white border border-[#D1D5D8] hover:bg-[#FEF3C7] text-[#D97706] rounded-[5px] text-[11px] font-medium transition-colors inline-flex items-center gap-1 shadow-2xs cursor-pointer" title="Edit Kartu" onclick=\'openCardEditModal('.$jsonPayload.')\'>
                 <i class="bi bi-pencil"></i>
               </button>
-              <button type="button" class="h-[28px] px-2 bg-white border border-[#D1D5D8] hover:bg-[#FEE2E2] text-[#DC2626] rounded-[5px] text-[11px] font-medium transition-colors inline-flex items-center gap-1 shadow-2xs cursor-pointer" title="Hapus Kartu" onclick="confirmDeleteCard('.$cId.', \''.e(addslashes($rek . ' - ' . $nama)).'\')">
+              <button type="button" class="min-h-[44px] md:min-h-0 md:h-[28px] px-2 bg-white border border-[#D1D5D8] hover:bg-[#FEE2E2] text-[#DC2626] rounded-[5px] text-[11px] font-medium transition-colors inline-flex items-center gap-1 shadow-2xs cursor-pointer" title="Hapus Kartu" onclick="confirmDeleteCard('.$cId.', \''.e(addslashes($rek . ' - ' . $nama)).'\')">
                 <i class="bi bi-trash"></i>
               </button>
             </div>
@@ -224,25 +224,25 @@ if (empty($displayCards)) {
           </div>
 
           <footer class="grid grid-cols-7 gap-1 pt-2 border-t border-[#F3F4F6]">
-            <button type="button" class="h-[30px] bg-[#D9F1EF] border border-[#A7E2DC] text-[#0E5C58] rounded-[6px] text-[11px] font-semibold flex items-center justify-center shadow-2xs cursor-pointer" title="Unduh Gambar Kartu PNG Ukuran Asli" onclick=\'downloadCardPngFromRow('.$jsonPayload.', this)\'>
+            <button type="button" class="min-h-[44px] md:min-h-0 md:h-[30px] bg-[#D9F1EF] border border-[#A7E2DC] text-[#0E5C58] rounded-[6px] text-[11px] font-semibold flex items-center justify-center shadow-2xs cursor-pointer" title="Unduh Gambar Kartu PNG Ukuran Asli" onclick=\'downloadCardPngFromRow('.$jsonPayload.', this)\'>
               <i class="bi bi-download"></i>
             </button>
-            <a class="h-[30px] bg-white border border-[#D1D5D8] hover:bg-[#ECFDF5] text-[#10B981] rounded-[6px] text-[11px] font-medium transition-colors flex items-center justify-center text-decoration-none shadow-2xs" target="_blank" href="'.e(module_url('inventaris_mutation.php', ['id'=>$cId])).'" title="Mutasi">
+            <a class="min-h-[44px] md:min-h-0 md:h-[30px] bg-white border border-[#D1D5D8] hover:bg-[#ECFDF5] text-[#10B981] rounded-[6px] text-[11px] font-medium transition-colors flex items-center justify-center text-decoration-none shadow-2xs" target="_blank" href="'.e(module_url('inventaris_mutation.php', ['id'=>$cId])).'" title="Mutasi">
               <i class="bi bi-arrow-left-right"></i>
             </a>
-            <a class="h-[30px] bg-white border border-[#D1D5D8] hover:bg-[#D9F1EF] text-[#0E5C58] rounded-[6px] text-[11px] font-medium transition-colors flex items-center justify-center text-decoration-none shadow-2xs" target="_blank" href="'.e($canonicalCardUrl).'" title="Detail">
+            <a class="min-h-[44px] md:min-h-0 md:h-[30px] bg-white border border-[#D1D5D8] hover:bg-[#D9F1EF] text-[#0E5C58] rounded-[6px] text-[11px] font-medium transition-colors flex items-center justify-center text-decoration-none shadow-2xs" target="_blank" href="'.e($canonicalCardUrl).'" title="Detail">
               <i class="bi bi-box-arrow-up-right"></i>
             </a>
-            <button type="button" class="h-[30px] bg-white border border-[#D1D5D8] hover:bg-[#E0F2FE] text-[#0284C7] rounded-[6px] text-[11px] font-medium transition-colors flex items-center justify-center shadow-2xs cursor-pointer" title="Lihat" onclick=\'openCardPreviewModal('.$jsonPayload.')\'>
+            <button type="button" class="min-h-[44px] md:min-h-0 md:h-[30px] bg-white border border-[#D1D5D8] hover:bg-[#E0F2FE] text-[#0284C7] rounded-[6px] text-[11px] font-medium transition-colors flex items-center justify-center shadow-2xs cursor-pointer" title="Lihat" onclick=\'openCardPreviewModal('.$jsonPayload.')\'>
               <i class="bi bi-eye"></i>
             </button>
-            <a class="h-[30px] bg-white border border-[#D1D5D8] hover:bg-[#F4F5F7] text-[#1B2A3A] rounded-[6px] text-[11px] font-medium transition-colors flex items-center justify-center text-decoration-none shadow-2xs" target="_blank" href="'.e(module_url('print_inventory_card.php', ['source'=>'inventaris_kartu', 'id'=>$cId])).'" title="Cetak">
+            <a class="min-h-[44px] md:min-h-0 md:h-[30px] bg-white border border-[#D1D5D8] hover:bg-[#F4F5F7] text-[#1B2A3A] rounded-[6px] text-[11px] font-medium transition-colors flex items-center justify-center text-decoration-none shadow-2xs" target="_blank" href="'.e(module_url('print_inventory_card.php', ['source'=>'inventaris_kartu', 'id'=>$cId])).'" title="Cetak">
               <i class="bi bi-printer"></i>
             </a>
-            <button type="button" class="h-[30px] bg-white border border-[#D1D5D8] hover:bg-[#FEF3C7] text-[#D97706] rounded-[6px] text-[11px] font-medium transition-colors flex items-center justify-center shadow-2xs cursor-pointer" title="Edit" onclick=\'openCardEditModal('.$jsonPayload.')\'>
+            <button type="button" class="min-h-[44px] md:min-h-0 md:h-[30px] bg-white border border-[#D1D5D8] hover:bg-[#FEF3C7] text-[#D97706] rounded-[6px] text-[11px] font-medium transition-colors flex items-center justify-center shadow-2xs cursor-pointer" title="Edit" onclick=\'openCardEditModal('.$jsonPayload.')\'>
               <i class="bi bi-pencil"></i>
             </button>
-            <button type="button" class="h-[30px] bg-white border border-[#D1D5D8] hover:bg-[#FEE2E2] text-[#DC2626] rounded-[6px] text-[11px] font-medium transition-colors flex items-center justify-center shadow-2xs cursor-pointer" title="Hapus" onclick="confirmDeleteCard('.$cId.', \''.e(addslashes($rek . ' - ' . $nama)).'\')">
+            <button type="button" class="min-h-[44px] md:min-h-0 md:h-[30px] bg-white border border-[#D1D5D8] hover:bg-[#FEE2E2] text-[#DC2626] rounded-[6px] text-[11px] font-medium transition-colors flex items-center justify-center shadow-2xs cursor-pointer" title="Hapus" onclick="confirmDeleteCard('.$cId.', \''.e(addslashes($rek . ' - ' . $nama)).'\')">
               <i class="bi bi-trash"></i>
             </button>
           </footer>

@@ -334,7 +334,7 @@ foreach ($rawAssets as $a) {
 // Render Branch Navigation Pills
 $branchPillsHtml = '<div class="flex items-center gap-2 overflow-x-auto pb-1 mb-4 custom-scrollbar">';
 $allActive = ($cabangId === 0);
-$branchPillsHtml .= '<a class="flex items-center gap-1.5 h-[34px] px-3.5 rounded-[8px] text-[13px] font-semibold text-decoration-none shrink-0 transition-colors '.($allActive ? 'bg-[#0E5C58] text-white shadow-sm' : 'bg-[#FFFFFF] border border-[#D1D5D8] text-[#53595F] hover:bg-[#F4F5F7] hover:text-[#1B2A3A]').'" href="'.e(filter_query(['cabang' => 0, 'page' => 1])).'">
+$branchPillsHtml .= '<a class="flex items-center gap-1.5 min-h-[44px] md:min-h-0 md:h-[34px] px-3.5 rounded-[8px] text-[13px] font-semibold text-decoration-none shrink-0 transition-colors '.($allActive ? 'bg-[#0E5C58] text-white shadow-sm' : 'bg-[#FFFFFF] border border-[#D1D5D8] text-[#53595F] hover:bg-[#F4F5F7] hover:text-[#1B2A3A]').'" href="'.e(filter_query(['cabang' => 0, 'page' => 1])).'">
   <i class="bi bi-buildings"></i> Semua Cabang
   <span class="text-[11px] font-bold px-1.5 py-0.2 rounded-full '.($allActive ? 'bg-white/20 text-white' : 'bg-[#F4F5F7] text-[#53595F]').'">'.$totalAllAssets.'</span>
 </a>';
@@ -343,7 +343,7 @@ foreach ($cabangs as $c) {
     $cnama = $c['nama'] ?? $c['nama_cabang'] ?? ('Cabang #' . $cid);
     $cCount = $branchAssetCounts[$cid] ?? 0;
     $isActive = ($cid === $cabangId);
-    $branchPillsHtml .= '<a class="flex items-center gap-1.5 h-[34px] px-3.5 rounded-[8px] text-[13px] font-semibold text-decoration-none shrink-0 transition-colors '.($isActive ? 'bg-[#0E5C58] text-white shadow-sm' : 'bg-[#FFFFFF] border border-[#D1D5D8] text-[#53595F] hover:bg-[#F4F5F7] hover:text-[#1B2A3A]').'" href="'.e(filter_query(['cabang' => $cid, 'page' => 1])).'">
+    $branchPillsHtml .= '<a class="flex items-center gap-1.5 min-h-[44px] md:min-h-0 md:h-[34px] px-3.5 rounded-[8px] text-[13px] font-semibold text-decoration-none shrink-0 transition-colors '.($isActive ? 'bg-[#0E5C58] text-white shadow-sm' : 'bg-[#FFFFFF] border border-[#D1D5D8] text-[#53595F] hover:bg-[#F4F5F7] hover:text-[#1B2A3A]').'" href="'.e(filter_query(['cabang' => $cid, 'page' => 1])).'">
       <i class="bi bi-geo-alt'.($isActive ? '-fill' : '').'"></i> '.e($cnama).'
       <span class="text-[11px] font-bold px-1.5 py-0.2 rounded-full '.($isActive ? 'bg-white/20 text-white' : 'bg-[#F4F5F7] text-[#53595F]').'">'.$cCount.'</span>
     </a>';
@@ -507,10 +507,10 @@ $todoTabsHtml = '
     </a>
   </div>
   <div class="flex items-center gap-2 pb-1">
-    <a class="flex items-center gap-1.5 h-[30px] px-2.5 bg-white border border-[#D1D5D8] hover:bg-[#F4F5F7] text-[#53595F] hover:text-[#1B2A3A] font-semibold text-[12px] rounded-[6px] text-decoration-none transition-colors" target="_blank" href="'.e(module_url('print_qr.php', ['cabang' => $cabangId])).'">
+    <a class="flex items-center gap-1.5 min-h-[44px] md:min-h-0 md:h-[30px] px-2.5 bg-white border border-[#D1D5D8] hover:bg-[#F4F5F7] text-[#53595F] hover:text-[#1B2A3A] font-semibold text-[12px] rounded-[6px] text-decoration-none transition-colors" target="_blank" href="'.e(module_url('print_qr.php', ['cabang' => $cabangId])).'">
       <i class="bi bi-qr-code text-[#0E5C58]"></i> Cetak QR
     </a>
-    <a class="flex items-center gap-1.5 h-[30px] px-2.5 bg-white border border-[#D1D5D8] hover:bg-[#F4F5F7] text-[#53595F] hover:text-[#1B2A3A] font-semibold text-[12px] rounded-[6px] text-decoration-none transition-colors" target="_blank" href="'.e(module_url('print_report.php', ['bulan' => $month, 'tahun' => $year, 'cabang' => $cabangId])).'">
+    <a class="flex items-center gap-1.5 min-h-[44px] md:min-h-0 md:h-[30px] px-2.5 bg-white border border-[#D1D5D8] hover:bg-[#F4F5F7] text-[#53595F] hover:text-[#1B2A3A] font-semibold text-[12px] rounded-[6px] text-decoration-none transition-colors" target="_blank" href="'.e(module_url('print_report.php', ['bulan' => $month, 'tahun' => $year, 'cabang' => $cabangId])).'">
       <i class="bi bi-printer text-[#0E5C58]"></i> Cetak Laporan
     </a>
   </div>
@@ -627,13 +627,13 @@ foreach ($pageAssets as $a) {
     // Quick Action Button for Technicians
     $quickActionBtn = '';
     if ($isRepairIssue && $scanUrl) {
-        $quickActionBtn = '<a class="flex items-center gap-1 h-[28px] px-2.5 bg-[#DC2626] hover:bg-[#b91c1c] text-white font-semibold text-[11px] rounded-[6px] text-decoration-none transition-colors" href="'.e($scanUrl . '&action=tindak_lanjut').'" title="Tindak Lanjuti Kendala"><i class="bi bi-tools"></i> Perbaiki</a>';
+        $quickActionBtn = '<a class="flex items-center gap-1 min-h-[44px] md:min-h-0 md:h-[28px] px-2.5 bg-[#DC2626] hover:bg-[#b91c1c] text-white font-semibold text-[11px] rounded-[6px] text-decoration-none transition-colors" href="'.e($scanUrl . '&action=tindak_lanjut').'" title="Tindak Lanjuti Kendala"><i class="bi bi-tools"></i> Perbaiki</a>';
     } elseif (!$isDoneMaint && $isAsetAktif && $scanUrl) {
-        $quickActionBtn = '<a class="flex items-center gap-1 h-[28px] px-2.5 bg-[#0E5C58] hover:bg-[#0c4f4b] text-white font-semibold text-[11px] rounded-[6px] text-decoration-none transition-colors" href="'.e($scanUrl . '&action=start').'" title="Mulai Checklist Pemeliharaan"><i class="bi bi-clipboard-check"></i> Periksa</a>';
+        $quickActionBtn = '<a class="flex items-center gap-1 min-h-[44px] md:min-h-0 md:h-[28px] px-2.5 bg-[#0E5C58] hover:bg-[#0c4f4b] text-white font-semibold text-[11px] rounded-[6px] text-decoration-none transition-colors" href="'.e($scanUrl . '&action=start').'" title="Mulai Checklist Pemeliharaan"><i class="bi bi-clipboard-check"></i> Periksa</a>';
     } elseif ($scanUrl) {
-        $quickActionBtn = '<a class="flex items-center gap-1 h-[28px] px-2.5 bg-[#D9F1EF] hover:bg-[#c2ebe8] text-[#0E5C58] font-semibold text-[11px] rounded-[6px] text-decoration-none transition-colors" href="'.e($scanUrl).'" title="Buka Kartu"><i class="bi bi-credit-card"></i> Buka Kartu</a>';
+        $quickActionBtn = '<a class="flex items-center gap-1 min-h-[44px] md:min-h-0 md:h-[28px] px-2.5 bg-[#D9F1EF] hover:bg-[#c2ebe8] text-[#0E5C58] font-semibold text-[11px] rounded-[6px] text-decoration-none transition-colors" href="'.e($scanUrl).'" title="Buka Kartu"><i class="bi bi-credit-card"></i> Buka Kartu</a>';
     } elseif (!$isAsetAktif) {
-        $quickActionBtn = '<span class="inline-flex items-center h-[28px] px-2 bg-[#F4F5F7] text-[#53595F] text-[11px] font-semibold rounded-[6px]" title="Unit Bebas Maintenance">Bebas Maint</span>';
+        $quickActionBtn = '<span class="inline-flex items-center min-h-[44px] md:min-h-0 md:h-[28px] px-2 bg-[#F4F5F7] text-[#53595F] text-[11px] font-semibold rounded-[6px]" title="Unit Bebas Maintenance">Bebas Maint</span>';
     }
 
     $mobileCards .= '
@@ -945,8 +945,8 @@ $body = '
         Menampilkan <strong>'.$totalFiltered.'</strong> unit dari total <strong>'.$statTotal.'</strong> unit komputer.
       </div>
       <div class="d-flex gap-2">
-        <a class="flex items-center gap-1 h-[34px] px-3 bg-white border border-[#D1D5D8] hover:bg-[#F4F5F7] text-[#53595F] font-semibold text-[13px] rounded-[8px] transition-colors text-decoration-none" href="'.e(module_url('assets.php')).'"><i class="bi bi-x-circle me-1"></i> Reset</a>
-        <button type="submit" class="flex items-center gap-1 h-[34px] px-4 bg-[#0E5C58] hover:bg-[#0c4f4b] text-white font-semibold text-[13px] rounded-[8px] transition-colors cursor-pointer"><i class="bi bi-filter me-1"></i> Terapkan</button>
+        <a class="flex items-center gap-1 min-h-[44px] md:min-h-0 md:h-[34px] px-3 bg-white border border-[#D1D5D8] hover:bg-[#F4F5F7] text-[#53595F] font-semibold text-[13px] rounded-[8px] transition-colors text-decoration-none" href="'.e(module_url('assets.php')).'"><i class="bi bi-x-circle me-1"></i> Reset</a>
+        <button type="submit" class="flex items-center gap-1 min-h-[44px] md:min-h-0 md:h-[34px] px-4 bg-[#0E5C58] hover:bg-[#0c4f4b] text-white font-semibold text-[13px] rounded-[8px] transition-colors cursor-pointer"><i class="bi bi-filter me-1"></i> Terapkan</button>
       </div>
     </div>
   </form>

@@ -427,7 +427,7 @@ ob_start();
             <input type="hidden" name="_csrf" value="<?= e(csrf_token()) ?>">
             <input type="hidden" name="action" value="approve_face">
             <input type="hidden" name="user_id" value="<?= $puId ?>">
-            <button type="submit" class="w-full h-[30px] bg-[#10B981] hover:bg-[#059669] text-white rounded-[6px] text-[12px] font-semibold transition-colors flex items-center justify-center gap-1 border-0 cursor-pointer">
+            <button type="submit" class="w-full min-h-[44px] md:min-h-0 md:h-[30px] bg-[#10B981] hover:bg-[#059669] text-white rounded-[6px] text-[12px] font-semibold transition-colors flex items-center justify-center gap-1 border-0 cursor-pointer">
               <i class="bi bi-check-circle-fill"></i> Setujui
             </button>
           </form>
@@ -435,7 +435,7 @@ ob_start();
             <input type="hidden" name="_csrf" value="<?= e(csrf_token()) ?>">
             <input type="hidden" name="action" value="reject_face">
             <input type="hidden" name="user_id" value="<?= $puId ?>">
-            <button type="submit" class="h-[30px] px-2.5 bg-white hover:bg-[#FEE2E2] text-[#DC2626] border border-[#FECACA] rounded-[6px] text-[12px] font-semibold transition-colors flex items-center justify-center gap-1 cursor-pointer" title="Tolak Pendaftaran">
+            <button type="submit" class="min-h-[44px] md:min-h-0 md:h-[30px] px-2.5 bg-white hover:bg-[#FEE2E2] text-[#DC2626] border border-[#FECACA] rounded-[6px] text-[12px] font-semibold transition-colors flex items-center justify-center gap-1 cursor-pointer" title="Tolak Pendaftaran">
               <i class="bi bi-x-circle"></i> Tolak
             </button>
           </form>
@@ -664,7 +664,7 @@ ob_start();
 
           if ($uPhoto !== '') {
             $dot = $isFaceVerified ? '<span class="position-absolute bottom-0 end-0 badge rounded-full bg-success p-0 border border-white" style="width: 10px; height: 10px;"></span>' : ($isFacePending ? '<span class="position-absolute bottom-0 end-0 badge rounded-full bg-warning p-0 border border-white" style="width: 10px; height: 10px;"></span>' : '');
-            $mAvatarHtml = '<div class="position-relative js-preview-face cursor-pointer shrink-0" data-photo="'.e($uPhoto).'" data-nama="'.e($uNama).'" data-username="'.e($uUsername).'" data-role="'.e($uRole).'" data-id="'.$uId.'" data-stat="'.e($fStat).'" data-enroll-url="'.e(module_url('user_biometric_enroll.php', ['id'=>$uId])).'"><img src="'.e($uPhoto).'" class="rounded-full border border-[#D1D5D8] shadow-xs" style="width: 44px; height: 44px; object-fit: cover;">'.$dot.'</div>';
+            $mAvatarHtml = '<div class="position-relative js-preview-face cursor-pointer shrink-0" data-photo="'.e($uPhoto).'" data-nama="'.e($uNama).'" data-username="'.e($uUsername).'" data-role="'.e($uRole).'" data-id="'.$uId.'" data-stat="'.e($fStat).'" data-enroll-url="'.e(module_url('user_biometric_enroll.php', ['id'=>$uId])).'"><img src="'.e($uPhoto).'" class="rounded-full border border-[#D1D5D8] shadow-xs" style="width: 44px; height: 44px; object-fit: cover;" alt="Foto Profil Petugas">'.$dot.'</div>';
           } else {
             $initial = strtoupper(substr($uNama ?: $uUsername, 0, 1));
             $mAvatarHtml = '<div class="rounded-full d-flex align-items-center justify-content-center font-bold text-white shadow-xs shrink-0" style="width: 44px; height: 44px; font-size: 1.05rem; background: linear-gradient(135deg, #0E5C58 0%, #1B2A3A 100%);">'.$initial.'</div>';
@@ -850,7 +850,7 @@ ob_start();
               // Avatar
               if ($uPhoto !== '') {
                 $dot = $isFaceVerified ? '<span class="position-absolute bottom-0 end-0 badge rounded-full bg-success p-0 border border-white" style="width: 9px; height: 9px;"></span>' : ($isFacePending ? '<span class="position-absolute bottom-0 end-0 badge rounded-full bg-warning p-0 border border-white" style="width: 9px; height: 9px;"></span>' : '');
-                $avatarHtml = '<div class="position-relative js-preview-face cursor-pointer shrink-0" data-photo="'.e($uPhoto).'" data-nama="'.e($uNama).'" data-username="'.e($uUsername).'" data-role="'.e($uRole).'" data-id="'.$uId.'" data-stat="'.e($fStat).'" data-enroll-url="'.e(module_url('user_biometric_enroll.php', ['id'=>$uId])).'" title="Klik untuk kelola foto wajah"><img src="'.e($uPhoto).'" class="rounded-full border border-[#D1D5D8] shadow-xs" style="width: 40px; height: 40px; object-fit: cover;">'.$dot.'</div>';
+                $avatarHtml = '<div class="position-relative js-preview-face cursor-pointer shrink-0" data-photo="'.e($uPhoto).'" data-nama="'.e($uNama).'" data-username="'.e($uUsername).'" data-role="'.e($uRole).'" data-id="'.$uId.'" data-stat="'.e($fStat).'" data-enroll-url="'.e(module_url('user_biometric_enroll.php', ['id'=>$uId])).'" title="Klik untuk kelola foto wajah"><img src="'.e($uPhoto).'" class="rounded-full border border-[#D1D5D8] shadow-xs" style="width: 40px; height: 40px; object-fit: cover;" alt="Foto Profil Petugas">'.$dot.'</div>';
               } else {
                 $initial = strtoupper(substr($uNama ?: $uUsername, 0, 1));
                 $avatarHtml = '<div class="rounded-full d-flex align-items-center justify-content-center font-bold text-white shadow-xs shrink-0" style="width: 40px; height: 40px; font-size: 0.95rem; background: linear-gradient(135deg, #0E5C58 0%, #1B2A3A 100%);">'.$initial.'</div>';
@@ -949,7 +949,7 @@ ob_start();
         </div>
         <h6 class="font-bold text-[#1B2A3A] mb-1">Pengguna Tidak Ditemukan</h6>
         <p class="text-[#53595F] text-[13px] mb-3">Tidak ada data pengguna yang sesuai dengan filter atau kata kunci pencarian.</p>
-        <button type="button" class="h-[34px] px-3 bg-white border border-[#D1D5D8] rounded-[8px] text-[13px] font-medium text-[#1B2A3A] hover:bg-[#F4F5F7] transition-colors inline-flex items-center gap-1.5 cursor-pointer shadow-xs" id="btnResetAllFilters">
+        <button type="button" class="min-h-[44px] md:min-h-0 md:h-[34px] px-3 bg-white border border-[#D1D5D8] rounded-[8px] text-[13px] font-medium text-[#1B2A3A] hover:bg-[#F4F5F7] transition-colors inline-flex items-center gap-1.5 cursor-pointer shadow-xs" id="btnResetAllFilters">
           <i class="bi bi-arrow-counterclockwise"></i> Reset Semua Filter
         </button>
       </div>
@@ -980,7 +980,7 @@ ob_start();
               <i class="bi bi-pencil-square text-[#D97706]"></i> Edit Akun / Password
             </h6>
           </div>
-          <a href="<?= e(module_url('users_admin.php')) ?>" class="h-[30px] px-2.5 bg-white border border-[#D1D5D8] rounded-[6px] text-[12px] font-medium text-[#53595F] hover:bg-[#F4F5F7] transition-colors inline-flex items-center gap-1 text-decoration-none shadow-xs" title="Batal Edit">
+          <a href="<?= e(module_url('users_admin.php')) ?>" class="min-h-[44px] md:min-h-0 md:h-[30px] px-2.5 bg-white border border-[#D1D5D8] rounded-[6px] text-[12px] font-medium text-[#53595F] hover:bg-[#F4F5F7] transition-colors inline-flex items-center gap-1 text-decoration-none shadow-xs" title="Batal Edit">
             <i class="bi bi-x-lg"></i> Batal
           </a>
         </div>
@@ -997,7 +997,7 @@ ob_start();
           ?>
           <div class="p-3 mb-3 bg-[#F8FAF9] rounded-[8px] border border-[#D1D5D8]">
             <div class="flex items-center gap-3 mb-2">
-              <img src="<?= e($editPhoto) ?>" alt="Foto Profil" class="rounded-full border border-[#D1D5D8] shadow-xs" style="width: 44px; height: 44px; object-fit: cover;">
+              <img src="<?= e($editPhoto) ?>" alt="Foto Profil" class="rounded-full border border-[#D1D5D8] shadow-xs" style="width: 44px; height: 44px; object-fit: cover;" alt="Foto Profil Petugas">
               <div class="min-w-0 flex-1">
                 <div class="text-[12px] font-bold text-[#1B2A3A] truncate"><?= e($editNama) ?></div>
                 <div class="text-[11px] font-mono text-[#53595F]">Biometrik Wajah Tersimpan</div>
@@ -1014,15 +1014,15 @@ ob_start();
             </div>
             <div class="flex gap-1.5 pt-2 border-t border-[#E5E7EB]">
               <?php if (!$isEditVerified): ?>
-                <button type="submit" form="sideVerifyFaceForm" class="flex-1 h-[28px] bg-[#10B981] hover:bg-[#059669] text-white rounded-[6px] text-[11px] font-semibold border-0 transition-colors flex items-center justify-center gap-1 cursor-pointer">
+                <button type="submit" form="sideVerifyFaceForm" class="flex-1 min-h-[44px] md:min-h-0 md:h-[28px] bg-[#10B981] hover:bg-[#059669] text-white rounded-[6px] text-[11px] font-semibold border-0 transition-colors flex items-center justify-center gap-1 cursor-pointer">
                   <i class="bi bi-shield-check"></i> Verifikasi
                 </button>
               <?php else: ?>
-                <button type="submit" form="sideUnverifyFaceForm" class="flex-1 h-[28px] bg-white border border-[#D1D5D8] hover:bg-[#F4F5F7] text-[#53595F] rounded-[6px] text-[11px] font-semibold transition-colors flex items-center justify-center gap-1 cursor-pointer">
+                <button type="submit" form="sideUnverifyFaceForm" class="flex-1 min-h-[44px] md:min-h-0 md:h-[28px] bg-white border border-[#D1D5D8] hover:bg-[#F4F5F7] text-[#53595F] rounded-[6px] text-[11px] font-semibold transition-colors flex items-center justify-center gap-1 cursor-pointer">
                   <i class="bi bi-arrow-counterclockwise"></i> Batal Verifikasi
                 </button>
               <?php endif; ?>
-              <button type="submit" form="sideDeleteFaceForm" class="h-[28px] px-2.5 bg-white border border-[#FECACA] hover:bg-[#FEE2E2] text-[#DC2626] rounded-[6px] text-[11px] font-semibold transition-colors flex items-center justify-center gap-1 cursor-pointer" title="Hapus Sampel Wajah">
+              <button type="submit" form="sideDeleteFaceForm" class="min-h-[44px] md:min-h-0 md:h-[28px] px-2.5 bg-white border border-[#FECACA] hover:bg-[#FEE2E2] text-[#DC2626] rounded-[6px] text-[11px] font-semibold transition-colors flex items-center justify-center gap-1 cursor-pointer" title="Hapus Sampel Wajah">
                 <i class="bi bi-trash"></i> Hapus
               </button>
             </div>
@@ -1269,7 +1269,7 @@ ob_start();
             <input type="hidden" name="_csrf" value="<?= e(csrf_token()) ?>">
             <input type="hidden" name="action" value="approve_face">
             <input type="hidden" name="user_id" id="modalUserIdVerify" value="0">
-            <button type="submit" id="btnModalVerifyFace" class="h-[32px] px-3 bg-[#10B981] hover:bg-[#059669] text-white rounded-[6px] text-[12px] font-semibold border-0 transition-colors flex items-center justify-center gap-1 cursor-pointer">
+            <button type="submit" id="btnModalVerifyFace" class="min-h-[44px] md:min-h-0 md:h-[32px] px-3 bg-[#10B981] hover:bg-[#059669] text-white rounded-[6px] text-[12px] font-semibold border-0 transition-colors flex items-center justify-center gap-1 cursor-pointer">
               <i class="bi bi-shield-check"></i> Verifikasi Muka
             </button>
           </form>
@@ -1279,7 +1279,7 @@ ob_start();
             <input type="hidden" name="_csrf" value="<?= e(csrf_token()) ?>">
             <input type="hidden" name="action" value="unverify_face">
             <input type="hidden" name="user_id" id="modalUserIdUnverify" value="0">
-            <button type="submit" id="btnModalUnverifyFace" class="h-[32px] px-3 bg-white border border-[#D1D5D8] hover:bg-[#F4F5F7] text-[#53595F] rounded-[6px] text-[12px] font-semibold transition-colors flex items-center justify-center gap-1 cursor-pointer" style="display: none;">
+            <button type="submit" id="btnModalUnverifyFace" class="min-h-[44px] md:min-h-0 md:h-[32px] px-3 bg-white border border-[#D1D5D8] hover:bg-[#F4F5F7] text-[#53595F] rounded-[6px] text-[12px] font-semibold transition-colors flex items-center justify-center gap-1 cursor-pointer" style="display: none;">
               <i class="bi bi-arrow-counterclockwise"></i> Batal Verifikasi
             </button>
           </form>
@@ -1289,15 +1289,15 @@ ob_start();
             <input type="hidden" name="_csrf" value="<?= e(csrf_token()) ?>">
             <input type="hidden" name="action" value="delete_face">
             <input type="hidden" name="user_id" id="modalUserIdDelete" value="0">
-            <button type="submit" id="btnModalDeleteFace" class="h-[32px] px-2.5 bg-white border border-[#FECACA] hover:bg-[#FEE2E2] text-[#DC2626] rounded-[6px] text-[12px] font-semibold transition-colors flex items-center justify-center gap-1 cursor-pointer">
+            <button type="submit" id="btnModalDeleteFace" class="min-h-[44px] md:min-h-0 md:h-[32px] px-2.5 bg-white border border-[#FECACA] hover:bg-[#FEE2E2] text-[#DC2626] rounded-[6px] text-[12px] font-semibold transition-colors flex items-center justify-center gap-1 cursor-pointer">
               <i class="bi bi-trash"></i> Hapus Muka
             </button>
           </form>
         </div>
 
         <div class="flex items-center gap-1.5">
-          <a id="btnPreviewEnrollAgain" href="javascript:;" role="button" class="h-[32px] px-3 bg-white border border-[#0E5C58] text-[#0E5C58] hover:bg-[#D9F1EF] rounded-[6px] text-[12px] font-semibold transition-colors inline-flex items-center gap-1 text-decoration-none shadow-xs"><i class="bi bi-camera"></i> Foto Ulang</a>
-          <button type="button" class="h-[32px] px-3 bg-white border border-[#D1D5D8] text-[#53595F] hover:bg-[#F4F5F7] rounded-[6px] text-[12px] font-semibold transition-colors" data-bs-dismiss="modal">Tutup</button>
+          <a id="btnPreviewEnrollAgain" href="javascript:;" role="button" class="min-h-[44px] md:min-h-0 md:h-[32px] px-3 bg-white border border-[#0E5C58] text-[#0E5C58] hover:bg-[#D9F1EF] rounded-[6px] text-[12px] font-semibold transition-colors inline-flex items-center gap-1 text-decoration-none shadow-xs"><i class="bi bi-camera"></i> Foto Ulang</a>
+          <button type="button" class="min-h-[44px] md:min-h-0 md:h-[32px] px-3 bg-white border border-[#D1D5D8] text-[#53595F] hover:bg-[#F4F5F7] rounded-[6px] text-[12px] font-semibold transition-colors" data-bs-dismiss="modal">Tutup</button>
         </div>
       </div>
     </div>

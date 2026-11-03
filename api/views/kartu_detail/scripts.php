@@ -95,47 +95,38 @@
             }
         }
 
-        // Kompresi & Auto-Crop Cerdas Rasio 4:5 (Width 4 : Height 5)
+        // Kompresi & Auto-Fit Cerdas Rasio 4:5 Tanpa Memotong Foto (Grid / Kanvas Putih Bersih di Sisinya)
         function compressImageClientSide(file, maxDimension, quality, callback) {
             const reader = new FileReader();
             reader.onload = function(e) {
                 const img = new Image();
                 img.onload = function() {
-                    const targetRatio = 4 / 5; // 0.8
-                    let cropW = img.width;
-                    let cropH = img.height;
-                    let sx = 0;
-                    let sy = 0;
-
-                    if (img.width / img.height > targetRatio) {
-                        // Foto lebih lebar dari 4:5 -> potong sisi kiri & kanan (center crop)
-                        cropW = Math.round(img.height * targetRatio);
-                        cropH = img.height;
-                        sx = Math.round((img.width - cropW) / 2);
-                        sy = 0;
-                    } else {
-                        // Foto lebih tinggi dari 4:5 -> potong sisi atas & bawah (center crop)
-                        cropW = img.width;
-                        cropH = Math.round(img.width / targetRatio);
-                        sx = 0;
-                        sy = Math.round((img.height - cropH) / 2);
-                    }
-
-                    // Skala resolusi output dengan rasio tepat 4:5 (maksimal 1200 x 1500)
-                    let outW = 1200;
-                    let outH = 1500;
-                    if (cropW < outW) {
-                        outW = cropW;
-                        outH = Math.round(outW / targetRatio);
-                    }
+                    const outW = 1200;
+                    const outH = 1500; // Standar Rasio Presisi 4:5 (Width 4 : Height 5)
 
                     const canvas = document.createElement('canvas');
                     canvas.width = outW;
                     canvas.height = outH;
                     const ctx = canvas.getContext('2d');
+
+                    // 1. Berikan latar belakang kanvas putih bersih (grid / padding putih di samping foto agar terlihat penuh)
+                    ctx.fillStyle = '#FFFFFF';
+                    ctx.fillRect(0, 0, outW, outH);
+
+                    // 2. Hitung skala fit-contain sehingga seluruh foto tampak utuh 100% tanpa terpotong
+                    const imgW = img.naturalWidth || img.width;
+                    const imgH = img.naturalHeight || img.height;
+                    const scale = Math.min(outW / imgW, outH / imgH);
+                    const drawW = Math.round(imgW * scale);
+                    const drawH = Math.round(imgH * scale);
+                    const dx = Math.round((outW - drawW) / 2);
+                    const dy = Math.round((outH - drawH) / 2);
+
                     ctx.imageSmoothingEnabled = true;
                     ctx.imageSmoothingQuality = 'high';
-                    ctx.drawImage(img, sx, sy, cropW, cropH, 0, 0, outW, outH);
+
+                    // 3. Gambar seluruh foto di tengah kanvas putih
+                    ctx.drawImage(img, 0, 0, imgW, imgH, dx, dy, drawW, drawH);
 
                     canvas.toBlob(function(blob) {
                         callback(blob, canvas.toDataURL('image/jpeg', quality));
@@ -308,6 +299,8 @@
             compressImageClientSide(file, 1600, 0.82, function(compressedBlob, previewDataUrl) {
                 if (prevImg) {
                     prevImg.src = previewDataUrl;
+                    prevImg.style.objectFit = 'contain';
+                    prevImg.style.backgroundColor = '#FFFFFF';
                     prevImg.classList.remove('d-none');
                 }
                 if (emptyBox) {

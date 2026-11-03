@@ -201,7 +201,7 @@ function render_page(string $title, string $content, string $extraHead = '', str
       <div class="p-3 border-t border-[#D1D5D8] bg-[#FFFFFF]" style="border-top:1px solid #D1D5D8 !important; background:#FFFFFF !important;">
         <div class="flex items-center justify-between">
           <div class="flex items-center gap-2 overflow-hidden">
-            <div class="w-[34px] h-[34px] rounded-[8px] bg-[#0E5C58] text-white flex items-center justify-center font-bold text-[12px] shrink-0">
+            <div class="min-w-[44px] md:min-w-0 md:w-[34px] min-h-[44px] md:min-h-0 md:h-[34px] rounded-[8px] bg-[#0E5C58] text-white flex items-center justify-center font-bold text-[12px] shrink-0">
               ' . $userInitial . '
             </div>
             <div class="overflow-hidden">
@@ -220,7 +220,7 @@ function render_page(string $title, string $content, string $extraHead = '', str
     <div class="offcanvas offcanvas-start bg-white text-dark" tabindex="-1" id="appMobileSidebar" aria-labelledby="appMobileSidebarLabel" style="width: 260px; background:#FFFFFF !important; color:#1B2A3A !important;">
       <div class="offcanvas-header border-b border-[#D1D5D8] py-3 px-4" style="border-bottom:1px solid #D1D5D8 !important;">
         <a href="' . e(module_url('dashboard.php')) . '" class="flex items-center gap-2.5 text-decoration-none overflow-hidden">
-          <img src="' . app_logo_url() . '" alt="Logo Bank Mitra" class="h-[34px] w-auto max-w-[40px] object-contain shrink-0" onerror="this.onerror=null; this.src=\'logo.png\';">
+          <img src="' . app_logo_url() . '" alt="Logo Bank Mitra" class="min-h-[44px] md:min-h-0 md:h-[34px] w-auto max-w-[40px] object-contain shrink-0" onerror="this.onerror=null; this.src=\'logo.png\';">
           <div class="flex flex-col leading-tight overflow-hidden">
             <span class="font-bold text-[14px] tracking-tight text-[#1B2A3A] truncate">Bank Mitra</span>
             <span class="text-[10px] font-semibold text-[#0E5C58] uppercase tracking-wider truncate">QR Maintenance</span>
@@ -234,7 +234,7 @@ function render_page(string $title, string $content, string $extraHead = '', str
       <div class="p-3 border-t border-[#D1D5D8] bg-[#F4F5F7]">
         <div class="flex items-center justify-between">
           <div class="flex items-center gap-2">
-            <div class="w-[32px] h-[32px] rounded-[8px] bg-[#0E5C58] text-white flex items-center justify-center font-bold text-[12px]">
+            <div class="min-w-[44px] md:min-w-0 md:w-[32px] min-h-[44px] md:min-h-0 md:h-[32px] rounded-[8px] bg-[#0E5C58] text-white flex items-center justify-center font-bold text-[12px]">
               ' . $userInitial . '
             </div>
             <div>
@@ -261,14 +261,14 @@ function render_page(string $title, string $content, string $extraHead = '', str
       </div>
 
       <div class="flex items-center gap-1.5 sm:gap-2.5 md:gap-4 shrink-0">
-        <button type="button" class="flex items-center justify-center gap-2 h-[34px] md:h-[36px] px-2.5 md:px-3 bg-[#F4F5F7] border border-[#D1D5D8] rounded-[8px] text-[#53595F] text-[13px] hover:bg-[#e9eaec] transition-colors cursor-pointer" data-bs-toggle="modal" data-bs-target="#globalSearchModal" title="Cari aset (Ctrl+K)">
+        <button type="button" class="flex items-center justify-center gap-2 min-h-[44px] md:min-h-0 md:h-[34px] md:h-[36px] px-2.5 md:px-3 bg-[#F4F5F7] border border-[#D1D5D8] rounded-[8px] text-[#53595F] text-[13px] hover:bg-[#e9eaec] transition-colors cursor-pointer" data-bs-toggle="modal" data-bs-target="#globalSearchModal" title="Cari aset (Ctrl+K)">
           <i class="bi bi-search"></i>
           <span class="d-none d-sm-inline">Cari aset...</span>
           <kbd class="ml-2 font-mono text-[10px] font-semibold bg-[#FFFFFF] border border-[#D1D5D8] rounded-[4px] px-1.5 py-0.5 text-[#53595F] d-none d-md-inline-block">Ctrl+K</kbd>
         </button>
         <div class="w-px h-6 bg-[#D1D5D8] d-none d-sm-block"></div>
         ' . ($activeIssuesCount > 0 ? '
-        <a href="' . e(module_url('dashboard.php', ['tab' => 'temuan'])) . '" class="flex items-center gap-1.5 h-[34px] md:h-[36px] px-2.5 bg-[#FEF2F2] border border-[#FECACA] rounded-[8px] text-[#DC2626] text-[12px] md:text-[13px] font-bold text-decoration-none shadow-xs hover:bg-[#FEE2E2] transition-colors" title="' . $activeIssuesCount . ' Perangkat Membutuhkan Tindak Lanjut Teknisi">
+        <a href="' . e(module_url('dashboard.php', ['tab' => 'temuan'])) . '" class="flex items-center gap-1.5 min-h-[44px] md:min-h-0 md:h-[34px] md:h-[36px] px-2.5 bg-[#FEF2F2] border border-[#FECACA] rounded-[8px] text-[#DC2626] text-[12px] md:text-[13px] font-bold text-decoration-none shadow-xs hover:bg-[#FEE2E2] transition-colors" title="' . $activeIssuesCount . ' Perangkat Membutuhkan Tindak Lanjut Teknisi">
           <i class="bi bi-exclamation-triangle-fill text-[#DC2626]"></i>
           <span>' . $activeIssuesCount . ' Kendala</span>
         </a>
@@ -282,7 +282,7 @@ function render_page(string $title, string $content, string $extraHead = '', str
         </button>
         <div class="dropdown">
           <button type="button" class="flex items-center gap-2 h-[36px] md:h-[38px] px-1.5 md:px-2 rounded-[8px] hover:bg-[#F4F5F7] border border-transparent hover:border-[#D1D5D8] transition-all cursor-pointer bg-transparent text-decoration-none" data-bs-toggle="dropdown" aria-expanded="false" title="Akun Pengguna: ' . e($userName) . '">
-            <div class="w-[32px] h-[32px] rounded-[8px] bg-[#0E5C58] text-white flex items-center justify-center font-bold text-[13px] shadow-[0_1px_2px_rgba(0,0,0,0.1)] shrink-0">
+            <div class="min-w-[44px] md:min-w-0 md:w-[32px] min-h-[44px] md:min-h-0 md:h-[32px] rounded-[8px] bg-[#0E5C58] text-white flex items-center justify-center font-bold text-[13px] shadow-[0_1px_2px_rgba(0,0,0,0.1)] shrink-0">
               ' . $userInitial . '
             </div>
             <div class="d-none d-md-flex flex-col text-start leading-none pr-0.5">

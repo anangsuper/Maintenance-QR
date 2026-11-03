@@ -167,7 +167,7 @@
             position: relative;
             border-radius: 14px;
             overflow: hidden;
-            background: #F1F5F9;
+            background: #FFFFFF;
             aspect-ratio: 4 / 5;
             display: flex;
             align-items: center;
@@ -180,11 +180,13 @@
         }
         .item-photo-wrapper.has-image {
             border: 1px solid #E2E8F0;
+            background: #FFFFFF;
         }
         .item-photo-wrapper img {
             width: 100%;
             height: 100%;
-            object-fit: cover;
+            object-fit: contain !important;
+            background-color: #FFFFFF !important;
             cursor: pointer;
             transition: transform 0.2s ease;
         }
@@ -374,14 +376,16 @@
             }
             .item-photo-wrapper {
                 border-radius: 12px;
-                aspect-ratio: 1 / 1 !important;
-                min-height: 150px !important;
-                max-height: 220px !important;
+                aspect-ratio: 4 / 5 !important;
+                background-color: #FFFFFF !important;
+                min-height: 180px !important;
+                max-height: 280px !important;
                 max-width: 100% !important;
                 margin: 0 auto;
             }
             .item-photo-wrapper img {
-                object-fit: cover !important;
+                object-fit: contain !important;
+                background-color: #FFFFFF !important;
             }
             .item-photo-wrapper .badge {
                 font-size: 0.60rem !important;
