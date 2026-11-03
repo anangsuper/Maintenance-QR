@@ -583,7 +583,7 @@ $pageTitle = $card ? e($card['nama_barang']) . ' - Kartu Inventaris' : 'Kartu In
                         <h2 class="h6 fw-bold text-dark mb-1 lh-sm" style="font-size: 1.05rem;"><?= e($card['nama_barang']) ?></h2>
                         <div class="font-mono text-primary fw-bold small mb-1" style="font-size: 0.82rem;"><?= e($kodeInventaris) ?> <span class="text-muted fw-normal">(#<?= (int)$card['id'] ?>)</span></div>
                         <div class="small text-muted mb-0.5" style="font-size: 0.76rem;">
-                            <i class="bi bi-geo-alt-fill text-warning me-1"></i><strong><?= e($lokasiBarangVal) ?></strong>
+                            <i class="bi bi-geo-alt-fill text-primary me-1"></i><strong class="text-dark"><?= e($lokasiBarangVal) ?></strong>
                         </div>
                     </div>
 
@@ -609,7 +609,7 @@ $pageTitle = $card ? e($card['nama_barang']) . ' - Kartu Inventaris' : 'Kartu In
                         </div>
                         <div class="col-3">
                             <button type="button" class="mobile-action-btn" data-bs-toggle="modal" data-bs-target="#modalEditDataKartu" title="Ubah Data Inventaris">
-                                <i class="bi bi-pencil-square text-[#D97706]"></i>
+                                <i class="bi bi-pencil-square text-primary"></i>
                                 <span>Edit</span>
                             </button>
                         </div>
@@ -641,33 +641,33 @@ $pageTitle = $card ? e($card['nama_barang']) . ' - Kartu Inventaris' : 'Kartu In
                 <!-- Desktop Header Bar -->
                 <div class="p-3.5 p-md-4 border-bottom bg-light bg-opacity-75 d-none d-md-flex flex-wrap align-items-center justify-content-between gap-3">
                     <div class="d-flex align-items-center gap-2.5 flex-wrap">
-                        <span class="badge badge-gold px-3.5 py-2 rounded-pill text-uppercase shadow-2xs" style="font-size: 0.88rem;">
-                            <i class="bi bi-shield-check me-1.5 fs-6"></i> Data Master Inventaris
+                        <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 px-3 py-1.5 rounded-pill text-uppercase shadow-2xs fw-bold" style="font-size: 0.82rem;">
+                            <i class="bi bi-shield-check me-1 fs-6"></i> Data Master Inventaris
                         </span>
-                        <span class="badge bg-primary bg-opacity-10 text-primary px-3.5 py-2 rounded-pill font-mono shadow-2xs" style="font-size: 0.88rem;">
+                        <span class="badge bg-light text-secondary border px-3 py-1.5 rounded-pill font-mono shadow-2xs fw-semibold" style="font-size: 0.82rem;">
                             ID: #<?= (int)$card['id'] ?>
                         </span>
                         <?php if ($isPrintedDetail): ?>
-                            <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 px-3 py-2 rounded-pill fw-bold shadow-2xs" style="font-size: 0.84rem;" title="Dicetak pada <?= e($printedTimeDetail) ?>">
+                            <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 px-3 py-1.5 rounded-pill fw-bold shadow-2xs" style="font-size: 0.80rem;" title="Dicetak pada <?= e($printedTimeDetail) ?>">
                                 <i class="bi bi-check-circle-fill me-1"></i> Sudah Dicetak (<?= e($printedTimeDetail) ?>)
                             </span>
                         <?php endif; ?>
                     </div>
                     <div class="d-flex align-items-center gap-2 flex-wrap">
-                        <button type="button" class="btn btn-outline-neutral rounded-pill px-3.5 py-2 fw-bold" style="font-size: 0.86rem; border-color: #0E5C58; color: #0E5C58;" onclick="downloadOrSharePhysicalCard(window.CURRENT_DETAIL_CARD, 'download', this)" title="Unduh Gambar Kartu Fisik Ukuran Asli CR80 (85.6mm x 54.0mm - 300 DPI)">
-                            <i class="bi bi-download me-1"></i> Unduh Kartu (PNG)
+                        <button type="button" class="btn btn-outline-teal rounded-pill px-3 py-1.5 fw-bold shadow-2xs d-inline-flex align-items-center gap-1.5" style="font-size: 0.82rem;" onclick="downloadOrSharePhysicalCard(window.CURRENT_DETAIL_CARD, 'download', this)" title="Unduh Gambar Kartu Fisik Ukuran Asli CR80 (85.6mm x 54.0mm - 300 DPI)">
+                            <i class="bi bi-download"></i> <span>Unduh Kartu (PNG)</span>
                         </button>
-                        <button type="button" class="btn btn-success rounded-pill px-3.5 py-2 fw-bold shadow-2xs" style="font-size: 0.86rem;" onclick="downloadOrSharePhysicalCard(window.CURRENT_DETAIL_CARD, 'share', this)" title="Bagikan / Kirim Gambar Kartu ke WhatsApp">
-                            <i class="bi bi-whatsapp me-1"></i> Kirim WA
+                        <button type="button" class="btn btn-success rounded-pill px-3 py-1.5 fw-bold shadow-2xs d-inline-flex align-items-center gap-1.5" style="font-size: 0.82rem;" onclick="downloadOrSharePhysicalCard(window.CURRENT_DETAIL_CARD, 'share', this)" title="Bagikan / Kirim Gambar Kartu ke WhatsApp">
+                            <i class="bi bi-whatsapp"></i> <span>Kirim WA</span>
                         </button>
-                        <a href="<?= module_url('inventaris_mutation.php', ['id' => $card['id']]) ?>" class="btn btn-outline-neutral rounded-pill px-3.5 py-2 fw-semibold" style="font-size: 0.88rem;">
-                            <i class="bi bi-arrow-left-right me-1.5"></i> Mutasi Barang
+                        <a href="<?= module_url('inventaris_mutation.php', ['id' => $card['id']]) ?>" class="btn btn-outline-neutral rounded-pill px-3 py-1.5 fw-semibold shadow-2xs d-inline-flex align-items-center gap-1.5" style="font-size: 0.82rem;">
+                            <i class="bi bi-arrow-left-right"></i> <span>Mutasi Barang</span>
                         </a>
-                        <button type="button" class="btn btn-outline-neutral rounded-pill px-3.5 py-2 fw-semibold" data-bs-toggle="modal" data-bs-target="#modalEditDataKartu" style="font-size: 0.88rem;">
-                            <i class="bi bi-pencil-square me-1.5"></i> Edit Data
+                        <button type="button" class="btn btn-outline-neutral rounded-pill px-3 py-1.5 fw-semibold shadow-2xs d-inline-flex align-items-center gap-1.5" data-bs-toggle="modal" data-bs-target="#modalEditDataKartu" style="font-size: 0.82rem;">
+                            <i class="bi bi-pencil-square"></i> <span>Edit Data</span>
                         </button>
-                        <a href="<?= module_url('print_inventory_card.php', ['source' => 'inventaris_kartu', 'id' => $card['id']]) ?>" target="_blank" class="btn btn-navy-primary rounded-pill px-4 py-2 fw-bold shadow-xs" style="font-size: 0.88rem;">
-                            <i class="bi bi-printer-fill text-warning me-1.5"></i> Cetak CR80
+                        <a href="<?= module_url('print_inventory_card.php', ['source' => 'inventaris_kartu', 'id' => $card['id']]) ?>" target="_blank" class="btn btn-navy-primary rounded-pill px-3.5 py-1.5 fw-bold shadow-xs d-inline-flex align-items-center gap-1.5 text-white" style="font-size: 0.82rem;">
+                            <i class="bi bi-printer-fill"></i> <span>Cetak CR80</span>
                         </a>
                     </div>
                 </div>
@@ -757,18 +757,18 @@ $pageTitle = $card ? e($card['nama_barang']) . ' - Kartu Inventaris' : 'Kartu In
                                 </div>
                             <?php endif; ?>
 
-                            <!-- Banner Foto di Folder Sampah (Khusus User yang Sedang Login - Tidak Ditampilkan ke Tamu/Publik) -->
+                            <!-- Banner Foto di Folder Sampah (Khusus User yang Sedang Login - Bersih & Rapi Tanpa Warna Kuning) -->
                             <?php if (is_logged_in() && !empty($itemTrashPhotos)): ?>
-                                <div class="bg-warning bg-opacity-10 border border-warning border-opacity-50 rounded-3 p-2.5 mb-2 text-start">
-                                    <div class="d-flex align-items-center justify-content-between mb-1">
-                                        <span class="fw-bold text-dark" style="font-size: 0.75rem;">
-                                            <i class="bi bi-recycle text-success me-1"></i><?= count($itemTrashPhotos) ?> Foto Barang Ini di Folder Sampah
+                                <div class="rounded-3 p-2.5 mb-2.5 text-start" style="background-color: #F8FAFC; border: 1px solid #E2E8F0;">
+                                    <div class="d-flex align-items-center justify-content-between mb-1.5">
+                                        <span class="fw-bold text-dark d-inline-flex align-items-center gap-1" style="font-size: 0.75rem;">
+                                            <i class="bi bi-recycle text-primary"></i> <?= count($itemTrashPhotos) ?> Foto di Folder Sampah
                                         </span>
-                                        <a href="<?= module_url('photo_trash.php', ['source_type' => 'inventaris_kartu', 'item_id' => (int)$card['id']]) ?>" class="text-primary fw-bold text-decoration-none" style="font-size: 0.70rem;">
+                                        <a href="<?= module_url('photo_trash.php', ['source_type' => 'inventaris_kartu', 'item_id' => (int)$card['id']]) ?>" class="fw-bold text-decoration-none" style="font-size: 0.70rem; color: #0E5C58;">
                                             Lihat Detail &rarr;
                                         </a>
                                     </div>
-                                    <div class="d-flex flex-column gap-1.5 mt-1">
+                                    <div class="d-flex flex-column gap-1.5">
                                         <?php foreach (array_slice($itemTrashPhotos, 0, 2) as $tp): 
                                             $tpUrl = str_starts_with($tp['file_path'], 'http') ? $tp['file_path'] : module_url($tp['file_path']);
                                         ?>
@@ -776,7 +776,7 @@ $pageTitle = $card ? e($card['nama_barang']) . ' - Kartu Inventaris' : 'Kartu In
                                                 <div class="d-flex align-items-center gap-2 min-w-0">
                                                     <img src="<?= e($tpUrl) ?>" alt="Trash" fetchpriority="low" loading="lazy" class="rounded border object-fit-cover flex-shrink-0" style="width: 34px; height: 34px; cursor: pointer;" onclick="viewFullImage('<?= e(addslashes($tpUrl)) ?>', 'Foto di Folder Sampah')">
                                                     <div class="min-w-0">
-                                                        <div class="fw-bold text-dark text-truncate" style="font-size: 0.70rem;">Foto Ke-<?= (int)$tp['photo_slot'] ?> &bull; <span class="text-danger"><?= e($tp['countdown_label']) ?></span></div>
+                                                        <div class="fw-semibold text-dark text-truncate" style="font-size: 0.70rem;">Foto Ke-<?= (int)$tp['photo_slot'] ?> &bull; <span class="text-secondary"><?= e($tp['countdown_label']) ?></span></div>
                                                         <div class="text-muted text-truncate" style="font-size: 0.64rem;">Dihapus: <?= date('d/m H:i', strtotime($tp['deleted_at'])) ?></div>
                                                     </div>
                                                 </div>
@@ -784,7 +784,7 @@ $pageTitle = $card ? e($card['nama_barang']) . ' - Kartu Inventaris' : 'Kartu In
                                                     <input type="hidden" name="_csrf" value="<?= e(csrf_token()) ?>">
                                                     <input type="hidden" name="action" value="restore_trash_photo">
                                                     <input type="hidden" name="trash_id" value="<?= (int)$tp['id'] ?>">
-                                                    <button type="submit" class="btn btn-xs btn-success rounded-pill px-2.5 py-1 fw-bold" style="font-size: 0.68rem;">
+                                                    <button type="submit" class="btn btn-xs rounded-pill px-2.5 py-1 fw-bold text-white shadow-2xs" style="background-color: #0E5C58; font-size: 0.68rem;">
                                                         <i class="bi bi-arrow-counterclockwise me-0.5"></i>Restore
                                                     </button>
                                                 </form>
@@ -945,8 +945,8 @@ $pageTitle = $card ? e($card['nama_barang']) . ' - Kartu Inventaris' : 'Kartu In
                         <!-- Kolom Detail Data Master Inventaris Sesuai Core System Bank (Kanan: 7 Kolom) -->
                         <div class="col-lg-7 col-md-7">
                             
-                            <!-- Header Nama Barang dengan Pulse Dot Status -->
-                            <div class="p-3 bg-light rounded-3 border mb-3">
+                            <!-- Header Nama Barang dengan Pulse Dot Status (Desktop Only - Mobile Ditampilkan di Bagian Atas) -->
+                            <div class="p-3 bg-light rounded-3 border mb-3 d-none d-md-block">
                                 <div class="d-flex justify-content-between align-items-center mb-1">
                                     <span class="label-cell text-primary">NAMA BARANG</span>
                                     <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 rounded-pill px-2.5 py-1 d-inline-flex align-items-center gap-1.5 fw-bold font-mono">
@@ -995,8 +995,8 @@ $pageTitle = $card ? e($card['nama_barang']) . ' - Kartu Inventaris' : 'Kartu In
                                             <td class="td-label">Jenis Inventaris</td>
                                             <td>
                                                 <div class="d-flex align-items-center justify-content-between gap-2">
-                                                    <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 rounded-pill px-2.5 py-1 font-mono fw-semibold">
-                                                        <?= e($jenisInvVal) ?>
+                                                    <span class="badge rounded-pill px-2.5 py-1 font-mono fw-semibold" style="background-color: #F1F5F9; color: #1E293B; border: 1px solid #CBD5E1;">
+                                                        <i class="bi bi-tag-fill me-1 text-primary"></i><?= e($jenisInvVal) ?>
                                                     </span>
                                                     <button type="button" class="btn btn-xs btn-link text-muted p-0 text-decoration-none" data-bs-toggle="modal" data-bs-target="#modalEditDataKartu" title="Ubah Jenis">
                                                         <i class="bi bi-pencil-fill" style="font-size: 0.72rem;"></i>
@@ -1008,8 +1008,8 @@ $pageTitle = $card ? e($card['nama_barang']) . ' - Kartu Inventaris' : 'Kartu In
                                             <td class="td-label">Ruangan (Lokasi Penempatan)</td>
                                             <td>
                                                 <div class="d-flex align-items-center justify-content-between gap-2">
-                                                    <span class="badge bg-warning bg-opacity-15 text-dark border border-warning border-opacity-40 rounded-pill px-2.5 py-1 fw-semibold font-mono">
-                                                        <i class="bi bi-geo-alt-fill text-warning me-1"></i><?= e($ruanganVal) ?>
+                                                    <span class="badge rounded-pill px-2.5 py-1 font-mono fw-semibold" style="background-color: #F1F5F9; color: #1E293B; border: 1px solid #CBD5E1;">
+                                                        <i class="bi bi-geo-alt-fill me-1 text-primary"></i><?= e($ruanganVal) ?>
                                                     </span>
                                                     <button type="button" class="btn btn-xs btn-link text-muted p-0 text-decoration-none" data-bs-toggle="modal" data-bs-target="#modalEditDataKartu" title="Ubah Ruangan">
                                                         <i class="bi bi-pencil-fill" style="font-size: 0.72rem;"></i>
@@ -1021,8 +1021,8 @@ $pageTitle = $card ? e($card['nama_barang']) . ' - Kartu Inventaris' : 'Kartu In
                                             <td class="td-label">Golongan</td>
                                             <td>
                                                 <div class="d-flex align-items-center justify-content-between gap-2">
-                                                    <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 rounded-pill px-2.5 py-1 font-mono fw-semibold">
-                                                        <?= e($golonganVal) ?>
+                                                    <span class="badge rounded-pill px-2.5 py-1 font-mono fw-semibold" style="background-color: #F1F5F9; color: #1E293B; border: 1px solid #CBD5E1;">
+                                                        <i class="bi bi-layers-fill me-1 text-primary"></i><?= e($golonganVal) ?>
                                                     </span>
                                                     <button type="button" class="btn btn-xs btn-link text-muted p-0 text-decoration-none" data-bs-toggle="modal" data-bs-target="#modalEditDataKartu" title="Ubah Golongan">
                                                         <i class="bi bi-pencil-fill" style="font-size: 0.72rem;"></i>
@@ -1061,16 +1061,18 @@ $pageTitle = $card ? e($card['nama_barang']) . ' - Kartu Inventaris' : 'Kartu In
                                 <h6 class="fw-bold mb-1 text-dark d-flex align-items-center gap-1.5 justify-content-center justify-content-sm-start">
                                     <i class="bi bi-qr-code text-primary"></i> Barcode &amp; QR Code Resmi Bank
                                 </h6>
-                                <p class="text-secondary small mb-2 mx-auto mx-sm-0" style="max-width: 520px; font-size: 0.78rem;">
+                                <p class="text-secondary small mb-2 mx-auto mx-sm-0" style="max-width: 650px; font-size: 0.78rem;">
                                     Hasil scan stiker fisik inventaris mengarah langsung ke paspor aset ini di server lokal BPR Mitratama.
                                 </p>
-                                <!-- Kotak Tautan QR Code Share Link Modern -->
-                                <div class="input-group input-group-sm mx-auto mx-sm-0" style="max-width: 480px;">
-                                    <span class="input-group-text bg-white text-muted border-end-0" style="font-size: 0.75rem;"><i class="bi bi-link-45deg"></i></span>
-                                    <input type="text" class="form-control form-control-sm font-mono bg-white text-muted border-start-0 border-end-0" value="<?= e($canonicalQrUrl) ?>" id="inputCardUrl" readonly style="font-size: 0.74rem;">
-                                    <button class="btn btn-primary px-3 fw-semibold shadow-2xs d-inline-flex align-items-center gap-1" type="button" onclick="copyCardUrlDirect(this)">
-                                        <i class="bi bi-clipboard"></i> <span>Salin Tautan</span>
-                                    </button>
+                                <!-- Kotak Tautan QR Code Share Link Modern (Lega & Tidak Terpotong) -->
+                                <div class="qr-share-group mx-auto mx-sm-0" style="max-width: 680px;">
+                                    <div class="input-group input-group-sm w-100">
+                                        <span class="input-group-text bg-white text-muted border-end-0" style="font-size: 0.78rem;"><i class="bi bi-link-45deg"></i></span>
+                                        <input type="text" class="form-control form-control-sm font-mono bg-white text-dark border-start-0 border-end-0" value="<?= e($canonicalQrUrl) ?>" id="inputCardUrl" readonly onclick="this.select()" title="Klik untuk menyeleksi tautan" style="font-size: 0.76rem; letter-spacing: -0.2px;">
+                                        <button class="btn btn-primary px-3 fw-semibold shadow-2xs d-inline-flex align-items-center gap-1 flex-shrink-0" type="button" onclick="copyCardUrlDirect(this)">
+                                            <i class="bi bi-clipboard"></i> <span>Salin Tautan</span>
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
                         </div>

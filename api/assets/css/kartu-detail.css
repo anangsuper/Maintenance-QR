@@ -131,11 +131,24 @@
             background: #ffffff;
             overflow: hidden;
         }
-        .badge-gold {
-            background-color: #D9F1EF !important;
+        .badge-gold, .badge-corporate-teal {
+            background-color: #E6F4F2 !important;
             color: #0E5C58 !important;
             border: 1px solid #A7E2DC !important;
             font-weight: 700;
+        }
+        .btn-outline-teal {
+            color: #0E5C58 !important;
+            border: 1.5px solid #0E5C58 !important;
+            background: #FFFFFF !important;
+            transition: all 0.2s ease;
+        }
+        .btn-outline-teal:hover {
+            background: #E6F4F2 !important;
+            color: #094340 !important;
+            border-color: #094340 !important;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 10px rgba(14, 92, 88, 0.12) !important;
         }
         .label-cell {
             color: #0E5C58;
@@ -277,7 +290,7 @@
                 background: #f8fafc;
             }
             .header-brand {
-                padding: 12px 14px !important;
+                padding: 10px 14px !important;
             }
             .header-brand h1 {
                 font-size: 0.85rem !important;
@@ -285,14 +298,14 @@
             main.container {
                 padding-left: 10px !important;
                 padding-right: 10px !important;
-                padding-top: 14px !important;
+                padding-top: 12px !important;
             }
             .card-custom {
                 border-radius: 14px !important;
-                box-shadow: 0 4px 16px rgba(0, 43, 73, 0.06) !important;
+                box-shadow: 0 2px 12px rgba(0, 43, 73, 0.05) !important;
             }
             .card-custom .p-3, .card-custom .p-md-4 {
-                padding: 14px !important;
+                padding: 12px !important;
             }
             /* Stacked Card Layout on Smartphones: Never squish table columns! */
             .table-responsive {
@@ -306,12 +319,12 @@
             .bank-data-table tr {
                 display: flex !important;
                 flex-direction: column !important;
-                padding: 11px 14px !important;
+                padding: 11px 12px !important;
                 border-bottom: 1px solid #E5E7EB !important;
                 background: #FFFFFF !important;
             }
             .bank-data-table tr:nth-of-type(odd) {
-                background-color: #F9FAFB !important;
+                background-color: #F8FAFC !important;
             }
             .bank-data-table tr:last-child {
                 border-bottom: none !important;
@@ -326,18 +339,18 @@
             }
             .bank-data-table td.td-label,
             .bank-data-table td:first-child {
-                font-size: 0.80rem !important;
+                font-size: 0.76rem !important;
                 font-weight: 700 !important;
                 text-transform: uppercase !important;
-                letter-spacing: 0.05em !important;
+                letter-spacing: 0.04em !important;
                 color: #53595F !important;
-                margin-bottom: 5px !important;
+                margin-bottom: 4px !important;
                 line-height: 1.25 !important;
                 width: 100% !important;
                 white-space: normal !important;
             }
             .bank-data-table td:last-child {
-                font-size: 1.02rem !important;
+                font-size: 0.96rem !important;
                 color: #1B2A3A !important;
                 width: 100% !important;
             }
@@ -345,29 +358,50 @@
                 width: 100% !important;
             }
             .bank-data-table .badge {
-                font-size: 0.88rem !important;
-                padding: 6px 14px !important;
+                font-size: 0.82rem !important;
+                padding: 5px 12px !important;
                 white-space: normal !important;
                 text-align: left !important;
                 line-height: 1.35 !important;
                 max-width: 100% !important;
+                display: inline-flex !important;
+                align-items: center !important;
+                flex-wrap: wrap !important;
             }
             .bank-data-table .copy-btn {
-                padding: 4px 12px !important;
-                font-size: 0.78rem !important;
+                padding: 3px 10px !important;
+                font-size: 0.74rem !important;
             }
             .item-photo-wrapper {
                 border-radius: 12px;
-                aspect-ratio: 4 / 5;
-                max-width: 280px;
+                aspect-ratio: 1 / 1 !important;
+                min-height: 150px !important;
+                max-height: 220px !important;
+                max-width: 100% !important;
                 margin: 0 auto;
             }
+            .item-photo-wrapper img {
+                object-fit: cover !important;
+            }
+            .item-photo-wrapper .badge {
+                font-size: 0.60rem !important;
+                padding: 3px 6px !important;
+                background-color: rgba(15, 23, 42, 0.75) !important;
+            }
+            .item-photo-wrapper .btn-danger {
+                width: 24px !important;
+                height: 24px !important;
+            }
             .qr-card-box {
-                margin: 0 auto;
+                margin: 0 auto 10px auto;
+            }
+            .qr-share-group {
+                width: 100% !important;
+                max-width: 100% !important;
             }
             .mobile-action-btn {
                 width: 100% !important;
-                height: 52px !important;
+                height: 50px !important;
                 display: flex !important;
                 flex-direction: column !important;
                 align-items: center !important;
@@ -376,17 +410,17 @@
                 border: 1px solid #D1D5D8 !important;
                 background: #FFFFFF !important;
                 color: #1B2A3A !important;
-                font-size: 0.80rem !important;
+                font-size: 0.78rem !important;
                 font-weight: 700 !important;
                 text-decoration: none !important;
                 padding: 0 !important;
                 transition: all 0.15s ease !important;
-                box-shadow: 0 1px 3px rgba(0,0,0,0.06) !important;
+                box-shadow: 0 1px 3px rgba(0,0,0,0.04) !important;
             }
             .mobile-action-btn i {
-                font-size: 1.30rem !important;
+                font-size: 1.25rem !important;
                 line-height: 1 !important;
-                margin-bottom: 3px !important;
+                margin-bottom: 2px !important;
             }
             .mobile-action-btn:active, .mobile-action-btn:hover {
                 background: #F4F5F7 !important;
@@ -395,9 +429,31 @@
             }
             /* Form inputs touch-friendly */
             .form-control, .form-select {
-                font-size: 0.92rem !important;
-                min-height: 42px;
+                font-size: 0.90rem !important;
+                min-height: 40px;
                 border-radius: 10px;
+            }
+        }
+        @media (max-width: 576px) {
+            .qr-share-group .input-group {
+                flex-direction: column !important;
+            }
+            .qr-share-group .input-group > * {
+                width: 100% !important;
+                border-radius: 8px !important;
+                margin-bottom: 6px !important;
+            }
+            .qr-share-group .input-group-text {
+                display: none !important;
+            }
+            .qr-share-group .input-group .form-control {
+                border: 1px solid #CBD5E1 !important;
+                text-align: center !important;
+                font-size: 0.75rem !important;
+            }
+            .qr-share-group .input-group .btn {
+                justify-content: center !important;
+                padding: 8px 12px !important;
             }
         }
         .collapse {

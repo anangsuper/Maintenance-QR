@@ -7,7 +7,7 @@
             <div class="modal-content border-0 rounded-4 shadow-2xl overflow-hidden">
                 <div class="modal-header bg-dark text-white py-3">
                     <div class="d-flex align-items-center gap-2">
-                        <i class="bi bi-pencil-square fs-5 text-warning"></i>
+                        <i class="bi bi-pencil-square fs-5 text-primary"></i>
                         <div>
                             <h6 class="modal-title fw-bold mb-0">Ubah Data Master Inventaris</h6>
                             <div class="text-white-50 small" style="font-size: 0.72rem;">Sesuai Standar Data Core Banking BPR Mitratama</div>
@@ -69,7 +69,7 @@
                             <div class="col-md-6">
                                 <label class="form-label small fw-bold text-secondary">Ruangan Penempatan (Lokasi Fisik)</label>
                                 <div class="input-group input-group-sm">
-                                    <span class="input-group-text bg-light text-muted"><i class="bi bi-geo-alt-fill text-warning"></i></span>
+                                    <span class="input-group-text bg-light text-muted"><i class="bi bi-geo-alt-fill text-primary"></i></span>
                                     <input type="text" name="ruangan_custom" id="ruanganInput" class="form-control font-mono" list="listLokasiPresets" value="<?= e($ruanganVal) ?>" placeholder="Contoh: 33 : RUANG KADIV KREDIT LT 4">
                                 </div>
                                 <datalist id="listLokasiPresets">
