@@ -300,7 +300,7 @@ unset($_SESSION['flash']);
 if (session_status() === PHP_SESSION_ACTIVE) {
     session_write_close();
 }
-$flashHtml = $flash ? '<div class="alert alert-success alert-dismissible fade show border-0 shadow-sm mb-4"><i class="bi bi-check-circle-fill me-2"></i>'.e($flash).'<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>' : '';
+$flashHtml = $flash ? '<div class="alert alert-success alert-dismissible fade show border-0 shadow-sm mb-4"><i class="bi bi-check-circle-fill me-2"></i>'.e($flash).'<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Tutup"></button></div>' : '';
 
 // Helper Query URL untuk Pagination & Filter
 function filter_query(array $overrides = []): string {

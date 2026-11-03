@@ -141,7 +141,7 @@ $portalUrl = qr_url('server_room_log.php');
   <div class="print-sheet text-center">
     <!-- Header Brand Bank -->
     <div class="d-flex align-items-center justify-content-between border-bottom pb-2 mb-3">
-      <img src="<?= app_logo_url() ?>" alt="Bank Mitra Logo" style="height: 48px; width: auto; object-fit: contain;">
+      <img alt="Logo Bank Mitra" src="<?= app_logo_url() ?>" alt="Bank Mitra Logo" style="height: 48px; width: auto; object-fit: contain;">
       <div class="text-end">
         <div class="fw-bold fs-6 text-dark">BANK MITRA</div>
         <div class="text-muted small" style="font-size: 0.75rem;">Divisi Teknologi Informasi</div>

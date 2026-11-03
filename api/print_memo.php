@@ -265,7 +265,7 @@ body {
 <!-- Lembar Dokumen Resmi Memo Internal -->
 <div class="memo-sheet">
   <!-- 1. Logo Resmi Bank Mitra di Sudut Kiri Atas -->
-  <img src="<?= $logoUrl ?>" alt="Bank Mitra Logo" class="memo-top-logo">
+  <img alt="Logo Bank Mitra" src="<?= $logoUrl ?>" alt="Bank Mitra Logo" class="memo-top-logo">
 
   <!-- 2. Judul Dokumen -->
   <div class="memo-title-block">
@@ -339,7 +339,7 @@ body {
   </div>
 
   <!-- 6. Footer Kop Surat Resmi Bank Mitra di Bagian Bawah Kertas -->
-  <img src="<?= $footerUrl ?>" alt="Footer Kop Surat Bank Mitra" class="memo-page-footer">
+  <img alt="Footer Dokumen" src="<?= $footerUrl ?>" alt="Footer Kop Surat Bank Mitra" class="memo-page-footer">
 </div>
 
 </body>

@@ -84,7 +84,7 @@ $body .= '
             <h5 class="modal-title fw-bold mb-0"><i class="bi bi-plus-circle-fill me-2"></i>Tambah Data Kartu Inventaris</h5>
             <small class="text-white-50">Sistem Inventaris Core Banking BPR Mitratama</small>
           </div>
-          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Tutup"></button>
         </div>
         <div class="modal-body p-4">
           <!-- Section 1: Identitas Rekening & Barang -->
@@ -233,7 +233,7 @@ $body .= '
             </h5>
             <small class="text-dark opacity-75">Perbarui data spesifikasi dan klasifikasi Core Banking</small>
           </div>
-          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Tutup"></button>
         </div>
         <div class="modal-body p-4">
           <!-- Section 1: Identitas Rekening & Barang -->
@@ -393,7 +393,7 @@ $body .= '
           <h6 class="modal-title fw-bold d-flex align-items-center gap-2">
             <i class="bi bi-box-seam"></i> Pilih Perangkat dari Katalog Aset IT
           </h6>
-          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Tutup"></button>
         </div>
         <div class="modal-body p-3">
           <p class="small text-muted mb-2">Pilih perangkat di bawah ini untuk didaftarkan ke tabel Kartu Inventaris:</p>
@@ -444,7 +444,7 @@ $body .= '
         <h6 class="modal-title fw-bold d-flex align-items-center gap-2">
           <i class="bi bi-eye-fill"></i> Pratinjau Desain Kartu Fisik
         </h6>
-        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Tutup"></button>
       </div>
       <div class="modal-body text-center bg-light p-2 sm:p-4" style="overflow-x: hidden;">
         <!-- Container Skala Pratinjau (Responsif Mobile & Desktop) -->

@@ -622,7 +622,7 @@ body {
     <!-- Brand Header -->
     <div class="brand-top-header">
       <div class="brand-logo-container">
-        <img src="<?= module_url('logo.png') ?>" alt="Logo Bank Mitra" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 24 24\' fill=\'%231d4ed8\'><path d=\'M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 10.99h7c-.53 4.12-3.28 7.79-7 8.94V12H5V6.3l7-3.11v8.8z\'/></svg>'">
+        <img alt="Logo Bank Mitra" src="<?= module_url('logo.png') ?>" alt="Logo Bank Mitra" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 24 24\' fill=\'%231d4ed8\'><path d=\'M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 10.99h7c-.53 4.12-3.28 7.79-7 8.94V12H5V6.3l7-3.11v8.8z\'/></svg>'">
       </div>
       <div class="brand-title-meta">
         <h1>PT BPR MITRATAMA ARTHABUANA</h1>
@@ -666,7 +666,7 @@ body {
       
       <!-- Mobile Brand Header (Tampil pada layar HP / Tablet) -->
       <div class="mobile-brand-hero">
-        <img src="<?= module_url('logo.png') ?>" alt="Logo Bank Mitra" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 24 24\' fill=\'%231d4ed8\'><path d=\'M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 10.99h7c-.53 4.12-3.28 7.79-7 8.94V12H5V6.3l7-3.11v8.8z\'/></svg>'">
+        <img alt="Logo Bank Mitra" src="<?= module_url('logo.png') ?>" alt="Logo Bank Mitra" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 24 24\' fill=\'%231d4ed8\'><path d=\'M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 10.99h7c-.53 4.12-3.28 7.79-7 8.94V12H5V6.3l7-3.11v8.8z\'/></svg>'">
         <h2>BPR MITRATAMA ARTHABUANA</h2>
         <p>IT Operations &amp; Infrastructure Portal</p>
       </div>

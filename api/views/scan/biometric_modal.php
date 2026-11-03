@@ -11,7 +11,7 @@ function render_biometric_modal_html(string $token, string $returnAction = 'form
               <h6 class="modal-title fw-bold text-white mb-0"><i class="bi bi-person-bounding-box text-primary me-2"></i>Verifikasi Biometrik Wajah Teknisi</h6>
               <small class="text-white-50">Arahkan wajah Anda ke kamera</small>
             </div>
-            <button type="button" class="btn-close btn-close-white" onclick="closeBiometricModal()"></button>
+            <button type="button" class="btn-close btn-close-white" onclick="closeBiometricModal()" aria-label="Tutup"></button>
           </div>
 
           <div class="modal-body p-3 text-center position-relative">

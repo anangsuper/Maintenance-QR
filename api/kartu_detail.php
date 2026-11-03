@@ -459,7 +459,7 @@ $pageTitle = $card ? e($card['nama_barang']) . ' - Kartu Inventaris' : 'Kartu In
         <div class="container d-flex align-items-center justify-content-between gap-2 gap-md-3" style="max-width: 1200px;">
             <div class="d-flex align-items-center gap-2 gap-md-3 min-w-0 flex-grow-1">
                 <div class="bg-white px-1.5 px-md-3 py-1 rounded-3 shadow-sm flex-shrink-0 d-flex align-items-center justify-content-center" style="height: clamp(34px, 4vw, 42px); width: clamp(42px, 5vw, 68px);">
-                    <img src="<?= module_url('logo_img.php') ?>" alt="Logo Bank Mitra" style="height: 32px; width: auto; max-width: 100%; object-fit: contain;" onerror="this.onerror=null; this.src='data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'32\' height=\'32\' viewBox=\'0 0 24 24\' fill=\'%230E5C58\'%3E%3Cpath d=\'M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5\'/%3E%3C/svg%3E';">
+                    <img alt="Logo Bank Mitra" src="<?= module_url('logo_img.php') ?>" alt="Logo Bank Mitra" style="height: 32px; width: auto; max-width: 100%; object-fit: contain;" onerror="this.onerror=null; this.src='data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'32\' height=\'32\' viewBox=\'0 0 24 24\' fill=\'%230E5C58\'%3E%3Cpath d=\'M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5\'/%3E%3C/svg%3E';">
                 </div>
                 <div class="min-w-0 pe-1">
                     <h1 class="h6 h5-md mb-0 text-white fw-bold tracking-tight text-truncate" style="font-size: clamp(0.82rem, 3.2vw, 1.25rem); line-height: 1.2;">
@@ -489,7 +489,7 @@ $pageTitle = $card ? e($card['nama_barang']) . ' - Kartu Inventaris' : 'Kartu In
             <div class="alert alert-success alert-dismissible fade show rounded-3 shadow-xs mb-3 border-success" role="alert">
                 <i class="bi bi-check-circle-fill me-2 fs-5 align-middle"></i>
                 <strong>Sukses:</strong> <?= e($uploadSuccess) ?>
-                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Tutup"></button>
             </div>
         <?php endif; ?>
 
@@ -497,7 +497,7 @@ $pageTitle = $card ? e($card['nama_barang']) . ' - Kartu Inventaris' : 'Kartu In
             <div class="alert alert-danger alert-dismissible fade show rounded-3 shadow-xs mb-3" role="alert">
                 <i class="bi bi-exclamation-triangle-fill me-2 fs-5 align-middle"></i>
                 <strong>Perhatian:</strong> <?= e($uploadError) ?>
-                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Tutup"></button>
             </div>
         <?php endif; ?>
 
@@ -505,7 +505,7 @@ $pageTitle = $card ? e($card['nama_barang']) . ' - Kartu Inventaris' : 'Kartu In
             <div class="alert alert-success alert-dismissible fade show rounded-3 shadow-xs mb-3 border-success" role="alert">
                 <i class="bi bi-check-circle-fill me-2 fs-5 align-middle"></i>
                 <strong>Tersimpan:</strong> <?= e($dataSuccess) ?>
-                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Tutup"></button>
             </div>
         <?php endif; ?>
 
@@ -513,7 +513,7 @@ $pageTitle = $card ? e($card['nama_barang']) . ' - Kartu Inventaris' : 'Kartu In
             <div class="alert alert-danger alert-dismissible fade show rounded-3 shadow-xs mb-3" role="alert">
                 <i class="bi bi-exclamation-circle-fill me-2 fs-5 align-middle"></i>
                 <?= e($dataError) ?>
-                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Tutup"></button>
             </div>
         <?php endif; ?>
 
@@ -706,7 +706,7 @@ $pageTitle = $card ? e($card['nama_barang']) . ' - Kartu Inventaris' : 'Kartu In
                                         <span class="position-absolute top-0 start-0 m-2 badge bg-dark bg-opacity-75 text-white rounded-pill px-2 py-1" style="font-size: 0.65rem; z-index: 3;">
                                             <i class="bi bi-1-circle-fill me-0.5"></i> Foto 1 (Utama)
                                         </span>
-                                        <img id="previewImg" src="<?= $photoUrl ? e($photoUrl) : '' ?>" alt="Foto 1 <?= e($card['nama_barang']) ?>" fetchpriority="high" class="<?= $photoUrl ? '' : 'd-none' ?>" style="object-fit: contain !important; background-color: #ffffff;" onclick="viewFullImage(this.src, '<?= e(addslashes($card['nama_barang'] . ' - Foto 1 (Utama)')) ?>')" title="Klik untuk memperbesar Foto 1">
+                                        <img alt="Foto Fisik Barang" id="previewImg" src="<?= $photoUrl ? e($photoUrl) : '' ?>" alt="Foto 1 <?= e($card['nama_barang']) ?>" fetchpriority="high" class="<?= $photoUrl ? '' : 'd-none' ?>" style="object-fit: contain !important; background-color: #ffffff;" onclick="viewFullImage(this.src, '<?= e(addslashes($card['nama_barang'] . ' - Foto 1 (Utama)')) ?>')" title="Klik untuk memperbesar Foto 1">
                                         
                                         <div id="emptyPhotoPlaceholder" class="text-center p-3 <?= $photoUrl ? 'd-none' : '' ?>" style="cursor: pointer;" data-bs-toggle="modal" data-bs-target="#modalUploadFotoBarang">
                                             <i class="bi bi-camera text-muted fs-2 mb-1 d-block"></i>
@@ -732,7 +732,7 @@ $pageTitle = $card ? e($card['nama_barang']) . ' - Kartu Inventaris' : 'Kartu In
                                         <span class="position-absolute top-0 start-0 m-2 badge bg-primary text-white rounded-pill px-2 py-1" style="font-size: 0.65rem; z-index: 3;">
                                             <i class="bi bi-2-circle-fill me-0.5"></i> Foto 2 (Detail)
                                         </span>
-                                        <img id="previewImg2" src="<?= $photoUrl2 ? e($photoUrl2) : '' ?>" alt="Foto 2 <?= e($card['nama_barang']) ?>" fetchpriority="low" loading="lazy" class="<?= $photoUrl2 ? '' : 'd-none' ?>" style="object-fit: contain !important; background-color: #ffffff;" onclick="viewFullImage(this.src, '<?= e(addslashes($card['nama_barang'] . ' - Foto 2 (Detail)')) ?>')" title="Klik untuk memperbesar Foto 2">
+                                        <img alt="Foto Fisik Barang" id="previewImg2" src="<?= $photoUrl2 ? e($photoUrl2) : '' ?>" alt="Foto 2 <?= e($card['nama_barang']) ?>" fetchpriority="low" loading="lazy" class="<?= $photoUrl2 ? '' : 'd-none' ?>" style="object-fit: contain !important; background-color: #ffffff;" onclick="viewFullImage(this.src, '<?= e(addslashes($card['nama_barang'] . ' - Foto 2 (Detail)')) ?>')" title="Klik untuk memperbesar Foto 2">
                                         
                                         <div id="emptyPhotoPlaceholder2" class="text-center p-3 <?= $photoUrl2 ? 'd-none' : '' ?>" style="cursor: pointer;" data-bs-toggle="modal" data-bs-target="#modalUploadFotoBarang">
                                             <i class="bi bi-plus-circle-dotted text-primary fs-2 mb-1 d-block"></i>
@@ -790,7 +790,7 @@ $pageTitle = $card ? e($card['nama_barang']) . ' - Kartu Inventaris' : 'Kartu In
                                         ?>
                                             <div class="d-flex align-items-center justify-content-between bg-white rounded-2 p-1.5 border gap-2">
                                                 <div class="d-flex align-items-center gap-2 min-w-0">
-                                                    <img src="<?= e($tpUrl) ?>" alt="Trash" fetchpriority="low" loading="lazy" class="rounded border object-fit-cover flex-shrink-0" style="width: 34px; height: 34px; cursor: pointer;" onclick="viewFullImage('<?= e(addslashes($tpUrl)) ?>', 'Foto di Folder Sampah')">
+                                                    <img alt="Foto Fisik Barang" src="<?= e($tpUrl) ?>" alt="Trash" fetchpriority="low" loading="lazy" class="rounded border object-fit-cover flex-shrink-0" style="width: 34px; height: 34px; cursor: pointer;" onclick="viewFullImage('<?= e(addslashes($tpUrl)) ?>', 'Foto di Folder Sampah')">
                                                     <div class="min-w-0">
                                                         <div class="fw-semibold text-dark text-truncate" style="font-size: 0.70rem;">Foto Ke-<?= (int)$tp['photo_slot'] ?> &bull; <span class="text-secondary"><?= e($tp['countdown_label']) ?></span></div>
                                                         <div class="text-muted text-truncate" style="font-size: 0.64rem;">Dihapus: <?= date('d/m H:i', strtotime($tp['deleted_at'])) ?></div>

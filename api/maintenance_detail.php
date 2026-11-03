@@ -343,8 +343,8 @@ foreach ($karyawanList as $k) {
     }
 }
 
-$flashHtml = $flash ? '<div class="alert alert-success alert-dismissible fade show border-0 shadow-sm no-print" style="border-left: 4px solid #10B981 !important;"><i class="bi bi-check-circle-fill me-2 text-success"></i>'.e($flash).'<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>' : '';
-$errorHtml = $error ? '<div class="alert alert-danger alert-dismissible fade show border-0 shadow-sm no-print" style="border-left: 4px solid #EF4444 !important;"><i class="bi bi-exclamation-triangle-fill me-2 text-danger"></i>'.e($error).'<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>' : '';
+$flashHtml = $flash ? '<div class="alert alert-success alert-dismissible fade show border-0 shadow-sm no-print" style="border-left: 4px solid #10B981 !important;"><i class="bi bi-check-circle-fill me-2 text-success"></i>'.e($flash).'<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Tutup"></button></div>' : '';
+$errorHtml = $error ? '<div class="alert alert-danger alert-dismissible fade show border-0 shadow-sm no-print" style="border-left: 4px solid #EF4444 !important;"><i class="bi bi-exclamation-triangle-fill me-2 text-danger"></i>'.e($error).'<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Tutup"></button></div>' : '';
 
 $assetId = (int)($asset['id'] ?? 0);
 $assetHistory = get_asset_maintenance_history($assetId);

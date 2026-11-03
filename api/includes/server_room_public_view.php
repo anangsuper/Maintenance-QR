@@ -30,7 +30,7 @@ $autoCheckoutMatch = $autoCheckoutMatch ?? null;
 <head>
   <meta charset="utf-8">
   <title>Portal Akses &amp; Log Ruang Server &middot; Bank Mitra</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="theme-color" content="#0E5C58">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -195,7 +195,7 @@ $autoCheckoutMatch = $autoCheckoutMatch ?? null;
   <header class="public-portal-header py-2 px-3 px-md-4">
     <div class="container-fluid max-container d-flex align-items-center justify-content-between" style="max-width: 900px; margin: 0 auto;">
       <div class="d-flex align-items-center gap-2.5">
-        <img src="<?= app_logo_url() ?>" alt="Bank Mitra Logo" style="height: 38px; width: auto; object-fit: contain;">
+        <img alt="Logo Bank Mitra" src="<?= app_logo_url() ?>" alt="Bank Mitra Logo" style="height: 38px; width: auto; object-fit: contain;">
         <div class="d-none d-sm-block border-start ps-2.5">
           <div class="fw-bold text-dark" style="font-size: 0.85rem; letter-spacing: -0.01em;">PT BPR MITRATAMA ARTHABUANA</div>
           <div class="text-muted" style="font-size: 0.70rem;">Divisi TI &amp; Keamanan Data Center</div>
@@ -221,14 +221,14 @@ $autoCheckoutMatch = $autoCheckoutMatch ?? null;
         <div class="alert alert-success border-0 shadow-sm rounded-4 alert-dismissible fade show p-3 mb-3 d-flex align-items-center gap-2" role="alert">
           <i class="bi bi-check-circle-fill fs-5 text-success"></i>
           <div><?= e($flashMsg) ?></div>
-          <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert"></button>
+          <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert" aria-label="Tutup"></button>
         </div>
       <?php endif; ?>
       <?php if (!empty($flashErr)): ?>
         <div class="alert alert-danger border-0 shadow-sm rounded-4 alert-dismissible fade show p-3 mb-3 d-flex align-items-center gap-2" role="alert">
           <i class="bi bi-exclamation-triangle-fill fs-5 text-danger"></i>
           <div><?= e($flashErr) ?></div>
-          <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert"></button>
+          <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert" aria-label="Tutup"></button>
         </div>
       <?php endif; ?>
 
@@ -312,7 +312,7 @@ $autoCheckoutMatch = $autoCheckoutMatch ?? null;
               <div class="bg-white rounded-3 p-2.5 shadow-xs border d-flex align-items-center justify-content-between gap-2">
                 <div class="d-flex align-items-center gap-2 overflow-hidden">
                   <?php if (!empty($occ['photo_in'])): ?>
-                    <img src="<?= e($occ['photo_in']) ?>" alt="Foto Petugas Masuk" class="rounded-circle object-fit-cover border" style="width: 32px; height: 32px; min-width: 32px; cursor: pointer;" onclick="previewPhoto(<?= htmlspecialchars(json_encode($occ['photo_in']), ENT_QUOTES, 'UTF-8') ?>, <?= htmlspecialchars(json_encode($occ['visitor_name']), ENT_QUOTES, 'UTF-8') ?>)">
+                    <img alt="Foto Petugas" src="<?= e($occ['photo_in']) ?>" alt="Foto Petugas Masuk" class="rounded-circle object-fit-cover border" style="width: 32px; height: 32px; min-width: 32px; cursor: pointer;" onclick="previewPhoto(<?= htmlspecialchars(json_encode($occ['photo_in']), ENT_QUOTES, 'UTF-8') ?>, <?= htmlspecialchars(json_encode($occ['visitor_name']), ENT_QUOTES, 'UTF-8') ?>)">
                   <?php else: ?>
                     <div class="rounded-circle bg-light d-flex align-items-center justify-content-center text-secondary border" style="width: 32px; height: 32px; min-width: 32px;">
                       <i class="bi bi-person-fill"></i>
@@ -417,7 +417,7 @@ $autoCheckoutMatch = $autoCheckoutMatch ?? null;
                   <!-- Identitas Pengunjung -->
                   <div class="d-flex align-items-center gap-2 mb-2">
                     <?php if (!empty($l['photo_in'])): ?>
-                      <img src="<?= e($l['photo_in']) ?>" alt="Foto Petugas Masuk" class="rounded-circle object-fit-cover border" style="width: 38px; height: 38px; min-width: 38px; cursor: pointer;" onclick="previewPhoto(<?= htmlspecialchars(json_encode($l['photo_in']), ENT_QUOTES, 'UTF-8') ?>, <?= htmlspecialchars(json_encode($l['visitor_name']), ENT_QUOTES, 'UTF-8') ?>)" title="Klik untuk lihat foto masuk">
+                      <img alt="Foto Petugas" src="<?= e($l['photo_in']) ?>" alt="Foto Petugas Masuk" class="rounded-circle object-fit-cover border" style="width: 38px; height: 38px; min-width: 38px; cursor: pointer;" onclick="previewPhoto(<?= htmlspecialchars(json_encode($l['photo_in']), ENT_QUOTES, 'UTF-8') ?>, <?= htmlspecialchars(json_encode($l['visitor_name']), ENT_QUOTES, 'UTF-8') ?>)" title="Klik untuk lihat foto masuk">
                     <?php else: ?>
                       <div class="rounded-circle bg-light d-flex align-items-center justify-content-center text-secondary border" style="width: 38px; height: 38px; min-width: 38px;">
                         <i class="bi bi-person-fill fs-5"></i>
@@ -503,7 +503,7 @@ $autoCheckoutMatch = $autoCheckoutMatch ?? null;
             <h5 class="modal-title fw-bold d-flex align-items-center gap-2" id="modalCheckinLabel">
               <i class="bi bi-door-open-fill"></i> Check-In Masuk Ruang Server
             </h5>
-            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Tutup"></button>
           </div>
 
           <div class="modal-body p-4">
@@ -671,7 +671,7 @@ $autoCheckoutMatch = $autoCheckoutMatch ?? null;
             <h5 class="modal-title fw-bold d-flex align-items-center gap-2">
               <i class="bi bi-box-arrow-right"></i> Check-Out Keluar Ruang Server
             </h5>
-            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Tutup"></button>
           </div>
 
           <div class="modal-body p-4">
@@ -722,7 +722,7 @@ $autoCheckoutMatch = $autoCheckoutMatch ?? null;
           <h5 class="modal-title fw-bold d-flex align-items-center gap-2">
             <i class="bi bi-box-arrow-right"></i> Pilih Petugas yang Keluar
           </h5>
-          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Tutup"></button>
         </div>
         <div class="modal-body p-4">
           <p class="text-muted small mb-3">
@@ -770,7 +770,7 @@ $autoCheckoutMatch = $autoCheckoutMatch ?? null;
           <h5 class="modal-title fw-bold d-flex align-items-center gap-2">
             <i class="bi bi-qr-code-scan text-warning"></i> Scanner Barcode Live
           </h5>
-          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" onclick="stopScannerModal()"></button>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" onclick="stopScannerModal()" aria-label="Tutup"></button>
         </div>
         <div class="modal-body p-4 text-center">
           <p class="text-muted small mb-3">Arahkan kamera HP ke Barcode ID Card atau Stiker Pintu Ruang Server:</p>
@@ -817,7 +817,7 @@ $autoCheckoutMatch = $autoCheckoutMatch ?? null;
       <div class="modal-content shadow-lg overflow-hidden">
         <div class="modal-header bg-dark text-white py-2 px-3">
           <h6 class="modal-title fw-bold small" id="previewTitle">Foto Pengunjung</h6>
-          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Tutup"></button>
         </div>
         <div class="modal-body p-0 text-center bg-black">
           <img id="imgBigPreview" src="" alt="Pratinjau Gambar Penuh" class="img-fluid" style="max-height: 80vh; width: auto;">

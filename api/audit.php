@@ -286,10 +286,10 @@ $headStyle = '
 
 $flashAlert = '';
 if ($flash !== '') {
-    $flashAlert .= '<div class="alert alert-success alert-dismissible fade show border-0 shadow-sm mb-3" role="alert"><i class="bi bi-check-circle-fill me-2"></i><strong>Berhasil!</strong> '.e($flash).'<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>';
+    $flashAlert .= '<div class="alert alert-success alert-dismissible fade show border-0 shadow-sm mb-3" role="alert"><i class="bi bi-check-circle-fill me-2"></i><strong>Berhasil!</strong> '.e($flash).'<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Tutup"></button></div>';
 }
 if ($flashError !== '') {
-    $flashAlert .= '<div class="alert alert-danger alert-dismissible fade show border-0 shadow-sm mb-3" role="alert"><i class="bi bi-exclamation-triangle-fill me-2"></i><strong>Gagal:</strong> '.e($flashError).'<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>';
+    $flashAlert .= '<div class="alert alert-danger alert-dismissible fade show border-0 shadow-sm mb-3" role="alert"><i class="bi bi-exclamation-triangle-fill me-2"></i><strong>Gagal:</strong> '.e($flashError).'<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Tutup"></button></div>';
 }
 
 $body = '

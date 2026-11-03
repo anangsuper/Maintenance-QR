@@ -329,7 +329,7 @@ foreach ($karyawans as $kar) {
     }
 }
 
-$errorHtml = $error ? '<div class="alert alert-danger alert-dismissible fade show" role="alert"><i class="bi bi-exclamation-triangle-fill me-2"></i>'.e($error).'<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>' : '';
+$errorHtml = $error ? '<div class="alert alert-danger alert-dismissible fade show" role="alert"><i class="bi bi-exclamation-triangle-fill me-2"></i>'.e($error).'<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Tutup"></button></div>' : '';
 
 $existingFoto = trim((string)($asset['foto'] ?? ''));
 $existingFotoSrc = '';

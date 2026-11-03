@@ -328,14 +328,14 @@ ob_start();
 <?php if ($flashSuccess): ?>
   <div class="alert alert-success alert-dismissible fade show border-0 shadow-sm mb-4" style="border-left: 4px solid #16A34A !important;">
     <i class="bi bi-check-circle-fill me-2 text-success"></i><?= e($flashSuccess) ?>
-    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Tutup"></button>
   </div>
 <?php endif; ?>
 
 <?php if ($flashError): ?>
   <div class="alert alert-danger alert-dismissible fade show border-0 shadow-sm mb-4" style="border-left: 4px solid #DC2626 !important;">
     <i class="bi bi-exclamation-triangle-fill me-2 text-danger"></i><?= e($flashError) ?>
-    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Tutup"></button>
   </div>
 <?php endif; ?>
 

@@ -13,7 +13,7 @@
                             <div class="text-white-50 small" style="font-size: 0.72rem;">Sesuai Standar Data Core Banking BPR Mitratama</div>
                         </div>
                     </div>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Tutup"></button>
                 </div>
                 
                 <form method="post" id="editDataKartuForm" action="<?= module_url('kartu_detail.php', ['id' => $card['id']]) ?>">
@@ -198,7 +198,7 @@
 
                                     <!-- Preview Box Foto 1 -->
                                     <div class="position-relative rounded-3 border bg-white d-flex align-items-center justify-content-center overflow-hidden mb-2.5" style="min-height: 180px; aspect-ratio: 4 / 5; background-color: #ffffff;">
-                                        <img id="modalPreviewImg1" src="<?= $photoUrl ? e($photoUrl) : '' ?>" alt="Foto 1" class="<?= $photoUrl ? '' : 'd-none' ?> w-100 h-100 object-fit-contain bg-white">
+                                        <img alt="Foto Fisik Barang" id="modalPreviewImg1" src="<?= $photoUrl ? e($photoUrl) : '' ?>" alt="Foto 1" class="<?= $photoUrl ? '' : 'd-none' ?> w-100 h-100 object-fit-contain bg-white">
                                         
                                         <div id="modalEmptyPlace1" class="<?= $photoUrl ? 'd-none' : '' ?> text-center p-3 text-muted">
                                             <i class="bi bi-camera fs-1 d-block text-secondary opacity-50 mb-1"></i>
@@ -248,7 +248,7 @@
 
                                     <!-- Preview Box Foto 2 -->
                                     <div class="position-relative rounded-3 border bg-white d-flex align-items-center justify-content-center overflow-hidden mb-2.5" style="min-height: 180px; aspect-ratio: 4 / 5; background-color: #ffffff;">
-                                        <img id="modalPreviewImg2" src="<?= $photoUrl2 ? e($photoUrl2) : '' ?>" alt="Foto 2" class="<?= $photoUrl2 ? '' : 'd-none' ?> w-100 h-100 object-fit-contain bg-white">
+                                        <img alt="Foto Fisik Barang" id="modalPreviewImg2" src="<?= $photoUrl2 ? e($photoUrl2) : '' ?>" alt="Foto 2" class="<?= $photoUrl2 ? '' : 'd-none' ?> w-100 h-100 object-fit-contain bg-white">
                                         
                                         <div id="modalEmptyPlace2" class="<?= $photoUrl2 ? 'd-none' : '' ?> text-center p-3 text-muted">
                                             <i class="bi bi-image fs-1 d-block text-secondary opacity-50 mb-1"></i>
@@ -326,7 +326,7 @@
                         <i class="bi bi-trash3-fill fs-5"></i>
                         <h6 class="modal-title fw-bold mb-0">Hapus Foto Barang</h6>
                     </div>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Tutup"></button>
                 </div>
                 <form method="post" id="deletePhotoForm" action="<?= module_url('kartu_detail.php', ['id' => $card['id']]) ?>" onsubmit="return handleConfirmDeletePhotoSubmit(this)">
                     <input type="hidden" name="_csrf" value="<?= e(csrf_token()) ?>">
@@ -407,7 +407,7 @@
                         </h6>
                         <small class="text-white-50" id="bioModalSub">Arahkan wajah Anda ke kamera</small>
                     </div>
-                    <button type="button" class="btn-close btn-close-white" onclick="closeBiometricModal(true)"></button>
+                    <button type="button" class="btn-close btn-close-white" onclick="closeBiometricModal(true)" aria-label="Tutup"></button>
                 </div>
 
                 <div class="modal-body p-3 text-center position-relative">
@@ -477,7 +477,7 @@
             <div class="modal-content border-0 rounded-4 overflow-hidden shadow-2xl">
                 <div class="modal-header border-0 pb-0">
                     <h5 class="modal-title h6 fw-bold" id="imageModalTitle">Pratinjau Foto</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Tutup"></button>
                 </div>
                 <div class="modal-body text-center p-3">
                     <img src="" id="imageModalSrc" class="img-fluid rounded-3" style="max-height: 80vh; object-fit: contain; background-color: #ffffff;" alt="Foto Barang Penuh">

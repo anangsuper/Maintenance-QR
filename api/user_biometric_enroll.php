@@ -321,7 +321,7 @@ ob_start();
         <div class="p-3 bg-[#FAF9F8] border border-[#D1D5D8] rounded-[8px] flex items-center justify-between gap-3 pending-user-card" id="pendingCard_<?= $pfId ?>">
           <div class="flex items-center gap-3 min-w-0">
             <?php if (!empty($pfPhoto)): ?>
-              <img src="<?= e($pfPhoto) ?>" alt="Foto" class="w-12 h-12 rounded-full object-cover border-2 border-[#D1D5D8] shrink-0">
+              <img alt="Foto Petugas" src="<?= e($pfPhoto) ?>" alt="Foto" class="w-12 h-12 rounded-full object-cover border-2 border-[#D1D5D8] shrink-0">
             <?php else: ?>
               <div class="w-12 h-12 rounded-full bg-[#E5E7EB] text-[#64748B] flex items-center justify-center text-[18px] shrink-0">
                 <i class="bi bi-person-fill"></i>

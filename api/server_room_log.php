@@ -601,14 +601,14 @@ ob_start();
     <div class="alert alert-success alert-dismissible fade show border-0 shadow-xs d-flex align-items-center gap-2 mb-3" role="alert" style="background:#EDF7EE; color:#166534; border-left: 4px solid #16A34A !important; border-radius: 8px;">
       <i class="bi bi-check-circle-fill fs-5 text-success"></i>
       <div><?= e($flashMsg) ?></div>
-      <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+      <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Tutup"></button>
     </div>
   <?php endif; ?>
   <?php if ($flashErr): ?>
     <div class="alert alert-danger alert-dismissible fade show border-0 shadow-xs d-flex align-items-center gap-2 mb-3" role="alert" style="background:#FDE8E8; color:#9B1C1C; border-left: 4px solid #E02424 !important; border-radius: 8px;">
       <i class="bi bi-exclamation-triangle-fill fs-5 text-danger"></i>
       <div><?= e($flashErr) ?></div>
-      <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+      <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Tutup"></button>
     </div>
   <?php endif; ?>
 
@@ -878,7 +878,7 @@ ob_start();
 
               <div class="d-flex align-items-center gap-2 mb-2">
                 <?php if (!empty($l['photo_in'])): ?>
-                  <img src="<?= e($l['photo_in']) ?>" alt="Foto Petugas Masuk" class="rounded-circle object-fit-cover border" style="width: 36px; height: 36px; min-width: 36px; cursor: pointer;" onclick="previewPhoto(<?= htmlspecialchars(json_encode($l['photo_in']), ENT_QUOTES, 'UTF-8') ?>, <?= htmlspecialchars(json_encode($l['visitor_name']), ENT_QUOTES, 'UTF-8') ?>)">
+                  <img alt="Foto Petugas" src="<?= e($l['photo_in']) ?>" alt="Foto Petugas Masuk" class="rounded-circle object-fit-cover border" style="width: 36px; height: 36px; min-width: 36px; cursor: pointer;" onclick="previewPhoto(<?= htmlspecialchars(json_encode($l['photo_in']), ENT_QUOTES, 'UTF-8') ?>, <?= htmlspecialchars(json_encode($l['visitor_name']), ENT_QUOTES, 'UTF-8') ?>)">
                 <?php else: ?>
                   <div class="rounded-circle bg-light d-flex align-items-center justify-content-center text-secondary border" style="width: 36px; height: 36px; min-width: 36px;">
                     <i class="bi bi-person-fill fs-5"></i>
@@ -983,7 +983,7 @@ ob_start();
                 <td>
                   <div class="fw-bold text-[#1B2A3A] d-flex align-items-center gap-1.5">
                     <?php if (!empty($l['photo_in'])): ?>
-                      <img src="<?= e($l['photo_in']) ?>" alt="Foto Petugas Masuk" class="rounded-circle object-fit-cover border" style="width: 24px; height: 24px; cursor: pointer;" onclick="previewPhoto(<?= htmlspecialchars(json_encode($l['photo_in']), ENT_QUOTES, 'UTF-8') ?>, <?= htmlspecialchars(json_encode($l['visitor_name']), ENT_QUOTES, 'UTF-8') ?>)" title="Klik untuk lihat foto masuk">
+                      <img alt="Foto Petugas" src="<?= e($l['photo_in']) ?>" alt="Foto Petugas Masuk" class="rounded-circle object-fit-cover border" style="width: 24px; height: 24px; cursor: pointer;" onclick="previewPhoto(<?= htmlspecialchars(json_encode($l['photo_in']), ENT_QUOTES, 'UTF-8') ?>, <?= htmlspecialchars(json_encode($l['visitor_name']), ENT_QUOTES, 'UTF-8') ?>)" title="Klik untuk lihat foto masuk">
                     <?php endif; ?>
                     <span><?= e($l['visitor_name']) ?></span>
                   </div>
@@ -1081,7 +1081,7 @@ ob_start();
               <i class="bi bi-shield-check me-1"></i>Pencatatan resmi kontrol akses fisik Data Center BPR Mitra
             </div>
           </div>
-          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Tutup"></button>
         </div>
 
         <div class="modal-body p-4 bg-[#F4F5F7]">
@@ -1373,7 +1373,7 @@ ob_start();
         <h5 class="modal-title fw-bold d-flex align-items-center gap-2" id="modalScannerLabel" style="font-size: 15px;">
           <i class="bi bi-qr-code-scan text-[#D9F1EF]"></i> Scanner Barcode &amp; QR Pintu Server
         </h5>
-        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" onclick="stopScannerModal()"></button>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" onclick="stopScannerModal()" aria-label="Tutup"></button>
       </div>
       <div class="modal-body p-4 text-center">
         <p class="text-[#53595F] small mb-3">
@@ -1418,7 +1418,7 @@ ob_start();
               Selesaikan kunjungan dan catat waktu keluar resmi
             </div>
           </div>
-          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Tutup"></button>
         </div>
 
         <div class="modal-body p-4 bg-[#F4F5F7]">
@@ -1479,7 +1479,7 @@ ob_start();
         <h5 class="modal-title fw-bold d-flex align-items-center gap-2" id="modalSelectCheckoutLabel" style="font-size: 15px;">
           <i class="bi bi-box-arrow-right"></i> Pilih Petugas yang Keluar
         </h5>
-        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Tutup"></button>
       </div>
       <div class="modal-body p-4">
         <p class="text-muted small mb-3">
@@ -1551,7 +1551,7 @@ ob_start();
     <div class="modal-content border-0 shadow-lg rounded-[12px] overflow-hidden">
       <div class="modal-header bg-[#1B2A3A] text-white py-2 px-3">
         <h6 class="modal-title fw-bold small" id="previewTitle">Foto Pengunjung</h6>
-        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Tutup"></button>
       </div>
       <div class="modal-body p-0 text-center bg-black">
         <img id="imgBigPreview" src="" alt="Pratinjau Gambar Penuh" class="img-fluid" style="max-height: 80vh; width: auto;">

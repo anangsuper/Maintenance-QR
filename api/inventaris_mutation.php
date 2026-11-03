@@ -366,7 +366,7 @@ $head = '
 </style>
 ';
 
-$errorHtml = $error ? '<div class="alert alert-danger alert-dismissible fade show border-0 shadow-xs mb-4" style="background:#FDE8E8; color:#9B1C1C; border-left: 4px solid #E02424 !important; border-radius: 8px;"><i class="bi bi-exclamation-triangle-fill me-2 text-danger"></i>'.e($error).'<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>' : '';
+$errorHtml = $error ? '<div class="alert alert-danger alert-dismissible fade show border-0 shadow-xs mb-4" style="background:#FDE8E8; color:#9B1C1C; border-left: 4px solid #E02424 !important; border-radius: 8px;"><i class="bi bi-exclamation-triangle-fill me-2 text-danger"></i>'.e($error).'<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Tutup"></button></div>' : '';
 
 $cancelUrl = module_url('dashboard.php', ['tab' => 'kartu']);
 

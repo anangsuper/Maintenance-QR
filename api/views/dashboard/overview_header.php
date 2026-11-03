@@ -69,8 +69,8 @@ $periodFilterBarHtml .= '
 
 $body = '
 <!-- Flash Messages -->
-'.($flash ? '<div class="alert alert-success alert-dismissible fade show border-0 shadow-sm mb-3"><i class="bi bi-check-circle-fill me-2 text-success"></i>'.e($flash).'<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>' : '').'
-'.($flashError ? '<div class="alert alert-danger alert-dismissible fade show border-0 shadow-sm mb-3"><i class="bi bi-exclamation-triangle-fill me-2 text-danger"></i>'.e($flashError).'<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>' : '');
+'.($flash ? '<div class="alert alert-success alert-dismissible fade show border-0 shadow-sm mb-3"><i class="bi bi-check-circle-fill me-2 text-success"></i>'.e($flash).'<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Tutup"></button></div>' : '').'
+'.($flashError ? '<div class="alert alert-danger alert-dismissible fade show border-0 shadow-sm mb-3"><i class="bi bi-exclamation-triangle-fill me-2 text-danger"></i>'.e($flashError).'<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Tutup"></button></div>' : '');
 
 if (is_hrd() && !is_admin()) {
     // KOMBAI TEAL CONTAINER UNTUK SDM & SARPRAS

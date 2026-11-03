@@ -641,10 +641,10 @@ $body = '
 
 // Flash Messages
 if ($flash) {
-    $body .= '<div class="alert alert-success alert-dismissible fade show border-0 shadow-sm mb-4"><i class="bi bi-check-circle-fill me-2 text-success"></i>'.e($flash).'<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>';
+    $body .= '<div class="alert alert-success alert-dismissible fade show border-0 shadow-sm mb-4"><i class="bi bi-check-circle-fill me-2 text-success"></i>'.e($flash).'<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Tutup"></button></div>';
 }
 if ($flashError) {
-    $body .= '<div class="alert alert-danger alert-dismissible fade show border-0 shadow-sm mb-4"><i class="bi bi-exclamation-triangle-fill me-2 text-danger"></i>'.e($flashError).'<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>';
+    $body .= '<div class="alert alert-danger alert-dismissible fade show border-0 shadow-sm mb-4"><i class="bi bi-exclamation-triangle-fill me-2 text-danger"></i>'.e($flashError).'<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Tutup"></button></div>';
 }
 
 // 1. TAMPILAN JIKA BERHASIL DI-IMPORT (HASIL AKHIR)

@@ -309,7 +309,7 @@ body {
 <!-- Lembar Dokumen Resmi Berita Acara -->
 <div class="doc-sheet">
   <!-- 1. Logo Resmi Bank Mitra di Sudut Kiri Atas -->
-  <img src="<?= $logoUrl ?>" alt="Bank Mitra Logo" class="doc-top-logo">
+  <img alt="Logo Bank Mitra" src="<?= $logoUrl ?>" alt="Bank Mitra Logo" class="doc-top-logo">
 
   <!-- 2. Judul Dokumen & Nomor Berita Acara -->
   <div class="doc-title-block">
@@ -373,7 +373,7 @@ body {
   <?php if (!empty($disposal['foto_barang'])): ?>
     <div class="photo-gallery-box">
       <div class="photo-box-item">
-        <img src="<?= e(disposal_file_url($disposal['foto_barang'])) ?>" alt="Kondisi Fisik Barang Rusak">
+        <img alt="Foto Fisik Barang" src="<?= e(disposal_file_url($disposal['foto_barang'])) ?>" alt="Kondisi Fisik Barang Rusak">
         <div class="photo-label"><i class="bi bi-camera"></i> Dokumentasi Fisik Kondisi Barang Rusak (Afkir)</div>
       </div>
     </div>
@@ -402,7 +402,7 @@ body {
   </div>
 
   <!-- 8. Footer Kop Surat Bank Mitra di Bawah Kertas -->
-  <img src="<?= $footerUrl ?>" alt="Footer Kop Surat Bank Mitra" class="doc-page-footer">
+  <img alt="Footer Dokumen" src="<?= $footerUrl ?>" alt="Footer Kop Surat Bank Mitra" class="doc-page-footer">
 </div>
 
 </body>

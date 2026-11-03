@@ -371,7 +371,7 @@ $body .= '
           <i class="bi bi-shield-check fs-5 text-info"></i>
           <h6 class="modal-title fw-bold text-white mb-0">Rincian Log Aktivitas Sistem</h6>
         </div>
-        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Tutup"></button>
       </div>
       <div class="modal-body p-4 bg-light">
         <div class="bg-white p-3 rounded-3 border mb-3">

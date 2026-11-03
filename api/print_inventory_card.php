@@ -1257,7 +1257,7 @@ unset($_SESSION['flash'], $_SESSION['flash_error']);
                   <!-- Top Header -->
                   <div class="card-header-sec">
                     <div class="header-logo-box">
-                      <img src="<?= e($logoUrl) ?>" alt="Logo Bank Mitra" loading="lazy" onerror="this.src='logo.png'">
+                      <img alt="Logo Bank Mitra" src="<?= e($logoUrl) ?>" alt="Logo Bank Mitra" loading="lazy" onerror="this.src='logo.png'">
                     </div>
                     <div class="header-title-box">
                       <div class="header-main-title">PT BPR MITRATAMA ARTHABUANA</div>
@@ -1381,7 +1381,7 @@ unset($_SESSION['flash'], $_SESSION['flash_error']);
               <h5 class="modal-title fw-bold mb-0"><i class="bi bi-plus-circle me-2"></i>Tambah Kartu Inventaris</h5>
               <small class="text-white-50">Sistem Inventaris Core Banking BPR Mitratama</small>
             </div>
-            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Tutup"></button>
           </div>
           <div class="modal-body p-4">
             <!-- Section 1: Identitas Rekening & Barang -->
@@ -1493,7 +1493,7 @@ unset($_SESSION['flash'], $_SESSION['flash_error']);
           <h6 class="modal-title fw-bold d-flex align-items-center gap-2">
             <i class="bi bi-eye-fill"></i> Pratinjau Interaktif Kartu
           </h6>
-          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Tutup"></button>
         </div>
         <div class="modal-body text-center bg-light p-4">
           <div class="d-flex justify-content-center mb-3">
@@ -1530,7 +1530,7 @@ unset($_SESSION['flash'], $_SESSION['flash_error']);
       <div class="modal-content border-0 shadow-lg" style="border-radius: 14px;">
         <div class="modal-header py-2 px-3 bg-dark text-white">
           <h6 class="modal-title fw-bold"><i class="bi bi-sliders me-2"></i>Kustomisasi Teks Kartu</h6>
-          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Tutup"></button>
         </div>
         <div class="modal-body p-3">
           <div class="mb-3">
@@ -1564,7 +1564,7 @@ unset($_SESSION['flash'], $_SESSION['flash_error']);
       <div class="modal-content border-0 shadow-lg" style="border-radius: 16px;">
         <div class="modal-header py-2 px-3 bg-success text-white">
           <h6 class="modal-title fw-bold"><i class="bi bi-google me-2"></i>Database Google Spreadsheet Otomatis</h6>
-          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Tutup"></button>
         </div>
         <div class="modal-body p-4">
           <ul class="nav nav-pills nav-fill mb-3" id="gasTabs" role="tablist">

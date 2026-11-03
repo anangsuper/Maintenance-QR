@@ -223,7 +223,7 @@ body {
   <!-- Kop Surat Resmi Bank Mitra -->
   <div class="kop-header d-flex align-items-center justify-content-between">
     <div class="d-flex align-items-center gap-3">
-      <img src="<?= app_logo_url() ?>" alt="Logo Bank Mitra" class="bank-logo">
+      <img alt="Logo Bank Mitra" src="<?= app_logo_url() ?>" alt="Logo Bank Mitra" class="bank-logo">
       <div>
         <div class="kop-title">PT. BPR MITRATAMA ARTHABUANA</div>
         <div class="kop-subtitle">

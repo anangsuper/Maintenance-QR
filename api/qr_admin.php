@@ -147,7 +147,7 @@ if (!$table) {
     $table = '<tr><td colspan="8" class="text-center py-5 text-[#53595F]"><i class="bi bi-qr-code text-[32px] text-[#9CA3AF] d-block mb-2"></i>Tidak ada inventaris aset yang memerlukan label QR di cabang ini.</td></tr>';
 }
 
-$flashHtml = $flash ? '<div class="alert alert-success alert-dismissible fade show border-0 shadow-sm mb-4" style="border-left: 4px solid #10B981 !important;"><i class="bi bi-check-circle-fill me-2 text-success"></i>'.e($flash).'<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>' : '';
+$flashHtml = $flash ? '<div class="alert alert-success alert-dismissible fade show border-0 shadow-sm mb-4" style="border-left: 4px solid #10B981 !important;"><i class="bi bi-check-circle-fill me-2 text-success"></i>'.e($flash).'<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Tutup"></button></div>' : '';
 
 $head = '
 <style>

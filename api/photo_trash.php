@@ -170,14 +170,14 @@ ob_start();
 <?php if (!empty($_SESSION['flash'])): ?>
   <div class="alert alert-success alert-dismissible fade show rounded-[10px] mb-3 py-2.5 px-3.5 text-[13px]" role="alert">
     <i class="bi bi-check-circle-fill me-1 text-success"></i> <?= e($_SESSION['flash']) ?>
-    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Tutup"></button>
   </div>
   <?php unset($_SESSION['flash']); ?>
 <?php endif; ?>
 <?php if (!empty($_SESSION['flash_error'])): ?>
   <div class="alert alert-danger alert-dismissible fade show rounded-[10px] mb-3 py-2.5 px-3.5 text-[13px]" role="alert">
     <i class="bi bi-exclamation-triangle-fill me-1 text-danger"></i> <?= e($_SESSION['flash_error']) ?>
-    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Tutup"></button>
   </div>
   <?php unset($_SESSION['flash_error']); ?>
 <?php endif; ?>
@@ -371,7 +371,7 @@ ob_start();
               <!-- Kolom Foto Preview -->
               <div class="col-12 col-sm-4">
                 <div class="position-relative rounded-[10px] overflow-hidden border border-[#D1D5D8] bg-[#F4F5F7] flex items-center justify-center" style="height: 185px;">
-                  <img
+                  <img alt="Gambar Terlampir"
                     src="<?= e($photoUrl) ?>"
                     alt="<?= e($namaBarang) ?>"
                     fetchpriority="low"

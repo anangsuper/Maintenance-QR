@@ -408,7 +408,7 @@ ob_start();
       <div class="bg-white border border-[#E5E7EB] rounded-[10px] p-3 shadow-xs h-100 flex flex-col justify-between">
         <div class="flex items-center gap-3 mb-2.5">
           <?php if ($puPhoto !== ''): ?>
-            <img src="<?= e($puPhoto) ?>" alt="Foto Profil" class="rounded-full border border-[#D1D5D8] shadow-xs js-preview-face cursor-pointer shrink-0" style="width: 44px; height: 44px; object-fit: cover;" data-photo="<?= e($puPhoto) ?>" data-nama="<?= e($puNama) ?>" data-username="<?= e($puUsername) ?>" data-role="<?= e($puRole) ?>" data-id="<?= $puId ?>" data-stat="pending" data-enroll-url="<?= e(module_url('user_biometric_enroll.php', ['id' => $puId])) ?>" title="Klik untuk pratinjau wajah">
+            <img alt="Foto Petugas" src="<?= e($puPhoto) ?>" alt="Foto Profil" class="rounded-full border border-[#D1D5D8] shadow-xs js-preview-face cursor-pointer shrink-0" style="width: 44px; height: 44px; object-fit: cover;" data-photo="<?= e($puPhoto) ?>" data-nama="<?= e($puNama) ?>" data-username="<?= e($puUsername) ?>" data-role="<?= e($puRole) ?>" data-id="<?= $puId ?>" data-stat="pending" data-enroll-url="<?= e(module_url('user_biometric_enroll.php', ['id' => $puId])) ?>" title="Klik untuk pratinjau wajah">
           <?php else: ?>
             <div class="rounded-full bg-[#FEF3C7] text-[#D97706] font-bold flex items-center justify-center shrink-0 border border-[#FCD34D]" style="width: 44px; height: 44px;">
               <i class="bi bi-person-bounding-box"></i>
@@ -997,7 +997,7 @@ ob_start();
           ?>
           <div class="p-3 mb-3 bg-[#F8FAF9] rounded-[8px] border border-[#D1D5D8]">
             <div class="flex items-center gap-3 mb-2">
-              <img src="<?= e($editPhoto) ?>" alt="Foto Profil" class="rounded-full border border-[#D1D5D8] shadow-xs" style="width: 44px; height: 44px; object-fit: cover;" alt="Foto Profil Petugas">
+              <img alt="Foto Petugas" src="<?= e($editPhoto) ?>" alt="Foto Profil" class="rounded-full border border-[#D1D5D8] shadow-xs" style="width: 44px; height: 44px; object-fit: cover;" alt="Foto Profil Petugas">
               <div class="min-w-0 flex-1">
                 <div class="text-[12px] font-bold text-[#1B2A3A] truncate"><?= e($editNama) ?></div>
                 <div class="text-[11px] font-mono text-[#53595F]">Biometrik Wajah Tersimpan</div>

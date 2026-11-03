@@ -263,7 +263,7 @@ body {
   <!-- Kop Surat Resmi Bank Mitra -->
   <div class="d-flex align-items-center justify-content-between">
     <div class="d-flex align-items-center gap-3">
-      <img src="<?= app_logo_url() ?>" alt="Bank Mitra Logo" class="bank-logo">
+      <img alt="Logo Bank Mitra" src="<?= app_logo_url() ?>" alt="Bank Mitra Logo" class="bank-logo">
       <div>
         <div class="kop-title">PT BPR MITRATAMA ARTHABUANA</div>
         <div class="kop-sub">Kantor Pusat Operasional &middot; Bagian Umum &amp; Sarana Prasarana</div>
@@ -345,7 +345,7 @@ body {
         </div>
         <div class="doc-img-frame">
           <?php if ($hasFoto): ?>
-            <img src="<?= e(memo_file_url($memo['foto_barang_file'])) ?>" alt="Foto Fisik Barang">
+            <img alt="Foto Fisik Barang" src="<?= e(memo_file_url($memo['foto_barang_file'])) ?>" alt="Foto Fisik Barang">
           <?php else: ?>
             <div class="text-muted small fst-italic">Foto fisik belum diunggah</div>
           <?php endif; ?>
@@ -374,7 +374,7 @@ body {
                 </a>
               </div>
             <?php else: ?>
-              <img src="<?= e(memo_file_url($memo['bukti_beli_file'])) ?>" alt="Bukti Nota Toko">
+              <img alt="Bukti Pembelian" src="<?= e(memo_file_url($memo['bukti_beli_file'])) ?>" alt="Bukti Nota Toko">
             <?php endif; ?>
           <?php else: ?>
             <div class="text-muted small fst-italic">Bukti nota toko belum diunggah</div>
