@@ -109,6 +109,16 @@ $body .= '
               <div class="form-text text-muted" style="font-size: 0.70rem;">Format resmi: <strong>XX.X.XXXXX</strong> (contoh: <code>'.e($nextKodeInventarisMap['01'] ?? '01.5.00497').'</code>)</div>
             </div>
             <div class="col-md-6">
+              <label class="form-label small fw-bold text-dark">Kantor Bank <span class="text-danger">*</span></label>
+              <div class="input-group">
+                <span class="input-group-text font-monospace fw-bold bg-white text-primary" id="addCardKdCabang" style="min-width: 44px; justify-content: center;">01</span>
+                <select class="form-select font-monospace fw-semibold" name="kantor_bank" id="addCardKantorBank" onchange="syncAddCardBranchFromKantorBank(this.value)">
+                  '.$optCardKantorBank.'
+                </select>
+              </div>
+              <div class="form-text text-muted" style="font-size: 0.70rem;">01 KPO, 02 Batulicin, 03 Martapura, 04 Tanjung, 05 Handil Bakti.</div>
+            </div>
+            <div class="col-md-6">
               <label class="form-label small fw-bold text-dark">Nama Barang <span class="text-danger">*</span></label>
               <input type="text" name="nama_barang" class="form-control" placeholder="Contoh: MOBIL AVANZA DA 1532 BV" required>
             </div>
@@ -235,6 +245,16 @@ $body .= '
               <label class="form-label small fw-bold text-dark">Nomor Rekening / Kode Inventaris <span class="text-danger">*</span></label>
               <input type="text" name="nomor_rekening" id="editCardRekening" class="form-control font-monospace fw-bold text-primary" placeholder="Contoh: 01.5.00496" maxlength="10" required oninput="handleRekeningInput(this, event)">
               <div class="form-text text-muted" style="font-size: 0.72rem;">Format resmi: <strong>XX.X.XXXXX</strong></div>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label small fw-bold text-dark">Kantor Bank <span class="text-danger">*</span></label>
+              <div class="input-group">
+                <span class="input-group-text font-monospace fw-bold bg-white text-primary" id="editCardKdCabang" style="min-width: 44px; justify-content: center;">01</span>
+                <select class="form-select font-monospace fw-semibold" name="kantor_bank" id="editCardKantorBank" onchange="document.getElementById(\'editCardKdCabang\').textContent = this.value.substring(0, 2)">
+                  '.$optCardKantorBank.'
+                </select>
+              </div>
+              <div class="form-text text-muted" style="font-size: 0.70rem;">01 KPO, 02 Batulicin, 03 Martapura, 04 Tanjung, 05 Handil Bakti.</div>
             </div>
             <div class="col-md-6">
               <label class="form-label small fw-bold text-dark">Nama Barang <span class="text-danger">*</span></label>

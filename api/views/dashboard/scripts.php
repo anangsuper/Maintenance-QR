@@ -130,6 +130,33 @@ function handleRekeningInput(el, event) {
 
   if (p0.length === 2) {
     autoSuggestBranchLokasi(p0);
+    if (["01", "02", "03", "04", "05"].includes(p0)) {
+      if (el.id === "addCardRekening") {
+        const kbSelect = document.getElementById("addCardKantorBank");
+        const kdBadge = document.getElementById("addCardKdCabang");
+        if (kbSelect) {
+          for (let i = 0; i < kbSelect.options.length; i++) {
+            if (kbSelect.options[i].value.startsWith(p0)) {
+              kbSelect.selectedIndex = i;
+              break;
+            }
+          }
+        }
+        if (kdBadge) kdBadge.textContent = p0;
+      } else if (el.id === "editCardRekening") {
+        const editKb = document.getElementById("editCardKantorBank");
+        const editKd = document.getElementById("editCardKdCabang");
+        if (editKb) {
+          for (let i = 0; i < editKb.options.length; i++) {
+            if (editKb.options[i].value.startsWith(p0)) {
+              editKb.selectedIndex = i;
+              break;
+            }
+          }
+        }
+        if (editKd) editKd.textContent = p0;
+      }
+    }
   }
   if (el.id === "addCardRekening") {
     autoGenerateCardNoSeri("add");
@@ -143,6 +170,19 @@ function selectAddCardBranch(code) {
   } else if (rekInput) {
     rekInput.value = code + ".5.00001";
   }
+  const kbSelect = document.getElementById("addCardKantorBank");
+  const kdBadge = document.getElementById("addCardKdCabang");
+  if (kbSelect) {
+    for (let i = 0; i < kbSelect.options.length; i++) {
+      if (kbSelect.options[i].value.startsWith(code)) {
+        kbSelect.selectedIndex = i;
+        break;
+      }
+    }
+  }
+  if (kdBadge) {
+    kdBadge.textContent = code;
+  }
   const addLok = document.getElementById("addCardLokasi");
   const mapLok = {
     "01": "Kantor Pusat (KPO)",
@@ -155,6 +195,38 @@ function selectAddCardBranch(code) {
     addLok.value = mapLok[code];
   }
   autoGenerateCardNoSeri("add");
+}
+
+function syncAddCardBranchFromKantorBank(val) {
+  const code = (val || "").substring(0, 2);
+  const kdBadge = document.getElementById("addCardKdCabang");
+  if (kdBadge) kdBadge.textContent = code;
+  if (code && ["01", "02", "03", "04", "05"].includes(code)) {
+    const rekInput = document.getElementById("addCardRekening");
+    if (rekInput) {
+      const curVal = rekInput.value.replace(/[^0-9]/g, "");
+      const curBranch = curVal.slice(0, 2);
+      if (curBranch !== code) {
+        if (window.NEXT_KODE_INV_MAP && window.NEXT_KODE_INV_MAP[code]) {
+          rekInput.value = window.NEXT_KODE_INV_MAP[code];
+        } else {
+          rekInput.value = code + ".5.00001";
+        }
+      }
+    }
+    const addLok = document.getElementById("addCardLokasi");
+    const mapLok = {
+      "01": "Kantor Pusat (KPO)",
+      "02": "Batulicin",
+      "03": "Martapura",
+      "04": "Tanjung",
+      "05": "Handil Bakti"
+    };
+    if (addLok && mapLok[code] && (!addLok.value || addLok.dataset.customized !== "true")) {
+      addLok.value = mapLok[code];
+    }
+    autoGenerateCardNoSeri("add");
+  }
 }
 
 function handleDateInput(el, event) {
@@ -365,6 +437,43 @@ function openCardEditModal(card) {
   document.getElementById("editCardId").value = card.id || "";
   document.getElementById("editCardRekening").value = card.nomor_rekening || "";
   document.getElementById("editCardNama").value = card.nama_barang || "";
+
+  const editKb = document.getElementById("editCardKantorBank");
+  const editKd = document.getElementById("editCardKdCabang");
+  let targetBranch = "01";
+  let targetVal = card.kantor_bank || "";
+  if (!targetVal && card.nomor_rekening) {
+    const m = String(card.nomor_rekening).match(/^0?([1-5])/);
+    if (m) {
+      targetBranch = "0" + m[1];
+    }
+  } else if (targetVal) {
+    targetBranch = targetVal.substring(0, 2);
+  }
+  if (editKb) {
+    let matched = false;
+    for (let i = 0; i < editKb.options.length; i++) {
+      if (targetVal && editKb.options[i].value === targetVal) {
+        editKb.selectedIndex = i;
+        matched = true;
+        break;
+      }
+    }
+    if (!matched) {
+      for (let i = 0; i < editKb.options.length; i++) {
+        if (editKb.options[i].value.startsWith(targetBranch)) {
+          editKb.selectedIndex = i;
+          matched = true;
+          break;
+        }
+      }
+    }
+    if (editKd) {
+      editKd.textContent = editKb.value.substring(0, 2) || targetBranch;
+    }
+  } else if (editKd) {
+    editKd.textContent = targetBranch;
+  }
   document.getElementById("editCardNoSeri").value = card.nomor_seri_inventaris || "";
 
   if (card.jenis_inventaris) {

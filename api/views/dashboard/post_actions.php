@@ -16,6 +16,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         $res = insert_inventaris_kartu([
             'nomor_rekening'        => $_POST['nomor_rekening'] ?? '',
+            'kantor_bank'           => $_POST['kantor_bank'] ?? '',
             'nama_barang'           => $_POST['nama_barang'] ?? '',
             'nomor_seri_inventaris' => $_POST['nomor_seri_inventaris'] ?? '',
             'jenis_inventaris'      => $_POST['jenis_inventaris'] ?? '',
@@ -48,6 +49,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         $ok = update_inventaris_kartu($cardId, [
             'nomor_rekening'        => $_POST['nomor_rekening'] ?? '',
+            'kantor_bank'           => $_POST['kantor_bank'] ?? '',
             'nama_barang'           => $_POST['nama_barang'] ?? '',
             'nomor_seri_inventaris' => $_POST['nomor_seri_inventaris'] ?? '',
             'jenis_inventaris'      => $_POST['jenis_inventaris'] ?? '',

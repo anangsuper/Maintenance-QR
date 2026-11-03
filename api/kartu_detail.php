@@ -311,6 +311,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
         $statusInv = trim((string)($_POST['status_inventaris'] ?? '1 : Aktif'));
         $nomorSeri = trim((string)($_POST['nomor_seri_inventaris'] ?? ''));
         $keterangan = trim((string)($_POST['keterangan'] ?? ''));
+        $kantorBankInput = trim((string)($_POST['kantor_bank'] ?? ''));
 
         // Lokasi barang: utamakan custom input, atau select
         $finalRuangan = !empty($ruanganCustom) ? $ruanganCustom : $ruanganSelect;
@@ -327,6 +328,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
             'sumber_perolehan' => $sumberPerolehan,
             'status_inventaris' => $statusInv,
             'keterangan' => $keterangan,
+            'kantor_bank' => $kantorBankInput,
         ]);
 
         if ($updated) {
@@ -372,6 +374,7 @@ if ($card) {
 }
 
 // Master Pilihan Data Bank
+$masterKantorBank = get_master_kantor_bank_list();
 $masterJenis = get_master_jenis_inventaris();
 $masterGolongan = get_master_golongan_inventaris();
 $masterRuangan = get_master_ruangan_list();
@@ -522,13 +525,10 @@ $pageTitle = $card ? e($card['nama_barang']) . ' - Kartu Inventaris' : 'Kartu In
                 $kodeInventaris = format_kode_inventaris($rek);
                 $tglFormatted = format_indo_date($card['tanggal_perolehan']);
                 $nomorGabungan = get_nomor_asset_gabungan($kodeInventaris, $card['tanggal_perolehan']);
-                $cBranch = get_cabang_from_nomor_rekening($kodeInventaris);
-                $kdCabang = $cBranch ? $cBranch['code'] : '01';
-                if ($kdCabang === '01') {
-                    $namaCabang = 'KANTOR PUSAT OPERASIONAL (KPO)';
-                } else {
-                    $namaCabang = 'KANTOR CABANG ' . strtoupper($cBranch['name'] ?? '');
-                }
+                $kantorBankInfo = get_kantor_bank_from_card($card);
+                $kdCabang = $kantorBankInfo['code'];
+                $namaCabang = $kantorBankInfo['label'];
+                $kantorBankVal = $kantorBankInfo['label'];
                 
                 // Nilai-nilai master inventaris
                 $nomorSeriInv = !empty($card['nomor_seri_inventaris']) ? $card['nomor_seri_inventaris'] : generate_default_nomor_seri($card);
@@ -582,6 +582,9 @@ $pageTitle = $card ? e($card['nama_barang']) . ' - Kartu Inventaris' : 'Kartu In
                         </div>
                         <h2 class="h6 fw-bold text-dark mb-1 lh-sm" style="font-size: 1.05rem;"><?= e($card['nama_barang']) ?></h2>
                         <div class="font-mono text-primary fw-bold small mb-1" style="font-size: 0.82rem;"><?= e($kodeInventaris) ?> <span class="text-muted fw-normal">(#<?= (int)$card['id'] ?>)</span></div>
+                        <div class="small text-muted mb-0.5" style="font-size: 0.76rem;">
+                            <i class="bi bi-building text-primary me-1"></i><strong class="text-dark"><?= e($kantorBankVal) ?></strong>
+                        </div>
                         <div class="small text-muted mb-0.5" style="font-size: 0.76rem;">
                             <i class="bi bi-geo-alt-fill text-primary me-1"></i><strong class="text-dark"><?= e($lokasiBarangVal) ?></strong>
                         </div>
@@ -969,6 +972,24 @@ $pageTitle = $card ? e($card['nama_barang']) . ' - Kartu Inventaris' : 'Kartu In
                             <div class="table-responsive rounded-3 border bg-white mb-3">
                                 <table class="table table-sm table-striped bank-data-table mb-0">
                                     <tbody>
+                                        <tr>
+                                            <td class="td-label">Kantor Bank</td>
+                                            <td>
+                                                <div class="d-flex align-items-center justify-content-between gap-2">
+                                                    <div class="d-flex align-items-center gap-1.5 flex-wrap">
+                                                        <span class="badge rounded-pill px-2.5 py-1 font-mono fw-bold" style="background-color: #0E5C58; color: #FFFFFF;">
+                                                            <?= e($kdCabang) ?>
+                                                        </span>
+                                                        <span class="badge rounded-pill px-2.5 py-1 font-mono fw-semibold" style="background-color: #F1F5F9; color: #1E293B; border: 1px solid #CBD5E1;">
+                                                            <i class="bi bi-building me-1 text-primary"></i><?= e($kantorBankVal) ?>
+                                                        </span>
+                                                    </div>
+                                                    <button type="button" class="btn btn-xs btn-link text-muted p-0 text-decoration-none" data-bs-toggle="modal" data-bs-target="#modalEditDataKartu" title="Ubah Kantor Bank">
+                                                        <i class="bi bi-pencil-fill" style="font-size: 0.72rem;"></i>
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
                                         <tr>
                                             <td class="td-label">Kode Inventaris</td>
                                             <td>

@@ -215,12 +215,98 @@ function get_next_kode_inventaris_per_cabang(?array $cards = null): array {
  */
 function get_standard_cabang_list(): array {
     return [
-        ['code' => '01', 'name' => 'Kantor Pusat', 'lokasi' => 'Kantor Pusat (KPO)'],
+        ['code' => '01', 'name' => 'Kantor Pusat Operasional', 'lokasi' => 'Kantor Pusat (KPO)'],
         ['code' => '02', 'name' => 'Batulicin', 'lokasi' => 'Batulicin'],
         ['code' => '03', 'name' => 'Martapura', 'lokasi' => 'Martapura'],
         ['code' => '04', 'name' => 'Tanjung', 'lokasi' => 'Tanjung'],
         ['code' => '05', 'name' => 'Handil Bakti', 'lokasi' => 'Handil Bakti'],
     ];
+}
+
+/**
+ * Master Data Resmi Jaringan Kantor Bank BPR Mitratama (01 s/d 05)
+ * Sesuai Core Banking System (CBS):
+ * 01: Kantor Pusat Operasional
+ * 02: Batulicin (KC. BATULICIN)
+ * 03: Martapura (KC. MARTAPURA)
+ * 04: Tanjung (KC. TANJUNG)
+ * 05: Handil Bakti (KC. HANDIL BAKTI)
+ */
+function get_master_kantor_bank_list(): array {
+    return [
+        '01' => [
+            'code' => '01',
+            'name' => 'Kantor Pusat Operasional',
+            'label' => '01 : KANTOR PUSAT OPERASIONAL',
+            'value' => '01 : KANTOR PUSAT OPERASIONAL',
+            'lokasi' => 'Kantor Pusat (KPO)'
+        ],
+        '02' => [
+            'code' => '02',
+            'name' => 'Batulicin',
+            'label' => '02 : KC. BATULICIN',
+            'value' => '02 : KC. BATULICIN',
+            'lokasi' => 'Batulicin'
+        ],
+        '03' => [
+            'code' => '03',
+            'name' => 'Martapura',
+            'label' => '03 : KC. MARTAPURA',
+            'value' => '03 : KC. MARTAPURA',
+            'lokasi' => 'Martapura'
+        ],
+        '04' => [
+            'code' => '04',
+            'name' => 'Tanjung',
+            'label' => '04 : KC. TANJUNG',
+            'value' => '04 : KC. TANJUNG',
+            'lokasi' => 'Tanjung'
+        ],
+        '05' => [
+            'code' => '05',
+            'name' => 'Handil Bakti',
+            'label' => '05 : KC. HANDIL BAKTI',
+            'value' => '05 : KC. HANDIL BAKTI',
+            'lokasi' => 'Handil Bakti'
+        ],
+    ];
+}
+
+/**
+ * Mendapatkan detail Kantor Bank dari data kartu inventaris
+ */
+function get_kantor_bank_from_card(array $card): array {
+    $master = get_master_kantor_bank_list();
+
+    // 1. Cek dari kolom kantor_bank jika tersimpan
+    $rawKb = trim((string)($card['kantor_bank'] ?? ''));
+    if ($rawKb !== '') {
+        if (preg_match('/^(\d{2})/i', $rawKb, $m) && isset($master[$m[1]])) {
+            return $master[$m[1]];
+        }
+        $rawLower = strtolower($rawKb);
+        if (str_contains($rawLower, 'batulicin')) return $master['02'];
+        if (str_contains($rawLower, 'martapura')) return $master['03'];
+        if (str_contains($rawLower, 'tanjung')) return $master['04'];
+        if (str_contains($rawLower, 'handil')) return $master['05'];
+        if (str_contains($rawLower, 'pusat') || str_contains($rawLower, 'kpo')) return $master['01'];
+    }
+
+    // 2. Cek dari nomor_rekening / kode inventaris (contoh: 01.5.00496 -> 01)
+    $rek = trim((string)($card['nomor_rekening'] ?? ''));
+    if (preg_match('/^(\d{2})[\.\-]/', $rek, $m) && isset($master[$m[1]])) {
+        return $master[$m[1]];
+    }
+
+    // 3. Cek dari lokasi fisik
+    $lok = strtolower(trim((string)($card['lokasi'] ?? '')));
+    if (str_contains($lok, 'batulicin')) return $master['02'];
+    if (str_contains($lok, 'martapura')) return $master['03'];
+    if (str_contains($lok, 'tanjung')) return $master['04'];
+    if (str_contains($lok, 'handil')) return $master['05'];
+
+    // Default ke Kantor Pusat Operasional (01)
+    return $master['01'];
 }
 
 function get_standard_cabang_by_code(string $code): ?array {
@@ -465,19 +551,24 @@ function insert_inventaris_kartu(array $data): array {
     if ($ket === '') {
         $ket = $nama;
     }
+    $kantorBank = trim((string)($data['kantor_bank'] ?? ''));
+    if ($kantorBank === '') {
+        $kbInfo = get_kantor_bank_from_card(['nomor_rekening' => $rek, 'lokasi' => $lokasi]);
+        $kantorBank = $kbInfo['label'];
+    }
 
     try {
         $ins = db()->prepare("
             INSERT INTO inventaris_kartu (
                 nomor_rekening, nama_barang, tanggal_perolehan, barcode_data, lokasi,
-                nomor_seri_inventaris, jenis_inventaris, golongan, ruangan, sumber_perolehan, status_inventaris, keterangan,
+                nomor_seri_inventaris, jenis_inventaris, golongan, ruangan, sumber_perolehan, status_inventaris, keterangan, kantor_bank,
                 created_at
             )
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ");
         $ins->execute([
             $rek, $nama, $tgl, $barcode, $lokasi,
-            $noSeri, $jenisInv, $golongan, $ruangan, $sumber, $statusInv, $ket,
+            $noSeri, $jenisInv, $golongan, $ruangan, $sumber, $statusInv, $ket, $kantorBank,
             $nowStr
         ]);
         $newId = (int)db()->lastInsertId();
@@ -538,6 +629,11 @@ function update_inventaris_kartu(int $id, array $data): bool {
     $sumber = trim((string)($data['sumber_perolehan'] ?? ($current['sumber_perolehan'] ?? '02 : MODAL DISETOR')));
     $statusInv = trim((string)($data['status_inventaris'] ?? ($current['status_inventaris'] ?? '1 : Aktif')));
     $ket = trim((string)($data['keterangan'] ?? ($current['keterangan'] ?? '')));
+    $kantorBank = trim((string)($data['kantor_bank'] ?? ($current['kantor_bank'] ?? '')));
+    if ($kantorBank === '') {
+        $kbInfo = get_kantor_bank_from_card(['nomor_rekening' => $rek, 'lokasi' => $lokasi]);
+        $kantorBank = $kbInfo['label'];
+    }
     if ($noSeri === '') {
         $noSeri = generate_default_nomor_seri([
             'id' => $id,
@@ -569,12 +665,12 @@ function update_inventaris_kartu(int $id, array $data): bool {
         $st = db()->prepare("
             UPDATE inventaris_kartu
             SET nomor_rekening = ?, nama_barang = ?, tanggal_perolehan = ?, barcode_data = ?, lokasi = ?,
-                nomor_seri_inventaris = ?, jenis_inventaris = ?, golongan = ?, ruangan = ?, pengguna = ?, sumber_perolehan = ?, status_inventaris = ?, keterangan = ?
+                nomor_seri_inventaris = ?, jenis_inventaris = ?, golongan = ?, ruangan = ?, pengguna = ?, sumber_perolehan = ?, status_inventaris = ?, keterangan = ?, kantor_bank = ?
             WHERE id = ?
         ");
         return $st->execute([
             $rek, $nama, $tgl, $barcode, $lokasi,
-            $noSeri, $jenisInv, $golongan, $ruangan, $pengguna, $sumber, $statusInv, $ket,
+            $noSeri, $jenisInv, $golongan, $ruangan, $pengguna, $sumber, $statusInv, $ket, $kantorBank,
             $id
         ]);
     } catch (Throwable $e) {
@@ -835,6 +931,13 @@ function ensure_inventaris_kartu_columns(): void {
     static $done = false;
     if ($done) return;
     $done = true;
+    try {
+        $pdo = db();
+        $st = $pdo->query("SHOW COLUMNS FROM inventaris_kartu LIKE 'kantor_bank'");
+        if (!$st || !$st->fetch()) {
+            $pdo->exec("ALTER TABLE inventaris_kartu ADD COLUMN kantor_bank VARCHAR(150) NULL DEFAULT NULL AFTER lokasi");
+        }
+    } catch (Throwable $e) {}
     if (function_exists('ensure_photo_trash_and_dual_photo_schema')) {
         ensure_photo_trash_and_dual_photo_schema();
     }
@@ -1022,7 +1125,8 @@ function update_inventaris_kartu_data(int $id, array $data): bool {
                 lokasi = ?,
                 sumber_perolehan = ?,
                 status_inventaris = ?,
-                keterangan = ?
+                keterangan = ?,
+                kantor_bank = ?
             WHERE id = ?
         ");
         return $st->execute([
@@ -1034,6 +1138,7 @@ function update_inventaris_kartu_data(int $id, array $data): bool {
             $data['sumber_perolehan'] ?? null,
             $data['status_inventaris'] ?? '1 : Aktif',
             $data['keterangan'] ?? null,
+            $data['kantor_bank'] ?? null,
             $id
         ]);
     } catch (Throwable $e) {

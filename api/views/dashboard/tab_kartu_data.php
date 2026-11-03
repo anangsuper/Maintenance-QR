@@ -12,6 +12,12 @@ foreach (get_master_golongan_inventaris() as $k => $v) {
     $optCardGolongan .= '<option value="'.e($v).'">'.e($v).'</option>';
 }
 
+$optCardKantorBank = '';
+foreach (get_master_kantor_bank_list() as $kbCode => $kbItem) {
+    $valKb = $kbItem['value'] ?? $kbItem;
+    $optCardKantorBank .= '<option value="'.e($valKb).'" data-kode="'.e($kbCode).'">'.e($valKb).'</option>';
+}
+
 $optCardRuangan = '';
 $masterRuanganList = get_master_ruangan_list();
 foreach ($masterRuanganList as $r) {
@@ -56,6 +62,11 @@ if (empty($displayCards)) {
         $barcode = normalize_qr_target_url($rawBarcode, $canonicalCardUrl);
         $noSeriVal = !empty($c['nomor_seri_inventaris']) ? $c['nomor_seri_inventaris'] : generate_default_nomor_seri($c);
         $lokasi = !empty($c['ruangan']) ? $c['ruangan'] : (!empty($c['lokasi']) ? $c['lokasi'] : 'KPO');
+        $kantorBankInfo = get_kantor_bank_from_card($c);
+        $kantorBankVal = !empty($c['kantor_bank']) ? $c['kantor_bank'] : $kantorBankInfo['kantor_bank_val'];
+        $c['kantor_bank'] = $kantorBankVal;
+        $c['kantor_bank_code'] = $kantorBankInfo['kode'];
+        $c['kantor_bank_nama'] = $kantorBankInfo['nama'];
         $jsonPayload = json_encode(array_merge($c, [
             'nomor_rekening' => $rek,
             'nomor_seri_inventaris' => $noSeriVal,
@@ -118,8 +129,8 @@ if (empty($displayCards)) {
         $isPrintedCard = !empty($c['printed_at']);
         $printedDateTooltip = $isPrintedCard ? date('d/m/Y H:i', strtotime((string)$c['printed_at'])) : '';
         $printStatusBadgeHtml = $isPrintedCard
-            ? '<button type="button" id="print-badge-'.$cId.'" data-printed="1" onclick="toggleCardPrintStatus('.$cId.', this)" class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#ECFDF5] text-[#059669] border border-[#A7F3D0] hover:bg-[#D1FAE5] transition-colors inline-flex items-center gap-1 cursor-pointer" title="Sudah dicetak pada '.e($printedDateTooltip).' — Klik untuk ubah ke Belum Dicetak"><i class="bi bi-check-circle-fill"></i><span>Sudah Dicetak</span></button>'
-            : '<button type="button" id="print-badge-'.$cId.'" data-printed="0" onclick="toggleCardPrintStatus('.$cId.', this)" class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#FFFBEB] text-[#D97706] border border-[#FDE68A] hover:bg-[#FEF3C7] transition-colors inline-flex items-center gap-1 cursor-pointer" title="Belum pernah dicetak — Klik untuk tandai Sudah Dicetak"><i class="bi bi-hourglass-split"></i><span>Belum Dicetak</span></button>';
+            ? '<button type="button" id="print-badge-'.$cId.'" data-printed="1" onclick="toggleCardPrintStatus('.$cId.', this)" class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#ECFDF5] text-[#059669] border border-[#A7F3D0] hover:bg-[#D1FAE5] transition-colors inline-flex items-center gap-1 cursor-pointer" title="Sudah dicetak pada '.e($printedDateTooltip).' • Klik untuk ubah ke Belum Dicetak"><i class="bi bi-check-circle-fill"></i><span>Sudah Dicetak</span></button>'
+            : '<button type="button" id="print-badge-'.$cId.'" data-printed="0" onclick="toggleCardPrintStatus('.$cId.', this)" class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#FFFBEB] text-[#D97706] border border-[#FDE68A] hover:bg-[#FEF3C7] transition-colors inline-flex items-center gap-1 cursor-pointer" title="Belum pernah dicetak • Klik untuk tandai Sudah Dicetak"><i class="bi bi-hourglass-split"></i><span>Belum Dicetak</span></button>';
 
         $printStatusBadgeMobHtml = $isPrintedCard
             ? '<button type="button" id="print-badge-mob-'.$cId.'" data-printed="1" onclick="toggleCardPrintStatus('.$cId.', this)" class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#ECFDF5] text-[#059669] border border-[#A7F3D0] inline-flex items-center gap-1 cursor-pointer" title="Sudah dicetak pada '.e($printedDateTooltip).'"><i class="bi bi-check-circle-fill"></i><span>Sudah Dicetak</span></button>'
@@ -134,6 +145,7 @@ if (empty($displayCards)) {
             <div class="font-mono font-bold text-[#0E5C58] text-[13px]">'.e($rek).'</div>
             <div class="text-[11px] text-[#53595F] font-mono mt-0.5" title="Nomor Aset Gabungan">'.e($gabungan).'</div>
             '.$noSeriBadge.'
+            <div class="text-[10px] text-[#0E5C58] font-mono mt-0.5 fw-semibold" title="Kantor Bank"><i class="bi bi-building me-0.5"></i>'.e($kantorBankInfo['kantor_bank_val']).'</div>
           </th>
           <td class="py-2.5">
             <div class="flex items-center gap-2.5">
@@ -190,6 +202,7 @@ if (empty($displayCards)) {
               <div>
                 <div class="font-mono font-bold text-[#0E5C58] text-[13px]">'.e($rek).'</div>
                 <div class="text-[11px] text-[#53595F] font-mono" title="Nomor Aset Gabungan">'.e($gabungan).'</div>
+                <div class="text-[10px] text-[#0E5C58] font-mono mt-0.5 font-semibold" title="Kantor Bank"><i class="bi bi-building me-0.5"></i>'.e($kantorBankInfo['kantor_bank_val']).'</div>
               </div>
             </div>
             <div class="flex items-center gap-1.5 flex-wrap justify-end">

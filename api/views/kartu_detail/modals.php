@@ -27,6 +27,22 @@
                     <div class="modal-body p-4 bg-light">
                         <div class="row g-3">
                             
+                            <!-- Kantor Bank (Core Banking BPR Mitratama) -->
+                            <div class="col-md-6">
+                                <label class="form-label small fw-bold text-secondary">Kantor Bank</label>
+                                <div class="input-group input-group-sm">
+                                    <span class="input-group-text font-mono fw-bold bg-white text-primary" id="editModalKdCabang" style="min-width: 44px; justify-content: center;"><?= e($kdCabang) ?></span>
+                                    <select name="kantor_bank" id="editModalKantorBank" class="form-select form-select-sm font-mono fw-semibold" onchange="document.getElementById('editModalKdCabang').textContent = this.value.substring(0, 2);">
+                                        <?php foreach ($masterKantorBank as $code => $kb): ?>
+                                            <option value="<?= e($kb['value']) ?>" <?= ($kdCabang === $code || str_starts_with($kantorBankVal, $code)) ? 'selected' : '' ?>>
+                                                <?= e($kb['label']) ?>
+                                            </option>
+                                        <?php endforeach; ?>
+                                    </select>
+                                </div>
+                                <div class="form-text text-muted" style="font-size: 0.70rem;">01. Kantor Pusat Operasional, 02. Batulicin, 03. Martapura, 04. Tanjung, 05. Handil Bakti.</div>
+                            </div>
+
                             <!-- Kode Inventaris (Read Only) -->
                             <div class="col-md-6">
                                 <label class="form-label small fw-bold text-secondary">Kode Inventaris</label>
