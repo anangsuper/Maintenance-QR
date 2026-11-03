@@ -431,8 +431,8 @@
                 if (window.location.protocol === "http:") {
                     const httpsUrl = "https://" + window.location.host + window.location.pathname + window.location.search;
                     if (statusBox) {
-                        statusBox.className = "alert alert-warning py-2.5 px-3 small mb-2";
-                        statusBox.innerHTML = '<i class="bi bi-shield-exclamation text-warning me-1"></i> Kamera live memerlukan protokol <strong>HTTPS</strong>.<br><a href="' + httpsUrl + '" class="btn btn-warning btn-sm fw-bold mt-1 text-dark shadow-xs"><i class="bi bi-box-arrow-up-right me-1"></i> Buka via HTTPS agar Kamera Aktif</a>';
+                        statusBox.className = "alert alert-primary py-2.5 px-3 small mb-2";
+                        statusBox.innerHTML = '<i class="bi bi-shield-exclamation text-primary me-1"></i> Kamera live memerlukan protokol <strong>HTTPS</strong>.<br><a href="' + httpsUrl + '" class="btn btn-primary btn-sm fw-bold mt-1 text-white shadow-xs"><i class="bi bi-box-arrow-up-right me-1"></i> Buka via HTTPS agar Kamera Aktif</a>';
                     }
                     return;
                 }
@@ -622,8 +622,8 @@
             const statusBox = document.getElementById("bioStatusBox");
             if (!video || !video.videoWidth || bioCompleted) return;
 
-            statusBox.className = "alert alert-warning py-2 px-3 small fw-bold mb-2";
-            statusBox.innerHTML = '<span class="spinner-border spinner-border-sm me-2 text-warning"></span> Memproses pengenalan wajah...';
+            statusBox.className = "alert alert-primary py-2 px-3 small fw-bold mb-2";
+            statusBox.innerHTML = '<span class="spinner-border spinner-border-sm me-2 text-primary"></span> Memproses pengenalan wajah...';
 
             const useTiny = faceapi.nets.faceLandmark68TinyNet && faceapi.nets.faceLandmark68TinyNet.isLoaded;
             const detectorOptions = new faceapi.TinyFaceDetectorOptions({ inputSize: 224, scoreThreshold: 0.3 });
@@ -699,8 +699,8 @@
                             } else {
                                 bioFaceHoldFrames = Math.max(0, bioFaceHoldFrames - 1);
                                 if (statusBox) {
-                                    statusBox.className = "alert alert-warning py-2 px-3 small fw-semibold mb-2";
-                                    statusBox.innerHTML = '<i class="bi bi-person-exclamation me-1"></i> Wajah terdeteksi, mencocokkan dengan data staf...';
+                                    statusBox.className = "alert alert-primary py-2 px-3 small fw-semibold mb-2";
+                                    statusBox.innerHTML = '<i class="bi bi-person-exclamation text-primary me-1"></i> Wajah terdeteksi, mencocokkan dengan data staf...';
                                 }
                             }
                         }
