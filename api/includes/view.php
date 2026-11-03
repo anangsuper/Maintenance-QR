@@ -20,7 +20,7 @@ function render_page(string $title, string $content, string $extraHead = '', str
 
     // Context section / Kategori navbar atas
     $sectionContext = 'MENU UTAMA';
-    if (in_array($currentPage, ['assets.php', 'floor_plan.php', 'asset_add.php', 'asset_edit.php', 'asset_delete.php', 'asset_import.php', 'asset_mutation.php'], true) || ($currentPage === 'dashboard.php' && ($_GET['tab'] ?? '') === 'temuan')) {
+    if (in_array($currentPage, ['assets.php', 'asset_add.php', 'asset_edit.php', 'asset_delete.php', 'asset_import.php', 'asset_mutation.php'], true) || ($currentPage === 'dashboard.php' && ($_GET['tab'] ?? '') === 'temuan')) {
         $sectionContext = 'ASET & OPERASIONAL IT';
     } elseif (in_array($currentPage, ['memo_pengajuan.php', 'print_memo.php', 'inventaris_mutation.php', 'asset_mutations.php', 'print_bast.php', 'asset_disposal.php', 'print_bast_disposal.php', 'asset_gallery.php', 'inventaris_gallery.php', 'photo_trash.php', 'inventory_card.php', 'cetak_kartu.php', 'print_inventory_card.php', 'kartu_detail.php', 'inventaris_import.php'], true) || ($currentPage === 'dashboard.php' && ($_GET['tab'] ?? '') === 'kartu')) {
         $sectionContext = 'INVENTARIS & SARPRAS';
@@ -76,7 +76,6 @@ function render_page(string $title, string $content, string $extraHead = '', str
         // PERAN: SDM & UMUM (SARANA PRASARANA)
         $navLinks['MENU UTAMA'] = [
             ['title' => 'Kartu Inventaris', 'url' => module_url('dashboard.php', ['tab' => 'kartu']), 'icon' => 'bi-credit-card-2-front', 'active' => ($currentPage === 'dashboard.php' && ($_GET['tab'] ?? '') === 'kartu') || in_array($currentPage, ['inventory_card.php', 'cetak_kartu.php', 'print_inventory_card.php', 'kartu_detail.php'], true)],
-            ['title' => 'Denah Meja Kantor', 'url' => module_url('floor_plan.php'), 'icon' => 'bi-layout-text-window-reverse', 'active' => ($currentPage === 'floor_plan.php')],
             ['title' => 'Galeri Foto Barang', 'url' => module_url('asset_gallery.php', ['sub' => 'inventaris']), 'icon' => 'bi-images', 'active' => in_array($currentPage, ['asset_gallery.php', 'inventaris_gallery.php'], true)],
         ];
         $navLinks['INVENTARIS & SARPRAS'] = [
@@ -111,7 +110,6 @@ function render_page(string $title, string $content, string $extraHead = '', str
 
         $masterItems = [];
         if ($isAdminUser) {
-            $masterItems[] = ['title' => 'Denah Meja Kantor', 'url' => module_url('floor_plan.php'), 'icon' => 'bi-layout-text-window-reverse', 'active' => ($currentPage === 'floor_plan.php')];
             $masterItems[] = ['title' => 'Kartu Inventaris', 'url' => module_url('dashboard.php', ['tab' => 'kartu']), 'icon' => 'bi-credit-card-2-front', 'active' => ($currentPage === 'dashboard.php' && ($_GET['tab'] ?? '') === 'kartu')];
             $masterItems[] = ['title' => 'Kantor Cabang', 'url' => module_url('cabang_admin.php'), 'icon' => 'bi-buildings', 'active' => ($currentPage === 'cabang_admin.php')];
             $masterItems[] = ['title' => 'Divisi / Unit Kerja', 'url' => module_url('divisi_admin.php'), 'icon' => 'bi-diagram-3', 'active' => ($currentPage === 'divisi_admin.php')];
@@ -143,7 +141,6 @@ function render_page(string $title, string $content, string $extraHead = '', str
 
         $masterItems = [];
         if ($isAdminUser) {
-            $masterItems[] = ['title' => 'Denah Meja Kantor', 'url' => module_url('floor_plan.php'), 'icon' => 'bi-layout-text-window-reverse', 'active' => ($currentPage === 'floor_plan.php')];
             $masterItems[] = ['title' => 'Kantor Cabang', 'url' => module_url('cabang_admin.php'), 'icon' => 'bi-buildings', 'active' => ($currentPage === 'cabang_admin.php')];
             $masterItems[] = ['title' => 'Divisi / Unit Kerja', 'url' => module_url('divisi_admin.php'), 'icon' => 'bi-diagram-3', 'active' => ($currentPage === 'divisi_admin.php')];
             $masterItems[] = ['title' => 'Akun Pengguna', 'url' => module_url('users_admin.php'), 'icon' => 'bi-people', 'active' => ($currentPage === 'users_admin.php')];

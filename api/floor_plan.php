@@ -1,6 +1,8 @@
 <?php
 require __DIR__ . '/bootstrap.php';
 require_login();
+redirect(module_url('dashboard.php'));
+exit;
 
 // 1. Parameter Filter
 $currentYear = (int)date('Y');
