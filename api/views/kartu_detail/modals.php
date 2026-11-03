@@ -151,7 +151,174 @@
     <?php endif; ?>
 
     <!-- ===================================================================== -->
-    <!-- MODAL KONFIRMASI OTORISASI HAPUS FOTO (MASUK FOLDER SAMPAH 7 HARI)    -->
+    <!-- MODAL AMBIL & UPLOAD FOTO BARANG (MUDAH UNTUK ORANG AWAM)              -->
+    <!-- ===================================================================== -->
+    <div class="modal fade" id="modalUploadFotoBarang" tabindex="-1" aria-labelledby="modalUploadFotoLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content border-0 rounded-4 shadow-lg overflow-hidden">
+                <div class="modal-header text-white py-3 px-4" style="background-color: #0E5C58;">
+                    <div class="d-flex align-items-center gap-2.5">
+                        <div class="rounded-circle bg-white bg-opacity-20 d-flex align-items-center justify-content-center" style="width: 38px; height: 38px;">
+                            <i class="bi bi-camera-fill fs-5 text-white"></i>
+                        </div>
+                        <div>
+                            <h5 class="modal-title fw-bold fs-6 mb-0" id="modalUploadFotoLabel">Ambil &amp; Upload Foto Barang</h5>
+                            <small class="text-white-50" style="font-size: 0.74rem;">Paspor Fisik: <?= e($card['nama_barang']) ?> (<?= e($kodeInventaris) ?>)</small>
+                        </div>
+                    </div>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Tutup"></button>
+                </div>
+
+                <form method="post" enctype="multipart/form-data" id="modalUploadPhotoForm" action="<?= module_url('kartu_detail.php', ['id' => $card['id']]) ?>" onsubmit="return handleModalPhotoSubmit(this)">
+                    <input type="hidden" name="_csrf" value="<?= e(csrf_token()) ?>">
+                    <input type="hidden" name="action" value="upload_foto">
+                    <input type="hidden" name="face_verified" id="modalBioVerified" value="0">
+                    <input type="hidden" name="verifier_name" id="modalBioUserName" value="">
+
+                    <div class="modal-body p-3 p-md-4 bg-light">
+                        <!-- Petunjuk Ramah & Jelas -->
+                        <div class="alert alert-info py-2.5 px-3 small border-0 rounded-3 mb-3 d-flex align-items-center gap-2" style="background-color: #E0F2FE; color: #0369A1;">
+                            <i class="bi bi-info-circle-fill fs-5 flex-shrink-0"></i>
+                            <span style="font-size: 0.78rem;">Pilih <strong>Buka Kamera</strong> untuk langsung memotret barang dengan kamera HP / Laptop, atau <strong>Pilih dari Galeri</strong> untuk mengunggah foto yang sudah tersimpan.</span>
+                        </div>
+
+                        <div class="row g-3">
+                            <!-- SLOT FOTO 1 (UTAMA) -->
+                            <div class="col-12 col-md-6">
+                                <div class="card h-100 border rounded-3 p-3 bg-white shadow-2xs">
+                                    <div class="d-flex justify-content-between align-items-center mb-2">
+                                        <span class="badge px-2 py-1 text-white font-mono fw-bold rounded" style="background-color: #0E5C58; font-size: 0.68rem;">
+                                            FOTO 1 (UTAMA)
+                                        </span>
+                                        <span class="text-muted small" style="font-size: 0.70rem;">Tampak Depan</span>
+                                    </div>
+
+                                    <!-- Preview Box Foto 1 -->
+                                    <div class="position-relative rounded-3 border bg-light d-flex align-items-center justify-content-center overflow-hidden mb-2.5" style="height: 180px;">
+                                        <img id="modalPreviewImg1" src="<?= $photoUrl ? e($photoUrl) : '' ?>" alt="Foto 1" class="<?= $photoUrl ? '' : 'd-none' ?> w-100 h-100 object-fit-cover">
+                                        
+                                        <div id="modalEmptyPlace1" class="<?= $photoUrl ? 'd-none' : '' ?> text-center p-3 text-muted">
+                                            <i class="bi bi-camera fs-1 d-block text-secondary opacity-50 mb-1"></i>
+                                            <span class="small fw-semibold d-block" style="font-size: 0.74rem;">Belum ada foto yang dipilih</span>
+                                            <span class="text-secondary" style="font-size: 0.68rem;">Gunakan tombol di bawah untuk mengambil foto</span>
+                                        </div>
+
+                                        <span id="modalReadyBadge1" class="position-absolute bottom-0 start-0 end-0 py-1 text-center bg-success text-white small fw-bold d-none" style="font-size: 0.70rem;">
+                                            <i class="bi bi-check-circle-fill me-1"></i> Foto 1 Siap Diunggah (<span id="modalSize1">0 KB</span>)
+                                        </span>
+                                    </div>
+
+                                    <!-- Hidden Inputs: Camera vs File 1 -->
+                                    <input type="file" id="modalInputCam1" name="foto_barang_1_cam" class="d-none" accept="image/*" capture="environment" onchange="handleModalPhotoSelected(this, 1)">
+                                    <input type="file" id="modalInputFile1" name="foto_barang_1_file" class="d-none" accept="image/*" onchange="handleModalPhotoSelected(this, 1)">
+
+                                    <!-- Dua Tombol Jelas: Kamera Langsung & Galeri -->
+                                    <div class="d-grid gap-2">
+                                        <button type="button" class="btn btn-sm btn-outline-primary rounded-pill fw-semibold py-2 d-flex align-items-center justify-content-center gap-1.5" onclick="triggerPhotoPick('cam', 1)">
+                                            <i class="bi bi-camera-fill text-primary"></i> <span>Buka Kamera (Foto Langsung)</span>
+                                        </button>
+                                        <button type="button" class="btn btn-sm btn-light border rounded-pill fw-semibold py-1.5 text-secondary d-flex align-items-center justify-content-center gap-1.5" onclick="triggerPhotoPick('file', 1)">
+                                            <i class="bi bi-images text-secondary"></i> <span>Pilih dari Galeri / File</span>
+                                        </button>
+                                    </div>
+
+                                    <?php if ($photoUrl): ?>
+                                        <div class="form-check mt-2 pt-2 border-top">
+                                            <input class="form-check-input" type="checkbox" name="hapus_foto_1" value="1" id="modalChkHapus1" onchange="togglePhotoDeleteCheck(1, this.checked)">
+                                            <label class="form-check-label text-danger small fw-semibold" for="modalChkHapus1" style="font-size: 0.72rem;">
+                                                Hilangkan Foto 1 saat ini (Masuk Sampah)
+                                            </label>
+                                        </div>
+                                    <?php endif; ?>
+                                </div>
+                            </div>
+
+                            <!-- SLOT FOTO 2 (OPSIONAL: DETAIL / NO SERI) -->
+                            <div class="col-12 col-md-6">
+                                <div class="card h-100 border rounded-3 p-3 bg-white shadow-2xs">
+                                    <div class="d-flex justify-content-between align-items-center mb-2">
+                                        <span class="badge px-2 py-1 text-white font-mono fw-bold rounded" style="background-color: #0284C7; font-size: 0.68rem;">
+                                            FOTO 2 (OPSIONAL)
+                                        </span>
+                                        <span class="text-muted small" style="font-size: 0.70rem;">Tampak Belakang / No Seri</span>
+                                    </div>
+
+                                    <!-- Preview Box Foto 2 -->
+                                    <div class="position-relative rounded-3 border bg-light d-flex align-items-center justify-content-center overflow-hidden mb-2.5" style="height: 180px;">
+                                        <img id="modalPreviewImg2" src="<?= $photoUrl2 ? e($photoUrl2) : '' ?>" alt="Foto 2" class="<?= $photoUrl2 ? '' : 'd-none' ?> w-100 h-100 object-fit-cover">
+                                        
+                                        <div id="modalEmptyPlace2" class="<?= $photoUrl2 ? 'd-none' : '' ?> text-center p-3 text-muted">
+                                            <i class="bi bi-image fs-1 d-block text-secondary opacity-50 mb-1"></i>
+                                            <span class="small fw-semibold d-block" style="font-size: 0.74rem;">Belum ada foto ke-2</span>
+                                            <span class="text-secondary" style="font-size: 0.68rem;">Opsional: ambil foto label atau nomor seri</span>
+                                        </div>
+
+                                        <span id="modalReadyBadge2" class="position-absolute bottom-0 start-0 end-0 py-1 text-center bg-success text-white small fw-bold d-none" style="font-size: 0.70rem;">
+                                            <i class="bi bi-check-circle-fill me-1"></i> Foto 2 Siap Diunggah (<span id="modalSize2">0 KB</span>)
+                                        </span>
+                                    </div>
+
+                                    <!-- Hidden Inputs: Camera vs File 2 -->
+                                    <input type="file" id="modalInputCam2" name="foto_barang_2_cam" class="d-none" accept="image/*" capture="environment" onchange="handleModalPhotoSelected(this, 2)">
+                                    <input type="file" id="modalInputFile2" name="foto_barang_2_file" class="d-none" accept="image/*" onchange="handleModalPhotoSelected(this, 2)">
+
+                                    <!-- Dua Tombol Jelas: Kamera Langsung & Galeri 2 -->
+                                    <div class="d-grid gap-2">
+                                        <button type="button" class="btn btn-sm btn-outline-primary rounded-pill fw-semibold py-2 d-flex align-items-center justify-content-center gap-1.5" onclick="triggerPhotoPick('cam', 2)">
+                                            <i class="bi bi-camera-fill text-primary"></i> <span>Buka Kamera (Foto Ke-2)</span>
+                                        </button>
+                                        <button type="button" class="btn btn-sm btn-light border rounded-pill fw-semibold py-1.5 text-secondary d-flex align-items-center justify-content-center gap-1.5" onclick="triggerPhotoPick('file', 2)">
+                                            <i class="bi bi-images text-secondary"></i> <span>Pilih dari Galeri / File</span>
+                                        </button>
+                                    </div>
+
+                                    <?php if ($photoUrl2): ?>
+                                        <div class="form-check mt-2 pt-2 border-top">
+                                            <input class="form-check-input" type="checkbox" name="hapus_foto_2" value="1" id="modalChkHapus2" onchange="togglePhotoDeleteCheck(2, this.checked)">
+                                            <label class="form-check-label text-danger small fw-semibold" for="modalChkHapus2" style="font-size: 0.72rem;">
+                                                Hilangkan Foto 2 saat ini (Masuk Sampah)
+                                            </label>
+                                        </div>
+                                    <?php endif; ?>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Identitas Pengunggah / Petugas Lapangan -->
+                        <div class="card border rounded-3 p-3 bg-white shadow-2xs mt-3">
+                            <label class="form-label small fw-bold text-dark mb-1">
+                                <i class="bi bi-person-fill text-primary me-1"></i> Nama Petugas / Pengunggah Foto <span class="text-danger">*</span>
+                            </label>
+                            <?php if (is_logged_in()): ?>
+                                <div class="d-flex align-items-center gap-2 p-2 bg-success bg-opacity-10 border border-success border-opacity-25 rounded-3">
+                                    <i class="bi bi-patch-check-fill text-success fs-5"></i>
+                                    <div class="min-w-0">
+                                        <div class="fw-bold text-dark small" style="font-size: 0.82rem;"><?= e(current_user_name()) ?></div>
+                                        <div class="text-secondary" style="font-size: 0.70rem;">Tersimpan resmi via sesi akun (<?= e(current_user_role()) ?>)</div>
+                                    </div>
+                                </div>
+                                <input type="hidden" name="uploader_name" value="<?= e(current_user_name()) ?>">
+                            <?php else: ?>
+                                <input type="text" name="uploader_name" id="modalUploaderName" class="form-control" placeholder="Contoh: Budi Santoso (Teller KC Batulicin)" value="<?= e($_SESSION['last_uploader_name'] ?? '') ?>" required>
+                                <div class="form-text text-muted" style="font-size: 0.70rem;">Masukkan nama Anda beserta unit kerja / cabang agar tercatat resmi di paspor inventaris.</div>
+                            <?php endif; ?>
+                        </div>
+                    </div>
+
+                    <div class="modal-footer py-2.5 px-4 bg-light d-flex justify-content-between align-items-center">
+                        <button type="button" class="btn btn-sm btn-light border rounded-pill px-3" data-bs-dismiss="modal">Batal</button>
+                        <button type="submit" id="btnSubmitModalUpload" class="btn btn-sm rounded-pill fw-bold px-4 text-white shadow-xs d-inline-flex align-items-center gap-1.5" style="background-color: #0E5C58; border-color: #0E5C58;">
+                            <i class="bi bi-cloud-arrow-up-fill"></i>
+                            <span>Simpan Foto Barang</span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===================================================================== -->
+    <!-- MODAL KONFIRMASI HAPUS FOTO (PINDAH KE FOLDER SAMPAH 7 HARI)           -->
     <!-- ===================================================================== -->
     <div class="modal fade" id="modalConfirmDeletePhoto" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
@@ -159,53 +326,66 @@
                 <div class="modal-header bg-danger text-white border-0 py-2.5 px-3">
                     <div class="d-flex align-items-center gap-2">
                         <i class="bi bi-trash3-fill fs-5"></i>
-                        <h6 class="modal-title fw-bold mb-0">Hapus Foto &amp; Pindahkan ke Sampah</h6>
+                        <h6 class="modal-title fw-bold mb-0">Hapus Foto Barang</h6>
                     </div>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
-                <div class="modal-body p-3.5 text-start">
-                    <div class="alert alert-success bg-success bg-opacity-10 border-success border-opacity-25 rounded-3 py-2 px-3 mb-3">
-                        <div class="fw-bold text-success small"><i class="bi bi-recycle me-1"></i>Aman! Tidak Langsung Hilang Permanen</div>
-                        <div class="text-secondary" style="font-size: 0.72rem;">
-                            Foto yang dihapus akan disimpan di <strong>Folder Sampah Foto</strong> selama <strong>7 hari</strong> dan dapat dipulihkan (restore) kapan saja sebelum 7 hari berlalu.
+                <form method="post" id="deletePhotoForm" action="<?= module_url('kartu_detail.php', ['id' => $card['id']]) ?>" onsubmit="return handleConfirmDeletePhotoSubmit(this)">
+                    <input type="hidden" name="_csrf" value="<?= e(csrf_token()) ?>">
+                    <input type="hidden" name="action" value="delete_foto">
+                    <input type="hidden" name="delete_target" id="delPhotoTargetInput" value="all">
+                    <input type="hidden" name="face_verified" id="delBioVerified" value="0">
+                    <input type="hidden" name="verifier_name" id="delBioUserName" value="">
+
+                    <div class="modal-body p-3.5 text-start">
+                        <div class="alert alert-success bg-success bg-opacity-10 border-success border-opacity-25 rounded-3 py-2 px-3 mb-3">
+                            <div class="fw-bold text-success small"><i class="bi bi-recycle me-1"></i>Aman! Tersimpan di Folder Sampah</div>
+                            <div class="text-secondary" style="font-size: 0.72rem;">
+                                Foto yang dihapus akan disimpan di <strong>Folder Sampah Foto</strong> selama <strong>7 hari</strong> dan dapat dipulihkan (restore) kapan saja.
+                            </div>
+                        </div>
+
+                        <label class="form-label small fw-bold text-dark mb-1.5">Pilih Foto yang Ingin Dihapus:</label>
+                        <div class="d-flex flex-column gap-1.5 mb-3">
+                            <?php if (!empty($photoUrl)): ?>
+                                <label class="d-flex align-items-center gap-2 p-2 rounded-3 border bg-light cursor-pointer">
+                                    <input type="radio" name="modal_del_target_radio" value="1" class="form-check-input m-0" onchange="setDeleteTargetChoice(this.value)">
+                                    <span class="small fw-semibold text-dark">Hapus <strong>Foto 1 (Utama)</strong> Saja</span>
+                                </label>
+                            <?php endif; ?>
+                            <?php if (!empty($photoUrl2)): ?>
+                                <label class="d-flex align-items-center gap-2 p-2 rounded-3 border bg-light cursor-pointer">
+                                    <input type="radio" name="modal_del_target_radio" value="2" class="form-check-input m-0" onchange="setDeleteTargetChoice(this.value)">
+                                    <span class="small fw-semibold text-dark">Hapus <strong>Foto 2 (Detail)</strong> Saja</span>
+                                </label>
+                            <?php endif; ?>
+                            <label class="d-flex align-items-center gap-2 p-2 rounded-3 border bg-danger bg-opacity-10 border-danger border-opacity-25 cursor-pointer">
+                                <input type="radio" name="modal_del_target_radio" value="all" class="form-check-input m-0" checked onchange="setDeleteTargetChoice(this.value)">
+                                <span class="small fw-bold text-danger">Hapus <strong>Semua Foto</strong> Barang Ini</span>
+                            </label>
+                        </div>
+
+                        <!-- Identitas Pengunggah jika belum login -->
+                        <?php if (is_logged_in()): ?>
+                            <input type="hidden" name="uploader_name" value="<?= e(current_user_name()) ?>">
+                        <?php else: ?>
+                            <div class="mb-3">
+                                <label class="form-label small fw-bold text-dark">Nama Anda / Petugas <span class="text-danger">*</span></label>
+                                <input type="text" name="uploader_name" id="delModalUploaderName" class="form-control form-control-sm" placeholder="Contoh: Budi Santoso (Teller)" required>
+                            </div>
+                        <?php endif; ?>
+
+                        <div class="d-grid gap-2">
+                            <button type="submit" id="btnSubmitDeletePhoto" class="btn btn-danger btn-sm rounded-pill fw-bold py-2 shadow-xs d-flex align-items-center justify-content-center gap-1.5">
+                                <i class="bi bi-trash3-fill"></i>
+                                <span>Pindahkan ke Folder Sampah</span>
+                            </button>
+                            <button type="button" class="btn btn-light btn-xs py-1.5 rounded-pill text-muted border" data-bs-dismiss="modal">
+                                Batal
+                            </button>
                         </div>
                     </div>
-
-                    <label class="form-label small fw-bold text-dark mb-1.5">Pilih Foto yang Ingin Dihilangkan:</label>
-                    <div class="d-flex flex-column gap-1.5 mb-3">
-                        <?php if (!empty($photoUrl)): ?>
-                            <label class="d-flex align-items-center gap-2 p-2 rounded-3 border bg-light cursor-pointer">
-                                <input type="radio" name="modal_del_target_radio" value="1" class="form-check-input m-0" onchange="setDeleteTargetChoice(this.value)">
-                                <span class="small fw-semibold text-dark">Hapus <strong>Foto 1 (Utama)</strong> Saja</span>
-                            </label>
-                        <?php endif; ?>
-                        <?php if (!empty($photoUrl2)): ?>
-                            <label class="d-flex align-items-center gap-2 p-2 rounded-3 border bg-light cursor-pointer">
-                                <input type="radio" name="modal_del_target_radio" value="2" class="form-check-input m-0" onchange="setDeleteTargetChoice(this.value)">
-                                <span class="small fw-semibold text-dark">Hapus <strong>Foto 2 (Detail)</strong> Saja</span>
-                            </label>
-                        <?php endif; ?>
-                        <label class="d-flex align-items-center gap-2 p-2 rounded-3 border bg-danger bg-opacity-10 border-danger border-opacity-25 cursor-pointer">
-                            <input type="radio" name="modal_del_target_radio" value="all" class="form-check-input m-0" checked onchange="setDeleteTargetChoice(this.value)">
-                            <span class="small fw-bold text-danger">Hapus <strong>Semua Foto</strong> Barang Ini</span>
-                        </label>
-                    </div>
-
-                    <div class="d-grid gap-2">
-                        <button type="button" class="btn btn-primary btn-sm rounded-pill fw-bold py-2 shadow-xs d-flex align-items-center justify-content-center gap-2" onclick="startFaceDeleteProcess()">
-                            <i class="bi bi-person-bounding-box fs-5"></i>
-                            <span>Scan Wajah &amp; Pindahkan ke Sampah</span>
-                        </button>
-                        <?php if (is_logged_in() && (is_admin() || is_hrd())): ?>
-                            <button type="button" class="btn btn-outline-danger btn-xs py-1.5 rounded-pill fw-semibold" onclick="submitDeleteAsAuthorizedStaff()">
-                                <i class="bi bi-shield-check text-success me-1"></i> Hapus via Sesi <?= e(is_admin() ? 'Admin' : 'SDM & Umum') ?> (<?= e(current_user_name()) ?>)
-                            </button>
-                        <?php endif; ?>
-                        <button type="button" class="btn btn-light btn-xs py-1.5 rounded-pill text-muted border" data-bs-dismiss="modal">
-                            Batal
-                        </button>
-                    </div>
-                </div>
+                </form>
             </div>
         </div>
     </div>

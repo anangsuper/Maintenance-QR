@@ -259,6 +259,163 @@
             openBiometricModal();
         }
 
+        // =========================================================================
+        // LOGIKA MODAL AMBIL & UPLOAD FOTO BARANG (MUDAH UNTUK ORANG AWAM)
+        // =========================================================================
+        function openUploadPhotoModal(slot) {
+            var modalEl = document.getElementById("modalUploadFotoBarang");
+            if (modalEl) {
+                try {
+                    var m = (typeof bootstrap !== 'undefined' && bootstrap.Modal)
+                        ? (bootstrap.Modal.getOrCreateInstance ? bootstrap.Modal.getOrCreateInstance(modalEl) : new bootstrap.Modal(modalEl))
+                        : null;
+                    if (m) m.show();
+                } catch(e) {
+                    console.warn("Modal error:", e);
+                }
+            }
+        }
+
+        function triggerPhotoPick(mode, slot) {
+            var inputId = (mode === 'cam') ? ('modalInputCam' + slot) : ('modalInputFile' + slot);
+            var inputEl = document.getElementById(inputId);
+            if (inputEl) {
+                inputEl.click();
+            }
+        }
+
+        function handleModalPhotoSelected(inputEl, slot) {
+            if (!inputEl || !inputEl.files || !inputEl.files[0]) return;
+            var file = inputEl.files[0];
+
+            // Bersihkan input mode lain di slot yang sama agar tidak ganda
+            var otherMode = inputEl.id.includes('Cam') ? 'File' : 'Cam';
+            var otherInput = document.getElementById('modalInput' + otherMode + slot);
+            if (otherInput) otherInput.value = '';
+
+            var badge = document.getElementById('modalReadyBadge' + slot);
+            var sizeSpan = document.getElementById('modalSize' + slot);
+            var prevImg = document.getElementById('modalPreviewImg' + slot);
+            var emptyBox = document.getElementById('modalEmptyPlace' + slot);
+
+            if (badge) {
+                badge.classList.remove('d-none');
+                badge.className = "position-absolute bottom-0 start-0 end-0 py-1 text-center bg-primary text-white small fw-bold";
+                badge.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Mengompres Foto ' + slot + '...';
+            }
+
+            // Kompresi cerdas di browser (Client-Side)
+            compressImageClientSide(file, 1600, 0.82, function(compressedBlob, previewDataUrl) {
+                if (prevImg) {
+                    prevImg.src = previewDataUrl;
+                    prevImg.classList.remove('d-none');
+                }
+                if (emptyBox) {
+                    emptyBox.classList.add('d-none');
+                }
+
+                try {
+                    var compressedFile = new File([compressedBlob], "f" + slot + "_" + file.name.replace(/\.[^.]+$/, ".jpg"), {
+                        type: "image/jpeg",
+                        lastModified: Date.now()
+                    });
+                    var dataTransfer = new DataTransfer();
+                    dataTransfer.items.add(compressedFile);
+                    inputEl.files = dataTransfer.files;
+
+                    var kb = Math.round(compressedBlob.size / 1024);
+                    if (sizeSpan) sizeSpan.textContent = kb + ' KB';
+                    if (badge) {
+                        badge.className = "position-absolute bottom-0 start-0 end-0 py-1 text-center bg-success text-white small fw-bold";
+                        badge.innerHTML = '<i class="bi bi-check-circle-fill me-1"></i> Foto ' + slot + ' Siap Diunggah (' + kb + ' KB)';
+                    }
+                } catch(e) {
+                    console.warn("DataTransfer update fallback:", e);
+                    var kbFallback = Math.round(file.size / 1024);
+                    if (badge) {
+                        badge.className = "position-absolute bottom-0 start-0 end-0 py-1 text-center bg-success text-white small fw-bold";
+                        badge.innerHTML = '<i class="bi bi-check-circle-fill me-1"></i> Foto ' + slot + ' Siap Diunggah (' + kbFallback + ' KB)';
+                    }
+                }
+
+                // Update juga preview di halaman kartu utama
+                var mainImg = (slot === 1) ? document.getElementById('previewImg') : document.getElementById('previewImg2');
+                var mainEmpty = (slot === 1) ? document.getElementById('emptyPhotoPlaceholder') : document.getElementById('emptyPhotoPlaceholder2');
+                var mainBadge = (slot === 1) ? document.getElementById('previewBadge') : document.getElementById('previewBadge2');
+                var mainWrap = (slot === 1) ? document.getElementById('photoWrapper') : document.getElementById('photoWrapper2');
+                if (mainImg) {
+                    mainImg.src = previewDataUrl;
+                    mainImg.classList.remove('d-none');
+                }
+                if (mainEmpty) mainEmpty.classList.add('d-none');
+                if (mainBadge) mainBadge.classList.remove('d-none');
+                if (mainWrap) mainWrap.classList.add('has-image');
+            });
+        }
+
+        function togglePhotoDeleteCheck(slot, isChecked) {
+            var prevImg = document.getElementById('modalPreviewImg' + slot);
+            var badge = document.getElementById('modalReadyBadge' + slot);
+            if (isChecked) {
+                if (prevImg) prevImg.style.opacity = '0.35';
+                if (badge) {
+                    badge.classList.remove('d-none');
+                    badge.className = "position-absolute bottom-0 start-0 end-0 py-1 text-center bg-danger text-white small fw-bold";
+                    badge.innerHTML = '<i class="bi bi-trash3-fill me-1"></i> Foto ' + slot + ' Akan Dihilangkan';
+                }
+            } else {
+                if (prevImg) prevImg.style.opacity = '1';
+                if (badge) badge.classList.add('d-none');
+            }
+        }
+
+        function handleModalPhotoSubmit(form) {
+            var f1Cam = document.getElementById('modalInputCam1');
+            var f1File = document.getElementById('modalInputFile1');
+            var f2Cam = document.getElementById('modalInputCam2');
+            var f2File = document.getElementById('modalInputFile2');
+            var chkDel1 = document.getElementById('modalChkHapus1');
+            var chkDel2 = document.getElementById('modalChkHapus2');
+            var uploaderInput = document.getElementById('modalUploaderName');
+
+            var hasF1 = (f1Cam && f1Cam.files && f1Cam.files.length > 0) || (f1File && f1File.files && f1File.files.length > 0);
+            var hasF2 = (f2Cam && f2Cam.files && f2Cam.files.length > 0) || (f2File && f2File.files && f2File.files.length > 0);
+            var hasDel = (chkDel1 && chkDel1.checked) || (chkDel2 && chkDel2.checked);
+
+            if (!hasF1 && !hasF2 && !hasDel) {
+                alert('Silakan ambil foto menggunakan kamera atau pilih dari galeri terlebih dahulu!');
+                return false;
+            }
+
+            if (uploaderInput && !uploaderInput.value.trim()) {
+                alert('Silakan masukkan nama Anda sebagai petugas/pengunggah foto barang.');
+                uploaderInput.focus();
+                return false;
+            }
+
+            var btn = document.getElementById('btnSubmitModalUpload');
+            if (btn) {
+                btn.disabled = true;
+                btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1.5" role="status" aria-hidden="true"></span> Menyimpan &amp; Mengunggah Foto...';
+            }
+            return true;
+        }
+
+        function handleConfirmDeletePhotoSubmit(form) {
+            var uploaderInput = document.getElementById('delModalUploaderName');
+            if (uploaderInput && !uploaderInput.value.trim()) {
+                alert('Silakan masukkan nama Anda untuk memindahkan foto ke Folder Sampah.');
+                uploaderInput.focus();
+                return false;
+            }
+            var btn = document.getElementById('btnSubmitDeletePhoto');
+            if (btn) {
+                btn.disabled = true;
+                btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1.5" role="status" aria-hidden="true"></span> Memindahkan ke Sampah...';
+            }
+            return true;
+        }
+
         function setDeleteTargetChoice(val) {
             var targetInput = document.getElementById("delPhotoTargetInput");
             if (targetInput) targetInput.value = val || 'all';
