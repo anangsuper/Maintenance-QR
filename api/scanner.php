@@ -5,41 +5,49 @@ require __DIR__ . '/bootstrap.php';
 
 $head = '<style>
 .scanner-mobile-card {
-  max-width: 500px;
+  max-width: 520px;
   margin: 0 auto;
-  background: linear-gradient(180deg, #051329 0%, #0A1E38 100%);
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  background-color: #FFFFFF;
+  border: 1px solid #D1D5D8;
   border-radius: 20px;
-  padding: 20px 18px;
+  padding: 24px 20px;
+  color: #1B2A3A;
+  box-shadow: 0 10px 30px -5px rgba(14, 92, 88, 0.08), 0 4px 6px -2px rgba(0, 0, 0, 0.04);
+}
+
+[data-bs-theme="dark"] .scanner-mobile-card {
+  background-color: #152232;
+  border-color: #2D3D4E;
   color: #FFFFFF;
-  box-shadow: 0 16px 36px -10px rgba(5, 19, 41, 0.65);
+  box-shadow: 0 12px 36px -8px rgba(0, 0, 0, 0.45);
 }
 
 .scanner-viewport-wrapper {
   position: relative;
   width: 100%;
-  margin: 14px auto;
-  border-radius: 14px;
+  margin: 16px auto;
+  border-radius: 16px;
   overflow: hidden;
-  background-color: #000000;
-  box-shadow: inset 0 0 16px rgba(0, 0, 0, 0.8);
-  min-height: 290px;
+  background-color: #0B131E;
+  box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.8), 0 2px 8px rgba(0, 0, 0, 0.06);
+  border: 2px solid #0E5C58;
+  min-height: 300px;
 }
 
 #reader {
   width: 100% !important;
   border: none !important;
-  background: #000 !important;
-  min-height: 290px;
+  background: #0B131E !important;
+  min-height: 300px;
 }
 
 #reader video {
-  border-radius: 10px;
+  border-radius: 12px;
   object-fit: cover !important;
   width: 100% !important;
   height: auto !important;
   max-height: 52vh !important;
-  background: #000;
+  background: #0B131E;
 }
 
 #reader__scan_region {
@@ -49,35 +57,35 @@ $head = '<style>
   justify-content: center !important;
 }
 
-/* Corner Scan Reticle */
+/* Corner Scan Reticle - Kombai Teal & Emerald */
 .scan-corner-frame {
   position: absolute;
-  inset: 18px;
+  inset: 22px;
   pointer-events: none;
   z-index: 5;
 }
 
 .scan-corner {
   position: absolute;
-  width: 26px;
-  height: 26px;
-  border-color: #38BDF8;
+  width: 28px;
+  height: 28px;
+  border-color: #10B981;
   border-style: solid;
 }
 
-.corner-tl { top: 0; left: 0; border-width: 3.5px 0 0 3.5px; border-top-left-radius: 6px; }
-.corner-tr { top: 0; right: 0; border-width: 3.5px 3.5px 0 0; border-top-right-radius: 6px; }
-.corner-bl { bottom: 0; left: 0; border-width: 0 0 3.5px 3.5px; border-bottom-left-radius: 6px; }
-.corner-br { bottom: 0; right: 0; border-width: 0 3.5px 3.5px 0; border-bottom-right-radius: 6px; }
+.corner-tl { top: 0; left: 0; border-width: 4px 0 0 4px; border-top-left-radius: 8px; }
+.corner-tr { top: 0; right: 0; border-width: 4px 4px 0 0; border-top-right-radius: 8px; }
+.corner-bl { bottom: 0; left: 0; border-width: 0 0 4px 4px; border-bottom-left-radius: 8px; }
+.corner-br { bottom: 0; right: 0; border-width: 0 4px 4px 0; border-bottom-right-radius: 8px; }
 
 .scan-laser-line {
   position: absolute;
   top: 25%;
-  left: 18px;
-  right: 18px;
+  left: 20px;
+  right: 20px;
   height: 2.5px;
-  background: linear-gradient(90deg, transparent, #38BDF8, #60A5FA, #38BDF8, transparent);
-  box-shadow: 0 0 12px rgba(56, 189, 248, 0.95);
+  background: linear-gradient(90deg, transparent, #10B981, #5EEAD4, #10B981, transparent);
+  box-shadow: 0 0 12px rgba(16, 185, 129, 0.9);
   pointer-events: none;
   z-index: 6;
   animation: scanLaserAnim 2.2s infinite ease-in-out;
@@ -91,51 +99,65 @@ $head = '<style>
 }
 
 .scanner-tool-btn {
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.18);
-  color: #E2E8F0;
+  background: #F8FAFC;
+  border: 1px solid #D1D5D8;
+  color: #1B2A3A;
   border-radius: 12px;
+  min-height: 44px;
   padding: 8px 14px;
-  font-size: 0.8rem;
+  font-size: 0.82rem;
   font-weight: 600;
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  justify-content: center;
+  gap: 8px;
   cursor: pointer;
   transition: all 0.2s ease;
+  flex: 1 1 calc(50% - 8px);
 }
 
-.scanner-tool-btn:hover, .scanner-tool-btn:active {
-  background: rgba(56, 189, 248, 0.2);
-  border-color: #38BDF8;
-  color: #FFFFFF;
+.scanner-tool-btn:hover {
+  background: #E6F4F2;
+  border-color: #0E5C58;
+  color: #0E5C58;
 }
 
 .scanner-tool-btn.active {
-  background: #38BDF8 !important;
-  border-color: #38BDF8 !important;
-  color: #0A1E38 !important;
-  font-weight: 700;
-  box-shadow: 0 0 10px rgba(56, 189, 248, 0.6);
+  background: #0E5C58 !important;
+  border-color: #0E5C58 !important;
+  color: #FFFFFF !important;
+  box-shadow: 0 2px 8px rgba(14, 92, 88, 0.3);
+}
+
+[data-bs-theme="dark"] .scanner-tool-btn {
+  background: #1B2A3A;
+  border-color: #334155;
+  color: #E2E8F0;
+}
+
+[data-bs-theme="dark"] .scanner-tool-btn:hover {
+  background: #0E5C58;
+  border-color: #10B981;
+  color: #FFFFFF;
 }
 
 .btn-zoom-pill {
-  font-size: 0.75rem;
+  font-size: 0.78rem;
   font-weight: 600;
-  padding: 3px 12px;
-  border-radius: 18px;
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  color: #CBD5E1;
+  min-height: 36px;
+  padding: 4px 14px;
+  border-radius: 20px;
+  background: #F8FAFC;
+  border: 1px solid #D1D5D8;
+  color: #53595F;
   cursor: pointer;
   transition: all 0.15s ease;
 }
 
 .btn-zoom-pill:hover, .btn-zoom-pill.active {
-  background: #2563EB !important;
-  border-color: #38BDF8 !important;
+  background: #0E5C58 !important;
+  border-color: #0E5C58 !important;
   color: #FFFFFF !important;
-  box-shadow: 0 0 8px rgba(37, 99, 235, 0.6);
 }
 
 .pulse-dot {
@@ -143,9 +165,9 @@ $head = '<style>
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background-color: #22C55E;
+  background-color: #10B981;
   margin-right: 6px;
-  box-shadow: 0 0 8px #22C55E;
+  box-shadow: 0 0 6px #10B981;
   animation: pulseDotAnim 1.8s infinite;
 }
 
@@ -153,6 +175,33 @@ $head = '<style>
   0% { transform: scale(0.9); opacity: 0.7; }
   50% { transform: scale(1.3); opacity: 1; }
   100% { transform: scale(0.9); opacity: 0.7; }
+}
+
+.status-pill-box {
+  background-color: #F8FAFC;
+  border: 1px solid #E2E8F0;
+  border-radius: 12px;
+  padding: 10px 14px;
+  font-size: 0.82rem;
+  color: #53595F;
+}
+
+[data-bs-theme="dark"] .status-pill-box {
+  background-color: #1B2A3A;
+  border-color: #334155;
+  color: #94A3B8;
+}
+
+.manual-input-box {
+  background: #F8FAFC;
+  border: 1px solid #E2E8F0;
+  border-radius: 14px;
+  padding: 14px 16px;
+}
+
+[data-bs-theme="dark"] .manual-input-box {
+  background: #1B2A3A;
+  border-color: #334155;
 }
 </style>';
 
@@ -162,20 +211,22 @@ $body = '
     <div class="scanner-mobile-card">
       
       <!-- Header Mobile Bar -->
-      <div class="d-flex align-items-center justify-content-between border-bottom pb-3 mb-2" style="border-color: rgba(255,255,255,0.1) !important;">
+      <div class="d-flex align-items-center justify-content-between border-bottom pb-3 mb-2" style="border-color: #E2E8F0 !important;">
         <div>
-          <div class="text-uppercase fw-bold text-info" style="font-size: 0.68rem; letter-spacing: 0.08em;">PEMINDAI QR SMARTPHONE</div>
-          <h1 class="h6 mb-0 text-white fw-bold d-flex align-items-center">
-            <i class="bi bi-qr-code-scan me-2 text-primary"></i> SCAN ASSET LAPANGAN
+          <div class="d-inline-flex align-items-center gap-1.5 px-2.5 py-0.5 rounded-pill mb-1 fw-bold text-uppercase" style="background-color: #E6F4F2; color: #0E5C58; font-size: 0.65rem; letter-spacing: 0.05em; border: 1px solid #A7E2DC;">
+            <i class="bi bi-shield-check"></i> PT BPR MITRATAMA ARTHABUANA
+          </div>
+          <h1 class="h5 mb-0 fw-bold d-flex align-items-center" style="color: #1B2A3A;">
+            <i class="bi bi-qr-code-scan me-2" style="color: #0E5C58;"></i> Pindai QR Aset
           </h1>
         </div>
-        <span class="badge rounded-pill bg-success bg-opacity-25 text-success border border-success border-opacity-50 px-2.5 py-1.5" style="font-size: 0.72rem;">
-          <span class="pulse-dot"></span> Langsung Scan
+        <span class="badge rounded-pill d-inline-flex align-items-center px-2.5 py-1.5 fw-semibold" style="background-color: #E6F4F2; color: #0E5C58; border: 1px solid #A7E2DC; font-size: 0.72rem;">
+          <span class="pulse-dot"></span> Kamera Aktif
         </span>
       </div>
 
-      <div class="text-center text-muted small my-2" style="font-size: 0.78rem; color: #94A3B8 !important;">
-        Arahkan kamera HP ke stiker label QR komputer untuk memeriksa info & mengisi checklist bulanan.
+      <div class="text-center small my-2.5" style="font-size: 0.80rem; color: #53595F;">
+        Arahkan kamera ke stiker label QR komputer untuk memeriksa informasi aset atau mengisi checklist pemeliharaan bulanan.
       </div>
 
       <!-- Viewport Kamera -->
@@ -190,15 +241,15 @@ $body = '
         <div id="reader"></div>
 
         <!-- Tombol Start Manual (jika browser butuh izin ketukan pengguna / iOS Safari) -->
-        <div id="manualStartBox" class="text-center p-4 d-none" style="position: absolute; inset: 0; background: #07172F; z-index: 8;">
+        <div id="manualStartBox" class="text-center p-4 d-none" style="position: absolute; inset: 0; background: #0B131E; z-index: 8;">
           <div class="d-flex flex-column align-items-center justify-content-center h-100">
-            <div class="rounded-circle bg-primary bg-opacity-20 p-3 mb-2">
-              <i class="bi bi-camera-video-fill fs-1 text-primary"></i>
+            <div class="rounded-circle p-3 mb-2" style="background: rgba(14, 92, 88, 0.2);">
+              <i class="bi bi-camera-video-fill fs-1" style="color: #5EEAD4;"></i>
             </div>
-            <h6 class="text-white fw-bold mb-1">Kamera Belum Aktif</h6>
-            <p class="small text-light text-opacity-75 mb-3" style="font-size: 0.78rem; max-width: 280px;">Browser HP meminta izin Anda untuk menyalakan kamera scanner:</p>
-            <button type="button" class="btn btn-primary fw-bold px-4 py-2.5 rounded-pill shadow-lg" onclick="requestStartCamera()">
-              <i class="bi bi-camera me-1.5"></i> Buka Kamera Scanner
+            <h6 class="text-white fw-bold mb-1">Kamera Memerlukan Izin</h6>
+            <p class="small text-light text-opacity-75 mb-3" style="font-size: 0.78rem; max-width: 280px;">Ketuk tombol di bawah untuk mengizinkan browser menyalakan kamera scanner:</p>
+            <button type="button" class="btn text-white fw-bold px-4 py-2.5 rounded-pill shadow-sm min-h-[44px] d-inline-flex align-items-center justify-content-center gap-1.5" style="background-color: #0E5C58; border-color: #0E5C58;" onclick="requestStartCamera()">
+              <i class="bi bi-camera"></i> <span>Buka Kamera Scanner</span>
             </button>
           </div>
         </div>
@@ -207,16 +258,16 @@ $body = '
       <!-- Toolbar Kontrol Kamera: Senter, Balik Kamera, Foto Langsung, Unggah Galeri -->
       <div class="d-flex align-items-center justify-content-center flex-wrap gap-2 mb-2">
         <button type="button" class="scanner-tool-btn" id="btnToggleTorch" onclick="toggleCameraTorch()">
-          <i class="bi bi-lightning-fill"></i> Flash
+          <i class="bi bi-lightning-charge"></i> <span>Flash</span>
         </button>
         <button type="button" class="scanner-tool-btn" id="btnSwitchCam" onclick="switchCamera()">
-          <i class="bi bi-camera-reverse"></i> Balik Kamera
+          <i class="bi bi-camera-reverse"></i> <span>Balik Kamera</span>
         </button>
         <button type="button" class="scanner-tool-btn" onclick="document.getElementById(\'nativeCameraInput\').click()">
-          <i class="bi bi-camera-fill text-warning"></i> Foto Langsung
+          <i class="bi bi-camera-fill" style="color: #0E5C58;"></i> <span>Foto Langsung</span>
         </button>
         <button type="button" class="scanner-tool-btn" onclick="document.getElementById(\'galleryInput\').click()">
-          <i class="bi bi-image"></i> Dari Galeri
+          <i class="bi bi-image"></i> <span>Pilih dari Galeri</span>
         </button>
         <!-- Native Camera Input (langsung membuka app kamera HP) -->
         <input type="file" id="nativeCameraInput" accept="image/*" capture="environment" class="d-none" onchange="handleGalleryScan(this)">
@@ -226,37 +277,41 @@ $body = '
 
       <!-- Zoom Slider / Buttons jika didukung kamera -->
       <div id="zoomControlWrapper" class="d-none text-center my-2">
-        <span class="text-secondary small me-1"><i class="bi bi-search"></i> Zoom:</span>
-        <div id="zoomButtonsContainer" class="d-inline-flex gap-1"></div>
+        <span class="small me-1 fw-semibold" style="color: #53595F;"><i class="bi bi-search"></i> Zoom:</span>
+        <div id="zoomButtonsContainer" class="d-inline-flex gap-1.5"></div>
       </div>
 
       <!-- Status Scanner -->
-      <div id="scannerStatus" class="text-center mt-2" style="font-size: 0.78rem; color: #98A2B3;">
-        <span class="spinner-border spinner-border-sm me-1 text-primary"></span> Menghubungkan ke kamera HP...
+      <div id="scannerStatus" class="status-pill-box text-center mt-2.5">
+        <span class="spinner-border spinner-border-sm me-1" style="color: #0E5C58;"></span> Menghubungkan ke kamera smartphone...
       </div>
 
       <!-- Input Manual Token (Jika QR Rusak/Kamera Terhalang) -->
-      <div class="mt-3 pt-3 border-top" style="border-color: rgba(255,255,255,0.1) !important;">
-        <div class="d-flex align-items-center justify-content-between mb-2">
-          <span class="text-uppercase fw-semibold" style="font-size: 0.7rem; color: #94A3B8;">Ketik Token / Kode Manual</span>
-          <span class="text-muted" style="font-size: 0.7rem;">(Alternatif jika stiker robek)</span>
+      <div class="manual-input-box mt-3 pt-3">
+        <div class="d-flex align-items-center justify-content-between mb-1.5">
+          <span class="fw-bold d-inline-flex align-items-center gap-1" style="font-size: 0.74rem; color: #1B2A3A;">
+            <i class="bi bi-keyboard" style="color: #0E5C58;"></i> Ketik Nomor / Token Manual
+          </span>
+          <span class="text-secondary small" style="font-size: 0.68rem;">(Jika stiker QR robek)</span>
         </div>
         <form onsubmit="return handleManualToken(event)">
           <div class="input-group">
-            <input type="text" class="form-control form-control-sm font-monospace" id="manualTokenInput" placeholder="Ketik nomor/token aset..." style="background: #091C35; border-color: #1E3A60; color: #FFFFFF;" required>
-            <button class="btn btn-primary btn-sm px-3 fw-bold" type="submit">
-              <i class="bi bi-arrow-right"></i> Buka
+            <input type="text" class="form-control font-monospace" id="manualTokenInput" placeholder="Contoh: 01.5.00492 atau token..." style="height: 44px; border-color: #D1D5D8; font-size: 0.84rem;" required>
+            <button class="btn text-white fw-bold px-3.5 d-inline-flex align-items-center justify-content-center gap-1" style="background-color: #0E5C58; border-color: #0E5C58; min-height: 44px;" type="submit">
+              <span>Buka</span> <i class="bi bi-arrow-right"></i>
             </button>
           </div>
         </form>
       </div>
 
       <!-- Tautan Cepat -->
-      <div class="d-flex justify-content-between align-items-center mt-3 pt-2 text-muted" style="font-size: 0.72rem;">
-        <span class="text-secondary"><i class="bi bi-shield-check text-success me-1"></i> Mode Lapangan Bebas Login</span>
-        '.(is_logged_in() 
-            ? '<a href="'.e(module_url('dashboard.php')).'" class="text-info text-decoration-none"><i class="bi bi-speedometer2 me-1"></i> Dashboard</a>' 
-            : '<a href="'.e(module_url('login.php')).'" class="text-secondary text-decoration-none" title="Akses Admin Portal"><i class="bi bi-lock me-1"></i> Portal Admin</a>').'
+      <div class="d-flex justify-content-between align-items-center mt-3 pt-2 text-muted" style="font-size: 0.75rem;">
+        <span class="d-inline-flex align-items-center gap-1" style="color: #53595F;">
+          <i class="bi bi-shield-check" style="color: #10B981;"></i> Mode Lapangan Bebas Login
+        </span>
+        ' . (is_logged_in() 
+            ? '<a href="' . e(module_url('dashboard.php')) . '" class="fw-bold text-decoration-none d-inline-flex align-items-center gap-1" style="color: #0E5C58;"><i class="bi bi-speedometer2"></i> Dashboard</a>' 
+            : '<a href="' . e(module_url('login.php')) . '" class="fw-bold text-decoration-none d-inline-flex align-items-center gap-1" style="color: #0E5C58;" title="Akses Admin Portal"><i class="bi bi-lock"></i> Portal Admin</a>') . '
       </div>
 
     </div>
@@ -379,8 +434,8 @@ function onScanSuccess(decodedText) {
 
   const laser = document.getElementById("scanLaserLine");
   if (laser) {
-    laser.style.backgroundColor = "#22C55E";
-    laser.style.boxShadow = "0 0 16px #22C55E";
+    laser.style.backgroundColor = "#10B981";
+    laser.style.boxShadow = "0 0 16px #10B981";
   }
 
   try {
@@ -661,7 +716,7 @@ async function startCameraScanner(isUserInitiated) {
     isStarting = false;
     if (manualBox) manualBox.classList.add("d-none");
     if (statusEl) {
-      statusEl.innerHTML = '<span class="text-success fw-bold"><i class="bi bi-lightning-charge-fill text-warning me-1"></i> Scanner aktif &bull; Arahkan ke stiker QR</span>';
+      statusEl.innerHTML = '<span class="fw-bold" style="color: #0E5C58;"><i class="bi bi-camera-fill me-1 text-success"></i> Scanner aktif &bull; Arahkan ke stiker QR</span>';
     }
 
     // Pastikan video mobile memiliki atribut playsinline & muted (krusial di iOS Safari/Chrome)
