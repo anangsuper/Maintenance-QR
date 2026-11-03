@@ -239,7 +239,7 @@ $body = '
 <div class="card p-3 mb-4 bg-light border-0 shadow-sm" style="border-radius: 14px;">
   <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-2">
     <div class="fw-semibold text-dark small d-flex align-items-center gap-1">
-      <i class="bi bi-magic text-primary me-1"></i> Terapkan Cepat ke Semua Baris di Bawah (Opsional):
+      <i class="bi bi-arrow-repeat text-primary me-1"></i> Terapkan Cepat ke Semua Baris di Bawah (Opsional):
     </div>
     <span class="text-muted small">Fitur cepat untuk menyeragamkan kolom tertentu, setelah itu Anda tetap bebas mengubah tiap baris.</span>
   </div>

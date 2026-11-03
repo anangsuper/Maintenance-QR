@@ -289,7 +289,7 @@ $body = '
             <label class="form-label text-secondary small fw-semibold">Kode Inventaris</label>
             <div class="input-group">
               <input type="text" class="form-control font-monospace" name="kode_inventaris" id="kodeInventaris" placeholder="Contoh: INV-IT-006 (Kosongkan utk auto)">
-              <button class="btn btn-light border" type="button" onclick="autoGenerateKode()" title="Generate Otomatis"><i class="bi bi-magic me-1"></i>Auto</button>
+              <button class="btn btn-light border" type="button" onclick="autoGenerateKode()" title="Generate Otomatis"><i class="bi bi-arrow-repeat me-1"></i>Auto</button>
             </div>
             <div class="form-text small text-muted">Biarkan kosong jika ingin dibuatkan otomatis oleh sistem.</div>
           </div>

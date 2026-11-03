@@ -677,7 +677,7 @@ $body .= '
               <label class="form-label text-uppercase fw-bold text-muted small" style="font-size:0.72rem;">Nomor Memo <span class="text-danger">*</span></label>
               <div class="input-group">
                 <input type="text" name="nomor_memo" id="memoNomor" class="form-control font-monospace fw-bold" placeholder="Contoh: 396/INT/MI/OPS/BANK-MITRA.KC.BTL/VIII/2026" required>
-                <button type="button" class="btn btn-outline-secondary" onclick="autoUpdateNomorMemo()"><i class="bi bi-magic me-1"></i>Auto Nomor</button>
+                <button type="button" class="btn btn-outline-secondary" onclick="autoUpdateNomorMemo()"><i class="bi bi-arrow-repeat me-1"></i>Auto Nomor</button>
               </div>
               <div class="form-text small" style="font-size:0.72rem;">Dapat diisi otomatis sesuai cabang pemohon atau diedit manual sesuai nomor agenda surat.</div>
             </div>

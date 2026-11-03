@@ -382,7 +382,7 @@ $body = '
             <label class="form-label text-secondary small fw-semibold">Kode Inventaris</label>
             <div class="input-group">
               <input type="text" class="form-control font-monospace" name="kode_inventaris" id="kodeInventaris" value="'.e(normalize_kode_inventaris($asset['kode_inventaris'] ?? '')).'" placeholder="Contoh: 0450007417122025">
-              <button class="btn btn-light border" type="button" onclick="autoGenerateKode()" title="Generate Otomatis"><i class="bi bi-magic me-1"></i>Auto</button>
+              <button class="btn btn-light border" type="button" onclick="autoGenerateKode()" title="Generate Otomatis"><i class="bi bi-arrow-repeat me-1"></i>Auto</button>
             </div>
           </div>
 

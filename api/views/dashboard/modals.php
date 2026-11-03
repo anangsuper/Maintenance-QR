@@ -116,7 +116,7 @@ $body .= '
               <label class="form-label small fw-bold text-dark">Nomor Seri Inventaris Bank</label>
               <div class="input-group">
                 <input type="text" name="nomor_seri_inventaris" id="addCardNoSeri" class="form-control font-monospace" placeholder="Contoh: 01.05.02.200224.001">
-                <button class="btn btn-light border" type="button" onclick="autoGenerateCardNoSeri(\'add\')" title="Generate Format Bank"><i class="bi bi-magic me-1"></i>Auto</button>
+                <button class="btn btn-light border" type="button" onclick="autoGenerateCardNoSeri(\'add\')" title="Generate Format Bank"><i class="bi bi-arrow-repeat me-1"></i>Auto</button>
               </div>
               <div class="form-text text-muted" style="font-size: 0.72rem;">Format resmi: [Cabang].[Ruang].[Gol].[ddMMyy].[No]</div>
             </div>
@@ -244,7 +244,7 @@ $body .= '
               <label class="form-label small fw-bold text-dark">Nomor Seri Inventaris Bank</label>
               <div class="input-group">
                 <input type="text" name="nomor_seri_inventaris" id="editCardNoSeri" class="form-control font-monospace" placeholder="Contoh: 01.05.02.200224.001">
-                <button class="btn btn-light border" type="button" onclick="autoGenerateCardNoSeri(\'edit\')" title="Generate Format Bank"><i class="bi bi-magic me-1"></i>Auto</button>
+                <button class="btn btn-light border" type="button" onclick="autoGenerateCardNoSeri(\'edit\')" title="Generate Format Bank"><i class="bi bi-arrow-repeat me-1"></i>Auto</button>
               </div>
               <div class="form-text text-muted" style="font-size: 0.72rem;">Format resmi: [Cabang].[Ruang].[Gol].[ddMMyy].[No]</div>
             </div>

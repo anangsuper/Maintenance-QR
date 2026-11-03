@@ -83,7 +83,7 @@ if (empty($displayCards)) {
                 $isCardToday = true;
             }
         }
-        $todayBadge = $isCardToday ? '<span class="badge bg-success-subtle text-success border border-success-subtle ms-1" style="font-size: 0.65rem; font-weight: 700;"><i class="bi bi-stars me-0.5"></i>Hari Ini</span>' : '';
+        $todayBadge = $isCardToday ? '<span class="badge bg-success-subtle text-success border border-success-subtle ms-1" style="font-size: 0.65rem; font-weight: 700;"><i class="bi bi-clock-history me-0.5"></i>Hari Ini</span>' : '';
 
         $photoThumbHtml = '';
         if (!empty($c['foto'])) {

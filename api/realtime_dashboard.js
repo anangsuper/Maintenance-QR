@@ -92,7 +92,7 @@
       statusDot.className = 'status-dot warning';
       statusDot.style.background = '#f59e0b';
       statusText.innerHTML = '<i class="bi bi-arrow-repeat me-1"></i>Auto-Sync';
-      statusBadge.title = 'WebSocket offline — Menggunakan Auto-Sync background fallback (sinkron otomatis).';
+      statusBadge.title = 'WebSocket offline : Menggunakan Auto-Sync background fallback (sinkron otomatis).';
     }
   }
 

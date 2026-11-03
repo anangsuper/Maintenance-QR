@@ -105,10 +105,10 @@
         <div class="absolute left-0 top-0 bottom-0 w-1 bg-[#0284C7]"></div>
         <div class="text-[26px] font-bold text-[#0284C7] tabular-nums leading-none flex items-center justify-between">
           <span>'.$todayCardsCount.' <span class="text-[13px] font-normal text-[#53595F]">Unit</span></span>
-          '.($todayCardsCount > 0 ? '<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#0284C7] text-white"><i class="bi bi-stars me-0.5"></i>Baru</span>' : '').'
+          '.($todayCardsCount > 0 ? '<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#0284C7] text-white"><i class="bi bi-clock-history me-0.5"></i>Baru</span>' : '').'
         </div>
         <div class="text-[12px] font-medium text-[#53595F] mt-1.5 flex items-center gap-1.5">
-          <span class="text-[#0284C7] font-semibold"><i class="bi bi-stars me-0.5"></i> Baru Hari Ini</span>
+          <span class="text-[#0284C7] font-semibold"><i class="bi bi-clock-history me-0.5"></i> Baru Hari Ini</span>
           <span>&middot;</span>
           <span class="text-[#53595F] text-[11px]">'.date('d/m/Y').'</span>
         </div>
@@ -164,7 +164,7 @@
         </div>
         <div class="col-lg-3 col-md-12 flex gap-1 justify-content-lg-end">
           <a class="h-[36px] px-3 w-full rounded-[8px] text-[13px] font-semibold transition-colors flex items-center justify-center gap-1.5 text-decoration-none '.($filterHariIni ? 'bg-[#10B981] hover:bg-[#059669] text-white shadow-xs' : 'bg-white border border-[#D1D5D8] text-[#10B981] hover:bg-[#ECFDF5]').'" href="'.e(module_url('dashboard.php', ['tab' => 'kartu', 'hari_ini' => ($filterHariIni ? null : 1)])).'" title="Filter aset yang baru diperoleh / didaftarkan hari ini">
-            <i class="bi bi-stars"></i> Baru Hari Ini ('.$todayCardsCount.')
+            <i class="bi bi-clock-history"></i> Baru Hari Ini ('.$todayCardsCount.')
           </a>
         </div>
         <div class="col-12 flex justify-between items-center pt-3 border-t border-[#F3F4F6] mt-2 flex-wrap gap-2">

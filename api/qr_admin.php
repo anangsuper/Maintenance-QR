@@ -322,7 +322,7 @@ $body = '
         <input type="hidden" name="_csrf" value="'.e(csrf_token()).'">
         <input type="hidden" name="action" value="generate_missing">
         <button type="submit" class="h-[36px] w-full px-3.5 bg-[#F59E0B] hover:bg-[#D97706] text-white rounded-[8px] text-[13px] font-semibold transition-colors inline-flex items-center justify-center gap-1.5 border-0 shadow-xs cursor-pointer">
-          <i class="bi bi-magic"></i> Generate '.$countMissing.' Token Kosong
+          <i class="bi bi-arrow-repeat"></i> Generate '.$countMissing.' Token Kosong
         </button>
       </form>' : '
       <button class="h-[36px] w-full px-3.5 bg-[#F4F5F7] text-[#6B7280] border border-[#D1D5D8] rounded-[8px] text-[13px] font-medium inline-flex items-center justify-center gap-1.5 cursor-not-allowed" disabled>

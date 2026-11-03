@@ -56,7 +56,7 @@ if (isset($_GET['action']) && $_GET['action'] === 'download_doc_pdf') {
     }
 }
 
-$pageTitle = 'Buku Panduan & Laporan Sistem Informasi Manajemen Aset, IT & Sarpras Terpadu — PT. BPR Mitratama Arthabuana';
+$pageTitle = 'Buku Panduan & Laporan Sistem Informasi Manajemen Aset, IT & Sarpras Terpadu | PT. BPR Mitratama Arthabuana';
 ?>
 <!DOCTYPE html>
 <html lang="id">

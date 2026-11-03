@@ -379,12 +379,12 @@ ob_start();
                     class="w-100 h-100"
                     style="object-fit: cover; cursor: zoom-in;"
                     onerror="this.onerror=null; this.parentElement.innerHTML='<div class=\'text-center p-3 text-muted\'><i class=\'bi bi-image fs-1 opacity-50\'></i><div class=\'small mt-1\'>Foto tidak ditemukan</div></div>';"
-                    onclick="openTrashZoomModal('<?= e($photoUrl) ?>', '<?= e($namaBarang) ?> — <?= e($slotLabel) ?>', '<?= e($kodeInv) ?>')"
+                    onclick="openTrashZoomModal('<?= e($photoUrl) ?>', '<?= e($namaBarang) ?> • <?= e($slotLabel) ?>', '<?= e($kodeInv) ?>')"
                   >
                   <button
                     type="button"
                     class="position-absolute bottom-2 end-2 px-2.5 py-1 bg-dark bg-opacity-75 text-white border-0 rounded-full text-[11px] font-semibold shadow-xs"
-                    onclick="openTrashZoomModal('<?= e($photoUrl) ?>', '<?= e($namaBarang) ?> — <?= e($slotLabel) ?>', '<?= e($kodeInv) ?>')"
+                    onclick="openTrashZoomModal('<?= e($photoUrl) ?>', '<?= e($namaBarang) ?> • <?= e($slotLabel) ?>', '<?= e($kodeInv) ?>')"
                   >
                     <i class="bi bi-arrows-fullscreen me-1"></i>Perbesar
                   </button>
