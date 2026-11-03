@@ -30,6 +30,13 @@
         const HOLD_FRAMES_REQUIRED = 10;
         const MODEL_URL = "https://cdn.jsdelivr.net/npm/@vladmandic/face-api/model/";
 
+                // Data Inventaris untuk Watermark Stempel Resmi
+        window.__INVENTARIS_META = {
+            rek: <?= json_encode((string)($card['nomor_rekening'] ?? '')) ?>,
+            gabungan: <?= json_encode((string)($card['nomor_gabungan'] ?? '')) ?>,
+            nama: <?= json_encode((string)($card['nama_barang'] ?? '')) ?>,
+            kantorBank: <?= json_encode((string)($kantorBankInfo['kantor_bank_val'] ?? '01. Kantor Pusat Operasional')) ?>
+        };
         // 1. Kompresi Gambar Cerdas di Browser (Client-side) sebelum Unggah (Mendukung 2 Foto)
         const fileInput = document.getElementById('fotoBarangInput');
         const fileInput2 = document.getElementById('fotoBarangInput2');
@@ -127,6 +134,80 @@
 
                     // 3. Gambar seluruh foto di tengah kanvas putih
                     ctx.drawImage(img, 0, 0, imgW, imgH, dx, dy, drawW, drawH);
+
+                    // 4. Stempel Watermark Otentikasi Audit Resmi (Anti-Slop Institutional)
+                    try {
+                        const meta = window.__INVENTARIS_META || {};
+                        const bankName = "PT BPR MITRATAMA ARTHABUANA";
+                        const kantor = meta.kantorBank || "Kantor Bank";
+                        const assetCode = meta.rek || meta.gabungan || "INVENTARIS";
+
+                        const now = new Date();
+                        const pad = n => String(n).padStart(2, "0");
+                        const dateStr = pad(now.getDate()) + "/" + pad(now.getMonth() + 1) + "/" + now.getFullYear() + " " + pad(now.getHours()) + ":" + pad(now.getMinutes()) + " WITA";
+
+                        const barX = 24;
+                        const barY = outH - 100;
+                        const barW = outW - 48;
+                        const barH = 76;
+                        const cornerR = 8;
+
+                        ctx.save();
+                        // Background Bar Dark Navy Semi-transparan
+                        ctx.fillStyle = "rgba(15, 23, 42, 0.88)";
+                        ctx.beginPath();
+                        if (ctx.roundRect) {
+                            ctx.roundRect(barX, barY, barW, barH, cornerR);
+                        } else {
+                            ctx.rect(barX, barY, barW, barH);
+                        }
+                        ctx.fill();
+
+                        // Garis Aksen Kombai Teal di Sisi Kiri
+                        ctx.fillStyle = "#0E5C58";
+                        ctx.beginPath();
+                        if (ctx.roundRect) {
+                            ctx.roundRect(barX, barY, 8, barH, [cornerR, 0, 0, cornerR]);
+                        } else {
+                            ctx.rect(barX, barY, 8, barH);
+                        }
+                        ctx.fill();
+
+                        // Teks 1: Nama Bank & Kantor Cabang
+                        ctx.fillStyle = "#FFFFFF";
+                        ctx.font = "bold 20px 'Public Sans', system-ui, -apple-system, sans-serif";
+                        ctx.fillText(bankName + " • " + kantor, barX + 24, barY + 32);
+
+                        // Teks 2: Nomor Inventaris & Tanggal Audit
+                        ctx.fillStyle = "#A7E2DC";
+                        ctx.font = "500 15px 'Public Sans', system-ui, -apple-system, sans-serif";
+                        ctx.fillText("NO INVENTARIS: " + assetCode + " • DOKUMENTASI FISIK RESMI • " + dateStr, barX + 24, barY + 58);
+
+                        // Badge Sisi Kanan: VERIFIED ASSET
+                        const badgeText = "VERIFIED ASSET";
+                        ctx.font = "bold 13px system-ui, sans-serif";
+                        const badgeW = ctx.measureText(badgeText).width + 20;
+                        const badgeX = barX + barW - badgeW - 16;
+                        const badgeY = barY + 22;
+
+                        ctx.fillStyle = "rgba(14, 92, 88, 0.9)";
+                        ctx.strokeStyle = "#A7E2DC";
+                        ctx.lineWidth = 1;
+                        ctx.beginPath();
+                        if (ctx.roundRect) {
+                            ctx.roundRect(badgeX, badgeY, badgeW, 32, 4);
+                        } else {
+                            ctx.rect(badgeX, badgeY, badgeW, 32);
+                        }
+                        ctx.fill();
+                        ctx.stroke();
+
+                        ctx.fillStyle = "#FFFFFF";
+                        ctx.fillText(badgeText, badgeX + 10, badgeY + 21);
+                        ctx.restore();
+                    } catch(wmErr) {
+                        console.warn("Watermark render notice:", wmErr);
+                    }
 
                     canvas.toBlob(function(blob) {
                         callback(blob, canvas.toDataURL('image/jpeg', quality));

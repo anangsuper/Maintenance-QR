@@ -179,10 +179,15 @@
                     <input type="hidden" name="verifier_photo" id="modalBioPhoto" value="">
 
                     <div class="modal-body p-3 p-md-4 bg-light">
-                        <!-- Petunjuk Ramah & Jelas -->
-                        <div class="alert alert-info py-2.5 px-3 small border-0 rounded-3 mb-3 d-flex align-items-center gap-2" style="background-color: #E0F2FE; color: #0369A1;">
-                            <i class="bi bi-info-circle-fill fs-5 flex-shrink-0"></i>
-                            <span style="font-size: 0.78rem;">Pilih <strong>Buka Kamera</strong> untuk langsung memotret barang dengan kamera HP / Laptop, atau <strong>Pilih dari Galeri</strong> untuk mengunggah foto yang sudah tersimpan.</span>
+                        <!-- Petunjuk Ramah & Jelas + Watermark Audit Notice -->
+                        <div class="alert alert-info py-2.5 px-3 small border-0 rounded-3 mb-3 d-flex flex-wrap align-items-center justify-content-between gap-2" style="background-color: #E0F2FE; color: #0369A1;">
+                            <div class="d-flex align-items-center gap-2">
+                                <i class="bi bi-info-circle-fill fs-5 flex-shrink-0"></i>
+                                <span style="font-size: 0.78rem;">Pilih <strong>Buka Kamera</strong> untuk langsung memotret barang, atau <strong>Pilih dari Galeri</strong> untuk mengunggah file foto.</span>
+                            </div>
+                            <span class="badge bg-white border border-[#BFDBFE] text-[#0369A1] px-2.5 py-1 text-[11px] font-semibold rounded-pill inline-flex items-center gap-1 shadow-2xs">
+                                <i class="bi bi-shield-check text-[#10B981]"></i> Watermark Audit Otomatis Disematkan
+                            </span>
                         </div>
 
                         <div class="row g-3">

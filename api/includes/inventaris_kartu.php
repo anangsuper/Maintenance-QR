@@ -1186,7 +1186,7 @@ function generate_default_nomor_seri(array $card): string {
  * Kompres dan simpan gambar aset dengan kualitas tajam tapi ukuran file hemat (~150-280KB)
  * Menjaga performa server agar tidak kehabisan storage
  */
-function compress_and_save_uploaded_image(string $tmpPath, string $targetPath, int $maxDimension = 1600, int $quality = 82, bool $crop4by5 = false): bool {
+function compress_and_save_uploaded_image(string $tmpPath, string $targetPath, int $maxDimension = 1600, int $quality = 82, bool $crop4by5 = false, string $watermarkText = ''): bool {
     if (!file_exists($tmpPath)) return false;
 
     // Pastikan direktori tujuan tersedia
@@ -1249,6 +1249,32 @@ function compress_and_save_uploaded_image(string $tmpPath, string $targetPath, i
                     imagefilledrectangle($dst, 0, 0, $outW, $outH, $white);
 
                     imagecopyresampled($dst, $src, $dstX, $dstY, 0, 0, $drawW, $drawH, $w, $h);
+
+                    // Stempel Watermark Otentikasi Audit Resmi PHP GD (Anti-Slop Institutional)
+                    if (!empty($watermarkText)) {
+                        $barX = 24;
+                        $barY = $outH - 100;
+                        $barW = $outW - 48;
+                        $barH = 76;
+
+                        // Background Bar Dark Navy Semi-transparan (kontras tinggi)
+                        $bgNavy = imagecolorallocatealpha($dst, 15, 23, 42, 25);
+                        imagefilledrectangle($dst, $barX, $barY, $barX + $barW, $barY + $barH, $bgNavy);
+
+                        // Garis Aksen Kombai Teal di sisi kiri
+                        $teal = imagecolorallocate($dst, 14, 92, 88);
+                        imagefilledrectangle($dst, $barX, $barY, $barX + 8, $barY + $barH, $teal);
+
+                        // Teks 1: Nama Bank & Kantor Cabang
+                        $whiteText = imagecolorallocate($dst, 255, 255, 255);
+                        $line1 = "PT BPR MITRATAMA ARTHABUANA • " . $watermarkText;
+                        imagestring($dst, 5, $barX + 22, $barY + 16, $line1, $whiteText);
+
+                        // Teks 2: Tanggal & Validasi
+                        $cyanText = imagecolorallocate($dst, 167, 226, 220);
+                        $line2 = "DOKUMENTASI FISIK RESMI • " . date('d/m/Y H:i') . " WITA • VERIFIED ASSET";
+                        imagestring($dst, 4, $barX + 22, $barY + 42, $line2, $cyanText);
+                    }
 
                     $saved = @imagejpeg($dst, $targetPath, $quality);
                     imagedestroy($src);
