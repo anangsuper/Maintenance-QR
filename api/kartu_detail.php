@@ -773,43 +773,6 @@ $pageTitle = $card ? e($card['nama_barang']) . ' - Kartu Inventaris' : 'Kartu In
                                 </div>
                             <?php endif; ?>
 
-                            <!-- Banner Foto di Folder Sampah (Khusus User yang Sedang Login - Bersih & Rapi Tanpa Warna Kuning) -->
-                            <?php if (is_logged_in() && !empty($itemTrashPhotos)): ?>
-                                <div class="rounded-3 p-2.5 mb-2.5 text-start" style="background-color: #F8FAFC; border: 1px solid #E2E8F0;">
-                                    <div class="d-flex align-items-center justify-content-between mb-1.5">
-                                        <span class="fw-bold text-dark d-inline-flex align-items-center gap-1" style="font-size: 0.75rem;">
-                                            <i class="bi bi-recycle text-primary"></i> <?= count($itemTrashPhotos) ?> Foto di Folder Sampah
-                                        </span>
-                                        <a href="<?= module_url('photo_trash.php', ['source_type' => 'inventaris_kartu', 'item_id' => (int)$card['id']]) ?>" class="fw-bold text-decoration-none" style="font-size: 0.70rem; color: #0E5C58;">
-                                            Lihat Detail
-                                        </a>
-                                    </div>
-                                    <div class="d-flex flex-column gap-1.5">
-                                        <?php foreach (array_slice($itemTrashPhotos, 0, 2) as $tp): 
-                                            $tpUrl = str_starts_with($tp['file_path'], 'http') ? $tp['file_path'] : module_url($tp['file_path']);
-                                        ?>
-                                            <div class="d-flex align-items-center justify-content-between bg-white rounded-2 p-1.5 border gap-2">
-                                                <div class="d-flex align-items-center gap-2 min-w-0">
-                                                    <img alt="Foto Fisik Barang" src="<?= e($tpUrl) ?>" alt="Trash" fetchpriority="low" loading="lazy" class="rounded border object-fit-cover flex-shrink-0" style="width: 34px; height: 34px; cursor: pointer;" onclick="viewFullImage('<?= e(addslashes($tpUrl)) ?>', 'Foto di Folder Sampah')">
-                                                    <div class="min-w-0">
-                                                        <div class="fw-semibold text-dark text-truncate" style="font-size: 0.70rem;">Foto Ke-<?= (int)$tp['photo_slot'] ?> &bull; <span class="text-secondary"><?= e($tp['countdown_label']) ?></span></div>
-                                                        <div class="text-muted text-truncate" style="font-size: 0.64rem;">Dihapus: <?= date('d/m H:i', strtotime($tp['deleted_at'])) ?></div>
-                                                    </div>
-                                                </div>
-                                                <form method="post" class="m-0 flex-shrink-0">
-                                                    <input type="hidden" name="_csrf" value="<?= e(csrf_token()) ?>">
-                                                    <input type="hidden" name="action" value="restore_trash_photo">
-                                                    <input type="hidden" name="trash_id" value="<?= (int)$tp['id'] ?>">
-                                                    <button type="submit" class="btn btn-xs rounded-pill px-2.5 py-1 fw-bold text-white shadow-2xs" style="background-color: #0E5C58; font-size: 0.68rem;">
-                                                        <i class="bi bi-arrow-counterclockwise me-0.5"></i>Restore
-                                                    </button>
-                                                </form>
-                                            </div>
-                                        <?php endforeach; ?>
-                                    </div>
-                                </div>
-                            <?php endif; ?>
-
                             <!-- Tombol Aksi Foto (Ambil / Upload Foto, Hapus, & Folder Sampah) -->
                             <div class="d-flex flex-wrap align-items-center justify-content-center gap-2 mb-3">
                                 <button class="btn btn-sm rounded-pill px-3.5 py-2 fw-bold text-white shadow-xs d-inline-flex align-items-center gap-1.5" type="button" data-bs-toggle="modal" data-bs-target="#modalUploadFotoBarang" style="background-color: #0E5C58; border-color: #0E5C58; font-size: 0.82rem;">
