@@ -205,7 +205,7 @@ foreach ($users as $u) {
         $countActive++;
     }
 
-    if ($fDesc !== '' && ($fStat === 'pending' || $fStat === 'menunggu')) {
+    if (($fDesc !== '' || !empty($u['face_photo'])) && ($fStat === 'pending' || $fStat === 'menunggu')) {
         $countFacePending++;
         $pendingFaceUsers[] = $u;
     } elseif ($fStat === 'verified' || $fStat === 'terverifikasi') {

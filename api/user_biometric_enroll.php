@@ -1,6 +1,9 @@
 <?php
 require __DIR__ . '/bootstrap.php';
-require_login();
+// Akses publik diizinkan: Petugas/user dapat mendaftarkan wajah secara mandiri tanpa login terlebih dahulu
+$isLoggedIn = is_logged_in();
+$isAdmin = is_admin();
+$currUserId = current_user_id();
 
 // Handle AJAX POST simpan biometrik atau tambah teknisi baru langsung dari HP
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -24,12 +27,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $descriptor = trim((string)($data['descriptor'] ?? ''));
     $photo = trim((string)($data['photo'] ?? ''));
 
-    // Aksi 1: Simpan Nama Teknisi Baru Langsung (Hanya Admin yang berwenang)
+    // Aksi 1: Simpan Nama Teknisi Baru Langsung (Bisa oleh Admin maupun pendaftaran publik mandiri)
     if ($action === 'add_tech_only' || ($newTechName !== '' && empty($descriptor))) {
-        if (!$isAdmin) {
-            echo json_encode(['success' => false, 'error' => 'Akses ditolak. Penambahan akun teknisi baru hanya dapat dilakukan oleh Administrator.']);
-            exit;
-        }
         if ($newTechName === '') {
             echo json_encode(['success' => false, 'error' => 'Nama teknisi baru tidak boleh kosong.']);
             exit;
@@ -38,7 +37,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'nama' => $newTechName,
             'role' => 'teknisi',
             'status' => 'Aktif',
-            'face_status' => 'none'
+            'face_status' => 'pending'
         ]);
 
         $uId = (int)($created['id'] ?? $created['user']['id'] ?? 0);
@@ -53,10 +52,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     'nama' => $uNama,
                     'username' => $uUsername
                 ],
-                'message' => "Teknisi '{$newTechName}' berhasil didaftarkan ke sistem!"
+                'message' => "Nama '{$newTechName}' berhasil didaftarkan ke sistem! Silakan lanjutkan dengan pengambilan sampel wajah."
             ]);
         } else {
-            echo json_encode(['success' => false, 'error' => $created['error'] ?? 'Gagal mendaftarkan teknisi baru.']);
+            echo json_encode(['success' => false, 'error' => $created['error'] ?? 'Gagal mendaftarkan nama teknisi baru.']);
         }
         exit;
     }
@@ -67,29 +66,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit;
     }
 
-    // Jika teknisi mendaftar dengan nama baru secara mandiri bersama wajah (Hanya Admin)
+    // Jika teknisi mendaftar dengan nama baru secara mandiri bersama wajah
     if ($targetUserId === -1 && $newTechName !== '') {
-        if (!$isAdmin) {
-            echo json_encode(['success' => false, 'error' => 'Akses ditolak. Penambahan akun baru hanya diizinkan untuk Administrator.']);
-            exit;
-        }
+        $enrollStatus = ($isAdmin || is_hrd()) ? 'verified' : 'pending';
         $created = create_new_user([
             'nama' => $newTechName,
             'role' => 'teknisi',
             'status' => 'Aktif',
             'face_descriptor' => $descriptor,
             'face_photo' => $photo,
-            'face_status' => 'pending'
+            'face_status' => $enrollStatus
         ]);
         $uId = (int)($created['id'] ?? $created['user']['id'] ?? 0);
         if (!empty($created['success']) && $uId > 0) {
             echo json_encode([
                 'success' => true,
-                'face_status' => 'pending',
-                'is_admin' => is_admin(),
+                'face_status' => $enrollStatus,
+                'is_admin' => ($isAdmin || is_hrd()),
                 'user_id' => $uId,
                 'user' => $created['user'] ?? $created,
-                'message' => "Teknisi '{$newTechName}' dan biometrik wajah berhasil didaftarkan ke sistem!"
+                'message' => ($enrollStatus === 'verified')
+                    ? "Teknisi '{$newTechName}' dan biometrik wajah berhasil didaftarkan dan langsung diverifikasi!"
+                    : "Pendaftaran wajah '{$newTechName}' berhasil dikirimkan! Menunggu verifikasi dari Administrator IT."
             ]);
             exit;
         } else {
@@ -103,19 +101,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit;
     }
 
-    // Otorisasi: Non-admin & non-HRD HANYA boleh mendaftarkan biometrik untuk akun login miliknya sendiri
-    if (!$isAdmin && !is_hrd() && $targetUserId !== $currUserId) {
-        echo json_encode(['success' => false, 'error' => 'Akses ditolak. Anda hanya berwenang mendaftarkan sampel wajah untuk akun login Anda sendiri.']);
-        exit;
-    }
-
-    // Untuk Admin dan SDM/HRD otomatis disetujui ('verified'), untuk teknisi umum 'pending'
+    // Untuk Admin dan SDM/HRD otomatis disetujui ('verified'), untuk teknisi/user publik tanpa login 'pending'
     $enrollStatus = ($isAdmin || is_hrd()) ? 'verified' : 'pending';
     $res = save_user_biometrics($targetUserId, $descriptor, $photo, $enrollStatus);
     echo json_encode(array_merge($res, [
         'face_status' => $enrollStatus,
         'is_admin' => ($isAdmin || is_hrd()),
-        'user_id' => $targetUserId
+        'user_id' => $targetUserId,
+        'message' => ($enrollStatus === 'verified')
+            ? "Biometrik wajah berhasil disimpan dan langsung aktif terverifikasi."
+            : "Biometrik wajah berhasil disimpan! Menunggu proses persetujuan dan verifikasi dari Administrator IT."
     ]));
     exit;
 }
@@ -131,10 +126,14 @@ $retUrl = ($rawRet !== '') ? safe_redirect_url($rawRet, '') : '';
 
 $reqId = isset($_GET['id']) ? (int)$_GET['id'] : 0;
 
-// Tentukan user aktif: non-admin non-hrd diarahkan ke profil sendiri, atau jika ada parameter ?id=
+// Tentukan user aktif
 $selectedUserId = 0;
-if ($reqId > 0 && ($isAdmin || is_hrd() || $reqId === $currId)) {
-    $selectedUserId = $reqId;
+if ($reqId > 0) {
+    if ($isAdmin || is_hrd() || !$isLoggedIn || $reqId === $currId) {
+        $selectedUserId = $reqId;
+    } else {
+        $selectedUserId = $currId;
+    }
 } elseif ($currId > 0) {
     $selectedUserId = $currId;
 } elseif (!empty($allUsers)) {
@@ -214,8 +213,9 @@ foreach ($allUsers as $u) {
     if ($uid <= 0 || strcasecmp($unama, 'nama') === 0 || $unama === '') {
         continue;
     }
-    // Jika bukan admin dan bukan HRD/SDM, hanya tampilkan opsi akun login miliknya sendiri
-    if (!$isAdmin && !is_hrd() && $uid !== $currId) {
+    // Jika user sudah login dan bukan admin/hrd, batasi ke akun miliknya sendiri
+    // Namun jika belum login (mode publik), tampilkan seluruh nama agar petugas dapat memilih namanya
+    if ($isLoggedIn && !$isAdmin && !is_hrd() && $uid !== $currId) {
         continue;
     }
     $uRawRole = strtolower(trim((string)($u['role'] ?? 'teknisi')));
@@ -238,29 +238,30 @@ foreach ($allUsers as $u) {
     }
     $userOptionsHtml .= '<option value="'.$uid.'" '.$sel.'>'.e($unama).' ('.e($urole).')'.$bioMark.'</option>';
 }
-if ($isAdmin) {
-    $userOptionsHtml .= '<option value="-1">+ Tambah Nama Teknisi Baru (Ketik Sendiri)</option>';
-}
+// Pilihan Tambah Nama Baru selalu tersedia (untuk admin maupun user publik tanpa login)
+$userOptionsHtml .= '<option value="-1">+ Tambah Nama Teknisi Baru (Ketik Sendiri)</option>';
 
 // Susun tombol aksi selesai sesuai status autentikasi pengguna
 $successButtonsHtml = '';
 if ($retUrl !== '') {
-    $successButtonsHtml .= '<a href="'.e($retUrl).'" class="h-[38px] px-4 bg-[#10B981] hover:bg-[#059669] text-white rounded-[8px] text-[13px] font-semibold transition-colors flex items-center justify-center gap-1.5 text-decoration-none shadow-xs"><i class="bi bi-arrow-return-left"></i> Kembali Lanjutkan Maintenance</a>';
+    $successButtonsHtml .= '<a href="'.e($retUrl).'" class="h-[40px] px-4 bg-[#10B981] hover:bg-[#059669] text-white rounded-[8px] text-[13px] font-semibold transition-colors flex items-center justify-center gap-1.5 text-decoration-none shadow-xs"><i class="bi bi-arrow-return-left"></i> Kembali Lanjutkan Maintenance</a>';
 }
+
+$successButtonsHtml .= '<button type="button" class="h-[40px] px-4 bg-[#0E5C58] hover:bg-[#094340] text-white rounded-[8px] text-[13px] font-bold transition-colors inline-flex items-center justify-center gap-1.5 cursor-pointer shadow-xs" onclick="resetForNextEnrollment()"><i class="bi bi-person-plus-fill"></i> + Tambahkan Muka / Daftarkan Pengguna Lain</button>';
 
 if ($isAdmin || is_hrd()) {
-    $successButtonsHtml .= '<a href="'.e(module_url('users_admin.php')).'" class="h-[38px] px-4 bg-[#0E5C58] hover:bg-[#094340] text-white rounded-[8px] text-[13px] font-semibold transition-colors flex items-center justify-center gap-1.5 text-decoration-none shadow-xs"><i class="bi bi-people-fill"></i> Halaman Data Pengguna</a>';
+    $successButtonsHtml .= '<a href="'.e(module_url('users_admin.php')).'" class="h-[38px] px-4 bg-white border border-[#D1D5D8] hover:bg-[#F4F5F7] text-[#1B2A3A] rounded-[8px] text-[13px] font-medium transition-colors flex items-center justify-center gap-1.5 text-decoration-none shadow-xs"><i class="bi bi-people-fill text-[#0E5C58]"></i> Halaman Data Pengguna</a>';
     $successButtonsHtml .= '<a href="'.e(module_url('dashboard.php')).'" class="h-[38px] px-4 bg-white border border-[#D1D5D8] hover:bg-[#F4F5F7] text-[#1B2A3A] rounded-[8px] text-[13px] font-medium transition-colors flex items-center justify-center gap-1.5 text-decoration-none shadow-xs"><i class="bi bi-speedometer2"></i> Dashboard</a>';
 } elseif ($isLoggedIn) {
-    $successButtonsHtml .= '<a href="'.e(module_url('dashboard.php')).'" class="h-[38px] px-4 bg-[#0E5C58] hover:bg-[#094340] text-white rounded-[8px] text-[13px] font-semibold transition-colors flex items-center justify-center gap-1.5 text-decoration-none shadow-xs"><i class="bi bi-speedometer2"></i> Dashboard</a>';
+    $successButtonsHtml .= '<a href="'.e(module_url('dashboard.php')).'" class="h-[38px] px-4 bg-white border border-[#D1D5D8] hover:bg-[#F4F5F7] text-[#1B2A3A] rounded-[8px] text-[13px] font-medium transition-colors flex items-center justify-center gap-1.5 text-decoration-none shadow-xs"><i class="bi bi-speedometer2"></i> Dashboard</a>';
+} else {
+    $successButtonsHtml .= '<a href="'.e(module_url('login.php')).'" class="h-[38px] px-4 bg-white border border-[#D1D5D8] hover:bg-[#F4F5F7] text-[#53595F] rounded-[8px] text-[13px] font-medium transition-colors flex items-center justify-center gap-1.5 text-decoration-none shadow-xs"><i class="bi bi-box-arrow-in-right"></i> Masuk / Halaman Login</a>';
 }
-
-$successButtonsHtml .= '<button type="button" class="h-[34px] px-3 bg-white border border-[#D1D5D8] hover:bg-[#F4F5F7] text-[#53595F] rounded-[8px] text-[12px] font-medium transition-colors inline-flex items-center justify-center gap-1 cursor-pointer" onclick="location.reload()"><i class="bi bi-arrow-clockwise"></i> Daftarkan Teknisi Lain</button>';
 
 if ($isAdmin || is_hrd()) {
     $successDescHtml = 'Data foto profil dan verifikasi wajah berhasil disimpan dan <strong>langsung aktif terverifikasi</strong>.<br><br>Anda dapat melihat status akun ini di menu <a href="'.e(module_url('users_admin.php')).'" class="font-bold text-[#0E5C58] text-decoration-none">Kelola Akun Pengguna &rarr;</a>.';
 } else {
-    $successDescHtml = 'Foto profil dan data verifikasi telah disimpan dengan status: <span class="px-2 py-0.5 rounded-full text-[11px] font-bold bg-[#FEF3C7] text-[#B45309] border border-[#FDE68A] inline-block"><i class="bi bi-hourglass-split me-1"></i> Menunggu Persetujuan Admin</span>.<br><br>Administrator IT akan mengonfirmasi akun Anda agar dapat langsung digunakan saat checklist maintenance.';
+    $successDescHtml = 'Foto profil dan data verifikasi telah disimpan dengan status: <span class="px-2 py-0.5 rounded-full text-[11px] font-bold bg-[#FEF3C7] text-[#B45309] border border-[#FDE68A] inline-block"><i class="bi bi-hourglass-split me-1"></i> Menunggu Persetujuan Admin</span>.<br><br>Administrator IT akan memproses dan memverifikasi data wajah Anda agar dapat digunakan untuk checklist pemeliharaan.';
 }
 
 ob_start();
@@ -346,11 +347,31 @@ ob_start();
         <i class="bi bi-people-fill text-[#0E5C58]"></i> Kelola Pengguna
       </a>
     <?php endif; ?>
-    <a href="<?= e(module_url('dashboard.php')) ?>" class="h-[36px] px-3.5 bg-white border border-[#D1D5D8] rounded-[8px] text-[13px] font-semibold text-[#1B2A3A] hover:bg-[#F4F5F7] transition-colors inline-flex items-center gap-1.5 text-decoration-none shadow-xs">
-      <i class="bi bi-speedometer2 text-[#53595F]"></i> Dashboard
-    </a>
+    <?php if ($isLoggedIn): ?>
+      <a href="<?= e(module_url('dashboard.php')) ?>" class="h-[36px] px-3.5 bg-white border border-[#D1D5D8] rounded-[8px] text-[13px] font-semibold text-[#1B2A3A] hover:bg-[#F4F5F7] transition-colors inline-flex items-center gap-1.5 text-decoration-none shadow-xs">
+        <i class="bi bi-speedometer2 text-[#53595F]"></i> Dashboard
+      </a>
+    <?php else: ?>
+      <a href="<?= e(module_url('login.php')) ?>" class="h-[36px] px-3.5 bg-white border border-[#D1D5D8] rounded-[8px] text-[13px] font-semibold text-[#1B2A3A] hover:bg-[#F4F5F7] transition-colors inline-flex items-center gap-1.5 text-decoration-none shadow-xs">
+        <i class="bi bi-box-arrow-in-right text-[#0E5C58]"></i> Masuk / Login
+      </a>
+    <?php endif; ?>
   </div>
 </div>
+
+<?php if (!$isLoggedIn): ?>
+<div class="mb-4 p-3 bg-[#EFF6FF] border border-[#BFDBFE] rounded-[10px] flex items-center justify-between gap-3 shadow-xs">
+  <div class="flex items-center gap-2.5 text-[12px] text-[#1E40AF]">
+    <i class="bi bi-info-circle-fill text-[18px] text-[#2563EB] shrink-0"></i>
+    <div>
+      <strong>Mode Pendaftaran Mandiri (Tanpa Login):</strong> Anda dapat mendaftarkan nama dan sampel foto wajah Anda langsung di sini. Data yang Anda kirimkan akan berstatus <em>Menunggu Persetujuan Admin</em> sampai diverifikasi oleh Administrator IT.
+    </div>
+  </div>
+  <a href="<?= e(module_url('login.php')) ?>" class="h-[30px] px-2.5 bg-white border border-[#BFDBFE] text-[#1E40AF] hover:bg-[#DBEAFE] rounded-[6px] text-[11px] font-semibold transition-colors shrink-0 flex items-center gap-1 text-decoration-none">
+    Login Petugas &rarr;
+  </a>
+</div>
+<?php endif; ?>
 
 <!-- 4 SYMMETRICAL KOMBAI METRIC CARDS -->
 <div class="bg-[#FFFFFF] border border-[#D1D5D8] rounded-[10px] flex flex-col sm:flex-row overflow-hidden shrink-0 mb-4 shadow-xs">
@@ -1235,8 +1256,48 @@ async function saveNewTechOnly() {
     if (btn) btn.disabled = false;
   }
 }
+function resetForNextEnrollment() {
+  const successBox = document.getElementById("successBox");
+  if (successBox) successBox.classList.add("d-none");
+
+  const overlay = document.getElementById("enrollSuccessOverlay");
+  if (overlay) overlay.classList.add("d-none");
+
+  detectedDescriptor = null;
+  capturedPhotoBase64 = null;
+  enrollCompleted = false;
+  isLivenessVerified = false;
+  blinkDetected = false;
+  enrollHoldFrames = 0;
+
+  if (progressBar) progressBar.style.width = "0%";
+  if (faceOval) faceOval.classList.remove("active");
+
+  if (btnSave) {
+    btnSave.classList.add("d-none");
+    btnSave.disabled = false;
+    btnSave.innerHTML = '<i class="bi bi-check-circle-fill me-1"></i> Simpan Foto Profil & Wajah';
+  }
+  if (btnSnapNow) btnSnapNow.classList.add("d-none");
+  if (btnStart) btnStart.classList.remove("d-none");
+
+  const userSelect = document.getElementById("userSelect");
+  if (userSelect) {
+    userSelect.value = "-1";
+    showNewTechInput();
+    const newNameInp = document.getElementById("newTechName");
+    if (newNameInp) {
+      newNameInp.value = "";
+      newNameInp.focus();
+    }
+  }
+
+  setStatus("info", '<i class="bi bi-person-plus-fill text-[#0E5C58] me-1"></i> Masukkan nama pengguna berikutnya atau pilih dari daftar, lalu tekan <strong>"Buka Kamera Wajah"</strong>.');
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
 </script>
 <?php
 $script = ob_get_clean();
 
-render_page('Wajah Teknisi (Biometrik)', $body, $head, $script);
+render_page('Wajah Teknisi (Biometrik)', $body, $head, $script, $isLoggedIn);

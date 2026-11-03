@@ -741,6 +741,13 @@ body {
       </form>
 
       <!-- Panel Footer -->
+      <div class="text-center my-3 pt-2" style="border-top: 1px solid rgba(255,255,255,0.1);">
+          <a href="<?= module_url('user_biometric_enroll.php') ?>" class="d-inline-flex align-items-center gap-1 text-decoration-none py-1.5 px-3 rounded-pill text-white" style="font-size: 0.78rem; background: rgba(14, 92, 88, 0.55); border: 1px solid rgba(167, 226, 220, 0.4); backdrop-filter: blur(4px);">
+            <i class="bi bi-person-bounding-box text-warning me-1"></i>
+            <span>Daftar Wajah / Face ID (Tanpa Login) &rarr;</span>
+          </a>
+        </div>
+
       <div class="auth-panel-footer">
         <div>&copy; <?= date('Y') ?> PT BPR Mitratama Arthabuana</div>
         <div style="font-size: 0.72rem; color: #94A3B8; margin-top: 4px;">Divisi IT Operations &amp; Digital Banking</div>
