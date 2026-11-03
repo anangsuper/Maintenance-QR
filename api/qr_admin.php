@@ -115,31 +115,31 @@ foreach ($rows as $r) {
     $action .= '</div>';
 
     $table .= '<tr class="asset-table-row hover:bg-[#F9FAFB] transition-colors" id="row-asset-'.$aid.'" data-search="'.e($searchKeyword).'" data-has-token="'.($hasToken ? '1' : '0').'">
-      <td class="text-center py-2.5">
+      <td class="text-center py-2.5 px-3">
         <input type="checkbox" class="form-check-input row-chk cursor-pointer" value="'.$aid.'" onchange="onRowCheckChange()">
       </td>
-      <td class="text-center font-mono text-[#53595F] text-[12px] py-2.5">'.sprintf('%02d', $num).'</td>
-      <td class="py-2.5">
+      <td class="text-center font-mono text-[#53595F] text-[12px] py-2.5 px-2">'.sprintf('%02d', $num).'</td>
+      <td class="py-2.5 px-3">
         <span class="font-mono font-bold text-[#0E5C58] text-[13px]">'.e($kode).'</span>
       </td>
-      <td class="py-2.5">
-        <div class="font-semibold text-[#1B2A3A] text-[13px]">'.e($deviceTitle).'</div>
-        <div class="text-[#53595F] text-[11px] mt-0.5">SN: '.e($sn).' &middot; Tipe: '.e($kategori).'</div>
+      <td class="py-2.5 px-3 cell-wrap-info">
+        <div class="font-semibold text-[#1B2A3A] text-[13px] leading-snug">'.e($deviceTitle).'</div>
+        <div class="text-[#53595F] text-[11px] mt-0.5">SN: '.e($sn).' &middot; '.e($kategori).'</div>
       </td>
-      <td class="py-2.5">
+      <td class="py-2.5 px-3 cell-wrap-info">
         <div class="flex items-center gap-2">
           <div class="w-6 h-6 rounded-full bg-[#F4F5F7] border border-[#D1D5D8] flex items-center justify-center text-[#53595F] text-[11px] shrink-0">
             <i class="bi bi-person"></i>
           </div>
           <div class="min-w-0">
-            <div class="font-semibold text-[#1B2A3A] text-[13px] truncate">'.e($userNama).'</div>
-            '.($divisiNama ? '<div class="text-[#53595F] text-[11px] truncate">'.e($divisiNama).'</div>' : '').'
+            <div class="font-semibold text-[#1B2A3A] text-[13px] leading-snug">'.e($userNama).'</div>
+            '.($divisiNama ? '<div class="text-[#53595F] text-[11px]">'.e($divisiNama).'</div>' : '').'
           </div>
         </div>
       </td>
-      <td class="py-2.5"><span class="px-2 py-0.5 rounded-[6px] text-[11px] font-medium bg-[#F4F5F7] border border-[#D1D5D8] text-[#1B2A3A]">'.e($cabangNama).'</span></td>
-      <td class="text-center py-2.5">'.$qrStatus.'</td>
-      <td class="text-nowrap text-end py-2.5 pe-3">'.$action.'</td>
+      <td class="py-2.5 px-3"><span class="px-2 py-0.5 rounded-[6px] text-[11px] font-medium bg-[#F4F5F7] border border-[#D1D5D8] text-[#1B2A3A]">'.e($cabangNama).'</span></td>
+      <td class="text-center py-2.5 px-3">'.$qrStatus.'</td>
+      <td class="text-nowrap text-end py-2.5 px-3 sticky-action-col">'.$action.'</td>
     </tr>';
 }
 
@@ -151,6 +151,55 @@ $flashHtml = $flash ? '<div class="alert alert-success alert-dismissible fade sh
 
 $head = '
 <style>
+/* Kontrol Scroll Horizontal & Stabilisasi Layout */
+.qr-admin-container {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+.table-responsive-clean {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  border-radius: 0 0 10px 10px;
+}
+
+#qrAssetTable {
+  min-width: 860px;
+  table-layout: auto;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+#qrAssetTable th, #qrAssetTable td {
+  white-space: nowrap;
+  vertical-align: middle;
+}
+
+/* Kolom detail perangkat & pengguna boleh wrap terkontrol */
+#qrAssetTable td.cell-wrap-info {
+  white-space: normal !important;
+  min-width: 180px;
+  max-width: 260px;
+}
+
+/* Kolom Aksi Sticky di Kanan agar tidak perlu geser jauh */
+.sticky-action-col {
+  position: sticky;
+  right: 0;
+  background: #FFFFFF;
+  z-index: 2;
+  box-shadow: -4px 0 8px -2px rgba(0, 0, 0, 0.05);
+}
+thead .sticky-action-col {
+  background: #F4F5F7 !important;
+  z-index: 3;
+}
+tr:hover .sticky-action-col {
+  background: #F9FAFB !important;
+}
+
 .floating-bulk-bar {
   position: fixed;
   bottom: 24px;
@@ -169,6 +218,7 @@ $head = '
   transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s ease;
   opacity: 0;
   pointer-events: none;
+  max-width: 90vw;
 }
 .floating-bulk-bar.active {
   transform: translateX(-50%) translateY(0);
@@ -204,7 +254,7 @@ $head = '
 </style>';
 
 $body = '
-<div class="max-w-[1152px] mx-auto flex flex-col">
+<div class="qr-admin-container mx-auto flex flex-col">
 '.$flashHtml.'
 
 <!-- Header Kicker & Action Bar -->
@@ -370,20 +420,20 @@ $body = '
     </div>
   </div>
 
-  <div class="table-responsive">
+  <div class="table-responsive-clean">
     <table class="table table-hover align-middle mb-0" id="qrAssetTable" style="font-size: 13px;">
       <thead style="background: #F4F5F7; border-bottom: 1px solid #D1D5D8;">
         <tr>
-          <th style="width: 40px;" class="text-center py-2.5">
+          <th style="width: 40px;" class="text-center py-2.5 px-3">
             <input class="form-check-input cursor-pointer" type="checkbox" id="checkAllRows" onchange="toggleSelectAllRows(this)" title="Pilih Semua Aset">
           </th>
-          <th style="width: 45px;" class="text-center font-mono text-[12px] text-[#53595F] font-bold py-2.5">NO</th>
-          <th style="width: 150px;" class="text-[12px] text-[#53595F] font-bold py-2.5">KODE INVENTARIS</th>
-          <th class="text-[12px] text-[#53595F] font-bold py-2.5">DETAIL PERANGKAT</th>
-          <th class="text-[12px] text-[#53595F] font-bold py-2.5">PENGGUNA / PIC</th>
-          <th class="text-[12px] text-[#53595F] font-bold py-2.5">KANTOR CABANG</th>
-          <th style="width: 130px;" class="text-center text-[12px] text-[#53595F] font-bold py-2.5">STATUS TOKEN</th>
-          <th style="width: 150px;" class="text-end pe-3 text-[12px] text-[#53595F] font-bold py-2.5">AKSI</th>
+          <th style="width: 45px;" class="text-center font-mono text-[12px] text-[#53595F] font-bold py-2.5 px-2">NO</th>
+          <th style="width: 140px;" class="text-[12px] text-[#53595F] font-bold py-2.5 px-3">KODE INVENTARIS</th>
+          <th style="width: 220px;" class="text-[12px] text-[#53595F] font-bold py-2.5 px-3">DETAIL PERANGKAT</th>
+          <th style="width: 200px;" class="text-[12px] text-[#53595F] font-bold py-2.5 px-3">PENGGUNA / PIC</th>
+          <th style="width: 130px;" class="text-[12px] text-[#53595F] font-bold py-2.5 px-3">KANTOR CABANG</th>
+          <th style="width: 110px;" class="text-center text-[12px] text-[#53595F] font-bold py-2.5 px-3">STATUS TOKEN</th>
+          <th style="width: 130px;" class="text-end py-2.5 px-3 text-[12px] text-[#53595F] font-bold sticky-action-col">AKSI</th>
         </tr>
       </thead>
       <tbody>'.$table.'</tbody>
@@ -502,7 +552,7 @@ $body = '
     </div>
   </div>
 </div>
-</div><!-- End max-w-[1152px] -->
+</div><!-- End qr-admin-container -->
 ';
 
 $logoDataUri = app_logo_url();
