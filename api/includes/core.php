@@ -254,7 +254,7 @@ function render_vercel_spreadsheet_setup_guide(?string $technicalMsg = null): vo
 
     echo '<h6 class="text-white fw-bold mb-3">Langkah Aktivasi di Vercel Dashboard:</h6>';
     echo '<ol class="list-unstyled d-flex flex-column gap-3 small">';
-    echo '<li class="d-flex gap-3 align-items-start"><span class="step-num flex-shrink-0">1</span><div>Buka <strong>Vercel Dashboard</strong> &rarr; Pilih Proyek <strong>Maintenance-QR</strong> &rarr; Tab <strong>Settings</strong> &rarr; <strong>Environment Variables</strong>.</div></li>';
+    echo '<li class="d-flex gap-3 align-items-start"><span class="step-num flex-shrink-0">1</span><div>Buka <strong>Vercel Dashboard</strong> > Pilih Proyek <strong>Maintenance-QR</strong> > Tab <strong>Settings</strong> > <strong>Environment Variables</strong>.</div></li>';
     echo '<li class="d-flex gap-3 align-items-start"><span class="step-num flex-shrink-0">2</span><div>Tambahkan salah satu opsi kredensial berikut:';
     echo '<div class="mt-2 p-3 rounded-2" style="background: #0F172A;">';
     echo '<div class="fw-bold text-info mb-1">Opsi A (Paling Praktis - 1 Variabel):</div>';

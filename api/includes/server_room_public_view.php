@@ -60,8 +60,7 @@ $autoCheckoutMatch = $autoCheckoutMatch ?? null;
       -webkit-font-smoothing: antialiased;
     }
     .public-portal-header {
-      background: rgba(255, 255, 255, 0.94);
-      backdrop-filter: blur(12px);
+      background: #FFFFFF;
       border-bottom: 1px solid rgba(76, 78, 100, 0.12);
       position: sticky;
       top: 0;
@@ -594,7 +593,7 @@ $autoCheckoutMatch = $autoCheckoutMatch ?? null;
                       <div class="position-absolute start-0 w-100" style="height: 3px; background: linear-gradient(90deg, transparent, #3b82f6, #60a5fa, transparent); animation: scanRayAnim 2s infinite ease-in-out;"></div>
 
                       <!-- Success Overlay -->
-                      <div id="camSuccessOverlay" class="position-absolute top-0 start-0 w-100 h-100 bg-success bg-opacity-75 d-flex flex-column align-items-center justify-content-center text-white d-none" style="backdrop-filter: blur(4px);">
+                      <div id="camSuccessOverlay" class="position-absolute top-0 start-0 w-100 h-100 bg-success bg-opacity-75 d-flex flex-column align-items-center justify-content-center text-white d-none" style="background: rgba(16, 185, 129, 0.95);">
                         <i class="bi bi-check-circle-fill display-3 mb-2 animate-bounce"></i>
                         <h5 class="fw-bold text-white mb-1">Foto Berhasil Diambil!</h5>
                         <span class="badge bg-white text-success fw-bold px-3 py-1 rounded-pill">Tersimpan</span>

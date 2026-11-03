@@ -832,10 +832,10 @@ ob_start();
           </ul>
 
           <div class="flex flex-wrap gap-2 pt-2 border-t border-[#E5E7EB]">
-            <a href="<?= e(module_url('inventaris_import.php', ['download_template' => 'xlsx'])) ?>" class="min-h-[44px] md:min-h-0 md:h-[30px] px-2.5 bg-white border border-[#D1D5D8] rounded-[6px] text-[11px] font-semibold text-[#10B981] hover:bg-[#ECFDF5] transition-colors inline-flex items-center gap-1 text-decoration-none">
+            <a href="<?= e(module_url('inventaris_import.php', ['download_template' => 'xlsx'])) ?>" class="min-h-[44px] md:min-h-[36px] px-2.5 bg-white border border-[#D1D5D8] rounded-[6px] text-[11px] font-semibold text-[#10B981] hover:bg-[#ECFDF5] transition-colors inline-flex items-center gap-1 text-decoration-none">
               <i class="bi bi-file-earmark-excel"></i> Template .xlsx
             </a>
-            <a href="<?= e(module_url('inventaris_import.php', ['download_template' => 'csv'])) ?>" class="min-h-[44px] md:min-h-0 md:h-[30px] px-2.5 bg-white border border-[#D1D5D8] rounded-[6px] text-[11px] font-semibold text-[#53595F] hover:bg-[#F4F5F7] transition-colors inline-flex items-center gap-1 text-decoration-none">
+            <a href="<?= e(module_url('inventaris_import.php', ['download_template' => 'csv'])) ?>" class="min-h-[44px] md:min-h-[36px] px-2.5 bg-white border border-[#D1D5D8] rounded-[6px] text-[11px] font-semibold text-[#53595F] hover:bg-[#F4F5F7] transition-colors inline-flex items-center gap-1 text-decoration-none">
               <i class="bi bi-file-earmark-text"></i> Template .csv
             </a>
           </div>
@@ -857,7 +857,7 @@ ob_start();
         </p>
       </div>
       <div class="flex items-center gap-2">
-        <a href="<?= e(module_url('inventaris_import.php')) ?>" class="min-h-[44px] md:min-h-0 md:h-[34px] px-3 bg-white border border-[#D1D5D8] rounded-[6px] text-[12px] font-medium text-[#53595F] hover:bg-[#F4F5F7] transition-colors inline-flex items-center gap-1 text-decoration-none">
+        <a href="<?= e(module_url('inventaris_import.php')) ?>" class="min-h-[44px] md:min-h-[36px] px-3 bg-white border border-[#D1D5D8] rounded-[6px] text-[12px] font-medium text-[#53595F] hover:bg-[#F4F5F7] transition-colors inline-flex items-center gap-1 text-decoration-none">
           <i class="bi bi-arrow-left"></i> Ganti File Lain
         </a>
       </div>

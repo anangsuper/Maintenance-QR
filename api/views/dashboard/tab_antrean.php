@@ -218,7 +218,7 @@
             <span class="text-[12px] '.$textColor.' font-semibold tabular-nums truncate" data-kid="1-2-2-1-7-3-'.$rIdx.'-4-2" data-name=\'last maintenance date "'.e($item['last_maint']).'"\'>'.e($item['last_maint']).'</span>
           </div>
           <div class="w-[110px] shrink-0 flex justify-end" data-kid="1-2-2-1-7-3-'.$rIdx.'-5" data-name="action cell">
-            <a href="'.e($actionUrl).'" class="min-h-[44px] md:min-h-0 md:h-[32px] px-3 bg-[#FFFFFF] border border-[#D1D5D8] rounded-[6px] text-[12px] font-semibold text-[#1B2A3A] hover:bg-[#F4F5F7] hover:border-[#A0A5AA] transition-all cursor-pointer inline-flex items-center justify-center text-decoration-none shadow-xs" data-kid="1-2-2-1-7-3-'.$rIdx.'-5-1" data-name=\'row action button "Buka aset"\'>Buka aset</a>
+            <a href="'.e($actionUrl).'" class="min-h-[44px] md:min-h-[36px] px-3 bg-[#FFFFFF] border border-[#D1D5D8] rounded-[6px] text-[12px] font-semibold text-[#1B2A3A] hover:bg-[#F4F5F7] hover:border-[#A0A5AA] transition-all cursor-pointer inline-flex items-center justify-center text-decoration-none shadow-xs" data-kid="1-2-2-1-7-3-'.$rIdx.'-5-1" data-name=\'row action button "Buka aset"\'>Buka aset</a>
           </div>
         </div>
         <!-- Mobile Card Row (< md) -->
@@ -240,7 +240,7 @@
             </div>
           </div>
           <div class="pt-1 flex justify-end">
-            <a href="'.e($actionUrl).'" class="min-h-[44px] md:min-h-0 md:h-[34px] w-full bg-[#0E5C58] hover:bg-[#094340] text-white rounded-[8px] text-[12px] font-semibold transition-all inline-flex items-center justify-center gap-1.5 text-decoration-none shadow-xs">
+            <a href="'.e($actionUrl).'" class="min-h-[44px] md:min-h-[36px] w-full bg-[#0E5C58] hover:bg-[#094340] text-white rounded-[8px] text-[12px] font-semibold transition-all inline-flex items-center justify-center gap-1.5 text-decoration-none shadow-xs">
               <i class="bi bi-qr-code-scan"></i> Buka &amp; Inspeksi Aset
             </a>
           </div>
@@ -262,17 +262,17 @@
     $queuePaginationHtml = '';
     if ($pageQueue > 1) {
         $prevUrl = module_url('dashboard.php', array_merge($_GET, ['p_queue' => $pageQueue - 1]));
-        $queuePaginationHtml .= '<a href="'.e($prevUrl).'" class="min-w-[44px] md:min-w-0 md:w-[28px] min-h-[44px] md:min-h-0 md:h-[28px] rounded-[6px] flex items-center justify-center border border-[#D1D5D8] bg-[#FFFFFF] text-[#1B2A3A] hover:bg-[#E9EAEC] transition-colors text-decoration-none cursor-pointer" data-kid="1-2-2-1-7-4-2-1" data-name="previous page button"><i class="bi bi-chevron-left" data-kid="1-2-2-1-7-4-2-1-1" data-name="chevron left icon"></i></a>';
+        $queuePaginationHtml .= '<a href="'.e($prevUrl).'" class="min-h-[44px] min-w-[44px] md:min-h-[36px] md:min-w-[36px] rounded-[6px] flex items-center justify-center border border-[#D1D5D8] bg-[#FFFFFF] text-[#1B2A3A] hover:bg-[#E9EAEC] transition-colors text-decoration-none cursor-pointer" data-kid="1-2-2-1-7-4-2-1" data-name="previous page button"><i class="bi bi-chevron-left" data-kid="1-2-2-1-7-4-2-1-1" data-name="chevron left icon"></i></a>';
     } else {
-        $queuePaginationHtml .= '<button class="min-w-[44px] md:min-w-0 md:w-[28px] min-h-[44px] md:min-h-0 md:h-[28px] rounded-[6px] flex items-center justify-center border border-[#D1D5D8] bg-[#FFFFFF] text-[#A0A5AA] cursor-not-allowed" disabled data-kid="1-2-2-1-7-4-2-1" data-name="disabled previous page button"><i class="bi bi-chevron-left" data-kid="1-2-2-1-7-4-2-1-1" data-name="chevron left icon"></i></button>';
+        $queuePaginationHtml .= '<button class="min-h-[44px] min-w-[44px] md:min-h-[36px] md:min-w-[36px] rounded-[6px] flex items-center justify-center border border-[#D1D5D8] bg-[#FFFFFF] text-[#A0A5AA] cursor-not-allowed" disabled data-kid="1-2-2-1-7-4-2-1" data-name="disabled previous page button"><i class="bi bi-chevron-left" data-kid="1-2-2-1-7-4-2-1-1" data-name="chevron left icon"></i></button>';
     }
 
     for ($p = 1; $p <= min(5, $totalPagesQueue); $p++) {
         if ($p === $pageQueue) {
-            $queuePaginationHtml .= '<button class="min-w-[44px] md:min-w-0 md:w-[28px] min-h-[44px] md:min-h-0 md:h-[28px] rounded-[6px] flex items-center justify-center border border-[#D1D5D8] bg-[#FFFFFF] text-[#1B2A3A] font-bold shadow-[0_1px_2px_rgba(0,0,0,0.05)] cursor-pointer" data-kid="1-2-2-1-7-4-2-2" data-name=\'current page number "'.$p.'"\'>'.$p.'</button>';
+            $queuePaginationHtml .= '<button class="min-h-[44px] min-w-[44px] md:min-h-[36px] md:min-w-[36px] rounded-[6px] flex items-center justify-center border border-[#D1D5D8] bg-[#FFFFFF] text-[#1B2A3A] font-bold shadow-[0_1px_2px_rgba(0,0,0,0.05)] cursor-pointer" data-kid="1-2-2-1-7-4-2-2" data-name=\'current page number "'.$p.'"\'>'.$p.'</button>';
         } else {
             $pUrl = module_url('dashboard.php', array_merge($_GET, ['p_queue' => $p]));
-            $queuePaginationHtml .= '<a href="'.e($pUrl).'" class="min-w-[44px] md:min-w-0 md:w-[28px] min-h-[44px] md:min-h-0 md:h-[28px] rounded-[6px] flex items-center justify-center border border-transparent text-[#53595F] hover:bg-[#D1D5D8] transition-colors cursor-pointer text-decoration-none" data-kid="1-2-2-1-7-4-2-3" data-name=\'page number "'.$p.'" button\'>'.$p.'</a>';
+            $queuePaginationHtml .= '<a href="'.e($pUrl).'" class="min-h-[44px] min-w-[44px] md:min-h-[36px] md:min-w-[36px] rounded-[6px] flex items-center justify-center border border-transparent text-[#53595F] hover:bg-[#D1D5D8] transition-colors cursor-pointer text-decoration-none" data-kid="1-2-2-1-7-4-2-3" data-name=\'page number "'.$p.'" button\'>'.$p.'</a>';
         }
     }
     if ($totalPagesQueue > 5) {
@@ -281,9 +281,9 @@
 
     if ($pageQueue < $totalPagesQueue) {
         $nextUrl = module_url('dashboard.php', array_merge($_GET, ['p_queue' => $pageQueue + 1]));
-        $queuePaginationHtml .= '<a href="'.e($nextUrl).'" class="min-w-[44px] md:min-w-0 md:w-[28px] min-h-[44px] md:min-h-0 md:h-[28px] rounded-[6px] flex items-center justify-center border border-[#D1D5D8] bg-[#FFFFFF] text-[#1B2A3A] hover:bg-[#E9EAEC] transition-colors text-decoration-none cursor-pointer" data-kid="1-2-2-1-7-4-2-6" data-name="next page button"><i class="bi bi-chevron-right" data-kid="1-2-2-1-7-4-2-6-1" data-name="chevron right icon"></i></a>';
+        $queuePaginationHtml .= '<a href="'.e($nextUrl).'" class="min-h-[44px] min-w-[44px] md:min-h-[36px] md:min-w-[36px] rounded-[6px] flex items-center justify-center border border-[#D1D5D8] bg-[#FFFFFF] text-[#1B2A3A] hover:bg-[#E9EAEC] transition-colors text-decoration-none cursor-pointer" data-kid="1-2-2-1-7-4-2-6" data-name="next page button"><i class="bi bi-chevron-right" data-kid="1-2-2-1-7-4-2-6-1" data-name="chevron right icon"></i></a>';
     } else {
-        $queuePaginationHtml .= '<button class="min-w-[44px] md:min-w-0 md:w-[28px] min-h-[44px] md:min-h-0 md:h-[28px] rounded-[6px] flex items-center justify-center border border-[#D1D5D8] bg-[#FFFFFF] text-[#A0A5AA] cursor-not-allowed" disabled data-kid="1-2-2-1-7-4-2-6" data-name="disabled next page button"><i class="bi bi-chevron-right" data-kid="1-2-2-1-7-4-2-6-1" data-name="chevron right icon"></i></button>';
+        $queuePaginationHtml .= '<button class="min-h-[44px] min-w-[44px] md:min-h-[36px] md:min-w-[36px] rounded-[6px] flex items-center justify-center border border-[#D1D5D8] bg-[#FFFFFF] text-[#A0A5AA] cursor-not-allowed" disabled data-kid="1-2-2-1-7-4-2-6" data-name="disabled next page button"><i class="bi bi-chevron-right" data-kid="1-2-2-1-7-4-2-6-1" data-name="chevron right icon"></i></button>';
     }
 
     $body .= '

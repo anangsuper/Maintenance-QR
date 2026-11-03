@@ -567,7 +567,7 @@ $body .= '
           <button type="button" class="btn btn-sm btn-success fw-bold" onclick="if(window.CURRENT_PREVIEW_CARD) downloadOrSharePhysicalCard(window.CURRENT_PREVIEW_CARD, \'share\', this)">
             <i class="bi bi-whatsapp me-1"></i> Bagikan / Kirim WA
           </button>
-          <a id="pvPrintDirectBtn" href="javascript:;" role="button" target="_blank" class="btn btn-sm btn-primary fw-bold">
+          <a id="pvPrintDirectBtn" href="'.e(module_url('print_inventory_card.php')).'" target="_blank" class="btn btn-sm btn-primary fw-bold">
             <i class="bi bi-printer-fill me-1"></i> Cetak A4
           </a>
         </div>

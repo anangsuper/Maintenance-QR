@@ -250,13 +250,13 @@ ob_start();
   <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
     <!-- Tab Modul -->
     <div class="flex flex-wrap items-center gap-1.5">
-      <a href="<?= e(trash_query_url(['source' => null])) ?>" class="min-h-[44px] md:min-h-0 md:h-[34px] px-3 rounded-[8px] text-[12px] font-semibold inline-flex items-center gap-1.5 text-decoration-none transition-colors <?= $sourceFilter === 'all' ? 'bg-[#0E5C58] text-white' : 'bg-[#F4F5F7] text-[#53595F] hover:bg-[#E5E7EB]' ?>">
+      <a href="<?= e(trash_query_url(['source' => null])) ?>" class="min-h-[44px] md:min-h-[36px] px-3 rounded-[8px] text-[12px] font-semibold inline-flex items-center gap-1.5 text-decoration-none transition-colors <?= $sourceFilter === 'all' ? 'bg-[#0E5C58] text-white' : 'bg-[#F4F5F7] text-[#53595F] hover:bg-[#E5E7EB]' ?>">
         <i class="bi bi-grid-fill"></i> Semua Foto <span class="px-1.5 py-0.2 rounded-full text-[10px] <?= $sourceFilter === 'all' ? 'bg-white text-[#0E5C58]' : 'bg-white text-[#53595F]' ?>"><?= $totalTrashCount ?></span>
       </a>
-      <a href="<?= e(trash_query_url(['source' => 'inventaris_kartu'])) ?>" class="min-h-[44px] md:min-h-0 md:h-[34px] px-3 rounded-[8px] text-[12px] font-semibold inline-flex items-center gap-1.5 text-decoration-none transition-colors <?= $sourceFilter === 'inventaris_kartu' ? 'bg-[#0E5C58] text-white' : 'bg-[#F4F5F7] text-[#53595F] hover:bg-[#E5E7EB]' ?>">
+      <a href="<?= e(trash_query_url(['source' => 'inventaris_kartu'])) ?>" class="min-h-[44px] md:min-h-[36px] px-3 rounded-[8px] text-[12px] font-semibold inline-flex items-center gap-1.5 text-decoration-none transition-colors <?= $sourceFilter === 'inventaris_kartu' ? 'bg-[#0E5C58] text-white' : 'bg-[#F4F5F7] text-[#53595F] hover:bg-[#E5E7EB]' ?>">
         <i class="bi bi-credit-card-2-front"></i> Kartu Inventaris <span class="px-1.5 py-0.2 rounded-full text-[10px] <?= $sourceFilter === 'inventaris_kartu' ? 'bg-white text-[#0E5C58]' : 'bg-white text-[#53595F]' ?>"><?= $countKartu ?></span>
       </a>
-      <a href="<?= e(trash_query_url(['source' => 'assets'])) ?>" class="min-h-[44px] md:min-h-0 md:h-[34px] px-3 rounded-[8px] text-[12px] font-semibold inline-flex items-center gap-1.5 text-decoration-none transition-colors <?= $sourceFilter === 'assets' ? 'bg-[#0E5C58] text-white' : 'bg-[#F4F5F7] text-[#53595F] hover:bg-[#E5E7EB]' ?>">
+      <a href="<?= e(trash_query_url(['source' => 'assets'])) ?>" class="min-h-[44px] md:min-h-[36px] px-3 rounded-[8px] text-[12px] font-semibold inline-flex items-center gap-1.5 text-decoration-none transition-colors <?= $sourceFilter === 'assets' ? 'bg-[#0E5C58] text-white' : 'bg-[#F4F5F7] text-[#53595F] hover:bg-[#E5E7EB]' ?>">
         <i class="bi bi-pc-display"></i> Perangkat IT <span class="px-1.5 py-0.2 rounded-full text-[10px] <?= $sourceFilter === 'assets' ? 'bg-white text-[#0E5C58]' : 'bg-white text-[#53595F]' ?>"><?= $countAssets ?></span>
       </a>
     </div>
@@ -293,10 +293,10 @@ ob_start();
       Belum ada foto yang dihapus dalam 7 hari terakhir<?= $search !== '' ? ' untuk kata kunci pencarian tersebut' : '' ?>. Semua foto yang dihapus dari Kartu Inventaris maupun Perangkat IT akan otomatis tampil di halaman ini.
     </p>
     <div class="flex justify-center gap-2">
-      <a href="<?= e(module_url('dashboard.php', ['tab' => 'kartu'])) ?>" class="min-h-[44px] md:min-h-0 md:h-[34px] px-3.5 bg-[#0E5C58] text-white rounded-[8px] text-[12px] font-semibold inline-flex items-center gap-1.5 text-decoration-none">
+      <a href="<?= e(module_url('dashboard.php', ['tab' => 'kartu'])) ?>" class="min-h-[44px] md:min-h-[36px] px-3.5 bg-[#0E5C58] text-white rounded-[8px] text-[12px] font-semibold inline-flex items-center gap-1.5 text-decoration-none">
         <i class="bi bi-credit-card-2-front"></i> Ke Kartu Inventaris
       </a>
-      <a href="<?= e(module_url('asset_gallery.php')) ?>" class="min-h-[44px] md:min-h-0 md:h-[34px] px-3.5 bg-white border border-[#D1D5D8] text-[#1B2A3A] rounded-[8px] text-[12px] font-semibold inline-flex items-center gap-1.5 text-decoration-none">
+      <a href="<?= e(module_url('asset_gallery.php')) ?>" class="min-h-[44px] md:min-h-[36px] px-3.5 bg-white border border-[#D1D5D8] text-[#1B2A3A] rounded-[8px] text-[12px] font-semibold inline-flex items-center gap-1.5 text-decoration-none">
         <i class="bi bi-images"></i> Buka Galeri Foto
       </a>
     </div>
@@ -458,12 +458,12 @@ ob_start();
               <input type="hidden" name="trash_id" value="<?= $tid ?>">
               <input type="hidden" name="return_source" value="<?= e($sourceFilter) ?>">
               <input type="hidden" name="return_q" value="<?= e($search) ?>">
-              <button type="submit" class="min-h-[44px] md:min-h-0 md:h-[32px] px-3 bg-[#0E5C58] hover:bg-[#094340] text-white rounded-[8px] text-[12px] font-semibold inline-flex items-center gap-1.5 border-0 shadow-xs cursor-pointer">
+              <button type="submit" class="min-h-[44px] md:min-h-[36px] px-3 bg-[#0E5C58] hover:bg-[#094340] text-white rounded-[8px] text-[12px] font-semibold inline-flex items-center gap-1.5 border-0 shadow-xs cursor-pointer">
                 <i class="bi bi-arrow-counterclockwise"></i> Pulihkan ke <?= $slot === 2 ? 'Foto 2' : 'Foto 1' ?>
               </button>
             </form>
 
-            <a href="<?= e($itemDetailUrl) ?>" class="min-h-[44px] md:min-h-0 md:h-[32px] px-3 bg-white border border-[#D1D5D8] hover:bg-[#F4F5F7] text-[#1B2A3A] rounded-[8px] text-[12px] font-medium inline-flex items-center gap-1.5 text-decoration-none shadow-xs">
+            <a href="<?= e($itemDetailUrl) ?>" class="min-h-[44px] md:min-h-[36px] px-3 bg-white border border-[#D1D5D8] hover:bg-[#F4F5F7] text-[#1B2A3A] rounded-[8px] text-[12px] font-medium inline-flex items-center gap-1.5 text-decoration-none shadow-xs">
               <i class="bi bi-box-arrow-up-right text-[#0E5C58]"></i> Buka Detail Barang
             </a>
           </div>
@@ -474,7 +474,7 @@ ob_start();
             <input type="hidden" name="trash_id" value="<?= $tid ?>">
             <input type="hidden" name="return_source" value="<?= e($sourceFilter) ?>">
             <input type="hidden" name="return_q" value="<?= e($search) ?>">
-            <button type="submit" class="min-h-[44px] md:min-h-0 md:h-[32px] px-2.5 bg-white border border-[#FECACA] hover:bg-[#FEF2F2] text-[#DC2626] rounded-[8px] text-[11px] font-semibold inline-flex items-center gap-1 cursor-pointer" title="Hapus Permanen Sekarang Sebelum 7 Hari">
+            <button type="submit" class="min-h-[44px] md:min-h-[36px] px-2.5 bg-white border border-[#FECACA] hover:bg-[#FEF2F2] text-[#DC2626] rounded-[8px] text-[11px] font-semibold inline-flex items-center gap-1 cursor-pointer" title="Hapus Permanen Sekarang Sebelum 7 Hari">
               <i class="bi bi-trash3-fill"></i> Hapus Permanen
             </button>
           </form>
