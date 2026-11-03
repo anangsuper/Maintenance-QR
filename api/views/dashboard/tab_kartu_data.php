@@ -141,7 +141,7 @@ if (empty($displayCards)) {
           <td class="text-center py-2.5" style="width: 38px;">
             <input class="form-check-input card-checkbox cursor-pointer" type="checkbox" value="'.$cId.'" onchange="updateCardCounters(this)">
           </td>
-          <th scope="row" style="width: 155px;" class="py-2.5 font-normal">
+          <th scope="row" style="min-width: 165px; width: 175px;" class="py-2.5 font-normal">
             <div class="font-mono font-bold text-[#0E5C58] text-[13px]">'.e($rek).'</div>
             <div class="text-[11px] text-[#53595F] font-mono mt-0.5" title="Nomor Aset Gabungan">'.e($gabungan).'</div>
             '.$noSeriBadge.'
@@ -166,8 +166,8 @@ if (empty($displayCards)) {
           <td style="width: 95px;" class="text-center py-2.5">
             <span class="badge px-2 py-1 rounded-pill '.$lokasiBadgeClass.'" style="font-size: 0.72rem; font-weight: 600;">'.e($lokasi).'</span>
           </td>
-          <td class="text-end py-2.5 pe-3" style="width: 235px;">
-            <div class="inline-flex items-center gap-1 justify-end">
+          <td class="text-end py-2.5 pe-3" style="min-width: 280px; width: 290px; white-space: nowrap;">
+            <div class="inline-flex items-center gap-1 justify-end flex-nowrap">
               <button type="button" class="h-[28px] px-2 bg-[#D9F1EF] border border-[#A7E2DC] hover:bg-[#0E5C58] hover:text-white text-[#0E5C58] rounded-[5px] text-[11px] font-semibold transition-colors inline-flex items-center gap-1 shadow-2xs cursor-pointer" title="Unduh Gambar Kartu PNG Ukuran Asli CR80 (85.6mm x 54mm)" onclick=\'downloadCardPngFromRow('.$jsonPayload.', this)\'>
                 <i class="bi bi-download"></i><span class="d-none d-xl-inline"> PNG</span>
               </button>

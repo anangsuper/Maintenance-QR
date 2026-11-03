@@ -219,18 +219,18 @@
       </div>
 
       <!-- Desktop View: Tabel Pas Lebar Layar (Tanpa Scroll Horizontal) -->
-      <div class="d-none d-md-block w-100 overflow-hidden" role="region" aria-label="Daftar Kartu Inventaris" tabindex="0">
-        <table class="table table-hover align-middle mb-0 w-100" style="font-size: 13px;">
+      <div class="d-none d-md-block w-100 overflow-x-auto" role="region" aria-label="Daftar Kartu Inventaris" tabindex="0">
+        <table class="table table-hover align-middle mb-0 w-100" style="font-size: 13px; min-width: 920px;">
           <thead style="background: #F4F5F7; border-bottom: 1px solid #D1D5D8;">
             <tr>
               <th style="width: 38px;" class="text-center py-2.5">
                 <input class="form-check-input cursor-pointer" type="checkbox" id="checkAllRows" onchange="toggleSelectAllCards(this)" title="Pilih Semua Kartu">
               </th>
-              <th style="width: 155px;" class="text-[11px] font-bold text-[#53595F] uppercase tracking-wider py-2.5">NOMOR INVENTARIS</th>
+              <th style="min-width: 165px; width: 175px;" class="text-[11px] font-bold text-[#53595F] uppercase tracking-wider py-2.5">NOMOR INVENTARIS</th>
               <th class="text-[11px] font-bold text-[#53595F] uppercase tracking-wider py-2.5">NAMA BARANG &amp; TGL PEROLEHAN</th>
               <th style="width: 75px;" class="text-center text-[11px] font-bold text-[#53595F] uppercase tracking-wider py-2.5">LABEL QR</th>
-              <th style="width: 95px;" class="text-center text-[11px] font-bold text-[#53595F] uppercase tracking-wider py-2.5">LOKASI</th>
-              <th class="text-end text-[11px] font-bold text-[#53595F] uppercase tracking-wider py-2.5 pe-3" style="width: 210px;">AKSI</th>
+              <th style="min-width: 110px; width: 120px;" class="text-center text-[11px] font-bold text-[#53595F] uppercase tracking-wider py-2.5">LOKASI</th>
+              <th class="text-end text-[11px] font-bold text-[#53595F] uppercase tracking-wider py-2.5 pe-3" style="min-width: 280px; width: 290px;">AKSI</th>
             </tr>
           </thead>
           <tbody class="divide-y divide-[#E5E7EB]">

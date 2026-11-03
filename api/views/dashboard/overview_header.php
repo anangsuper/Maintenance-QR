@@ -75,7 +75,7 @@ $body = '
 if (is_hrd() && !is_admin()) {
     // KOMBAI TEAL CONTAINER UNTUK SDM & SARPRAS
     $body .= '
-    <div class="max-w-[1152px] mx-auto flex flex-col">
+    <div class="w-full flex flex-col">
       <!-- Heading Row with Page Title and Actions -->
       <div class="mb-4 flex flex-col md:flex-row md:items-center justify-between gap-3">
         <div>
@@ -398,7 +398,7 @@ if (is_hrd() && !is_admin()) {
     $isTabKartu = ($activeTab === 'kartu');
 
     $body .= '
-    <div class="max-w-[1152px] mx-auto flex flex-col">
+    <div class="w-full flex flex-col">
       <!-- Heading Row with Page Title and Filters -->
       <div class="flex justify-between items-center mb-3 shrink-0 flex-wrap gap-2">
         <div>

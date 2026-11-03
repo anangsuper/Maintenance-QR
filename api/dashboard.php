@@ -26,7 +26,7 @@ if ($activeTab === 'kartu') {
 }
 
 $body .= '
-</div><!-- End max-w-[1152px] -->
+</div><!-- End full width dashboard container -->
 <div class="h-8 shrink-0" data-kid="1-2-2-2" data-name="bottom spacer div"></div>';
 
 // 6. Modals Terpadu & Logika JavaScript
