@@ -681,7 +681,7 @@ $body .= '
         </div>
       </div>
       <div class="modal-footer py-2 px-4 bg-light justify-content-between">
-        <a href="'.e(module_url('cabang_admin.php', ['bulan'=>$month, 'tahun'=>$year])).'" class="small fw-bold text-decoration-none">Kelola Cabang Selengkapnya &rarr;</a>
+        <a href="'.e(module_url('cabang_admin.php', ['bulan'=>$month, 'tahun'=>$year])).'" class="small fw-bold text-decoration-none">Kelola Cabang Selengkapnya</a>
         <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Tutup</button>
       </div>
     </div>

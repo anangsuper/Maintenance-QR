@@ -685,7 +685,7 @@ async function startCameraScanner(isUserInitiated) {
     if (statusEl) {
       const errStr = String(err || "");
       if (errStr.includes("NotAllowedError") || errStr.includes("Permission") || errStr.includes("denied")) {
-        statusEl.innerHTML = '<span class="text-danger fw-bold"><i class="bi bi-shield-x me-1"></i> Izin kamera diblokir browser. Di iPhone: Buka <b>Pengaturan HP &rarr; Safari / Chrome &rarr; Kamera &rarr; Izinkan</b>. Atau gunakan tombol <b>"Foto Langsung"</b> di bawah.</span>';
+        statusEl.innerHTML = '<span class="text-danger fw-bold"><i class="bi bi-shield-x me-1"></i> Izin kamera diblokir browser. Di iPhone: Buka <b>Pengaturan HP > Safari / Chrome > Kamera > Izinkan</b>. Atau gunakan tombol <b>"Foto Langsung"</b> di bawah.</span>';
       } else if (errStr.includes("NotFoundError") || errStr.includes("DevicesNotFoundError")) {
         statusEl.innerHTML = '<span class="text-warning fw-bold"><i class="bi bi-camera-video-off me-1"></i> Perangkat kamera tidak ditemukan. Gunakan tombol <b>"Foto Langsung"</b> atau ketik token di bawah.</span>';
       } else if (errStr.includes("NotReadableError") || errStr.includes("TrackStartError")) {

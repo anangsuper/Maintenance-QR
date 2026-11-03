@@ -91,7 +91,7 @@ foreach ($rows as $r) {
         ]), ENT_QUOTES, 'UTF-8');
 
         $qrStatus = '
-        <button type="button" class="min-h-[44px] md:min-h-0 md:h-[28px] px-2.5 bg-[#D9F1EF] text-[#0E5C58] hover:bg-[#0E5C58] hover:text-white border border-[#A7E2DC] rounded-[6px] text-[11px] font-bold transition-colors inline-flex items-center gap-1 cursor-pointer shadow-xs" 
+        <button type="button" class="min-h-[44px] md:min-h-[36px] px-2.5 bg-[#D9F1EF] text-[#0E5C58] hover:bg-[#0E5C58] hover:text-white border border-[#A7E2DC] rounded-[6px] text-[11px] font-bold transition-colors inline-flex items-center gap-1 cursor-pointer shadow-xs" 
           onclick="openQrModal('.$modalPayload.')" title="Klik untuk Pratinjau & Unduh QR">
           <i class="bi bi-qr-code text-[12px]"></i>
           <span>LIHAT QR</span>
@@ -101,17 +101,17 @@ foreach ($rows as $r) {
     }
 
     $action = '<div class="flex items-center justify-end gap-1">';
-    $action .= '<a class="min-h-[44px] md:min-h-0 md:h-[28px] min-w-[44px] md:min-w-0 md:w-[28px] bg-white border border-[#D1D5D8] hover:bg-[#F4F5F7] text-[#53595F] hover:text-[#0E5C58] rounded-[6px] inline-flex items-center justify-center transition-colors text-decoration-none" href="'.e(module_url('asset_edit.php', ['id'=>$aid])).'" title="Edit Detail Aset"><i class="bi bi-pencil-square text-[13px]"></i></a>';
+    $action .= '<a class="min-h-[44px] min-w-[44px] md:min-h-[36px] md:min-w-[36px] bg-white border border-[#D1D5D8] hover:bg-[#F4F5F7] text-[#53595F] hover:text-[#0E5C58] rounded-[6px] inline-flex items-center justify-center transition-colors text-decoration-none" href="'.e(module_url('asset_edit.php', ['id'=>$aid])).'" title="Edit Detail Aset"><i class="bi bi-pencil-square text-[13px]"></i></a>';
     if ($url) {
-        $action .= '<a class="min-h-[44px] md:min-h-0 md:h-[28px] min-w-[44px] md:min-w-0 md:w-[28px] bg-white border border-[#D1D5D8] hover:bg-[#D9F1EF] text-[#0E5C58] rounded-[6px] inline-flex items-center justify-center transition-colors text-decoration-none" target="_blank" href="'.e(module_url('print_qr.php', ['asset_id'=>$aid])).'" title="Cetak Stiker Label"><i class="bi bi-printer text-[13px]"></i></a>';
+        $action .= '<a class="min-h-[44px] min-w-[44px] md:min-h-[36px] md:min-w-[36px] bg-white border border-[#D1D5D8] hover:bg-[#D9F1EF] text-[#0E5C58] rounded-[6px] inline-flex items-center justify-center transition-colors text-decoration-none" target="_blank" href="'.e(module_url('print_qr.php', ['asset_id'=>$aid])).'" title="Cetak Stiker Label"><i class="bi bi-printer text-[13px]"></i></a>';
     }
     $action .= '<form method="post" class="inline m-0">
       <input type="hidden" name="_csrf" value="'.e(csrf_token()).'">
       <input type="hidden" name="action" value="regenerate">
       <input type="hidden" name="asset_id" value="'.$aid.'">
-      <button type="submit" class="min-h-[44px] md:min-h-0 md:h-[28px] min-w-[44px] md:min-w-0 md:w-[28px] bg-white border border-[#D1D5D8] hover:bg-[#FEF3C7] text-[#D97706] rounded-[6px] inline-flex items-center justify-center transition-colors cursor-pointer" title="Generate Ulang & Revoke Token QR" onclick="return confirm(&#39;Generate ulang token QR ini? QR lama otomatis tidak berlaku lagi demi keamanan.&#39;)"><i class="bi bi-arrow-repeat text-[13px]"></i></button>
+      <button type="submit" class="min-h-[44px] min-w-[44px] md:min-h-[36px] md:min-w-[36px] bg-white border border-[#D1D5D8] hover:bg-[#FEF3C7] text-[#D97706] rounded-[6px] inline-flex items-center justify-center transition-colors cursor-pointer" title="Generate Ulang & Revoke Token QR" onclick="return confirm(&#39;Generate ulang token QR ini? QR lama otomatis tidak berlaku lagi demi keamanan.&#39;)"><i class="bi bi-arrow-repeat text-[13px]"></i></button>
     </form>';
-    $action .= '<a class="min-h-[44px] md:min-h-0 md:h-[28px] min-w-[44px] md:min-w-0 md:w-[28px] bg-white border border-[#D1D5D8] hover:bg-[#FEE2E2] text-[#DC2626] rounded-[6px] inline-flex items-center justify-center transition-colors text-decoration-none" href="'.e(module_url('asset_delete.php', ['id'=>$aid])).'" title="Hapus Aset" onclick="return confirm(&#39;Hapus aset '.e(addslashes($kode)).' ini dari sistem?&#39;)"><i class="bi bi-trash text-[13px]"></i></a>';
+    $action .= '<a class="min-h-[44px] min-w-[44px] md:min-h-[36px] md:min-w-[36px] bg-white border border-[#D1D5D8] hover:bg-[#FEE2E2] text-[#DC2626] rounded-[6px] inline-flex items-center justify-center transition-colors text-decoration-none" href="'.e(module_url('asset_delete.php', ['id'=>$aid])).'" title="Hapus Aset" onclick="return confirm(&#39;Hapus aset '.e(addslashes($kode)).' ini dari sistem?&#39;)"><i class="bi bi-trash text-[13px]"></i></a>';
     $action .= '</div>';
 
     $table .= '<tr class="asset-table-row hover:bg-[#F9FAFB] transition-colors" id="row-asset-'.$aid.'" data-search="'.e($searchKeyword).'" data-has-token="'.($hasToken ? '1' : '0').'">
@@ -296,11 +296,11 @@ $body = '
     <div class="col-md-4">
       <form method="get" class="m-0">
         <label class="block text-[12px] font-bold text-[#1B2A3A] mb-1.5">Pilih Kantor Cabang</label>
-        <select class="h-[36px] w-full bg-white border border-[#D1D5D8] rounded-[8px] px-3 text-[13px] text-[#1B2A3A] outline-none focus:border-[#0E5C58] transition-colors" name="cabang" onchange="this.form.submit()">
+        <select class="h-[36px] w-full bg-white border border-[#D1D5D8] rounded-[8px] px-3 text-[13px] text-[#1B2A3A] focus:outline-none focus:ring-2 focus:ring-[#0E5C58]/30 focus:border-[#0E5C58] transition-colors" name="cabang" onchange="this.form.submit()">
           <option value="0">🏢 Semua Kantor Cabang</option>
           '.$opts.'
         </select>
-        <noscript><button type="submit" class="min-h-[44px] md:min-h-0 md:h-[32px] px-3 bg-[#0E5C58] text-white rounded-[6px] text-[12px] mt-1">Terapkan</button></noscript>
+        <noscript><button type="submit" class="min-h-[44px] md:min-h-[36px] px-3 bg-[#0E5C58] text-white rounded-[6px] text-[12px] mt-1">Terapkan</button></noscript>
       </form>
     </div>
 
@@ -309,7 +309,7 @@ $body = '
       <label class="block text-[12px] font-bold text-[#1B2A3A] mb-1.5">Pencarian Cepat Aset</label>
       <div class="relative w-full">
         <i class="bi bi-search absolute left-3 top-1/2 -translate-y-1/2 text-[#9CA3AF] text-[13px]"></i>
-        <input type="text" id="tableSearchInput" class="h-[36px] w-full bg-white border border-[#D1D5D8] rounded-[8px] pl-9 pr-8 text-[13px] text-[#1B2A3A] placeholder-[#9CA3AF] outline-none focus:border-[#0E5C58] transition-colors" placeholder="Cari kode, nama user, serial number, perangkat..." oninput="onFilterTable()">
+        <input type="text" id="tableSearchInput" class="h-[36px] w-full bg-white border border-[#D1D5D8] rounded-[8px] pl-9 pr-8 text-[13px] text-[#1B2A3A] placeholder-[#9CA3AF] focus:outline-none focus:ring-2 focus:ring-[#0E5C58]/30 focus:border-[#0E5C58] transition-colors" placeholder="Cari kode, nama user, serial number, perangkat..." oninput="onFilterTable()">
         <button type="button" class="absolute right-2.5 top-1/2 -translate-y-1/2 text-[#9CA3AF] hover:text-[#1B2A3A] bg-transparent border-0 cursor-pointer p-0" onclick="clearTableSearch()" title="Reset"><i class="bi bi-x-circle-fill"></i></button>
       </div>
     </div>
@@ -358,13 +358,13 @@ $body = '
       <span class="text-[13px] text-[#1E40AF] font-semibold">Aksi untuk aset terpilih:</span>
     </div>
     <div class="flex items-center gap-2 flex-wrap">
-      <button type="button" class="min-h-[44px] md:min-h-0 md:h-[32px] px-3 bg-[#0E5C58] hover:bg-[#094340] text-white rounded-[6px] text-[12px] font-semibold transition-colors flex items-center gap-1.5 border-0 shadow-xs cursor-pointer" onclick="printBulkSelected(\'qr\')">
+      <button type="button" class="min-h-[44px] md:min-h-[36px] px-3 bg-[#0E5C58] hover:bg-[#094340] text-white rounded-[6px] text-[12px] font-semibold transition-colors flex items-center gap-1.5 border-0 shadow-xs cursor-pointer" onclick="printBulkSelected(\'qr\')">
         <i class="bi bi-printer-fill"></i> Cetak Stiker QR (<span id="countPrintQr">0</span>)
       </button>
-      <button type="button" class="min-h-[44px] md:min-h-0 md:h-[32px] px-3 bg-white border border-[#D1D5D8] hover:bg-[#F4F5F7] text-[#1B2A3A] rounded-[6px] text-[12px] font-medium transition-colors flex items-center gap-1.5 shadow-xs cursor-pointer" onclick="printBulkSelected(\'card\')">
+      <button type="button" class="min-h-[44px] md:min-h-[36px] px-3 bg-white border border-[#D1D5D8] hover:bg-[#F4F5F7] text-[#1B2A3A] rounded-[6px] text-[12px] font-medium transition-colors flex items-center gap-1.5 shadow-xs cursor-pointer" onclick="printBulkSelected(\'card\')">
         <i class="bi bi-credit-card-2-front text-[#0E5C58]"></i> Cetak Kartu Inventaris (<span id="countPrintCard">0</span>)
       </button>
-      <button type="button" class="min-h-[44px] md:min-h-0 md:h-[32px] px-3 bg-white border border-[#D1D5D8] hover:bg-[#F4F5F7] text-[#1B2A3A] rounded-[6px] text-[12px] font-medium transition-colors flex items-center gap-1 cursor-pointer" onclick="clearBulkSelection()">
+      <button type="button" class="min-h-[44px] md:min-h-[36px] px-3 bg-white border border-[#D1D5D8] hover:bg-[#F4F5F7] text-[#1B2A3A] rounded-[6px] text-[12px] font-medium transition-colors flex items-center gap-1 cursor-pointer" onclick="clearBulkSelection()">
         <i class="bi bi-x-circle"></i> Batal
       </button>
     </div>
@@ -397,13 +397,13 @@ $body = '
     <span class="px-2.5 py-1 text-[12px] font-bold bg-[#0E5C58] text-white rounded-[6px]"><span id="bulkSelectedCount">0</span> Dipilih</span>
   </div>
   <div class="w-[1px] h-4 bg-white/20"></div>
-  <button type="button" class="min-h-[44px] md:min-h-0 md:h-[30px] px-3 bg-[#0E5C58] hover:bg-[#094340] text-white rounded-[6px] text-[12px] font-semibold transition-colors flex items-center gap-1.5 border-0 shadow-xs cursor-pointer" onclick="printBulkSelected(\'qr\')">
+  <button type="button" class="min-h-[44px] md:min-h-[36px] px-3 bg-[#0E5C58] hover:bg-[#094340] text-white rounded-[6px] text-[12px] font-semibold transition-colors flex items-center gap-1.5 border-0 shadow-xs cursor-pointer" onclick="printBulkSelected(\'qr\')">
     <i class="bi bi-printer-fill"></i> Cetak QR
   </button>
-  <button type="button" class="min-h-[44px] md:min-h-0 md:h-[30px] px-3 bg-white/10 hover:bg-white/20 text-white rounded-[6px] text-[12px] font-medium transition-colors flex items-center gap-1.5 border border-white/20 cursor-pointer" onclick="printBulkSelected(\'card\')">
+  <button type="button" class="min-h-[44px] md:min-h-[36px] px-3 bg-white/10 hover:bg-white/20 text-white rounded-[6px] text-[12px] font-medium transition-colors flex items-center gap-1.5 border border-white/20 cursor-pointer" onclick="printBulkSelected(\'card\')">
     <i class="bi bi-credit-card-2-front"></i> Cetak Kartu
   </button>
-  <button type="button" class="min-h-[44px] md:min-h-0 md:h-[30px] px-2 text-white/80 hover:text-white text-[12px] font-medium transition-colors cursor-pointer bg-transparent border-0" onclick="clearBulkSelection()">
+  <button type="button" class="min-h-[44px] md:min-h-[36px] px-2 text-white/80 hover:text-white text-[12px] font-medium transition-colors cursor-pointer bg-transparent border-0" onclick="clearBulkSelection()">
     <i class="bi bi-x-circle"></i> Batal
   </button>
 </div>
@@ -440,7 +440,7 @@ $body = '
                 <i class="bi bi-camera text-[36px] d-block mb-1 text-[#9CA3AF]"></i>
                 <span class="font-medium">Belum ada foto fisik unit</span>
                 <div class="mt-2.5">
-                  <a id="modalAssetAddPhotoBtn" href="javascript:;" role="button" class="min-h-[44px] md:min-h-0 md:h-[28px] px-3 bg-white border border-[#D1D5D8] hover:bg-[#F4F5F7] text-[#0E5C58] rounded-[6px] text-[12px] font-semibold transition-colors inline-flex items-center gap-1 text-decoration-none shadow-xs">
+                  <a id="modalAssetAddPhotoBtn" href="<?= module_url('asset_edit.php') ?>" class="min-h-[44px] md:min-h-[36px] px-3 bg-white border border-[#D1D5D8] hover:bg-[#F4F5F7] text-[#0E5C58] rounded-[6px] text-[12px] font-semibold transition-colors inline-flex items-center gap-1 text-decoration-none shadow-xs">
                     <i class="bi bi-plus-circle"></i> Upload Foto
                   </a>
                 </div>
@@ -448,7 +448,7 @@ $body = '
             </div>
             <div class="text-[12px] text-[#53595F] mt-2 font-medium flex justify-center items-center gap-1">
               <i class="bi bi-pc-display text-[#0E5C58]"></i> Foto Fisik Unit Perangkat
-              <a id="modalAssetEditPhotoBtn" href="javascript:;" role="button" class="text-[#0E5C58] hover:underline text-[11px] font-semibold text-decoration-none d-none ms-1">(Ganti Foto)</a>
+              <a id="modalAssetEditPhotoBtn" href="<?= module_url('asset_edit.php') ?>" class="text-[#0E5C58] hover:underline text-[11px] font-semibold text-decoration-none d-none ms-1">(Ganti Foto)</a>
             </div>
           </div>
         </div>
@@ -467,21 +467,21 @@ $body = '
 
         <!-- Input Link Scan & Copy -->
         <div class="flex gap-1.5 mb-3">
-          <input type="text" id="modalScanUrlInput" class="min-h-[44px] md:min-h-0 md:h-[34px] flex-1 bg-[#F4F5F7] border border-[#D1D5D8] rounded-[6px] px-2.5 font-mono text-[12px] text-[#1B2A3A] outline-none" readonly>
-          <button type="button" class="min-h-[44px] md:min-h-0 md:h-[34px] px-3 bg-white border border-[#D1D5D8] hover:bg-[#F4F5F7] text-[#1B2A3A] rounded-[6px] text-[12px] font-medium transition-colors flex items-center gap-1.5 cursor-pointer shadow-xs" onclick="copyModalScanUrl(this)" title="Salin Link">
+          <input type="text" id="modalScanUrlInput" class="min-h-[44px] md:min-h-[36px] flex-1 bg-[#F4F5F7] border border-[#D1D5D8] rounded-[6px] px-2.5 font-mono text-[12px] text-[#1B2A3A] focus:outline-none focus:ring-2 focus:ring-[#0E5C58]/30" readonly>
+          <button type="button" class="min-h-[44px] md:min-h-[36px] px-3 bg-white border border-[#D1D5D8] hover:bg-[#F4F5F7] text-[#1B2A3A] rounded-[6px] text-[12px] font-medium transition-colors flex items-center gap-1.5 cursor-pointer shadow-xs" onclick="copyModalScanUrl(this)" title="Salin Link">
             <i class="bi bi-clipboard"></i> Salin
           </button>
         </div>
 
         <!-- Action Buttons -->
         <div class="flex flex-wrap gap-2 justify-center pt-2">
-          <a id="modalBtnPrint" href="javascript:;" role="button" target="_blank" class="h-[36px] px-3.5 bg-[#0E5C58] hover:bg-[#094340] text-white rounded-[8px] text-[13px] font-semibold transition-colors inline-flex items-center gap-1.5 text-decoration-none shadow-xs">
+          <a id="modalBtnPrint" href="<?= module_url('print_qr.php') ?>" target="_blank" class="h-[36px] px-3.5 bg-[#0E5C58] hover:bg-[#094340] text-white rounded-[8px] text-[13px] font-semibold transition-colors inline-flex items-center gap-1.5 text-decoration-none shadow-xs">
             <i class="bi bi-printer-fill"></i> Cetak Stiker
           </a>
           <button type="button" class="h-[36px] px-3 bg-white border border-[#D1D5D8] hover:bg-[#F4F5F7] text-[#1B2A3A] rounded-[8px] text-[13px] font-medium transition-colors inline-flex items-center gap-1.5 cursor-pointer shadow-xs" onclick="downloadModalQrPng()">
             <i class="bi bi-download"></i> Unduh Gambar QR (PNG)
           </button>
-          <a id="modalBtnOpenScan" href="javascript:;" role="button" target="_blank" class="h-[36px] px-3 bg-white border border-[#D1D5D8] hover:bg-[#F4F5F7] text-[#53595F] rounded-[8px] text-[13px] font-medium transition-colors inline-flex items-center gap-1.5 text-decoration-none shadow-xs">
+          <a id="modalBtnOpenScan" href="<?= module_url('assets.php') ?>" target="_blank" class="h-[36px] px-3 bg-white border border-[#D1D5D8] hover:bg-[#F4F5F7] text-[#53595F] rounded-[8px] text-[13px] font-medium transition-colors inline-flex items-center gap-1.5 text-decoration-none shadow-xs">
             <i class="bi bi-box-arrow-up-right"></i> Buka Halaman Scan
           </a>
         </div>

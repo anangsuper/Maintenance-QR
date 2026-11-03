@@ -781,7 +781,7 @@ $pageTitle = $card ? e($card['nama_barang']) . ' - Kartu Inventaris' : 'Kartu In
                                             <i class="bi bi-recycle text-primary"></i> <?= count($itemTrashPhotos) ?> Foto di Folder Sampah
                                         </span>
                                         <a href="<?= module_url('photo_trash.php', ['source_type' => 'inventaris_kartu', 'item_id' => (int)$card['id']]) ?>" class="fw-bold text-decoration-none" style="font-size: 0.70rem; color: #0E5C58;">
-                                            Lihat Detail &rarr;
+                                            Lihat Detail
                                         </a>
                                     </div>
                                     <div class="d-flex flex-column gap-1.5">

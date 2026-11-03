@@ -39,7 +39,7 @@ if (empty($mutations)) {
 
         $asal = e($m['cabang_asal']) . ($m['ruangan_asal'] ? ' <small class="text-muted">(' . e($m['ruangan_asal']) . ')</small>' : '');
         $tujuan = e($m['cabang_tujuan']) . ($m['ruangan_tujuan'] ? ' <small class="text-muted">(' . e($m['ruangan_tujuan']) . ')</small>' : '');
-        $pengguna = '<span class="text-muted">' . e($m['pengguna_asal'] ?: 'Umum') . '</span> &rarr; <strong class="text-dark">' . e($m['pengguna_tujuan'] ?: 'Umum') . '</strong>';
+        $pengguna = '<span class="text-muted">' . e($m['pengguna_asal'] ?: 'Umum') . '</span> <i class="bi bi-arrow-right mx-1 text-muted"></i> <strong class="text-dark">' . e($m['pengguna_tujuan'] ?: 'Umum') . '</strong>';
         $alasan = e($m['alasan_mutasi']);
         $kondisi = !empty($m['kondisi_fisik']) ? '<span class="badge bg-light text-secondary border small ms-1">' . e($m['kondisi_fisik']) . '</span>' : '';
         $printUrl = module_url('print_bast.php', ['id' => $mid]);

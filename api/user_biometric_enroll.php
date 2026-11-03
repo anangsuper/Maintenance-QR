@@ -281,7 +281,7 @@ ob_start();
       </a>
     <?php elseif (!$isLoggedIn): ?>
       <a href="<?= e(module_url('login.php', ['ret' => 'user_biometric_enroll.php'])) ?>" class="h-[38px] px-3.5 bg-white border border-[#D1D5D8] rounded-[8px] text-[13px] font-semibold text-[#1B2A3A] hover:bg-[#F4F5F7] transition-colors inline-flex items-center gap-1.5 text-decoration-none shadow-xs">
-        <i class="bi bi-box-arrow-in-right text-[#0E5C58]"></i> Login Admin &rarr;
+        <i class="bi bi-box-arrow-in-right text-[#0E5C58]"></i> Login Petugas
       </a>
     <?php endif; ?>
   </div>
@@ -347,7 +347,7 @@ ob_start();
               </button>
             <?php else: ?>
               <a href="<?= e(module_url('login.php', ['ret' => 'user_biometric_enroll.php'])) ?>" class="min-h-[44px] md:min-h-0 md:h-[32px] px-2.5 bg-white border border-[#D1D5D8] hover:bg-[#F4F5F7] text-[#0E5C58] rounded-[6px] text-[11px] font-bold transition-colors inline-flex items-center gap-1 text-decoration-none shadow-xs">
-                Login Verifikasi &rarr;
+                Login Verifikasi
               </a>
             <?php endif; ?>
           </div>
@@ -465,7 +465,7 @@ ob_start();
           <i class="bi bi-shield-lock-fill text-[#0E5C58] me-1"></i>
           Buka lewat <strong>HTTPS</strong> agar kamera webcam aktif langsung di browser.
         </div>
-        <a href="javascript:;" id="linkToHttps" role="button" class="min-h-[44px] md:min-h-0 md:h-[28px] px-2.5 bg-[#0E5C58] text-white rounded-[6px] text-[11px] font-bold flex items-center gap-1 text-decoration-none shadow-xs text-nowrap ms-2">
+        <button type="button" id="linkToHttps" class="btn-action-mobile px-2.5 bg-[#0E5C58] text-white rounded-[6px] text-[11px] font-bold flex items-center gap-1 shadow-xs text-nowrap ms-2 border-0 cursor-pointer">
           Buka via HTTPS <i class="bi bi-arrow-right-short"></i>
         </a>
       </div>
@@ -483,7 +483,7 @@ ob_start();
           <div id="enrollScanRay" class="position-absolute start-0 w-100 d-none" style="height: 3px; background: linear-gradient(90deg, transparent, #0E5C58, #10B981, transparent); animation: scanRayAnim 2s infinite ease-in-out;"></div>
 
           <!-- Success Overlay Inside Video -->
-          <div id="enrollSuccessOverlay" class="position-absolute top-0 start-0 w-100 h-100 d-flex flex-column align-items-center justify-content-center text-white d-none" style="background: rgba(14, 92, 88, 0.88); backdrop-filter: blur(4px); z-index: 5;">
+          <div id="enrollSuccessOverlay" class="position-absolute top-0 start-0 w-100 h-100 d-flex flex-column align-items-center justify-content-center text-white d-none" style="background: rgba(14, 92, 88, 0.88);  z-index: 5;">
             <i class="bi bi-check-circle-fill display-4 mb-2 animate-bounce text-white"></i>
             <h5 class="fw-bold text-white mb-1" id="enrollSuccessName">Wajah Terdeteksi!</h5>
             <span class="px-3 py-1 rounded-full text-[12px] font-bold bg-white text-[#0E5C58] shadow-xs" id="enrollSuccessBadge">100% Cocok</span>

@@ -123,8 +123,7 @@ body {
   top: 12px;
   z-index: 999;
   background: rgba(255, 255, 255, 0.96);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  background: #1E293B;
   border: 1px solid #E2E8F0;
   border-radius: 14px;
   padding: 16px 20px;

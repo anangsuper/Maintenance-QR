@@ -41,7 +41,7 @@ function render_gallery_card_photo(string $sliderId, array $photos, string $altT
     if ($photoCount === 0) {
         $noPhotoBtn = '';
         if ($noPhotoEditUrl !== '') {
-            $noPhotoBtn = '<a href="' . e($noPhotoEditUrl) . '" class="min-h-[44px] md:min-h-0 md:h-[28px] px-3 bg-white border border-[#0E5C58] text-[#0E5C58] hover:bg-[#D9F1EF] rounded-[6px] text-[11px] font-semibold transition-colors inline-flex items-center gap-1 text-decoration-none shadow-xs">' .
+            $noPhotoBtn = '<a href="' . e($noPhotoEditUrl) . '" class="min-h-[44px] md:min-h-[36px] px-3 bg-white border border-[#0E5C58] text-[#0E5C58] hover:bg-[#D9F1EF] rounded-[6px] text-[11px] font-semibold transition-colors inline-flex items-center gap-1 text-decoration-none shadow-xs">' .
                 '<i class="bi bi-camera"></i> Upload Foto' .
                 '</a>';
         }
@@ -356,14 +356,14 @@ if ($subTab === 'inventaris') {
 
             <div class="p-3 pt-0">
               <div class="pt-2 border-t border-[#E5E7EB] flex items-center justify-between gap-1.5">
-                <a href="'.e($detailUrl).'" class="min-h-[44px] md:min-h-0 md:h-[30px] px-3 bg-[#0E5C58] hover:bg-[#094340] text-white rounded-[6px] text-[12px] font-semibold transition-colors inline-flex items-center gap-1 text-decoration-none border-0 shadow-xs">
+                <a href="'.e($detailUrl).'" class="min-h-[44px] md:min-h-[36px] px-3 bg-[#0E5C58] hover:bg-[#094340] text-white rounded-[6px] text-[12px] font-semibold transition-colors inline-flex items-center gap-1 text-decoration-none border-0 shadow-xs">
                   <i class="bi bi-credit-card-2-front"></i> Buka Kartu
                 </a>
                 <div class="flex items-center gap-1">
-                  <button type="button" class="min-h-[44px] md:min-h-0 md:h-[30px] min-w-[44px] md:min-w-0 md:w-[30px] bg-white border border-[#D1D5D8] rounded-[6px] text-[#53595F] hover:bg-[#F4F5F7] transition-colors inline-flex items-center justify-center cursor-pointer shadow-xs" title="Lihat Barcode &amp; Info Cepat" onclick="openInvQrModal('.$cardJson.')">
+                  <button type="button" class="min-h-[44px] min-w-[44px] md:min-h-[36px] md:min-w-[36px] bg-white border border-[#D1D5D8] rounded-[6px] text-[#53595F] hover:bg-[#F4F5F7] transition-colors inline-flex items-center justify-center cursor-pointer shadow-xs" title="Lihat Barcode &amp; Info Cepat" onclick="openInvQrModal('.$cardJson.')">
                     <i class="bi bi-qr-code"></i>
                   </button>
-                  <a href="'.e($printUrl).'" target="_blank" class="min-h-[44px] md:min-h-0 md:h-[30px] min-w-[44px] md:min-w-0 md:w-[30px] bg-white border border-[#D1D5D8] rounded-[6px] text-[#53595F] hover:bg-[#F4F5F7] transition-colors inline-flex items-center justify-center text-decoration-none shadow-xs" title="Cetak Kartu A4">
+                  <a href="'.e($printUrl).'" target="_blank" class="min-h-[44px] min-w-[44px] md:min-h-[36px] md:min-w-[36px] bg-white border border-[#D1D5D8] rounded-[6px] text-[#53595F] hover:bg-[#F4F5F7] transition-colors inline-flex items-center justify-center text-decoration-none shadow-xs" title="Cetak Kartu A4">
                     <i class="bi bi-printer"></i>
                   </a>
                 </div>
@@ -379,7 +379,7 @@ if ($subTab === 'inventaris') {
           <div class="text-[#9CA3AF] opacity-50 mb-3"><i class="bi bi-collection" style="font-size: 3.5rem;"></i></div>
           <h5 class="font-bold text-[#1B2A3A]">Tidak ada kartu inventaris yang ditemukan</h5>
           <p class="text-[#53595F] text-[13px]">Coba ubah kata kunci pencarian atau ganti filter cabang di atas.</p>
-          <a href="'.e(gallery_query(['sub' => 'inventaris', 'q' => null, 'cabang' => null, 'photo' => 'all', 'jenis' => 'all'])).'" class="min-h-[44px] md:min-h-0 md:h-[34px] px-3.5 bg-white border border-[#D1D5D8] rounded-[8px] text-[13px] font-medium text-[#1B2A3A] hover:bg-[#F4F5F7] transition-colors inline-flex items-center gap-1 text-decoration-none shadow-xs">
+          <a href="'.e(gallery_query(['sub' => 'inventaris', 'q' => null, 'cabang' => null, 'photo' => 'all', 'jenis' => 'all'])).'" class="min-h-[44px] md:min-h-[36px] px-3.5 bg-white border border-[#D1D5D8] rounded-[8px] text-[13px] font-medium text-[#1B2A3A] hover:bg-[#F4F5F7] transition-colors inline-flex items-center gap-1 text-decoration-none shadow-xs">
             <i class="bi bi-arrow-counterclockwise"></i> Reset Filter
           </a>
         </div>';
@@ -453,11 +453,11 @@ if ($subTab === 'inventaris') {
         </div>
 
         <div class="col-12 col-md-1 p-0 ps-md-1 d-flex gap-1">
-          <button type="submit" class="h-[36px] px-3 bg-[#0E5C58] hover:bg-[#094340] text-white rounded-[8px] text-[13px] font-semibold transition-colors flex-fill inline-flex items-center justify-center gap-1 border-0 shadow-xs cursor-pointer" title="Terapkan Filter">
+          <button type="submit" class="min-h-[44px] md:min-h-[36px] px-3 bg-[#0E5C58] hover:bg-[#094340] text-white rounded-[8px] text-[13px] font-semibold transition-colors flex-fill inline-flex items-center justify-center gap-1 border-0 shadow-xs cursor-pointer" title="Terapkan Filter">
             <i class="bi bi-funnel"></i>
           </button>
           '.($search !== '' || $photoFilter !== 'all' || $jenisFilter !== 'all' ? '
-          <a href="'.e(module_url('asset_gallery.php', array_filter(['sub' => 'inventaris', 'cabang' => $cabangCode]))).'" class="h-[36px] w-[36px] bg-white border border-[#D1D5D8] rounded-[8px] text-[#53595F] hover:bg-[#F4F5F7] transition-colors inline-flex items-center justify-center text-decoration-none shadow-xs shrink-0" title="Reset Semua Filter">
+          <a href="'.e(module_url('asset_gallery.php', array_filter(['sub' => 'inventaris', 'cabang' => $cabangCode]))).'" class="min-h-[44px] min-w-[44px] md:min-h-[36px] md:min-w-[36px] bg-white border border-[#D1D5D8] rounded-[8px] text-[#53595F] hover:bg-[#F4F5F7] transition-colors inline-flex items-center justify-center text-decoration-none shadow-xs shrink-0" title="Reset Semua Filter">
             <i class="bi bi-arrow-counterclockwise"></i>
           </a>' : '').'
         </div>
@@ -628,14 +628,14 @@ if ($subTab === 'inventaris') {
 
             <div class="p-3 pt-0">
               <div class="pt-2 border-t border-[#E5E7EB] flex items-center justify-between gap-1.5">
-                <button type="button" class="min-h-[44px] md:min-h-0 md:h-[30px] px-3 bg-white border border-[#0E5C58] text-[#0E5C58] hover:bg-[#D9F1EF] rounded-[6px] text-[12px] font-semibold transition-colors inline-flex items-center gap-1 shadow-xs cursor-pointer" onclick="openQrModal('.$qrJson.')" title="Lihat Stiker QR &amp; Foto">
+                <button type="button" class="min-h-[44px] md:min-h-[36px] px-3 bg-white border border-[#0E5C58] text-[#0E5C58] hover:bg-[#D9F1EF] rounded-[6px] text-[12px] font-semibold transition-colors inline-flex items-center gap-1 shadow-xs cursor-pointer" onclick="openQrModal('.$qrJson.')" title="Lihat Stiker QR &amp; Foto">
                   <i class="bi bi-qr-code"></i> Lihat QR
                 </button>
                 <div class="flex items-center gap-1">
-                  <a href="'.e($editUrl).'" class="min-h-[44px] md:min-h-0 md:h-[30px] min-w-[44px] md:min-w-0 md:w-[30px] bg-white border border-[#D1D5D8] rounded-[6px] text-[#53595F] hover:bg-[#F4F5F7] transition-colors inline-flex items-center justify-center text-decoration-none shadow-xs" title="Ganti / Edit Foto">
+                  <a href="'.e($editUrl).'" class="min-h-[44px] min-w-[44px] md:min-h-[36px] md:min-w-[36px] bg-white border border-[#D1D5D8] rounded-[6px] text-[#53595F] hover:bg-[#F4F5F7] transition-colors inline-flex items-center justify-center text-decoration-none shadow-xs" title="Ganti / Edit Foto">
                     <i class="bi bi-camera"></i>
                   </a>
-                  <a href="'.e(qr_url('scan.php', ['token' => $token])).'" class="min-h-[44px] md:min-h-0 md:h-[30px] min-w-[44px] md:min-w-0 md:w-[30px] bg-white border border-[#D1D5D8] rounded-[6px] text-[#53595F] hover:bg-[#F4F5F7] transition-colors inline-flex items-center justify-center text-decoration-none shadow-xs" title="Buka Detail Aset">
+                  <a href="'.e(qr_url('scan.php', ['token' => $token])).'" class="min-h-[44px] min-w-[44px] md:min-h-[36px] md:min-w-[36px] bg-white border border-[#D1D5D8] rounded-[6px] text-[#53595F] hover:bg-[#F4F5F7] transition-colors inline-flex items-center justify-center text-decoration-none shadow-xs" title="Buka Detail Aset">
                     <i class="bi bi-arrow-up-right"></i>
                   </a>
                 </div>
@@ -651,7 +651,7 @@ if ($subTab === 'inventaris') {
           <div class="text-[#9CA3AF] opacity-50 mb-3"><i class="bi bi-images" style="font-size: 3.5rem;"></i></div>
           <h5 class="font-bold text-[#1B2A3A]">Tidak ada foto perangkat yang ditemukan</h5>
           <p class="text-[#53595F] text-[13px]">Coba ubah kata kunci pencarian atau ganti filter cabang di atas.</p>
-          <a href="'.e(gallery_query(['sub' => 'unit', 'q' => null, 'cabang' => null, 'divisi' => null, 'photo' => 'all'])).'" class="min-h-[44px] md:min-h-0 md:h-[34px] px-3.5 bg-white border border-[#D1D5D8] rounded-[8px] text-[13px] font-medium text-[#1B2A3A] hover:bg-[#F4F5F7] transition-colors inline-flex items-center gap-1 text-decoration-none shadow-xs">
+          <a href="'.e(gallery_query(['sub' => 'unit', 'q' => null, 'cabang' => null, 'divisi' => null, 'photo' => 'all'])).'" class="min-h-[44px] md:min-h-[36px] px-3.5 bg-white border border-[#D1D5D8] rounded-[8px] text-[13px] font-medium text-[#1B2A3A] hover:bg-[#F4F5F7] transition-colors inline-flex items-center gap-1 text-decoration-none shadow-xs">
             <i class="bi bi-arrow-counterclockwise"></i> Reset Filter
           </a>
         </div>';
@@ -725,11 +725,11 @@ if ($subTab === 'inventaris') {
         </div>
 
         <div class="col-12 col-md-1 p-0 ps-md-1 d-flex gap-1">
-          <button type="submit" class="h-[36px] px-3 bg-[#0E5C58] hover:bg-[#094340] text-white rounded-[8px] text-[13px] font-semibold transition-colors flex-fill inline-flex items-center justify-center gap-1 border-0 shadow-xs cursor-pointer" title="Terapkan Filter">
+          <button type="submit" class="min-h-[44px] md:min-h-[36px] px-3 bg-[#0E5C58] hover:bg-[#094340] text-white rounded-[8px] text-[13px] font-semibold transition-colors flex-fill inline-flex items-center justify-center gap-1 border-0 shadow-xs cursor-pointer" title="Terapkan Filter">
             <i class="bi bi-funnel"></i>
           </button>
           '.($search !== '' || $photoFilter !== 'all' || $divisiId > 0 ? '
-          <a href="'.e(module_url('asset_gallery.php', array_filter(['sub' => 'unit', 'cabang' => $cabangId]))).'" class="h-[36px] w-[36px] bg-white border border-[#D1D5D8] rounded-[8px] text-[#53595F] hover:bg-[#F4F5F7] transition-colors inline-flex items-center justify-center text-decoration-none shadow-xs shrink-0" title="Reset Semua Filter">
+          <a href="'.e(module_url('asset_gallery.php', array_filter(['sub' => 'unit', 'cabang' => $cabangId]))).'" class="min-h-[44px] min-w-[44px] md:min-h-[36px] md:min-w-[36px] bg-white border border-[#D1D5D8] rounded-[8px] text-[#53595F] hover:bg-[#F4F5F7] transition-colors inline-flex items-center justify-center text-decoration-none shadow-xs shrink-0" title="Reset Semua Filter">
             <i class="bi bi-arrow-counterclockwise"></i>
           </a>' : '').'
         </div>
@@ -744,18 +744,18 @@ $paginationHtml = '';
 if ($totalPages > 1) {
     $paginationHtml = '<nav aria-label="Page navigation" class="mt-4"><ul class="pagination pagination-sm justify-content-center gap-1.5 m-0">';
     $prevDisabled = ($page <= 1) ? ' disabled' : '';
-    $paginationHtml .= '<li class="page-item'.$prevDisabled.'"><a class="page-link rounded-[6px] px-3 min-h-[44px] md:min-h-0 md:h-[32px] inline-flex items-center border-[#D1D5D8] text-[#1B2A3A]" href="'.e(gallery_query(['page' => max(1, $page - 1)])).'">&laquo; Sebelumnya</a></li>';
+    $paginationHtml .= '<li class="page-item'.$prevDisabled.'"><a class="page-link rounded-[6px] px-3 min-h-[44px] md:min-h-[36px] inline-flex items-center border-[#D1D5D8] text-[#1B2A3A]" href="'.e(gallery_query(['page' => max(1, $page - 1)])).'">&laquo; Sebelumnya</a></li>';
     for ($p = 1; $p <= $totalPages; $p++) {
         if ($p === 1 || $p === $totalPages || ($p >= $page - 2 && $p <= $page + 2)) {
             $act = ($p === $page) ? ' active' : '';
             $activeStyle = ($p === $page) ? 'style="background-color: #0E5C58 !important; border-color: #0E5C58 !important; color: white !important;"' : 'style="border-color: #D1D5D8; color: #1B2A3A;"';
-            $paginationHtml .= '<li class="page-item'.$act.'"><a class="page-link rounded-[6px] text-center min-w-[44px] md:min-w-0 md:w-[32px] min-h-[44px] md:min-h-0 md:h-[32px] p-0 inline-flex items-center justify-center" '.$activeStyle.' href="'.e(gallery_query(['page' => $p])).'">'.$p.'</a></li>';
+            $paginationHtml .= '<li class="page-item'.$act.'"><a class="page-link rounded-[6px] text-center min-h-[44px] min-w-[44px] md:min-h-[36px] md:min-w-[36px] p-0 inline-flex items-center justify-center" '.$activeStyle.' href="'.e(gallery_query(['page' => $p])).'">'.$p.'</a></li>';
         } elseif ($p === $page - 3 || $p === $page + 3) {
             $paginationHtml .= '<li class="page-item disabled"><span class="page-link border-0 text-[#A0A5AA]">...</span></li>';
         }
     }
     $nextDisabled = ($page >= $totalPages) ? ' disabled' : '';
-    $paginationHtml .= '<li class="page-item'.$nextDisabled.'"><a class="page-link rounded-[6px] px-3 min-h-[44px] md:min-h-0 md:h-[32px] inline-flex items-center border-[#D1D5D8] text-[#1B2A3A]" href="'.e(gallery_query(['page' => min($totalPages, $page + 1)])).'">Selanjutnya &raquo;</a></li>';
+    $paginationHtml .= '<li class="page-item'.$nextDisabled.'"><a class="page-link rounded-[6px] px-3 min-h-[44px] md:min-h-[36px] inline-flex items-center border-[#D1D5D8] text-[#1B2A3A]" href="'.e(gallery_query(['page' => min($totalPages, $page + 1)])).'">Selanjutnya &raquo;</a></li>';
     $paginationHtml .= '</ul></nav>';
 }
 
@@ -948,19 +948,19 @@ ob_start();
 
   <div class="flex flex-wrap items-center gap-2 shrink-0">
     <?php $activeTrashCnt = function_exists('get_photo_trash_count') ? get_photo_trash_count() : 0; ?>
-    <a href="<?= e(module_url('photo_trash.php')) ?>" class="h-[36px] px-3 <?= $activeTrashCnt > 0 ? 'bg-[#FFFBEB] border-[#FDE68A] text-[#92400E]' : 'bg-white border-[#D1D5D8] text-[#1B2A3A]' ?> border rounded-[8px] text-[13px] font-semibold hover:bg-[#F4F5F7] transition-colors inline-flex items-center gap-1.5 text-decoration-none shadow-xs">
+    <a href="<?= e(module_url('photo_trash.php')) ?>" class="min-h-[44px] md:min-h-[36px] px-3 <?= $activeTrashCnt > 0 ? 'bg-[#FFFBEB] border-[#FDE68A] text-[#92400E]' : 'bg-white border-[#D1D5D8] text-[#1B2A3A]' ?> border rounded-[8px] text-[13px] font-semibold hover:bg-[#F4F5F7] transition-colors inline-flex items-center gap-1.5 text-decoration-none shadow-xs">
       <i class="bi bi-recycle text-[#D97706]"></i> <span>Folder Sampah Foto</span>
       <?php if ($activeTrashCnt > 0): ?>
         <span class="px-1.5 py-0.2 rounded-full bg-[#D97706] text-white text-[11px] font-bold"><?= (int)$activeTrashCnt ?></span>
       <?php endif; ?>
     </a>
-    <a href="<?= e(module_url('dashboard.php', ['tab' => 'kartu'])) ?>" class="h-[36px] px-3 bg-white border border-[#D1D5D8] rounded-[8px] text-[13px] font-medium text-[#1B2A3A] hover:bg-[#F4F5F7] transition-colors inline-flex items-center gap-1.5 text-decoration-none shadow-xs">
+    <a href="<?= e(module_url('dashboard.php', ['tab' => 'kartu'])) ?>" class="min-h-[44px] md:min-h-[36px] px-3 bg-white border border-[#D1D5D8] rounded-[8px] text-[13px] font-medium text-[#1B2A3A] hover:bg-[#F4F5F7] transition-colors inline-flex items-center gap-1.5 text-decoration-none shadow-xs">
       <i class="bi bi-credit-card-2-front text-[#0E5C58]"></i> <span>Tabel Kartu</span>
     </a>
-    <a href="<?= e(module_url('assets.php')) ?>" class="h-[36px] px-3 bg-white border border-[#D1D5D8] rounded-[8px] text-[13px] font-medium text-[#1B2A3A] hover:bg-[#F4F5F7] transition-colors inline-flex items-center gap-1.5 text-decoration-none shadow-xs">
+    <a href="<?= e(module_url('assets.php')) ?>" class="min-h-[44px] md:min-h-[36px] px-3 bg-white border border-[#D1D5D8] rounded-[8px] text-[13px] font-medium text-[#1B2A3A] hover:bg-[#F4F5F7] transition-colors inline-flex items-center gap-1.5 text-decoration-none shadow-xs">
       <i class="bi bi-pc-display text-[#53595F]"></i> <span>Tabel Aset IT</span>
     </a>
-    <a href="<?= e(module_url('dashboard.php')) ?>" class="h-[36px] px-3 bg-white border border-[#D1D5D8] rounded-[8px] text-[13px] font-medium text-[#1B2A3A] hover:bg-[#F4F5F7] transition-colors inline-flex items-center gap-1.5 text-decoration-none shadow-xs">
+    <a href="<?= e(module_url('dashboard.php')) ?>" class="min-h-[44px] md:min-h-[36px] px-3 bg-white border border-[#D1D5D8] rounded-[8px] text-[13px] font-medium text-[#1B2A3A] hover:bg-[#F4F5F7] transition-colors inline-flex items-center gap-1.5 text-decoration-none shadow-xs">
       <i class="bi bi-speedometer2 text-[#53595F]"></i> <span>Dashboard</span>
     </a>
   </div>
@@ -969,12 +969,12 @@ ob_start();
 <?php if (!$isHrdOnly): ?>
 <!-- SUB-TAB SWITCHER BAR (SEGMENTED CONTROL) -->
 <div class="flex flex-wrap items-center gap-2 mb-4">
-  <a href="<?= e(gallery_query(['sub' => 'inventaris', 'page' => 1, 'q' => null, 'cabang' => null, 'photo' => 'all'])) ?>" class="h-[38px] px-4 rounded-[8px] text-[13px] font-semibold inline-flex items-center gap-2 text-decoration-none transition-colors <?= ($subTab === 'inventaris' ? 'bg-[#0E5C58] text-white shadow-xs' : 'bg-white border border-[#D1D5D8] text-[#53595F] hover:bg-[#F4F5F7]') ?>">
+  <a href="<?= e(gallery_query(['sub' => 'inventaris', 'page' => 1, 'q' => null, 'cabang' => null, 'photo' => 'all'])) ?>" class="min-h-[44px] md:min-h-[38px] px-4 rounded-[8px] text-[13px] font-semibold inline-flex items-center gap-2 text-decoration-none transition-colors <?= ($subTab === 'inventaris' ? 'bg-[#0E5C58] text-white shadow-xs' : 'bg-white border border-[#D1D5D8] text-[#53595F] hover:bg-[#F4F5F7]') ?>">
     <i class="bi bi-collection-fill"></i>
     <span>Galeri Foto Inventaris (Bank Core)</span>
     <span class="px-2 py-0.5 text-[11px] font-bold rounded-full <?= ($subTab === 'inventaris' ? 'bg-white text-[#0E5C58]' : 'bg-[#F4F5F7] text-[#53595F] border border-[#D1D5D8]') ?>"><?= $totalInvCount ?></span>
   </a>
-  <a href="<?= e(gallery_query(['sub' => 'unit', 'page' => 1, 'q' => null, 'cabang' => null, 'photo' => 'all'])) ?>" class="h-[38px] px-4 rounded-[8px] text-[13px] font-semibold inline-flex items-center gap-2 text-decoration-none transition-colors <?= ($subTab === 'unit' ? 'bg-[#0E5C58] text-white shadow-xs' : 'bg-white border border-[#D1D5D8] text-[#53595F] hover:bg-[#F4F5F7]') ?>">
+  <a href="<?= e(gallery_query(['sub' => 'unit', 'page' => 1, 'q' => null, 'cabang' => null, 'photo' => 'all'])) ?>" class="min-h-[44px] md:min-h-[38px] px-4 rounded-[8px] text-[13px] font-semibold inline-flex items-center gap-2 text-decoration-none transition-colors <?= ($subTab === 'unit' ? 'bg-[#0E5C58] text-white shadow-xs' : 'bg-white border border-[#D1D5D8] text-[#53595F] hover:bg-[#F4F5F7]') ?>">
     <i class="bi bi-pc-display-horizontal"></i>
     <span>Galeri Unit Perangkat (IT Ops)</span>
     <span class="px-2 py-0.5 text-[11px] font-bold rounded-full <?= ($subTab === 'unit' ? 'bg-white text-[#0E5C58]' : 'bg-[#F4F5F7] text-[#53595F] border border-[#D1D5D8]') ?>"><?= $totalUnitCount ?></span>
@@ -1080,10 +1080,10 @@ ob_start();
           <div id="lightboxDotsContainer" class="flex items-center gap-1.5" style="display: none;"></div>
         </div>
         <div class="flex gap-2">
-          <a id="lightboxInvOpenBtn" href="" target="_blank" class="min-h-[44px] md:min-h-0 md:h-[32px] px-3 bg-white border border-[#D1D5D8] rounded-[6px] text-[12px] font-semibold text-[#53595F] hover:bg-[#F4F5F7] transition-colors inline-flex items-center gap-1 text-decoration-none shadow-xs">
+          <a id="lightboxInvOpenBtn" href="" target="_blank" class="min-h-[44px] md:min-h-[36px] px-3 bg-white border border-[#D1D5D8] rounded-[6px] text-[12px] font-semibold text-[#53595F] hover:bg-[#F4F5F7] transition-colors inline-flex items-center gap-1 text-decoration-none shadow-xs">
             <i class="bi bi-box-arrow-up-right"></i> Buka Asli
           </a>
-          <a id="lightboxInvDetailBtn" href="" class="min-h-[44px] md:min-h-0 md:h-[32px] px-3 bg-[#0E5C58] hover:bg-[#094340] text-white rounded-[6px] text-[12px] font-semibold transition-colors inline-flex items-center gap-1 text-decoration-none shadow-xs">
+          <a id="lightboxInvDetailBtn" href="" class="min-h-[44px] md:min-h-[36px] px-3 bg-[#0E5C58] hover:bg-[#094340] text-white rounded-[6px] text-[12px] font-semibold transition-colors inline-flex items-center gap-1 text-decoration-none shadow-xs">
             <i class="bi bi-credit-card-2-front"></i> Buka Detail
           </a>
         </div>
@@ -1110,10 +1110,10 @@ ob_start();
         <div class="font-bold text-[#1B2A3A] text-[13px] mb-1" id="invModalNama"></div>
         <div class="inline-flex px-2 py-0.5 rounded bg-[#F4F5F7] text-[#53595F] border border-[#D1D5D8] text-[11px] mb-3" id="invModalRuangan"></div>
         <div class="d-grid gap-2">
-          <a id="invModalDetailBtn" href="" class="min-h-[44px] md:min-h-0 md:h-[34px] bg-[#0E5C58] hover:bg-[#094340] text-white rounded-[6px] text-[12px] font-semibold transition-colors flex items-center justify-center gap-1.5 text-decoration-none shadow-xs">
+          <a id="invModalDetailBtn" href="" class="min-h-[44px] md:min-h-[36px] bg-[#0E5C58] hover:bg-[#094340] text-white rounded-[6px] text-[12px] font-semibold transition-colors flex items-center justify-center gap-1.5 text-decoration-none shadow-xs">
             <i class="bi bi-credit-card-2-front"></i> Detail Kartu Inventaris
           </a>
-          <a id="invModalPrintBtn" href="" target="_blank" class="min-h-[44px] md:min-h-0 md:h-[34px] bg-white border border-[#D1D5D8] text-[#53595F] hover:bg-[#F4F5F7] rounded-[6px] text-[12px] font-semibold transition-colors flex items-center justify-center gap-1.5 text-decoration-none shadow-xs">
+          <a id="invModalPrintBtn" href="" target="_blank" class="min-h-[44px] md:min-h-[36px] bg-white border border-[#D1D5D8] text-[#53595F] hover:bg-[#F4F5F7] rounded-[6px] text-[12px] font-semibold transition-colors flex items-center justify-center gap-1.5 text-decoration-none shadow-xs">
             <i class="bi bi-printer"></i> Cetak Kartu A4
           </a>
         </div>
@@ -1138,10 +1138,10 @@ ob_start();
         <div class="font-bold text-[#1B2A3A] text-[13px] mb-1" id="modalQrDevice"></div>
         <div class="inline-flex px-2 py-0.5 rounded bg-[#F4F5F7] text-[#53595F] border border-[#D1D5D8] text-[11px] mb-3" id="modalQrUser"></div>
         <div class="d-grid gap-2">
-          <a id="modalQrScanBtn" href="" class="min-h-[44px] md:min-h-0 md:h-[34px] bg-[#0E5C58] hover:bg-[#094340] text-white rounded-[6px] text-[12px] font-semibold transition-colors flex items-center justify-center gap-1.5 text-decoration-none shadow-xs">
+          <a id="modalQrScanBtn" href="" class="min-h-[44px] md:min-h-[36px] bg-[#0E5C58] hover:bg-[#094340] text-white rounded-[6px] text-[12px] font-semibold transition-colors flex items-center justify-center gap-1.5 text-decoration-none shadow-xs">
             <i class="bi bi-arrow-up-right"></i> Buka Detail Unit
           </a>
-          <a id="modalQrEditBtn" href="" class="min-h-[44px] md:min-h-0 md:h-[34px] bg-white border border-[#D1D5D8] text-[#53595F] hover:bg-[#F4F5F7] rounded-[6px] text-[12px] font-semibold transition-colors flex items-center justify-center gap-1.5 text-decoration-none shadow-xs">
+          <a id="modalQrEditBtn" href="" class="min-h-[44px] md:min-h-[36px] bg-white border border-[#D1D5D8] text-[#53595F] hover:bg-[#F4F5F7] rounded-[6px] text-[12px] font-semibold transition-colors flex items-center justify-center gap-1.5 text-decoration-none shadow-xs">
             <i class="bi bi-pencil"></i> Edit Data / Foto
           </a>
         </div>

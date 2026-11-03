@@ -547,7 +547,7 @@ if (is_hrd() && !is_admin()) {
             <span>Menampilkan '.count($branchSummaries).' Cabang Bank Mitra</span>
             <div class="flex items-center gap-2">
               '.(is_admin() ? '<button type="button" class="text-[#0E5C58] bg-[#D9F1EF] hover:bg-[#0E5C58] hover:text-white px-2 py-0.5 rounded font-bold transition-colors border-0 cursor-pointer" data-bs-toggle="modal" data-bs-target="#modalKelolaSkipCabang"><i class="bi bi-calendar-x me-1"></i>Atur Skip Cabang</button>' : '').'
-              <a href="'.e(module_url('cabang_admin.php', ['bulan' => $month, 'tahun' => $year])).'" class="text-[#0E5C58] font-bold hover:underline text-decoration-none">Kelola Cabang &rarr;</a>
+              <a href="'.e(module_url('cabang_admin.php', ['bulan' => $month, 'tahun' => $year])).'" class="text-[#0E5C58] font-bold hover:underline text-decoration-none">Kelola Cabang</a>
             </div>
           </div>
         </div>
@@ -566,7 +566,7 @@ if (is_hrd() && !is_admin()) {
                 </div>
               </div>
               <a href="'.e(module_url('audit_trail.php')).'" class="text-[11px] font-bold text-[#0E5C58] bg-[#D9F1EF] px-2 py-0.5 rounded border border-[#A7E2DC] text-decoration-none hover:bg-[#0E5C58] hover:text-white transition-colors">
-                Semua Log &rarr;
+                Semua Log
               </a>
             </div>
             <div class="flex flex-col gap-2 relative before:absolute before:top-2 before:bottom-2 before:left-[11px] before:w-[2px] before:bg-[#E5E7EB]">
@@ -636,7 +636,7 @@ if (is_hrd() && !is_admin()) {
           </div>
         </div>
         <a href="'.e(module_url('dashboard.php', ['tab'=>'temuan', 'cabang'=>$cabangId, 'bulan_temuan'=>'all', 'tahun'=>$year])).'" class="btn btn-danger btn-sm fw-bold px-3 py-2 shadow-xs text-decoration-none">
-          <i class="bi bi-tools me-1"></i> Buka Temuan &amp; Selesaikan Sekarang &rarr;
+          <i class="bi bi-tools me-1"></i> Buka Temuan &amp; Selesaikan Sekarang
         </a>
       </div>' : '').'
     ';

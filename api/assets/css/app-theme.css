@@ -507,8 +507,7 @@ aside#appDesktopSidebar {
 
 /* Materio AppBar / Topbar */
 .app-topbar, .public-topbar {
-  background-color: rgba(255, 255, 255, 0.88) !important;
-  backdrop-filter: blur(8px) !important;
+  background-color: #FFFFFF !important;
   border-bottom: 1px solid var(--border-subtle) !important;
   box-shadow: 0 2px 10px rgba(76, 78, 100, 0.04) !important;
 }
@@ -1479,9 +1478,7 @@ h1, h2, h3, h4, h5, h6,
 
 .app-topbar {
   height: 66px;
-  background-color: rgba(255, 255, 255, 0.88);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
+  background-color: #FFFFFF;
   border-bottom: 1px solid rgba(226, 232, 240, 0.85);
   position: sticky;
   top: 0;
@@ -1775,9 +1772,33 @@ h1, h2, h3, h4, h5, h6,
 }
 
 .form-control:focus, .form-select:focus {
-  border-color: var(--blue-accent) !important;
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15) !important;
-  outline: none;
+  border-color: #0E5C58 !important;
+  box-shadow: 0 0 0 3px rgba(14, 92, 88, 0.2) !important;
+  outline: 2px solid transparent !important;
+}
+
+/* Accessible focus ring for keyboard navigation (Anti-Slop R-32) */
+:focus-visible {
+  outline: 2px solid #0E5C58 !important;
+  outline-offset: 2px !important;
+}
+
+/* Touch-friendly interactive targets (Anti-Slop R-03) */
+.btn-touch, .btn-action-mobile {
+  min-height: 44px;
+  min-width: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* High contrast secondary and muted text (Anti-Slop R-25) */
+.text-muted, .text-secondary {
+  color: #53595F !important;
+}
+[data-bs-theme="dark"] .text-muted,
+[data-bs-theme="dark"] .text-secondary {
+  color: #94A3B8 !important;
 }
 
 /* Luxury Table Design */
@@ -1947,9 +1968,7 @@ h1, h2, h3, h4, h5, h6,
   top: 16px;
   right: 20px;
   z-index: 99998;
-  background: rgba(13, 39, 72, 0.94);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
+  background: #0D2748;
   color: #ffffff;
   padding: 5px 12px;
   border-radius: 20px;
@@ -2687,8 +2706,7 @@ label.form-label,
   padding: 8px 16px;
   border-radius: 10px;
   transition: all 0.2s ease;
-  backdrop-filter: blur(6px);
-  text-decoration: none;
+    text-decoration: none;
   display: inline-flex;
   align-items: center;
   gap: 6px;

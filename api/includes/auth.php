@@ -959,8 +959,8 @@ function verify_current_user_password(string $password): array {
  */
 const MAX_LOGIN_ATTEMPTS = 5;
 const LOCKOUT_DURATION_SECONDS = 900; // 15 menit
-const OJK_MAX_LOGIN_ATTEMPTS = MAX_LOGIN_ATTEMPTS;
-const OJK_LOCKOUT_DURATION_SECONDS = LOCKOUT_DURATION_SECONDS;
+const SECURITY_MAX_LOGIN_ATTEMPTS = MAX_LOGIN_ATTEMPTS;
+const SECURITY_LOCKOUT_DURATION_SECONDS = LOCKOUT_DURATION_SECONDS;
 
 function get_lockout_storage_record(string $identifier, string $type): array {
     // 1. Coba dari MySQL jika bukan Google Cloud Mode
@@ -992,7 +992,7 @@ function get_lockout_storage_record(string $identifier, string $type): array {
     }
 
     // 2. Fallback File Cache di /tmp (bertahan antar request serverless di container yang sama)
-    $tmpFile = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'ojk_lock_' . md5($identifier) . '.json';
+    $tmpFile = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'sec_lock_' . md5($identifier) . '.json';
     if (file_exists($tmpFile)) {
         $raw = @file_get_contents($tmpFile);
         if ($raw) {
@@ -1008,7 +1008,7 @@ function get_lockout_storage_record(string $identifier, string $type): array {
     }
 
     // 3. Fallback Sesi PHP
-    $sessKey = '_ojk_lock_' . md5($identifier);
+    $sessKey = '_sec_lock_' . md5($identifier);
     if (!empty($_SESSION[$sessKey]) && is_array($_SESSION[$sessKey])) {
         return [
             'attempts' => (int)($_SESSION[$sessKey]['attempts'] ?? 0),
@@ -1036,7 +1036,7 @@ function save_lockout_storage_record(string $identifier, string $type, int $atte
     }
 
     // 2. Simpan ke File Cache di /tmp
-    $tmpFile = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'ojk_lock_' . md5($identifier) . '.json';
+    $tmpFile = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'sec_lock_' . md5($identifier) . '.json';
     $data = [
         'identifier' => $identifier,
         'type' => $type,
@@ -1047,7 +1047,7 @@ function save_lockout_storage_record(string $identifier, string $type, int $atte
     @file_put_contents($tmpFile, json_encode($data));
 
     // 3. Simpan ke Sesi PHP
-    $sessKey = '_ojk_lock_' . md5($identifier);
+    $sessKey = '_sec_lock_' . md5($identifier);
     $_SESSION[$sessKey] = $data;
 }
 
@@ -1060,12 +1060,12 @@ function clear_lockout_storage_record(string $identifier): void {
         } catch (Throwable $e) {}
     }
 
-    $tmpFile = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'ojk_lock_' . md5($identifier) . '.json';
+    $tmpFile = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'sec_lock_' . md5($identifier) . '.json';
     if (file_exists($tmpFile)) {
         @unlink($tmpFile);
     }
 
-    $sessKey = '_ojk_lock_' . md5($identifier);
+    $sessKey = '_sec_lock_' . md5($identifier);
     unset($_SESSION[$sessKey]);
 }
 
@@ -1203,7 +1203,7 @@ function clear_all_login_lockouts(): void {
 
     // 2. Bersihkan seluruh file cache di /tmp
     $tmpDir = sys_get_temp_dir();
-    $files = @glob($tmpDir . DIRECTORY_SEPARATOR . 'ojk_lock_*.json');
+    $files = @glob($tmpDir . DIRECTORY_SEPARATOR . 'sec_lock_*.json');
     if (is_array($files)) {
         foreach ($files as $f) {
             @unlink($f);
@@ -1213,7 +1213,7 @@ function clear_all_login_lockouts(): void {
     // 3. Bersihkan dari Sesi PHP aktif
     if (session_status() === PHP_SESSION_ACTIVE) {
         foreach ($_SESSION as $k => $v) {
-            if (str_starts_with($k, '_ojk_lock_')) {
+            if (str_starts_with($k, '_sec_lock_')) {
                 unset($_SESSION[$k]);
             }
         }

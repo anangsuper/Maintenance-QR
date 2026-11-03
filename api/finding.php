@@ -72,7 +72,7 @@ $body = '
           </select>
         </div>
         <div class="d-flex justify-content-end gap-2 pt-2 border-top">
-          <a class="btn btn-light border" href="javascript:history.back()">Batal</a>
+          <button type="button" class="btn btn-light border" onclick="history.back()">Batal</button>
           <button class="btn btn-danger fw-semibold"><i class="bi bi-check2 me-1"></i> Simpan Temuan</button>
         </div>
       </form>

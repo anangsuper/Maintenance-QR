@@ -87,7 +87,7 @@ $pageTitle = 'Buku Panduan & Laporan Sistem Informasi Manajemen Aset, IT & Sarpr
       top: 0;
       z-index: 1050;
       background: rgba(15, 23, 42, 0.95);
-      backdrop-filter: blur(8px);
+      
       padding: 12px 20px;
       border-bottom: 1px solid rgba(255, 255, 255, 0.1);
       box-shadow: 0 4px 20px rgba(0,0,0,0.15);

@@ -477,7 +477,11 @@ body {
 }
 
 .input-control-styled:focus {
-  outline: none; box-shadow: 0 0 0 3px rgba(14, 92, 88, 0.25); border-color: #0E5C58;
+  outline: 2px solid transparent; box-shadow: 0 0 0 3px rgba(14, 92, 88, 0.25); border-color: #0E5C58;
+}
+.input-control-styled:focus-visible {
+  outline: 2px solid #0E5C58;
+  outline-offset: 2px;
   border-color: var(--blue-brand);
   background: #FFFFFF;
   box-shadow: 0 0 0 3.5px rgba(37, 99, 235, 0.15);
@@ -742,9 +746,9 @@ body {
 
       <!-- Panel Footer -->
       <div class="text-center my-3 pt-2" style="border-top: 1px solid rgba(255,255,255,0.1);">
-          <a href="<?= module_url('user_biometric_enroll.php') ?>" class="d-inline-flex align-items-center gap-1 text-decoration-none py-1.5 px-3 rounded-pill text-white" style="font-size: 0.78rem; background: rgba(14, 92, 88, 0.55); border: 1px solid rgba(167, 226, 220, 0.4); backdrop-filter: blur(4px);">
+          <a href="<?= module_url('user_biometric_enroll.php') ?>" class="d-inline-flex align-items-center gap-1 text-decoration-none py-1.5 px-3 rounded-pill text-white" style="font-size: 0.78rem; background: #0E5C58; border: 1px solid #A7E2DC;">
             <i class="bi bi-person-bounding-box text-warning me-1"></i>
-            <span>Daftar Wajah / Face ID (Tanpa Login) &rarr;</span>
+            <span>Daftar Wajah / Face ID (Tanpa Login)</span>
           </a>
         </div>
 

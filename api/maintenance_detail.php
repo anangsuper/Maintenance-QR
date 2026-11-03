@@ -796,7 +796,7 @@ $backBtnTop = !empty($token)
     ? '<a class="btn btn-outline-primary btn-sm fw-bold flex-fill flex-sm-grow-0" href="'.e(qr_url('scan.php', ['t' => $token, 'tahun' => $scanYear])).'"><i class="bi bi-arrow-left me-1"></i> Kembali ke Kartu QR</a>'
     : ($isLoggedIn
         ? '<a class="btn btn-outline-secondary btn-sm fw-semibold flex-fill flex-sm-grow-0" href="'.e(module_url('audit.php')).'"><i class="bi bi-arrow-left me-1"></i> Riwayat Audit</a>'
-        : '<a class="btn btn-outline-secondary btn-sm fw-semibold flex-fill flex-sm-grow-0" href="javascript:history.back()"><i class="bi bi-arrow-left me-1"></i> Kembali</a>');
+        : '<button type="button" class="btn btn-outline-secondary btn-sm fw-semibold flex-fill flex-sm-grow-0" onclick="history.back()"><i class="bi bi-arrow-left me-1"></i> Kembali</button>');
 
 $tindakBtnTop = (!empty($token) && ($status === 'Temuan' || $status === 'Perlu Perbaikan' || $status === 'Proses'))
     ? '<a class="btn btn-danger btn-sm fw-bold flex-fill flex-sm-grow-0" href="'.e(qr_url('scan.php', ['t' => $token, 'action' => 'tindak_lanjut'])).'"><i class="bi bi-tools me-1"></i> Form Tindak Lanjut</a>'
@@ -1283,7 +1283,7 @@ $body = '
                   <span class="text-secondary small fw-bold" style="font-size: 0.74rem; letter-spacing: 0.03em;">
                     <i class="bi bi-bar-chart-fill text-primary me-1"></i>REKAP PER BULAN:
                   </span>
-                  <span class="text-muted d-inline d-md-none" style="font-size: 0.7rem;"><i class="bi bi-arrows-expand me-0.5"></i>Geser &rarr;</span>
+                  <span class="text-muted d-inline d-md-none" style="font-size: 0.7rem;"><i class="bi bi-arrows-expand me-0.5"></i>Geser horizontal</span>
                 </div>
                 <div class="month-pills-scroll">
                   <button type="button" class="btn btn-sm btn-primary py-1 px-2.5 small month-pill-btn" data-ym="all" onclick="selectMonthPill(\'all\')" style="font-size: 0.75rem; border-radius: 20px;">

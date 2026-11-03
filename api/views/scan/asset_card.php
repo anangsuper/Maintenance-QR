@@ -839,7 +839,7 @@ $complaintCardHtml = '
   <div class="p-2.5 px-3 mb-3 rounded-3 bg-light border d-flex flex-wrap align-items-center justify-content-between gap-2" style="font-size: 0.76rem;">
     <div class="text-secondary">
       <strong class="text-dark"><i class="bi bi-info-circle-fill text-primary me-1"></i>Alur Tindak Lanjut (Follow-Up):</strong>
-      <span>1. Karyawan tulis catatan &rarr; 2. Masuk ke <strong>Dashboard Temuan IT</strong> &amp; kartu ini &rarr; 3. Teknisi klik <strong>Follow Up / Respon Cepat</strong> atau <strong>Tindak Lanjut + Checklist</strong>.</span>
+      <span>1. Karyawan tulis catatan • 2. Masuk ke <strong>Dashboard Temuan IT</strong> &amp; kartu ini • 3. Teknisi klik <strong>Follow Up / Respon Cepat</strong> atau <strong>Tindak Lanjut + Checklist</strong>.</span>
     </div>
   </div>
 
@@ -921,7 +921,7 @@ if (empty($historyList)) {
             </div>
             '.($hId > 0 ? '
             <a href="'.e($hDetailUrl).'" class="btn btn-sm btn-outline-primary fw-semibold py-1 px-3 w-100 w-sm-auto text-center" style="font-size: 0.78rem;">
-              <i class="bi bi-file-earmark-medical me-1"></i> Rincian Audit #'.$hId.' &rarr;
+              <i class="bi bi-file-earmark-medical me-1"></i> Rincian Audit #'.$hId.'
             </a>' : '').'
           </div>
 
@@ -1002,7 +1002,7 @@ if ($loggedIn && !empty($assetTrashPhotos)) {
     <div class="bg-warning bg-opacity-10 border border-warning border-opacity-50 rounded-3 p-2 mt-2 text-start">
       <div class="d-flex align-items-center justify-content-between">
         <span class="fw-bold text-dark" style="font-size: 0.68rem;"><i class="bi bi-recycle text-success me-1"></i>'.count($assetTrashPhotos).' Foto di Sampah (7 Hari)</span>
-        <a href="'.e(module_url('photo_trash.php', ['source_type' => 'assets', 'item_id' => $assetId])).'" class="text-primary fw-bold text-decoration-none" style="font-size: 0.66rem;">Buka &rarr;</a>
+        <a href="'.e(module_url('photo_trash.php', ['source_type' => 'assets', 'item_id' => $assetId])).'" class="text-primary fw-bold text-decoration-none" style="font-size: 0.66rem;">Buka</a>
       </div>
       '.$trashItemsMini.'
     </div>';
@@ -1095,7 +1095,7 @@ if (!empty($replInfo['replaces'])) {
         </div>
       </div>
       <a href="'.e(module_url('scan.php', ['t' => $oldToken])).'" class="btn btn-sm btn-outline-primary py-1 px-2.5 fw-semibold font-monospace shadow-xs" style="font-size:0.75rem;">
-        <i class="bi bi-clock-history me-1"></i>Lihat Komputer Lama &rarr;
+        <i class="bi bi-clock-history me-1"></i>Lihat Komputer Lama
       </a>
     </div>';
 } elseif (!empty($replInfo['replaced_by'])) {
@@ -1118,7 +1118,7 @@ if (!empty($replInfo['replaces'])) {
         </div>
       </div>
       <a href="'.e(module_url('scan.php', ['t' => $newToken])).'" class="btn btn-sm btn-dark py-1 px-2.5 fw-semibold font-monospace shadow-xs" style="font-size:0.75rem;">
-        <i class="bi bi-box-arrow-up-right me-1"></i>Buka Unit Baru &rarr;
+        <i class="bi bi-box-arrow-up-right me-1"></i>Buka Unit Baru
       </a>
     </div>';
 }
@@ -1555,7 +1555,7 @@ $body = '
           <div id="bioPhotoScanRay" class="position-absolute start-0 w-100" style="height: 3px; background: linear-gradient(90deg, transparent, #3b82f6, #60a5fa, transparent); animation: scanRayAnim 2s infinite ease-in-out;"></div>
 
           <!-- Success Overlay -->
-          <div id="bioPhotoSuccessOverlay" class="position-absolute top-0 start-0 w-100 h-100 bg-success bg-opacity-75 d-flex flex-column align-items-center justify-content-center text-white d-none" style="backdrop-filter: blur(4px);">
+          <div id="bioPhotoSuccessOverlay" class="position-absolute top-0 start-0 w-100 h-100 bg-success bg-opacity-75 d-flex flex-column align-items-center justify-content-center text-white d-none" style="">
             <i class="bi bi-check-circle-fill display-3 mb-2 animate-bounce"></i>
             <h5 class="fw-bold mb-1" id="bioPhotoMatchedName">Wajah Terverifikasi!</h5>
             <span class="badge bg-white text-success fw-bold px-3 py-1 rounded-pill" id="bioPhotoMatchConf">100% Cocok</span>
