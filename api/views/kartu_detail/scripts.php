@@ -135,7 +135,7 @@
                     // 3. Gambar seluruh foto di tengah kanvas putih
                     ctx.drawImage(img, 0, 0, imgW, imgH, dx, dy, drawW, drawH);
 
-                    // 4. Stempel Watermark Otentikasi Audit Resmi (Anti-Slop Institutional)
+                    // 4. Stempel Watermark Otentikasi Audit Resmi (Anti-Slop Institutional - Ultra Jelas & Tajam)
                     try {
                         const meta = window.__INVENTARIS_META || {};
                         const bankName = "PT BPR MITRATAMA ARTHABUANA";
@@ -146,15 +146,15 @@
                         const pad = n => String(n).padStart(2, "0");
                         const dateStr = pad(now.getDate()) + "/" + pad(now.getMonth() + 1) + "/" + now.getFullYear() + " " + pad(now.getHours()) + ":" + pad(now.getMinutes()) + " WITA";
 
-                        const barX = 24;
-                        const barY = outH - 100;
-                        const barW = outW - 48;
-                        const barH = 76;
-                        const cornerR = 8;
+                        const barH = 136;
+                        const barX = 28;
+                        const barW = outW - 56;
+                        const barY = outH - barH - 32;
+                        const cornerR = 14;
 
                         ctx.save();
-                        // Background Bar Dark Navy Semi-transparan
-                        ctx.fillStyle = "rgba(15, 23, 42, 0.88)";
+                        // Latar Belakang Kartu Solid Slate Navy (95% opasitas menjamin teks sangat jelas terbaca di atas foto apapun)
+                        ctx.fillStyle = "rgba(15, 23, 42, 0.95)";
                         ctx.beginPath();
                         if (ctx.roundRect) {
                             ctx.roundRect(barX, barY, barW, barH, cornerR);
@@ -163,47 +163,74 @@
                         }
                         ctx.fill();
 
-                        // Garis Aksen Kombai Teal di Sisi Kiri
+                        // Garis batas luar presisi
+                        ctx.strokeStyle = "rgba(255, 255, 255, 0.22)";
+                        ctx.lineWidth = 1.5;
+                        ctx.stroke();
+
+                        // Pilar aksen Kombai Teal di sisi kiri
                         ctx.fillStyle = "#0E5C58";
                         ctx.beginPath();
                         if (ctx.roundRect) {
-                            ctx.roundRect(barX, barY, 8, barH, [cornerR, 0, 0, cornerR]);
+                            ctx.roundRect(barX, barY, 14, barH, [cornerR, 0, 0, cornerR]);
                         } else {
-                            ctx.rect(barX, barY, 8, barH);
+                            ctx.rect(barX, barY, 14, barH);
                         }
                         ctx.fill();
 
-                        // Teks 1: Nama Bank & Kantor Cabang
-                        ctx.fillStyle = "#FFFFFF";
-                        ctx.font = "bold 20px 'Public Sans', system-ui, -apple-system, sans-serif";
-                        ctx.fillText(bankName + " • " + kantor, barX + 24, barY + 32);
-
-                        // Teks 2: Nomor Inventaris & Tanggal Audit
-                        ctx.fillStyle = "#A7E2DC";
-                        ctx.font = "500 15px 'Public Sans', system-ui, -apple-system, sans-serif";
-                        ctx.fillText("NO INVENTARIS: " + assetCode + " • DOKUMENTASI FISIK RESMI • " + dateStr, barX + 24, barY + 58);
-
                         // Badge Sisi Kanan: VERIFIED ASSET
                         const badgeText = "VERIFIED ASSET";
-                        ctx.font = "bold 13px system-ui, sans-serif";
-                        const badgeW = ctx.measureText(badgeText).width + 20;
-                        const badgeX = barX + barW - badgeW - 16;
-                        const badgeY = barY + 22;
+                        ctx.font = "bold 17px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
+                        const badgeW = ctx.measureText(badgeText).width + 36;
+                        const badgeH = 42;
+                        const badgeX = barX + barW - badgeW - 20;
+                        const badgeY = barY + Math.round((barH - badgeH) / 2);
 
-                        ctx.fillStyle = "rgba(14, 92, 88, 0.9)";
-                        ctx.strokeStyle = "#A7E2DC";
-                        ctx.lineWidth = 1;
+                        ctx.fillStyle = "#0E5C58";
+                        ctx.strokeStyle = "#10B981";
+                        ctx.lineWidth = 2;
                         ctx.beginPath();
                         if (ctx.roundRect) {
-                            ctx.roundRect(badgeX, badgeY, badgeW, 32, 4);
+                            ctx.roundRect(badgeX, badgeY, badgeW, badgeH, 6);
                         } else {
-                            ctx.rect(badgeX, badgeY, badgeW, 32);
+                            ctx.rect(badgeX, badgeY, badgeW, badgeH);
                         }
                         ctx.fill();
                         ctx.stroke();
 
                         ctx.fillStyle = "#FFFFFF";
-                        ctx.fillText(badgeText, badgeX + 10, badgeY + 21);
+                        ctx.textAlign = "center";
+                        ctx.textBaseline = "middle";
+                        ctx.fillText(badgeText, badgeX + badgeW / 2, badgeY + badgeH / 2);
+
+                        // Reset perataan untuk penulisan teks kiri
+                        ctx.textAlign = "left";
+                        ctx.textBaseline = "alphabetic";
+
+                        const maxTextW = badgeX - (barX + 34) - 20;
+                        const line1 = bankName + " • " + kantor;
+                        const line2 = "NO INVENTARIS: " + assetCode + " • DOKUMENTASI FISIK RESMI • " + dateStr;
+
+                        // Baris 1: Identitas Institusi Bank & Kantor Cabang (Tebal & Putih Kontras Maksimal)
+                        let fSize1 = 28;
+                        ctx.font = "bold " + fSize1 + "px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
+                        while (ctx.measureText(line1).width > maxTextW && fSize1 > 18) {
+                            fSize1 -= 1;
+                            ctx.font = "bold " + fSize1 + "px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
+                        }
+                        ctx.fillStyle = "#FFFFFF";
+                        ctx.fillText(line1, barX + 34, barY + 52);
+
+                        // Baris 2: Nomor Inventaris & Cap Waktu Audit (Warna Mint Teal Tajam)
+                        let fSize2 = 20;
+                        ctx.font = "bold " + fSize2 + "px 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace, sans-serif";
+                        while (ctx.measureText(line2).width > maxTextW && fSize2 > 14) {
+                            fSize2 -= 1;
+                            ctx.font = "bold " + fSize2 + "px 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace, sans-serif";
+                        }
+                        ctx.fillStyle = "#5EEAD4";
+                        ctx.fillText(line2, barX + 34, barY + 98);
+
                         ctx.restore();
                     } catch(wmErr) {
                         console.warn("Watermark render notice:", wmErr);
@@ -235,7 +262,7 @@
                 if (sc1) sc1.className = 'col-6';
                 if (sc2) sc2.className = 'col-6';
 
-                compressImageClientSide(file, 1600, 0.82, function(compressedBlob, previewDataUrl) {
+                compressImageClientSide(file, 1600, 0.86, function(compressedBlob, previewDataUrl) {
                     const pImg = (slotNum === 2) ? previewImg2 : previewImg;
                     const ePlace = (slotNum === 2) ? emptyPlaceholder2 : emptyPlaceholder;
                     const pBadge = (slotNum === 2) ? previewBadge2 : previewBadge;
@@ -377,7 +404,7 @@
             }
 
             // Kompresi cerdas di browser (Client-Side)
-            compressImageClientSide(file, 1600, 0.82, function(compressedBlob, previewDataUrl) {
+            compressImageClientSide(file, 1600, 0.86, function(compressedBlob, previewDataUrl) {
                 if (prevImg) {
                     prevImg.src = previewDataUrl;
                     prevImg.style.objectFit = 'contain';

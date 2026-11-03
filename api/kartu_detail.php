@@ -211,10 +211,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
             $f1 = $_FILES[$file1Key];
             if ($f1['size'] <= 25 * 1024 * 1024) {
                 $fn1 = 'kartu_' . $card['id'] . '_f1_' . date('Ymd_His') . '_' . bin2hex(random_bytes(3)) . '.jpg';
-                $wmBranch = $kantorBankInfo['kantor_bank_val'] ?? 'Kantor Bank';
-                $wmCode = (string)($card['nomor_rekening'] ?: ($card['nomor_gabungan'] ?: 'INVENTARIS'));
-                $watermarkMeta = $wmBranch . ' • ' . $wmCode;
-                if (compress_and_save_uploaded_image($f1['tmp_name'], $uploadDir . $fn1, 1600, 82, true, $watermarkMeta)) {
+                if (compress_and_save_uploaded_image($f1['tmp_name'], $uploadDir . $fn1, 1600, 85, true)) {
                     if ($newF1 !== '') {
                         move_photo_to_trash('inventaris_kartu', (int)$card['id'], 1, $newF1, $verifierLabel, 'Diganti dengan Foto 1 baru');
                     }
@@ -238,10 +235,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
             $f2 = $_FILES[$file2Key];
             if ($f2['size'] <= 25 * 1024 * 1024) {
                 $fn2 = 'kartu_' . $card['id'] . '_f2_' . date('Ymd_His') . '_' . bin2hex(random_bytes(3)) . '.jpg';
-                $wmBranch2 = $kantorBankInfo['kantor_bank_val'] ?? 'Kantor Bank';
-                $wmCode2 = (string)($card['nomor_rekening'] ?: ($card['nomor_gabungan'] ?: 'INVENTARIS'));
-                $watermarkMeta2 = $wmBranch2 . ' • ' . $wmCode2;
-                if (compress_and_save_uploaded_image($f2['tmp_name'], $uploadDir . $fn2, 1600, 82, true, $watermarkMeta2)) {
+                if (compress_and_save_uploaded_image($f2['tmp_name'], $uploadDir . $fn2, 1600, 85, true)) {
                     if ($newF2 !== '') {
                         move_photo_to_trash('inventaris_kartu', (int)$card['id'], 2, $newF2, $verifierLabel, 'Diganti dengan Foto 2 baru');
                     }
@@ -708,7 +702,7 @@ $pageTitle = $card ? e($card['nama_barang']) . ' - Kartu Inventaris' : 'Kartu In
                             <div class="row g-2 mb-2" id="cardGalleryRow">
                                 <!-- SLOT FOTO 1 (UTAMA) -->
                                 <div class="<?= $hasBothPhotos ? 'col-6' : ($hasFoto1 || !$hasFoto2 ? 'col-12' : 'col-12 d-none') ?>" id="slotCol1">
-                                    <div class="item-photo-wrapper mb-0 shadow-xs d-flex position-relative <?= $photoUrl ? 'has-image' : '' ?>" id="photoWrapper" style="min-height: 185px; max-height: 250px; aspect-ratio: 4 / 5; background-color: #ffffff;">
+                                    <div class="item-photo-wrapper mb-0 shadow-xs d-flex position-relative <?= $photoUrl ? 'has-image' : '' ?>" id="photoWrapper" style="min-height: 200px; aspect-ratio: 4 / 5; background-color: #ffffff;">
                                         <span class="position-absolute top-0 start-0 m-2 badge bg-dark bg-opacity-75 text-white rounded-pill px-2 py-1" style="font-size: 0.65rem; z-index: 3;">
                                             <i class="bi bi-1-circle-fill me-0.5"></i> Foto 1 (Utama)
                                         </span>
@@ -734,7 +728,7 @@ $pageTitle = $card ? e($card['nama_barang']) . ' - Kartu Inventaris' : 'Kartu In
 
                                 <!-- SLOT FOTO 2 (DETAIL) - Hanya Tampil Jika Ada Foto 2 -->
                                 <div class="<?= $hasBothPhotos ? 'col-6' : ($hasFoto2 ? 'col-12' : 'col-6 d-none') ?>" id="slotCol2">
-                                    <div class="item-photo-wrapper mb-0 shadow-xs d-flex position-relative <?= $photoUrl2 ? 'has-image' : '' ?>" id="photoWrapper2" style="min-height: 185px; max-height: 250px; aspect-ratio: 4 / 5; background-color: #ffffff;">
+                                    <div class="item-photo-wrapper mb-0 shadow-xs d-flex position-relative <?= $photoUrl2 ? 'has-image' : '' ?>" id="photoWrapper2" style="min-height: 200px; aspect-ratio: 4 / 5; background-color: #ffffff;">
                                         <span class="position-absolute top-0 start-0 m-2 badge bg-primary text-white rounded-pill px-2 py-1" style="font-size: 0.65rem; z-index: 3;">
                                             <i class="bi bi-2-circle-fill me-0.5"></i> Foto 2 (Detail)
                                         </span>
