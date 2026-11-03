@@ -364,7 +364,7 @@ ob_start();
   <div class="row g-4 align-items-start">
 
     <!-- KOLOM KIRI: Form Pendaftaran Nama Baru & Role Akses -->
-    <div class="col-lg-5 border-end-lg pe-lg-4">
+    <div class="col-lg-5 order-2 order-lg-1 border-end-lg pe-lg-4">
       
       <div class="mb-3 pb-2 border-b border-[#E5E7EB]">
         <div class="text-[14px] font-bold text-[#1B2A3A] flex items-center gap-2">
@@ -452,7 +452,7 @@ ob_start();
     </div>
 
     <!-- KOLOM KANAN: Kamera Pemindai & Tombol Aksi -->
-    <div class="col-lg-7 ps-lg-4">
+    <div class="col-lg-7 order-1 order-lg-2 ps-lg-4">
       <div class="flex items-center justify-between mb-3">
         <span class="text-[12px] font-bold text-[#1B2A3A] uppercase tracking-wider flex items-center gap-1.5">
           <i class="bi bi-camera-video text-[#0E5C58]"></i> Pemindai Kamera &amp; Verifikasi Wajah
@@ -1009,14 +1009,21 @@ function checkHttpsEnvironment() {
   }
 }
 
-if (document.readyState === "loading") {
-  document.addEventListener("DOMContentLoaded", () => {
-    checkHttpsEnvironment();
-    setTimeout(loadModels, 200);
-  });
-} else {
+function autoInitMobileCamera() {
   checkHttpsEnvironment();
-  setTimeout(loadModels, 200);
+  setTimeout(loadModels, 150);
+  // Di layar HP/ponsel, langsung aktifkan kamera agar wajah langsung muncul di layar
+  if (window.innerWidth <= 768 && navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+    setTimeout(function() {
+      startCamera().catch(function(e) { console.log('Camera auto-start notice:', e); });
+    }, 400);
+  }
+}
+
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", autoInitMobileCamera);
+} else {
+  autoInitMobileCamera();
 }
 
 async function saveBiometrics() {
