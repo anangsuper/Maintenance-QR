@@ -551,6 +551,62 @@ body {
   box-shadow: 0 2px 8px rgba(37, 99, 235, 0.25);
 }
 
+/* Pendaftaran Face ID: tombol sekunder di bawah tombol masuk */
+.auth-divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 24px 0 16px;
+  color: #53595F;
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+.auth-divider::before,
+.auth-divider::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: var(--border-light);
+}
+
+.btn-face-enroll {
+  width: 100%;
+  min-height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 10px 16px;
+  background: #FFFFFF;
+  color: #1B2A3A;
+  border: 1.5px solid #D1D5D8;
+  border-radius: 10px;
+  font-size: 0.92rem;
+  font-weight: 600;
+  text-decoration: none;
+  transition: border-color 0.2s ease, background-color 0.2s ease, color 0.2s ease;
+}
+.btn-face-enroll i {
+  font-size: 1.15rem;
+  color: #0E5C58;
+}
+.btn-face-enroll:hover {
+  border-color: #0E5C58;
+  background: #E6F4F2;
+  color: #094340;
+}
+.btn-face-enroll:focus-visible {
+  outline: 2px solid #0E5C58;
+  outline-offset: 2px;
+}
+
+.face-enroll-hint {
+  margin: 8px 0 0;
+  text-align: center;
+  font-size: 0.76rem;
+  color: #53595F;
+}
+
 /* Card Footer */
 .auth-panel-footer {
   text-align: center;
@@ -744,13 +800,13 @@ body {
         </button>
       </form>
 
-      <!-- Panel Footer -->
-      <div class="text-center my-3 pt-2" style="border-top: 1px solid rgba(255,255,255,0.1);">
-          <a href="<?= module_url('user_biometric_enroll.php') ?>" class="d-inline-flex align-items-center gap-1 text-decoration-none py-1.5 px-3 rounded-pill text-white" style="font-size: 0.78rem; background: #0E5C58; border: 1px solid #A7E2DC;">
-            <i class="bi bi-person-bounding-box text-warning me-1"></i>
-            <span>Daftar Wajah / Face ID (Tanpa Login)</span>
-          </a>
-        </div>
+      <!-- Pendaftaran Face ID (tanpa login) -->
+      <div class="auth-divider" role="separator"><span>atau</span></div>
+      <a href="<?= e(module_url('user_biometric_enroll.php')) ?>" class="btn-face-enroll">
+        <i class="bi bi-person-bounding-box" aria-hidden="true"></i>
+        <span>Daftarkan Wajah (Face ID)</span>
+      </a>
+      <p class="face-enroll-hint">Tidak perlu login. Untuk petugas yang belum mendaftarkan wajah.</p>
 
       <div class="auth-panel-footer">
         <div>&copy; <?= date('Y') ?> PT BPR Mitratama Arthabuana</div>
