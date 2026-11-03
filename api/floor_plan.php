@@ -708,14 +708,14 @@ $modalHtml = '
 
         <!-- Tombol Aksi Cepat -->
         <div class="d-grid gap-2">
-          <a id="btnDeskScan" href="<?= module_url('assets.php') ?>" class="btn btn-success fw-semibold py-2 shadow-xs d-flex align-items-center justify-content-center gap-2">
+          <a id="btnDeskScan" href="'.e(module_url('assets.php')).'" class="btn btn-success fw-semibold py-2 shadow-xs d-flex align-items-center justify-content-center gap-2">
             <i class="bi bi-qr-code-scan"></i> Buka Kartu Kontrol / Checklist Pemeliharaan
           </a>
           <div class="d-flex gap-2">
-            <a id="btnDeskEdit" href="<?= module_url('assets.php') ?>" class="btn btn-outline-secondary btn-sm fw-semibold flex-fill py-2">
+            <a id="btnDeskEdit" href="'.e(module_url('assets.php')).'" class="btn btn-outline-secondary btn-sm fw-semibold flex-fill py-2">
               <i class="bi bi-pencil-square me-1"></i> Edit Data Meja
             </a>
-            <a id="btnDeskReplace" href="<?= module_url('assets.php') ?>" class="btn btn-outline-primary btn-sm fw-semibold flex-fill py-2">
+            <a id="btnDeskReplace" href="'.e(module_url('assets.php')).'" class="btn btn-outline-primary btn-sm fw-semibold flex-fill py-2">
               <i class="bi bi-arrow-repeat me-1"></i> Ganti Unit Baru
             </a>
           </div>
