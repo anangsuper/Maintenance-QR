@@ -440,7 +440,7 @@ $body = '
                 <i class="bi bi-camera text-[36px] d-block mb-1 text-[#9CA3AF]"></i>
                 <span class="font-medium">Belum ada foto fisik unit</span>
                 <div class="mt-2.5">
-                  <a id="modalAssetAddPhotoBtn" href="<?= module_url('asset_edit.php') ?>" class="min-h-[44px] md:min-h-[36px] px-3 bg-white border border-[#D1D5D8] hover:bg-[#F4F5F7] text-[#0E5C58] rounded-[6px] text-[12px] font-semibold transition-colors inline-flex items-center gap-1 text-decoration-none shadow-xs">
+                  <a id="modalAssetAddPhotoBtn" href="'.e(module_url('asset_edit.php')).'" class="min-h-[44px] md:min-h-[36px] px-3 bg-white border border-[#D1D5D8] hover:bg-[#F4F5F7] text-[#0E5C58] rounded-[6px] text-[12px] font-semibold transition-colors inline-flex items-center gap-1 text-decoration-none shadow-xs">
                     <i class="bi bi-plus-circle"></i> Upload Foto
                   </a>
                 </div>
@@ -448,7 +448,7 @@ $body = '
             </div>
             <div class="text-[12px] text-[#53595F] mt-2 font-medium flex justify-center items-center gap-1">
               <i class="bi bi-pc-display text-[#0E5C58]"></i> Foto Fisik Unit Perangkat
-              <a id="modalAssetEditPhotoBtn" href="<?= module_url('asset_edit.php') ?>" class="text-[#0E5C58] hover:underline text-[11px] font-semibold text-decoration-none d-none ms-1">(Ganti Foto)</a>
+              <a id="modalAssetEditPhotoBtn" href="'.e(module_url('asset_edit.php')).'" class="text-[#0E5C58] hover:underline text-[11px] font-semibold text-decoration-none d-none ms-1">(Ganti Foto)</a>
             </div>
           </div>
         </div>
@@ -475,13 +475,13 @@ $body = '
 
         <!-- Action Buttons -->
         <div class="flex flex-wrap gap-2 justify-center pt-2">
-          <a id="modalBtnPrint" href="<?= module_url('print_qr.php') ?>" target="_blank" class="h-[36px] px-3.5 bg-[#0E5C58] hover:bg-[#094340] text-white rounded-[8px] text-[13px] font-semibold transition-colors inline-flex items-center gap-1.5 text-decoration-none shadow-xs">
+          <a id="modalBtnPrint" href="'.e(module_url('print_qr.php')).'" target="_blank" class="h-[36px] px-3.5 bg-[#0E5C58] hover:bg-[#094340] text-white rounded-[8px] text-[13px] font-semibold transition-colors inline-flex items-center gap-1.5 text-decoration-none shadow-xs">
             <i class="bi bi-printer-fill"></i> Cetak Stiker
           </a>
           <button type="button" class="h-[36px] px-3 bg-white border border-[#D1D5D8] hover:bg-[#F4F5F7] text-[#1B2A3A] rounded-[8px] text-[13px] font-medium transition-colors inline-flex items-center gap-1.5 cursor-pointer shadow-xs" onclick="downloadModalQrPng()">
             <i class="bi bi-download"></i> Unduh Gambar QR (PNG)
           </button>
-          <a id="modalBtnOpenScan" href="<?= module_url('assets.php') ?>" target="_blank" class="h-[36px] px-3 bg-white border border-[#D1D5D8] hover:bg-[#F4F5F7] text-[#53595F] rounded-[8px] text-[13px] font-medium transition-colors inline-flex items-center gap-1.5 text-decoration-none shadow-xs">
+          <a id="modalBtnOpenScan" href="'.e(module_url('assets.php')).'" target="_blank" class="h-[36px] px-3 bg-white border border-[#D1D5D8] hover:bg-[#F4F5F7] text-[#53595F] rounded-[8px] text-[13px] font-medium transition-colors inline-flex items-center gap-1.5 text-decoration-none shadow-xs">
             <i class="bi bi-box-arrow-up-right"></i> Buka Halaman Scan
           </a>
         </div>
