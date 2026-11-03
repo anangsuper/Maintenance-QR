@@ -878,7 +878,7 @@ ob_start();
 
               <div class="d-flex align-items-center gap-2 mb-2">
                 <?php if (!empty($l['photo_in'])): ?>
-                  <img src="<?= e($l['photo_in']) ?>" class="rounded-circle object-fit-cover border" style="width: 36px; height: 36px; min-width: 36px; cursor: pointer;" onclick="previewPhoto(<?= htmlspecialchars(json_encode($l['photo_in']), ENT_QUOTES, 'UTF-8') ?>, <?= htmlspecialchars(json_encode($l['visitor_name']), ENT_QUOTES, 'UTF-8') ?>)">
+                  <img src="<?= e($l['photo_in']) ?>" alt="Foto Petugas Masuk" class="rounded-circle object-fit-cover border" style="width: 36px; height: 36px; min-width: 36px; cursor: pointer;" onclick="previewPhoto(<?= htmlspecialchars(json_encode($l['photo_in']), ENT_QUOTES, 'UTF-8') ?>, <?= htmlspecialchars(json_encode($l['visitor_name']), ENT_QUOTES, 'UTF-8') ?>)">
                 <?php else: ?>
                   <div class="rounded-circle bg-light d-flex align-items-center justify-content-center text-secondary border" style="width: 36px; height: 36px; min-width: 36px;">
                     <i class="bi bi-person-fill fs-5"></i>
@@ -983,7 +983,7 @@ ob_start();
                 <td>
                   <div class="fw-bold text-[#1B2A3A] d-flex align-items-center gap-1.5">
                     <?php if (!empty($l['photo_in'])): ?>
-                      <img src="<?= e($l['photo_in']) ?>" class="rounded-circle object-fit-cover border" style="width: 24px; height: 24px; cursor: pointer;" onclick="previewPhoto(<?= htmlspecialchars(json_encode($l['photo_in']), ENT_QUOTES, 'UTF-8') ?>, <?= htmlspecialchars(json_encode($l['visitor_name']), ENT_QUOTES, 'UTF-8') ?>)" title="Klik untuk lihat foto masuk">
+                      <img src="<?= e($l['photo_in']) ?>" alt="Foto Petugas Masuk" class="rounded-circle object-fit-cover border" style="width: 24px; height: 24px; cursor: pointer;" onclick="previewPhoto(<?= htmlspecialchars(json_encode($l['photo_in']), ENT_QUOTES, 'UTF-8') ?>, <?= htmlspecialchars(json_encode($l['visitor_name']), ENT_QUOTES, 'UTF-8') ?>)" title="Klik untuk lihat foto masuk">
                     <?php endif; ?>
                     <span><?= e($l['visitor_name']) ?></span>
                   </div>
@@ -1333,7 +1333,7 @@ ob_start();
             <!-- Box Foto Sudah Terambil -->
             <div id="previewSnapBox" class="d-none text-center p-3 border rounded-[10px] bg-dark text-white mt-2">
               <div class="position-relative mx-auto rounded-3 overflow-hidden bg-black shadow-inner mb-2" style="max-width: 180px; aspect-ratio: 1/1;">
-                <img id="imgSnapPreview" src="" class="w-100 h-100 object-fit-cover">
+                <img id="imgSnapPreview" src="" alt="Pratinjau Snapshot Wajah" class="w-100 h-100 object-fit-cover">
                 <div class="position-absolute top-0 end-0 m-2">
                   <span class="badge bg-success shadow-sm rounded-pill px-2 py-1"><i class="bi bi-check-lg me-1"></i> Terverifikasi</span>
                 </div>
@@ -1554,7 +1554,7 @@ ob_start();
         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
       </div>
       <div class="modal-body p-0 text-center bg-black">
-        <img id="imgBigPreview" src="" class="img-fluid" style="max-height: 80vh; width: auto;">
+        <img id="imgBigPreview" src="" alt="Pratinjau Gambar Penuh" class="img-fluid" style="max-height: 80vh; width: auto;">
       </div>
     </div>
   </div>

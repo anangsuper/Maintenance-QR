@@ -1126,7 +1126,7 @@ $body = '
         <img id="viewPhotoImg" src="" alt="Foto Unit" class="img-fluid rounded border shadow-sm" style="max-height: 480px; width: auto; object-fit: contain;">
       </div>
       <div class="modal-footer py-2 px-3 bg-light d-flex justify-content-between">
-        <a id="viewPhotoEditLink" href="#" class="btn btn-sm btn-outline-primary">
+        <a id="viewPhotoEditLink" href="javascript:;" role="button" class="btn btn-sm btn-outline-primary">
           <i class="bi bi-pencil me-1"></i> Ganti / Edit Foto
         </a>
         <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Tutup</button>
@@ -1167,7 +1167,7 @@ $body = '
                 <i class="bi bi-camera fs-1 d-block mb-1 opacity-50 text-secondary"></i>
                 <span class="fw-semibold">Belum ada foto fisik unit</span>
                 <div class="mt-2">
-                  <a id="modalAssetAddPhotoBtn" href="#" class="btn btn-sm btn-outline-primary py-1 px-2.5 fw-semibold" style="font-size: 0.75rem;">
+                  <a id="modalAssetAddPhotoBtn" href="javascript:;" role="button" class="btn btn-sm btn-outline-primary py-1 px-2.5 fw-semibold" style="font-size: 0.75rem;">
                     <i class="bi bi-plus-circle me-1"></i> Upload Foto
                   </a>
                 </div>
@@ -1175,7 +1175,7 @@ $body = '
             </div>
             <div class="small text-muted mt-2 fw-semibold d-flex justify-content-center align-items-center gap-1" style="font-size: 0.75rem;">
               <i class="bi bi-pc-display me-1 text-primary"></i> Foto Fisik Unit Perangkat
-              <a id="modalAssetEditPhotoBtn" href="#" class="btn btn-sm btn-link py-0 px-1 text-decoration-none d-none" style="font-size: 0.72rem;">(Ganti Foto)</a>
+              <a id="modalAssetEditPhotoBtn" href="javascript:;" role="button" class="btn btn-sm btn-link py-0 px-1 text-decoration-none d-none" style="font-size: 0.72rem;">(Ganti Foto)</a>
             </div>
           </div>
         </div>
@@ -1202,13 +1202,13 @@ $body = '
 
         <!-- Action Buttons -->
         <div class="d-flex flex-wrap gap-2 justify-content-center pt-2">
-          <a id="modalBtnPrint" href="#" target="_blank" class="btn btn-primary btn-sm px-3 rounded-pill fw-semibold shadow-xs">
+          <a id="modalBtnPrint" href="javascript:;" role="button" target="_blank" class="btn btn-primary btn-sm px-3 rounded-pill fw-semibold shadow-xs">
             <i class="bi bi-printer-fill me-1"></i> Cetak Stiker
           </a>
           <button type="button" class="btn btn-outline-primary btn-sm px-3 rounded-pill fw-semibold" onclick="downloadModalQrPng()">
             <i class="bi bi-download me-1"></i> Unduh Gambar QR (PNG)
           </button>
-          <a id="modalBtnOpenScan" href="#" target="_blank" class="btn btn-outline-secondary btn-sm px-3 rounded-pill">
+          <a id="modalBtnOpenScan" href="javascript:;" role="button" target="_blank" class="btn btn-outline-secondary btn-sm px-3 rounded-pill">
             <i class="bi bi-box-arrow-up-right me-1"></i> Buka Halaman Scan
           </a>
         </div>

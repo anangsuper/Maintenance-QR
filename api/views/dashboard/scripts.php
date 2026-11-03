@@ -599,12 +599,12 @@ function toggleCardPrintStatus(cardId, btnEl) {
         if (res.is_printed) {
           b.setAttribute("data-printed", "1");
           b.className = "px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#ECFDF5] text-[#059669] border border-[#A7F3D0] hover:bg-[#D1FAE5] transition-colors inline-flex items-center gap-1 cursor-pointer";
-          b.title = "Sudah dicetak pada " + (res.printed_label || "") + " — Klik untuk ubah ke Belum Dicetak";
+          b.title = "Sudah dicetak pada " + (res.printed_label || "") + " • Klik untuk ubah ke Belum Dicetak";
           b.innerHTML = "<i class=\\"bi bi-check-circle-fill\\"></i><span>Sudah Dicetak</span>";
         } else {
           b.setAttribute("data-printed", "0");
           b.className = "px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#FFFBEB] text-[#D97706] border border-[#FDE68A] hover:bg-[#FEF3C7] transition-colors inline-flex items-center gap-1 cursor-pointer";
-          b.title = "Belum pernah dicetak — Klik untuk tandai Sudah Dicetak";
+          b.title = "Belum pernah dicetak  •  Klik untuk tandai Sudah Dicetak";
           b.innerHTML = "<i class=\\"bi bi-hourglass-split\\"></i><span>Belum Dicetak</span>";
         }
       });

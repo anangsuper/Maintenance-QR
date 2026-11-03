@@ -202,7 +202,7 @@ $head = '
   padding: 8px 16px;
   border-radius: 10px;
   transition: all 0.2s ease;
-  backdrop-filter: blur(4px);
+  background-color: rgba(15, 23, 42, 0.75);
 }
 .mutation-page-header .header-actions .btn:hover {
   background: #FFFFFF;

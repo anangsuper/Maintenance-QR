@@ -408,7 +408,7 @@ ob_start();
       <div class="bg-white border border-[#E5E7EB] rounded-[10px] p-3 shadow-xs h-100 flex flex-col justify-between">
         <div class="flex items-center gap-3 mb-2.5">
           <?php if ($puPhoto !== ''): ?>
-            <img src="<?= e($puPhoto) ?>" class="rounded-full border border-[#D1D5D8] shadow-xs js-preview-face cursor-pointer shrink-0" style="width: 44px; height: 44px; object-fit: cover;" data-photo="<?= e($puPhoto) ?>" data-nama="<?= e($puNama) ?>" data-username="<?= e($puUsername) ?>" data-role="<?= e($puRole) ?>" data-id="<?= $puId ?>" data-stat="pending" data-enroll-url="<?= e(module_url('user_biometric_enroll.php', ['id' => $puId])) ?>" title="Klik untuk pratinjau wajah">
+            <img src="<?= e($puPhoto) ?>" alt="Foto Profil" class="rounded-full border border-[#D1D5D8] shadow-xs js-preview-face cursor-pointer shrink-0" style="width: 44px; height: 44px; object-fit: cover;" data-photo="<?= e($puPhoto) ?>" data-nama="<?= e($puNama) ?>" data-username="<?= e($puUsername) ?>" data-role="<?= e($puRole) ?>" data-id="<?= $puId ?>" data-stat="pending" data-enroll-url="<?= e(module_url('user_biometric_enroll.php', ['id' => $puId])) ?>" title="Klik untuk pratinjau wajah">
           <?php else: ?>
             <div class="rounded-full bg-[#FEF3C7] text-[#D97706] font-bold flex items-center justify-center shrink-0 border border-[#FCD34D]" style="width: 44px; height: 44px;">
               <i class="bi bi-person-bounding-box"></i>
@@ -829,13 +829,13 @@ ob_start();
               if (!$hasFace) {
                 $bioBadge = '<a href="'.e(module_url('user_biometric_enroll.php', ['id'=>$uId])).'" class="status-pill text-decoration-none" style="background:#F3F4F6; color:#6B7280; border:1px solid #E5E7EB;" title="Klik untuk daftarkan wajah"><i class="bi bi-camera me-1"></i> Belum Ada</a>';
               } elseif ($isFaceVerified) {
-                $thumb = $uPhoto ? '<img src="'.e($uPhoto).'" class="rounded-full border shadow-xs js-preview-face cursor-pointer me-1.5" style="width: 22px; height: 22px; object-fit: cover;" data-photo="'.e($uPhoto).'" data-nama="'.e($uNama).'" data-username="'.e($uUsername).'" data-role="'.e($uRole).'" data-id="'.$uId.'" data-stat="'.e($fStat).'" data-enroll-url="'.e(module_url('user_biometric_enroll.php', ['id'=>$uId])).'">' : '';
+                $thumb = $uPhoto ? '<img src="'.e($uPhoto).'" alt="Foto Profil" class="rounded-full border shadow-xs js-preview-face cursor-pointer me-1.5" style="width: 22px; height: 22px; object-fit: cover;" data-photo="'.e($uPhoto).'" data-nama="'.e($uNama).'" data-username="'.e($uUsername).'" data-role="'.e($uRole).'" data-id="'.$uId.'" data-stat="'.e($fStat).'" data-enroll-url="'.e(module_url('user_biometric_enroll.php', ['id'=>$uId])).'">' : '';
                 $bioBadge = '<div class="d-inline-flex items-center">'.$thumb.'<span class="status-pill js-preview-face cursor-pointer" style="background:#ECFDF5; color:#065F46; border:1px solid #A7F3D0;" data-photo="'.e($uPhoto).'" data-nama="'.e($uNama).'" data-username="'.e($uUsername).'" data-role="'.e($uRole).'" data-id="'.$uId.'" data-stat="'.e($fStat).'" data-enroll-url="'.e(module_url('user_biometric_enroll.php', ['id'=>$uId])).'"><i class="bi bi-shield-check me-1"></i> Terverifikasi</span></div>';
               } elseif ($isFacePending) {
-                $thumb = $uPhoto ? '<img src="'.e($uPhoto).'" class="rounded-full border border-warning shadow-xs js-preview-face cursor-pointer me-1.5" style="width: 22px; height: 22px; object-fit: cover;" data-photo="'.e($uPhoto).'" data-nama="'.e($uNama).'" data-username="'.e($uUsername).'" data-role="'.e($uRole).'" data-id="'.$uId.'" data-stat="'.e($fStat).'" data-enroll-url="'.e(module_url('user_biometric_enroll.php', ['id'=>$uId])).'">' : '';
+                $thumb = $uPhoto ? '<img src="'.e($uPhoto).'" alt="Foto Profil" class="rounded-full border border-warning shadow-xs js-preview-face cursor-pointer me-1.5" style="width: 22px; height: 22px; object-fit: cover;" data-photo="'.e($uPhoto).'" data-nama="'.e($uNama).'" data-username="'.e($uUsername).'" data-role="'.e($uRole).'" data-id="'.$uId.'" data-stat="'.e($fStat).'" data-enroll-url="'.e(module_url('user_biometric_enroll.php', ['id'=>$uId])).'">' : '';
                 $bioBadge = '<div class="d-inline-flex items-center">'.$thumb.'<span class="status-pill js-preview-face cursor-pointer" style="background:#FEF3C7; color:#92400E; border:1px solid #FCD34D;" data-photo="'.e($uPhoto).'" data-nama="'.e($uNama).'" data-username="'.e($uUsername).'" data-role="'.e($uRole).'" data-id="'.$uId.'" data-stat="'.e($fStat).'" data-enroll-url="'.e(module_url('user_biometric_enroll.php', ['id'=>$uId])).'"><i class="bi bi-hourglass-split me-1"></i> Menunggu</span></div>';
               } else {
-                $thumb = $uPhoto ? '<img src="'.e($uPhoto).'" class="rounded-full border border-danger shadow-xs js-preview-face cursor-pointer me-1.5" style="width: 22px; height: 22px; object-fit: cover;" data-photo="'.e($uPhoto).'" data-nama="'.e($uNama).'" data-username="'.e($uUsername).'" data-role="'.e($uRole).'" data-id="'.$uId.'" data-stat="'.e($fStat).'" data-enroll-url="'.e(module_url('user_biometric_enroll.php', ['id'=>$uId])).'">' : '';
+                $thumb = $uPhoto ? '<img src="'.e($uPhoto).'" alt="Foto Profil" class="rounded-full border border-danger shadow-xs js-preview-face cursor-pointer me-1.5" style="width: 22px; height: 22px; object-fit: cover;" data-photo="'.e($uPhoto).'" data-nama="'.e($uNama).'" data-username="'.e($uUsername).'" data-role="'.e($uRole).'" data-id="'.$uId.'" data-stat="'.e($fStat).'" data-enroll-url="'.e(module_url('user_biometric_enroll.php', ['id'=>$uId])).'">' : '';
                 $bioBadge = '<div class="d-inline-flex items-center">'.$thumb.'<span class="status-pill js-preview-face cursor-pointer" style="background:#FEF2F2; color:#991B1B; border:1px solid #FECACA;" data-photo="'.e($uPhoto).'" data-nama="'.e($uNama).'" data-username="'.e($uUsername).'" data-role="'.e($uRole).'" data-id="'.$uId.'" data-stat="'.e($fStat).'" data-enroll-url="'.e(module_url('user_biometric_enroll.php', ['id'=>$uId])).'"><i class="bi bi-x-circle me-1"></i> Ditolak</span></div>';
               }
 
@@ -997,7 +997,7 @@ ob_start();
           ?>
           <div class="p-3 mb-3 bg-[#F8FAF9] rounded-[8px] border border-[#D1D5D8]">
             <div class="flex items-center gap-3 mb-2">
-              <img src="<?= e($editPhoto) ?>" class="rounded-full border border-[#D1D5D8] shadow-xs" style="width: 44px; height: 44px; object-fit: cover;">
+              <img src="<?= e($editPhoto) ?>" alt="Foto Profil" class="rounded-full border border-[#D1D5D8] shadow-xs" style="width: 44px; height: 44px; object-fit: cover;">
               <div class="min-w-0 flex-1">
                 <div class="text-[12px] font-bold text-[#1B2A3A] truncate"><?= e($editNama) ?></div>
                 <div class="text-[11px] font-mono text-[#53595F]">Biometrik Wajah Tersimpan</div>
@@ -1296,7 +1296,7 @@ ob_start();
         </div>
 
         <div class="flex items-center gap-1.5">
-          <a id="btnPreviewEnrollAgain" href="#" class="h-[32px] px-3 bg-white border border-[#0E5C58] text-[#0E5C58] hover:bg-[#D9F1EF] rounded-[6px] text-[12px] font-semibold transition-colors inline-flex items-center gap-1 text-decoration-none shadow-xs"><i class="bi bi-camera"></i> Foto Ulang</a>
+          <a id="btnPreviewEnrollAgain" href="javascript:;" role="button" class="h-[32px] px-3 bg-white border border-[#0E5C58] text-[#0E5C58] hover:bg-[#D9F1EF] rounded-[6px] text-[12px] font-semibold transition-colors inline-flex items-center gap-1 text-decoration-none shadow-xs"><i class="bi bi-camera"></i> Foto Ulang</a>
           <button type="button" class="h-[32px] px-3 bg-white border border-[#D1D5D8] text-[#53595F] hover:bg-[#F4F5F7] rounded-[6px] text-[12px] font-semibold transition-colors" data-bs-dismiss="modal">Tutup</button>
         </div>
       </div>

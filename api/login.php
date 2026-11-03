@@ -477,7 +477,7 @@ body {
 }
 
 .input-control-styled:focus {
-  outline: none;
+  outline: none; box-shadow: 0 0 0 3px rgba(14, 92, 88, 0.25); border-color: #0E5C58;
   border-color: var(--blue-brand);
   background: #FFFFFF;
   box-shadow: 0 0 0 3.5px rgba(37, 99, 235, 0.15);

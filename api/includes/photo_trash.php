@@ -218,7 +218,7 @@ function move_photo_to_trash(
                 $cBranch = function_exists('get_cabang_from_nomor_rekening') ? get_cabang_from_nomor_rekening($kodeInv) : null;
                 $branchName = $cBranch ? ($cBranch['lokasi'] ?? $cBranch['name'] ?? 'Kantor Pusat') : 'Kantor Pusat (KPO)';
                 $ruang = trim((string)($card['ruangan'] ?? $card['lokasi'] ?? ''));
-                $cabangLokasi = $branchName . ($ruang !== '' && $ruang !== $branchName ? ' — ' . $ruang : '');
+                $cabangLokasi = $branchName . ($ruang !== '' && $ruang !== $branchName ? ' • ' . $ruang : '');
 
                 $pengguna = trim((string)($card['pengguna'] ?? 'Umum / Operasional'));
                 $sumber = trim((string)($card['sumber_perolehan'] ?? ''));
@@ -239,7 +239,7 @@ function move_photo_to_trash(
 
                 $cab = trim((string)($asset['cabang_nama'] ?? 'Kantor Pusat'));
                 $ruang = trim((string)($asset['ruangan'] ?? ''));
-                $cabangLokasi = $cab . ($ruang !== '' ? ' — ' . $ruang : '');
+                $cabangLokasi = $cab . ($ruang !== '' ? ' • ' . $ruang : '');
 
                 $kar = trim((string)($asset['karyawan_nama'] ?? 'Umum / Pool'));
                 $div = trim((string)($asset['divisi_nama'] ?? ''));

@@ -2011,7 +2011,7 @@ h1, h2, h3, h4, h5, h6,
   color: inherit !important;
 }
 
-/* ── Card Premium — elevasi saat hover ── */
+/* ── Card Premium  -  elevasi saat hover ── */
 .card {
   border: 1px solid #E2E8F0 !important;
   border-radius: 12px !important;
@@ -2027,7 +2027,7 @@ h1, h2, h3, h4, h5, h6,
   box-shadow: 0 6px 18px rgba(15, 23, 42, 0.07) !important;
 }
 
-/* ── Table — lebih bersih & readable ── */
+/* ── Table  -  lebih bersih & readable ── */
 .table thead th {
   font-size: 0.71rem !important;
   font-weight: 700 !important;
@@ -3060,4 +3060,24 @@ label.form-label,
 }
 .collapsing {
   visibility: visible !important;
+}
+
+/* =========================================================================
+ * ANTI-SLOP STANDARD (R-03): Minimum 44px Interactive Touch Targets on Mobile
+ * ========================================================================= */
+@media (max-width: 768px), (pointer: coarse) {
+  .btn, button, [role="button"], a.btn, .mobile-touch-target {
+    min-height: 44px !important;
+    min-width: 44px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+  }
+  .pagination .page-link {
+    min-height: 44px !important;
+    min-width: 44px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+  }
 }

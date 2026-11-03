@@ -465,7 +465,7 @@ ob_start();
           <i class="bi bi-shield-lock-fill text-[#0E5C58] me-1"></i>
           Buka lewat <strong>HTTPS</strong> agar kamera webcam aktif langsung di browser.
         </div>
-        <a href="#" id="linkToHttps" class="h-[28px] px-2.5 bg-[#0E5C58] text-white rounded-[6px] text-[11px] font-bold flex items-center gap-1 text-decoration-none shadow-xs text-nowrap ms-2">
+        <a href="javascript:;" id="linkToHttps" role="button" class="h-[28px] px-2.5 bg-[#0E5C58] text-white rounded-[6px] text-[11px] font-bold flex items-center gap-1 text-decoration-none shadow-xs text-nowrap ms-2">
           Buka via HTTPS <i class="bi bi-arrow-right-short"></i>
         </a>
       </div>
