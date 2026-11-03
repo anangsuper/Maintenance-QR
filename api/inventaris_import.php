@@ -382,7 +382,7 @@ $stats = [
 ];
 
 // TAHAP 1: Unggah & Pratinjau File
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'preview_file') {
+if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST' && isset($_POST['action']) && $_POST['action'] === 'preview_file') {
     verify_csrf();
 
     if (empty($_FILES['file_excel']['tmp_name']) || !is_uploaded_file($_FILES['file_excel']['tmp_name'])) {
@@ -579,7 +579,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
 }
 
 // TAHAP 2: Konfirmasi Impor (Hanya baris baru yang dibuatkan kartu, data lama tidak ditimpa)
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'confirm_import') {
+if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST' && isset($_POST['action']) && $_POST['action'] === 'confirm_import') {
     verify_csrf();
 
     $rawJson = (string)($_POST['rows_json'] ?? '');
