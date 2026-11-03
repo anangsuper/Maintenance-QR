@@ -22,7 +22,7 @@ function render_page(string $title, string $content, string $extraHead = '', str
     $sectionContext = 'MENU UTAMA';
     if (in_array($currentPage, ['assets.php', 'floor_plan.php', 'asset_add.php', 'asset_edit.php', 'asset_delete.php', 'asset_import.php', 'asset_mutation.php'], true) || ($currentPage === 'dashboard.php' && ($_GET['tab'] ?? '') === 'temuan')) {
         $sectionContext = 'ASET & OPERASIONAL IT';
-    } elseif (in_array($currentPage, ['memo_pengajuan.php', 'print_memo.php', 'inventaris_mutation.php', 'asset_mutations.php', 'print_bast.php', 'asset_disposal.php', 'print_bast_disposal.php', 'asset_gallery.php', 'inventaris_gallery.php', 'photo_trash.php', 'inventory_card.php', 'cetak_kartu.php', 'print_inventory_card.php', 'kartu_detail.php'], true) || ($currentPage === 'dashboard.php' && ($_GET['tab'] ?? '') === 'kartu')) {
+    } elseif (in_array($currentPage, ['memo_pengajuan.php', 'print_memo.php', 'inventaris_mutation.php', 'asset_mutations.php', 'print_bast.php', 'asset_disposal.php', 'print_bast_disposal.php', 'asset_gallery.php', 'inventaris_gallery.php', 'photo_trash.php', 'inventory_card.php', 'cetak_kartu.php', 'print_inventory_card.php', 'kartu_detail.php', 'inventaris_import.php'], true) || ($currentPage === 'dashboard.php' && ($_GET['tab'] ?? '') === 'kartu')) {
         $sectionContext = 'INVENTARIS & SARPRAS';
     } elseif (in_array($currentPage, ['server_room_log.php', 'server_room_print_qr.php', 'audit.php', 'monthly_history.php', 'history.php', 'print_report.php', 'audit_trail.php'], true)) {
         $sectionContext = 'KEAMANAN & AUDIT';

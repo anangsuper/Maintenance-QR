@@ -16,6 +16,9 @@
           <button type="button" class="h-[34px] px-3.5 bg-[#0E5C58] hover:bg-[#094340] text-white rounded-[6px] text-[12px] font-semibold transition-colors inline-flex items-center gap-1.5 border-0 shadow-xs cursor-pointer" data-bs-toggle="modal" data-bs-target="#addCardModal">
             <i class="bi bi-plus-lg"></i> Tambah Data Kartu
           </button>
+          <a href="'.e(module_url('inventaris_import.php')).'" class="h-[34px] px-3.5 bg-white border border-[#D1D5D8] hover:bg-[#F4F5F7] text-[#10B981] rounded-[6px] text-[12px] font-semibold transition-colors inline-flex items-center gap-1.5 text-decoration-none shadow-xs" title="Impor data kartu inventaris dari Excel / CSV (hanya membuat kartu baru, data lama tidak ditimpa)">
+            <i class="bi bi-file-earmark-arrow-up-fill text-[#10B981]"></i> Impor Excel
+          </a>
           <a href="'.e(module_url('print_inventory_card.php', ['source'=>'inventaris_kartu', 'status_cetak'=>'belum'])).'" target="_blank" class="h-[34px] px-3 bg-[#FFFBEB] border border-[#FDE68A] rounded-[6px] text-[12px] font-bold text-[#B45309] hover:bg-[#FEF3C7] transition-colors inline-flex items-center gap-1.5 text-decoration-none shadow-xs" title="Cetak massal A4 khusus kartu yang belum pernah dicetak">
             <i class="bi bi-printer-fill"></i> Cetak Belum Dicetak ('.$unprintedCardsCount.')
           </a>
@@ -40,6 +43,12 @@
               <li>
                 <a class="dropdown-item" href="'.e(module_url('print_inventory_card.php', ['export'=>'csv'])).'">
                   <i class="bi bi-file-earmark-spreadsheet text-[#53595F] me-2"></i> Spreadsheet CSV (.csv)
+                </a>
+              </li>
+              <li><hr class="dropdown-divider my-1"></li>
+              <li>
+                <a class="dropdown-item fw-semibold text-[#0E5C58]" href="'.e(module_url('inventaris_import.php')).'">
+                  <i class="bi bi-file-earmark-arrow-up-fill text-[#0E5C58] me-2"></i> Impor dari Excel (.xlsx / .csv)
                 </a>
               </li>
             </ul>
