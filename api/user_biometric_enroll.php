@@ -568,6 +568,48 @@ ob_start();
 
   </div>
 </div>
+
+<!-- MODAL POPUP TULIS NAMA SETELAH BERHASIL REKAM WAJAH -->
+<div class="modal fade" id="modalInputNamaPetugas" tabindex="-1" aria-labelledby="modalInputNamaTitle" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+  <div class="modal-dialog modal-dialog-centered modal-sm">
+    <div class="modal-content border-0 shadow-lg" style="border-radius: 14px; overflow: hidden;">
+      <div class="modal-header border-0 pb-1 pt-3 px-3.5 bg-[#FAF9F8]">
+        <div class="d-flex align-items-center gap-2">
+          <span class="w-8 h-8 rounded-full bg-[#D9F1EF] text-[#0E5C58] d-inline-flex align-items-center justify-center font-bold text-[14px]">
+            <i class="bi bi-check-circle-fill text-[#10B981]"></i>
+          </span>
+          <div>
+            <h5 class="modal-title text-[15px] font-bold text-[#1B2A3A] m-0" id="modalInputNamaTitle">Wajah Berhasil Direkam!</h5>
+            <div class="text-[11px] text-[#53595F]">Tulis nama petugas pemilik wajah ini.</div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-body px-3.5 py-3">
+        <div class="text-center mb-3">
+          <img id="modalFacePreviewImg" src="" alt="Sampel Wajah" class="w-20 h-20 rounded-full object-cover border-3 border-[#10B981] shadow-xs mx-auto mb-1.5" style="border: 3px solid #10B981;">
+          <div class="text-[11px] font-semibold text-[#0E5C58] flex items-center justify-center gap-1">
+            <i class="bi bi-patch-check-fill text-[#10B981]"></i> Sampel Muka Terverifikasi
+          </div>
+        </div>
+        <div class="mb-2">
+          <label for="modalTechNameInput" class="form-label text-[12px] font-bold text-[#1B2A3A] uppercase tracking-wider mb-1">
+            Nama Lengkap Petugas <span class="text-[#DC2626]">*</span>
+          </label>
+          <input type="text" class="form-control text-[14px] h-[46px] rounded-[8px] border-[#D1D5D8] focus:border-[#0E5C58]" id="modalTechNameInput" placeholder="Ketik nama lengkap Anda..." autocomplete="name" required enterkeyhint="done">
+          <div class="text-[11px] text-[#53595F] mt-1">Nama ini digunakan untuk verifikasi foto inventaris.</div>
+        </div>
+      </div>
+      <div class="modal-footer border-0 pt-0 pb-3 px-3.5 flex flex-col gap-2">
+        <button type="button" class="w-100 h-[44px] bg-[#0E5C58] hover:bg-[#094340] text-white rounded-[8px] text-[13px] font-bold transition-colors d-flex align-items-center justify-center gap-1.5 border-0 shadow-xs cursor-pointer" id="btnModalConfirmName" onclick="confirmNameAndSave()">
+          <i class="bi bi-save2-fill"></i> Simpan Pendaftaran Wajah
+        </button>
+        <button type="button" class="w-100 h-[36px] bg-transparent text-[#53595F] hover:text-[#1B2A3A] rounded-[8px] text-[12px] font-medium border-0 cursor-pointer" onclick="cancelModalRetake()">
+          <i class="bi bi-arrow-repeat me-1"></i> Foto Ulang Muka
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
 <?php
 $body = ob_get_clean();
 
@@ -837,6 +879,74 @@ async function startCamera() {
   }
 }
 
+function showNameModalAfterCapture() {
+  const modalEl = document.getElementById("modalInputNamaPetugas");
+  if (!modalEl) return;
+  const prevImg = document.getElementById("modalFacePreviewImg");
+  if (prevImg && capturedPhotoBase64) {
+    prevImg.src = capturedPhotoBase64;
+  }
+  const modalInput = document.getElementById("modalTechNameInput");
+  if (modalInput) {
+    modalInput.value = newTechName ? newTechName.value.trim() : "";
+  }
+  try {
+    const bsModal = new bootstrap.Modal(modalEl);
+    bsModal.show();
+    setTimeout(() => { if (modalInput) modalInput.focus(); }, 400);
+  } catch(e) {
+    console.log("Bootstrap modal notice:", e);
+    // Fallback jika bootstrap bundle belum siap
+    const entered = prompt("Wajah berhasil direkam! Masukkan Nama Lengkap Petugas:");
+    if (entered && entered.trim()) {
+      if (newTechName) newTechName.value = entered.trim();
+      saveBiometrics();
+    }
+  }
+}
+
+function confirmNameAndSave() {
+  const modalInput = document.getElementById("modalTechNameInput");
+  const val = modalInput ? modalInput.value.trim() : "";
+  if (!val) {
+    alert("Mohon masukkan Nama Lengkap Petugas terlebih dahulu.");
+    if (modalInput) modalInput.focus();
+    return;
+  }
+  if (newTechName) newTechName.value = val;
+
+  const modalEl = document.getElementById("modalInputNamaPetugas");
+  if (modalEl) {
+    const bsModal = bootstrap.Modal.getInstance(modalEl);
+    if (bsModal) bsModal.hide();
+  }
+
+  saveBiometrics();
+}
+
+function cancelModalRetake() {
+  const modalEl = document.getElementById("modalInputNamaPetugas");
+  if (modalEl) {
+    const bsModal = bootstrap.Modal.getInstance(modalEl);
+    if (bsModal) bsModal.hide();
+  }
+  resetForNextEnrollment();
+  startCamera();
+}
+
+// Support tombol Enter di input modal
+document.addEventListener("DOMContentLoaded", () => {
+  const modalInput = document.getElementById("modalTechNameInput");
+  if (modalInput) {
+    modalInput.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        confirmNameAndSave();
+      }
+    });
+  }
+});
+
 function calculateEAR(eye) {
   const distA = Math.hypot(eye[1].x - eye[5].x, eye[1].y - eye[5].y);
   const distB = Math.hypot(eye[2].x - eye[4].x, eye[2].y - eye[4].y);
@@ -863,8 +973,13 @@ function completeEnrollment(descriptor) {
   captureSnapshot();
 
   if (btnSnapNow) btnSnapNow.classList.add("d-none");
-  setStatus("success", '<i class="bi bi-check-circle-fill me-1"></i> Foto wajah terambil! Tekan <strong>"Simpan Foto Profil & Wajah"</strong> di bawah.');
+  setStatus("success", '<i class="bi bi-check-circle-fill me-1"></i> Wajah berhasil direkam! Silakan lengkapi nama petugas.');
   btnSave.classList.remove("d-none");
+
+  // Jika nama belum diisi (alur mobile cepat: rekam muka dulu baru tulis nama), munculkan modal/popup nama
+  if (!enteredName && activeTargetUserId <= 0) {
+    setTimeout(showNameModalAfterCapture, 500);
+  }
 }
 
 async function forceCaptureBiometric() {
