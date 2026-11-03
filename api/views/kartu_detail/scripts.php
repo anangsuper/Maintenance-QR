@@ -369,51 +369,78 @@
             }
         }
 
-        function handleModalPhotoSubmit(form) {
+        function startUploadPhotoWithFaceVerify() {
             var f1Cam = document.getElementById('modalInputCam1');
             var f1File = document.getElementById('modalInputFile1');
             var f2Cam = document.getElementById('modalInputCam2');
             var f2File = document.getElementById('modalInputFile2');
             var chkDel1 = document.getElementById('modalChkHapus1');
             var chkDel2 = document.getElementById('modalChkHapus2');
-            var uploaderInput = document.getElementById('modalUploaderName');
 
             var hasF1 = (f1Cam && f1Cam.files && f1Cam.files.length > 0) || (f1File && f1File.files && f1File.files.length > 0);
             var hasF2 = (f2Cam && f2Cam.files && f2Cam.files.length > 0) || (f2File && f2File.files && f2File.files.length > 0);
             var hasDel = (chkDel1 && chkDel1.checked) || (chkDel2 && chkDel2.checked);
 
             if (!hasF1 && !hasF2 && !hasDel) {
-                alert('Silakan ambil foto menggunakan kamera atau pilih dari galeri terlebih dahulu!');
-                return false;
+                alert('Silakan ambil foto barang menggunakan tombol "Buka Kamera" atau "Pilih dari Galeri" terlebih dahulu sebelum verifikasi wajah!');
+                return;
             }
 
-            if (uploaderInput && !uploaderInput.value.trim()) {
-                alert('Silakan masukkan nama Anda sebagai petugas/pengunggah foto barang.');
-                uploaderInput.focus();
-                return false;
+            var uploadModalEl = document.getElementById('modalUploadFotoBarang');
+            if (uploadModalEl) {
+                try {
+                    var m = (typeof bootstrap !== 'undefined' && bootstrap.Modal)
+                        ? (bootstrap.Modal.getInstance ? bootstrap.Modal.getInstance(uploadModalEl) : null)
+                        : null;
+                    if (m) m.hide();
+                } catch(e) {}
             }
 
-            var btn = document.getElementById('btnSubmitModalUpload');
-            if (btn) {
-                btn.disabled = true;
-                btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1.5" role="status" aria-hidden="true"></span> Menyimpan &amp; Mengunggah Foto...';
+            window.faceAuthMode = 'upload';
+            var titleEl = document.getElementById('bioModalTitle');
+            var subEl = document.getElementById('bioModalSub');
+            if (titleEl) titleEl.textContent = 'Verifikasi Wajah Petugas (Unggah Foto)';
+            if (subEl) subEl.textContent = 'Arahkan wajah Anda ke kamera untuk validasi foto barang';
+
+            openBiometricModal();
+        }
+
+        function startDeletePhotoWithFaceVerify() {
+            var delModalEl = document.getElementById('modalConfirmDeletePhoto');
+            if (delModalEl) {
+                try {
+                    var m = (typeof bootstrap !== 'undefined' && bootstrap.Modal)
+                        ? (bootstrap.Modal.getInstance ? bootstrap.Modal.getInstance(delModalEl) : null)
+                        : null;
+                    if (m) m.hide();
+                } catch(e) {}
             }
-            return true;
+
+            window.faceAuthMode = 'delete';
+            var titleEl = document.getElementById('bioModalTitle');
+            var subEl = document.getElementById('bioModalSub');
+            if (titleEl) titleEl.textContent = 'Verifikasi Wajah Petugas (Hapus Foto)';
+            if (subEl) subEl.textContent = 'Arahkan wajah Anda ke kamera untuk konfirmasi penghapusan foto';
+
+            openBiometricModal();
+        }
+
+        function handleModalPhotoSubmit(form) {
+            var bioVer = document.getElementById('modalBioVerified');
+            if (bioVer && bioVer.value === '1') {
+                return true;
+            }
+            startUploadPhotoWithFaceVerify();
+            return false;
         }
 
         function handleConfirmDeletePhotoSubmit(form) {
-            var uploaderInput = document.getElementById('delModalUploaderName');
-            if (uploaderInput && !uploaderInput.value.trim()) {
-                alert('Silakan masukkan nama Anda untuk memindahkan foto ke Folder Sampah.');
-                uploaderInput.focus();
-                return false;
+            var bioVer = document.getElementById('delBioVerified');
+            if (bioVer && bioVer.value === '1') {
+                return true;
             }
-            var btn = document.getElementById('btnSubmitDeletePhoto');
-            if (btn) {
-                btn.disabled = true;
-                btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1.5" role="status" aria-hidden="true"></span> Memindahkan ke Sampah...';
-            }
-            return true;
+            startDeletePhotoWithFaceVerify();
+            return false;
         }
 
         function setDeleteTargetChoice(val) {
@@ -563,7 +590,7 @@
             if (f) f.submit();
         }
 
-        function closeBiometricModal() {
+        function closeBiometricModal(reopenPrevious) {
             bioCompleted = true;
             if (bioTrackingTimer) {
                 cancelAnimationFrame(bioTrackingTimer);
@@ -571,12 +598,27 @@
             }
             if (bioVideoStream) {
                 try {
-                    bioVideoStream.getTracks().forEach(t => t.stop());
+                    bioVideoStream.getTracks().forEach(function(t) { t.stop(); });
                 } catch(e) {}
                 bioVideoStream = null;
             }
             if (bioModalInstance) {
                 bioModalInstance.hide();
+            }
+            if (reopenPrevious) {
+                if (window.faceAuthMode === 'upload') {
+                    var upEl = document.getElementById('modalUploadFotoBarang');
+                    if (upEl && typeof bootstrap !== 'undefined' && bootstrap.Modal) {
+                        var mUp = bootstrap.Modal.getOrCreateInstance(upEl);
+                        if (mUp) mUp.show();
+                    }
+                } else if (window.faceAuthMode === 'delete') {
+                    var delEl = document.getElementById('modalConfirmDeletePhoto');
+                    if (delEl && typeof bootstrap !== 'undefined' && bootstrap.Modal) {
+                        var mDel = bootstrap.Modal.getOrCreateInstance(delEl);
+                        if (mDel) mDel.show();
+                    }
+                }
             }
         }
 
@@ -719,10 +761,17 @@
 
             // JIKA DALAM MODE HAPUS FOTO
             if (window.faceAuthMode === 'delete') {
-                document.getElementById("delBioVerified").value = "1";
-                document.getElementById("delBioUserId").value = user.id;
-                document.getElementById("delBioUserName").value = user.nama;
-                document.getElementById("delBioConfidence").value = conf;
+                var dVer = document.getElementById("delBioVerified");
+                var dUid = document.getElementById("delBioUserId");
+                var dUser = document.getElementById("delBioUserName");
+                var dConf = document.getElementById("delBioConfidence");
+                var dPhoto = document.getElementById("delBioPhoto");
+                var snapDel = captureBioSnapshot(videoEl);
+                if (dVer) dVer.value = "1";
+                if (dUid) dUid.value = user.id;
+                if (dUser) dUser.value = user.nama;
+                if (dConf) dConf.value = conf;
+                if (dPhoto) dPhoto.value = snapDel;
 
                 if (matchedNameEl) matchedNameEl.textContent = user.nama;
                 if (matchConfEl) matchConfEl.textContent = conf + "% Cocok";
@@ -730,47 +779,72 @@
 
                 if (statusBox) {
                     statusBox.className = "alert alert-success py-2 px-3 small fw-bold mb-2";
-                    statusBox.innerHTML = '<i class="bi bi-check-circle-fill me-1"></i> Otorisasi Hapus Diterima: <strong>' + user.nama + '</strong>! Mengosongkan foto...';
+                    statusBox.innerHTML = '<i class="bi bi-check-circle-fill me-1"></i> Otorisasi Hapus Diterima: <strong>' + user.nama + '</strong>! Memindahkan foto ke Sampah...';
                 }
 
                 if (bioVideoStream) {
-                    try { bioVideoStream.getTracks().forEach(t => t.stop()); } catch(e) {}
+                    try { bioVideoStream.getTracks().forEach(function(t) { t.stop(); }); } catch(e) {}
                 }
 
-                setTimeout(() => {
-                    document.getElementById("deletePhotoForm").submit();
+                var btnDel = document.getElementById('btnSubmitDeletePhoto');
+                if (btnDel) {
+                    btnDel.disabled = true;
+                    btnDel.innerHTML = '<span class="spinner-border spinner-border-sm me-1.5"></span> Menghapus Foto...';
+                }
+
+                setTimeout(function() {
+                    var fDel = document.getElementById("deletePhotoForm");
+                    if (fDel) fDel.submit();
                 }, 600);
                 return;
             }
 
-            document.getElementById("bioVerified").value = "1";
-            document.getElementById("bioUserId").value = user.id;
-            document.getElementById("bioUserName").value = user.nama;
-            document.getElementById("bioConfidence").value = conf;
-            
-            const snap = captureBioSnapshot(videoEl);
-            document.getElementById("bioPhotoSnap").value = snap;
+            // JIKA DALAM MODE UNGGAH FOTO BARANG (DEFAULT / UPLOAD)
+            var mVer = document.getElementById("modalBioVerified");
+            var mUid = document.getElementById("modalBioUserId");
+            var mUser = document.getElementById("modalBioUserName");
+            var mConf = document.getElementById("modalBioConfidence");
+            var mPhoto = document.getElementById("modalBioPhoto");
+            var snapUpload = captureBioSnapshot(videoEl);
+            if (mVer) mVer.value = "1";
+            if (mUid) mUid.value = user.id;
+            if (mUser) mUser.value = user.nama;
+            if (mConf) mConf.value = conf;
+            if (mPhoto) mPhoto.value = snapUpload;
+
+            // Fallback input lama jika ada
+            var bVer = document.getElementById("bioVerified");
+            var bUid = document.getElementById("bioUserId");
+            var bUser = document.getElementById("bioUserName");
+            var bConf = document.getElementById("bioConfidence");
+            var bSnap = document.getElementById("bioPhotoSnap");
+            if (bVer) bVer.value = "1";
+            if (bUid) bUid.value = user.id;
+            if (bUser) bUser.value = user.nama;
+            if (bConf) bConf.value = conf;
+            if (bSnap) bSnap.value = snapUpload;
 
             if (matchedNameEl) matchedNameEl.textContent = user.nama;
             if (matchConfEl) matchConfEl.textContent = conf + "% Cocok";
             if (successOverlay) successOverlay.classList.remove("d-none");
             if (statusBox) {
                 statusBox.className = "alert alert-success py-2 px-3 small fw-bold mb-2";
-                statusBox.innerHTML = '<i class="bi bi-check-circle-fill me-1"></i> Wajah Terverifikasi: <strong>' + user.nama + '</strong>! Menyimpan foto...';
+                statusBox.innerHTML = '<i class="bi bi-check-circle-fill me-1"></i> Wajah Terverifikasi: <strong>' + user.nama + '</strong>! Menyimpan foto ke server...';
             }
 
             if (bioVideoStream) {
-                try { bioVideoStream.getTracks().forEach(t => t.stop()); } catch(e) {}
+                try { bioVideoStream.getTracks().forEach(function(t) { t.stop(); }); } catch(e) {}
             }
 
-            const btn = document.getElementById('btnMulaiScanWajah');
-            if (btn) {
-                btn.disabled = true;
-                btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Menyimpan Foto ke Server...';
+            var btnSubmit = document.getElementById('btnSubmitModalUpload');
+            if (btnSubmit) {
+                btnSubmit.disabled = true;
+                btnSubmit.innerHTML = '<span class="spinner-border spinner-border-sm me-1.5"></span> Menyimpan Foto...';
             }
 
-            setTimeout(() => {
-                document.getElementById("uploadPhotoForm").submit();
+            setTimeout(function() {
+                var fUpload = document.getElementById("modalUploadPhotoForm") || document.getElementById("uploadPhotoForm");
+                if (fUpload) fUpload.submit();
             }, 600);
         }
 

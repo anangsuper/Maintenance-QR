@@ -174,6 +174,9 @@
                     <input type="hidden" name="action" value="upload_foto">
                     <input type="hidden" name="face_verified" id="modalBioVerified" value="0">
                     <input type="hidden" name="verifier_name" id="modalBioUserName" value="">
+                    <input type="hidden" name="verifier_user_id" id="modalBioUserId" value="0">
+                    <input type="hidden" name="verifier_confidence" id="modalBioConfidence" value="0">
+                    <input type="hidden" name="verifier_photo" id="modalBioPhoto" value="">
 
                     <div class="modal-body p-3 p-md-4 bg-light">
                         <!-- Petunjuk Ramah & Jelas -->
@@ -284,32 +287,27 @@
                             </div>
                         </div>
 
-                        <!-- Identitas Pengunggah / Petugas Lapangan -->
+                        <!-- Otorisasi Biometrik Wajah (Muka) Staf / Teknisi -->
                         <div class="card border rounded-3 p-3 bg-white shadow-2xs mt-3">
-                            <label class="form-label small fw-bold text-dark mb-1">
-                                <i class="bi bi-person-fill text-primary me-1"></i> Nama Petugas / Pengunggah Foto <span class="text-danger">*</span>
-                            </label>
-                            <?php if (is_logged_in()): ?>
-                                <div class="d-flex align-items-center gap-2 p-2 bg-success bg-opacity-10 border border-success border-opacity-25 rounded-3">
-                                    <i class="bi bi-patch-check-fill text-success fs-5"></i>
-                                    <div class="min-w-0">
-                                        <div class="fw-bold text-dark small" style="font-size: 0.82rem;"><?= e(current_user_name()) ?></div>
-                                        <div class="text-secondary" style="font-size: 0.70rem;">Tersimpan resmi via sesi akun (<?= e(current_user_role()) ?>)</div>
+                            <div class="d-flex align-items-center gap-3">
+                                <div class="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0" style="width: 44px; height: 44px; background-color: #E6F4F1; color: #0E5C58;">
+                                    <i class="bi bi-person-bounding-box fs-5"></i>
+                                </div>
+                                <div class="min-w-0">
+                                    <div class="fw-bold text-dark small mb-0.5" style="font-size: 0.82rem;">Otorisasi Wajah Staf / Teknisi (Biometrik AI)</div>
+                                    <div class="text-secondary" style="font-size: 0.72rem; line-height: 1.35;">
+                                        Tidak perlu mengetik nama. Cukup arahkan wajah Anda ke kamera saat menekan tombol simpan untuk memvalidasi identitas petugas secara resmi.
                                     </div>
                                 </div>
-                                <input type="hidden" name="uploader_name" value="<?= e(current_user_name()) ?>">
-                            <?php else: ?>
-                                <input type="text" name="uploader_name" id="modalUploaderName" class="form-control" placeholder="Contoh: Budi Santoso (Teller KC Batulicin)" value="<?= e($_SESSION['last_uploader_name'] ?? '') ?>" required>
-                                <div class="form-text text-muted" style="font-size: 0.70rem;">Masukkan nama Anda beserta unit kerja / cabang agar tercatat resmi di paspor inventaris.</div>
-                            <?php endif; ?>
+                            </div>
                         </div>
                     </div>
 
                     <div class="modal-footer py-2.5 px-4 bg-light d-flex justify-content-between align-items-center">
                         <button type="button" class="btn btn-sm btn-light border rounded-pill px-3" data-bs-dismiss="modal">Batal</button>
-                        <button type="submit" id="btnSubmitModalUpload" class="btn btn-sm rounded-pill fw-bold px-4 text-white shadow-xs d-inline-flex align-items-center gap-1.5" style="background-color: #0E5C58; border-color: #0E5C58;">
-                            <i class="bi bi-cloud-arrow-up-fill"></i>
-                            <span>Simpan Foto Barang</span>
+                        <button type="button" id="btnSubmitModalUpload" class="btn btn-sm rounded-pill fw-bold px-4 text-white shadow-xs d-inline-flex align-items-center gap-2" style="background-color: #0E5C58; border-color: #0E5C58;" onclick="startUploadPhotoWithFaceVerify()">
+                            <i class="bi bi-person-bounding-box fs-6"></i>
+                            <span>Scan Wajah &amp; Simpan Foto</span>
                         </button>
                     </div>
                 </form>
@@ -336,6 +334,9 @@
                     <input type="hidden" name="delete_target" id="delPhotoTargetInput" value="all">
                     <input type="hidden" name="face_verified" id="delBioVerified" value="0">
                     <input type="hidden" name="verifier_name" id="delBioUserName" value="">
+                    <input type="hidden" name="verifier_user_id" id="delBioUserId" value="0">
+                    <input type="hidden" name="verifier_confidence" id="delBioConfidence" value="0">
+                    <input type="hidden" name="verifier_photo" id="delBioPhoto" value="">
 
                     <div class="modal-body p-3.5 text-start">
                         <div class="alert alert-success bg-success bg-opacity-10 border-success border-opacity-25 rounded-3 py-2 px-3 mb-3">
@@ -365,20 +366,22 @@
                             </label>
                         </div>
 
-                        <!-- Identitas Pengunggah jika belum login -->
-                        <?php if (is_logged_in()): ?>
-                            <input type="hidden" name="uploader_name" value="<?= e(current_user_name()) ?>">
-                        <?php else: ?>
-                            <div class="mb-3">
-                                <label class="form-label small fw-bold text-dark">Nama Anda / Petugas <span class="text-danger">*</span></label>
-                                <input type="text" name="uploader_name" id="delModalUploaderName" class="form-control form-control-sm" placeholder="Contoh: Budi Santoso (Teller)" required>
+                        <!-- Otorisasi Biometrik Wajah Hapus -->
+                        <div class="card border rounded-3 p-2.5 bg-white shadow-2xs mb-3">
+                            <div class="d-flex align-items-center gap-2.5">
+                                <div class="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0" style="width: 36px; height: 36px; background-color: #FEE2E2; color: #DC2626;">
+                                    <i class="bi bi-person-bounding-box fs-6"></i>
+                                </div>
+                                <div class="text-secondary" style="font-size: 0.72rem; line-height: 1.35;">
+                                    Wajib otorisasi wajah staf resmi untuk memindahkan foto ke Folder Sampah (tanpa perlu mengetik nama).
+                                </div>
                             </div>
-                        <?php endif; ?>
+                        </div>
 
                         <div class="d-grid gap-2">
-                            <button type="submit" id="btnSubmitDeletePhoto" class="btn btn-danger btn-sm rounded-pill fw-bold py-2 shadow-xs d-flex align-items-center justify-content-center gap-1.5">
-                                <i class="bi bi-trash3-fill"></i>
-                                <span>Pindahkan ke Folder Sampah</span>
+                            <button type="button" id="btnSubmitDeletePhoto" class="btn btn-danger btn-sm rounded-pill fw-bold py-2 shadow-xs d-flex align-items-center justify-content-center gap-1.5" onclick="startDeletePhotoWithFaceVerify()">
+                                <i class="bi bi-person-bounding-box"></i>
+                                <span>Scan Wajah &amp; Hapus Foto</span>
                             </button>
                             <button type="button" class="btn btn-light btn-xs py-1.5 rounded-pill text-muted border" data-bs-dismiss="modal">
                                 Batal
@@ -400,11 +403,11 @@
                     <div>
                         <h6 class="modal-title fw-bold text-white mb-0 d-flex align-items-center gap-2">
                             <i class="bi bi-person-bounding-box text-primary me-2"></i>
-                            <span>Verifikasi Biometrik Wajah Teknisi</span>
+                            <span id="bioModalTitle">Verifikasi Biometrik Wajah</span>
                         </h6>
-                        <small class="text-white-50">Arahkan wajah Anda ke kamera</small>
+                        <small class="text-white-50" id="bioModalSub">Arahkan wajah Anda ke kamera</small>
                     </div>
-                    <button type="button" class="btn-close btn-close-white" onclick="closeBiometricModal()"></button>
+                    <button type="button" class="btn-close btn-close-white" onclick="closeBiometricModal(true)"></button>
                 </div>
 
                 <div class="modal-body p-3 text-center position-relative">
@@ -455,13 +458,10 @@
                 </div>
 
                 <div class="modal-footer border-secondary border-opacity-25 py-2 px-3 d-flex justify-content-between align-items-center">
-                    <button type="button" class="btn btn-outline-secondary btn-sm rounded-pill px-3" onclick="closeBiometricModal()">
+                    <button type="button" class="btn btn-outline-secondary btn-sm rounded-pill px-3" onclick="closeBiometricModal(true)">
                         Batal
                     </button>
                     <div class="d-flex align-items-center gap-2">
-                        <button type="button" class="btn btn-link btn-sm text-danger text-decoration-none p-0" style="font-size: 0.75rem;" onclick="bypassBiometricAndSubmit()">
-                            Lewati Manual
-                        </button>
                         <button type="button" id="btnManualTriggerFace" class="btn btn-primary btn-sm rounded-pill px-3 fw-bold" onclick="triggerInstantFaceVerify()">
                             <i class="bi bi-camera me-1"></i> Verifikasi Sekarang
                         </button>

@@ -98,26 +98,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
         $deleteTarget = 'all';
     }
 
-    $uploaderName = trim((string)($_POST['uploader_name'] ?? ''));
     $isAuthorized = false;
     $verifierLabel = '';
 
     if ($faceVerified === '1' && !empty($verifierName)) {
         $isAuthorized = true;
         $verifierLabel = $verifierName . ($verifierConfidence > 0 ? " ({$verifierConfidence}% Cocok - Scan Wajah)" : " (Scan Wajah)");
-    } elseif (is_logged_in()) {
-        $staffRole = is_admin() ? 'Sesi Admin' : (is_hrd() ? 'Sesi SDM & Umum' : 'Sesi Petugas');
-        $staffName = current_user_name() ?: ($uploaderName ?: 'Staf Bank Mitra');
+    } elseif (is_logged_in() && (is_admin() || is_hrd())) {
+        $staffRole = is_admin() ? 'Sesi Admin' : 'Sesi SDM & Umum';
+        $staffName = current_user_name() ?: 'Administrator';
         $verifierLabel = $staffName . " ({$staffRole})";
         $isAuthorized = true;
-    } elseif (!empty($uploaderName) || !empty($verifierName)) {
-        $rawName = !empty($uploaderName) ? $uploaderName : $verifierName;
-        $isAuthorized = true;
-        $verifierLabel = $rawName . " (Unggah Mandiri)";
     }
 
     if (!$isAuthorized) {
-        $uploadError = "Silakan masukkan nama Anda untuk memindahkan foto ke Folder Sampah.";
+        $uploadError = "Penghapusan foto barang ditolak! Wajib diverifikasi melalui pemindaian biometrik wajah staf resmi PT BPR Mitratama Arthabuana.";
     } else {
         try {
             $curF1 = trim((string)($card['foto'] ?? ''));
@@ -165,28 +160,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     $verifierConfidence = (int)($_POST['verifier_confidence'] ?? 0);
     $verifierPhotoSnap = trim((string)($_POST['verifier_photo'] ?? ''));
 
-    $uploaderName = trim((string)($_POST['uploader_name'] ?? ''));
     $isAuthorized = false;
     $verifierLabel = '';
 
     if ($faceVerified === '1' && !empty($verifierName)) {
         $isAuthorized = true;
         $verifierLabel = $verifierName . ($verifierConfidence > 0 ? " ({$verifierConfidence}% Cocok - Scan Wajah)" : " (Scan Wajah)");
-    } elseif (is_logged_in()) {
-        $staffRole = is_admin() ? 'Sesi Admin' : (is_hrd() ? 'Sesi SDM & Umum' : 'Sesi Petugas');
-        $staffName = current_user_name() ?: ($uploaderName ?: 'Staf Bank Mitra');
+    } elseif (is_logged_in() && (is_admin() || is_hrd())) {
+        $staffRole = is_admin() ? 'Sesi Admin' : 'Sesi SDM & Umum';
+        $staffName = current_user_name() ?: 'Administrator';
         $verifierLabel = $staffName . " ({$staffRole})";
         $verifierName = $staffName;
         $isAuthorized = true;
-    } elseif (!empty($uploaderName) || !empty($verifierName)) {
-        $rawName = !empty($uploaderName) ? $uploaderName : $verifierName;
-        $isAuthorized = true;
-        $verifierLabel = $rawName . " (Unggah Mandiri)";
-        $verifierName = $rawName;
     }
 
     if (!$isAuthorized) {
-        $uploadError = "Silakan masukkan nama Anda sebagai petugas/pengunggah foto barang.";
+        $uploadError = "Perubahan foto barang ditolak! Wajib diverifikasi melalui pemindaian biometrik wajah staf resmi PT BPR Mitratama Arthabuana.";
     } else {
         $uploadDir = __DIR__ . '/uploads/assets/';
         if (!is_dir($uploadDir)) {
