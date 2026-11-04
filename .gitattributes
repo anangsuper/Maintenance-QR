@@ -1,0 +1,39 @@
+# ==============================================================================
+# Git Attributes - PT BPR Mitratama Arthabuana
+# ==============================================================================
+
+# Set default behavior to automatically normalize line endings
+* text=auto eol=lf
+
+# Explicit text files
+*.php text eol=lf diff=php
+*.js text eol=lf
+*.css text eol=lf
+*.html text eol=lf
+*.json text eol=lf
+*.sql text eol=lf
+*.md text eol=lf
+*.conf text eol=lf
+*.htaccess text eol=lf
+*.bat text eol=crlf
+*.ps1 text eol=crlf
+
+# Binary files
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.pdf binary
+*.woff binary
+*.woff2 binary
+*.ttf binary
+*.pptx binary
+
+# Exclude sensitive / build files from git archive export
+.gitattributes export-ignore
+.gitignore export-ignore
+.github export-ignore
+scratch export-ignore
+deploy.ps1 export-ignore
+deploy.bat export-ignore

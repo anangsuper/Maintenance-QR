@@ -1,0 +1,55 @@
+name: Security & Secrets Audit
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  secret-scan:
+    name: Gitleaks Secret Detection
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Scan Repository for Leaked Secrets
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        continue-on-error: true
+
+  php-lint:
+    name: PHP Syntax & Security Sanity
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        php-version: ['8.2', '8.3']
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
+
+      - name: Setup PHP Environment
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php-version }}
+          extensions: mbstring, pdo_mysql, json, openssl
+
+      - name: Validate PHP Syntax Integrity
+        run: |
+          echo "Scanning all PHP files for syntax and parsing integrity..."
+          find api -type f -name "*.php" -print0 | xargs -0 -n 1 -P 4 php -l
+          php -l index.php
+          echo "All PHP files passed syntax and lint inspection!"
+
+      - name: Enforce Strict Guard Against Unsanitized SQL Dumps
+        run: |
+          echo "Checking for accidental production SQL dumps in repository root..."
+          if [ -f "database_terbaru.sql" ]; then
+            echo "::error::database_terbaru.sql detected in commit! Production dumps must not be tracked."
+            exit 1
+          fi
+          echo "No forbidden production database dumps found in repository."

@@ -1,0 +1,34 @@
+# ==============================================================================
+# Hardening Folder Uploads - PT BPR Mitratama Arthabuana
+# Mencegah eksekusi script berbahaya / Web Shell / RCE di direktori upload
+# ==============================================================================
+
+# 1. Matikan Directory Browsing dan eksekusi CGI
+Options -Indexes -ExecCGI
+
+# 2. Matikan engine PHP di dalam folder upload
+<IfModule mod_php.c>
+    php_flag engine off
+</IfModule>
+<IfModule mod_php7.c>
+    php_flag engine off
+</IfModule>
+<IfModule mod_php8.c>
+    php_flag engine off
+</IfModule>
+
+# 3. Blokir total eksekusi semua file script / executable
+<FilesMatch "(?i)\.(php|phtml|php3|php4|php5|php7|php8|phps|phar|inc|cgi|pl|py|sh|bash|exe|bat|cmd|com|js|jsp|asp|aspx)$">
+    <IfModule !mod_authz_core.c>
+        Order deny,allow
+        Deny from all
+    </IfModule>
+    <IfModule mod_authz_core.c>
+        Require all denied
+    </IfModule>
+</FilesMatch>
+
+# 4. Header Keamanan
+<IfModule mod_headers.c>
+    Header set X-Content-Type-Options "nosniff"
+</IfModule>

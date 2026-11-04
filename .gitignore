@@ -1,27 +1,36 @@
-# ===================================================
-# SECURITY & SENSITIVE CREDENTIALS (DO NOT UPLOAD)
-# ===================================================
-# Local configurations & secrets
+# ==============================================================================
+# CYBERSECURITY HARDENED GITIGNORE - PT BPR Mitratama Arthabuana
+# Memenuhi Standar Regulasi OJK POJK No. 75/POJK.03/2016 & ISO 27001
+# Mencegah Kebocoran Kredensial, Database, Biometrik, dan Informasi Rahasia
+# ==============================================================================
+
+# 1. Konfigurasi Lokal & Kredensial Rahasia (DILARANG KERAS DI-COMMIT)
 config.local.php
 config.*.php
 !config.local.example.php
+!config.hostinger.example.php
 *.local.php
 *.local.env
 *.local.json
 
-# Environment Variables & Secrets
+# 2. Environment Variables & Secret Tokens
 .env
 .env.*
 !.env.example
 *.env
 
-# Google Cloud Service Account & Private Keys
+# 3. Google Cloud Service Account & Private Keys
 *.pem
 *.key
 *.crt
 *.pfx
 *.p12
 *.cer
+*.json
+!manifest.json
+!api/manifest.json
+!api/manifest.webmanifest
+!vercel.json
 credentials*.json
 client_secret*.json
 service-account*.json
@@ -32,7 +41,51 @@ oauth*.json
 *_credential.json
 token.json
 
-# Temporary Cache, Session, and Runtime Files
+# 4. Database Dumps, Cadangan Data & Migrasi Data Riil (CRITICAL PRIVACY)
+database_terbaru.sql
+database_*.sql
+*.sql
+!sql/00_master_schema.sql
+!sql/01_qr_maintenance.sql
+!sql/02_inventaris_kartu.sql
+!sql/hostinger_database_schema.sql
+sql/03_import_fbd3.sql
+sql/04_import_user_assets.sql
+sql/05_full_database_migration.sql
+sql/hostinger_full_data_migration.sql
+*.sqlite
+*.sqlite3
+*.db
+*.sql.gz
+*.sql.bak
+*.bak
+*.backup
+*.dump
+backup.xlsx
+backups/
+storage/
+
+# 5. File Data & Master Spreadsheet Internal
+*.xlsx
+*.xls
+*.csv
+fbd3.xls
+fbd3_data.json
+api/fbd3_data.json
+scratch_data.xlsx
+
+# 6. Direktori Unggahan Pengguna & Foto Biometrik (PII Protection)
+api/uploads/*
+!api/uploads/.gitkeep
+!api/uploads/.htaccess
+!api/uploads/index.php
+!api/uploads/*.pdf
+!api/uploads/*.pptx
+api/uploads/assets/*
+!api/uploads/assets/.gitkeep
+api/uploads/uploads/
+
+# 7. File Cache, Sesi Sementara, dan Log
 *.tmp
 *.temp
 *.cache
@@ -46,25 +99,7 @@ gs_cache_*.json
 gs_oauth_*.json
 gs_exist_*.json
 
-# Database Dumps & Backups
-*.sql.gz
-*.sql.bak
-*.bak
-*.backup
-*.dump
-backup.xlsx
-backups/
-storage/
-
-# Data and Master Spreadsheet Files
-*.xlsx
-*.xls
-*.csv
-fbd3.xls
-fbd3_data.json
-api/fbd3_data.json
-
-# Compressed Archives
+# 8. Arsip Terkompresi & Installer
 *.zip
 *.rar
 *.7z
@@ -72,17 +107,17 @@ api/fbd3_data.json
 *.tar.gz
 *.tgz
 *.iso
+*.exe
 Maintenance-QR-main*.rar
+Maintenance-QR-main*.zip
 
-# IDE & Editor Settings
+# 9. IDE, Editor & Pengaturan Sistem Operasi
 .vscode/
 .idea/
 *.sublime-project
 *.sublime-workspace
 .project
 .settings/
-
-# OS Generated Files
 .DS_Store
 .DS_Store?
 ._*
@@ -93,7 +128,8 @@ Thumbs.db
 Desktop.ini
 $RECYCLE.BIN/
 
-# Vercel / Deployment artifacts
+# 10. Scratch Scripts & Deployment Artifacts
 .vercel/
 .system_generated/
 scratch/
+get-docker.sh
