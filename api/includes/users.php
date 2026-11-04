@@ -23,6 +23,10 @@ function get_user_list(bool $forceRefresh = false): array {
             $nama = trim((string)($u['nama'] ?? $u['name'] ?? $u['username'] ?? ''));
             $username = trim((string)($u['username'] ?? ''));
             $role = strtolower(trim((string)($u['role'] ?? 'teknisi')));
+            if ($role === 'administrator') $role = 'admin';
+            elseif ($role === 'skai') $role = 'auditor';
+            elseif (in_array($role, ['hrd', 'umum', 'hrd_umum', 'sdm_umum', 'sdm & umum', 'sdm/hrd'], true) || str_contains($role, 'sdm') || str_contains($role, 'hrd') || str_contains($role, 'umum')) $role = 'sdm';
+            if (!in_array($role, ['admin', 'sdm', 'auditor', 'teknisi'], true)) $role = 'teknisi';
 
             // Recovery jika baris user tergeser ke kanan (mulai dari kolom O / index col_14)
             if ($id <= 0 && !empty($u['col_14']) && is_numeric($u['col_14'])) {
@@ -30,6 +34,10 @@ function get_user_list(bool $forceRefresh = false): array {
                 $username = trim((string)($u['col_15'] ?? ''));
                 $nama = trim((string)($u['col_17'] ?? ''));
                 $role = strtolower(trim((string)($u['col_18'] ?? 'teknisi')));
+                if ($role === 'administrator') $role = 'admin';
+                elseif ($role === 'skai') $role = 'auditor';
+                elseif (in_array($role, ['hrd', 'umum', 'hrd_umum', 'sdm_umum', 'sdm & umum', 'sdm/hrd'], true) || str_contains($role, 'sdm') || str_contains($role, 'hrd') || str_contains($role, 'umum')) $role = 'sdm';
+                if (!in_array($role, ['admin', 'sdm', 'auditor', 'teknisi'], true)) $role = 'teknisi';
                 $telepon = trim((string)($u['col_19'] ?? '-'));
                 $status = trim((string)($u['col_20'] ?? 'Aktif'));
                 $createdAt = trim((string)($u['col_21'] ?? ''));
@@ -103,6 +111,15 @@ function get_user_list(bool $forceRefresh = false): array {
             );
         ");
             $cols = table_columns('users');
+            if (!in_array('telepon', $cols, true)) {
+                try { db()->exec("ALTER TABLE users ADD COLUMN telepon VARCHAR(50) NULL"); } catch (Throwable $e) {}
+                $cols = table_columns('users');
+            }
+            if (!in_array('status', $cols, true)) {
+                try { db()->exec("ALTER TABLE users ADD COLUMN status VARCHAR(50) NOT NULL DEFAULT 'Aktif'"); } catch (Throwable $e) {}
+                $cols = table_columns('users');
+            }
+            try { db()->exec("ALTER TABLE users MODIFY COLUMN role VARCHAR(50) NOT NULL DEFAULT 'teknisi'"); } catch (Throwable $e) {}
             if (!in_array('nama_panggilan', $cols, true)) {
                 try { db()->exec("ALTER TABLE users ADD COLUMN nama_panggilan VARCHAR(50) NULL"); } catch (Throwable $e) {}
                 $cols = table_columns('users');
@@ -116,6 +133,15 @@ function get_user_list(bool $forceRefresh = false): array {
             $mysqlSchemaChecked = true;
         }
         $cols = table_columns('users');
+        if (!in_array('telepon', $cols, true)) {
+            try { db()->exec("ALTER TABLE users ADD COLUMN telepon VARCHAR(50) NULL"); } catch (Throwable $e) {}
+            $cols = table_columns('users');
+        }
+        if (!in_array('status', $cols, true)) {
+            try { db()->exec("ALTER TABLE users ADD COLUMN status VARCHAR(50) NOT NULL DEFAULT 'Aktif'"); } catch (Throwable $e) {}
+            $cols = table_columns('users');
+        }
+        try { db()->exec("ALTER TABLE users MODIFY COLUMN role VARCHAR(50) NOT NULL DEFAULT 'teknisi'"); } catch (Throwable $e) {}
         $nameCol = in_array('nama', $cols, true) ? 'nama' : (in_array('name', $cols, true) ? 'name' : 'username');
         $nickCol = in_array('nama_panggilan', $cols, true) ? 'nama_panggilan' : "'' AS nama_panggilan";
         $telCol = in_array('telepon', $cols, true) ? 'telepon' : "'-' AS telepon";
@@ -145,6 +171,12 @@ function get_user_list(bool $forceRefresh = false): array {
             }
             $u['face_status'] = $fStatus;
             $u['nama_panggilan'] = trim((string)($u['nama_panggilan'] ?? '')) ?: get_nickname((string)($u['nama'] ?? ''));
+            $uRole = strtolower(trim((string)($u['role'] ?? 'teknisi')));
+            if ($uRole === 'administrator') $uRole = 'admin';
+            elseif ($uRole === 'skai') $uRole = 'auditor';
+            elseif (in_array($uRole, ['hrd', 'umum', 'hrd_umum', 'sdm_umum', 'sdm & umum', 'sdm/hrd'], true) || str_contains($uRole, 'sdm') || str_contains($uRole, 'hrd') || str_contains($uRole, 'umum')) $uRole = 'sdm';
+            if (!in_array($uRole, ['admin', 'sdm', 'auditor', 'teknisi'], true)) $uRole = 'teknisi';
+            $u['role'] = $uRole;
             return $u;
         }, $users);
         $staticUserCache = $result;
@@ -536,6 +568,15 @@ function create_new_user(array $data): array {
             try { db()->exec("ALTER TABLE users ADD COLUMN face_descriptor TEXT NULL, ADD COLUMN face_photo MEDIUMTEXT NULL, ADD COLUMN face_status VARCHAR(50) DEFAULT 'none'"); } catch (Throwable $e) {}
             $cols = table_columns('users');
         }
+        if (!in_array('telepon', $cols, true)) {
+            try { db()->exec("ALTER TABLE users ADD COLUMN telepon VARCHAR(50) NULL"); } catch (Throwable $e) {}
+            $cols = table_columns('users');
+        }
+        if (!in_array('status', $cols, true)) {
+            try { db()->exec("ALTER TABLE users ADD COLUMN status VARCHAR(50) NOT NULL DEFAULT 'Aktif'"); } catch (Throwable $e) {}
+            $cols = table_columns('users');
+        }
+        try { db()->exec("ALTER TABLE users MODIFY COLUMN role VARCHAR(50) NOT NULL DEFAULT 'teknisi'"); } catch (Throwable $e) {}
         $nameCol = in_array('nama', $cols, true) ? 'nama' : (in_array('name', $cols, true) ? 'name' : 'username');
 
         $teleponFormatted = format_phone_number($telepon);
@@ -637,7 +678,8 @@ function update_user(int $id, array $data): array {
                 ]]);
                 $client->clearCache('Users');
                 record_audit_log('UPDATE', 'PENGGUNA', $id, "{$username} ({$nama})", "Menginisialisasi dan memperbarui akun pengguna default");
-                return ['success' => true, 'id' => $id, 'nama' => $nama, 'nama_panggilan' => $namaPanggilan];
+                get_user_list(true);
+        return ['success' => true, 'id' => $id, 'nama' => $nama, 'nama_panggilan' => $namaPanggilan];
             }
             return ['success' => false, 'error' => 'Pengguna tidak ditemukan'];
         }
@@ -679,6 +721,7 @@ function update_user(int $id, array $data): array {
             record_audit_log('UPDATE', 'PENGGUNA', $id, $uLabel, $detail);
         }
 
+        get_user_list(true);
         return ['success' => true, 'id' => $id, 'nama' => $nama, 'nama_panggilan' => $namaPanggilan];
     }
 
@@ -689,27 +732,45 @@ function update_user(int $id, array $data): array {
             try { db()->exec("ALTER TABLE users ADD COLUMN nama_panggilan VARCHAR(50) NULL"); } catch (Throwable $e) {}
             $cols = table_columns('users');
         }
+        if (!in_array('telepon', $cols, true)) {
+            try { db()->exec("ALTER TABLE users ADD COLUMN telepon VARCHAR(50) NULL"); } catch (Throwable $e) {}
+            $cols = table_columns('users');
+        }
+        if (!in_array('status', $cols, true)) {
+            try { db()->exec("ALTER TABLE users ADD COLUMN status VARCHAR(50) NOT NULL DEFAULT 'Aktif'"); } catch (Throwable $e) {}
+            $cols = table_columns('users');
+        }
+        try { db()->exec("ALTER TABLE users MODIFY COLUMN role VARCHAR(50) NOT NULL DEFAULT 'teknisi'"); } catch (Throwable $e) {}
         $nameCol = in_array('nama', $cols, true) ? 'nama' : (in_array('name', $cols, true) ? 'name' : 'username');
         $hasNick = in_array('nama_panggilan', $cols, true);
 
+        $fields = ["`{$nameCol}` = ?"];
+        $params = [$nama];
+        if (in_array('nama_panggilan', $cols, true)) {
+            $fields[] = "nama_panggilan = ?";
+            $params[] = $namaPanggilan;
+        }
+        if (in_array('role', $cols, true)) {
+            $fields[] = "role = ?";
+            $params[] = $role;
+        }
+        if (in_array('telepon', $cols, true)) {
+            $fields[] = "telepon = ?";
+            $params[] = $teleponStored;
+        }
+        if (in_array('status', $cols, true)) {
+            $fields[] = "status = ?";
+            $params[] = $status;
+        }
         if ($password !== '') {
             $hashedPass = password_hash($password, PASSWORD_BCRYPT);
-            if ($hasNick) {
-                $up = db()->prepare("UPDATE users SET `{$nameCol}` = ?, nama_panggilan = ?, role = ?, telepon = ?, status = ?, password = ? WHERE id = ?");
-                $up->execute([$nama, $namaPanggilan, $role, $teleponStored, $status, $hashedPass, $id]);
-            } else {
-                $up = db()->prepare("UPDATE users SET `{$nameCol}` = ?, role = ?, telepon = ?, status = ?, password = ? WHERE id = ?");
-                $up->execute([$nama, $role, $teleponStored, $status, $hashedPass, $id]);
-            }
-        } else {
-            if ($hasNick) {
-                $up = db()->prepare("UPDATE users SET `{$nameCol}` = ?, nama_panggilan = ?, role = ?, telepon = ?, status = ? WHERE id = ?");
-                $up->execute([$nama, $namaPanggilan, $role, $teleponStored, $status, $id]);
-            } else {
-                $up = db()->prepare("UPDATE users SET `{$nameCol}` = ?, role = ?, telepon = ?, status = ? WHERE id = ?");
-                $up->execute([$nama, $role, $teleponStored, $status, $id]);
-            }
+            $fields[] = "password = ?";
+            $params[] = $hashedPass;
         }
+        $params[] = $id;
+        $sql = "UPDATE users SET " . implode(', ', $fields) . " WHERE id = ?";
+        $up = db()->prepare($sql);
+        $up->execute($params);
 
         if ($oldUser) {
             $diffs = [];
@@ -722,6 +783,7 @@ function update_user(int $id, array $data): array {
             record_audit_log('UPDATE', 'PENGGUNA', $id, $uLabel, $detail);
         }
 
+        get_user_list(true);
         return ['success' => true, 'id' => $id, 'nama' => $nama, 'nama_panggilan' => $namaPanggilan];
     } catch (Throwable $e) {
         return ['success' => false, 'error' => $e->getMessage()];

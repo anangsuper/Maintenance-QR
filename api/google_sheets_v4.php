@@ -697,7 +697,7 @@ class GoogleSheetsV4Client {
             }
 
             // Tiered cache TTL: 30s scan/checklist/findings, 180s assets, 600s master data
-            $ttl = in_array($sheetName, ['Maintenance_Scan', 'Maintenance_Checklists', 'Maintenance_Findings'], true) ? 30 : (in_array($sheetName, ['Assets', 'Asset_QR_Tokens'], true) ? 180 : 600);
+            $ttl = in_array($sheetName, ['Maintenance_Scan', 'Maintenance_Checklists', 'Maintenance_Findings', 'Users'], true) ? 15 : (in_array($sheetName, ['Assets', 'Asset_QR_Tokens'], true) ? 180 : 600);
 
             // 2. Cek warm disk cache di /tmp
             if (!$forceRefresh) {

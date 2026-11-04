@@ -35,7 +35,7 @@ function render_page(string $title, string $content, string $extraHead = '', str
 
     $isHrdRole = is_hrd();
     $brandTag = $isHrdRole ? 'SDM & UMUM' : 'IT OPS';
-    $displayRole = $isHrdRole ? 'SDM & Umum' : (($role === 'admin') ? 'Administrator' : ucfirst($role));
+    $displayRole = is_admin() ? 'Administrator' : ($isHrdRole ? 'SDM & Umum' : (is_auditor() ? 'Auditor' : 'Teknisi IT'));
 
     // Hitung temuan kerusakan & keluhan karyawan aktif untuk badge notifikasi menu
     $activeIssuesCount = 0;

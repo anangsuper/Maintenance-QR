@@ -2,6 +2,10 @@
 require __DIR__ . '/bootstrap.php';
 require_admin_or_hrd();
 
+header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
+header('Pragma: no-cache');
+header('Expires: 0');
+
 $error = '';
 $flash = $_SESSION['flash'] ?? '';
 unset($_SESSION['flash']);
@@ -75,8 +79,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 get_user_list(true);
                 if ($id === current_user_id()) {
                     $_SESSION['nama'] = $nama;
-                    $effectiveRole = in_array(strtolower($role), ['hrd', 'umum', 'hrd_umum', 'sdm_umum', 'sdm & umum', 'sdm/hrd'], true) || str_contains(strtolower($role), 'sdm') ? 'sdm' : strtolower($role);
+                    $effectiveRole = in_array(strtolower($role), ['hrd', 'umum', 'hrd_umum', 'sdm_umum', 'sdm & umum', 'sdm/hrd'], true) || str_contains(strtolower($role), 'sdm') || str_contains(strtolower($role), 'hrd') || str_contains(strtolower($role), 'umum') ? 'sdm' : (in_array(strtolower($role), ['admin', 'administrator'], true) ? 'admin' : (in_array(strtolower($role), ['auditor', 'skai'], true) ? 'auditor' : 'teknisi'));
                     $_SESSION['role'] = $effectiveRole;
+                    set_auth_cookie([
+                        'id' => $id,
+                        'nama' => $nama,
+                        'username' => $_SESSION['username'] ?? '',
+                        'role' => $effectiveRole
+                    ]);
                 }
                 $_SESSION['flash'] = "Data akun pengguna '{$nama}' berhasil diperbarui.";
                 header('Location: ' . module_url('users_admin.php'));
@@ -159,7 +169,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 $editId = max(0, (int)($_GET['edit'] ?? 0));
 $editUser = null;
 if ($editId > 0) {
-    $editUser = get_user_by_id($editId, false);
+    $editUser = get_user_by_id($editId, true);
     if ($editUser && !is_admin() && in_array(strtolower($editUser['role'] ?? ''), ['admin', 'administrator'], true)) {
         $_SESSION['flash'] = 'Akses ditolak: Anda tidak memiliki izin untuk mengedit akun Administrator.';
         header('Location: ' . module_url('users_admin.php'));
@@ -167,8 +177,8 @@ if ($editId > 0) {
     }
 }
 
-// Ambil Daftar Pengguna
-$users = get_user_list(false);
+// Ambil Daftar Pengguna (Force refresh agar pembaruan wewenang peran selalu instan)
+$users = get_user_list(true);
 
 // Hitung Statistik & Metrik Pengguna
 $totalUsers = count($users);
@@ -191,7 +201,7 @@ foreach ($users as $u) {
 
     if ($r === 'admin' || $r === 'administrator') {
         $countAdmin++;
-    } elseif (in_array($r, ['sdm', 'hrd', 'umum', 'hrd_umum', 'sdm_umum', 'sdm & umum', 'sdm/hrd'], true) || str_contains($r, 'sdm')) {
+    } elseif (in_array($r, ['sdm', 'hrd', 'umum', 'hrd_umum', 'sdm_umum', 'sdm & umum', 'sdm/hrd'], true) || str_contains($r, 'sdm') || str_contains($r, 'hrd') || str_contains($r, 'umum')) {
         $countSdm++;
     } elseif ($r === 'auditor' || $r === 'skai') {
         $countAuditor++;
@@ -628,7 +638,7 @@ ob_start();
           $uPhoto = trim((string)($u['face_photo'] ?? ''));
           $isBeingEdited = ($editId === $uId);
 
-          $filterRoleGroup = ($uRole === 'admin' || $uRole === 'administrator') ? 'admin' : ((in_array($uRole, ['sdm', 'hrd', 'umum', 'hrd_umum', 'sdm_umum', 'sdm & umum', 'sdm/hrd'], true) || str_contains($uRole, 'sdm')) ? 'sdm' : (($uRole === 'auditor' || $uRole === 'skai') ? 'auditor' : 'teknisi'));
+          $filterRoleGroup = ($uRole === 'admin' || $uRole === 'administrator') ? 'admin' : ((in_array($uRole, ['sdm', 'hrd', 'umum', 'hrd_umum', 'sdm_umum', 'sdm & umum', 'sdm/hrd'], true) || str_contains($uRole, 'sdm') || str_contains($uRole, 'hrd') || str_contains($uRole, 'umum')) ? 'sdm' : (($uRole === 'auditor' || $uRole === 'skai') ? 'auditor' : 'teknisi'));
           $filterBioGroup = ($fStat === 'verified' || $fStat === 'terverifikasi') ? 'verified' : (($fStat === 'pending' || $fStat === 'menunggu') ? 'pending' : 'none');
           $filterStatusGroup = (strcasecmp($uStatus, 'Nonaktif') === 0) ? 'nonaktif' : 'aktif';
 
@@ -799,7 +809,7 @@ ob_start();
               $isBeingEdited = ($editId === $uId);
 
               // Filter Group
-              $filterRoleGroup = ($uRole === 'admin' || $uRole === 'administrator') ? 'admin' : ((in_array($uRole, ['sdm', 'hrd', 'umum', 'hrd_umum', 'sdm_umum', 'sdm & umum', 'sdm/hrd'], true) || str_contains($uRole, 'sdm')) ? 'sdm' : (($uRole === 'auditor' || $uRole === 'skai') ? 'auditor' : 'teknisi'));
+              $filterRoleGroup = ($uRole === 'admin' || $uRole === 'administrator') ? 'admin' : ((in_array($uRole, ['sdm', 'hrd', 'umum', 'hrd_umum', 'sdm_umum', 'sdm & umum', 'sdm/hrd'], true) || str_contains($uRole, 'sdm') || str_contains($uRole, 'hrd') || str_contains($uRole, 'umum')) ? 'sdm' : (($uRole === 'auditor' || $uRole === 'skai') ? 'auditor' : 'teknisi'));
               $filterBioGroup = ($fStat === 'verified' || $fStat === 'terverifikasi') ? 'verified' : (($fStat === 'pending' || $fStat === 'menunggu') ? 'pending' : 'none');
               $filterStatusGroup = (strcasecmp($uStatus, 'Nonaktif') === 0) ? 'nonaktif' : 'aktif';
 
@@ -965,7 +975,8 @@ ob_start();
         $editNama = $editUser['nama'] ?? '';
         $editNick = $editUser['nama_panggilan'] ?? '';
         $editUsername = $editUser['username'] ?? '';
-        $editRole = strtolower($editUser['role'] ?? 'teknisi');
+        $editRole = strtolower(trim((string)($editUser['role'] ?? 'teknisi')));
+        $editRoleGroup = ($editRole === 'admin' || $editRole === 'administrator') ? 'admin' : ((in_array($editRole, ['sdm', 'hrd', 'umum', 'hrd_umum', 'sdm_umum', 'sdm & umum', 'sdm/hrd'], true) || str_contains($editRole, 'sdm') || str_contains($editRole, 'hrd') || str_contains($editRole, 'umum')) ? 'sdm' : (($editRole === 'auditor' || $editRole === 'skai') ? 'auditor' : 'teknisi'));
         $editTelepon = format_phone_number((string)($editUser['telepon'] ?? ''));
         $editTeleponVal = ($editTelepon !== '-' && $editTelepon !== '') ? $editTelepon : '';
         $editStatus = $editUser['status'] ?? 'Aktif';
@@ -1060,11 +1071,11 @@ ob_start();
             <div class="input-group">
               <span class="input-group-text input-icon-box"><i class="bi bi-shield-check"></i></span>
               <select class="form-select form-control-kombai" name="role">
-                <option value="teknisi" <?= ($editRole==='teknisi'?'selected':'') ?>>Teknisi IT (Inspeksi &amp; Checklist)</option>
-                <option value="sdm" <?= ($editRole==='sdm'||$editRole==='hrd'||$editRole==='umum'||$editRole==='hrd_umum'||str_contains($editRole,'sdm')?'selected':'') ?>>SDM &amp; Umum / HRD (Inventaris &amp; Karyawan)</option>
-                <option value="auditor" <?= ($editRole==='auditor'?'selected':'') ?>>Auditor / SKAI (Read-Only Audit Trail)</option>
+                <option value="teknisi" <?= ($editRoleGroup==='teknisi'?'selected':'') ?>>Teknisi IT (Inspeksi &amp; Checklist)</option>
+                <option value="sdm" <?= ($editRoleGroup==='sdm'?'selected':'') ?>>SDM &amp; Umum / HRD (Inventaris &amp; Karyawan)</option>
+                <option value="auditor" <?= ($editRoleGroup==='auditor'?'selected':'') ?>>Auditor / SKAI (Read-Only Audit Trail)</option>
                 <?php if (is_admin()): ?>
-                  <option value="admin" <?= ($editRole==='admin'?'selected':'') ?>>Administrator (Akses Penuh Sistem)</option>
+                  <option value="admin" <?= ($editRoleGroup==='admin'?'selected':'') ?>>Administrator (Akses Penuh Sistem)</option>
                 <?php endif; ?>
               </select>
             </div>
